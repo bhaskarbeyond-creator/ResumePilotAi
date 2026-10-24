@@ -6,7 +6,7 @@
  */
 
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { PageSpinner } from '@/components/ui/loading';
 import { RouteErrorBoundary } from '@/components/guards/route-error-boundary';
 import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/require-auth';
@@ -364,8 +364,7 @@ export function AppRouter() {
 
 /** Utility: redirect legacy paths preserving subpath and query */
 function LegacyRedirect({ from, to }: { from: string; to: string }) {
-  const path = window.location.pathname.replace(new RegExp(`^${from}`), to) || to;
-  const search = window.location.search;
-  const hash = window.location.hash;
-  return <Navigate to={`${path}${search}${hash}`} replace />;
+  const location = useLocation();
+  const path = location.pathname.replace(new RegExp(`^${from}`), to) || to;
+  return <Navigate to={`${path}${location.search}${location.hash}`} replace />;
 }

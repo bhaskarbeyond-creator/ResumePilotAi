@@ -660,8 +660,8 @@ export function CubaAppShell({
                   type="button"
                   data-testid="portal-switcher-trigger"
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border border-border bg-surface-raised/70 hover:bg-surface-raised hover:border-brand-300 transition-all shadow-2xs cursor-pointer"
-                  aria-label="Switch platform workspace"
                 >
+                  <span className="sr-only">Switch platform workspace </span>
                   <div className="flex items-center gap-2 truncate">
                     {activePortal === 'admin' && <ShieldCheck className="size-4 text-brand-600 shrink-0" />}
                     {activePortal === 'employer' && <Briefcase className="size-4 text-brand-600 shrink-0" />}
@@ -1205,9 +1205,9 @@ export function CubaAppShell({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    aria-label={`Account menu for ${displayName}`}
                     className="flex items-center gap-2 rounded-full py-0.5 pl-1 pr-1.5 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
+                    <span className="sr-only">Account menu for {displayName} </span>
                     <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-indigo-600 font-bold text-white text-xs shadow-xs">
                       {initials}
                       <span

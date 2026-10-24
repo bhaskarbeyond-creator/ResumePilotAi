@@ -1,2167 +1,2791 @@
 /**
- * FreeLLMAPI Unified AI Multi-Provider Engine & Governance Panel
+ * Admin AI Multi-Provider Engine (Rebuilt & Simplified v2)
  *
- * Full 100% reproduction of FreeLLMAPI 0.16.6 UI/UX:
- * - Tab 1 ("Keys"):
- *   - 74 provider catalog with live search, status pills (All/Healthy/Issues/Disabled),
- *     sub-pills (Providers/Quota signals/Unified API key/Anthropic/Agents),
- *     batch health checking, config export, and direct inline key editing.
- *   - Add Key Dialog matching FreeLLMAPI 0.16.6:
- *     - Pane 1: "Provider key" with searchable combobox over all 74 providers (grouped by
- *       Web Search vs Models, with hint badges and "Hide added providers" toggle).
- *     - Pane 2: "Import file" (.env / .json / raw keys).
- *     - Pane 3: "Custom endpoint" (custom OpenAI-compatible gateway + base URL).
- *     - Non-blocking save: saves credential immediately to server, updates state, and runs test.
- * - Tab 2 ("Models & Fallback Chains"):
- *   - Named chains (auto:default, auto:free-claude-code), context chips (Any, 32K+, 128K+, 1M+),
- *     Vision/Tools filters, multi-metric model table with colored progress bars for
- *     Reliability (green), Speed (blue), and Intelligence (purple), guardrails, composite score.
- * - Tab 3 ("Claude Code & Agents"):
- *   - Live wire setup for Claude Code CLI and Anthropic SDK via reverse proxy.
- * - Tab 4 ("Playground"):
- *   - Live prompt tester against any registered provider or fallback chain.
- *
- * INVARIANTS PRESERVED:
- * 1. ZERO PLAINTEXT SECRET LEAKAGE: Masked keys displayed, credentials stored server-side.
- * 2. POST-SAVE MASKING: Input cleared after save, displays "✓ Active on server".
- * 3. DYNAMIC MODEL IDS: Supports curated models AND arbitrary custom model IDs.
+ * Implements:
+ * - Simplification #1: 2–3 click Add & Activate Provider flow (row-level + header CTA)
+ * - Simplification #2: Unified URL-backed navigation preserving all ?subtab=* & ?tab=* aliases
+ * - Simplification #3: Shared Radix Dialog (@/components/ui/dialog) across all 5 tools + confirmations
+ * - Simplification #4: Configured-first provider sort + "Configured" filter + live Issues count
+ * - Simplification #5: Compact Runtime Model Selection strip (Temp 0–2, Max Tokens 256–8192)
+ * - Simplification #6: Self-persisting inline provider drawer (key, pool, model, baseUrl, primary, CAS)
+ * - Simplification #7: Unified Quotas & Telemetry (ADMIN + SUPER_ADMIN quota governance + SQLite metrics)
+ * - Simplification #8: Consolidated Unified Gateway, Claude Code & multi-language snippets (dynamic origin)
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { get, post, normalizeError } from '@/lib/api-client';
+import { type ApiError, get, normalizeError, post, put } from '@/lib/api-client';
+import { readPreviewSession } from '@/lib/preview-session';
 import type { ProviderCatalogEntry } from './freellmapi-catalog';
 import {
-  Brain,
-  CheckCircle2,
+  Activity,
   AlertCircle,
-  RefreshCw,
-  Key,
-  Shield,
-  Zap,
-  Sliders,
+  AlertTriangle,
+  Brain,
   Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Code2,
+  Copy,
+  Download,
+  ExternalLink,
   Eye,
   EyeOff,
-  Play,
-  Sparkles,
-  Search,
-  Download,
-  Plus,
-  X,
-  ExternalLink,
-  ChevronRight,
-  ChevronDown,
-  ChevronsUpDown,
+  Gauge,
+  Globe,
+  Key,
   Layers,
+  Loader2,
+  Lock,
+  Play,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Sliders,
+  Sparkles,
   Terminal,
-  Copy,
-  Info,
-  Radio,
-  Clock,
-  Filter,
-  CheckCheck,
-  Upload,
-  FileText,
-  Activity,
+  Trash2,
 } from 'lucide-react';
 
-/**
- * Provider tiers used by the Keys screen category tabs.
- *
- * FRONTIER — paid-adjacent free tiers with flagship intelligence (Llama 3.3 70B,
- *            Gemini 2.0 Flash, Mistral Large, DeepSeek V3, GPT-4o-mini …).
- * MESH     — community/aggregator gateways with generous free quotas.
- * SEARCH   — agent web-search & extraction tools (never chat candidates).
- */
-const FRONTIER_PROVIDER_IDS = new Set<string>([
-  'groq', 'cerebras', 'gemini', 'mistral', 'nvidia', 'openrouter', 'deepseek',
-  'openai', 'cloudflare', 'cohere', 'siliconflow', 'modelscope', 'huggingface',
+export interface CatalogModel {
+  id: string;
+  name?: string;
+  providerId: string;
+  contextWindow?: number | null;
+  capabilities?: { vision?: boolean; tools?: boolean; json?: boolean };
+  catalogStatus?: string;
+  lastSuccessfulRefresh?: number | null;
+}
+
+interface CooldownEntry {
+  remainingSeconds: number;
+  reason?: string | null;
+  strikeCount?: number;
+}
+
+interface QuotaConsumerRecord {
+  uid: string;
+  email: string;
+  displayName?: string;
+  membership?: string;
+  count: number;
+  limit: number;
+  day?: string;
+  lastUsed?: string | null;
+}
+
+interface QuotaDashboardResponse {
+  todayDate?: string;
+  totalTodayRequests: number;
+  activeUsersToday: number;
+  totalHistoricalRecords: number;
+  topConsumers: QuotaConsumerRecord[];
+  limits: {
+    basic: number;
+    premium: number;
+    admin: number;
+    enterprise: number;
+  };
+  quotaRevision: number;
+}
+
+interface EngineMetricsResponse {
+  summary?: {
+    totalRequests?: number;
+    successCount?: number;
+    errorCount?: number;
+    totalTokens?: number;
+    avgLatencyMs?: number | null;
+    backend?: string;
+  } | null;
+  providers?: Array<{
+    provider: string;
+    requests?: number;
+    errors?: number;
+    avgLatencyMs?: number | null;
+    totalTokens?: number;
+  }>;
+}
+
+interface EngineStatusResponse {
+  version?: string;
+  totalProvidersCount?: number;
+  chatProvidersCount?: number;
+  searchProvidersCount?: number;
+  cacheEntries?: number;
+  activeCooldowns?: Array<{ provider: string; remainingSeconds: number; reason?: string }>;
+}
+
+interface AiSettingsApiResponse {
+  revision?: number;
+  settings?: Record<string, any>;
+  configuredProviders?: Record<string, boolean>;
+  credentialSources?: Record<string, string>;
+  maskedKeys?: Record<string, string>;
+  catalog?: ProviderCatalogEntry[];
+  cooldowns?: Record<string, CooldownEntry>;
+  discoveredModels?: CatalogModel[];
+  featureFlags?: { ai_settings_v2_enabled?: boolean };
+}
+
+type SelectionMode = 'auto' | 'quality' | 'speed' | 'balanced' | 'manual';
+type EngineViewSubtab =
+  | 'providers'
+  | 'key-pool'
+  | 'metrics'
+  | 'quotas'
+  | 'unified-gateway'
+  | 'claude'
+  | 'discovery'
+  | 'models'
+  | 'playground';
+
+type DialogSlug =
+  | 'configure-provider'
+  | 'key-pool'
+  | 'cooldowns'
+  | 'discovery'
+  | 'snippets'
+  | 'confirm-clear-key'
+  | 'confirm-reset-user-quota'
+  | 'confirm-reset-all-quotas';
+
+const FRONTIER_IDS = new Set([
+  'groq',
+  'cerebras',
+  'gemini',
+  'mistral',
+  'nvidia',
+  'openrouter',
+  'cloudflare',
+  'cohere',
+  'deepseek',
+  'openai',
+  'kilo',
+  'ovh',
+  'sambanova',
 ]);
 
-function isSearchProvider(provider: Pick<ProviderCatalogEntry, 'group' | 'type'>): boolean {
-  return provider.group === 'search' || provider.type === 'search' || provider.type === 'media';
-}
+const VALID_SUBTABS = new Set<string>([
+  'providers',
+  'key-pool',
+  'metrics',
+  'quotas',
+  'unified-gateway',
+  'claude',
+  'discovery',
+  'models',
+  'playground',
+]);
 
-type ProviderTier = 'all' | 'frontier' | 'mesh' | 'search';
+const VALID_DIALOGS = new Set<string>([
+  'configure-provider',
+  'key-pool',
+  'cooldowns',
+  'discovery',
+  'snippets',
+  'confirm-clear-key',
+  'confirm-reset-user-quota',
+  'confirm-reset-all-quotas',
+]);
 
-/**
- * Split a pasted credential blob into a de-duplicated key pool.
- * FreeLLMAPI accepts comma- or newline-delimited multi-key pools and
- * rotates them round-robin, benching only the key that is throttled.
- */
-function splitKeyPool(value: string): string[] {
+function splitKeys(raw: string): string[] {
   const seen = new Set<string>();
-  return String(value || '')
-    .split(/[\n,]+/)
-    .map((key) => key.trim())
-    .filter((key) => {
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  const out: string[] = [];
+  for (const part of raw.split(/[\n,]+/)) {
+    const trimmed = part.trim();
+    if (trimmed && !/[•*]/.test(trimmed) && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      out.push(trimmed);
+    }
+  }
+  return out;
 }
 
-export interface ProviderItem extends ProviderCatalogEntry {}
-
-export interface FallbackChain {
-  id: string;
-  name: string;
-  alias: string;
-  isDefault?: boolean;
-  isCurated?: boolean;
-  isActive: boolean;
-  modelsCount: number;
+function getProviderTier(p: ProviderCatalogEntry): 'frontier' | 'mesh' | 'search' {
+  if (p.group === 'search' || p.type === 'search' || p.type === 'media') return 'search';
+  if (FRONTIER_IDS.has(p.id)) return 'frontier';
+  return 'mesh';
 }
 
-/** Valid deep-link subtabs for the AI Multi-Provider Engine surface. */
-const AI_ENGINE_SUBTABS = ['providers', 'key-pool', 'metrics', 'unified-gateway', 'discovery'] as const;
-type AiEngineSubtab = (typeof AI_ENGINE_SUBTABS)[number];
-
-export interface CatalogModel {
-  id: string; name?: string; providerId: string;
-  contextWindow?: number; capabilities?: { vision?: boolean; tools?: boolean; json?: boolean };
-  catalogStatus?: string; lastSuccessfulRefresh?: number;
+function formatCredentialSource(source?: string, keyless?: boolean): string {
+  if (source === 'mariadb-secret-store') return 'MariaDB Vault';
+  if (source === 'environment') return 'Environment (.env)';
+  if (source === 'mariadb-legacy-setting') return 'Legacy Store';
+  if (source === 'keyless' || keyless) return 'Keyless / Local';
+  return 'Not Configured';
 }
 
-export function AdminAiSettingsTab() {
-  // Navigation tabs
-  const [activeTab, setActiveTab] = useState<'keys' | 'models' | 'claude' | 'playground'>('keys');
+export interface AdminAiSettingsTabProps {
+  viewerRole?: string;
+}
 
-  // Deep link / URL state: subtab under ai-settings.
+export function AdminAiSettingsTab({ viewerRole }: AdminAiSettingsTabProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawSubtab = searchParams.get('subtab');
-  const subtab: AiEngineSubtab = (AI_ENGINE_SUBTABS as readonly string[]).includes(rawSubtab || '')
-    ? (rawSubtab as AiEngineSubtab)
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const effectiveRole = useMemo(() => {
+    if (viewerRole) return viewerRole.toUpperCase();
+    const preview = readPreviewSession();
+    return (preview?.role || 'SUPER_ADMIN').toUpperCase();
+  }, [viewerRole]);
+
+  const isSuperAdmin = effectiveRole === 'SUPER_ADMIN';
+
+  // ─── URL-Derived Deep-Link State (Single Source of Truth) ───
+  const rawSubtab = (searchParams.get('subtab') || '').toLowerCase().trim();
+  const activeSubtab: EngineViewSubtab = VALID_SUBTABS.has(rawSubtab)
+    ? (rawSubtab as EngineViewSubtab)
     : 'providers';
 
-  // Filter deep-links: ?provider=<id> & ?category=<fast|frontier|mesh|search>
-  const [providerFilter, setProviderFilter] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<'' | 'fast' | 'frontier' | 'mesh' | 'search'>('');
+  const rawDialog = (searchParams.get('dialog') || '').toLowerCase().trim();
+  const activeDialog: DialogSlug | null = VALID_DIALOGS.has(rawDialog)
+    ? (rawDialog as DialogSlug)
+    : null;
+  const dialogTarget = searchParams.get('target') || '';
 
-  // Sync filter state from URL query params on mount
-  useEffect(() => {
-    const rawProvider = searchParams.get('provider');
-    const rawCategory = searchParams.get('category');
-    if (rawProvider) setProviderFilter(rawProvider);
-    if (['fast', 'frontier', 'mesh', 'search'].includes(rawCategory || '')) {
-      setCategoryFilter(rawCategory as '' | 'fast' | 'frontier' | 'mesh' | 'search');
-    }
-  }, [searchParams]);
+  const providerFilter = (searchParams.get('provider') || '').trim().toLowerCase();
+  const rawCategory = (searchParams.get('category') || '').toLowerCase().trim();
+  const categoryFilter: 'all' | 'frontier' | 'mesh' | 'search' =
+    rawCategory === 'frontier'
+      ? 'frontier'
+      : rawCategory === 'mesh' || rawCategory === 'fast'
+        ? 'mesh'
+        : rawCategory === 'search'
+          ? 'search'
+          : 'all';
 
-  // Sync filter query params when state changes
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    if (providerFilter) {
-      params.set('provider', providerFilter);
-    } else {
-      params.delete('provider');
-    }
-    if (categoryFilter) {
-      params.set('category', categoryFilter);
-    } else {
-      params.delete('category');
-    }
-    if (JSON.stringify(params) !== JSON.stringify(searchParams)) {
-      setSearchParams(params, { replace: false });
-    }
-  }, [providerFilter, categoryFilter, searchParams, setSearchParams]);
+  const rawStatus = (searchParams.get('status') || '').toLowerCase().trim();
+  const statusFilter: 'all' | 'configured' | 'healthy' | 'issues' | 'disabled' =
+    rawStatus === 'configured' ||
+    rawStatus === 'healthy' ||
+    rawStatus === 'issues' ||
+    rawStatus === 'disabled'
+      ? rawStatus
+      : 'all';
 
-  // Provider catalog is loaded from the authoritative server registry.
-  const [providers, setProviders] = useState<ProviderItem[]>([]);
-  const [subPill, setSubPill] = useState<'providers' | 'quota' | 'unified' | 'anthropic' | 'agents'>('providers');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'issues' | 'disabled'>('all');
-  const [tierFilter, setTierFilter] = useState<ProviderTier>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
-  const [cooldowns, setCooldowns] = useState<Record<string, { remainingSeconds: number; reason: string }>>({});
-  const [keyPoolDrafts, setKeyPoolDrafts] = useState<Record<string, string>>({});
-  const modalRef = useRef<HTMLDivElement>(null);
+  const searchQuery = searchParams.get('q') || '';
 
-  // Global settings
-  const [primaryProvider, setPrimaryProvider] = useState('nvidia');
-  const [selectionMode, setSelectionMode] = useState('balanced');
-  const [manualModel, setManualModel] = useState('');
-  const [enableFallback, setEnableFallback] = useState(true);
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(2048);
-  const [revision, setRevision] = useState(0);
+  const updateUrlParams = useCallback(
+    (mutator: (next: URLSearchParams) => void, replace = true) => {
+      const next = new URLSearchParams(searchParams);
+      mutator(next);
+      if (next.toString() !== searchParams.toString()) {
+        setSearchParams(next, { replace });
+      }
+    },
+    [searchParams, setSearchParams]
+  );
 
-  // Fallback chains & models state
-  const [chains, setChains] = useState<FallbackChain[]>([
-    { id: 'default', name: 'Default', alias: 'auto:default', isDefault: true, isActive: true, modelsCount: 22 },
-    { id: 'free-claude-code', name: 'free-claude-code', alias: 'auto:free-claude-code', isCurated: true, isActive: true, modelsCount: 22 },
-  ]);
-  const [catalogModels, setCatalogModels] = useState<CatalogModel[]>([]);
-  const [modelSearch, setModelSearch] = useState('');
-  const [filterVision, setFilterVision] = useState(false);
-  const [filterTools, setFilterTools] = useState(false);
-  const [contextFilter, setContextFilter] = useState<'any' | '32k' | '128k' | '1m'>('any');
+  const openDialog = useCallback(
+    (slug: DialogSlug, target?: string) => {
+      updateUrlParams((next) => {
+        next.set('dialog', slug);
+        if (target) next.set('target', target);
+        else next.delete('target');
+      }, true);
+    },
+    [updateUrlParams]
+  );
 
-  // Secret management & testing
-  const [secretInputs, setSecretInputs] = useState<Record<string, string>>({});
-  const [showSecretField, setShowSecretField] = useState<Record<string, boolean>>({});
-  const [testingId, setTestingId] = useState<string | null>(null);
-  const [testStatus, setTestStatus] = useState<Record<string, { ok: boolean; message: string; latencyMs?: number }>>({});
-  const [checkingAll, setCheckingAll] = useState(false);
+  const closeDialog = useCallback(() => {
+    updateUrlParams((next) => {
+      next.delete('dialog');
+      next.delete('target');
+    }, true);
+  }, [updateUrlParams]);
 
-  // Add Key Modal state
-  const [isAddKeyOpen, setIsAddKeyOpen] = useState(false);
-  const [isComboboxOpen, setIsComboboxOpen] = useState(false);
-  const [modalPlatformSearch, setModalPlatformSearch] = useState('');
-  const [modalCategoryFilter, setModalCategoryFilter] = useState<'all' | 'models' | 'search'>('all');
-  const [modalSelectedPlatform, setModalSelectedPlatform] = useState<ProviderItem | null>(null);
-  const [modalHideAdded, setModalHideAdded] = useState(false);
-  const [modalApiKey, setModalApiKey] = useState('');
-  const [modalAccountId, setModalAccountId] = useState('');
-  const [modalSeveral, setModalSeveral] = useState(false);
-  const [modalTab, setModalTab] = useState<'key' | 'import' | 'endpoint'>('key');
-  const [modalCustomEndpoint, setModalCustomEndpoint] = useState('');
-  const [modalCustomModel, setModalCustomModel] = useState('');
-  const [modalImportRaw, setModalImportRaw] = useState('');
-  const [modalTesting, setModalTesting] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
-  const [modalShowKey, setModalShowKey] = useState(false);
+  const selectSubtab = useCallback(
+    (nextSubtab: EngineViewSubtab) => {
+      updateUrlParams((next) => {
+        next.set('subtab', nextSubtab);
+      }, true);
+    },
+    [updateUrlParams]
+  );
 
-  // Section 5: Additional modal states (Key Pool Manager, Cooldown Flush,
-  // Model Discovery, Code Snippets).
-  const [isKeyPoolOpen, setIsKeyPoolOpen] = useState(false);
-  const [isCooldownOpen, setIsCooldownOpen] = useState(false);
-  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
-  const [isCodeSnippetsOpen, setIsCodeSnippetsOpen] = useState(false);
-
-  const keyPoolRef = useRef<HTMLDivElement>(null);
-  const cooldownRef = useRef<HTMLDivElement>(null);
-  const discoveryRef = useRef<HTMLDivElement>(null);
-  const codeSnippetsRef = useRef<HTMLDivElement>(null);
-
-  // Discovery tab state (Section 5 / DIR-013 Section 5 item 4)
-  const [discoveryResults, setDiscoveryResults] = useState<Record<string, any>>({});
-  const [discoveryLoading, setDiscoveryLoading] = useState(false);
-
-  // Operations state
-  const [loading, setLoading] = useState(true);
+  // ─── Core Engine & Feature Flag State ───
+  const [loading, setLoading] = useState<boolean>(isSuperAdmin);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [v2Enabled, setV2Enabled] = useState<boolean>(true);
+  const [revision, setRevision] = useState<number>(0);
+  const [revisionConflict, setRevisionConflict] = useState<{
+    message: string;
+    currentRevision?: number;
+    pendingPayload?: Record<string, any>;
+  } | null>(null);
+
+  const [providers, setProviders] = useState<ProviderCatalogEntry[]>([]);
+  const [maskedKeys, setMaskedKeys] = useState<Record<string, string>>({});
+  const [cooldowns, setCooldowns] = useState<Record<string, CooldownEntry>>({});
+  const [discoveredModels, setDiscoveredModels] = useState<CatalogModel[]>([]);
+
+  // Runtime Selection Strip Controls
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('balanced');
+  const [primaryProvider, setPrimaryProvider] = useState<string>('groq');
+  const [pinnedModel, setPinnedModel] = useState<string>('');
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [maxTokens, setMaxTokens] = useState<number>(2048);
+  const [enableFallback, setEnableFallback] = useState<boolean>(true);
+  const [showTuning, setShowTuning] = useState<boolean>(false);
+
+  // Inline Feedback Banners
+  const [saving, setSaving] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [savedSuccess, setSavedSuccess] = useState(false);
-  const [copiedText, setCopiedText] = useState<string | null>(null);
 
-  // Modal state (Section 5 / DIR-013 Section 5 items 1-5)
-  const [cooldownFocus, setCooldownFocus] = useState<string | null>(null);
+  // Provider Row Expansion & Scoped Write-Only Drafts
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [singleKeyDrafts, setSingleKeyDrafts] = useState<Record<string, string>>({});
+  const [poolKeyDrafts, setPoolKeyDrafts] = useState<Record<string, string>>({});
+  const [showRowKey, setShowRowKey] = useState<Record<string, boolean>>({});
+  const [modelDrafts, setModelDrafts] = useState<Record<string, string>>({});
+  const [baseUrlDrafts, setBaseUrlDrafts] = useState<Record<string, string>>({});
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [checkingAll, setCheckingAll] = useState<boolean>(false);
 
-  // Playground state
-  const [playgroundPrompt, setPlaygroundPrompt] = useState('Explain the difference between a process and a thread in 2 sentences.');
-  const [playgroundModel, setPlaygroundModel] = useState('auto');
-  const [playgroundOutput, setPlaygroundOutput] = useState('');
-  const [playgroundLoading, setPlaygroundLoading] = useState(false);
+  // Configure Provider Modal State
+  const [modalTab, setModalTab] = useState<'single' | 'pool' | 'endpoint'>('single');
+  const [modalSelectedId, setModalSelectedId] = useState<string>('');
+  const [platformDropdownOpen, setPlatformDropdownOpen] = useState<boolean>(false);
+  const [modalPlatformQuery, setModalPlatformQuery] = useState<string>('');
+  const [modalApiKey, setModalApiKey] = useState<string>('');
+  const [modalShowKey, setModalShowKey] = useState<boolean>(false);
+  const [modalPoolText, setModalPoolText] = useState<string>('');
+  const [modalCustomBaseUrl, setModalCustomBaseUrl] = useState<string>('');
+  const [modalCustomModel, setModalCustomModel] = useState<string>('');
+  const [modalTesting, setModalTesting] = useState<boolean>(false);
+  const [modalTestStatus, setModalTestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const modalKeyInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Combobox click-outside ref
-  const comboboxRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (comboboxRef.current && !comboboxRef.current.contains(e.target as Node)) {
-        setIsComboboxOpen(false);
-      }
+  // Discovery State (Shared by ?subtab=discovery, Models view, and Discovery Dialog)
+  const [discoveryProvider, setDiscoveryProvider] = useState<string>('');
+  const [discoveryModels, setDiscoveryModels] = useState<CatalogModel[]>([]);
+  const [discoveryLoading, setDiscoveryLoading] = useState<boolean>(false);
+  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [modelsCapFilter, setModelsCapFilter] = useState<'all' | 'vision' | 'tools' | 'json'>('all');
+  const [modelsSearch, setModelsSearch] = useState<string>('');
+
+  // Quotas & Telemetry State
+  const [quotaData, setQuotaData] = useState<QuotaDashboardResponse | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState<boolean>(false);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [quotaRequiresReauth, setQuotaRequiresReauth] = useState<boolean>(false);
+  const [basicLimitDraft, setBasicLimitDraft] = useState<string>('10');
+  const [premiumLimitDraft, setPremiumLimitDraft] = useState<string>('100');
+  const [enterpriseLimitDraft, setEnterpriseLimitDraft] = useState<string>('5000');
+  const [adminLimitDraft, setAdminLimitDraft] = useState<string>('10000');
+  const [quotaSaving, setQuotaSaving] = useState<boolean>(false);
+  const [engineStatus, setEngineStatus] = useState<EngineStatusResponse | null>(null);
+  const [engineMetrics, setEngineMetrics] = useState<EngineMetricsResponse | null>(null);
+
+  // Playground & Snippets State
+  const [playgroundModel, setPlaygroundModel] = useState<string>('auto');
+  const [playgroundPrompt, setPlaygroundPrompt] = useState<string>(
+    'Summarize three concrete engineering strengths for a senior backend resume in two concise sentences.'
+  );
+  const [playgroundOutput, setPlaygroundOutput] = useState<string>('');
+  const [playgroundMeta, setPlaygroundMeta] = useState<string>('');
+  const [playgroundRunning, setPlaygroundRunning] = useState<boolean>(false);
+  const [snippetLang, setSnippetLang] = useState<'curl' | 'python' | 'typescript' | 'claude'>('curl');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const gatewayOrigin = useMemo(() => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return `${window.location.origin}/v1`;
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return '/v1';
   }, []);
 
-  // Reusable WCAG 2.1 AA modal focus trap hook (Section 5 / DIR-013)
-  // Used by all 5 modals: Add Key, Key Pool Manager, Cooldown Flush,
-  // Model Discovery, Code Snippets.
-  const useModalFocus = (isOpen: boolean, modalRef: React.RefObject<HTMLDivElement>, setOpen: (open: boolean) => void) => {
-    useEffect(() => {
-      if (!isOpen) return;
-      const node = modalRef.current;
-      const focusables = () => Array.from(
-        node?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        ) || []
-      );
-      const initial = focusables()[0];
-      initial?.focus();
-
-      function onKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          setOpen(false);
-          return;
-        }
-        if (event.key !== 'Tab') return;
-        const list = focusables();
-        if (list.length === 0) return;
-        const firstEl = list[0];
-        const lastEl = list[list.length - 1];
-        if (event.shiftKey && document.activeElement === firstEl) {
-          event.preventDefault();
-          lastEl.focus();
-        } else if (!event.shiftKey && document.activeElement === lastEl) {
-          event.preventDefault();
-          firstEl.focus();
-        }
+  const redirectOn401 = useCallback(
+    (err: unknown): boolean => {
+      const apiErr = err as Partial<ApiError> & { response?: { status?: number } };
+      const status = apiErr?.status || apiErr?.response?.status;
+      if (status === 401) {
+        const nextUrl = `${location.pathname}${location.search}`;
+        navigate(`/login?next=${encodeURIComponent(nextUrl)}`, { replace: true });
+        return true;
       }
+      return false;
+    },
+    [location.pathname, location.search, navigate]
+  );
 
-      document.addEventListener('keydown', onKeyDown);
-      return () => document.removeEventListener('keydown', onKeyDown);
-    }, [isOpen, modalRef, setOpen]);
-  };
-
-  // Apply focus trap to all modals
-  useModalFocus(isAddKeyOpen, modalRef, setIsAddKeyOpen);
-  useModalFocus(isKeyPoolOpen, keyPoolRef, setIsKeyPoolOpen);
-  useModalFocus(isCooldownOpen, cooldownRef, setIsCooldownOpen);
-  useModalFocus(isDiscoveryOpen, discoveryRef, setIsDiscoveryOpen);
-  useModalFocus(isCodeSnippetsOpen, codeSnippetsRef, setIsCodeSnippetsOpen);
-
-  // Load configuration on mount
-  useEffect(() => {
-    loadSettings();
+  const showToast = useCallback((message: string) => {
+    setToastMsg(message);
+    setActionError(null);
   }, []);
 
-  const loadSettings = () => {
-    setLoading(true);
-    setSettingsError(null);
-    get<{
-      settings?: Record<string, any>;
-      revision?: number;
-      catalog?: ProviderItem[];
-      fallbackChains?: FallbackChain[];
-      discoveredModels?: CatalogModel[];
-      configuredProviders?: Record<string, boolean>;
-      maskedKeys?: Record<string, string>;
-      cooldowns?: Record<string, { remainingSeconds: number; reason: string }>;
-    }>('/admin/ai-settings')
-      .then((res) => {
-        if (res.revision) setRevision(res.revision);
-        setCooldowns(res.cooldowns || {});
-        if (res.fallbackChains && Array.isArray(res.fallbackChains)) {
-          setChains(res.fallbackChains);
-        }
-        setCatalogModels(res.discoveredModels || []);
-        if (res.settings) {
-          const cfg = res.settings;
-          setPrimaryProvider(cfg.provider || 'nvidia');
-          setSelectionMode(cfg.selectionMode || 'balanced');
-          setEnableFallback(cfg.enableFallback !== false);
-          if (cfg.temperature !== undefined) setTemperature(Number(cfg.temperature));
-          if (cfg.maxTokens !== undefined) setMaxTokens(Number(cfg.maxTokens));
-        }
+  // Apply server payload to state consistently on load & save
+  const hydrateFromResponse = useCallback((res: AiSettingsApiResponse) => {
+    if (typeof res.revision === 'number') {
+      setRevision(res.revision);
+    }
+    if (typeof res.featureFlags?.ai_settings_v2_enabled === 'boolean') {
+      setV2Enabled(res.featureFlags.ai_settings_v2_enabled);
+    }
+    const serverMasks = res.maskedKeys || {};
+    const serverSources = res.credentialSources || {};
+    const serverCooldowns = res.cooldowns || {};
+    setMaskedKeys(serverMasks);
+    setCooldowns(serverCooldowns);
 
-        setManualModel(res.catalog?.find(p => p.id === res.settings?.provider)?.defaultModel || '');
-        // Server registry is authoritative; new providers require no frontend release.
-        setProviders((res.catalog || []).map((p) => ({
+    const s = res.settings || {};
+    if (s.selectionMode && ['auto', 'quality', 'speed', 'balanced', 'manual'].includes(s.selectionMode)) {
+      setSelectionMode(s.selectionMode as SelectionMode);
+    }
+    if (s.provider) {
+      setPrimaryProvider(String(s.provider));
+    }
+    if (typeof s.temperature === 'number') {
+      setTemperature(s.temperature);
+    }
+    if (typeof s.maxTokens === 'number') {
+      setMaxTokens(s.maxTokens);
+    }
+    if (typeof s.enableFallback === 'boolean') {
+      setEnableFallback(s.enableFallback);
+    }
+
+    if (Array.isArray(res.catalog)) {
+      const mapped: ProviderCatalogEntry[] = res.catalog.map((p) => {
+        const hasCooldown = Boolean(serverCooldowns[p.id]);
+        const isEnabled =
+          typeof p.enabled === 'boolean'
+            ? p.enabled
+            : Boolean(p.configuredOnServer) && !p.disabled;
+        const normalizedStatus: ProviderCatalogEntry['status'] = !isEnabled
+          ? 'disabled'
+          : hasCooldown || p.status === 'cooldown' || p.status === 'issues'
+            ? 'issues'
+            : p.status === 'healthy'
+              ? 'healthy'
+              : 'unverified';
+        return {
           ...p,
           configuredOnServer: Boolean(p.configuredOnServer),
-          keysCount: p.keyless ? 0 : (p.keysCount || 0),
-          enabled: p.configuredOnServer,
-          status: res.cooldowns?.[p.id] ? 'issues' : p.configuredOnServer ? 'unverified' : 'disabled',
-        })));
+          enabled: isEnabled,
+          disabled: Boolean(p.disabled),
+          status: normalizedStatus,
+          maskedKey: serverMasks[p.id] || '',
+          credentialSource: p.credentialSource || serverSources[p.id] || 'none',
+          customBaseUrl: p.customBaseUrl || '',
+        };
+      });
+      setProviders(mapped);
 
-      })
-      .catch((err) => {
-        setSettingsError(normalizeError(err).message);
-      })
-      .finally(() => setLoading(false));
-  };
-
-  // Filtered providers for Keys Screen
-  const filteredProviders = useMemo(() => {
-    return providers.filter((p) => {
-      // Sub-pill filter
-      if (subPill === 'providers' && p.group !== 'models' && p.group !== 'search') return false;
-
-      // Provider tier filter (Frontier / Community Mesh / Agent Search)
-      if (tierFilter === 'frontier' && !FRONTIER_PROVIDER_IDS.has(p.id)) return false;
-      if (tierFilter === 'mesh' && (isSearchProvider(p) || FRONTIER_PROVIDER_IDS.has(p.id))) return false;
-      if (tierFilter === 'search' && !isSearchProvider(p)) return false;
-
-      // Filter deep-link: ?category=fast|frontier|mesh|search (DIR-013 Section 4)
-      if (categoryFilter === 'fast' || categoryFilter === 'frontier') {
-        if (!FRONTIER_PROVIDER_IDS.has(p.id)) return false;
+      const nextModels: Record<string, string> = {};
+      const nextUrls: Record<string, string> = {};
+      for (const item of mapped) {
+        nextModels[item.id] = item.defaultModel || '';
+        nextUrls[item.id] = item.customBaseUrl || '';
       }
-      if (categoryFilter === 'mesh') {
-        if (isSearchProvider(p) || FRONTIER_PROVIDER_IDS.has(p.id)) return false;
-      }
-      if (categoryFilter === 'search') {
-        if (!isSearchProvider(p)) return false;
-      }
+      setModelDrafts(nextModels);
+      setBaseUrlDrafts(nextUrls);
 
-      // Status filter
-      if (statusFilter === 'healthy' && p.status !== 'healthy') return false;
-      if (statusFilter === 'issues' && p.status !== 'issues') return false;
-      if (statusFilter === 'disabled' && p.status !== 'disabled') return false;
+      const targetPrimary = String(s.provider || mapped[0]?.id || 'groq');
+      const primaryCatalogEntry = mapped.find((item) => item.id === targetPrimary);
+      if (primaryCatalogEntry?.defaultModel) {
+        setPinnedModel(primaryCatalogEntry.defaultModel);
+      }
+    }
 
-      // Text search
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        return (
-          p.name.toLowerCase().includes(q) ||
-          p.label.toLowerCase().includes(q) ||
-          p.id.toLowerCase().includes(q) ||
-          (p.defaultModel && p.defaultModel.toLowerCase().includes(q))
+    if (Array.isArray(res.discoveredModels)) {
+      setDiscoveredModels(res.discoveredModels);
+    }
+  }, []);
+
+  const loadQuotaAndTelemetry = useCallback(async () => {
+    setQuotaLoading(true);
+    setQuotaError(null);
+    try {
+      const requests: Promise<any>[] = [
+        get<QuotaDashboardResponse>('/admin/ai/quota-stats').catch((err) => ({ __err: err })),
+        get<EngineStatusResponse>('/freellmapi/status').catch(() => null),
+      ];
+      if (isSuperAdmin) {
+        requests.push(get<EngineMetricsResponse>('/freellmapi/metrics').catch(() => null));
+      } else {
+        requests.push(
+          get<{ value?: boolean }>('/admin/operations/feature-flags/ai_settings_v2_enabled').catch(
+            () => null
+          )
         );
       }
-      return true;
-    });
-  }, [providers, statusFilter, searchQuery, subPill, tierFilter]);
-
-  // Providers list for Add Key Modal Combobox
-  const filteredModalPlatforms = useMemo(() => {
-    return providers.filter((p) => {
-      // Category filter
-      if (modalCategoryFilter === 'models' && p.group !== 'models') return false;
-      if (modalCategoryFilter === 'search' && p.group !== 'search') return false;
-
-      // Hide added filter
-      if (modalHideAdded && (p.configuredOnServer || p.hasKey)) return false;
-
-      // Search query
-      if (modalPlatformSearch.trim()) {
-        const q = modalPlatformSearch.toLowerCase().trim();
-        return (
-          p.name.toLowerCase().includes(q) ||
-          p.label.toLowerCase().includes(q) ||
-          p.id.toLowerCase().includes(q) ||
-          (p.hint && p.hint.toLowerCase().includes(q))
-        );
+      const [qRes, statusRes, thirdRes] = await Promise.all(requests);
+      if (qRes && qRes.__err) {
+        if (redirectOn401(qRes.__err)) return;
+        setQuotaError(qRes.__err.message || 'Unable to load AI quota statistics.');
+      } else if (qRes && qRes.limits) {
+        setQuotaData(qRes);
+        setBasicLimitDraft(String(qRes.limits.basic ?? 10));
+        setPremiumLimitDraft(String(qRes.limits.premium ?? 100));
+        setEnterpriseLimitDraft(String(qRes.limits.enterprise ?? 5000));
+        setAdminLimitDraft(String(qRes.limits.admin ?? 10000));
       }
-      return true;
-    });
-  }, [providers, modalCategoryFilter, modalHideAdded, modalPlatformSearch]);
+      if (statusRes) setEngineStatus(statusRes);
+      if (isSuperAdmin && thirdRes) {
+        setEngineMetrics(thirdRes);
+      } else if (!isSuperAdmin && thirdRes && typeof thirdRes.value === 'boolean') {
+        setV2Enabled(thirdRes.value);
+      }
+    } finally {
+      setQuotaLoading(false);
+    }
+  }, [isSuperAdmin, redirectOn401]);
 
-  // Statistics
-  const configuredCount = useMemo(() => {
-    return providers.filter((p) => p.configuredOnServer).length;
-  }, [providers]);
+  const loadSettings = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setLoading(false);
+      void loadQuotaAndTelemetry();
+      return;
+    }
+    setLoading(true);
+    setSettingsError(null);
+    try {
+      const res = await get<AiSettingsApiResponse>('/admin/ai-settings');
+      hydrateFromResponse(res);
+      setRevisionConflict(null);
+      void loadQuotaAndTelemetry();
+    } catch (err: unknown) {
+      if (redirectOn401(err)) return;
+      const norm = normalizeError(err);
+      setSettingsError(`Engine configuration could not be loaded: ${norm.message || 'Service unavailable'}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [hydrateFromResponse, isSuperAdmin, loadQuotaAndTelemetry, redirectOn401]);
 
-  const healthyCount = useMemo(() => {
-    return providers.filter((p) => testStatus[p.id]?.ok === true && !cooldowns[p.id]).length;
-  }, [providers, testStatus, cooldowns]);
+  useEffect(() => {
+    void loadSettings();
+  }, [loadSettings]);
 
-  const totalKeysCount = useMemo(() => {
-    return providers.reduce((acc, p) => acc + (p.keyless ? 0 : p.keysCount || 0), 0);
-  }, [providers]);
+  // Auto-expand provider when ?provider=<exactId> matches a catalog entry
+  useEffect(() => {
+    if (providerFilter && providers.some((p) => p.id.toLowerCase() === providerFilter)) {
+      setExpandedRowId(providerFilter);
+    }
+  }, [providerFilter, providers]);
+
+  // Pre-select target provider when opening Configure Provider with ?target=<id>
+  useEffect(() => {
+    if (activeDialog === 'configure-provider' && dialogTarget) {
+      setModalSelectedId(dialogTarget);
+      setModalError(null);
+      setModalTestStatus(null);
+    }
+  }, [activeDialog, dialogTarget]);
+
+  // ─── Central CAS-Guarded Settings Mutation Helper ───
+  const commitSettingsPatch = useCallback(
+    async (
+      payload: Record<string, any>,
+      successMessage: string,
+      options?: { force?: boolean }
+    ): Promise<AiSettingsApiResponse | null> => {
+      setSaving(true);
+      setActionError(null);
+      const body: Record<string, any> = {
+        ...payload,
+        expectedRevision: revision,
+        ...(options?.force ? { force: true } : {}),
+      };
+      try {
+        const res = await post<AiSettingsApiResponse>('/admin/ai-settings', body);
+        if (typeof res.revision === 'number' && !res.catalog) {
+          setRevision(res.revision);
+        } else {
+          hydrateFromResponse(res);
+        }
+        setRevisionConflict(null);
+        showToast(successMessage);
+        return res;
+      } catch (err: any) {
+        if (redirectOn401(err)) return null;
+        const norm = normalizeError(err);
+        const rawDetails = norm.details as Record<string, any> | undefined;
+        if (norm.status === 409 && (norm.code === 'REVISION_CONFLICT' || norm.code === 'AI_SETTINGS_CONFLICT')) {
+          const safeRetryPayload = Object.fromEntries(
+            Object.entries(payload).filter(([k]) => !/ApiKey|ApiKeys/i.test(k))
+          );
+          setRevisionConflict({
+            message:
+              norm.message ||
+              'Configuration was modified in another session. Reload server state or overwrite.',
+            currentRevision: rawDetails?.currentRevision,
+            pendingPayload: safeRetryPayload,
+          });
+          return null;
+        }
+        setActionError(norm.message || 'Unable to save AI settings.');
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [hydrateFromResponse, redirectOn401, revision, showToast]
+  );
+
+  // ─── Derived Provider Counts & Configured-First Sort (Simplification #4) ───
+  const configuredCount = useMemo(
+    () => providers.filter((p) => p.configuredOnServer || p.hasKey).length,
+    [providers]
+  );
+  const healthyCount = useMemo(
+    () => providers.filter((p) => p.enabled && p.status === 'healthy').length,
+    [providers]
+  );
+  const issuesCount = useMemo(
+    () =>
+      providers.filter(
+        (p) => p.status === 'issues' || p.status === 'cooldown' || Boolean(cooldowns[p.id])
+      ).length,
+    [cooldowns, providers]
+  );
+  const disabledCount = useMemo(
+    () => providers.filter((p) => !p.enabled || p.status === 'disabled').length,
+    [providers]
+  );
 
   const tierCounts = useMemo(() => {
-    const frontier = providers.filter((p) => FRONTIER_PROVIDER_IDS.has(p.id)).length;
-    const search = providers.filter((p) => isSearchProvider(p)).length;
-    const mesh = providers.length - frontier - search;
+    let frontier = 0;
+    let mesh = 0;
+    let search = 0;
+    for (const p of providers) {
+      const t = getProviderTier(p);
+      if (t === 'frontier') frontier++;
+      else if (t === 'search') search++;
+      else mesh++;
+    }
     return { all: providers.length, frontier, mesh, search };
   }, [providers]);
 
-  /**
-   * The four operational states mandated by the FreeLLMAPI parity audit.
-   * Exact strings are part of the UI contract (Playwright asserts them).
-   */
-  const providerStatePill = (p: ProviderItem) => {
-    const cooling = cooldowns[p.id];
-    if (cooling) {
-      return {
-        label: '⊘ Rate-Limited Cooldown',
-        tone: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
-        detail: `${cooling.remainingSeconds}s · ${cooling.reason}`,
-        state: 'cooldown',
+  const sortedFilteredProviders = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = providers.filter((p) => {
+      if (providerFilter && p.id.toLowerCase() !== providerFilter && !p.name.toLowerCase().includes(providerFilter)) {
+        return false;
+      }
+      if (categoryFilter !== 'all' && getProviderTier(p) !== categoryFilter) {
+        return false;
+      }
+      if (statusFilter === 'configured' && !(p.configuredOnServer || p.hasKey)) {
+        return false;
+      }
+      if (statusFilter === 'healthy' && !(p.enabled && p.status === 'healthy')) {
+        return false;
+      }
+      if (statusFilter === 'issues' && p.status !== 'issues' && p.status !== 'cooldown' && !cooldowns[p.id]) {
+        return false;
+      }
+      if (statusFilter === 'disabled' && p.enabled && p.status !== 'disabled') {
+        return false;
+      }
+      if (
+        q &&
+        !p.name.toLowerCase().includes(q) &&
+        !p.id.toLowerCase().includes(q) &&
+        !(p.defaultModel || '').toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const rank = (item: ProviderCatalogEntry): number => {
+        if (item.id === primaryProvider) return 0;
+        if (item.status === 'issues' || item.status === 'cooldown' || cooldowns[item.id]) return 1;
+        if (item.enabled && (item.configuredOnServer || item.hasKey)) return 2;
+        if (item.configuredOnServer || item.hasKey) return 3;
+        return 4;
       };
-    }
-    const check = testStatus[p.id];
-    if (check?.ok) {
-      return {
-        label: '● Inference Verified',
-        tone: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        detail: check.latencyMs ? `${check.latencyMs}ms` : 'Inference succeeded this session',
-        state: 'healthy',
-      };
-    }
-    if (p.configuredOnServer) {
-      return {
-        label: check?.ok === false ? '⊘ Check Failed' : '○ Not Yet Verified',
-        tone: 'bg-sky-50 text-sky-800 border-sky-200',
-        detail: check?.message || (p.keyless ? 'No credential required; inference not checked' : 'Credential configured; inference not checked'),
-        state: check?.ok === false ? 'issues' : 'unverified',
-      };
-    }
-    return {
-      label: '— Not Configured',
-      tone: 'bg-surface-secondary text-ink-muted border-border',
-      detail: 'add a key to activate',
-      state: 'disabled',
+      const diff = rank(a) - rank(b);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
+  }, [categoryFilter, cooldowns, primaryProvider, providerFilter, providers, searchQuery, statusFilter]);
+
+  const pinnedProviderModels = useMemo(
+    () => discoveredModels.filter((m) => m.providerId === primaryProvider),
+    [discoveredModels, primaryProvider]
+  );
+
+  // ─── Actions: Global Save, Discovery, Provider Probe, Key Save/Clear, Toggle ───
+  const handleSaveGlobalSettings = async () => {
+    const payload: Record<string, any> = {
+      selectionMode,
+      provider: primaryProvider,
+      temperature,
+      maxTokens,
+      enableFallback,
     };
-  };
-
-  // Test Provider Reachability
-  const handleTestProvider = async (providerId: string, customKey?: string) => {
-    setTestingId(providerId);
-    setTestStatus((prev) => ({ ...prev, [providerId]: undefined as any }));
-    try {
-      const p = providers.find((item) => item.id === providerId);
-      // Resolves to /api/admin/ai/test-provider through the shared axios baseURL.
-      const res = await post<{ success?: boolean; latencyMs?: number; message?: string }>(
-        '/admin/ai/test-provider',
-        {
-          provider: providerId,
-          model: p?.defaultModel,
-          apiKey: customKey || secretInputs[providerId] || undefined,
-        }
-      );
-
-
-      // Never invent a latency: the badge must reflect a real probe or the
-      // server's own message. `latencyMs` stays undefined when unreported.
-      const lat = Number(res.latencyMs) > 0 ? Number(res.latencyMs) : undefined;
-      setTestStatus((prev) => ({
-        ...prev,
-        [providerId]: {
-          ok: res.success === true,
-          ...(lat ? { latencyMs: lat } : {}),
-          message: res.message || (lat ? `Connected in ${lat}ms` : 'Connection verified'),
-        },
-      }));
-
-      // Update provider status in local view
-      setProviders((prev) =>
-        prev.map((item) =>
-          item.id === providerId
-            ? { ...item, status: res.success === true ? 'healthy' : 'issues', ...(lat ? { latencyMs: lat } : {}) }
-            : item
-        )
-      );
-    } catch (err: any) {
-      setTestStatus((prev) => ({
-        ...prev,
-        [providerId]: {
-          ok: false,
-          message: err.message || 'Connection test failed',
-        },
-      }));
-      setProviders((prev) =>
-        prev.map((item) => (item.id === providerId ? { ...item, status: 'issues' } : item))
-      );
-    } finally {
-      setTestingId(null);
-    }
-  };
-
-  // Section 5: Modal handlers for Key Pool Manager, Cooldown Flush, Model Discovery, Code Snippets
-
-  // Key Pool Manager Modal
-  const handleOpenKeyPool = () => {
-    setIsKeyPoolOpen(true);
-  };
-
-  const handleKeyPoolSave = async (providerId: string) => {
-    const pool = splitKeyPool(keyPoolDrafts[providerId] || '');
-    if (pool.length === 0) return;
-    setSaving(true);
-    try {
-      const payload: Record<string, any> = {
-        expectedRevision: revision,
-        [`${providerId}ApiKeys`]: pool,
-        [`${providerId}ApiKey`]: pool[0],
+    if (selectionMode === 'manual' && primaryProvider && pinnedModel) {
+      payload[primaryProvider] = {
+        ...payload[primaryProvider],
+        model: pinnedModel,
+        ...(providers.find((p) => p.id === primaryProvider)?.keyless ? { enabled: true } : {}),
       };
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
-            : p
-        )
-      );
-      setKeyPoolDrafts((prev) => ({ ...prev, [providerId]: '' }));
-      setIsKeyPoolOpen(false);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (err: any) {
-      setActionError(`Key Pool save failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setSaving(false);
     }
-  };
-
-  // Cooldown Flush Modal
-  const handleOpenCooldown = (_providerId: string) => {
-    setIsCooldownOpen(true);
-  };
-
-  // Model Discovery Modal
-  const handleOpenDiscovery = () => {
-    setIsDiscoveryOpen(true);
-  };
-
-  const handleDiscoveryFetch = async (selectedProviderId?: string) => {
-    if (!selectedProviderId && !modalSelectedPlatform) {
-      setModalError('Please select a platform first.');
-      return;
-    }
-    setDiscoveryLoading(true);
-    setModalError(null);
     try {
-      const providerId = selectedProviderId || modalSelectedPlatform!.id;
-      const res = await post<{ models?: any[] }>('/admin/ai/fetch-models', {
-        provider: providerId,
-        ...(selectedProviderId ? {} : { apiKey: modalApiKey }),
-      });
-      setCatalogModels(prev => [...prev.filter(m => m.providerId !== providerId), ...(res.models || []).map(m => ({ ...m, providerId }))]);
-      setDiscoveryResults((prev) => ({
-        ...prev,
-        [providerId]: res.models || [],
+      await commitSettingsPatch(payload, 'Runtime routing and generation parameters saved.');
+    } catch {
+      /* error banner set in commitSettingsPatch */
+    }
+  };
+
+  const handleRefreshPinnedModels = async () => {
+    if (!primaryProvider) return;
+    setActionError(null);
+    try {
+      const res = await post<{ models?: Array<{ id: string; name?: string; catalogStatus?: string }> }>(
+        '/admin/ai/fetch-models',
+        { provider: primaryProvider }
+      );
+      const fetched: CatalogModel[] = (res.models || []).map((m) => ({
+        id: m.id,
+        name: m.name || m.id,
+        providerId: primaryProvider,
+        catalogStatus: m.catalogStatus || 'fresh',
       }));
-      if (providerId) {
-        setPrimaryProvider(providerId);
-        if (res.models && res.models[0]?.id) {
-          setManualModel(res.models[0].id);
-        }
+      setDiscoveredModels((prev) => [
+        ...prev.filter((item) => item.providerId !== primaryProvider),
+        ...fetched,
+      ]);
+      if (fetched.length > 0 && !fetched.some((m) => m.id === pinnedModel)) {
+        setPinnedModel(fetched[0].id);
       }
     } catch (err: any) {
-      setModalError(`Model discovery failed: ${normalizeError(err).message}`);
-      const providerId = selectedProviderId || modalSelectedPlatform?.id;
-      if (providerId) setDiscoveryResults(prev => ({
-        ...prev,
-        ...(prev[providerId] ? { [providerId]: prev[providerId].map((model: any) => ({ ...model, catalogStatus: 'stale' })) } : {}),
+      if (redirectOn401(err)) return;
+      setActionError(err?.message || 'Unable to discover models for pinned provider.');
+    }
+  };
+
+  const handleDiscoveryFetch = async (providerId: string) => {
+    if (!providerId) return;
+    setDiscoveryLoading(true);
+    setDiscoveryError(null);
+    try {
+      const res = await post<{
+        models?: Array<{
+          id: string;
+          name?: string;
+          contextWindow?: number | null;
+          capabilities?: { vision?: boolean; tools?: boolean; json?: boolean };
+          catalogStatus?: string;
+        }>;
+      }>('/admin/ai/fetch-models', { provider: providerId });
+      const rows: CatalogModel[] = (res.models || []).map((m) => ({
+        id: m.id,
+        name: m.name || m.id,
+        providerId,
+        contextWindow: m.contextWindow ?? null,
+        capabilities: m.capabilities || {},
+        catalogStatus: m.catalogStatus || 'fresh',
       }));
+      setDiscoveryModels(rows);
+      setDiscoveredModels((prev) => [
+        ...prev.filter((item) => item.providerId !== providerId),
+        ...rows,
+      ]);
+    } catch (err: unknown) {
+      if (redirectOn401(err)) return;
+      const norm = normalizeError(err);
+      setDiscoveryError(norm.message || 'Catalog discovery failed');
     } finally {
       setDiscoveryLoading(false);
     }
   };
 
-  // Code Snippets Modal
-  const handleOpenCodeSnippets = () => {
-    setIsCodeSnippetsOpen(true);
+  // Probes server-stored credential ONLY (never re-transmits saved plaintext secrets)
+  const probeStoredProvider = async (providerId: string) => {
+    setTestingId(providerId);
+    setActionError(null);
+    try {
+      const res = await post<{
+        success?: boolean;
+        latencyMs?: number | null;
+        message?: string;
+        model?: string;
+      }>('/admin/ai/test-provider', { provider: providerId });
+      if (res.success === false) {
+        throw new Error(res.message || 'Connection check failed');
+      }
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === providerId
+            ? { ...p, status: 'healthy', latencyMs: res.latencyMs ?? p.latencyMs ?? null }
+            : p
+        )
+      );
+      showToast(res.message || `${providerId} verified.`);
+    } catch (err: any) {
+      if (redirectOn401(err)) return;
+      setProviders((prev) =>
+        prev.map((p) => (p.id === providerId ? { ...p, status: 'issues' } : p))
+      );
+      setActionError(err?.message || `Verification failed for ${providerId}.`);
+    } finally {
+      setTestingId(null);
+    }
   };
 
-  // Handle Check All (Batch reachability)
   const handleCheckAll = async () => {
+    const candidates = providers.filter((p) => p.enabled && (p.configuredOnServer || p.keyless));
+    if (candidates.length === 0) {
+      showToast('No enabled providers to verify.');
+      return;
+    }
     setCheckingAll(true);
-    const toCheck = providers.filter((p) => p.configuredOnServer || p.keyless);
-    for (const p of toCheck) {
-      try {
-        await handleTestProvider(p.id);
-      } catch {
-        // continue batch
-      }
+    for (const candidate of candidates) {
+      await probeStoredProvider(candidate.id);
     }
     setCheckingAll(false);
   };
 
-  // Direct Save Key for a Single Provider (from expanded row)
-  const handleSaveSingleKey = async (providerId: string) => {
-    const key = (secretInputs[providerId] || '').trim();
-    if (!key) return;
-    const pool = splitKeyPool(key);
-    if (pool.length === 0) return;
-    setSaving(true);
-    try {
-      const payload: Record<string, any> = { expectedRevision: revision };
-      payload[`${providerId}ApiKey`] = pool[0];
-      if (pool.length > 1) payload[`${providerId}ApiKeys`] = pool;
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
-            : p
-        )
-      );
-      setSecretInputs((prev) => ({ ...prev, [providerId]: '' }));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-      handleTestProvider(providerId, key).catch(() => {});
-    } catch (err: any) {
-      setActionError(`Save failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setSaving(false);
+  const handleToggleProvider = async (p: ProviderCatalogEntry, nextEnabled: boolean) => {
+    if (nextEnabled && !p.keyless && !p.hasKey && !p.configuredOnServer) {
+      setModalSelectedId(p.id);
+      setModalTab('single');
+      openDialog('configure-provider', p.id);
+      return;
     }
-  };
-
-  // Save a pooled set of keys for a high-volume provider (Groq/Cerebras/Gemini)
-  const handleSaveKeyPool = async (providerId: string) => {
-    const pool = splitKeyPool(keyPoolDrafts[providerId] || '');
-    if (pool.length === 0) return;
-    setSaving(true);
-    try {
-      const payload: Record<string, any> = {
-        expectedRevision: revision,
-        [`${providerId}ApiKeys`]: pool,
-        [`${providerId}ApiKey`]: pool[0],
-      };
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === providerId
-            ? { ...p, configuredOnServer: true, hasKey: true, status: 'unverified', keysCount: pool.length }
-            : p
-        )
-      );
-      setKeyPoolDrafts((prev) => ({ ...prev, [providerId]: '' }));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-      handleTestProvider(providerId, pool[0]).catch(() => {});
-    } catch (err: any) {
-      setActionError(`Key pool save failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Clear Key for a Single Provider (from expanded row)
-  const handleClearSingleKey = async (providerId: string) => {
-    if (!confirm(`Are you sure you want to clear the stored credential for ${providerId}?`)) return;
-    setSaving(true);
-    try {
-      const payload: Record<string, any> = {
-        expectedRevision: revision,
-        clearSecrets: { [providerId]: true },
-      };
-      payload[`${providerId}ApiKey`] = '';
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === providerId
-            ? { ...p, configuredOnServer: false, hasKey: false, status: 'disabled', keysCount: 0 }
-            : p
-        )
-      );
-      setSecretInputs((prev) => ({ ...prev, [providerId]: '' }));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (err: any) {
-      setActionError(`Clear failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Toggle Provider Activation
-  const handleToggleProvider = async (providerId: string, currentEnabled: boolean) => {
-    const nextEnabled = !currentEnabled;
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === providerId
+    const previous = providers;
+    setProviders((curr) =>
+      curr.map((item) =>
+        item.id === p.id
           ? {
-              ...p,
+              ...item,
               enabled: nextEnabled,
-              status: nextEnabled ? (p.configuredOnServer ? 'healthy' : 'disabled') : 'disabled',
+              disabled: !nextEnabled,
+              status: nextEnabled ? 'unverified' : 'disabled',
             }
-          : p
+          : item
       )
     );
     try {
-      const fieldName = `enable${providerId.charAt(0).toUpperCase() + providerId.slice(1)}`;
-      const payload: Record<string, any> = {
-        expectedRevision: revision,
-        [fieldName]: nextEnabled,
-      };
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-    } catch (err: any) {
-      console.warn('Toggle sync notice:', err);
-    }
-  };
-
-  // Open Add Key Dialog pre-selected with a specific provider
-  const handleOpenAddKeyForProvider = (provider: ProviderItem) => {
-    setModalSelectedPlatform(provider);
-    setModalPlatformSearch(provider.name);
-    setIsAddKeyOpen(true);
-    setIsComboboxOpen(false);
-    setModalError(null);
-  };
-
-  // Add Key Modal Submit (Non-blocking & Robust)
-  const handleModalAddKey = async () => {
-    if (!modalSelectedPlatform) {
-      setModalError('Please select a platform first.');
-      return;
-    }
-
-    const providerId = modalSelectedPlatform.id;
-    const isKeyless = Boolean(modalSelectedPlatform.keyless);
-    const key = modalApiKey.trim();
-
-    if (!isKeyless && !key && modalTab === 'key') {
-      setModalError('Please enter an API key for this provider.');
-      return;
-    }
-
-    setModalTesting(true);
-    setModalError(null);
-
-    try {
-      let currentRev = revision;
-      if (!currentRev) {
-        try {
-          const fresh = await get<{ revision?: number }>('/admin/ai-settings');
-          if (fresh?.revision) {
-            currentRev = fresh.revision;
-            setRevision(fresh.revision);
-          }
-        } catch (_) {}
-      }
-
-      const payload: Record<string, any> = {
-        expectedRevision: currentRev,
-      };
-
-      const pool = splitKeyPool(key);
-      if (providerId === 'cloudflare' && modalAccountId.trim()) {
-        payload[`${providerId}ApiKey`] = `${modalAccountId.trim()}:${key}`;
-      } else if (pool.length > 1) {
-        // Multi-key pooling: the server stores the whole pool and rotates it
-        // round-robin, benching only a key that is throttled.
-        payload[`${providerId}ApiKeys`] = pool;
-        payload[`${providerId}ApiKey`] = pool[0];
-      } else {
-        payload[`${providerId}ApiKey`] = key || (isKeyless ? 'keyless' : '');
-      }
-
-      if (modalCustomEndpoint.trim()) {
-        payload[`${providerId}BaseUrl`] = modalCustomEndpoint.trim();
-      }
-
-      // Save directly to backend
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-
-      // Mark provider configured immediately in UI
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === providerId
-            ? {
-                ...p,
-                configuredOnServer: true,
-                hasKey: true,
-                status: 'unverified',
-                keysCount: Math.max(pool.length, (p.keysCount || 0) + (pool.length > 0 ? 0 : 1), 1),
-              }
-            : p
-        )
+      await commitSettingsPatch(
+        { enabledProviders: { [p.id]: nextEnabled } },
+        `${p.name} ${nextEnabled ? 'enabled' : 'disabled'}.`
       );
-
-      // Asynchronously trigger non-blocking probe to verify latency
-      handleTestProvider(providerId, key).catch(() => {});
-
-      // Clean up modal
-      setIsAddKeyOpen(false);
-      setModalApiKey('');
-      setModalAccountId('');
-      setModalSelectedPlatform(null);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.error?.message ||
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to save provider key. Please retry.';
-      setModalError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-    } finally {
-      setModalTesting(false);
+    } catch {
+      setProviders(previous);
     }
   };
 
-  // Import raw keys handler
-  const handleImportRawKeys = async () => {
-    if (!modalImportRaw.trim()) {
-      setModalError('Please paste configuration content to import.');
-      return;
+  const handleSaveRowSingleKey = async (p: ProviderCatalogEntry) => {
+    const draft = (singleKeyDrafts[p.id] || '').trim();
+    if (!draft) return;
+    try {
+      await commitSettingsPatch(
+        {
+          [`${p.id}ApiKey`]: draft,
+          enabledProviders: { [p.id]: true },
+        },
+        `${p.name} API key saved and masked.`
+      );
+      // Immediately purge plaintext draft from React state before probing server key
+      setSingleKeyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[p.id];
+        return next;
+      });
+      setShowRowKey((prev) => ({ ...prev, [p.id]: false }));
+      await probeStoredProvider(p.id);
+    } catch {
+      /* error surfaced by commitSettingsPatch */
     }
+  };
+
+  const handleSaveRowPool = async (p: ProviderCatalogEntry) => {
+    const keys = splitKeys(poolKeyDrafts[p.id] || '');
+    if (keys.length === 0) return;
+    try {
+      await commitSettingsPatch(
+        {
+          [`${p.id}ApiKeys`]: keys,
+          enabledProviders: { [p.id]: true },
+        },
+        `${p.name} rotation pool (${keys.length} keys) saved.`
+      );
+      setPoolKeyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[p.id];
+        return next;
+      });
+      await probeStoredProvider(p.id);
+    } catch {
+      /* error surfaced */
+    }
+  };
+
+  const handleSaveRowConfig = async (p: ProviderCatalogEntry) => {
+    const nextModel = (modelDrafts[p.id] || '').trim();
+    const nextBaseUrl = (baseUrlDrafts[p.id] || '').trim();
+    try {
+      await commitSettingsPatch(
+        {
+          [`${p.id}Model`]: nextModel,
+          [`${p.id}BaseUrl`]: nextBaseUrl || 'none',
+        },
+        `${p.name} model and endpoint settings saved.`
+      );
+    } catch {
+      /* error surfaced */
+    }
+  };
+
+  const handleSetPrimaryImmediate = async (p: ProviderCatalogEntry) => {
+    setPrimaryProvider(p.id);
+    try {
+      await commitSettingsPatch(
+        {
+          provider: p.id,
+          enabledProviders: { [p.id]: true },
+        },
+        `${p.name} set as primary provider.`
+      );
+    } catch {
+      /* error surfaced */
+    }
+  };
+
+  const handleConfirmClearKey = async () => {
+    if (!dialogTarget) return;
+    const targetProvider = providers.find((p) => p.id === dialogTarget);
+    try {
+      await commitSettingsPatch(
+        { clearSecrets: { [dialogTarget]: true } },
+        `Stored credential removed for ${targetProvider?.name || dialogTarget}.`
+      );
+      closeDialog();
+    } catch {
+      closeDialog();
+    }
+  };
+
+  // ─── Configure Provider Modal Handlers (Simplification #1) ───
+  const modalSelectedPlatform = useMemo(
+    () => providers.find((p) => p.id === modalSelectedId) || null,
+    [modalSelectedId, providers]
+  );
+
+  const modalFilteredPlatforms = useMemo(() => {
+    const q = modalPlatformQuery.trim().toLowerCase();
+    if (!q) return providers;
+    return providers.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+    );
+  }, [modalPlatformQuery, providers]);
+
+  const canProbeInModal = Boolean(
+    modalSelectedPlatform &&
+      modalTab !== 'endpoint' &&
+      !modalCustomBaseUrl.trim() &&
+      (modalSelectedPlatform.keyless ||
+        (modalTab === 'single' && modalApiKey.trim().length > 0) ||
+        (modalTab === 'pool' && splitKeys(modalPoolText).length > 0))
+  );
+
+  const resetModalDrafts = useCallback(() => {
+    setModalApiKey('');
+    setModalShowKey(false);
+    setModalPoolText('');
+    setModalCustomBaseUrl('');
+    setModalCustomModel('');
+    setModalTestStatus(null);
+    setModalError(null);
+    setPlatformDropdownOpen(false);
+    setModalPlatformQuery('');
+  }, []);
+
+  const openQuickAddForProvider = (p: ProviderCatalogEntry) => {
+    resetModalDrafts();
+    setModalSelectedId(p.id);
+    setModalTab('single');
+    openDialog('configure-provider', p.id);
+    requestAnimationFrame(() => {
+      modalKeyInputRef.current?.focus();
+    });
+  };
+
+  const handleModalProbeBeforeSave = async () => {
+    if (!modalSelectedPlatform || !canProbeInModal) return;
     setModalTesting(true);
+    setModalTestStatus(null);
     setModalError(null);
     try {
-      const lines = modalImportRaw.split('\n');
-      const payload: Record<string, any> = { expectedRevision: revision };
-      let detectedCount = 0;
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        const match = trimmed.match(/^([A-Za-z0-9_]+)[=:]\s*(.+)$/);
-        if (match) {
-          const varName = match[1].toLowerCase();
-          const varVal = match[2].trim().replace(/^['"]|['"]$/g, '');
-          const matchedP = providers.find(
-            (p) =>
-              varName.includes(p.id) ||
-              varName.includes(`${p.id}_api_key`) ||
-              varName === `${p.id}apikey`
-          );
-          if (matchedP && varVal) {
-            payload[`${matchedP.id}ApiKey`] = varVal;
-            detectedCount++;
-          }
+      const candidateKey =
+        modalTab === 'pool'
+          ? splitKeys(modalPoolText)[0]
+          : modalApiKey.trim() || undefined;
+      const res = await post<{ success?: boolean; message?: string; latencyMs?: number }>(
+        '/admin/ai/test-provider',
+        {
+          provider: modalSelectedPlatform.id,
+          ...(candidateKey ? { apiKey: candidateKey } : {}),
+          ...(modalCustomModel.trim() ? { model: modalCustomModel.trim() } : {}),
         }
+      );
+      if (res.success === false) {
+        setModalTestStatus({ ok: false, msg: res.message || 'Provider rejected key.' });
+      } else {
+        setModalTestStatus({
+          ok: true,
+          msg: res.message || `Verified (${res.latencyMs ?? 1}ms).`,
+        });
       }
-
-      if (detectedCount === 0) {
-        throw new Error('No matching provider API keys detected in pasted text.');
-      }
-
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-
-      setIsAddKeyOpen(false);
-      setModalImportRaw('');
-      setSavedSuccess(true);
-      loadSettings();
-      setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err: any) {
-      setModalError(err.message || 'Import failed.');
+      if (redirectOn401(err)) return;
+      setModalTestStatus({
+        ok: false,
+        msg: err?.message || 'Connection test failed.',
+      });
     } finally {
       setModalTesting(false);
     }
   };
 
-  // Handle Save All
-  const handleSaveAll = async () => {
-    if (selectionMode === 'manual' && !manualModel) { setActionError('Refresh the catalog and select a pinned model before saving.'); return; }
-    setSaving(true);
-    setSavedSuccess(false);
+  const handleModalSaveAndActivate = async () => {
+    if (!modalSelectedPlatform) {
+      setModalError('Select a provider platform first.');
+      return;
+    }
+    const pId = modalSelectedPlatform.id;
+    const payload: Record<string, any> = {
+      enabledProviders: { [pId]: true },
+    };
+
+    if (modalTab === 'pool') {
+      const pool = splitKeys(modalPoolText);
+      if (pool.length === 0 && !modalSelectedPlatform.keyless) {
+        setModalError('Enter at least one API key for the rotation pool.');
+        return;
+      }
+      if (pool.length > 0) payload[`${pId}ApiKeys`] = pool;
+    } else {
+      const single = modalApiKey.trim();
+      if (!single && !modalSelectedPlatform.keyless && !modalSelectedPlatform.hasKey) {
+        setModalError('Enter an API key to activate this provider.');
+        return;
+      }
+      if (single) payload[`${pId}ApiKey`] = single;
+      else if (modalSelectedPlatform.keyless) payload[`${pId}ApiKey`] = 'keyless';
+    }
+
+    if (modalCustomBaseUrl.trim()) {
+      payload[`${pId}BaseUrl`] = modalCustomBaseUrl.trim();
+    }
+    if (modalCustomModel.trim()) {
+      payload[`${pId}Model`] = modalCustomModel.trim();
+    }
+
+    setModalError(null);
     try {
-      const payload: Record<string, any> = {
-        provider: primaryProvider,
-        enableFallback,
-        selectionMode,
-        ...(primaryProvider ? {
-          [primaryProvider]: { enabled: true, ...(manualModel ? { model: manualModel } : {}) },
-          [`enable${primaryProvider.charAt(0).toUpperCase() + primaryProvider.slice(1)}`]: true,
-        } : {}),
-        ...(manualModel ? { [`${primaryProvider}Model`]: manualModel } : {}),
-        temperature,
-        maxTokens,
-        expectedRevision: revision,
-      };
-
-      Object.entries(secretInputs).forEach(([pId, keyVal]) => {
-        if (keyVal && keyVal.trim()) {
-          payload[`${pId}ApiKey`] = keyVal.trim();
-        }
-      });
-
-      const res = await post<{ revision?: number }>('/admin/ai-settings', payload);
-      if (res?.revision) setRevision(res.revision);
-
-      setSecretInputs({});
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 4000);
+      await commitSettingsPatch(payload, `${modalSelectedPlatform.name} configured and activated.`);
+      // Immediately clear plaintext secret inputs upon save before any follow-up probe
+      resetModalDrafts();
+      closeDialog();
+      await probeStoredProvider(pId);
     } catch (err: any) {
-      setActionError(`Save failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setSaving(false);
+      setModalError(err?.message || 'Unable to save provider configuration.');
     }
   };
 
-  // Export configuration bundle
-  const handleExportConfig = () => {
-    const exportBundle = {
-      version: 'freellmapi-0.16.6-ime365',
+  // ─── AI Quota Governance Handlers (Simplification #7) ───
+  const handleSaveQuotaLimits = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuotaSaving(true);
+    setQuotaError(null);
+    setQuotaRequiresReauth(false);
+    try {
+      const res = await post<{
+        revision: number;
+        limits: { basic: number; premium: number; admin: number };
+        message?: string;
+      }>('/admin/ai/quota-limits', {
+        basicDailyLimit: Number(basicLimitDraft),
+        premiumDailyLimit: Number(premiumLimitDraft),
+        enterpriseDailyLimit: Number(enterpriseLimitDraft),
+        adminDailyLimit: Number(adminLimitDraft),
+        expectedRevision: quotaData?.quotaRevision ?? 0,
+      });
+      showToast(res.message || 'AI daily quota limits saved.');
+      await loadQuotaAndTelemetry();
+    } catch (err: any) {
+      if (redirectOn401(err)) return;
+      if (err?.code === 'RECENT_AUTH_REQUIRED') {
+        setQuotaRequiresReauth(true);
+      }
+      setQuotaError(err?.message || 'Unable to save AI quota limits.');
+    } finally {
+      setQuotaSaving(false);
+    }
+  };
+
+  const handleConfirmQuotaReset = async (resetAll: boolean) => {
+    setQuotaSaving(true);
+    setQuotaError(null);
+    setQuotaRequiresReauth(false);
+    try {
+      const body = resetAll ? { all: true } : { uid: dialogTarget };
+      const res = await post<{ message?: string }>('/admin/ai/reset-quota', body);
+      closeDialog();
+      showToast(res.message || 'Daily AI quota reset completed.');
+      await loadQuotaAndTelemetry();
+    } catch (err: any) {
+      closeDialog();
+      if (redirectOn401(err)) return;
+      if (err?.code === 'RECENT_AUTH_REQUIRED') {
+        setQuotaRequiresReauth(true);
+      }
+      setQuotaError(err?.message || 'Unable to reset AI usage quota.');
+    } finally {
+      setQuotaSaving(false);
+    }
+  };
+
+  // ─── Export & Copy & Playground ───
+  const handleExportMetadata = () => {
+    const bundle = {
       exportedAt: new Date().toISOString(),
+      selectionMode,
       primaryProvider,
-      enableFallback,
       temperature,
       maxTokens,
+      enableFallback,
       providers: providers.map((p) => ({
         id: p.id,
         name: p.name,
-        type: p.type,
-        group: p.group,
-        configured: p.configuredOnServer,
-        keyless: p.keyless || false,
-        model: p.defaultModel,
+        enabled: p.enabled,
+        configuredOnServer: p.configuredOnServer,
+        credentialSource: p.credentialSource || 'none',
+        defaultModel: p.defaultModel,
       })),
-      fallbackChains: chains,
     };
-    const blob = new Blob([JSON.stringify(exportBundle, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `freellmapi-providers-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `ime365-ai-routing-metadata-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
     URL.revokeObjectURL(url);
   };
 
-  // Copy helper
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(id);
-    setTimeout(() => setCopiedText(null), 2000);
+  const handleCopy = (value: string, id: string) => {
+    void navigator.clipboard?.writeText(value);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((curr) => (curr === id ? null : curr)), 2000);
   };
 
-  // Filtered models for Screen 2
-  const filteredModels = useMemo(() => {
-    return catalogModels.filter((m) => {
-      if (filterVision && m.capabilities?.vision !== true) return false;
-      if (filterTools && m.capabilities?.tools !== true) return false;
-      const minContext = contextFilter === '32k' ? 32768 : contextFilter === '128k' ? 131072 : contextFilter === '1m' ? 1048576 : 0;
-      if (minContext && (!m.contextWindow || m.contextWindow < minContext)) return false;
-
-      if (modelSearch.trim()) {
-        const q = modelSearch.toLowerCase().trim();
-        return (
-          (m.name || m.id).toLowerCase().includes(q) ||
-          m.providerId.toLowerCase().includes(q) ||
-          m.id.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [catalogModels, filterVision, filterTools, contextFilter, modelSearch]);
-
-  // Handle Playground Run
   const handleRunPlayground = async () => {
     if (!playgroundPrompt.trim()) return;
-    setPlaygroundLoading(true);
+    setPlaygroundRunning(true);
     setPlaygroundOutput('');
+    setPlaygroundMeta('');
     try {
+      const started = performance.now();
       const res = await post<{
+        model?: string;
         choices?: Array<{ message?: { content?: string } }>;
         content?: string;
+        _freellmapi?: { provider?: string; actual_model?: string };
       }>('/v1/chat/completions', {
         model: playgroundModel,
         messages: [{ role: 'user', content: playgroundPrompt }],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: Math.min(maxTokens, 512),
+        temperature,
       });
-
-      const text =
-        res.choices?.[0]?.message?.content ||
-        res.content ||
-        JSON.stringify(res, null, 2);
-      setPlaygroundOutput(text);
+      const elapsed = Math.round(performance.now() - started);
+      const content = res.choices?.[0]?.message?.content || res.content || '';
+      setPlaygroundOutput(content || '(Empty completion)');
+      setPlaygroundMeta(
+        `Provider: ${res._freellmapi?.provider || primaryProvider} · Model: ${res._freellmapi?.actual_model || res.model || playgroundModel} · ${elapsed}ms`
+      );
     } catch (err: any) {
-      setPlaygroundOutput(`[Error]: ${err.message || 'Execution failed'}`);
+      if (redirectOn401(err)) return;
+      setPlaygroundOutput(`Error: ${err?.message || 'Inference request failed.'}`);
     } finally {
-      setPlaygroundLoading(false);
+      setPlaygroundRunning(false);
     }
   };
 
-  if (loading) return <p role="status" className="p-5 text-sm text-ink-muted">Loading engine configuration…</p>;
-  if (settingsError) return (
-    <div role="alert" className="space-y-3 p-5">
-      <p>Engine configuration could not be loaded: {settingsError}</p>
-      <Button onClick={loadSettings}>Retry configuration</Button>
-    </div>
+  const handleRestoreV2Flag = async () => {
+    try {
+      await put('/admin/operations/feature-flags/ai_settings_v2_enabled', { value: true });
+      setV2Enabled(true);
+      showToast('AI Multi-Provider Engine v2 UI re-enabled.');
+    } catch (err: any) {
+      if (redirectOn401(err)) return;
+      setActionError(err?.message || 'Unable to toggle feature flag.');
+    }
+  };
+
+  const snippetCode = useMemo(() => {
+    if (snippetLang === 'claude') {
+      return `export ANTHROPIC_BASE_URL="${gatewayOrigin}"\nexport ANTHROPIC_API_KEY="$IME365_API_TOKEN"\nclaude`;
+    }
+    if (snippetLang === 'python') {
+      return `from openai import OpenAI\n\nclient = OpenAI(\n    base_url="${gatewayOrigin}",\n    api_key=os.environ["IME365_API_TOKEN"],\n)\nres = client.chat.completions.create(\n    model="auto",\n    messages=[{"role": "user", "content": "Hello from IME365 router"}],\n)\nprint(res.choices[0].message.content)`;
+    }
+    if (snippetLang === 'typescript') {
+      return `const response = await fetch('${gatewayOrigin}/chat/completions', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    Authorization: \`Bearer \${process.env.IME365_API_TOKEN}\`,\n  },\n  body: JSON.stringify({\n    model: 'auto',\n    messages: [{ role: 'user', content: 'Hello from IME365 router' }],\n  }),\n});\nconst data = await response.json();`;
+    }
+    return `curl -X POST "${gatewayOrigin}/chat/completions" \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer $IME365_API_TOKEN" \\\n  -d '{"model":"auto","messages":[{"role":"user","content":"Ping"}]}'`;
+  }, [gatewayOrigin, snippetLang]);
+
+  // ─── Reusable AI Quota Governance Section (Used by ADMIN view & SUPER_ADMIN Quotas/Metrics view) ───
+  const renderQuotaGovernancePanel = () => (
+    <Card className="border-border bg-surface">
+      <CardContent className="p-4 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-ink flex items-center gap-2">
+              <Gauge className="size-4 text-brand-600 shrink-0" />
+              AI Quota Governance &amp; Daily Usage
+            </h3>
+            <p className="text-xs text-ink-muted mt-0.5">
+              Enforce tier daily request caps in MariaDB and reset exhausted individual or global daily counters.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void loadQuotaAndTelemetry()}
+              disabled={quotaLoading}
+            >
+              <RefreshCw className={cn('size-3.5 mr-1.5', quotaLoading && 'animate-spin')} />
+              Refresh Quotas
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openDialog('confirm-reset-all-quotas')}
+              disabled={quotaSaving}
+              className="text-error-700 border-error-100 hover:bg-error-50"
+            >
+              <RotateCcw className="size-3.5 mr-1.5" />
+              Reset All Daily Quotas
+            </Button>
+          </div>
+        </div>
+
+        {quotaError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-error-100 bg-error-50 p-3 text-xs text-error-700 flex flex-wrap items-center justify-between gap-2"
+          >
+            <span>{quotaError}</span>
+            {quotaRequiresReauth && (
+              <Link
+                to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
+                className="font-bold underline text-error-700"
+              >
+                Reauthenticate Session
+              </Link>
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border bg-canvas p-3.5">
+            <div className="text-xs font-medium text-ink-muted">Today&apos;s AI Requests</div>
+            <div className="text-xl font-extrabold text-ink mt-1">
+              {quotaData?.totalTodayRequests ?? 0}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border bg-canvas p-3.5">
+            <div className="text-xs font-medium text-ink-muted">Active Users Today</div>
+            <div className="text-xl font-extrabold text-ink mt-1">
+              {quotaData?.activeUsersToday ?? 0}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border bg-canvas p-3.5">
+            <div className="text-xs font-medium text-ink-muted">Historical Usage Rows</div>
+            <div className="text-xl font-extrabold text-ink mt-1">
+              {quotaData?.totalHistoricalRecords ?? 0}
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveQuotaLimits} className="space-y-4 pt-2 border-t border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label htmlFor="quota-basic-limit" className="block text-xs font-semibold text-ink mb-1">
+                Basic Daily Limit
+              </label>
+              <Input
+                id="quota-basic-limit"
+                type="number"
+                min={1}
+                max={100000}
+                value={basicLimitDraft}
+                onChange={(e) => setBasicLimitDraft(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="quota-premium-limit" className="block text-xs font-semibold text-ink mb-1">
+                Premium Daily Limit
+              </label>
+              <Input
+                id="quota-premium-limit"
+                type="number"
+                min={1}
+                max={100000}
+                value={premiumLimitDraft}
+                onChange={(e) => setPremiumLimitDraft(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="quota-enterprise-limit" className="block text-xs font-semibold text-ink mb-1">
+                Enterprise Daily Limit
+              </label>
+              <Input
+                id="quota-enterprise-limit"
+                type="number"
+                min={100}
+                max={1000000}
+                value={enterpriseLimitDraft}
+                onChange={(e) => setEnterpriseLimitDraft(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="quota-admin-limit" className="block text-xs font-semibold text-ink mb-1">
+                Admin Daily Limit
+              </label>
+              <Input
+                id="quota-admin-limit"
+                type="number"
+                min={1}
+                max={1000000}
+                value={adminLimitDraft}
+                onChange={(e) => setAdminLimitDraft(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-ink-muted">
+              Quota policy revision: #{quotaData?.quotaRevision ?? 0}
+            </span>
+            <Button type="submit" size="sm" disabled={quotaSaving}>
+              {quotaSaving ? 'Saving Quotas...' : 'Save Quota Limits'}
+            </Button>
+          </div>
+        </form>
+
+        <div className="space-y-2 pt-2 border-t border-border">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-ink-secondary">
+            Top Consumers Today
+          </h4>
+          {!quotaData?.topConsumers?.length ? (
+            <p className="text-xs text-ink-muted py-3">
+              No AI quota consumption recorded for today ({quotaData?.todayDate || 'UTC'}).
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-ink-secondary">
+                    <th className="py-2 pr-3 font-semibold">User</th>
+                    <th className="py-2 px-3 font-semibold">Tier</th>
+                    <th className="py-2 px-3 font-semibold">Used / Limit</th>
+                    <th className="py-2 pl-3 text-right font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quotaData.topConsumers.map((consumer) => (
+                    <tr key={consumer.uid} className="border-b border-border/60">
+                      <td className="py-2 pr-3 font-medium text-ink">
+                        {consumer.email || consumer.uid}
+                      </td>
+                      <td className="py-2 px-3 text-ink-secondary">
+                        {consumer.membership || 'Basic'}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-ink">
+                        {consumer.count} / {consumer.limit || '—'}
+                      </td>
+                      <td className="py-2 pl-3 text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDialog('confirm-reset-user-quota', consumer.uid)}
+                        >
+                          Reset Quota
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // ─── Loading & Fatal Configuration Error States ───
+  if (loading) {
+    return (
+      <div className="space-y-4 py-6" role="status" aria-label="Loading AI Multi-Provider Engine">
+        <div className="h-24 rounded-2xl bg-canvas-soft animate-pulse border border-border" />
+        <div className="h-12 rounded-xl bg-canvas-soft animate-pulse border border-border" />
+        <div className="h-64 rounded-2xl bg-canvas-soft animate-pulse border border-border" />
+      </div>
+    );
+  }
+
+  if (isSuperAdmin && settingsError) {
+    return (
+      <div
+        role="alert"
+        className="rounded-2xl border border-error-100 bg-error-50 p-6 space-y-4 text-ink"
+      >
+        <div className="flex items-start gap-3">
+          <AlertCircle className="size-5 text-error-700 shrink-0 mt-0.5" />
+          <div className="space-y-1 min-w-0">
+            <h2 className="text-base font-bold text-error-700">AI Engine Configuration Error</h2>
+            <p className="text-sm text-ink-secondary break-words">{settingsError}</p>
+          </div>
+        </div>
+        <Button type="button" onClick={() => void loadSettings()}>
+          <RefreshCw className="size-4 mr-2" />
+          Retry configuration
+        </Button>
+      </div>
+    );
+  }
+
+  // ─── Runtime Feature-Flag Rollback View (Decision #2: ai_settings_v2_enabled = false) ───
+  if (!v2Enabled) {
+    return (
+      <div
+        data-testid="ai-settings-rollback-view"
+        className="space-y-4"
+      >
+        <div
+          role="status"
+          className="rounded-2xl border border-warning-100 bg-warning-50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-warning-700">
+              Runtime Rollback Active (ai_settings_v2_enabled = false)
+            </h2>
+            <p className="text-xs text-ink-secondary">
+              The v2 AI Multi-Provider Engine interface is currently disabled via runtime feature flag.
+              Active primary provider: <strong className="text-ink">{primaryProvider}</strong> ·
+              Fallback: <strong className="text-ink">{enableFallback ? 'Enabled' : 'Disabled'}</strong>.
+            </p>
+          </div>
+          {isSuperAdmin && (
+            <Button type="button" size="sm" onClick={() => void handleRestoreV2Flag()}>
+              Restore v2 Engine UI
+            </Button>
+          )}
+        </div>
+        {renderQuotaGovernancePanel()}
+      </div>
+    );
+  }
+
+  // ─── ADMIN (Non-Super-Admin) Scoped Governance View (Decision #1.7, DEF-05) ───
+  if (!isSuperAdmin) {
+    return (
+      <div className="space-y-5 min-w-0" data-testid="admin-ai-quota-only-view">
+        {toastMsg && (
+          <div
+            role="status"
+            className="rounded-xl border border-success-100 bg-success-50 px-4 py-3 text-xs font-semibold text-success-700 flex items-center justify-between gap-2"
+          >
+            <span>{toastMsg}</span>
+            <button
+              type="button"
+              onClick={() => setToastMsg(null)}
+              className="underline font-bold cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <section
+          data-testid="super-admin-restriction-notice"
+          aria-label="Super-Admin credential restriction notice"
+          className="rounded-2xl border border-brand-200 bg-brand-50/70 p-5 space-y-2"
+        >
+          <div className="flex items-center gap-2 text-brand-800 font-bold text-sm">
+            <Lock className="size-4 shrink-0" />
+            <h2>Provider Credentials Require Super-Admin Authorization</h2>
+          </div>
+          <p className="text-xs text-ink-secondary leading-relaxed">
+            API keys, multi-key rotation pools, custom provider endpoints, and live model routing
+            policies are restricted to <strong>SUPER_ADMIN</strong> operators. As a{' '}
+            <strong>System Admin</strong>, you have full operational authority over platform-wide AI
+            daily request quotas and user usage resets below. For general module toggles (such as
+            Resume Import), visit{' '}
+            <Link to="/admin/settings" className="font-bold text-brand-700 underline">
+              Platform Settings &amp; Modules
+            </Link>
+            .
+          </p>
+        </section>
+
+        {renderQuotaGovernancePanel()}
+
+        {/* Accessible Radix Confirmation Dialogs for ADMIN Quota Resets */}
+        <Dialog
+          open={activeDialog === 'confirm-reset-user-quota'}
+          onOpenChange={(open) => !open && closeDialog()}
+        >
+          <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reset User Daily AI Quota</DialogTitle>
+              <DialogDescription>
+                Clear today&apos;s AI request count for UID <span className="font-mono">{dialogTarget}</span>?
+                This action is recorded in the security audit log.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={closeDialog}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleConfirmQuotaReset(false)}
+                disabled={quotaSaving}
+              >
+                Confirm Reset
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={activeDialog === 'confirm-reset-all-quotas'}
+          onOpenChange={(open) => !open && closeDialog()}
+        >
+          <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reset All Daily AI Quotas</DialogTitle>
+              <DialogDescription>
+                Reset daily AI usage counters for every user across the platform? This operation
+                cannot be undone and is logged in the security audit trail.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={closeDialog}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleConfirmQuotaReset(true)}
+                disabled={quotaSaving}
+                className="bg-error-600 hover:bg-error-700 text-white"
+              >
+                Reset All Counters
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // ─── SUPER_ADMIN Full Rebuilt v2 Surface ───
+  const isDiscoveryOrModelsView = activeSubtab === 'discovery' || activeSubtab === 'models';
+  const isMetricsOrQuotasView = activeSubtab === 'metrics' || activeSubtab === 'quotas';
+  const isGatewayOrClaudeView = activeSubtab === 'unified-gateway' || activeSubtab === 'claude';
+
+  const hasStaleDiscovery = discoveryModels.some(
+    (m) => m.catalogStatus && m.catalogStatus !== 'fresh'
   );
 
   return (
-    <div className="space-y-6">
-      {actionError && <div role="alert" className="rounded border border-rose-300 p-3 text-sm">{actionError}<Button variant="ghost" onClick={() => setActionError(null)}>Dismiss</Button></div>}
-      {/* ─── EXECUTIVE COMMAND CONSOLE: RUNTIME MODEL SELECTION ─── */}
-      <Card className="rounded-2xl border border-border/70 bg-gradient-to-br from-surface via-surface/98 to-surface-secondary/40 shadow-xs backdrop-blur-md overflow-hidden">
-        <CardContent className="p-5 sm:p-6 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center shrink-0 border border-brand-500/20 shadow-xs">
-                <Brain className="size-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-ink tracking-tight flex items-center gap-2">
-                  Runtime model selection
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Router
-                  </span>
-                </h2>
-                <p className="text-xs text-ink-muted">
-                  Multi-provider intelligent dispatch with automated fallback and zero-synthetic governance.
-                </p>
-              </div>
-            </div>
+    <div className="space-y-5 min-w-0" data-testid="ai-multi-provider-engine">
+      {/* Status & Error Banners */}
+      {toastMsg && (
+        <div
+          role="status"
+          className="rounded-xl border border-success-100 bg-success-50 px-4 py-3 text-xs font-semibold text-success-700 flex items-center justify-between gap-2"
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <CheckCircle2 className="size-4 shrink-0" />
+            <span className="truncate">{toastMsg}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setToastMsg(null)}
+            className="underline font-bold shrink-0 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
-            <div className="flex items-center gap-2 text-xs text-ink-muted font-medium bg-surface-secondary/80 px-3 py-1.5 rounded-xl border border-border/60 self-start sm:self-auto">
-              <Activity className="size-3.5 text-brand-600 shrink-0" />
-              <span>Active: <strong className="text-ink uppercase font-bold">{selectionMode}</strong></span>
-              <span className="text-border">•</span>
-              <span>Primary: <strong className="text-ink font-semibold">{primaryProvider}</strong></span>
-            </div>
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-error-100 bg-error-50 px-4 py-3 text-xs font-semibold text-error-700 flex items-center justify-between gap-2"
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <AlertCircle className="size-4 shrink-0" />
+            <span className="break-words">{actionError}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="underline font-bold shrink-0 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {revisionConflict && (
+        <div
+          role="alert"
+          data-testid="revision-conflict-banner"
+          className="rounded-xl border border-warning-100 bg-warning-50 p-4 space-y-2 text-ink"
+        >
+          <div className="flex items-center gap-2 text-warning-700 font-bold text-xs">
+            <AlertTriangle className="size-4 shrink-0" />
+            <span>
+              Concurrent Edit Detected (Server Revision #{revisionConflict.currentRevision ?? '?'})
+            </span>
           </div>
+          <p className="text-xs text-ink-secondary">{revisionConflict.message}</p>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button type="button" size="sm" variant="outline" onClick={() => void loadSettings()}>
+              Reload Server Settings
+            </Button>
+            {revisionConflict.pendingPayload && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  void commitSettingsPatch(
+                    revisionConflict.pendingPayload!,
+                    'Configuration saved (overwrote prior revision).',
+                    { force: true }
+                  )
+                }
+              >
+                Overwrite Server Version
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Column 1: Mode Selection */}
-            <div className="space-y-2 p-3.5 rounded-xl bg-surface/60 border border-border/50">
-              <label className="text-xs font-bold text-ink flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span>Selection mode</span>
-                  <span className="text-[10px] font-semibold text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded">
-                    {selectionMode === 'manual' ? 'Pinned Model' : 'Dynamic Cascade'}
-                  </span>
-                </div>
+      {/* ─── Simplification #5: Compact Runtime Model Selection Strip ─── */}
+      <Card className="border-border bg-surface">
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Brain className="size-4 text-brand-600 shrink-0" />
+                <h2 className="text-base font-extrabold text-ink tracking-tight">
+                  Runtime model selection
+                </h2>
+                <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-[11px] font-bold text-brand-700">
+                  Primary: {primaryProvider}
+                </span>
+                <span className="text-xs text-ink-muted">Rev #{revision}</span>
+              </div>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Dispatch mode across {providers.length} registered providers. Resume Import toggle
+                lives in{' '}
+                <Link to="/admin/settings" className="font-semibold text-brand-700 underline">
+                  Platform Settings
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+              <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+                <label htmlFor="ai-selection-mode" className="text-xs font-bold text-ink shrink-0">
+                  Selection mode
+                </label>
                 <select
+                  id="ai-selection-mode"
                   aria-label="Selection mode"
                   value={selectionMode}
-                  onChange={(e) => setSelectionMode(e.target.value)}
-                  className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  onChange={(e) => setSelectionMode(e.target.value as SelectionMode)}
+                  className="max-w-full min-w-0 rounded-xl border border-border bg-canvas px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="auto">Auto / Recommended</option>
                   <option value="quality">Quality First</option>
                   <option value="speed">Speed First</option>
                   <option value="balanced">Balanced</option>
-                  <option value="manual">Manual</option>
+                  <option value="manual">Manual Pin</option>
                 </select>
-              </label>
-              <p className="text-[11px] text-ink-muted leading-relaxed">
-                {selectionMode === 'auto' && 'Dispatches across top frontier providers with automatic latency balancing.'}
-                {selectionMode === 'quality' && 'Maximizes verified reasoning capacity and capability alignment.'}
-                {selectionMode === 'speed' && 'Prioritizes lowest response latency (<300ms) with verified fast tokens.'}
-                {selectionMode === 'balanced' && 'Optimal trade-off between intelligence, speed, and reliability.'}
-                {selectionMode === 'manual' && 'Bypasses autonomous routing and locks execution strictly to your pinned model.'}
-              </p>
-            </div>
-
-            {/* Column 2: Pinned Provider & Model (When Manual) OR Hyperparameters */}
-            {selectionMode === 'manual' ? (
-              <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50 col-span-1 lg:col-span-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-ink block mb-1">
-                      Pinned provider
-                      <select
-                        aria-label="Pinned provider"
-                        value={primaryProvider}
-                        onChange={(e) => {
-                          setPrimaryProvider(e.target.value);
-                          setManualModel('');
-                        }}
-                        className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs"
-                      >
-                        <option value="">Select provider</option>
-                        {providers.filter((p) => p.group === 'models').map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-ink block mb-1">
-                      Pinned model
-                      <select
-                        aria-label="Pinned model"
-                        value={manualModel}
-                        onChange={(e) => setManualModel(e.target.value)}
-                        className="mt-1 block w-full h-10 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-ink shadow-xs max-w-full"
-                      >
-                        <option value="">Choose from live catalog</option>
-                        {manualModel && !(discoveryResults[primaryProvider] || []).some((m: any) => m.id === manualModel && m.catalogStatus === 'fresh') && (
-                          <option value={manualModel} disabled>{manualModel} (saved — refresh to verify)</option>
-                        )}
-                        {(discoveryResults[primaryProvider] || []).filter((m: any) => m.catalogStatus === 'fresh').map((m: any) => (
-                          <option key={m.id} value={m.id}>{m.name || m.id}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDiscoveryFetch(primaryProvider)}
-                    disabled={!primaryProvider || discoveryLoading}
-                    loading={discoveryLoading}
-                    className="h-8 text-xs font-semibold gap-1.5"
-                  >
-                    <RefreshCw className={cn("size-3.5", discoveryLoading && "animate-spin")} />
-                    Refresh selectable models
-                  </Button>
-                  <span className="text-[11px] text-ink-muted">
-                    {discoveryResults[primaryProvider]?.length ? `${discoveryResults[primaryProvider].length} models discovered` : 'No models discovered yet'}
-                  </span>
-                </div>
               </div>
-            ) : (
-              <>
-                {/* Column 2: Inference Hyperparameters */}
-                <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold text-ink">
-                      <span>Temperature</span>
-                      <span className="font-mono text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded text-[11px]">
-                        {temperature.toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.0"
-                      max="1.0"
-                      step="0.05"
-                      value={temperature}
-                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                      className="w-full accent-brand-600 h-1.5 bg-surface-secondary rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-ink-muted">
-                      <span>0.0 (Precise)</span>
-                      <span>1.0 (Creative)</span>
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between text-xs font-bold text-ink">
-                      <span>Max Tokens</span>
-                      <span className="font-mono text-brand-600 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded text-[11px]">
-                        {maxTokens} tok
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="256"
-                      max="4096"
-                      step="128"
-                      value={maxTokens}
-                      onChange={(e) => setMaxTokens(parseInt(e.target.value, 10))}
-                      className="w-full accent-brand-600 h-1.5 bg-surface-secondary rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-ink-muted">
-                      <span>256</span>
-                      <span>4096</span>
-                    </div>
-                  </div>
-                </div>
+              <label
+                htmlFor="ai-enable-fallback"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink cursor-pointer"
+              >
+                <input
+                  id="ai-enable-fallback"
+                  type="checkbox"
+                  checked={enableFallback}
+                  onChange={(e) => setEnableFallback(e.target.checked)}
+                  className="rounded border-border text-brand-600 focus:ring-brand-500"
+                />
+                <span>Failover Mesh</span>
+              </label>
 
-                {/* Column 3: Safeguards & Resilience */}
-                <div className="space-y-3 p-3.5 rounded-xl bg-surface/60 border border-border/50">
-                  <div className="text-xs font-bold text-ink mb-1">Governance & Fallbacks</div>
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={enableFallback}
-                      onChange={(e) => setEnableFallback(e.target.checked)}
-                      className="mt-0.5 rounded border-border text-brand-600 focus:ring-brand-500 size-4"
-                    />
-                    <div>
-                      <span className="text-xs font-semibold text-ink block">Enable Multi-Provider Fallback</span>
-                      <span className="text-[10px] text-ink-muted block">Automatically failover to secondary frontier mesh on 429 rate limit or 5xx outage.</span>
-                    </div>
-                  </label>
+              <button
+                type="button"
+                aria-expanded={showTuning}
+                onClick={() => setShowTuning((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink-secondary hover:text-ink cursor-pointer"
+              >
+                <Sliders className="size-3.5 shrink-0" />
+                <span>
+                  Tuning ({temperature.toFixed(2)} · {maxTokens} tok)
+                </span>
+                <ChevronDown
+                  className={cn('size-3.5 transition-transform', showTuning && 'rotate-180')}
+                />
+              </button>
 
-                  <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
-                    <span className="text-ink-muted">Active Primary:</span>
-                    <span className="font-bold text-ink uppercase text-[11px] bg-surface-secondary px-2 py-0.5 rounded border border-border/60">
-                      {primaryProvider}
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void handleSaveGlobalSettings()}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save All Changes'}
+              </Button>
+            </div>
           </div>
 
-          <p className="text-xs text-ink-muted">Automatic modes use current catalog capabilities and recent service observations. Quality First prioritizes documented capability fit; no response-quality benchmark is available. Manual pins never silently fall back.</p>
+          {/* Manual Pin Row */}
+          {selectionMode === 'manual' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border">
+              <div>
+                <label
+                  htmlFor="ai-pinned-provider"
+                  className="block text-xs font-semibold text-ink mb-1"
+                >
+                  Pinned provider
+                </label>
+                <select
+                  id="ai-pinned-provider"
+                  aria-label="Pinned provider"
+                  value={primaryProvider}
+                  onChange={(e) => {
+                    setPrimaryProvider(e.target.value);
+                    setPinnedModel('');
+                  }}
+                  className="w-full rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"
+                >
+                  {providers
+                    .filter((p) => p.group !== 'search')
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.id})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="ai-pinned-model"
+                  className="block text-xs font-semibold text-ink mb-1"
+                >
+                  Pinned model
+                </label>
+                <select
+                  id="ai-pinned-model"
+                  aria-label="Pinned model"
+                  value={pinnedModel}
+                  onChange={(e) => setPinnedModel(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"
+                >
+                  <option value="">Select discovered model...</option>
+                  {pinnedProviderModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleRefreshPinnedModels()}
+                  className="w-full sm:w-auto"
+                >
+                  <RefreshCw className="size-3.5 mr-1.5" />
+                  Refresh selectable models
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Expandable Generation Parameters (0–2 Temperature, 256–8192 Max Tokens) */}
+          {showTuning && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-border">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <label htmlFor="ai-temperature-slider" className="font-semibold text-ink">
+                    Temperature (0.0 – 2.0)
+                  </label>
+                  <span className="font-mono font-bold text-ink">{temperature.toFixed(2)}</span>
+                </div>
+                <input
+                  id="ai-temperature-slider"
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  value={temperature}
+                  onChange={(e) => setTemperature(Number(e.target.value))}
+                  className="w-full accent-brand-600"
+                />
+                <div className="flex justify-between text-[11px] text-ink-muted">
+                  <span>0.0 Deterministic</span>
+                  <span>1.0 Balanced</span>
+                  <span>2.0 High Variance</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <label htmlFor="ai-max-tokens-slider" className="font-semibold text-ink">
+                    Max Output Tokens (256 – 8192)
+                  </label>
+                  <span className="font-mono font-bold text-ink">{maxTokens} tok</span>
+                </div>
+                <input
+                  id="ai-max-tokens-slider"
+                  type="range"
+                  min={256}
+                  max={8192}
+                  step={128}
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(Number(e.target.value))}
+                  className="w-full accent-brand-600"
+                />
+                <div className="flex justify-between text-[11px] text-ink-muted">
+                  <span>256</span>
+                  <span>4096</span>
+                  <span>8192</span>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── MASTER TOP TAB BAR ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-        <div className="flex items-center gap-2 overflow-x-auto p-1 rounded-xl bg-surface-secondary/70">
-          <button
-            type="button"
-            onClick={() => setActiveTab('keys')}
-            className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
-              activeTab === 'keys'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
-            )}
-          >
-            <Key className="size-3.5" />
-            Keys ({providers.length})
-          </button>
 
+      {/* ─── Simplification #2: Unified URL-Backed Navigation & Tool Bar ─── */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center gap-1.5" aria-label="AI Engine Views">
           <button
             type="button"
-            onClick={() => setActiveTab('models')}
+            onClick={() => selectSubtab('providers')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
-              activeTab === 'models'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
+              activeSubtab === 'providers'
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
             )}
           >
-            <Layers className="size-3.5" />
-            Models & Fallback Chains
+            Providers &amp; Keys ({configuredCount}/{providers.length})
           </button>
-
           <button
             type="button"
-            onClick={() => setActiveTab('claude')}
+            onClick={() => selectSubtab('discovery')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
-              activeTab === 'claude'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
+              isDiscoveryOrModelsView
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
             )}
           >
-            <Terminal className="size-3.5" />
-            Claude Code & Agents
+            Models &amp; Fallback Chains
           </button>
-
           <button
             type="button"
-            onClick={() => setActiveTab('playground')}
+            onClick={() => selectSubtab('metrics')}
             className={cn(
-              'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0',
-              activeTab === 'playground'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                : 'text-ink-muted hover:text-ink hover:bg-surface-secondary'
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
+              isMetricsOrQuotasView
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
             )}
           >
-            <Sparkles className="size-3.5" />
+            Quotas &amp; Telemetry
+          </button>
+          <button
+            type="button"
+            onClick={() => selectSubtab('unified-gateway')}
+            className={cn(
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
+              isGatewayOrClaudeView
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
+            )}
+          >
+            Claude Code &amp; Agents
+          </button>
+          <button
+            type="button"
+            onClick={() => selectSubtab('playground')}
+            className={cn(
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
+              activeSubtab === 'playground'
+                ? 'bg-brand-600 text-white'
+                : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
+            )}
+          >
             Playground
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {savedSuccess && (
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-              <Check className="size-3 text-emerald-600" />
-              Settings Saved
-            </span>
-          )}
-          <Button variant="primary" size="sm" onClick={handleSaveAll} loading={saving} className="h-8 text-xs font-bold">
-            Save All Changes
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              resetModalDrafts();
+              setModalSelectedId('');
+              setModalTab('single');
+              openDialog('configure-provider');
+            }}
+          >
+            <Plus className="size-3.5 mr-1" />
+            Configure Provider
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => openDialog('key-pool')}
+          >
+            Manage key pools
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => openDialog('cooldowns')}
+          >
+            Manage cooldowns
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => openDialog('discovery')}
+          >
+            Discover models
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => openDialog('snippets')}
+          >
+            Integration snippets
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-surface/70 border border-border/60 shadow-2xs" aria-label="Engine tools">
-        <span className="text-[11px] font-bold text-ink-muted px-2 uppercase tracking-wider hidden sm:inline">Tools:</span>
-        <Button size="sm" variant="outline" onClick={handleOpenKeyPool} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
-          <Key className="size-3.5 text-amber-500" />
-          Manage key pools
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => handleOpenCooldown('')} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
-          <Clock className="size-3.5 text-blue-500" />
-          Manage cooldowns
-        </Button>
-        <Button size="sm" variant="outline" onClick={handleOpenDiscovery} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
-          <Sparkles className="size-3.5 text-brand-600" />
-          Discover models
-        </Button>
-        <Button size="sm" variant="outline" onClick={handleOpenCodeSnippets} className="h-8 text-xs font-semibold gap-1.5 border-border/70 hover:bg-surface-secondary shadow-xs">
-          <Terminal className="size-3.5 text-emerald-500" />
-          Integration snippets
-        </Button>
-      </div>
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB 1: KEYS (Matching FreeLLMAPI Screen 1) ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {activeTab === 'keys' && (
-        <div className="space-y-6">
-          {/* Header Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-ink tracking-tight">Keys</h1>
-              <p className="text-xs text-ink-muted mt-0.5">
-                Provider credentials and the unified API key your apps connect with.
-              </p>
+      {/* ─── VIEW 1: Providers & Keys (subtab=providers) ─── */}
+      {activeSubtab === 'providers' && (
+        <div className="space-y-4 min-w-0">
+          {/* Category Tier Tablist (Zero aria-pressed on role=tab — fixes DEF-19) */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div
+              role="tablist"
+              aria-label="Provider categories"
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {(
+                [
+                  { id: 'all', label: `All providers (${tierCounts.all})` },
+                  { id: 'frontier', label: `Frontier Free Tier (${tierCounts.frontier})` },
+                  { id: 'mesh', label: `Fast Community Mesh (${tierCounts.mesh})` },
+                  { id: 'search', label: `Agent Search & Tools (${tierCounts.search})` },
+                ] as const
+              ).map((tab) => {
+                const selected = categoryFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() =>
+                      updateUrlParams((next) => {
+                        if (tab.id === 'all') next.delete('category');
+                        else next.set('category', tab.id);
+                      }, true)
+                    }
+                    className={cn(
+                      'px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer',
+                      selected
+                        ? 'bg-ink text-white'
+                        : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleCheckAll}
-                loading={checkingAll}
-                className="h-8 text-xs font-semibold"
+                onClick={() => void handleCheckAll()}
+                disabled={checkingAll}
               >
-                <RefreshCw className={cn('size-3.5 mr-1.5', checkingAll && 'animate-spin')} />
-                Check all
+                <Activity className={cn('size-3.5 mr-1.5', checkingAll && 'animate-spin')} />
+                {checkingAll ? 'Checking...' : 'Check all'}
               </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportConfig}
-                className="h-8 text-xs font-semibold"
-              >
+              <Button type="button" variant="outline" size="sm" onClick={handleExportMetadata}>
                 <Download className="size-3.5 mr-1.5" />
                 Export
               </Button>
-
-              <Button
-                variant="primary"
-                size="sm"
-                data-testid="configure-provider"
-                onClick={() => {
-                  setModalSelectedPlatform(null);
-                  setModalPlatformSearch('');
-                  setIsAddKeyOpen(true);
-                  setIsComboboxOpen(false);
-                  setModalError(null);
-                }}
-                className="h-8 text-xs font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800"
-              >
-                <Plus className="size-3.5 mr-1" />
-                Configure Provider
-              </Button>
             </div>
           </div>
 
-          {/* Sub-Pills Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/40 text-xs">
-            {(
-              [
-                { id: 'providers', label: `Providers (${configuredCount}/${providers.length})` },
-                { id: 'quota', label: 'Quota signals' },
-                { id: 'unified', label: 'Unified API key' },
-                { id: 'anthropic', label: 'Anthropic' },
-                { id: 'agents', label: 'Agents' },
-              ] as const
-            ).map((pill) => (
-              <button
-                key={pill.id}
-                type="button"
-                onClick={() => setSubPill(pill.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap',
-                  subPill === pill.id
-                    ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white shadow-xs'
-                    : 'text-ink-muted hover:text-ink'
-                )}
-              >
-                {pill.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Provider Category Tabs (Frontier / Community Mesh / Agent Search) */}
-          <div
-            className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs"
-            role="tablist"
-            aria-label="Provider categories"
-            data-testid="provider-category-tabs"
-          >
-            {[
-              { id: 'all' as const, label: 'All providers', count: tierCounts.all },
-              { id: 'frontier' as const, label: 'Frontier Free Tier', count: tierCounts.frontier },
-              { id: 'mesh' as const, label: 'Fast Community Mesh', count: tierCounts.mesh },
-              { id: 'search' as const, label: 'Agent Search & Extraction Tools', count: tierCounts.search },
-            ].map((tier) => (
-              <button
-                key={tier.id}
-                type="button"
-                role="tab"
-                aria-selected={tierFilter === tier.id}
-                aria-pressed={tierFilter === tier.id}
-                data-testid={`provider-tier-${tier.id}`}
-                onClick={() => setTierFilter(tier.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap border',
-                  tierFilter === tier.id
-                    ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white shadow-xs'
-                    : 'bg-surface text-ink-muted border-border/60 hover:text-ink hover:border-border'
-                )}
-              >
-                {tier.label}
-                <span
-                  className={cn(
-                    'ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md',
-                    tierFilter === tier.id
-                      ? 'bg-white/20 text-white dark:bg-neutral-900/10 dark:text-neutral-900'
-                      : 'bg-surface-secondary text-ink-muted'
-                  )}
-                >
-                  {tier.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Search & Status Filters Bar */}
+          {/* Search + Configured/Status Filter Pills (Simplification #4) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-80">
-              <Search className="size-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
+            <div className="relative flex-1 max-w-md min-w-0">
+              <Search className="size-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                id="provider-search-input"
+                type="search"
+                aria-label={`Search ${providers.length} providers`}
+                placeholder={`Search ${providers.length} providers by name, ID, or model...`}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search platforms, models, keys..."
-                className="pl-8 h-8 text-xs"
+                onChange={(e) =>
+                  updateUrlParams((next) => {
+                    if (e.target.value) next.set('q', e.target.value);
+                    else next.delete('q');
+                  }, true)
+                }
+                className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
-            {/* Status Pills */}
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-secondary/70">
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by provider status">
               {(
                 [
-                  { id: 'all', label: `All ${totalKeysCount}` },
+                  { id: 'all', label: `All ${providers.length}` },
+                  { id: 'configured', label: `Configured ${configuredCount}` },
                   { id: 'healthy', label: `Healthy ${healthyCount}` },
-                  { id: 'issues', label: 'Issues 0' },
-                  { id: 'disabled', label: `Disabled ${providers.length - configuredCount}` },
+                  { id: 'issues', label: `Issues ${issuesCount}` },
+                  { id: 'disabled', label: `Disabled ${disabledCount}` },
                 ] as const
-              ).map((st) => (
+              ).map((pill) => (
                 <button
-                  key={st.id}
+                  key={pill.id}
                   type="button"
-                  onClick={() => setStatusFilter(st.id)}
+                  onClick={() =>
+                    updateUrlParams((next) => {
+                      if (pill.id === 'all') next.delete('status');
+                      else next.set('status', pill.id);
+                    }, true)
+                  }
                   className={cn(
-                    'px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
-                    statusFilter === st.id
-                      ? 'bg-white dark:bg-neutral-900 text-ink shadow-xs'
-                      : 'text-ink-muted hover:text-ink'
+                    'px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer',
+                    statusFilter === pill.id
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-canvas text-ink-secondary hover:text-ink border border-border'
                   )}
                 >
-                  {st.label}
+                  {pill.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Provider Rows List */}
-          <div className="space-y-2">
-            {filteredProviders.length === 0 ? (
-              <Card className="border-dashed p-8 text-center">
-                <p className="text-xs text-ink-muted">No providers match the current search or status filter.</p>
-              </Card>
-            ) : (
-              filteredProviders.map((p) => {
-                const isExpanded = expandedProvider === p.id;
-                const isPrimary = primaryProvider === p.id;
-                const status = testStatus[p.id];
-                const isConfigured = Boolean(p.configuredOnServer || p.keyless);
+          {providerFilter && (
+            <div className="flex items-center gap-2 text-xs text-ink-secondary bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
+              <span>
+                Filtered to provider: <strong className="text-ink">{providerFilter}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  updateUrlParams((next) => {
+                    next.delete('provider');
+                  }, true)
+                }
+                className="font-bold text-brand-700 underline cursor-pointer"
+              >
+                Show all {providers.length} providers
+              </button>
+            </div>
+          )}
+
+          {/* Provider List */}
+          {sortedFilteredProviders.length === 0 ? (
+            <Card className="border-border bg-surface">
+              <CardContent className="p-8 text-center space-y-2">
+                <p className="text-sm font-semibold text-ink">No matching providers found</p>
+                <p className="text-xs text-ink-muted">
+                  Clear active filters or search across all {providers.length} supported platforms.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    updateUrlParams((next) => {
+                      next.delete('provider');
+                      next.delete('category');
+                      next.delete('status');
+                      next.delete('q');
+                    }, true)
+                  }
+                >
+                  Reset Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {sortedFilteredProviders.map((p) => {
+                const isExpanded = expandedRowId === p.id;
+                const isPrimary = p.id === primaryProvider;
+                const cooldown = cooldowns[p.id];
+                const serverMask = maskedKeys[p.id] || p.maskedKey || '';
+                const poolDraftCount = splitKeys(poolKeyDrafts[p.id] || '').length;
 
                 return (
                   <div
                     key={p.id}
                     data-testid={`provider-row-${p.id}`}
                     className={cn(
-                      'rounded-xl border transition-all overflow-hidden',
-                      isExpanded
-                        ? 'border-border bg-surface shadow-sm ring-1 ring-border/50'
-                        : 'border-border/60 bg-surface/80 hover:bg-surface'
+                      'rounded-2xl border transition-colors bg-surface',
+                      isPrimary ? 'border-brand-300' : 'border-border'
                     )}
                   >
-                    {/* Main Row — stacks into two tidy bands below lg, where a
-                        single line would crush the provider name against the
-                        key count and status pill. */}
-                    <div className="p-3.5 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-                      {/* Left: Switch, Title, Badges */}
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        {/* On/Off Switch */}
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={p.enabled !== false && isConfigured}
-                            onChange={() => handleToggleProvider(p.id, p.enabled !== false)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900 dark:peer-checked:bg-emerald-600"></div>
-                        </label>
+                    <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start sm:items-center gap-3 min-w-0">
+                        <input
+                          id={`toggle-provider-${p.id}`}
+                          type="checkbox"
+                          aria-label={`Enable ${p.name}`}
+                          checked={Boolean(p.enabled)}
+                          onChange={(e) => void handleToggleProvider(p, e.target.checked)}
+                          className="mt-1 sm:mt-0 size-4 rounded border-border text-brand-600 focus:ring-brand-500 shrink-0 cursor-pointer"
+                        />
 
-                        {/* Title and Badges */}
-                        <div className="min-w-0">
-                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-bold text-ink">{p.name}</span>
-                            {p.hint && (
-                              <span className="whitespace-nowrap text-[10px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md font-medium border border-sky-200 dark:border-sky-800">
-                                {p.hint}
-                              </span>
-                            )}
                             {isPrimary && (
-                              <span className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-md font-black tracking-wide border border-purple-200 dark:border-purple-800 uppercase">
-                                PRIMARY
+                              <span className="rounded-md bg-brand-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                                Primary
                               </span>
                             )}
                             {p.group === 'search' && (
-                              <span className="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md font-medium border border-amber-200 dark:border-amber-800">
+                              <span className="rounded-md bg-canvas-soft border border-border px-1.5 py-0.5 text-[10px] font-semibold text-ink-secondary">
                                 web search
                               </span>
+                            )}
+                            <span className="text-xs text-ink-muted">
+                              {p.keyless
+                                ? 'Keyless'
+                                : `${p.keysCount || 0} ${p.keysCount === 1 ? 'key' : 'keys'}`}
+                            </span>
+                            {serverMask && (
+                              <span
+                                data-testid={`masked-key-${p.id}`}
+                                className="rounded-md bg-canvas px-2 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary border border-border"
+                              >
+                                {serverMask}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            {cooldown || p.status === 'issues' || p.status === 'cooldown' ? (
+                              <span className="font-semibold text-error-700">
+                                {cooldown
+                                  ? `Cooldown (${cooldown.remainingSeconds}s)`
+                                  : 'Connection Issue'}
+                              </span>
+                            ) : p.status === 'healthy' ? (
+                              <span className="font-semibold text-success-700">
+                                Verified{p.latencyMs ? ` (${p.latencyMs}ms)` : ''}
+                              </span>
+                            ) : p.enabled && (p.configuredOnServer || p.keyless) ? (
+                              <span className="font-medium text-ink-secondary">
+                                Configured ({formatCredentialSource(p.credentialSource, p.keyless)})
+                              </span>
+                            ) : p.hasKey ? (
+                              <span className="font-medium text-warning-700">
+                                Disabled (Key Stored)
+                              </span>
+                            ) : (
+                              <span className="text-ink-muted">Not Configured</span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Right: Key Count, Health Status, Actions */}
-                      <div className="flex flex-wrap items-center gap-2 pl-12 lg:pl-0 lg:gap-3">
-                        {/* Key Count Badge */}
-                        <span className="whitespace-nowrap text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-surface-secondary text-ink-muted">
-                          {p.keysCount || (p.keyless ? 1 : 0)} {p.keysCount === 1 ? 'key' : 'keys'}
-                        </span>
-
-                        {/* Operational status pill (4 exact states) */}
-                        <span
-                          data-testid={`provider-status-${p.id}`}
-                          data-provider-state={providerStatePill(p).state}
-                          data-credential-source={p.configuredOnServer ? 'server' : p.hasKey ? 'draft' : 'none'}
-                          aria-label={`${p.name}: ${providerStatePill(p).label}${
-                            p.configuredOnServer ? ' — Configured on Server' : ''
-                          }`}
-                          title={providerStatePill(p).detail}
-                          className={cn(
-                            'inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold',
-                            providerStatePill(p).tone
-                          )}
-                        >
-                          {providerStatePill(p).label}
-                          {providerStatePill(p).state === 'healthy' && p.latencyMs ? (
-                            <span className="font-mono text-[10px] opacity-80">{p.latencyMs}ms</span>
-                          ) : null}
-                        </span>
-
-                        {/* Quick + Add Key Button on Row */}
-                        {!isConfigured && (
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {!p.keyless && !p.hasKey && (
                           <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => handleOpenAddKeyForProvider(p)}
-                            className="h-7 text-xs font-semibold hidden lg:inline-flex"
+                            type="button"
+                            size="sm"
+                            onClick={() => openQuickAddForProvider(p)}
                           >
-                            <Plus className="size-3 mr-1" />
+                            <Key className="size-3.5 mr-1" />
                             Add key
                           </Button>
                         )}
-
-                        {/* Live reachability probe */}
                         <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => handleTestProvider(p.id)}
-                          loading={testingId === p.id}
-                          data-testid={`test-connection-${p.id}`}
-                          aria-label={`Test ${p.name} connection`}
-                          className="h-7 text-xs text-ink-muted hover:text-ink hidden lg:inline-flex"
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={`Test Connection for ${p.name}`}
+                          disabled={
+                            testingId === p.id || (!p.keyless && !p.hasKey && !p.configuredOnServer)
+                          }
+                          onClick={() => void probeStoredProvider(p.id)}
                         >
-                          <Zap className="size-3 mr-1" />
+                          {testingId === p.id ? (
+                            <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                          ) : null}
                           Test Connection
                         </Button>
-
-                        {/* Expand Accordion Toggle */}
                         <button
                           type="button"
                           data-testid={`expand-provider-${p.id}`}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${p.name} settings`}
-                          onClick={() => setExpandedProvider(isExpanded ? null : p.id)}
-                          className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-surface-secondary transition-transform"
+                          onClick={() =>
+                            setExpandedRowId((curr) => (curr === p.id ? null : p.id))
+                          }
+                          className="rounded-xl border border-border bg-canvas p-2 text-ink-secondary hover:text-ink cursor-pointer"
                         >
-                          {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                          {isExpanded ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )}
                         </button>
                       </div>
                     </div>
 
-                    {/* Expandable Settings & Direct Inline Key Configuration */}
+                    {/* ─── Simplification #6: Self-Persisting Inline Provider Row Drawer ─── */}
                     {isExpanded && (
-                      <div className="p-4 bg-surface-secondary/40 border-t border-border/50 space-y-4 animate-[fade-in_150ms_ease-out]">
-                        {p.privacy && <p role="note" className="text-xs text-amber-700">Privacy: {p.privacy}</p>}
-                        {p.quota && <p className="text-xs text-ink-muted">Access limits: {p.quota}</p>}
-                        {/* Reachability Result */}
-                        {status && (
-                          <div
-                            className={cn(
-                              'p-2.5 rounded-lg text-xs flex items-center gap-2',
-                              status.ok
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
-                                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
-                            )}
-                          >
-                            {status.ok ? (
-                              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            ) : (
-                              <AlertCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                            )}
-                            <span className="font-mono">{status.message}</span>
+                      <div className="border-t border-border bg-canvas p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-4 rounded-b-2xl">
+                        {/* Credentials Column */}
+                        <div className="space-y-3 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-ink-secondary">
+                              Server Credential Vault
+                            </h3>
+                            <span className="text-xs font-semibold text-ink-secondary">
+                              Source: {formatCredentialSource(p.credentialSource, p.keyless)}
+                            </span>
                           </div>
-                        )}
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => handleTestProvider(p.id)}
-                            loading={testingId === p.id}
-                            data-testid={`test-connection-inline-${p.id}`}
-                            className="h-7 text-xs font-semibold"
-                          >
-                            <Zap className="size-3 mr-1 text-amber-500" />
-                            Test Connection
-                          </Button>
-                          {testStatus[p.id]?.latencyMs ? (
-                            <span
-                              data-testid={`latency-badge-${p.id}`}
-                              className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
-                            >
-                              ⚡ {testStatus[p.id]?.latencyMs}ms
-                            </span>
-                          ) : null}
-                          {cooldowns[p.id] ? (
-                            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800">
-                              ⊘ {cooldowns[p.id].remainingSeconds}s remaining
-                            </span>
-                          ) : null}
+                          {serverMask && (
+                            <div className="rounded-xl border border-border bg-surface px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                              <span className="text-ink-muted">Active Server Key:</span>
+                              <span className="font-mono font-bold text-ink">{serverMask}</span>
+                            </div>
+                          )}
+
+                          {!p.keyless && (
+                            <div className="space-y-2">
+                              <label
+                                htmlFor={`row-key-input-${p.id}`}
+                                className="block text-xs font-semibold text-ink"
+                              >
+                                {p.hasKey ? 'Replace API Key (write-only)' : 'Enter API Key'}
+                              </label>
+                              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                                <div className="relative flex-1 min-w-0">
+                                  <input
+                                    id={`row-key-input-${p.id}`}
+                                    type={showRowKey[p.id] ? 'text' : 'password'}
+                                    autoComplete="new-password"
+                                    spellCheck={false}
+                                    placeholder={
+                                      p.hasKey
+                                        ? `${serverMask || '••••••••'} (Leave blank to keep)`
+                                        : `Paste API Key for ${p.name}...`
+                                    }
+                                    value={singleKeyDrafts[p.id] || ''}
+                                    onChange={(e) =>
+                                      setSingleKeyDrafts((prev) => ({
+                                        ...prev,
+                                        [p.id]: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 pr-9 text-xs text-ink font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    aria-label={
+                                      showRowKey[p.id]
+                                        ? `Hide API key for ${p.name}`
+                                        : `Show API key for ${p.name}`
+                                    }
+                                    onClick={() =>
+                                      setShowRowKey((prev) => ({
+                                        ...prev,
+                                        [p.id]: !prev[p.id],
+                                      }))
+                                    }
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink cursor-pointer"
+                                  >
+                                    {showRowKey[p.id] ? (
+                                      <EyeOff className="size-3.5" />
+                                    ) : (
+                                      <Eye className="size-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={!singleKeyDrafts[p.id]?.trim() || saving}
+                                  onClick={() => void handleSaveRowSingleKey(p)}
+                                >
+                                  Save Key
+                                </Button>
+                              </div>
+
+                              {p.hasKey && p.credentialSource !== 'environment' && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDialog('confirm-clear-key', p.id)}
+                                  className="text-error-700 border-error-100 hover:bg-error-50"
+                                >
+                                  <Trash2 className="size-3.5 mr-1.5" />
+                                  Remove Stored Key
+                                </Button>
+                              )}
+
+                              <div className="pt-2 space-y-1.5">
+                                <label
+                                  htmlFor={`row-pool-input-${p.id}`}
+                                  className="block text-xs font-semibold text-ink"
+                                >
+                                  Multi-Key Rotation Pool (one key per line or comma-separated)
+                                </label>
+                                <textarea
+                                  id={`row-pool-input-${p.id}`}
+                                  rows={2}
+                                  spellCheck={false}
+                                  placeholder="Enter multiple keys for automatic 429 rotation..."
+                                  value={poolKeyDrafts[p.id] || ''}
+                                  onChange={(e) =>
+                                    setPoolKeyDrafts((prev) => ({
+                                      ...prev,
+                                      [p.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-xl border border-border bg-surface p-2.5 text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                />
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[11px] text-ink-muted">
+                                    {poolDraftCount > 0
+                                      ? `${poolDraftCount} key(s) staged for server vault`
+                                      : 'Keys are never echoed in plaintext after save.'}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={poolDraftCount === 0 || saving}
+                                    onClick={() => void handleSaveRowPool(p)}
+                                  >
+                                    Save Key Pool
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Multi-key pool: chips + paste-more editor */}
-                        {!isSearchProvider(p) && (
-                          <div className="space-y-2" data-testid={`key-pool-${p.id}`}>
-                            <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
-                              <Layers className="size-3 text-purple-500" />
-                              Key Pool
-                              <span className="text-[10px] font-normal text-ink-muted">
-                                rotate automatically on 429
-                              </span>
-                            </label>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {Array.from({ length: p.keyless ? 1 : Math.max(0, p.keysCount || 0) }).map((_unused, index) => (
-                                <span
-                                  key={index}
-                                  data-testid={`key-chip-${p.id}-${index}`}
-                                  className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                                >
-                                  <Shield className="size-2.5" />
-                                  {p.keyless ? 'keyless' : `key ${index + 1}`}
-                                </span>
-                              ))}
-                              {!p.keyless && (p.keysCount || 0) === 0 ? (
-                                <span className="text-[11px] text-ink-muted">No keys yet — paste up to 10 to build a pool.</span>
-                              ) : null}
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                              <Input
-                                value={keyPoolDrafts[p.id] ?? ''}
-                                onChange={(e) =>
-                                  setKeyPoolDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))
-                                }
-                                placeholder="Paste additional keys (comma or newline separated)…"
-                                aria-label={`${p.name} key pool`}
-                                className="h-8 flex-1 text-xs font-mono"
-                              />
-                              <Button
-                                variant="outline"
-                                size="xs"
-                                onClick={() => handleSaveKeyPool(p.id)}
-                                loading={saving}
-                                disabled={splitKeyPool(keyPoolDrafts[p.id] || '').length === 0}
-                                className="h-8 text-xs font-semibold"
-                              >
-                                <Plus className="size-3 mr-1" />
-                                Add to pool
-                              </Button>
-                            </div>
-                            {splitKeyPool(keyPoolDrafts[p.id] || '').length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {splitKeyPool(keyPoolDrafts[p.id] || '').map((key, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-0.5 text-[11px] font-mono text-ink-muted"
-                                  >
-                                    {key.length > 8 ? `${key.slice(0, 4)}…${key.slice(-3)}` : '••••'}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        )}
+                        {/* Routing, Model & Custom Endpoint Column */}
+                        <div className="space-y-3 min-w-0">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-ink-secondary">
+                            Model &amp; Endpoint Override
+                          </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                          {/* Direct Key Configuration */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="font-semibold text-ink flex items-center gap-1.5">
-                                <Key className="size-3 text-amber-500" />
-                                Provider API Key
-                              </label>
-                              {p.docUrl && (
-                                <a
-                                  href={p.docUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[11px] text-brand-600 hover:underline flex items-center gap-0.5 font-medium"
-                                >
-                                  Get API key <ExternalLink className="size-2.5" />
-                                </a>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <div className="relative flex-1">
-                                <Input
-                                  type={showSecretField[p.id] ? 'text' : 'password'}
-                                  value={secretInputs[p.id] ?? ''}
-                                  onChange={(e) =>
-                                    setSecretInputs((prev) => ({ ...prev, [p.id]: e.target.value }))
-                                  }
-                                  placeholder={
-                                    p.configuredOnServer
-                                      ? '•••••••••••••••••••••••••••• (Active on server)'
-                                      : p.keyless
-                                      ? 'Keyless gateway (no key required)'
-                                      : 'Paste API Key here…'
-                                  }
-                                  className="h-8 text-xs font-mono pr-8"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setShowSecretField((prev) => ({ ...prev, [p.id]: !prev[p.id] }))
-                                  }
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink text-xs"
-                                >
-                                  {showSecretField[p.id] ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
-                                </button>
-                              </div>
-
-                              <Button
-                                variant="primary"
-                                size="xs"
-                                onClick={() => handleSaveSingleKey(p.id)}
-                                loading={saving}
-                                disabled={!secretInputs[p.id]?.trim()}
-                                className="h-8 text-xs font-bold whitespace-nowrap"
-                              >
-                                Save Key
-                              </Button>
-
-                              {p.configuredOnServer && !p.keyless && (
-                                <Button
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() => handleClearSingleKey(p.id)}
-                                  className="h-8 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                                >
-                                  Clear
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-[10px] text-ink-muted">
-                              Encrypted in MariaDB. Zero client-side leakage.
-                            </p>
-                          </div>
-
-                          {/* Default Model & Quick Actions */}
                           <div>
-                            <label className="font-semibold text-ink mb-1 block">Default Model Target</label>
+                            <label
+                              htmlFor={`row-model-input-${p.id}`}
+                              className="block text-xs font-semibold text-ink mb-1"
+                            >
+                              Default Model Target
+                            </label>
                             <Input
-                              value={p.defaultModel}
-                              readOnly
-                              className="h-8 text-xs font-mono bg-surface-secondary text-ink-muted"
+                              id={`row-model-input-${p.id}`}
+                              value={modelDrafts[p.id] ?? p.defaultModel ?? ''}
+                              onChange={(e) =>
+                                setModelDrafts((prev) => ({
+                                  ...prev,
+                                  [p.id]: e.target.value,
+                                }))
+                              }
+                              placeholder={p.defaultModel || 'auto'}
                             />
-                            <div className="mt-2.5 flex items-center gap-2">
-                              {primaryProvider !== p.id && (
-                                <Button
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => setPrimaryProvider(p.id)}
-                                  className="h-7 text-xs font-semibold"
-                                >
-                                  Set as Primary
-                                </Button>
-                              )}
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`row-baseurl-input-${p.id}`}
+                              className="block text-xs font-semibold text-ink mb-1"
+                            >
+                              Custom Endpoint Base URL (optional)
+                            </label>
+                            <Input
+                              id={`row-baseurl-input-${p.id}`}
+                              value={baseUrlDrafts[p.id] ?? ''}
+                              onChange={(e) =>
+                                setBaseUrlDrafts((prev) => ({
+                                  ...prev,
+                                  [p.id]: e.target.value,
+                                }))
+                              }
+                              placeholder={p.baseUrl || 'https://api.example.com/v1'}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={saving}
+                              onClick={() => void handleSaveRowConfig(p)}
+                            >
+                              Save Provider Config
+                            </Button>
+                            {p.group !== 'search' && !isPrimary && (
                               <Button
-                                variant="secondary"
-                                size="xs"
-                                onClick={() => handleTestProvider(p.id)}
-                                loading={testingId === p.id}
-                                className="h-7 text-xs font-semibold"
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={saving}
+                                onClick={() => void handleSetPrimaryImmediate(p)}
                               >
-                                Reachability Test
+                                Set as Primary
                               </Button>
-                            </div>
+                            )}
+                            {p.docUrl && (
+                              <a
+                                href={p.docUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline ml-auto"
+                              >
+                                Provider Docs
+                                <ExternalLink className="size-3.5" />
+                              </a>
+                            )}
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── DEEP-LINK SUBTABS (Section 4) — real data-bound content for each      */}
-      {/*     of the 5 engine subtab surfaces. Only rendered when the deep-link     */}
-      {/*   URL ( ?subtab=... ) is active.                                        */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {subtab === 'key-pool' && activeTab === 'keys' && (
-        <KeyPoolTab
-          providers={providers}
-          cooldowns={cooldowns}
-          keyPoolDrafts={keyPoolDrafts}
-          setKeyPoolDrafts={setKeyPoolDrafts}
-          saving={saving}
-          handleSaveKeyPool={handleSaveKeyPool}
-          providerStatePill={providerStatePill}
-        />
+      {/* ─── VIEW 2: Key Pool Subtab (?subtab=key-pool) ─── */}
+      {activeSubtab === 'key-pool' && (
+        <Card className="border-border bg-surface">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                  <Layers className="size-4 text-brand-600" />
+                  Key Pool Manager
+                </h3>
+                <p className="text-xs text-ink-muted mt-0.5">
+                  Round-robin credential pools with automatic 429 cooldown isolation per key.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  resetModalDrafts();
+                  setModalTab('pool');
+                  openDialog('configure-provider');
+                }}
+              >
+                <Plus className="size-3.5 mr-1" />
+                Add Rotation Pool
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {providers.filter((p) => p.hasKey && !p.keyless).length === 0 ? (
+                <p className="text-xs text-ink-muted py-4 col-span-2">
+                  No credential pools configured yet. Click &ldquo;Add Rotation Pool&rdquo; to add keys.
+                </p>
+              ) : (
+                providers
+                  .filter((p) => p.hasKey && !p.keyless)
+                  .map((p) => (
+                    <div
+                      key={p.id}
+                      className="rounded-xl border border-border bg-canvas p-3.5 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-ink">{p.name}</div>
+                        <div className="text-[11px] font-mono text-ink-secondary mt-0.5">
+                          {maskedKeys[p.id] || '••••••••'} ({p.keysCount} key
+                          {p.keysCount === 1 ? '' : 's'})
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setExpandedRowId(p.id);
+                          selectSubtab('providers');
+                        }}
+                      >
+                        Edit Pool
+                      </Button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {subtab === 'metrics' && activeTab === 'keys' && (
-        <MetricsTab
-          cooldowns={cooldowns}
-          tierCounts={tierCounts}
-          configuredCount={configuredCount}
-          healthyCount={healthyCount}
-        />
-      )}
-
-      {subtab === 'unified-gateway' && activeTab === 'keys' && (
-        <UnifiedGatewayTab
-          providers={providers}
-          primaryProvider={primaryProvider}
-          enableFallback={enableFallback}
-          temperature={temperature}
-          maxTokens={maxTokens}
-        />
-      )}
-
-      {subtab === 'discovery' && activeTab === 'keys' && (
-        <DiscoveryTab
-          providers={providers}
-          discoveryResults={discoveryResults}
-          discoveryLoading={discoveryLoading}
-          handleDiscoveryFetch={handleDiscoveryFetch}
-          error={modalError}
-          onSelectProvider={(id) => setPrimaryProvider(id)}
-        />
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB 2: MODELS & FALLBACK CHAINS (Matching FreeLLMAPI Screen 2) ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {activeTab === 'models' && (
-        <div className="space-y-6">
-          {/* Fallback Chains Card */}
-          <Card className="border-border/70">
+      {/* ─── VIEW 3: Models & Discovery (?subtab=discovery | ?subtab=models) ─── */}
+      {isDiscoveryOrModelsView && (
+        <div className="space-y-4 min-w-0">
+          <Card className="border-border bg-surface">
             <CardContent className="p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                    <Layers className="size-4 text-brand-600" />
-                    Fallback Chains
-                  </h3>
-                  <p className="text-xs text-ink-muted">
-                    Ordered cascade of models. If a provider hits 429 quota or times out, requests automatically failover.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                  <Sparkles className="size-4 text-brand-600" />
+                  Live Model Discovery &amp; Reconciliation
+                </h3>
+                <p className="text-xs text-ink-muted mt-0.5">
+                  Query upstream provider catalogs directly; static unverified model guesses are never synthesized.
+                </p>
               </div>
 
-              <p className="text-xs">Policy: {selectionMode}. Discovered models: {catalogModels.length}. Configure model selection above; this catalog is read-only.</p>
-            </CardContent>
-          </Card>
-
-          {/* Model Filter Controls */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            {/* Search */}
-            <div className="relative w-full sm:w-80">
-              <Search className="size-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                value={modelSearch}
-                onChange={(e) => setModelSearch(e.target.value)}
-                placeholder="Search models, providers, context..."
-                className="pl-8 h-8 text-xs"
-              />
-            </div>
-
-            {/* Context Chips & Capabilities */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-secondary/70">
-                {(
-                  [
-                    { id: 'any', label: 'Any context' },
-                    { id: '32k', label: '32K+' },
-                    { id: '128k', label: '128K+' },
-                    { id: '1m', label: '1M+' },
-                  ] as const
-                ).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setContextFilter(c.id)}
-                    className={cn(
-                      'px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
-                      contextFilter === c.id
-                        ? 'bg-white dark:bg-neutral-900 text-ink shadow-xs'
-                        : 'text-ink-muted hover:text-ink'
-                    )}
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                <div className="flex-1 max-w-sm">
+                  <label
+                    htmlFor="discovery-provider-select"
+                    className="block text-xs font-semibold text-ink mb-1"
                   >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setFilterVision(!filterVision)}
-                className={cn(
-                  'px-3 py-1 rounded-lg text-xs font-semibold border transition-all',
-                  filterVision
-                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
-                    : 'border-border text-ink-muted hover:text-ink'
-                )}
-              >
-                Vision
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFilterTools(!filterTools)}
-                className={cn(
-                  'px-3 py-1 rounded-lg text-xs font-semibold border transition-all',
-                  filterTools
-                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
-                    : 'border-border text-ink-muted hover:text-ink'
-                )}
-              >
-                Tools
-              </button>
-
-              <div className="h-4 w-px bg-border mx-1" />
-
-
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-surface overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead><tr>{['Model', 'Provider', 'Context', 'Capabilities', 'Catalog', 'Quality'].map(label => <th key={label} className="p-3">{label}</th>)}</tr></thead>
-              <tbody>{filteredModels.map(m => <tr key={`${m.providerId}:${m.id}`} className="border-t border-border">
-                <td className="p-3">{m.name || m.id}</td><td className="p-3">{m.providerId}</td>
-                <td className="p-3">{m.contextWindow ? `${m.contextWindow.toLocaleString()} tokens` : 'Unknown'}</td>
-                <td className="p-3">{Object.entries(m.capabilities || {}).filter(([, supported]) => supported === true).map(([name]) => name).join(', ') || 'Unknown'}</td>
-                <td className="p-3">{m.catalogStatus || 'Unknown'}{m.lastSuccessfulRefresh && <span className="block text-ink-muted">{new Date(m.lastSuccessfulRefresh).toLocaleString()}</span>}</td>
-                <td className="p-3">Unknown — no benchmark</td>
-              </tr>)}</tbody>
-            </table>
-            {!filteredModels.length && <p className="p-4 text-xs text-ink-muted">No matching discovered models. Refresh a configured provider’s catalog; registry hints are not proof of model availability.</p>}
-          </div>
-        </div>
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB 3: CLAUDE CODE & AGENTS ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {activeTab === 'claude' && (
-        <div className="space-y-6">
-          <Card className="border-border/70">
-            <CardContent className="p-6 space-y-4">
-              <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                <Terminal className="size-4 text-brand-600" />
-                Claude Code CLI & Agent Proxy Configuration
-              </h3>
-              <p className="text-xs text-ink-muted">
-                Run Claude Code and Anthropic SDK agents against all 74 free and high-permeability providers using the FreeLLMAPI wire proxy.
-              </p>
-
-              <div className="space-y-3 pt-2">
-                <div className="text-xs font-semibold text-ink">
-                  1. Set Environment Variables in Terminal:
-                </div>
-                <div className="relative p-3 rounded-lg bg-neutral-950 text-white font-mono text-xs overflow-x-auto">
-                  <pre>
-                    export ANTHROPIC_BASE_URL="http://localhost:8080/v1"{'\n'}
-                    export ANTHROPIC_API_KEY="free-ime365-unified-key"
-                  </pre>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(
-                        'export ANTHROPIC_BASE_URL="http://localhost:8080/v1"\nexport ANTHROPIC_API_KEY="free-ime365-unified-key"',
-                        'cli-env'
-                      )
-                    }
-                    className="absolute right-3 top-3 p-1.5 rounded bg-neutral-800 text-neutral-300 hover:text-white"
-                  >
-                    {copiedText === 'cli-env' ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
-                  </button>
-                </div>
-
-                <div className="text-xs font-semibold text-ink mt-4">
-                  2. Launch Claude Code CLI:
-                </div>
-                <div className="relative p-3 rounded-lg bg-neutral-950 text-white font-mono text-xs overflow-x-auto">
-                  <pre>claude --model auto:free-claude-code</pre>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy('claude --model auto:free-claude-code', 'cli-launch')}
-                    className="absolute right-3 top-3 p-1.5 rounded bg-neutral-800 text-neutral-300 hover:text-white"
-                  >
-                    {copiedText === 'cli-launch' ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB 4: PLAYGROUND ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {activeTab === 'playground' && (
-        <div className="space-y-6">
-          <Card className="border-border/70">
-            <CardContent className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                    <Sparkles className="size-4 text-purple-600" />
-                    AI Multi-Provider Playground
-                  </h3>
-                  <p className="text-xs text-ink-muted">
-                    Test live completions against any registered provider or fallback chain.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-semibold text-ink">Target Model / Chain:</label>
+                    Discovery provider
+                  </label>
                   <select
-                    value={playgroundModel}
-                    onChange={(e) => setPlaygroundModel(e.target.value)}
-                    className="h-8 text-xs font-semibold rounded-lg border border-border bg-surface px-2.5 text-ink"
+                    id="discovery-provider-select"
+                    aria-label="Discovery provider"
+                    value={discoveryProvider}
+                    onChange={(e) => setDiscoveryProvider(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-xs font-semibold text-ink"
                   >
-                    <option value="auto">Auto (saved runtime policy)</option>
-
+                    <option value="">Select provider...</option>
                     {providers
-                      .filter((p) => p.configuredOnServer || p.keyless)
+                      .filter((p) => p.group !== 'search')
                       .map((p) => (
-                        <option key={p.id} value={p.defaultModel}>
-                          {p.name} ({p.defaultModel})
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.id})
                         </option>
                       ))}
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-semibold text-ink block mb-1">Prompt</label>
-                <textarea
-                  value={playgroundPrompt}
-                  onChange={(e) => setPlaygroundPrompt(e.target.value)}
-                  rows={4}
-                  className="w-full text-xs font-mono p-3 rounded-lg border border-border bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Enter prompt here..."
-                />
-              </div>
-
-              <div className="flex justify-end">
                 <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleRunPlayground}
-                  loading={playgroundLoading}
-                  className="h-8 text-xs font-bold"
+                  type="button"
+                  disabled={!discoveryProvider || discoveryLoading}
+                  onClick={() => void handleDiscoveryFetch(discoveryProvider)}
                 >
-                  <Play className="size-3 mr-1.5" />
-                  Run Completion
+                  <RefreshCw className={cn('size-3.5 mr-1.5', discoveryLoading && 'animate-spin')} />
+                  Fetch Models
                 </Button>
               </div>
 
-              {playgroundOutput && (
-                <div className="pt-2">
-                  <label className="text-xs font-semibold text-ink block mb-1">Response Output</label>
-                  <div className="p-4 rounded-lg bg-surface-secondary border border-border/80 font-mono text-xs text-ink whitespace-pre-wrap">
-                    {playgroundOutput}
-                  </div>
+              {discoveryError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-error-100 bg-error-50 p-3 text-xs font-semibold text-error-700"
+                >
+                  {discoveryError}
+                </div>
+              )}
+
+              {hasStaleDiscovery && (
+                <div
+                  role="status"
+                  className="rounded-xl border border-warning-100 bg-warning-50 p-3 text-xs font-semibold text-warning-700"
+                >
+                  Some catalog entries are marked stale or unverified following upstream refresh.
+                </div>
+              )}
+
+              {discoveryModels.length > 0 && (
+                <div className="overflow-x-auto pt-2">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-ink-secondary">
+                        <th className="py-2 pr-3 font-semibold">Model ID</th>
+                        <th className="py-2 px-3 font-semibold">Provider</th>
+                        <th className="py-2 px-3 font-semibold">Context</th>
+                        <th className="py-2 pl-3 font-semibold">Catalog Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {discoveryModels.map((m) => (
+                        <tr key={`${m.providerId}:${m.id}`} className="border-b border-border/60">
+                          <td className="py-2 pr-3 font-mono font-semibold text-ink">{m.id}</td>
+                          <td className="py-2 px-3 text-ink-secondary">{m.providerId}</td>
+                          <td className="py-2 px-3 text-ink-secondary">
+                            {m.contextWindow ? `${m.contextWindow.toLocaleString()} tok` : 'Unknown'}
+                          </td>
+                          <td className="py-2 pl-3">
+                            <span
+                              className={cn(
+                                'rounded-md px-2 py-0.5 text-[11px] font-semibold',
+                                m.catalogStatus === 'fresh'
+                                  ? 'bg-success-50 text-success-700'
+                                  : 'bg-warning-50 text-warning-700'
+                              )}
+                            >
+                              {m.catalogStatus || 'unverified'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-surface">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-ink">
+                    Cached Runtime Catalog ({discoveredModels.length} models)
+                  </h3>
+                  <p className="text-xs text-ink-muted">
+                    Models currently eligible for automatic selection and failover chains.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="search"
+                    aria-label="Filter discovered models"
+                    placeholder="Filter models..."
+                    value={modelsSearch}
+                    onChange={(e) => setModelsSearch(e.target.value)}
+                    className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs text-ink"
+                  />
+                  <select
+                    aria-label="Filter by model capability"
+                    value={modelsCapFilter}
+                    onChange={(e) => setModelsCapFilter(e.target.value as any)}
+                    className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"
+                  >
+                    <option value="all">All Capabilities</option>
+                    <option value="vision">Vision</option>
+                    <option value="tools">Tool Calling</option>
+                    <option value="json">JSON Mode</option>
+                  </select>
+                </div>
+              </div>
+
+              {discoveredModels.filter(
+                (m) => !(discoveryModels.length > 0 && m.providerId === discoveryProvider)
+              ).length === 0 ? (
+                <p className="text-xs text-ink-muted py-3">
+                  {discoveryModels.length > 0
+                    ? 'All cached models for the selected provider are shown in the live discovery table above.'
+                    : 'No cached models yet. Select a provider above and click “Fetch Models”.'}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {discoveredModels
+                    .filter((m) => {
+                      if (discoveryModels.length > 0 && m.providerId === discoveryProvider) {
+                        return false;
+                      }
+                      if (modelsCapFilter === 'vision' && !m.capabilities?.vision) return false;
+                      if (modelsCapFilter === 'tools' && !m.capabilities?.tools) return false;
+                      if (modelsCapFilter === 'json' && !m.capabilities?.json) return false;
+                      if (
+                        modelsSearch &&
+                        !m.id.toLowerCase().includes(modelsSearch.toLowerCase()) &&
+                        !m.providerId.toLowerCase().includes(modelsSearch.toLowerCase())
+                      ) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((m) => (
+                      <div
+                        key={`${m.providerId}-${m.id}`}
+                        className="rounded-xl border border-border bg-canvas p-3 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs font-mono font-bold text-ink truncate">
+                            {m.id}
+                          </div>
+                          <div className="text-[11px] text-ink-muted">{m.providerId}</div>
+                        </div>
+                        <span className="text-[11px] font-semibold text-ink-secondary shrink-0">
+                          {m.catalogStatus || 'cached'}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               )}
             </CardContent>
@@ -2169,746 +2793,804 @@ export function AdminAiSettingsTab() {
         </div>
       )}
 
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {/* ─── ADD KEY MODAL (Matching FreeLLMAPI Screen 3 Exactly) ─── */}
-      {/* ═════════════════════════════════════════════════════════════════════════════ */}
-      {isKeyPoolOpen && <EngineDialog title="Key Pool Manager" rootRef={keyPoolRef} onClose={() => setIsKeyPoolOpen(false)}>
-        <KeyPoolTab providers={providers} cooldowns={cooldowns} keyPoolDrafts={keyPoolDrafts} setKeyPoolDrafts={setKeyPoolDrafts} saving={saving} handleSaveKeyPool={handleKeyPoolSave} providerStatePill={providerStatePill} />
-      </EngineDialog>}
-      {isCooldownOpen && <EngineDialog title="Provider cooldowns" rootRef={cooldownRef} onClose={() => setIsCooldownOpen(false)}>
-        <p className="text-xs">Upstream quota and Retry-After restrictions cannot be reset here. Cooldowns expire automatically; refreshing reads current server state.</p>
-        {Object.entries(cooldowns).map(([provider, state]) => <p key={provider} className="text-xs">{provider}: {state.remainingSeconds}s — {state.reason}</p>)}
-        {!Object.keys(cooldowns).length && <p className="text-xs">No active platform cooldowns.</p>}
-        <Button onClick={loadSettings}>Refresh cooldown state</Button>
-      </EngineDialog>}
-      {isDiscoveryOpen && <EngineDialog title="Model Discovery" rootRef={discoveryRef} onClose={() => setIsDiscoveryOpen(false)}>
-        <DiscoveryTab providers={providers} discoveryResults={discoveryResults} discoveryLoading={discoveryLoading} handleDiscoveryFetch={handleDiscoveryFetch} error={modalError} onSelectProvider={(id) => setPrimaryProvider(id)} />
-      </EngineDialog>}
-      {isCodeSnippetsOpen && <EngineDialog title="Integration snippets" rootRef={codeSnippetsRef} onClose={() => setIsCodeSnippetsOpen(false)}>
-        <p className="text-xs">Use your own authenticated token; credentials are never included in exports or examples.</p>
-        <pre className="text-xs overflow-auto p-3 bg-surface-secondary"><code>{`fetch('/api/v1/chat/completions', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer YOUR_TOKEN' },
-  body: JSON.stringify({ model: 'auto', messages: [{ role: 'user', content: 'Hello' }] })
-})`}</code></pre>
-      </EngineDialog>}
-      {isAddKeyOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]">
-          <div
-            ref={modalRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-key-dialog-title"
-            data-testid="add-key-dialog"
-            className="relative flex max-h-[90dvh] w-full max-w-lg flex-col rounded-2xl bg-surface border border-border shadow-2xl p-6 space-y-4 overflow-y-auto"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border/50 pb-3">
-              <h2 id="add-key-dialog-title" className="text-lg font-bold text-ink">Add key</h2>
-              <button
-                type="button"
-                data-testid="modal-close"
-                aria-label="Close add key dialog"
-                onClick={() => {
-                  setIsAddKeyOpen(false);
-                  setIsComboboxOpen(false);
-                }}
-                className="p-1 rounded-md text-ink-muted hover:text-ink transition-colors"
-              >
-                <X className="size-4" />
-              </button>
+      {/* ─── VIEW 4: Quotas & Telemetry (?subtab=metrics | ?subtab=quotas) (Simplification #7) ─── */}
+      {isMetricsOrQuotasView && (
+        <div className="space-y-4 min-w-0">
+          <Card className="border-border bg-surface">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                    <Activity className="size-4 text-brand-600" />
+                    Engine Metrics
+                  </h3>
+                  <p className="text-xs text-ink-muted mt-0.5">
+                    Live provider router inventory and durable SQLite execution counters.
+                  </p>
+                </div>
+                <span className="text-xs text-ink-muted">
+                  {engineStatus?.version || 'in-process router'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-border bg-canvas p-3.5">
+                  <div className="text-xs font-medium text-ink-muted">Total Providers</div>
+                  <div className="text-xl font-extrabold text-ink mt-1">{providers.length}</div>
+                </div>
+                <div className="rounded-xl border border-border bg-canvas p-3.5">
+                  <div className="text-xs font-medium text-ink-muted">Configured</div>
+                  <div className="text-xl font-extrabold text-ink mt-1">{configuredCount}</div>
+                </div>
+                <div className="rounded-xl border border-border bg-canvas p-3.5">
+                  <div className="text-xs font-medium text-ink-muted">Multi-Key Pools</div>
+                  <div className="text-xl font-extrabold text-ink mt-1">
+                    {providers.filter((p) => p.keysCount > 1).length}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border bg-canvas p-3.5">
+                  <div className="text-xs font-medium text-ink-muted">Active Cooldowns</div>
+                  <div className="text-xl font-extrabold text-ink mt-1">
+                    {Object.keys(cooldowns).length}
+                  </div>
+                </div>
+              </div>
+
+              {engineMetrics?.summary && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-border">
+                  <div className="rounded-xl border border-border bg-canvas p-3">
+                    <div className="text-xs text-ink-muted">Router Requests</div>
+                    <div className="text-base font-bold text-ink mt-0.5">
+                      {engineMetrics.summary.totalRequests ?? 0}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-canvas p-3">
+                    <div className="text-xs text-ink-muted">Total Tokens</div>
+                    <div className="text-base font-bold text-ink mt-0.5">
+                      {(engineMetrics.summary.totalTokens ?? 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-canvas p-3">
+                    <div className="text-xs text-ink-muted">Avg Latency</div>
+                    <div className="text-base font-bold text-ink mt-0.5">
+                      {engineMetrics.summary.avgLatencyMs
+                        ? `${Math.round(engineMetrics.summary.avgLatencyMs)}ms`
+                        : '—'}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-canvas p-3">
+                    <div className="text-xs text-ink-muted">Upstream Errors</div>
+                    <div className="text-base font-bold text-ink mt-0.5">
+                      {engineMetrics.summary.errorCount ?? 0}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {renderQuotaGovernancePanel()}
+        </div>
+      )}
+
+      {/* ─── VIEW 5: Unified Gateway & Claude Code (?subtab=unified-gateway | ?subtab=claude) (Simplification #8) ─── */}
+      {isGatewayOrClaudeView && (
+        <Card className="border-border bg-surface">
+          <CardContent className="p-5 space-y-5">
+            <div>
+              <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                <Globe className="size-4 text-brand-600" />
+                Unified Gateway
+              </h3>
+              <p className="text-xs text-ink-muted mt-0.5">
+                OpenAI- and Anthropic-compatible endpoints served from{' '}
+                <code className="font-mono text-ink">{gatewayOrigin}</code> using your authenticated
+                Bearer token (never static embedded secrets).
+              </p>
             </div>
 
-            {/* Segmented Control (Provider key / Import file / Custom endpoint) */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface-secondary">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { title: 'OpenAI Chat', path: '/v1/chat/completions' },
+                { title: 'Anthropic Messages', path: '/v1/messages' },
+                { title: 'Model Catalog', path: '/v1/models' },
+                { title: 'Engine Status', path: '/v1/status' },
+              ].map((ep) => (
+                <div key={ep.path} className="rounded-xl border border-border bg-canvas p-3.5">
+                  <div className="text-xs font-bold text-ink">{ep.title}</div>
+                  <div className="text-[11px] font-mono text-ink-secondary mt-1 break-all">
+                    {ep.path}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(
+                    [
+                      { id: 'curl', label: 'cURL' },
+                      { id: 'claude', label: 'Claude Code CLI' },
+                      { id: 'typescript', label: 'TypeScript' },
+                      { id: 'python', label: 'Python' },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSnippetLang(item.id)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer',
+                        snippetLang === item.id
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-canvas text-ink-secondary border border-border'
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopy(snippetCode, 'gateway-snippet')}
+                >
+                  {copiedId === 'gateway-snippet' ? (
+                    <Check className="size-3.5 mr-1.5 text-success-700" />
+                  ) : (
+                    <Copy className="size-3.5 mr-1.5" />
+                  )}
+                  {copiedId === 'gateway-snippet' ? 'Copied' : 'Copy Snippet'}
+                </Button>
+              </div>
+
+              <pre
+                tabIndex={0}
+                role="region"
+                aria-label="Gateway integration code snippet"
+                className="rounded-xl border border-border bg-canvas p-4 text-xs font-mono text-ink overflow-x-auto focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <code>{snippetCode}</code>
+              </pre>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── VIEW 6: Interactive Playground (?subtab=playground) ─── */}
+      {activeSubtab === 'playground' && (
+        <Card className="border-border bg-surface">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                  <Terminal className="size-4 text-brand-600" />
+                  Live Router Playground
+                </h3>
+                <p className="text-xs text-ink-muted mt-0.5">
+                  Execute an authenticated test completion against `/api/v1/chat/completions`.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="playground-model-select" className="text-xs font-semibold text-ink">
+                  Model
+                </label>
+                <select
+                  id="playground-model-select"
+                  value={playgroundModel}
+                  onChange={(e) => setPlaygroundModel(e.target.value)}
+                  className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"
+                >
+                  <option value="auto">auto (Live Router Policy)</option>
+                  {discoveredModels.map((m) => (
+                    <option key={`${m.providerId}:${m.id}`} value={m.id}>
+                      {m.providerId}: {m.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="playground-prompt-input" className="block text-xs font-semibold text-ink mb-1">
+                Prompt
+              </label>
+              <textarea
+                id="playground-prompt-input"
+                rows={3}
+                value={playgroundPrompt}
+                onChange={(e) => setPlaygroundPrompt(e.target.value)}
+                className="w-full rounded-xl border border-border bg-canvas p-3 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-ink-muted">{playgroundMeta}</span>
+              <Button
+                type="button"
+                onClick={() => void handleRunPlayground()}
+                disabled={playgroundRunning || !playgroundPrompt.trim()}
+              >
+                {playgroundRunning ? (
+                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Play className="size-3.5 mr-1.5" />
+                )}
+                {playgroundRunning ? 'Running...' : 'Execute Inference'}
+              </Button>
+            </div>
+
+            {playgroundOutput && (
+              <pre className="rounded-xl border border-border bg-canvas p-4 text-xs font-mono text-ink whitespace-pre-wrap break-words">
+                {playgroundOutput}
+              </pre>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+       *  Simplification #3: Shared Radix Dialogs (@/components/ui/dialog)
+       *  Focus trap, Escape, Backdrop click, Scroll lock, Focus return, URL sync
+       * ═══════════════════════════════════════════════════════════════════════ */}
+
+      {/* 1. Configure Provider Dialog */}
+      <Dialog
+        open={activeDialog === 'configure-provider'}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetModalDrafts();
+            closeDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Configure Provider</DialogTitle>
+            <DialogDescription>
+              {providers.length} platforms supported. Keys are write-only, encrypted at rest, and
+              never returned in plaintext after save.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 min-w-0">
+            {/* Mode Switcher */}
+            <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
-                  { id: 'key', label: 'Provider key' },
-                  { id: 'import', label: 'Import file' },
+                  { id: 'single', label: 'Provider key' },
+                  { id: 'pool', label: 'Multi-key pool' },
                   { id: 'endpoint', label: 'Custom endpoint' },
                 ] as const
-              ).map((tab) => (
+              ).map((t) => (
                 <button
-                  key={tab.id}
+                  key={t.id}
                   type="button"
-                  onClick={() => setModalTab(tab.id)}
+                  onClick={() => {
+                    setModalTab(t.id);
+                    setModalTestStatus(null);
+                  }}
                   className={cn(
-                    'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all text-center',
-                    modalTab === tab.id
-                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs'
-                      : 'text-ink-muted hover:text-ink'
+                    'px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer',
+                    modalTab === t.id
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-canvas text-ink-secondary border border-border'
                   )}
                 >
-                  {tab.label}
+                  {t.label}
                 </button>
               ))}
             </div>
 
-            {/* TAB 1: PROVIDER KEY */}
-            {modalTab === 'key' && (
-              <div className="space-y-3.5">
-                {/* Platform Selector Combobox */}
-                <div className="space-y-1.5" ref={comboboxRef}>
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-ink">Platform</label>
-                    <span className="text-[11px] text-ink-muted">74 platforms supported</span>
-                  </div>
+            {/* Platform Selector (Available across ALL 3 modal tabs — fixes DEF-09) */}
+            <div className="space-y-1.5 relative">
+              <span className="block text-xs font-semibold text-ink">Target Platform</span>
+              <button
+                type="button"
+                data-testid="platform-selector"
+                aria-expanded={platformDropdownOpen}
+                onClick={() => setPlatformDropdownOpen((v) => !v)}
+                className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-left text-xs font-semibold text-ink flex items-center justify-between gap-2 cursor-pointer"
+              >
+                <span className="truncate">
+                  {modalSelectedPlatform
+                    ? `${modalSelectedPlatform.name} (${modalSelectedPlatform.id})`
+                    : `Select from ${providers.length} platforms...`}
+                </span>
+                <ChevronDown className="size-4 text-ink-muted shrink-0" />
+              </button>
 
-                  <div className="relative">
-                    <button
-                      type="button"
-                      data-testid="platform-selector"
-                      aria-haspopup="listbox"
-                      aria-expanded={isComboboxOpen}
-                      aria-label="Select provider platform"
-                      onClick={() => setIsComboboxOpen(!isComboboxOpen)}
-                      className={cn(
-                        'flex h-9 w-full items-center justify-between rounded-lg border bg-surface px-3 text-xs outline-none transition-colors hover:bg-surface-secondary focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white',
-                        modalSelectedPlatform ? 'border-neutral-900 dark:border-white font-bold' : 'border-border text-ink-muted'
-                      )}
-                    >
-                      <span className={modalSelectedPlatform ? 'text-ink font-bold' : 'text-ink-muted'}>
-                        {modalSelectedPlatform ? modalSelectedPlatform.label : 'Select a platform…'}
-                      </span>
-                      <ChevronsUpDown className="size-3.5 text-ink-muted" />
-                    </button>
-
-                    {/* Popover Dropdown Menu */}
-                    {isComboboxOpen && (
-                      <div
-                        data-testid="platform-listbox-panel"
-                        className="mt-1 w-full rounded-xl border border-border bg-surface shadow-sm overflow-hidden animate-[fade-in_100ms_ease-out]"
-                      >
-                        {/* Search Input */}
-                        <div className="p-2 border-b border-border/60 bg-surface-secondary/40 flex items-center gap-2">
-                          <Search className="size-3.5 text-ink-muted shrink-0" />
-                          <input
-                            type="text"
-                            data-testid="platform-search"
-                            value={modalPlatformSearch}
-                            onChange={(e) => setModalPlatformSearch(e.target.value)}
-                            placeholder="Search 74 platforms (e.g. 'groq', 'nvidia', 'free')..."
-                            className="w-full text-xs bg-transparent border-none outline-none text-ink placeholder:text-ink-muted"
-                            autoFocus
-                          />
-                          {modalPlatformSearch && (
-                            <button
-                              type="button"
-                              onClick={() => setModalPlatformSearch('')}
-                              className="p-0.5 text-ink-muted hover:text-ink"
-                            >
-                              <X className="size-3" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Filter Tabs & Hide Added Checkbox */}
-                        <div className="px-3 py-1.5 border-b border-border/40 bg-surface-secondary/20 flex items-center justify-between text-[11px]">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setModalCategoryFilter('all')}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-[10px] font-semibold',
-                                modalCategoryFilter === 'all'
-                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                                  : 'text-ink-muted hover:text-ink'
-                              )}
-                            >
-                              All ({providers.length})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setModalCategoryFilter('models')}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-[10px] font-semibold',
-                                modalCategoryFilter === 'models'
-                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                                  : 'text-ink-muted hover:text-ink'
-                              )}
-                            >
-                              Models ({providers.filter((entry) => !isSearchProvider(entry)).length})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setModalCategoryFilter('search')}
-                              className={cn(
-                                'px-2 py-0.5 rounded text-[10px] font-semibold',
-                                modalCategoryFilter === 'search'
-                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                                  : 'text-ink-muted hover:text-ink'
-                              )}
-                            >
-                              Web Search ({providers.filter((entry) => isSearchProvider(entry)).length})
-                            </button>
-                          </div>
-
-                          <label className="flex items-center gap-1 cursor-pointer text-ink-muted hover:text-ink">
-                            <input
-                              type="checkbox"
-                              checked={modalHideAdded}
-                              onChange={(e) => setModalHideAdded(e.target.checked)}
-                              className="size-3 rounded text-neutral-900"
-                            />
-                            <span>Hide added</span>
-                          </label>
-                        </div>
-
-                        {/* Items List */}
-                        <div role="listbox" aria-label="Provider platforms" className="max-h-48 overflow-y-auto divide-y divide-border/30">
-                          {filteredModalPlatforms.length === 0 ? (
-                            <div className="p-4 text-center text-xs text-ink-muted">
-                              No platform matches "{modalPlatformSearch}"
-                            </div>
-                          ) : (
-                            filteredModalPlatforms.map((p) => {
-                              const isSelected = modalSelectedPlatform?.id === p.id;
-                              return (
-                                <button
-                                  key={p.id}
-                                  type="button"
-                                  role="option"
-                                  aria-selected={isSelected}
-                                  data-testid={`platform-option-${p.id}`}
-                                  onClick={() => {
-                                    setModalSelectedPlatform(p);
-                                    setIsComboboxOpen(false);
-                                    setModalPlatformSearch('');
-                                    setModalError(null);
-                                  }}
-                                  className={cn(
-                                    'w-full text-left p-2.5 px-3 text-xs flex items-center justify-between cursor-pointer transition-colors',
-                                    isSelected
-                                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
-                                      : 'hover:bg-surface-secondary text-ink'
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span>{p.label || p.name}</span>
-                                    {p.hint && (
-                                      <span
-                                        className={cn(
-                                          'text-[10px] px-1.5 py-0.2 rounded font-medium',
-                                          isSelected
-                                            ? 'bg-white/20 text-white'
-                                            : 'bg-surface-secondary text-ink-muted'
-                                        )}
-                                      >
-                                        {p.hint}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    {p.configuredOnServer && (
-                                      <span
-                                        className={cn(
-                                          'text-[10px] font-semibold flex items-center gap-1',
-                                          isSelected ? 'text-emerald-300' : 'text-emerald-600'
-                                        )}
-                                      >
-                                        <span className="size-1.5 rounded-full bg-emerald-500" />
-                                        active
-                                      </span>
-                                    )}
-                                    {isSelected && <Check className="size-3.5" />}
-                                  </div>
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Cloudflare Account ID (if applicable) */}
-                {modalSelectedPlatform?.id === 'cloudflare' && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-ink">Cloudflare Account ID</label>
-                    <Input
-                      type="text"
-                      value={modalAccountId}
-                      onChange={(e) => setModalAccountId(e.target.value)}
-                      placeholder="e.g. 9b73648a1... (found in Cloudflare dashboard URL)"
-                      className="h-9 text-xs font-mono"
-                    />
-                  </div>
-                )}
-
-                {/* Keyless Notice Banner */}
-                {modalSelectedPlatform?.keyless && (
-                  <div className="p-3 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-200 border border-sky-200 dark:border-sky-800 text-xs flex items-center gap-2">
-                    <Zap className="size-4 shrink-0 text-sky-600" />
-                    <span>
-                      <strong>Keyless Gateway:</strong> {modalSelectedPlatform.name} requires no API key. Click <strong>Add key & Activate</strong> to route completions anonymously.
-                    </span>
-                  </div>
-                )}
-
-                {/* API Key Input */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-ink">
-                      {modalSelectedPlatform?.id === 'cloudflare' ? 'API Token' : 'API key'}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {!modalSelectedPlatform?.keyless && (
-                        <button
-                          type="button"
-                          onClick={() => setModalSeveral(!modalSeveral)}
-                          className="text-[11px] text-ink-muted hover:underline"
-                        >
-                          {modalSeveral ? 'Single key' : 'Paste several'}
-                        </button>
-                      )}
-                      {modalSelectedPlatform?.docUrl && (
-                        <a
-                          href={modalSelectedPlatform.docUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-brand-600 hover:underline flex items-center gap-0.5"
-                        >
-                          Get API key ↗
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  {modalSeveral ? (
-                    <textarea
-                      value={modalApiKey}
-                      onChange={(e) => setModalApiKey(e.target.value)}
-                      rows={3}
-                      placeholder="Paste keys (one per line)..."
-                      className="w-full text-xs font-mono p-2.5 rounded-lg border border-border bg-surface text-ink"
-                    />
-                  ) : (
-                    <div className="relative">
-                      <Input
-                        type={modalShowKey ? 'text' : 'password'}
-                        data-testid="modal-api-key"
-                        value={modalApiKey}
-                        onChange={(e) => setModalApiKey(e.target.value)}
-                        placeholder={
-                          modalSelectedPlatform?.keyless
-                            ? 'Optional custom token (or leave blank)'
-                            : 'Paste API key here...'
-                        }
-                        className="h-9 text-xs font-mono pr-8"
-                      />
+              {platformDropdownOpen && (
+                <div className="rounded-xl border border-border bg-surface shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto z-10">
+                  <input
+                    type="search"
+                    aria-label={`Search ${providers.length} platforms`}
+                    placeholder={`Search ${providers.length} platforms...`}
+                    value={modalPlatformQuery}
+                    onChange={(e) => setModalPlatformQuery(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-xs text-ink"
+                  />
+                  <div className="space-y-0.5">
+                    {modalFilteredPlatforms.map((p) => (
                       <button
+                        key={p.id}
                         type="button"
-                        onClick={() => setModalShowKey(!modalShowKey)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink text-xs"
+                        data-testid={`platform-option-${p.id}`}
+                        onClick={() => {
+                          setModalSelectedId(p.id);
+                          setPlatformDropdownOpen(false);
+                          setModalError(null);
+                          setModalTestStatus(null);
+                        }}
+                        className={cn(
+                          'w-full rounded-lg px-2.5 py-1.5 text-left text-xs flex items-center justify-between gap-2 cursor-pointer',
+                          modalSelectedId === p.id
+                            ? 'bg-brand-50 text-brand-700 font-bold'
+                            : 'text-ink hover:bg-canvas'
+                        )}
                       >
-                        {modalShowKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                        <span className="truncate">{p.name}</span>
+                        <span className="text-[11px] text-ink-muted shrink-0">
+                          {p.keyless ? 'keyless' : p.hasKey ? 'configured' : p.id}
+                        </span>
                       </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: IMPORT FILE */}
-            {modalTab === 'import' && (
-              <div className="space-y-3">
-                <p className="text-xs text-ink-muted">
-                  Paste keys in <code>KEY_NAME=value</code> format or raw JSON configuration:
-                </p>
-                <textarea
-                  value={modalImportRaw}
-                  onChange={(e) => setModalImportRaw(e.target.value)}
-                  rows={5}
-                  placeholder="GROQ_API_KEY=gsk_...&#10;GEMINI_API_KEY=AIzaSy...&#10;NVIDIA_API_KEY=nvapi-..."
-                  className="w-full text-xs font-mono p-3 rounded-lg border border-border bg-surface text-ink"
-                />
-              </div>
-            )}
-
-            {/* TAB 3: CUSTOM ENDPOINT */}
-            {modalTab === 'endpoint' && (
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-ink">Custom Gateway Base URL</label>
-                  <Input
-                    type="text"
-                    value={modalCustomEndpoint}
-                    onChange={(e) => setModalCustomEndpoint(e.target.value)}
-                    placeholder="https://my-openai-gateway.com/v1"
-                    className="h-9 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-ink">Custom Model Target</label>
-                  <Input
-                    type="text"
-                    value={modalCustomModel}
-                    onChange={(e) => setModalCustomModel(e.target.value)}
-                    placeholder="e.g. meta-llama/Llama-3-70b-chat"
-                    className="h-9 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-ink">API Key (Optional)</label>
-                  <Input
-                    type="password"
-                    value={modalApiKey}
-                    onChange={(e) => setModalApiKey(e.target.value)}
-                    placeholder="Leave blank for local/open endpoints"
-                    className="h-9 text-xs font-mono"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Error Notice */}
-            {modalError && (
-              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800 text-xs flex items-center gap-2">
-                <AlertCircle className="size-4 shrink-0 text-rose-600" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsAddKeyOpen(false);
-                  setIsComboboxOpen(false);
-                }}
-                className="h-8 text-xs font-semibold"
-              >
-                Cancel
-              </Button>
-
-              {/* Test Key Before Saving: real reachability probe, server-side masked */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  if (modalTab !== 'key' || modalCustomEndpoint.trim() || !modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())) return;
-                  setModalTesting(true);
-                  setModalError(null);
-                  try {
-                    const firstKey = splitKeyPool(modalApiKey)[0] || '';
-                    const apiKey = modalSelectedPlatform.keyless ? ''
-                      : modalSelectedPlatform.id === 'cloudflare' && modalAccountId.trim()
-                        ? `${modalAccountId.trim()}:${firstKey}` : firstKey;
-                    const res = await post<{ ok?: boolean; latencyMs?: number; message?: string }>(
-                      '/admin/ai/test-provider',
-                      { provider: modalSelectedPlatform.id, model: modalSelectedPlatform.defaultModel, apiKey }
-                    );
-                    if (res.ok) setModalError(`✓ Connection verified${res.latencyMs ? ` (${res.latencyMs}ms)` : ''}`);
-                    else setModalError(`✗ Test failed: ${res.message || 'Connection test failed'}`);
-                  } catch (err: any) {
-                    setModalError(`✗ Test failed: ${err.message || 'Connection test failed'}`);
-                  } finally {
-                    setModalTesting(false);
-                  }
-                }}
-                loading={modalTesting}
-                disabled={modalTab !== 'key' || Boolean(modalCustomEndpoint.trim()) || !modalSelectedPlatform || (!modalSelectedPlatform.keyless && !modalApiKey.trim())}
-                title="Tests the first entered key at the saved provider endpoint. Save endpoint changes before testing them."
-                className="h-8 text-xs font-semibold text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/20"
-              >
-                {modalTesting ? <Activity className="size-3.5 mr-1.5 animate-spin" /> : <Zap className="size-3 mr-1" />}
-                Test Key Before Saving
-              </Button>
-
-              {modalTab === 'import' ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleImportRawKeys}
-                  loading={modalTesting}
-                  className="h-8 text-xs font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                >
-                  Import Keys
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  data-testid="modal-add-key"
-                  onClick={handleModalAddKey}
-                  loading={modalTesting}
-                  disabled={
-                    modalTab === 'key' &&
-                    (!modalSelectedPlatform ||
-                      (!modalSelectedPlatform.keyless && !modalApiKey.trim()))
-                  }
-                  className="h-8 text-xs font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800"
-                >
-                  Add key & Activate
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EngineDialog({ title, rootRef, onClose, children }: {
-  title: string; rootRef: React.RefObject<HTMLDivElement>; onClose: () => void; children: React.ReactNode;
-}) {
-  return <div className="fixed inset-0 z-50 bg-black/40 p-3 flex items-center justify-center" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={rootRef} role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-3xl max-h-[90dvh] overflow-y-auto rounded-xl bg-surface border border-border p-4 space-y-4 shadow-xl">
-      <div className="flex items-center justify-between gap-2"><h2 className="font-bold">{title}</h2><Button onClick={onClose} aria-label={`Close ${title}`}>Close</Button></div>
-      {children}
-    </div>
-  </div>;
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// KEY POOL SUBTAB (DIR-013 Section 4: ?subtab=key-pool)
-// ═════════════════════════════════════════════════════════════════════════════
-const KeyPoolTab = ({ providers, cooldowns, keyPoolDrafts, setKeyPoolDrafts, saving, handleSaveKeyPool, providerStatePill }: {
-  providers: ProviderItem[];
-  cooldowns: Record<string, { remainingSeconds: number; reason: string }>;
-  keyPoolDrafts: Record<string, string>;
-  setKeyPoolDrafts: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  saving: boolean;
-  handleSaveKeyPool: (providerId: string) => Promise<void>;
-  providerStatePill: (p: ProviderItem) => { label: string; tone: string; detail: string; state: string };
-}) => {
-  const activeKeys = providers.filter((p) => (p.configuredOnServer || p.keyless) && p.hasKey);
-  return (
-    <div className="space-y-6">
-      <Card className="border-border/70">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <Layers className="size-4 text-purple-500" />
-            Key Pool Manager
-          </h3>
-          <p className="text-xs text-ink-muted">
-            Multi-key pooling with automatic rotation on 429 cooldowns. Keys are encrypted at rest in MariaDB.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {providers.filter((p) => !isSearchProvider(p)).map((p) => {
-              const keys = Array.from({ length: p.keyless ? 1 : Math.max(0, p.keysCount || 0) });
-              const cooldown = cooldowns[p.id];
-              const state = providerStatePill(p);
-              return (
-                <div
-                  key={p.id}
-                  data-testid={`key-pool-${p.id}`}
-                  className="p-4 rounded-xl border border-border/60 bg-surface/80 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-ink">{p.name}</span>
-                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md border', state.tone)}>
-                      {state.label}
-                    </span>
-                  </div>
-                  {cooldown ? (
-                    <div className="text-xs text-amber-800 dark:text-amber-200">
-                      Cooldown: {cooldown.remainingSeconds}s remaining — {cooldown.reason}
-                    </div>
-                  ) : null}
-                  <div className="flex flex-wrap gap-1.5">
-                    {keys.map((_unused, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                      >
-                        <Shield className="size-2.5" />
-                        {p.keyless ? 'keyless' : `key ${index + 1}`}
-                      </span>
                     ))}
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Input
-                      value={keyPoolDrafts[p.id] ?? ''}
-                      onChange={(e) => setKeyPoolDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                      placeholder="Paste additional keys (comma or newline separated)…"
-                      aria-label={`${p.name} key pool`}
-                      className="h-8 flex-1 text-xs font-mono"
-                    />
+                </div>
+              )}
+            </div>
+
+            {modalTab === 'single' && (
+              <div className="space-y-1.5">
+                <label htmlFor="modal-api-key-input" className="block text-xs font-semibold text-ink">
+                  API Key {modalSelectedPlatform?.keyless ? '(Optional for keyless provider)' : ''}
+                </label>
+                <div className="relative">
+                  <input
+                    ref={modalKeyInputRef}
+                    id="modal-api-key-input"
+                    type={modalShowKey ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    spellCheck={false}
+                    placeholder={
+                      modalSelectedPlatform?.keyless
+                        ? 'Keyless local/public endpoint — no key required'
+                        : 'Paste provider API key...'
+                    }
+                    value={modalApiKey}
+                    onChange={(e) => setModalApiKey(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-canvas px-3 py-2 pr-9 text-xs font-mono text-ink"
+                  />
+                  <button
+                    type="button"
+                    aria-label={modalShowKey ? 'Hide API key' : 'Show API key'}
+                    onClick={() => setModalShowKey((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink cursor-pointer"
+                  >
+                    {modalShowKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modalTab === 'pool' && (
+              <div className="space-y-1.5">
+                <label htmlFor="modal-pool-textarea" className="block text-xs font-semibold text-ink">
+                  API Key Pool (one key per line)
+                </label>
+                <textarea
+                  id="modal-pool-textarea"
+                  rows={4}
+                  spellCheck={false}
+                  placeholder="Paste one API key per line..."
+                  value={modalPoolText}
+                  onChange={(e) => setModalPoolText(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-canvas p-2.5 text-xs font-mono text-ink"
+                />
+                <p className="text-[11px] text-ink-muted">
+                  {splitKeys(modalPoolText).length} key(s) ready for server vault.
+                </p>
+              </div>
+            )}
+
+            {modalTab === 'endpoint' && (
+              <div className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="modal-custom-endpoint"
+                    className="block text-xs font-semibold text-ink mb-1"
+                  >
+                    Base URL Override
+                  </label>
+                  <Input
+                    id="modal-custom-endpoint"
+                    placeholder="https://my-openai-gateway.com/v1"
+                    value={modalCustomBaseUrl}
+                    onChange={(e) => setModalCustomBaseUrl(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="modal-custom-model"
+                    className="block text-xs font-semibold text-ink mb-1"
+                  >
+                    Default Model Target (optional)
+                  </label>
+                  <Input
+                    id="modal-custom-model"
+                    placeholder="e.g. llama-3.3-70b-instruct"
+                    value={modalCustomModel}
+                    onChange={(e) => setModalCustomModel(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {modalError && (
+              <div
+                role="alert"
+                className="rounded-xl border border-error-100 bg-error-50 p-2.5 text-xs font-semibold text-error-700"
+              >
+                {modalError}
+              </div>
+            )}
+
+            {modalTestStatus && (
+              <div
+                role={modalTestStatus.ok ? 'status' : 'alert'}
+                className={cn(
+                  'rounded-xl border p-2.5 text-xs font-semibold',
+                  modalTestStatus.ok
+                    ? 'border-success-100 bg-success-50 text-success-700'
+                    : 'border-error-100 bg-error-50 text-error-700'
+                )}
+              >
+                {modalTestStatus.msg}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canProbeInModal || modalTesting}
+              onClick={() => void handleModalProbeBeforeSave()}
+            >
+              {modalTesting ? 'Testing...' : 'Test Key Before Saving'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving}
+              onClick={() => void handleModalSaveAndActivate()}
+            >
+              {saving ? 'Saving...' : 'Add key & Activate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2. Key Pool Manager Dialog */}
+      <Dialog open={activeDialog === 'key-pool'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Key Pool Manager</DialogTitle>
+            <DialogDescription>
+              Configured server key pools across all {providers.length} providers. Secrets are
+              masked to last-4 characters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {providers.filter((p) => p.hasKey && !p.keyless).length === 0 ? (
+              <p className="text-xs text-ink-muted py-3">
+                No multi-key pools configured on server yet.
+              </p>
+            ) : (
+              providers
+                .filter((p) => p.hasKey && !p.keyless)
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="rounded-xl border border-border bg-canvas px-3 py-2.5 flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div>
+                      <div className="font-bold text-ink">{p.name}</div>
+                      <div className="font-mono text-ink-secondary">
+                        {maskedKeys[p.id] || '••••••••'} · {p.keysCount} key(s)
+                      </div>
+                    </div>
                     <Button
+                      type="button"
                       variant="outline"
-                      size="xs"
-                      onClick={() => handleSaveKeyPool(p.id)}
-                      loading={saving}
-                      disabled={splitKeyPool(keyPoolDrafts[p.id] || '').length === 0}
-                      className="h-8 text-xs font-semibold"
+                      size="sm"
+                      onClick={() => {
+                        closeDialog();
+                        setExpandedRowId(p.id);
+                        selectSubtab('providers');
+                      }}
                     >
-                      <Plus className="size-3 mr-1" />
-                      Add to pool
+                      Manage
                     </Button>
                   </div>
-                </div>
-              );
-            })}
+                ))
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// ═════════════════════════════════════════════════════════════════════════════
-// METRICS SUBTAB (DIR-013 Section 4: ?subtab=metrics)
-// ═════════════════════════════════════════════════════════════════════════════
-const MetricsTab = ({ cooldowns, tierCounts, configuredCount, healthyCount }: {
-  cooldowns: Record<string, { remainingSeconds: number; reason: string }>;
-  tierCounts: { all: number; frontier: number; mesh: number; search: number };
-  configuredCount: number;
-  healthyCount: number;
-}) => {
-  return (
-    <div className="space-y-6">
-      <Card className="border-border/70">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <Activity className="size-4 text-brand-600" />
-            Engine Metrics
-          </h3>
-          <p className="text-xs text-ink-muted">
-            Configuration summary and cooldown snapshot. Verified counts reflect inference checks performed in this browser session.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
-              <div className="text-2xl font-black text-ink">{tierCounts.all}</div>
-              <div className="text-[11px] font-semibold text-ink-muted uppercase">Total Providers</div>
-            </div>
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
-              <div className="text-2xl font-black text-ink">{configuredCount}</div>
-              <div className="text-[11px] font-semibold text-ink-muted uppercase">Configured</div>
-            </div>
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
-              <div className="text-2xl font-black text-ink">{healthyCount}</div>
-              <div className="text-[11px] font-semibold text-ink-muted uppercase">Verified this session</div>
-            </div>
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80 text-center">
-              <div className="text-2xl font-black text-ink">{Object.keys(cooldowns).length}</div>
-              <div className="text-[11px] font-semibold text-ink-muted uppercase">Active Cooldowns</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// ═════════════════════════════════════════════════════════════════════════════
-// UNIFIED GATEWAY SUBTAB (DIR-013 Section 4: ?subtab=unified-gateway)
-// ═════════════════════════════════════════════════════════════════════════════
-const UnifiedGatewayTab = ({ providers, primaryProvider, enableFallback, temperature, maxTokens }: {
-  providers: ProviderItem[];
-  primaryProvider: string;
-  enableFallback: boolean;
-  temperature: number;
-  maxTokens: number;
-}) => {
-  const gatewayProviders = providers.filter((p) => p.baseUrl || p.keyless);
-  return (
-    <div className="space-y-6">
-      <Card className="border-border/70">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <Zap className="size-4 text-brand-600" />
-            Unified Gateway
-          </h3>
-          <p className="text-xs text-ink-muted">
-            OpenAI &amp; Anthropic compatible /v1/* endpoints with unified model routing.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80">
-              <div className="text-xs font-bold text-ink">OpenAI Compatible</div>
-              <div className="text-[11px] font-mono text-ink-muted mt-1">/v1/chat/completions</div>
-              <div className="text-[11px] font-mono text-ink-muted">/v1/models</div>
-            </div>
-            <div className="p-4 rounded-xl border border-border/60 bg-surface/80">
-              <div className="text-xs font-bold text-ink">Anthropic Compatible</div>
-              <div className="text-[11px] font-mono text-ink-muted mt-1">/v1/messages</div>
-              <div className="text-[11px] font-mono text-ink-muted">/v1/models</div>
-            </div>
-          </div>
-          <div className="text-xs text-ink-muted">
-            Primary: {primaryProvider} · Fallback: {enableFallback ? 'enabled' : 'disabled'} · Temp: {temperature} · Max tokens: {maxTokens}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// ═════════════════════════════════════════════════════════════════════════════
-// DISCOVERY SUBTAB (DIR-013 Section 4: ?subtab=discovery)
-// ═════════════════════════════════════════════════════════════════════════════
-const DiscoveryTab = ({ providers, discoveryResults, discoveryLoading, handleDiscoveryFetch, error, onSelectProvider }: {
-  providers: ProviderItem[];
-  discoveryResults: Record<string, any>;
-  discoveryLoading: boolean;
-  handleDiscoveryFetch: (providerId: string) => Promise<void>;
-  error: string | null;
-  onSelectProvider?: (id: string) => void;
-}) => {
-  const [selectedId, setSelectedId] = React.useState<string>('');
-  const results = discoveryResults[selectedId];
-  return (
-    <div className="space-y-6">
-      <Card className="border-border/70">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <Sparkles className="size-4 text-brand-600" />
-            Dynamic Model Discovery
-          </h3>
-          <p className="text-xs text-ink-muted">
-            Live query of provider /models endpoints to sync available models into the catalog.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              aria-label="Discovery provider"
-              value={selectedId}
-              onChange={(e) => {
-                setSelectedId(e.target.value);
-                if (e.target.value && onSelectProvider) {
-                  onSelectProvider(e.target.value);
-                }
-              }}
-              className="h-9 rounded-md border border-border bg-surface px-3 text-xs text-ink"
-            >
-              <option value="">Select a provider…</option>
-              {providers.filter((p) => !isSearchProvider(p)).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => handleDiscoveryFetch(selectedId)}
-              disabled={!selectedId || discoveryLoading}
-              loading={discoveryLoading}
-              className="h-9 text-xs font-bold"
-            >
-              Fetch Models
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={closeDialog}>
+              Done
             </Button>
-          </div>
-          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-          {results ? (
-            <div className="space-y-2" aria-live="polite">
-              {results.some((m: any) => m.catalogStatus !== "fresh") && (
-                <p role="status" className="text-xs text-amber-600">Catalog is stale or unverified. Model availability must be confirmed by inference.</p>
-              )}
-              <div className="text-xs font-bold text-ink">Discovered Models ({results.length})</div>
-              {results.map((m: any) => (
-                <div key={m.id} className="p-3 rounded-lg border border-border/60 bg-surface/80 text-xs">
-                  <div className="font-mono font-semibold text-ink break-all">{m.id}</div>
-                  {m.contextWindow ? <div className="text-ink-muted mt-0.5">{m.contextWindow} context</div> : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. Cooldowns & Rate Limits Dialog */}
+      <Dialog open={activeDialog === 'cooldowns'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Cooldowns &amp; Rate-Limit Ledger</DialogTitle>
+            <DialogDescription>
+              Providers temporarily benched due to upstream 429 Retry-After or 5xx responses expire
+              automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {Object.keys(cooldowns).length === 0 ? (
+              <p className="text-xs text-ink-secondary py-3 flex items-center gap-2">
+                <ShieldCheck className="size-4 text-success-700" />
+                No active platform cooldowns. All enabled providers are eligible for routing.
+              </p>
+            ) : (
+              Object.entries(cooldowns).map(([id, state]) => (
+                <div
+                  key={id}
+                  className="rounded-xl border border-warning-100 bg-warning-50 p-3 text-xs flex items-center justify-between gap-2"
+                >
+                  <div>
+                    <span className="font-bold text-ink">{id}</span>
+                    <span className="text-ink-secondary ml-2">{state.reason || 'Rate limit'}</span>
+                  </div>
+                  <span className="font-mono font-bold text-warning-700 flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    {state.remainingSeconds}s
+                  </span>
                 </div>
+              ))
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => void loadSettings()}>
+              Refresh Cooldowns
+            </Button>
+            <Button type="button" size="sm" onClick={closeDialog}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 4. Model Discovery Dialog */}
+      <Dialog open={activeDialog === 'discovery'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Model Discovery</DialogTitle>
+            <DialogDescription>
+              Refresh live models directly from an upstream provider endpoint.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label
+                htmlFor="dialog-discovery-provider"
+                className="block text-xs font-semibold text-ink mb-1"
+              >
+                Provider
+              </label>
+              <select
+                id="dialog-discovery-provider"
+                value={discoveryProvider}
+                onChange={(e) => setDiscoveryProvider(e.target.value)}
+                className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-xs font-semibold text-ink"
+              >
+                <option value="">Select provider...</option>
+                {providers
+                  .filter((p) => p.group !== 'search')
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.id})
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!discoveryProvider || discoveryLoading}
+              onClick={() => void handleDiscoveryFetch(discoveryProvider)}
+            >
+              {discoveryLoading ? 'Fetching...' : 'Fetch Live Models'}
+            </Button>
+            {discoveryError && (
+              <p role="alert" className="text-xs font-semibold text-error-700">
+                {discoveryError}
+              </p>
+            )}
+            {discoveryModels.length > 0 && (
+              <div className="max-h-48 overflow-y-auto space-y-1 border-t border-border pt-2">
+                {discoveryModels.map((m) => (
+                  <div
+                    key={`dlg-${m.providerId}-${m.id}`}
+                    className="text-xs font-mono text-ink flex items-center justify-between py-1"
+                  >
+                    <span className="truncate">{m.id}</span>
+                    <span className="text-ink-muted ml-2 shrink-0">
+                      {m.catalogStatus || 'fresh'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={closeDialog}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 5. Integration Snippets Dialog */}
+      <Dialog open={activeDialog === 'snippets'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Integration Snippets</DialogTitle>
+            <DialogDescription>
+              Connect internal services or CLI agents to <code className="font-mono">{gatewayOrigin}</code>.
+              Credentials are never embedded in code examples.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(
+                [
+                  { id: 'curl', label: 'cURL' },
+                  { id: 'typescript', label: 'JavaScript / TS' },
+                  { id: 'python', label: 'Python' },
+                  { id: 'claude', label: 'Claude Code' },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSnippetLang(item.id)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer',
+                    snippetLang === item.id
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-canvas text-ink-secondary border border-border'
+                  )}
+                >
+                  {item.label}
+                </button>
               ))}
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+            <pre
+              tabIndex={0}
+              role="region"
+              aria-label="Dialog integration code snippet"
+              className="rounded-xl border border-border bg-canvas p-3 text-xs font-mono text-ink overflow-x-auto focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <code>{snippetCode}</code>
+            </pre>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleCopy(snippetCode, 'dialog-snippet')}
+            >
+              <Code2 className="size-3.5 mr-1.5" />
+              {copiedId === 'dialog-snippet' ? 'Copied' : 'Copy Code'}
+            </Button>
+            <Button type="button" size="sm" onClick={closeDialog}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 6. Confirm Clear Stored Provider Key Dialog */}
+      <Dialog
+        open={activeDialog === 'confirm-clear-key'}
+        onOpenChange={(open) => !open && closeDialog()}
+      >
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove Stored API Key</DialogTitle>
+            <DialogDescription>
+              Permanently delete the server-stored API key for{' '}
+              <strong className="text-ink">{dialogTarget}</strong> from MariaDB? Any active requests
+              will fail over to secondary providers.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleConfirmClearKey()}
+              className="bg-error-600 hover:bg-error-700 text-white"
+            >
+              Remove Key
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 7. Confirm Per-User Quota Reset Dialog */}
+      <Dialog
+        open={activeDialog === 'confirm-reset-user-quota'}
+        onOpenChange={(open) => !open && closeDialog()}
+      >
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset User Daily AI Quota</DialogTitle>
+            <DialogDescription>
+              Clear today&apos;s AI usage count for user <span className="font-mono">{dialogTarget}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={quotaSaving}
+              onClick={() => void handleConfirmQuotaReset(false)}
+            >
+              Confirm Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 8. Confirm Global Quota Reset Dialog */}
+      <Dialog
+        open={activeDialog === 'confirm-reset-all-quotas'}
+        onOpenChange={(open) => !open && closeDialog()}
+      >
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset All Daily AI Quotas</DialogTitle>
+            <DialogDescription>
+              Clear daily AI usage counters for every user across the platform? This operation is
+              audited in MariaDB.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={quotaSaving}
+              onClick={() => void handleConfirmQuotaReset(true)}
+              className="bg-error-600 hover:bg-error-700 text-white"
+            >
+              Reset All Counters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+}
+
+export default AdminAiSettingsTab;

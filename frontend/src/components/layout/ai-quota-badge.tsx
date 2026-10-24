@@ -56,7 +56,7 @@ export function AiQuotaBadge() {
         <button
           type="button"
           data-testid="ai-quota-badge"
-          aria-label={`Daily AI allowance: ${remaining} of ${limit} remaining today`}
+          aria-label={`${remaining} / ${limit} AI — Daily AI allowance (${remaining} of ${limit} remaining today)`}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs',
             isExhausted

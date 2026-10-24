@@ -27,7 +27,6 @@ import {
   Brain,
   Mail,
   Sliders,
-  Layers,
   Sparkles,
 } from 'lucide-react';
 
@@ -171,44 +170,45 @@ export function AdminConsolePage() {
     };
   }, [isSupport, isAuditor, isSuperAdmin]);
 
-  // Resolve active tab from URL path segment (/admin/:tab) or query param (?tab=...)
-  const resolveTab = useCallback((): AdminTabId => {
-    // 1. Check ?tab= query parameter with alias handling
+  // Resolve explicitly requested tab from URL path segment (/admin/:tab) or query param (?tab=...)
+  const requestedTab = useMemo((): AdminTabId | null => {
     const rawQueryTab = (searchParams.get('tab') || '').toLowerCase().trim();
     if (rawQueryTab) {
       if (['ai', 'aisettings', 'ai-settings', 'ai_settings', 'aimodels'].includes(rawQueryTab)) {
-        if (allowedTabs.includes('ai-settings')) return 'ai-settings';
+        return 'ai-settings';
       }
-      if (allowedTabs.includes(rawQueryTab as AdminTabId)) {
+      if (VALID_TABS.includes(rawQueryTab as AdminTabId)) {
         return rawQueryTab as AdminTabId;
       }
     }
 
-    // 2. Check path segment (/admin/:section)
     const segments = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
     if (segments[0] === 'admin' && segments[1]) {
       const section = segments[1].toLowerCase();
-      // Handle historical and semantic aliases
-      let mappedTab: AdminTabId | null = null;
-      if (section === 'help-desk') mappedTab = 'support';
-      else if (section === 'blog-management') mappedTab = 'blog';
-      else if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) mappedTab = 'moderation';
-      else if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) mappedTab = 'content';
-      else if (section === 'settings') mappedTab = 'settings';
-      else if (section === 'modules' || section === 'addon-modules') mappedTab = 'modules';
-      else if (section === 'command-center' || section === 'dashboard') mappedTab = 'dashboard';
-      else if (['ai', 'ai-settings', 'aisettings', 'ai_settings'].includes(section)) mappedTab = 'ai-settings';
-      else if (VALID_TABS.includes(section as AdminTabId)) {
-        mappedTab = section as AdminTabId;
-      }
-
-      if (mappedTab && allowedTabs.includes(mappedTab)) {
-        return mappedTab;
+      if (section === 'help-desk') return 'support';
+      if (section === 'blog-management') return 'blog';
+      if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) return 'moderation';
+      if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) return 'content';
+      if (section === 'settings') return 'settings';
+      if (section === 'modules' || section === 'addon-modules') return 'modules';
+      if (section === 'command-center' || section === 'dashboard') return 'dashboard';
+      if (['ai', 'ai-settings', 'aisettings', 'ai_settings'].includes(section)) return 'ai-settings';
+      if (VALID_TABS.includes(section as AdminTabId)) {
+        return section as AdminTabId;
       }
     }
 
+    return null;
+  }, [location.pathname, searchParams]);
+
+  const isForbiddenTab = Boolean(requestedTab && !allowedTabs.includes(requestedTab));
+
+  const resolveTab = useCallback((): AdminTabId => {
+    if (requestedTab && allowedTabs.includes(requestedTab)) {
+      return requestedTab;
+    }
     return defaultTab;
-  }, [location.pathname, searchParams, allowedTabs, defaultTab]);
+  }, [requestedTab, allowedTabs, defaultTab]);
 
   const [activeTab, setActiveTab] = useState<AdminTabId>(resolveTab);
 
@@ -294,21 +294,52 @@ export function AdminConsolePage() {
 
       {/* Tab Content Surface */}
       <main className="min-w-0" aria-label="Admin Control Tab Content">
-        {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
-        {activeTab === 'health' && <AdminHealthTab />}
-        {activeTab === 'queues' && <AdminQueuesTab />}
-        {activeTab === 'operations' && <AdminOperationsTab />}
-        {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
-        {activeTab === 'users' && <AdminUsersTab />}
-        {activeTab === 'support' && <AdminHelpDeskTab />}
-        {activeTab === 'security' && <AdminSecurityTab />}
-        {activeTab === 'moderation' && <AdminModerationTab />}
-        {activeTab === 'blog' && <AdminBlogManagementTab />}
-        {activeTab === 'content' && <AdminContentMarketingTab />}
-        {activeTab === 'ai-settings' && <AdminAiSettingsTab />}
-        {activeTab === 'email' && <AdminEmailSmtpTab />}
-        {(activeTab === 'settings' || activeTab === 'modules') && (
-          <AdminSettingsTab initialSection="modules" />
+        {isForbiddenTab ? (
+          <div
+            role="alert"
+            data-testid="admin-tab-forbidden"
+            className="rounded-2xl border border-error-100 bg-error-50 p-6 text-ink space-y-3"
+          >
+            <div className="flex items-center gap-2 text-error-700 font-bold text-base">
+              <ShieldCheck className="size-5 shrink-0" />
+              <h2>403 — Access Restricted</h2>
+            </div>
+            <p className="text-sm text-ink-secondary">
+              Your staff role ({userRole || 'STAFF'}) is not authorized to access the{' '}
+              <span className="font-semibold text-ink">{requestedTab}</span> control-plane module.
+              AI Multi-Provider Engine configuration requires System Admin or Super-Admin authorization.
+            </p>
+            <div>
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/${defaultTab}`, { replace: true })}
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 cursor-pointer"
+              >
+                Return to Allowed Workspace
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
+            {activeTab === 'health' && <AdminHealthTab />}
+            {activeTab === 'queues' && <AdminQueuesTab />}
+            {activeTab === 'operations' && <AdminOperationsTab />}
+            {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
+            {activeTab === 'users' && <AdminUsersTab />}
+            {activeTab === 'support' && <AdminHelpDeskTab />}
+            {activeTab === 'security' && <AdminSecurityTab />}
+            {activeTab === 'moderation' && <AdminModerationTab />}
+            {activeTab === 'blog' && <AdminBlogManagementTab />}
+            {activeTab === 'content' && <AdminContentMarketingTab />}
+            {activeTab === 'ai-settings' && (
+              <AdminAiSettingsTab viewerRole={userRole || (isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN')} />
+            )}
+            {activeTab === 'email' && <AdminEmailSmtpTab />}
+            {(activeTab === 'settings' || activeTab === 'modules') && (
+              <AdminSettingsTab initialSection="modules" />
+            )}
+          </>
         )}
       </main>
     </div>
