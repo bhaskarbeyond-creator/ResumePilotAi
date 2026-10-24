@@ -86,7 +86,7 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, requireSuperAdmin, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
+const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, requireSuperAdmin, isSuperAdmin, hasSecondFactor, superAdminMfaEnforced, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -3841,14 +3841,16 @@ app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
     try {
         const result = await saveAiAdminSettings({
             input: req.body || {},
-            expectedRevision: req.body?.expectedRevision,
+            expectedRevision: req.body?.expectedRevision !== undefined ? req.body.expectedRevision : req.body?.revision,
             actorUid: req.user?.uid || 'admin_console', requestId: res.locals.requestId,
         });
         return res.json({ success: true, ...result, message: 'AI settings saved securely.' });
     } catch (error) {
+        const isRevisionConflict = error.code === 'AI_SETTINGS_CONFLICT' || error.code === 'REVISION_CONFLICT';
         return res.status(error.status || 400).json({
             success: false,
-            code: error.code || 'AI_SETTINGS_SAVE_FAILED',
+            code: isRevisionConflict ? 'REVISION_CONFLICT' : (error.code || 'AI_SETTINGS_SAVE_FAILED'),
+            reasonCode: error.code || 'AI_SETTINGS_SAVE_FAILED',
             error: error.message,
             currentRevision: error.currentRevision,
             requestId: res.locals.requestId,
@@ -3897,7 +3899,40 @@ app.get('/api/admin/ai/quota-stats', async (_req, res) => {
     }
 });
 
-app.post('/api/admin/ai/quota-limits', requireRecentAdminAuthentication, async (req, res) => {
+function requireRecentQuotaAdminAuth(req, res, next) {
+    if (!req.user) {
+        return requireAuth(req, res, () => requireRecentQuotaAdminAuth(req, res, next));
+    }
+    return requirePermission(['ai.entitlements.manage', 'system.config.write'])(req, res, () => {
+        if (isSuperAdmin(req.user) && superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
+            return res.status(403).json({
+                error: {
+                    code: 'SUPER_ADMIN_MFA_REQUIRED',
+                    message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
+                    requestId: res.locals?.requestId,
+                },
+            });
+        }
+        const shouldEnforceRecentAuth = process.env.NODE_ENV === 'production' || process.env.REQUIRE_RECENT_AUTH_IN_TEST === 'true';
+        if (shouldEnforceRecentAuth) {
+            const authTimeSeconds = Number(req.user?.claims?.auth_time || 0);
+            const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
+            const ageMs = authTimeSeconds > 0 ? Date.now() - authTimeSeconds * 1000 : Infinity;
+            if (!authTimeSeconds || !Number.isFinite(ageMs) || ageMs < 0 || ageMs > maxAgeMs) {
+                return res.status(403).json({
+                    error: {
+                        code: 'RECENT_AUTH_REQUIRED',
+                        message: 'Reauthenticate before changing AI quota limits or resetting daily usage.',
+                        requestId: res.locals?.requestId,
+                    },
+                });
+            }
+        }
+        return next();
+    });
+}
+
+app.post('/api/admin/ai/quota-limits', requireRecentQuotaAdminAuth, async (req, res) => {
     try {
         const result = await setGlobalAiQuotaLimits({
             basicDailyLimit: req.body?.basicDailyLimit,
@@ -3920,7 +3955,7 @@ app.post('/api/admin/ai/quota-limits', requireRecentAdminAuthentication, async (
     }
 });
 
-app.post('/api/admin/ai/reset-quota', requireRecentAdminAuthentication, async (req, res) => {
+app.post('/api/admin/ai/reset-quota', requireRecentQuotaAdminAuth, async (req, res) => {
     try {
         const uid = String(req.body?.uid || '').trim();
         const resetAll = req.body?.all === true;

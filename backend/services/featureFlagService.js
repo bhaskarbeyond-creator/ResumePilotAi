@@ -81,6 +81,15 @@ const FLAG_DEFINITIONS = {
     defaultValue: false,
     dependencies: ['Firebase Admin SDK (identity only)'],
   },
+  ai_settings_v2_enabled: {
+    description: 'Enable rebuilt AI Multi-Provider Engine v2 settings UI',
+    impact: 'When enabled (default), /admin/ai-settings renders the rebuilt v2 interface. Toggle false for instant runtime rollback without redeployment.',
+    requiresRestart: false,
+    category: 'services',
+    securityRisk: 'low',
+    defaultValue: true,
+    dependencies: ['Admin AI Settings API'],
+  },
 };
 
 function timestampToIso(value) {

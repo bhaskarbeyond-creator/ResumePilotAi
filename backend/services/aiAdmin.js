@@ -45,11 +45,23 @@ function maskApiKey(key) {
   if (!key || typeof key !== 'string') return '';
   const trimmed = key.trim();
   if (!trimmed) return '';
-  if (trimmed.length <= 10) return '••••••••••••••••••••••••';
-  const prefixLen = trimmed.startsWith('nvapi-') ? 6 : trimmed.startsWith('sk-or-v1-') ? 9 : trimmed.startsWith('sk-proj-') ? 8 : trimmed.startsWith('AIzaSy') ? 6 : trimmed.startsWith('gsk_') ? 4 : 4;
-  const head = trimmed.slice(0, prefixLen);
-  const tail = trimmed.slice(-4);
-  return `${head}${'•'.repeat(24)}${tail}`;
+  if (trimmed.length < 8) return '••••••••';
+  return `••••••••${trimmed.slice(-4)}`;
+}
+
+function resolveExplicitEnableToggle(input = {}, pId) {
+  const legacyField = ENABLE_FIELDS[pId];
+  if (legacyField && typeof input[legacyField] === 'boolean') return input[legacyField];
+  const dynField = `enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`;
+  if (typeof input[dynField] === 'boolean') return input[dynField];
+  if (input.enabledProviders && typeof input.enabledProviders === 'object' && typeof input.enabledProviders[pId] === 'boolean') {
+    return input.enabledProviders[pId];
+  }
+  if (input[pId] && typeof input[pId] === 'object') {
+    if (typeof input[pId].enabled === 'boolean') return input[pId].enabled;
+    if (typeof input[pId].disabled === 'boolean') return !input[pId].disabled;
+  }
+  return undefined;
 }
 
 function publicAiSettings(input = {}) {
@@ -61,13 +73,14 @@ function publicAiSettings(input = {}) {
   const result = {
     provider,
     ...(input.selectionMode ? { selectionMode: input.selectionMode } : {}),
-    temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(1, temperatureValue)) : 0.7,
-    maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(4096, Math.floor(maxTokensValue))) : 2048,
+    temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(2, temperatureValue)) : 0.7,
+    maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(8192, Math.floor(maxTokensValue))) : 2048,
     enableFallback: input.enableFallback !== false,
     enableImportModule: input.enableImportModule === true,
   };
   for (const item of PROVIDERS) {
-    result[ENABLE_FIELDS[item]] = input[ENABLE_FIELDS[item]] !== false;
+    const explicitToggle = resolveExplicitEnableToggle(input, item);
+    result[ENABLE_FIELDS[item]] = explicitToggle !== undefined ? explicitToggle : (input[ENABLE_FIELDS[item]] !== false);
     const model = String(input[MODEL_FIELDS[item]] || '').trim();
     if (model && !modelPattern.test(model)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${item} model.`, 400);
     if (model) result[MODEL_FIELDS[item]] = model;
@@ -122,14 +135,23 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     ).trim();
     // Optional operator endpoint override (self-hosted / private AI gateway).
     // Blank preserves the existing value; 'none' clears it.
-    const baseUrl = resolveAdminBaseUrl(input[`${provider}BaseUrl`], existing[provider]?.baseUrl);
+    const baseUrl = resolveAdminBaseUrl(input[`${provider}BaseUrl`] ?? input[provider]?.baseUrl, existing[provider]?.baseUrl);
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
+    const explicitToggle = resolveExplicitEnableToggle(input, provider);
+    const hasFreshSecret = (!isMasked && Boolean(rawKey)) || pool.length > 0;
     patch[provider] = {
       ...(existing[provider] || {}),
       ...(nextPool.length > 0 ? { apiKey: nextPool[0], apiKeys: nextPool } : {}),
       ...(model ? { model } : {}),
       ...(baseUrl ? { baseUrl } : {}),
     };
+    if (explicitToggle === false) {
+      patch[provider].enabled = false;
+      patch[provider].disabled = true;
+    } else if ((explicitToggle === true || hasFreshSecret) && (existing[provider] || nextPool.length > 0 || model || baseUrl)) {
+      patch[provider].enabled = true;
+      delete patch[provider].disabled;
+    }
     if (explicitlyCleared) {
       delete patch[provider].apiKey;
       delete patch[provider].apiKeys;
@@ -137,7 +159,7 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     if (!baseUrl) delete patch[provider].baseUrl;
   }
 
-  // Support saving and updating keys for all 74 FreeLLMAPI platforms
+  // Support saving and updating keys and enable/disable state for all 75 FreeLLMAPI platforms
   const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
   for (const [pId, meta] of Object.entries(PROVIDER_REGISTRY)) {
     if (PROVIDERS.includes(pId)) continue;
@@ -167,20 +189,29 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
       ''
     ).trim();
     if (model && (model.length > 256 || /[\x00-\x1f\x7f]/.test(model))) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Invalid model identifier.', 400);
-    const baseUrl = resolveAdminBaseUrl(input[`${pId}BaseUrl`], existing[pId]?.baseUrl);
-    const isExplicitlyActivated = input[`enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`] === true || input[pId]?.enabled === true || rawKey === 'keyless' || input.provider === pId || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model));
+    const baseUrl = resolveAdminBaseUrl(input[`${pId}BaseUrl`] ?? input[pId]?.baseUrl, existing[pId]?.baseUrl);
+    const explicitToggle = resolveExplicitEnableToggle(input, pId);
+    const hasFreshSecret = (!isMasked && Boolean(rawKey) && rawKey !== 'keyless') || pool.length > 0;
+    const isExplicitlyDisabled = explicitToggle === false;
+    const isExplicitlyActivated = explicitToggle === true || (explicitToggle !== false && (rawKey === 'keyless' || hasFreshSecret || input.provider === pId || (input.provider === pId && input.selectionMode === 'manual' && Boolean(model))));
     const nextPool = explicitlyCleared ? [] : (pool.length > 0 ? pool : (finalKey ? [finalKey] : existingPool));
-    if (nextPool.length > 0 || existing[pId] || explicitlyCleared || (!isKeyless && Boolean(model)) || (isKeyless && isExplicitlyActivated)) {
+    if (nextPool.length > 0 || existing[pId] || explicitlyCleared || Boolean(model) || Boolean(baseUrl) || isExplicitlyDisabled || (isKeyless && isExplicitlyActivated)) {
       patch[pId] = {
         ...(existing[pId] || {}),
         ...(nextPool.length > 0
           ? { apiKey: nextPool[0], apiKeys: nextPool }
-          : (isKeyless ? { apiKey: 'keyless', apiKeys: ['keyless'] } : {})),
+          : (isKeyless && !isExplicitlyDisabled ? { apiKey: 'keyless', apiKeys: ['keyless'] } : {})),
         ...(model ? { model } : {}),
         ...(baseUrl ? { baseUrl } : {}),
         ...(isKeyless ? { keyless: true } : {}),
-        ...(isExplicitlyActivated ? { enabled: true } : {}),
       };
+      if (isExplicitlyDisabled) {
+        patch[pId].enabled = false;
+        patch[pId].disabled = true;
+      } else if (isExplicitlyActivated) {
+        patch[pId].enabled = true;
+        delete patch[pId].disabled;
+      }
       if (!baseUrl) delete patch[pId].baseUrl;
       if (explicitlyCleared) {
         delete patch[pId].apiKey;
@@ -248,17 +279,37 @@ async function loadAiAdminSettings(environment = process.env) {
   const catalog = allProvidersList.map(meta => {
     const envKeyName = meta.envKey || `${meta.id.toUpperCase()}_API_KEY`;
     const stored = providerSecrets[meta.id] || {};
-    const storedPool = splitKeyPoolInput(stored.apiKeys);
-    if (storedPool.length === 0 && stored.apiKey) storedPool.push(String(stored.apiKey));
+    const rawStoredPool = splitKeyPoolInput(stored.apiKeys);
+    if (rawStoredPool.length === 0 && stored.apiKey) rawStoredPool.push(String(stored.apiKey));
+    const storedSecretPool = meta.keyless ? rawStoredPool.filter(k => k !== 'keyless') : rawStoredPool;
     const envPool = splitKeyPoolInput(environment[envKeyName]);
     const legacyKey = splitKeyPoolInput(legacyAi[SECRET_FIELDS[meta.id]]);
-    const poolSize = Math.max(storedPool.length, envPool.length, legacyKey.length);
+    const poolSize = Math.max(storedSecretPool.length, envPool.length, legacyKey.length);
     const hasKey = poolSize > 0;
+    const legacyDisabled = PROVIDERS.includes(meta.id) && publicAi[ENABLE_FIELDS[meta.id]] === false;
+    const explicitlyDisabled = stored.disabled === true || stored.enabled === false || legacyDisabled;
     const localEnabled = !meta.optIn || stored.enabled === true || stored.apiKey === 'keyless' || environment[`${meta.id.toUpperCase()}_ENABLED`] === 'true';
-    const isConfigured = localEnabled && Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
+    const isConfigured = meta.optIn
+      ? (!explicitlyDisabled && localEnabled && Boolean(meta.keyless || hasKey || configuredProviders[meta.id]))
+      : Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
+    const isEnabled = !explicitlyDisabled && localEnabled && Boolean(meta.keyless || hasKey || configuredProviders[meta.id]);
     const cooldown = cooldowns[meta.id];
     const isSearch = meta.type === 'search';
-    const status = !isConfigured ? 'disabled' : cooldown ? 'cooldown' : 'unverified';
+    const status = !isEnabled ? 'disabled' : cooldown ? 'cooldown' : 'unverified';
+    const credentialSource = envPool.length > 0 ? 'environment'
+      : storedSecretPool.length > 0 ? 'mariadb-secret-store'
+        : legacyKey.length > 0 ? 'mariadb-legacy-setting' : (meta.keyless ? 'keyless' : 'none');
+    const maskSourcePool = storedSecretPool.length > 0
+      ? storedSecretPool
+      : (envPool.length > 0 ? envPool : legacyKey);
+    if (maskSourcePool.length > 0) {
+      maskedKeys[meta.id] = maskKeyPool(maskSourcePool);
+    } else if (!PROVIDERS.includes(meta.id)) {
+      delete maskedKeys[meta.id];
+    }
+    if (!PROVIDERS.includes(meta.id)) {
+      credentialSources[meta.id] = credentialSource;
+    }
     return {
       id: meta.id,
       name: meta.name,
@@ -270,16 +321,17 @@ async function loadAiAdminSettings(environment = process.env) {
       quota: meta.quota || null,
       accessCategory: meta.accessCategory || (meta.keyless ? 'public-unverified' : 'credential-required'),
       configuredOnServer: isConfigured,
+      enabled: isEnabled,
+      disabled: explicitlyDisabled,
       hasKey,
       keysCount: meta.keyless ? 0 : poolSize,
       status,
       cooldownRemainingSeconds: cooldown?.remainingSeconds || 0,
       cooldownReason: cooldown?.reason || null,
-      credentialSource: envPool.length > 0 ? 'environment'
-        : storedPool.length > 0 ? 'mariadb-secret-store'
-          : legacyKey.length > 0 ? 'mariadb-legacy-setting' : (meta.keyless ? 'keyless' : 'none'),
+      credentialSource,
       docUrl: meta.docUrl || '',
-      baseUrl: meta.baseUrl || '',
+      baseUrl: stored.baseUrl || environment[`${meta.id.toUpperCase()}_BASE_URL`] || meta.baseUrl || '',
+      customBaseUrl: stored.baseUrl || '',
       defaultModel: providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '',
       recommendedModels: meta.recommendedModels || [meta.defaultModel || 'default'],
       intelligenceScore: null,
@@ -291,14 +343,14 @@ async function loadAiAdminSettings(environment = process.env) {
 
   for (const item of catalog) {
     configuredProviders[item.id] = item.configuredOnServer;
-    if (item.hasKey) {
-      const sourcePool = splitKeyPoolInput(providerSecrets[item.id]?.apiKeys);
-      if (sourcePool.length === 0 && providerSecrets[item.id]?.apiKey) sourcePool.push(providerSecrets[item.id].apiKey);
-      if (sourcePool.length > 0) {
-        maskedKeys[item.id] = maskKeyPool(sourcePool);
-      }
-    }
   }
+
+  let aiSettingsV2Enabled = true;
+  try {
+    const { getFlagValue } = require('./featureFlagService');
+    const flagVal = await getFlagValue('ai_settings_v2_enabled');
+    if (typeof flagVal === 'boolean') aiSettingsV2Enabled = flagVal;
+  } catch { /* fallback to default true */ }
 
   const platform = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: repo, bypassCache: true });
   const { modelDiscovery } = require('../freellmapi/services/modelDiscovery');
@@ -312,6 +364,7 @@ async function loadAiAdminSettings(environment = process.env) {
     settings, configuredProviders, credentialSources, maskedKeys,
     catalog,
     cooldowns,
+    featureFlags: { ai_settings_v2_enabled: aiSettingsV2Enabled },
     engine: {
       version: freellmEngine.ENGINE_VERSION,
       capabilities: freellmEngine.getEngineStatus().capabilities,
@@ -325,8 +378,9 @@ async function loadAiAdminSettings(environment = process.env) {
   };
 }
 
-async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requestId }) {
+async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestId }) {
   publicAiSettings(input); // Validate before opening a transaction; normalization below uses the locked prior state.
+  const resolvedExpectedRevision = expectedRevision !== undefined ? expectedRevision : input?.revision;
   const pool = getPool();
   const connection = await pool.getConnection();
   let nextRevision;
@@ -346,8 +400,8 @@ async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requ
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
     );
-    const isBypass = expectedRevision === undefined || expectedRevision === null || expectedRevision === -1 || input.force === true;
-    if (!isBypass && Number(expectedRevision) !== currentRevision) {
+    const isBypass = resolvedExpectedRevision === undefined || resolvedExpectedRevision === null || resolvedExpectedRevision === -1 || input?.force === true;
+    if (!isBypass && Number(resolvedExpectedRevision) !== currentRevision) {
       const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
       conflictErr.currentRevision = currentRevision;
       throw conflictErr;

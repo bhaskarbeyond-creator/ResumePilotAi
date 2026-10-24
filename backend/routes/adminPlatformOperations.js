@@ -561,4 +561,79 @@ router.get('/platform/status', requirePermission('system.config.read'), requireR
   }
 });
 
+/* ------------------------------------------------------------------
+ * Runtime Feature Flag Operations (/api/admin/operations/feature-flags)
+ * Supports instant runtime rollback of ai_settings_v2_enabled without redeploy.
+ * ------------------------------------------------------------------ */
+const {
+  FLAG_DEFINITIONS,
+  getAllFlags,
+  getFlagValue,
+  setFlagValue,
+} = require('../services/featureFlagService');
+
+router.get('/operations/feature-flags', requireSuperAdmin, async (_req, res) => {
+  try {
+    const flags = await getAllFlags();
+    return res.json({ success: true, flags });
+  } catch (_error) {
+    return res.status(503).json({
+      success: false,
+      error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flags', requestId: res.locals?.requestId },
+    });
+  }
+});
+
+router.get('/operations/feature-flags/:flagKey', requirePermission(['ai.usage.read', 'system.config.read']), async (req, res) => {
+  const { flagKey } = req.params;
+  if (!FLAG_DEFINITIONS[flagKey]) {
+    return res.status(404).json({
+      success: false,
+      error: { code: 'UNKNOWN_FEATURE_FLAG', message: `Unknown feature flag: ${flagKey}`, requestId: res.locals?.requestId },
+    });
+  }
+  try {
+    const flags = await getAllFlags();
+    const entry = flags[flagKey];
+    const value = entry ? entry.value : await getFlagValue(flagKey);
+    return res.json({ success: true, flag: flagKey, value, metadata: entry || null });
+  } catch (_error) {
+    return res.status(503).json({
+      success: false,
+      error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flag', requestId: res.locals?.requestId },
+    });
+  }
+});
+
+router.put('/operations/feature-flags/:flagKey', requireRecentAdminAuthentication, async (req, res) => {
+  const { flagKey } = req.params;
+  const { value } = req.body || {};
+  if (typeof value !== 'boolean') {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_VALUE', message: 'Flag value must be a boolean', requestId: res.locals?.requestId },
+    });
+  }
+  if (!FLAG_DEFINITIONS[flagKey]) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'UNKNOWN_FEATURE_FLAG', message: `Unknown feature flag: ${flagKey}`, requestId: res.locals?.requestId },
+    });
+  }
+  try {
+    const result = await setFlagValue(flagKey, value, req.user?.uid, res.locals?.requestId);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    const status = Number(error.status) >= 400 && Number(error.status) < 600 ? Number(error.status) : 400;
+    return res.status(status).json({
+      success: false,
+      error: {
+        code: error.code || 'FLAG_UPDATE_FAILED',
+        message: status >= 500 ? 'Feature flag storage is unavailable.' : error.message,
+        requestId: res.locals?.requestId,
+      },
+    });
+  }
+});
+
 module.exports = { adminPlatformOperationsRouter: router };

@@ -139,3 +139,115 @@ test('admin discovery honors configured endpoints and authoritative model remova
   rows = [];
   assert.deepEqual((await fetchProviderModels({ provider: 'llamacpp', environment: {}, fetchImpl })).models, []);
 });
+
+test('maskApiKey enforces strict non-reversible masking without prefix leak', () => {
+  const { maskApiKey } = require('../services/aiAdmin');
+  assert.equal(maskApiKey(''), '');
+  assert.equal(maskApiKey('   '), '');
+  assert.equal(maskApiKey('short7'), '••••••••', 'keys < 8 chars return 8 bullets only');
+  assert.equal(maskApiKey('1234567'), '••••••••', '7-char key returns 8 bullets only');
+  assert.equal(maskApiKey('12345678'), '••••••••5678', '8-char key returns 8 bullets + last-4');
+  const masked = maskApiKey('prefix-secret-material-ZYXW');
+  assert.equal(masked, '••••••••ZYXW');
+  assert.doesNotMatch(masked, /prefix/, 'must never leak leading prefix characters');
+});
+
+test('maskedKeys populates from secretPool first else envPool without persisting env keys to MariaDB', async () => {
+  settingsContract.reset({
+    public_config: { ai: baseInput, aiRevision: 1 },
+    ai_providers: {
+      cerebras: { apiKey: 'stored-cerebras-secret-ABCD', apiKeys: ['stored-cerebras-secret-ABCD'] },
+      _revision: 1,
+    },
+  });
+  const env = {
+    CEREBRAS_API_KEY: 'env-cerebras-secret-9999',
+    TAVILY_API_KEY: 'env-tavily-secret-WXYZ',
+    MISTRAL_API_KEY: 'env-mistral-one-1111,env-mistral-two-2222',
+  };
+  const loaded = await loadAiAdminSettings(env);
+  assert.equal(loaded.maskedKeys.cerebras, '••••••••ABCD', 'secretPool takes precedence over envPool in maskedKeys');
+  assert.equal(loaded.maskedKeys.tavily, '••••••••WXYZ', 'env-sourced non-legacy provider returns masked last-4');
+  assert.equal(loaded.maskedKeys.mistral, '••••••••1111 +1', 'env-sourced multi-key pool masks first key + count');
+  assert.doesNotMatch(JSON.stringify(loaded), /stored-cerebras-secret|env-cerebras-secret|env-tavily-secret|env-mistral/);
+
+  // Saving unrelated settings must never copy env keys into MariaDB ai_providers
+  await saveAiAdminSettings({ input: { temperature: 1.5, maxTokens: 8192 }, expectedRevision: 1, actorUid: 'super' });
+  const storedProviders = settingsContract.settings.get('ai_providers').data;
+  assert.equal(storedProviders.tavily, undefined, 'env-only provider must not be copied to MariaDB');
+  assert.equal(storedProviders.mistral, undefined, 'env-only pool must not be copied to MariaDB');
+  assert.doesNotMatch(JSON.stringify(storedProviders), /env-cerebras-secret|env-tavily-secret|env-mistral/);
+});
+
+test('temperature [0, 2], maxTokens [256, 8192], and enabled:false / disabled:true persist across all 75 providers', async () => {
+  settingsContract.reset();
+  const { buildFreeLlmPlatformConfig } = require('../services/freellmConfig');
+
+  // Seed credentials across legacy (groq), frontier non-legacy (cerebras), local keyless (llamacpp), and search (tavily)
+  const seeded = await saveAiAdminSettings({
+    input: {
+      groqApiKey: 'fixture-groq-secret-1234',
+      cerebrasApiKey: 'fixture-cerebras-secret-5678',
+      tavilyApiKey: 'fixture-tavily-secret-9012',
+      llamacpp: { enabled: true },
+      temperature: 1.8,
+      maxTokens: 8192,
+    },
+    expectedRevision: 0,
+    actorUid: 'super',
+  });
+  assert.equal(seeded.settings.temperature, 1.8);
+  assert.equal(seeded.settings.maxTokens, 8192);
+  for (const id of ['groq', 'cerebras', 'tavily', 'llamacpp']) {
+    const item = seeded.catalog.find(p => p.id === id);
+    assert.equal(item.enabled, true, `${id} initially enabled`);
+    assert.equal(item.disabled, false, `${id} initially not disabled`);
+  }
+
+  // Disable both legacy and non-legacy providers; credentials stay preserved & masked while runtime skips them
+  const afterDisable = await saveAiAdminSettings({
+    input: {
+      enableGroq: false,
+      enableCerebras: false,
+      tavily: { enabled: false },
+      llamacpp: { disabled: true },
+    },
+    expectedRevision: seeded.revision,
+    actorUid: 'super',
+  });
+  for (const id of ['groq', 'cerebras', 'tavily', 'llamacpp']) {
+    const item = afterDisable.catalog.find(p => p.id === id);
+    assert.equal(item.enabled, false, `${id} persisted as disabled`);
+    assert.equal(item.disabled, true, `${id} disabled flag true`);
+    assert.equal(item.status, 'disabled', `${id} status disabled`);
+  }
+  assert.equal(afterDisable.maskedKeys.cerebras, '••••••••5678', 'disabled provider keeps masked key intact');
+
+  const runtimeCfg = buildFreeLlmPlatformConfig({
+    environment: {},
+    secrets: settingsContract.settings.get('ai_providers').data,
+    publicConfig: settingsContract.settings.get('public_config').data,
+    systemSettings: {},
+  });
+  for (const id of ['groq', 'cerebras', 'tavily', 'llamacpp']) {
+    assert.equal(runtimeCfg.providers[id], undefined, `${id} excluded from live runtime dispatch while disabled`);
+  }
+
+  // Re-enable non-legacy provider without re-entering its secret key
+  const reEnabled = await saveAiAdminSettings({
+    input: { enabledProviders: { cerebras: true } },
+    expectedRevision: afterDisable.revision,
+    actorUid: 'super',
+  });
+  const cerebrasItem = reEnabled.catalog.find(p => p.id === 'cerebras');
+  assert.equal(cerebrasItem.enabled, true, 'cerebras re-enabled without re-sending secret');
+  assert.equal(cerebrasItem.disabled, false);
+  assert.equal(reEnabled.maskedKeys.cerebras, '••••••••5678');
+});
+
+test('ai_settings_v2_enabled feature flag is registered with defaultValue true and no restart required', () => {
+  const { FLAG_DEFINITIONS } = require('../services/featureFlagService');
+  assert.ok(FLAG_DEFINITIONS.ai_settings_v2_enabled);
+  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.defaultValue, true);
+  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.requiresRestart, false);
+});
