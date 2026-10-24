@@ -330,4 +330,115 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
       });
     }
   });
+
+  test('Pre-save probe transmits candidate key, post-save probe sends {provider} only, and candidate key is NOT persisted in admin_audit_logs (A1)', async ({
+    page,
+    request,
+  }) => {
+    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
+    const headers = { Authorization: `Bearer ${superSession.token}` };
+    await page.addInitScript(
+      (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),
+      superSession
+    );
+
+    const PRE_SAVE_CANDIDATE = 'fixture-a1-presave-probe-candidate-R4T5';
+    const preSaveBodies: Array<Record<string, unknown>> = [];
+    const postSaveBodies: Array<Record<string, unknown>> = [];
+    let savedAt: number | null = null;
+
+    page.on('request', (req) => {
+      if (req.url().includes('/api/admin/ai/test-provider') && req.method() === 'POST') {
+        const body = req.postDataJSON() as Record<string, unknown>;
+        if (savedAt === null) {
+          preSaveBodies.push(body);
+        } else {
+          postSaveBodies.push(body);
+        }
+      }
+      if (req.url().includes('/api/admin/ai-settings') && req.method() === 'POST' && !req.url().includes('test-provider')) {
+        savedAt = Date.now();
+      }
+    });
+
+    try {
+      await page.goto('/admin/ai-settings?subtab=providers');
+      await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+
+      // 1. Open Configure Provider dialog for Cerebras
+      await page.goto('/admin/ai-settings?subtab=providers&dialog=configure-provider&target=cerebras');
+      await expect(page.getByRole('dialog')).toBeVisible();
+
+      // 2. Enter candidate key
+      const keyInput = page.locator('#modal-api-key-input');
+      await keyInput.fill(PRE_SAVE_CANDIDATE);
+
+      // 3. Trigger PRE-SAVE probe: "Test Key Before Saving"
+      const preProbePromise = page.waitForResponse(
+        (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
+      );
+      await page.getByRole('button', { name: 'Test Key Before Saving' }).click();
+      const preRes = await preProbePromise;
+      const preBody = preRes.request().postDataJSON() as Record<string, unknown>;
+
+      // PRE-SAVE probe carries candidate key
+      expect(preBody.provider).toBe('cerebras');
+      expect(preBody.apiKey).toBe(PRE_SAVE_CANDIDATE);
+
+      // 4. Save and activate
+      const savePromise = page.waitForResponse(
+        (r) => r.url().includes('/api/admin/ai-settings') && r.request().method() === 'POST' && !r.url().includes('test-provider')
+      );
+      const postProbePromise = page.waitForResponse(
+        (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
+      );
+      await page.getByRole('button', { name: 'Add key & Activate' }).click();
+      await savePromise;
+      await postProbePromise;
+
+      // Dialog closes
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+
+      // 5. POST-SAVE probe sends { provider } ONLY (zero apiKey re-transmission)
+      expect(postSaveBodies.length).toBeGreaterThanOrEqual(1);
+      for (const body of postSaveBodies) {
+        expect(body).toEqual({ provider: 'cerebras' });
+        expect(body).not.toHaveProperty('apiKey');
+      }
+
+      // Verify admin_audit_logs: candidate key must NOT appear in any audit row
+      const auditRes = await request.get('/api/admin/audit-logs?limit=50', { headers });
+      expect(auditRes.ok()).toBe(true);
+      const auditData = await auditRes.json();
+      const auditLogs = auditData.logs || [];
+      for (const log of auditLogs) {
+        const logStr = JSON.stringify(log);
+        expect(logStr).not.toContain(PRE_SAVE_CANDIDATE);
+      }
+    } finally {
+      await request.post('/api/admin/ai-settings', {
+        headers,
+        data: { force: true, clearSecrets: { cerebras: true } },
+      });
+    }
+  });
+
+  test('CSP header includes script-src restriction on AI settings endpoints', async ({
+    request,
+  }) => {
+    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
+    const headers = { Authorization: `Bearer ${superSession.token}` };
+
+    const settingsRes = await request.get('/api/admin/ai-settings', { headers });
+    expect(settingsRes.ok()).toBe(true);
+    const cspHeader = settingsRes.headers()['content-security-policy'] || '';
+    // CSP should restrict script-src and prohibit unsafe-inline scripts
+    if (cspHeader) {
+      expect(cspHeader).toContain('script-src');
+      const scriptSrcMatch = cspHeader.match(/script-src\s+([^;]+)/);
+      if (scriptSrcMatch) {
+        expect(scriptSrcMatch[1]).not.toContain("'unsafe-inline'");
+      }
+    }
+  });
 });

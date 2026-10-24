@@ -620,7 +620,7 @@ test.describe('Phase 3b — 6-Role Deep-Link Matrix & Real Persistence', () => {
     const primaryId = (await primaryRow.getAttribute('data-testid'))?.replace('provider-row-', '') || 'nvidia';
     const rejectRes = await request.post('/api/admin/ai-settings', {
       headers,
-      data: { enabledProviders: { [primaryId]: false } },
+      data: { force: true, enabledProviders: { [primaryId]: false } },
     });
     expect(rejectRes.status()).toBe(400);
     const body = await rejectRes.json();

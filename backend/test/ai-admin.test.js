@@ -303,3 +303,70 @@ test('disabling the active primary provider throws 400 CANNOT_DISABLE_PRIMARY_PR
     }
   );
 });
+
+test('saveAiAdminSettings requires expectedRevision for administrative writes unless force: true', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia' }, aiRevision: 2 },
+    ai_providers: { nvidia: { apiKey: 'test-key' }, _revision: 2 },
+  });
+
+  // Omitting expectedRevision without force: true throws 400 EXPECTED_REVISION_REQUIRED
+  await assert.rejects(
+    async () => {
+      await saveAiAdminSettings({
+        input: { temperature: 0.7 },
+        actorUid: 'super',
+      });
+    },
+    (err) => {
+      assert.equal(err.code, 'EXPECTED_REVISION_REQUIRED');
+      assert.equal(err.status, 400);
+      return true;
+    }
+  );
+
+  // Supplying expectedRevision succeeds
+  const withRevision = await saveAiAdminSettings({
+    input: { temperature: 0.7 },
+    expectedRevision: 2,
+    actorUid: 'super',
+  });
+  assert.equal(withRevision.revision, 3);
+
+  // Supplying force: true bypasses expectedRevision requirement
+  const withForce = await saveAiAdminSettings({
+    input: { temperature: 0.8, force: true },
+    actorUid: 'super',
+  });
+  assert.equal(withForce.revision, 4);
+});
+
+test('sanitizeAuditValue redacts sensitive keys and secret value patterns in audit metadata', () => {
+  const { sanitizeAuditValue } = require('../security/adminAudit');
+
+  // Direct sensitive key redaction
+  assert.equal(sanitizeAuditValue('apiKey', 'candidate-secret-key-1234'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('nvidiaApiKey', 'nvapi-some-secret-token'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('password', 'p@ssw0rd123'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('clientSecret', 'stripe_secret_key'), '[REDACTED]');
+
+  // Nested object redaction preserving non-sensitive fields
+  const metadata = {
+    providerId: 'cerebras',
+    fieldChanged: ['provider', 'model'],
+    revision: 5,
+    apiKey: 'transient-candidate-secret',
+    nested: {
+      safeField: 'safeValue',
+      token: 'bearer-token-val',
+    },
+  };
+  const sanitized = sanitizeAuditValue('metadata', metadata);
+  assert.equal(sanitized.providerId, 'cerebras');
+  assert.deepEqual(sanitized.fieldChanged, ['provider', 'model']);
+  assert.equal(sanitized.revision, 5);
+  assert.equal(sanitized.apiKey, '[REDACTED]');
+  assert.equal(sanitized.nested.safeField, 'safeValue');
+  assert.equal(sanitized.nested.token, '[REDACTED]');
+});
+

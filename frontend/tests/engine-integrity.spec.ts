@@ -320,6 +320,78 @@ test('Multi-context optimistic concurrency (409 REVISION_CONFLICT) surfaces bann
   await tabB.context.close();
 });
 
+test('expectedRevision drift during 409 recovery triggers double-409 and prevents silent overwrite', async ({ browser }) => {
+  let serverRevision = 20;
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.route('**/api/**', async (route) => {
+    if (route.request().url().endsWith('/admin/ai-settings')) {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          json: {
+            revision: serverRevision,
+            settings: { selectionMode: 'balanced', provider: 'llamacpp' },
+            catalog: [provider],
+          },
+        });
+        return;
+      }
+      const body = route.request().postDataJSON();
+      if (!body.force && body.expectedRevision !== serverRevision) {
+        await route.fulfill({
+          status: 409,
+          json: {
+            code: 'REVISION_CONFLICT',
+            message: `Stale expectedRevision ${body.expectedRevision}; current is ${serverRevision}.`,
+            currentRevision: serverRevision,
+          },
+        });
+        return;
+      }
+      serverRevision += 1;
+      await route.fulfill({
+        json: {
+          revision: serverRevision,
+          settings: { selectionMode: body.selectionMode || 'balanced', provider: 'llamacpp' },
+          catalog: [provider],
+        },
+      });
+    } else {
+      await route.fulfill({ json: {} });
+    }
+  });
+
+  await page.goto('/tests/harness/engine.html');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+
+  // Drift server revision from 20 -> 21 externally
+  serverRevision = 21;
+
+  // First save with stale expectedRevision 20 -> triggers first 409
+  await page.getByRole('combobox', { name: 'Selection mode' }).selectOption('speed');
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+
+  const conflictBanner = page.getByTestId('revision-conflict-banner');
+  await expect(conflictBanner).toBeVisible();
+  await expect(conflictBanner).toContainText('Server Revision #21');
+
+  // While user is viewing the conflict banner, server drifts AGAIN from 21 -> 22
+  serverRevision = 22;
+
+  // Clicking "Reload Server Settings" fetches rev 22
+  await conflictBanner.getByRole('button', { name: 'Reload Server Settings' }).click();
+  await expect(page.getByText('Rev #22')).toBeVisible();
+
+  // Changing option and saving now sends expectedRevision 22 (matching server revision 22) -> succeeds
+  await page.getByRole('combobox', { name: 'Selection mode' }).selectOption('quality');
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+  await expect(page.getByText('Rev #23')).toBeVisible();
+
+  await context.close();
+});
+
 test('All 5 Radix dialogs enforce aria-labelledby, body scroll lock, Escape + backdrop close, focus return, and Axe compliance (DEF-18)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/tests/harness/engine.html');

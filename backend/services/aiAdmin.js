@@ -400,7 +400,10 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
     );
-    const isBypass = resolvedExpectedRevision === undefined || resolvedExpectedRevision === null || resolvedExpectedRevision === -1 || input?.force === true;
+    if ((resolvedExpectedRevision === undefined || resolvedExpectedRevision === null) && input?.force !== true) {
+      throw errorWith('EXPECTED_REVISION_REQUIRED', 'expectedRevision is required for administrative writes.', 400);
+    }
+    const isBypass = resolvedExpectedRevision === -1 || input?.force === true;
     if (!isBypass && Number(resolvedExpectedRevision) !== currentRevision) {
       const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
       conflictErr.currentRevision = currentRevision;
