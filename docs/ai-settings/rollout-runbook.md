@@ -139,10 +139,17 @@ npx playwright test tests/engine-security.spec.ts --retries=0
 npx playwright test tests/engine-responsive.spec.ts --retries=0
 ```
 
-### Visual Regression Baseline Policy & Authorised Regeneration
-- **Standing Policy:** Never pass `--update-snapshots` during CI or verification gates; any pixel diff `> 0.01` (`maxDiffPixelRatio`) must fail the build and be reviewed.
+### Visual Regression Baseline Policy (Policy A — Authoritative Linux CI)
+- **Standing Policy (Policy A):** Commit only Linux-generated visual baselines (`-linux.png`). Linux CI is the single authoritative gate for visual regression detection.
+- **Cross-Platform Justification:** Windows font rasterization (DirectWrite / ClearType) introduces 0.5%–1.8% anti-aliasing variances on subpixel typography compared to Linux FreeType, which can trigger spurious snapshot diffs across operating systems. Under Policy A, Linux snapshots in `frontend/tests/engine-responsive.spec.ts-snapshots/` remain canonical. Local Windows developer runs execute all DOM, ARIA, and Axe checks, while skipping visual screenshot diffs unless explicitly forced via `PLAYWRIGHT_FORCE_VISUAL=1`.
 - **When Intentional UI Changes Are Approved:** After explicit reviewer sign-off on visual diffs, regenerate the 25 deterministic Linux snapshots (`5 subtabs × 5 viewports`) via:
   ```bash
   cd frontend && npx playwright test tests/engine-responsive.spec.ts --update-snapshots
   ```
   Inspect `git diff frontend/tests/engine-responsive.spec.ts-snapshots/` before committing.
+
+### Mandatory CAS Enforcement (expectedRevision)
+- All administrative mutations (`POST /api/admin/ai-settings`) MUST supply `expectedRevision: <number>`.
+- Omission of `expectedRevision` without `force: true` returns `400 EXPECTED_REVISION_REQUIRED`.
+- Stale revision returns `409 REVISION_CONFLICT` with `remoteRevision` payload for CAS recovery affordance.
+

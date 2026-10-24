@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+if (!process.env.TEST_AUTH_HMAC_SECRET) {
+  process.env.TEST_AUTH_HMAC_SECRET = 'local-test-auth-hmac-secret-super-secure-32chars';
+}
+
 const chromiumLaunchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
   ? {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
@@ -24,6 +28,7 @@ export default defineConfig({
       maxDiffPixelRatio: 0.01,
     },
   },
+  snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-linux{ext}',
   use: {
     baseURL,
     trace: 'retain-on-failure',
