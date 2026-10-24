@@ -862,6 +862,12 @@ export function AdminAiSettingsTab({ viewerRole }: AdminAiSettingsTabProps = {})
   };
 
   const handleToggleProvider = async (p: ProviderCatalogEntry, nextEnabled: boolean) => {
+    if (!nextEnabled && p.id === primaryProvider) {
+      setActionError(
+        `Cannot disable ${p.name} because it is currently the active primary provider. Switch primary provider first.`
+      );
+      return;
+    }
     if (nextEnabled && !p.keyless && !p.hasKey && !p.configuredOnServer) {
       setModalSelectedId(p.id);
       setModalTab('single');
@@ -3253,7 +3259,29 @@ export function AdminAiSettingsTab({ viewerRole }: AdminAiSettingsTabProps = {})
             )}
           </div>
 
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-2 flex-wrap sm:flex-nowrap">
+            {modalSelectedPlatform && (modalSelectedPlatform.hasKey || modalSelectedPlatform.keyless) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={saving}
+                onClick={async () => {
+                  if (modalSelectedPlatform) {
+                    await handleToggleProvider(modalSelectedPlatform, !modalSelectedPlatform.enabled);
+                    closeDialog();
+                  }
+                }}
+                className={cn(
+                  'cursor-pointer',
+                  modalSelectedPlatform.enabled
+                    ? 'text-warning-700 border-warning-200 hover:bg-warning-50'
+                    : 'text-brand-700 border-brand-200 hover:bg-brand-50'
+                )}
+              >
+                {modalSelectedPlatform.enabled ? 'Deactivate Provider' : 'Activate Provider'}
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"

@@ -251,3 +251,55 @@ test('ai_settings_v2_enabled feature flag is registered with defaultValue true a
   assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.defaultValue, true);
   assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.requiresRestart, false);
 });
+
+test('enabledProviders overrides merged legacy fields and persists correctly on both public_config and ai_providers', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia', enableGemini: true, enableNvidia: true }, aiRevision: 1 },
+    ai_providers: {
+      gemini: { model: 'gemini-2.0-flash' },
+      nvidia: { apiKey: 'test-nvidia-key-1234', enabled: true },
+      _revision: 1,
+    },
+  });
+
+  // Toggle OFF legacy provider gemini via enabledProviders
+  const res = await saveAiAdminSettings({
+    input: { enabledProviders: { gemini: false } },
+    expectedRevision: 1,
+    actorUid: 'super',
+  });
+
+  const storedPublic = settingsContract.settings.get('public_config').data;
+  const storedProviders = settingsContract.settings.get('ai_providers').data;
+  assert.equal(storedPublic.ai.enableGemini, false, 'public_config.ai.enableGemini must be updated to false');
+  assert.equal(storedProviders.gemini.enabled, false, 'ai_providers.gemini.enabled must be false');
+  assert.equal(storedProviders.gemini.disabled, true, 'ai_providers.gemini.disabled must be true');
+  const geminiCatalog = res.catalog.find(p => p.id === 'gemini');
+  assert.equal(geminiCatalog.enabled, false, 'catalog reflects gemini as disabled');
+  assert.equal(geminiCatalog.disabled, true, 'catalog disabled flag is true');
+});
+
+test('disabling the active primary provider throws 400 CANNOT_DISABLE_PRIMARY_PROVIDER', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia', enableNvidia: true }, aiRevision: 1 },
+    ai_providers: {
+      nvidia: { apiKey: 'test-nvidia-key-1234', enabled: true },
+      _revision: 1,
+    },
+  });
+
+  await assert.rejects(
+    async () => {
+      await saveAiAdminSettings({
+        input: { enabledProviders: { nvidia: false } },
+        expectedRevision: 1,
+        actorUid: 'super',
+      });
+    },
+    (err) => {
+      assert.equal(err.code, 'CANNOT_DISABLE_PRIMARY_PROVIDER');
+      assert.equal(err.status, 400);
+      return true;
+    }
+  );
+});

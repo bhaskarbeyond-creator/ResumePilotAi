@@ -550,9 +550,9 @@ test.describe('Phase 3b — 6-Role Deep-Link Matrix & Real Persistence', () => {
         headers,
         data: {
           force: true,
-          cerebrasApiKey: targets[0].key,
-          sambanovaApiKey: targets[1].key,
-          mistralApiKey: targets[2].key,
+          cerebrasApiKey: targets[0]!.key,
+          sambanovaApiKey: targets[1]!.key,
+          mistralApiKey: targets[2]!.key,
           enabledProviders: { cerebras: true, sambanova: true, mistral: true },
         },
       });
@@ -596,6 +596,77 @@ test.describe('Phase 3b — 6-Role Deep-Link Matrix & Real Persistence', () => {
           force: true,
           clearSecrets: { cerebras: true, sambanova: true, mistral: true },
         },
+      });
+    }
+  });
+
+  test('Disabling active primary provider is blocked with warning and cannot corrupt routing', async ({ page, request }) => {
+    const token = await authenticate(page, request);
+    const headers = { Authorization: `Bearer ${token}` };
+
+    await page.goto('/admin/ai-settings?subtab=providers');
+    const primaryPill = page.locator('span:text-is("Primary")');
+    await expect(primaryPill).toBeVisible();
+
+    const primaryRow = page.locator('[data-testid^="provider-row-"]').filter({ has: primaryPill });
+    const checkbox = primaryRow.getByRole('checkbox');
+    await expect(checkbox).toBeChecked();
+    await checkbox.click({ force: true });
+
+    const alert = page.locator('[role="alert"]').filter({ hasText: /Cannot disable .* active primary provider/i });
+    await expect(alert).toBeVisible();
+    await expect(checkbox).toBeChecked();
+
+    const primaryId = (await primaryRow.getAttribute('data-testid'))?.replace('provider-row-', '') || 'nvidia';
+    const rejectRes = await request.post('/api/admin/ai-settings', {
+      headers,
+      data: { enabledProviders: { [primaryId]: false } },
+    });
+    expect(rejectRes.status()).toBe(400);
+    const body = await rejectRes.json();
+    expect(body.code || body.reasonCode).toMatch(/CANNOT_DISABLE_PRIMARY_PROVIDER/);
+  });
+
+  test('Toggle legacy provider (gemini) OFF and ON persists across hard reloads on both public_config and ai_providers', async ({ page, request }) => {
+    const token = await authenticate(page, request);
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Ensure Gemini has a key and is enabled before toggle-off assertion
+    await request.post('/api/admin/ai-settings', {
+      headers,
+      data: { force: true, geminiApiKey: 'test-gemini-key-12345678', enabledProviders: { gemini: true } },
+    });
+
+    try {
+      await page.goto('/admin/ai-settings?subtab=providers');
+      const geminiCheckbox = page.getByTestId('provider-row-gemini').getByRole('checkbox');
+      await expect(geminiCheckbox).toBeChecked();
+
+      // Toggle OFF
+      const toggleOff = page.waitForResponse(
+        (r) => r.url().includes('/api/admin/ai-settings') && r.request().method() === 'POST'
+      );
+      await geminiCheckbox.uncheck();
+      expect((await toggleOff).ok()).toBe(true);
+
+      // Hard reload - persists as unchecked
+      await page.reload();
+      await expect(page.getByTestId('provider-row-gemini').getByRole('checkbox')).not.toBeChecked();
+
+      // Toggle ON
+      const toggleOn = page.waitForResponse(
+        (r) => r.url().includes('/api/admin/ai-settings') && r.request().method() === 'POST'
+      );
+      await page.getByTestId('provider-row-gemini').getByRole('checkbox').check();
+      expect((await toggleOn).ok()).toBe(true);
+
+      // Hard reload - persists as checked
+      await page.reload();
+      await expect(page.getByTestId('provider-row-gemini').getByRole('checkbox')).toBeChecked();
+    } finally {
+      await request.post('/api/admin/ai-settings', {
+        headers,
+        data: { force: true, clearSecrets: { gemini: true } },
       });
     }
   });
