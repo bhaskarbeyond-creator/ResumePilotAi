@@ -142,6 +142,28 @@ for (const [width, height] of viewports) {
 }
 
 test('real UI login, discovery, persisted modes and manual pin execute the actual discovered model', async ({ page, request }) => {
+  // Ensure local inference provider is enabled and clean prior metric records for deterministic test assertion
+  const adminSession = await identity(request, 'superadmin@resumepilot.test');
+  await request.post('/api/admin/ai-settings', {
+    headers: { Authorization: `Bearer ${adminSession.token}` },
+    data: {
+      force: true,
+      provider: 'llamacpp',
+      enabledProviders: { llamacpp: true },
+      llamacpp: { enabled: true, disabled: false, baseUrl: 'http://127.0.0.1:8081/v1', model: 'llama-3.2-1b-instruct' },
+    },
+  });
+  try {
+    const sqlite = await import('node:sqlite');
+    const pathMod = await import('node:path');
+    const dbPath = pathMod.resolve('data/freellm_metrics.db');
+    const db = new sqlite.DatabaseSync(dbPath);
+    db.exec('DELETE FROM request_log; DELETE FROM provider_metrics;');
+    db.close();
+  } catch {
+    // node:sqlite optional or in-memory fallback
+  }
+
   await page.goto(`/login?next=${encodeURIComponent(path)}`);
   await page.getByLabel('Email').fill('superadmin@resumepilot.test');
   await page.getByLabel('Password', { exact: true }).fill('ephemeral-e2e-only');

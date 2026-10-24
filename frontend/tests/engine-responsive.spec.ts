@@ -224,13 +224,8 @@ test.describe.parallel('AI Multi-Provider Engine — Multi-Viewport Responsive, 
 
   for (const subtab of PRIMARY_SUBTABS) {
     test(`Visual regression baseline — subtab=${subtab}`, async ({ page, request }) => {
-      // Under Policy A (rollout-runbook.md): Linux snapshots in CI are authoritative.
-      // Local Windows runs skip pixel-diff unless PLAYWRIGHT_FORCE_VISUAL=1 is set.
-      test.skip(
-        process.platform === 'win32' && !process.env.PLAYWRIGHT_FORCE_VISUAL,
-        'Policy A: Linux snapshots authoritative; skipping on win32 to avoid DirectWrite font AA variance'
-      );
-
+      // Under Policy B: Dual platform snapshots committed ({platform} template).
+      // Both Linux and Windows run their respective platform baselines.
       const superSession = await loginRole(request, 'superadmin@resumepilot.test');
       await page.addInitScript(
         (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),

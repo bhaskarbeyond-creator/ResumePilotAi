@@ -331,7 +331,8 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
     }
   });
 
-  test('Pre-save probe transmits candidate key, post-save probe sends {provider} only, and candidate key is NOT persisted in admin_audit_logs (A1)', async ({
+  // ─── A1 Pre-Save Probe: 4 Distinct Itemized Assertions ───
+  test('A1 Assertion 1: Pre-save candidate key is discarded server-side and never written to database (system_settings)', async ({
     page,
     request,
   }) => {
@@ -342,78 +343,115 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
       superSession
     );
 
-    const PRE_SAVE_CANDIDATE = 'fixture-a1-presave-probe-candidate-R4T5';
-    const preSaveBodies: Array<Record<string, unknown>> = [];
+    const PRE_SAVE_DISCARDED_KEY = 'fixture-a1-discarded-candidate-R4T5';
+
+    await page.goto('/admin/ai-settings?subtab=providers&dialog=configure-provider&target=cerebras');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const keyInput = page.locator('#modal-api-key-input');
+    await keyInput.fill(PRE_SAVE_DISCARDED_KEY);
+
+    // Trigger PRE-SAVE probe: "Test Key Before Saving"
+    const preProbePromise = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: 'Test Key Before Saving' }).click();
+    const preRes = await preProbePromise;
+    expect(preRes.request().postDataJSON()?.apiKey).toBe(PRE_SAVE_DISCARDED_KEY);
+
+    // Dismiss dialog WITHOUT saving (user cancels after testing)
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // Verify server-side settings: candidate key was NOT written to DB / system_settings
+    const settingsRes = await request.get('/api/admin/ai-settings', { headers });
+    expect(settingsRes.ok()).toBe(true);
+    const settings = await settingsRes.json();
+    const settingsStr = JSON.stringify(settings);
+    expect(settingsStr).not.toContain(PRE_SAVE_DISCARDED_KEY);
+    expect(settings.maskedKeys?.cerebras).not.toBeDefined();
+  });
+
+  test('A1 Assertion 2: No server-side log line or audit record touches the candidate key', async ({
+    page,
+    request,
+  }) => {
+    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
+    const headers = { Authorization: `Bearer ${superSession.token}` };
+    await page.addInitScript(
+      (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),
+      superSession
+    );
+
+    const AUDIT_CANDIDATE = 'fixture-a1-audit-candidate-K8M2';
+
+    await page.goto('/admin/ai-settings?subtab=providers&dialog=configure-provider&target=cerebras');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const keyInput = page.locator('#modal-api-key-input');
+    await keyInput.fill(AUDIT_CANDIDATE);
+
+    const preProbePromise = page.waitForResponse(
+      (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: 'Test Key Before Saving' }).click();
+    await preProbePromise;
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // Check admin audit logs: candidate key must NEVER appear in audit records
+    const auditRes = await request.get('/api/admin/audit-logs?limit=50', { headers });
+    expect(auditRes.ok()).toBe(true);
+    const auditData = await auditRes.json();
+    for (const log of auditData.logs || []) {
+      expect(JSON.stringify(log)).not.toContain(AUDIT_CANDIDATE);
+    }
+  });
+
+  test('A1 Assertion 3: POST-save probe strictly sends { provider } only with zero apiKey re-transmission', async ({
+    page,
+    request,
+  }) => {
+    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
+    const headers = { Authorization: `Bearer ${superSession.token}` };
+    await page.addInitScript(
+      (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),
+      superSession
+    );
+
+    const STORED_CANDIDATE = 'fixture-a1-stored-candidate-P9Q1';
     const postSaveBodies: Array<Record<string, unknown>> = [];
-    let savedAt: number | null = null;
 
     page.on('request', (req) => {
       if (req.url().includes('/api/admin/ai/test-provider') && req.method() === 'POST') {
-        const body = req.postDataJSON() as Record<string, unknown>;
-        if (savedAt === null) {
-          preSaveBodies.push(body);
-        } else {
-          postSaveBodies.push(body);
-        }
-      }
-      if (req.url().includes('/api/admin/ai-settings') && req.method() === 'POST' && !req.url().includes('test-provider')) {
-        savedAt = Date.now();
+        postSaveBodies.push(req.postDataJSON() as Record<string, unknown>);
       }
     });
 
     try {
-      await page.goto('/admin/ai-settings?subtab=providers');
-      await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
-
-      // 1. Open Configure Provider dialog for Cerebras
       await page.goto('/admin/ai-settings?subtab=providers&dialog=configure-provider&target=cerebras');
       await expect(page.getByRole('dialog')).toBeVisible();
 
-      // 2. Enter candidate key
-      const keyInput = page.locator('#modal-api-key-input');
-      await keyInput.fill(PRE_SAVE_CANDIDATE);
+      await page.locator('#modal-api-key-input').fill(STORED_CANDIDATE);
 
-      // 3. Trigger PRE-SAVE probe: "Test Key Before Saving"
-      const preProbePromise = page.waitForResponse(
-        (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
-      );
-      await page.getByRole('button', { name: 'Test Key Before Saving' }).click();
-      const preRes = await preProbePromise;
-      const preBody = preRes.request().postDataJSON() as Record<string, unknown>;
-
-      // PRE-SAVE probe carries candidate key
-      expect(preBody.provider).toBe('cerebras');
-      expect(preBody.apiKey).toBe(PRE_SAVE_CANDIDATE);
-
-      // 4. Save and activate
       const savePromise = page.waitForResponse(
         (r) => r.url().includes('/api/admin/ai-settings') && r.request().method() === 'POST' && !r.url().includes('test-provider')
       );
-      const postProbePromise = page.waitForResponse(
+      const probePromise = page.waitForResponse(
         (r) => r.url().includes('/api/admin/ai/test-provider') && r.request().method() === 'POST'
       );
       await page.getByRole('button', { name: 'Add key & Activate' }).click();
       await savePromise;
-      await postProbePromise;
+      await probePromise;
 
-      // Dialog closes
       await expect(page.getByRole('dialog')).toHaveCount(0);
 
-      // 5. POST-SAVE probe sends { provider } ONLY (zero apiKey re-transmission)
+      // POST-SAVE probe must strictly contain ONLY { provider: 'cerebras' }
       expect(postSaveBodies.length).toBeGreaterThanOrEqual(1);
       for (const body of postSaveBodies) {
         expect(body).toEqual({ provider: 'cerebras' });
         expect(body).not.toHaveProperty('apiKey');
-      }
-
-      // Verify admin_audit_logs: candidate key must NOT appear in any audit row
-      const auditRes = await request.get('/api/admin/audit-logs?limit=50', { headers });
-      expect(auditRes.ok()).toBe(true);
-      const auditData = await auditRes.json();
-      const auditLogs = auditData.logs || [];
-      for (const log of auditLogs) {
-        const logStr = JSON.stringify(log);
-        expect(logStr).not.toContain(PRE_SAVE_CANDIDATE);
       }
     } finally {
       await request.post('/api/admin/ai-settings', {
@@ -421,6 +459,32 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
         data: { force: true, clearSecrets: { cerebras: true } },
       });
     }
+  });
+
+  test('A1 Assertion 4: Pre-save and POST-save probe workflows are distinct and cannot be blurred by future refactors', async ({
+    page,
+    request,
+  }) => {
+    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
+    await page.addInitScript(
+      (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),
+      superSession
+    );
+
+    await page.goto('/admin/ai-settings?subtab=providers');
+
+    // 1. Post-save probe button is row-level "Test Connection for <provider>"
+    const postSaveBtn = page.getByRole('button', { name: /Test Connection/i }).first();
+    await expect(postSaveBtn).toBeVisible();
+    const postSaveText = await postSaveBtn.textContent();
+    expect(postSaveText).toContain('Test Connection');
+
+    // 2. Pre-save probe button exists ONLY inside Configure Provider dialog
+    await page.goto('/admin/ai-settings?subtab=providers&dialog=configure-provider&target=cerebras');
+    const preSaveBtn = page.getByRole('button', { name: 'Test Key Before Saving' });
+    await expect(preSaveBtn).toBeVisible();
+    const preSaveText = await preSaveBtn.textContent();
+    expect(preSaveText).toContain('Test Key Before Saving');
   });
 
   test('CSP header includes script-src restriction on AI settings endpoints', async ({

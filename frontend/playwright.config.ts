@@ -28,7 +28,7 @@ export default defineConfig({
       maxDiffPixelRatio: 0.01,
     },
   },
-  snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-linux{ext}',
+  snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}',
   use: {
     baseURL,
     trace: 'retain-on-failure',

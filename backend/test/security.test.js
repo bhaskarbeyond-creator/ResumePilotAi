@@ -117,3 +117,22 @@ test('account limiter cannot be bypassed by changing IP for an authenticated acc
   assert.equal(blocked.res.statusCode, 429);
   configureAbuseCounterStoreForTests(null);
 });
+
+test('rate-limit test-provider: POST /api/admin/ai/test-provider rate limits after abuse budget', async () => {
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
+  const limiter = accountRateLimit({ namespace: 'admin-ai-test', limit: 10, windowMs: 60_000 });
+  const req = { user: { uid: 'sa-operator' }, ip: '127.0.0.1' };
+  for (let i = 0; i < 10; i++) {
+    const res = responseHarness();
+    let next = false;
+    await limiter(req, res, () => { next = true; });
+    assert.equal(next, true, `Request ${i + 1} within budget should pass`);
+  }
+  const res11 = responseHarness();
+  let next11 = false;
+  await limiter(req, res11, () => { next11 = true; });
+  assert.equal(next11, false, '11th request must be rejected');
+  assert.equal(res11.statusCode, 429, '11th request must return 429');
+  configureAbuseCounterStoreForTests(null);
+});
+

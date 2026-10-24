@@ -139,12 +139,12 @@ npx playwright test tests/engine-security.spec.ts --retries=0
 npx playwright test tests/engine-responsive.spec.ts --retries=0
 ```
 
-### Visual Regression Baseline Policy (Policy A — Authoritative Linux CI)
-- **Standing Policy (Policy A):** Commit only Linux-generated visual baselines (`-linux.png`). Linux CI is the single authoritative gate for visual regression detection.
-- **Cross-Platform Justification:** Windows font rasterization (DirectWrite / ClearType) introduces 0.5%–1.8% anti-aliasing variances on subpixel typography compared to Linux FreeType, which can trigger spurious snapshot diffs across operating systems. Under Policy A, Linux snapshots in `frontend/tests/engine-responsive.spec.ts-snapshots/` remain canonical. Local Windows developer runs execute all DOM, ARIA, and Axe checks, while skipping visual screenshot diffs unless explicitly forced via `PLAYWRIGHT_FORCE_VISUAL=1`.
-- **When Intentional UI Changes Are Approved:** After explicit reviewer sign-off on visual diffs, regenerate the 25 deterministic Linux snapshots (`5 subtabs × 5 viewports`) via:
+### Visual Regression Baseline Policy (Policy B — Dual-Platform Baselines)
+- **Standing Policy (Policy B):** Dual-platform snapshots committed with Playwright `{platform}` template (`-linux.png` and `-win32.png`). Both Linux CI and Windows developer environments execute their respective authoritative platform baselines without skipping.
+- **Cross-Platform Justification:** Windows font rasterization (DirectWrite / ClearType) introduces 0.5%–1.8% anti-aliasing variances on subpixel typography compared to Linux FreeType. Rather than skipping visual tests on dev or suffering spurious CI failures, `playwright.config.ts` uses `snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}'`. Both platforms maintain canonical snapshots side-by-side in `frontend/tests/engine-responsive.spec.ts-snapshots/`. A pixel regression introduced on either Windows or Linux is immediately caught locally and in CI.
+- **Regenerating Snapshots:** When intentional UI changes are approved, regenerate the 25 deterministic snapshots (`5 subtabs × 5 viewports`) for the current platform via:
   ```bash
-  cd frontend && npx playwright test tests/engine-responsive.spec.ts --update-snapshots
+  cd frontend && npx playwright test tests/engine-responsive.spec.ts -g "Visual regression baseline" --update-snapshots
   ```
   Inspect `git diff frontend/tests/engine-responsive.spec.ts-snapshots/` before committing.
 

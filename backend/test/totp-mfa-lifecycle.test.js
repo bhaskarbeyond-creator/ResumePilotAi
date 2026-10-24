@@ -148,3 +148,49 @@ test('P0 TOTP MFA: Super Admin WITH valid TOTP MFA and recent auth SUCCEEDS and 
   assert.equal(maintenancePool.auditLogs.length > 0, true);
   assert.equal(maintenancePool.auditLogs.some(e => e.action === 'PLATFORM_MAINTENANCE_UPDATED'), true);
 });
+
+// ─── Step 4 §5 Category 4: Recent-auth MFA (4 assertions) ───
+test('Recent-auth MFA (Assertion 1): quota-limits rejects Super Admin without MFA (SUPER_ADMIN_MFA_REQUIRED) (-)', async () => {
+  const res = await request(app)
+    .post('/api/admin/ai/quota-limits')
+    .set('Authorization', 'Bearer superadmin-no-mfa')
+    .send({ basicDailyLimit: 25, expectedRevision: 0 });
+
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error?.code, 'SUPER_ADMIN_MFA_REQUIRED');
+  assert.match(res.body.error?.message, /require a second authentication factor/i);
+});
+
+test('Recent-auth MFA (Assertion 2): quota-limits rejects Super Admin with stale auth_time (RECENT_AUTH_REQUIRED) (-)', async () => {
+  const res = await request(app)
+    .post('/api/admin/ai/quota-limits')
+    .set('Authorization', 'Bearer superadmin-stale-mfa')
+    .send({ basicDailyLimit: 25, expectedRevision: 0 });
+
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error?.code, 'RECENT_AUTH_REQUIRED');
+  assert.match(res.body.error?.message, /Reauthenticate before changing AI quota limits/i);
+});
+
+test('Recent-auth MFA (Assertion 3): reset-quota rejects Super Admin without MFA (SUPER_ADMIN_MFA_REQUIRED) (-)', async () => {
+  const res = await request(app)
+    .post('/api/admin/ai/reset-quota')
+    .set('Authorization', 'Bearer superadmin-no-mfa')
+    .send({ uid: 'usr-123' });
+
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error?.code, 'SUPER_ADMIN_MFA_REQUIRED');
+  assert.match(res.body.error?.message, /require a second authentication factor/i);
+});
+
+test('Recent-auth MFA (Assertion 4): reset-quota rejects Super Admin with stale auth_time (RECENT_AUTH_REQUIRED) (-)', async () => {
+  const res = await request(app)
+    .post('/api/admin/ai/reset-quota')
+    .set('Authorization', 'Bearer superadmin-stale-mfa')
+    .send({ uid: 'usr-123' });
+
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error?.code, 'RECENT_AUTH_REQUIRED');
+  assert.match(res.body.error?.message, /Reauthenticate before changing AI quota limits/i);
+});
+

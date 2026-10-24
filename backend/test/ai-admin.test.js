@@ -370,3 +370,62 @@ test('sanitizeAuditValue redacts sensitive keys and secret value patterns in aud
   assert.equal(sanitized.nested.token, '[REDACTED]');
 });
 
+test('A1 Assertion 2: candidate key passed to testAiProvider is never logged or leaked to server-side stdout/stderr', async () => {
+  const candidateKey = 'fixture-a1-unit-test-candidate-key-XYZ99';
+  const interceptedLogs = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  console.log = (...args) => interceptedLogs.push(args.map(String).join(' '));
+  console.error = (...args) => interceptedLogs.push(args.map(String).join(' '));
+  console.warn = (...args) => interceptedLogs.push(args.map(String).join(' '));
+
+  try {
+    const mockFetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{ message: { content: 'Candidate probe success' } }],
+      }),
+    });
+
+    await testAiProvider({
+      provider: 'groq',
+      model: 'llama-3.3-70b-versatile',
+      apiKey: candidateKey,
+      fetchImpl: mockFetch,
+      timeoutMs: 5000,
+    });
+
+    // Zero server-side log lines touch candidateKey
+    for (const line of interceptedLogs) {
+      assert.doesNotMatch(line, new RegExp(candidateKey));
+    }
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+    console.warn = originalWarn;
+  }
+});
+
+test('GAP 7 audit: mask pattern ^•{8,}\\S{4}$ prevents plaintext prefix leaks while accepting valid non-alphanumeric suffix characters', () => {
+  const maskRegex = /^•{8,}\S{4}$/;
+
+  // Valid masked keys with alphanumeric and special suffix chars
+  assert.equal(maskRegex.test('••••••••1234'), true);
+  assert.equal(maskRegex.test('••••••••ab12'), true);
+  assert.equal(maskRegex.test('••••••••a-b_'), true);
+  assert.equal(maskRegex.test('••••••••X_9$'), true);
+
+  // Security proofs: ANY plaintext prefix leak MUST FAIL the pattern
+  assert.equal(maskRegex.test('gsk_••••••••1234'), false, 'Prefix leak gsk_ must fail mask pattern');
+  assert.equal(maskRegex.test('sk-••••••••1234'), false, 'Prefix leak sk- must fail mask pattern');
+  assert.equal(maskRegex.test('nvapi-••••••••1234'), false, 'Prefix leak nvapi- must fail mask pattern');
+  assert.equal(maskRegex.test('••••••••gsk_1234'), false, 'Too many suffix chars must fail mask pattern');
+  assert.equal(maskRegex.test('gsk_1234'), false, 'Unmasked short key must fail mask pattern');
+  assert.equal(maskRegex.test('••••1234'), false, 'Fewer than 8 bullets must fail mask pattern');
+  assert.equal(maskRegex.test('••••••••12 4'), false, 'Space in suffix must fail mask pattern (\\S requirement)');
+  assert.equal(maskRegex.test('••••••••12\n4'), false, 'Newline in suffix must fail mask pattern (\\S requirement)');
+});
+
+
