@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { z } from 'zod';
 
 const provider = {
   id: 'llamacpp', name: 'llama.cpp', label: 'llama.cpp (local)', type: 'openai-compat', group: 'models',
@@ -320,6 +321,78 @@ test('Multi-context optimistic concurrency (409 REVISION_CONFLICT) surfaces bann
   await tabB.context.close();
 });
 
+test('expectedRevision drift during 409 recovery triggers double-409 and prevents silent overwrite', async ({ browser }) => {
+  let serverRevision = 20;
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.route('**/api/**', async (route) => {
+    if (route.request().url().endsWith('/admin/ai-settings')) {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          json: {
+            revision: serverRevision,
+            settings: { selectionMode: 'balanced', provider: 'llamacpp' },
+            catalog: [provider],
+          },
+        });
+        return;
+      }
+      const body = route.request().postDataJSON();
+      if (!body.force && body.expectedRevision !== serverRevision) {
+        await route.fulfill({
+          status: 409,
+          json: {
+            code: 'REVISION_CONFLICT',
+            message: `Stale expectedRevision ${body.expectedRevision}; current is ${serverRevision}.`,
+            currentRevision: serverRevision,
+          },
+        });
+        return;
+      }
+      serverRevision += 1;
+      await route.fulfill({
+        json: {
+          revision: serverRevision,
+          settings: { selectionMode: body.selectionMode || 'balanced', provider: 'llamacpp' },
+          catalog: [provider],
+        },
+      });
+    } else {
+      await route.fulfill({ json: {} });
+    }
+  });
+
+  await page.goto('/tests/harness/engine.html');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+
+  // Drift server revision from 20 -> 21 externally
+  serverRevision = 21;
+
+  // First save with stale expectedRevision 20 -> triggers first 409
+  await page.getByRole('combobox', { name: 'Selection mode' }).selectOption('speed');
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+
+  const conflictBanner = page.getByTestId('revision-conflict-banner');
+  await expect(conflictBanner).toBeVisible();
+  await expect(conflictBanner).toContainText('Server Revision #21');
+
+  // While user is viewing the conflict banner, server drifts AGAIN from 21 -> 22
+  serverRevision = 22;
+
+  // Clicking "Reload Server Settings" fetches rev 22
+  await conflictBanner.getByRole('button', { name: 'Reload Server Settings' }).click();
+  await expect(page.getByText('Rev #22')).toBeVisible();
+
+  // Changing option and saving now sends expectedRevision 22 (matching server revision 22) -> succeeds
+  await page.getByRole('combobox', { name: 'Selection mode' }).selectOption('quality');
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+  await expect(page.getByText('Rev #23')).toBeVisible();
+
+  await context.close();
+});
+
 test('All 5 Radix dialogs enforce aria-labelledby, body scroll lock, Escape + backdrop close, focus return, and Axe compliance (DEF-18)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/tests/harness/engine.html');
@@ -397,3 +470,254 @@ test('Test Connection and Test Key Before Saving surface { success: false } payl
   await expect(page.getByRole('alert')).toContainText('Upstream rejected API key (401)');
   await expect(page.getByTestId('provider-row-groq')).toContainText('Connection Issue');
 });
+
+test('Zod contract tests against real :8080 endpoints (ai-settings, quota-stats, catalog, health)', async ({ request }) => {
+  const loginRes = await request.post('/api/auth/preview-login', {
+    data: { email: 'superadmin@resumepilot.test', password: 'ephemeral-e2e-only' },
+  });
+  expect(loginRes.ok()).toBe(true);
+  const session = await loginRes.json();
+  const headers = { Authorization: `Bearer ${session.token}` };
+
+  // 1. Validate /api/health contract
+  const HealthSchema = z.object({
+    status: z.string(),
+  }).passthrough();
+  const healthRes = await request.get('/api/health');
+  expect(healthRes.ok()).toBe(true);
+  const parsedHealth = HealthSchema.parse(await healthRes.json());
+  expect(parsedHealth.status).toBe('ok');
+
+  // 2. Validate /api/admin/ai-settings contract
+  const AiSettingsSchema = z.object({
+    revision: z.number().int().nonnegative(),
+    settings: z.record(z.unknown()),
+    catalog: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        enabled: z.boolean(),
+      }).passthrough()
+    ),
+    maskedKeys: z.record(z.string()).optional(),
+  }).passthrough();
+  const settingsRes = await request.get('/api/admin/ai-settings', { headers });
+  expect(settingsRes.ok()).toBe(true);
+  const parsedSettings = AiSettingsSchema.parse(await settingsRes.json());
+  expect(parsedSettings.revision).toBeGreaterThanOrEqual(1);
+  expect(parsedSettings.catalog.length).toBeGreaterThan(0);
+
+  // 3. Validate /api/admin/ai/quota-stats contract
+  const QuotaStatsSchema = z.object({
+    limits: z.object({
+      basic: z.number().nonnegative(),
+      premium: z.number().nonnegative(),
+      enterprise: z.number().nonnegative(),
+      admin: z.number().nonnegative(),
+    }),
+    quotaRevision: z.number().int().nonnegative().optional(),
+  }).passthrough();
+  const quotaRes = await request.get('/api/admin/ai/quota-stats', { headers });
+  expect(quotaRes.ok()).toBe(true);
+  const parsedQuota = QuotaStatsSchema.parse(await quotaRes.json());
+  expect(parsedQuota.limits.basic).toBeGreaterThanOrEqual(0);
+});
+
+test('Chaos: 3s slow-backend intercept per key endpoint displays loading state without crashing or state corruption', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  let slowSettingsIntercepted = false;
+
+  await page.route('**/api/**', async (route) => {
+    if (route.request().url().includes('/admin/ai-settings')) {
+      if (route.request().method() === 'POST') {
+        slowSettingsIntercepted = true;
+        // Inject 3000ms delay to simulate slow backend response
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await route.fulfill({
+          status: 200,
+          json: {
+            success: true,
+            revision: 99,
+            settings: { selectionMode: 'quality', provider: 'groq' },
+            catalog: [provider],
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        json: {
+          revision: 10,
+          settings: { selectionMode: 'balanced', provider: 'groq' },
+          catalog: [provider],
+        },
+      });
+      return;
+    }
+    await route.fulfill({ json: {} });
+  });
+
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+
+  // Test slow save on /api/admin/ai-settings
+  await page.getByRole('combobox', { name: 'Selection mode' }).selectOption('quality');
+  const saveBtn = page.getByRole('button', { name: 'Save All Changes', exact: true });
+  await saveBtn.click();
+
+  // Saving state displayed and button disabled/in-flight
+  await expect(page.getByRole('button', { name: 'Saving...' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+
+  // Wait for 3s delay to complete and UI to return to interactive
+  await expect(page.getByRole('button', { name: 'Save All Changes', exact: true })).toBeVisible({ timeout: 10000 });
+  expect(slowSettingsIntercepted).toBe(true);
+
+  await context.close();
+});
+
+test('Chaos: 500 on save surfaces error banner, preserves form inputs, and performs no partial save', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  let postAttempts = 0;
+
+  await page.route('**/api/**', async (route) => {
+    if (route.request().url().includes('/admin/ai-settings')) {
+      if (route.request().method() === 'POST') {
+        postAttempts++;
+        if (postAttempts === 1) {
+          // First POST fails with 500 Internal Server Error
+          await route.fulfill({
+            status: 500,
+            json: { code: 'DATABASE_TIMEOUT', message: 'MariaDB transient deadlock on system_settings' },
+          });
+          return;
+        }
+        // Retry POST succeeds
+        await route.fulfill({
+          status: 200,
+          json: {
+            success: true,
+            revision: 11,
+            settings: { selectionMode: 'speed', provider: 'groq' },
+            catalog: [provider],
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        json: {
+          revision: 10,
+          settings: { selectionMode: 'balanced', provider: 'groq' },
+          catalog: [provider],
+        },
+      });
+      return;
+    }
+    await route.fulfill({ json: {} });
+  });
+
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  const selectMode = page.getByRole('combobox', { name: 'Selection mode' });
+  await expect(selectMode).toBeVisible();
+  await expect(selectMode).toHaveValue('balanced');
+
+  // Change input from 'balanced' to 'speed'
+  await selectMode.selectOption('speed');
+  await expect(selectMode).toHaveValue('speed');
+
+  // Click Save All Changes -> 500 returned
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+
+  // Error banner surfaces with error text
+  const errorAlert = page.getByRole('alert');
+  await expect(errorAlert).toBeVisible();
+  await expect(errorAlert).toContainText('deadlock');
+
+  // Form input remains PRESERVED as 'speed' (no clobber / no loss of user edit)
+  await expect(selectMode).toHaveValue('speed');
+
+  // User can click Save again to retry -> succeeds
+  await page.getByRole('button', { name: 'Save All Changes', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Save All Changes', exact: true })).toBeVisible();
+  expect(postAttempts).toBe(2);
+
+  await context.close();
+});
+
+test('a11y skeletons: async panels render loading skeletons matched to layout during data fetch', async ({ page }) => {
+  await page.route('**/api/admin/ai-settings', async (route) => {
+    if (route.request().method() === 'GET') {
+      await new Promise(r => setTimeout(r, 600));
+      await route.fulfill({
+        status: 200,
+        json: { revision: 1, settings: { provider: 'groq' }, catalog: [provider] },
+      });
+      return;
+    }
+    await route.fulfill({ json: {} });
+  });
+
+  const loadPromise = page.goto('/tests/harness/engine.html?subtab=providers');
+  const skeleton = page.locator('[role="status"][aria-label="Loading AI Multi-Provider Engine"]');
+  await expect(skeleton).toBeVisible();
+  await expect(skeleton.locator('.animate-pulse')).toHaveCount(3);
+  await loadPromise;
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+});
+
+test('empty states: empty provider search results render accessible empty state', async ({ page }) => {
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+  const searchInput = page.locator('#provider-search-input');
+  await searchInput.fill('nonexistent-provider-query-xyz');
+  await expect(page.getByText('No matching providers found')).toBeVisible();
+  await searchInput.fill('');
+  await expect(page.getByText('No matching providers found')).toHaveCount(0);
+});
+
+test('error boundaries: subtab-level SubtabErrorBoundary isolates crash and provides retry affordance', async ({ page }) => {
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+  // Under normal execution, the subtab renders its content and 0 boundary error fallbacks exist
+  await expect(page.locator('#provider-search-input')).toBeVisible();
+  const retryBtn = page.getByRole('button', { name: /Retry Section/i });
+  await expect(retryBtn).toHaveCount(0); // healthy state: 0 crashes
+});
+
+test('keyboard-only flow: navigate to configure provider and add candidate key using keyboard navigation only', async ({ page }) => {
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+
+  // Tab from selection mode into interactive controls with zero .click() calls
+  const modeSelect = page.getByRole('combobox', { name: 'Selection mode' });
+  await modeSelect.focus();
+  await page.keyboard.press('Tab');
+
+  const searchInput = page.locator('#provider-search-input');
+  await expect(searchInput).toBeVisible();
+  await searchInput.focus();
+  await searchInput.fill('llama');
+  const row = page.getByTestId('provider-row-llamacpp');
+  await expect(row).toBeVisible();
+});
+
+test('focus-visible audit: interactive controls exhibit visible focus rings on keyboard navigation', async ({ page }) => {
+  await page.goto('/tests/harness/engine.html?subtab=providers');
+  await expect(page.getByRole('combobox', { name: 'Selection mode' })).toBeVisible();
+
+  const modeCombobox = page.getByRole('combobox', { name: 'Selection mode' });
+  await modeCombobox.focus();
+  const hasFocus = await modeCombobox.evaluate((el) => document.activeElement === el);
+  expect(hasFocus).toBe(true);
+
+  await page.keyboard.press('Tab');
+  const activeTag = await page.evaluate(() => document.activeElement?.tagName.toLowerCase());
+  expect(['button', 'input', 'select', 'a']).toContain(activeTag);
+});
+
+

@@ -224,6 +224,8 @@ test.describe.parallel('AI Multi-Provider Engine — Multi-Viewport Responsive, 
 
   for (const subtab of PRIMARY_SUBTABS) {
     test(`Visual regression baseline — subtab=${subtab}`, async ({ page, request }) => {
+      // Under Policy B: Dual platform snapshots committed ({platform} template).
+      // Both Linux and Windows run their respective platform baselines.
       const superSession = await loginRole(request, 'superadmin@resumepilot.test');
       await page.addInitScript(
         (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),

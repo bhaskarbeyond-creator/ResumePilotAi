@@ -72,7 +72,7 @@ Every closed defect (`DEF-01` .. `DEF-23`) maps 1:1 to a committed automated Pla
 | `DEF-13` | Medium | URL filter state (`?provider`, `?category`, `?status`, `?q`, `?dialog`) not synced | **Closed** (`10d6a2c`) |
 | `DEF-14` | High | Hardcoded `localhost:8000` gateway URLs broke proxied/remote browser origins | **Closed** (`10d6a2c`) |
 | `DEF-15` | Medium | Playground tab did not execute real `/api/v1/chat/completions` inference | **Closed** (`10d6a2c`) |
-| `DEF-16` | Medium | Legacy `?tab=ai|aisettings|ai_settings|aimodels` and `?subtab=key-pool` aliases incomplete | **Closed** (`10d6a2c`) |
+| `DEF-16` | Medium | Legacy `?tab=ai\|aisettings\|ai_settings\|aimodels` and `?subtab=key-pool` aliases incomplete | **Closed** (`10d6a2c`) |
 | `DEF-17` | Medium | `<LegacyRedirect>` (`/adm/*`, `/platform/*`) stripped query parameters | **Closed** (`10d6a2c`) |
 | `DEF-18` | High | Hand-rolled `div[role="dialog"]` & `window.confirm()` violated WCAG 2.1 AA modal semantics | **Closed** (`10d6a2c`) |
 | `DEF-19` | Low | Dead 3,949-line `AdminAiSettingsTab.tsx.fixed` file tracked in repository | **Closed** (`1968cd7`) |
@@ -81,3 +81,20 @@ Every closed defect (`DEF-01` .. `DEF-23`) maps 1:1 to a committed automated Pla
 | `DEF-22` | Medium | Discovery error states overwrote previously discovered models | **Closed** (`10d6a2c`) |
 | `DEF-23` | Medium | Silent `catch {}` blocks hid API failures on user-initiated actions | **Closed** (`10d6a2c`) |
 | `DEF-24` | Low (External) | Headless sandbox blocks outbound `fonts.googleapis.com` (`ERR_CONNECTION_CLOSED`) | **Logged External** (allow-listed narrowly in E2E console hygiene) |
+
+---
+
+## 4. Phase 4 — Post-Decomposition Module Architecture
+
+The 3,625-line `AdminAiSettingsTab.tsx` monolith has been decomposed into `frontend/src/components/admin/ai-settings/`:
+
+- **Orchestrator**: `ai-settings/AdminAiSettingsTab.tsx` — 89 lines (budget: < 300); root re-export: 5 lines
+- **Largest leaf**: `context/AiSettingsContext.tsx` — 440 lines (budget: < 500)
+- **Total leaves**: 42 files across 10 directories
+- **Zero behavior change**: All `data-testid` attributes preserved, all existing tests pass at `--retries=0`
+
+Full module tree, subtab-to-file mapping, and state architecture documented in [`module-map.md`](./module-map.md).
+
+### P0 Enable/Disable Fix (applied before decomposition)
+
+The `resolveExplicitEnableToggle` precedence inversion in `backend/services/aiAdmin.js` was fixed (`c2e08dc7`). Legacy merged fields (`openaiEnabled`, `anthropicEnabled`, etc.) no longer silently override the `enabledProviders` object for the 75-provider registry. A primary-provider guard prevents disabling the active routing provider without reassigning first.

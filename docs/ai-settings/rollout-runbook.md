@@ -139,10 +139,30 @@ npx playwright test tests/engine-security.spec.ts --retries=0
 npx playwright test tests/engine-responsive.spec.ts --retries=0
 ```
 
-### Visual Regression Baseline Policy & Authorised Regeneration
-- **Standing Policy:** Never pass `--update-snapshots` during CI or verification gates; any pixel diff `> 0.01` (`maxDiffPixelRatio`) must fail the build and be reviewed.
-- **When Intentional UI Changes Are Approved:** After explicit reviewer sign-off on visual diffs, regenerate the 25 deterministic Linux snapshots (`5 subtabs × 5 viewports`) via:
+### Visual Regression Baseline Policy (Policy B — Dual-Platform Baselines)
+- **Standing Policy (Policy B):** Dual-platform snapshots committed with Playwright `{platform}` template (`-linux.png` and `-win32.png`). Both Linux CI and Windows developer environments execute their respective authoritative platform baselines without skipping.
+- **Cross-Platform Justification:** Windows font rasterization (DirectWrite / ClearType) introduces 0.5%–1.8% anti-aliasing variances on subpixel typography compared to Linux FreeType. Rather than skipping visual tests on dev or suffering spurious CI failures, `playwright.config.ts` uses `snapshotPathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}'`. Both platforms maintain canonical snapshots side-by-side in `frontend/tests/engine-responsive.spec.ts-snapshots/`. A pixel regression introduced on either Windows or Linux is immediately caught locally and in CI.
+- **Regenerating Snapshots:** When intentional UI changes are approved, regenerate the 25 deterministic snapshots (`5 subtabs × 5 viewports`) for the current platform via:
   ```bash
-  cd frontend && npx playwright test tests/engine-responsive.spec.ts --update-snapshots
+  cd frontend && npx playwright test tests/engine-responsive.spec.ts -g "Visual regression baseline" --update-snapshots
   ```
   Inspect `git diff frontend/tests/engine-responsive.spec.ts-snapshots/` before committing.
+
+### Mandatory CAS Enforcement (expectedRevision)
+- All administrative mutations (`POST /api/admin/ai-settings`) MUST supply `expectedRevision: <number>`.
+- Omission of `expectedRevision` without `force: true` returns `400 EXPECTED_REVISION_REQUIRED`.
+- Stale revision returns `409 REVISION_CONFLICT` with `remoteRevision` payload for CAS recovery affordance.
+
+---
+
+## §6 Deferred to Platform Infrastructure
+
+### MariaDB connection-pool circuit breaker
+- File: backend/database/mysql.js
+- Status: Deferred — Phase 4 Platform Infrastructure Roadmap
+- Rationale: Shared across 1,082 platform tests; no AI-settings-specific failure mode identified. Modifying pool reconnection logic inside a feature freeze adds more risk than it removes.
+- Owner: platform infrastructure team
+- Revisit trigger: any AI-settings incident where pool exhaustion is the proximate cause
+- Ticket: PLAT-001
+
+

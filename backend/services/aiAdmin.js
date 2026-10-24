@@ -50,10 +50,6 @@ function maskApiKey(key) {
 }
 
 function resolveExplicitEnableToggle(input = {}, pId) {
-  const legacyField = ENABLE_FIELDS[pId];
-  if (legacyField && typeof input[legacyField] === 'boolean') return input[legacyField];
-  const dynField = `enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`;
-  if (typeof input[dynField] === 'boolean') return input[dynField];
   if (input.enabledProviders && typeof input.enabledProviders === 'object' && typeof input.enabledProviders[pId] === 'boolean') {
     return input.enabledProviders[pId];
   }
@@ -61,6 +57,10 @@ function resolveExplicitEnableToggle(input = {}, pId) {
     if (typeof input[pId].enabled === 'boolean') return input[pId].enabled;
     if (typeof input[pId].disabled === 'boolean') return !input[pId].disabled;
   }
+  const legacyField = ENABLE_FIELDS[pId];
+  if (legacyField && typeof input[legacyField] === 'boolean') return input[legacyField];
+  const dynField = `enable${pId.charAt(0).toUpperCase() + pId.slice(1)}`;
+  if (typeof input[dynField] === 'boolean') return input[dynField];
   return undefined;
 }
 
@@ -400,11 +400,23 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
     );
-    const isBypass = resolvedExpectedRevision === undefined || resolvedExpectedRevision === null || resolvedExpectedRevision === -1 || input?.force === true;
+    if ((resolvedExpectedRevision === undefined || resolvedExpectedRevision === null) && input?.force !== true) {
+      throw errorWith('EXPECTED_REVISION_REQUIRED', 'expectedRevision is required for administrative writes.', 400);
+    }
+    const isBypass = resolvedExpectedRevision === -1 || input?.force === true;
     if (!isBypass && Number(resolvedExpectedRevision) !== currentRevision) {
       const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
       conflictErr.currentRevision = currentRevision;
       throw conflictErr;
+    }
+    const targetPrimary = safePublic.provider || currentPublic.ai?.provider || 'gemini';
+    const primaryExplicitToggle = resolveExplicitEnableToggle(input, targetPrimary);
+    if (primaryExplicitToggle === false) {
+      throw errorWith(
+        'CANNOT_DISABLE_PRIMARY_PROVIDER',
+        `Cannot disable ${targetPrimary} because it is currently the active primary provider. Switch primary provider first.`,
+        400
+      );
     }
     const providerPatch = secretPatch(input, currentSecrets, legacyAi);
     const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
