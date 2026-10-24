@@ -1,0 +1,1133 @@
+diff --git a/docs/ai-settings/engine-audit-2026-10-24.md b/docs/ai-settings/engine-audit-2026-10-24.md
+new file mode 100644
+index 0000000..3bcb6e1
+--- /dev/null
++++ b/docs/ai-settings/engine-audit-2026-10-24.md
+@@ -0,0 +1,462 @@
++# AI Multi-Provider Engine — Independent Audit
++
++**Date:** 2026-10-24
++**Repository:** `bhaskarbeyond-creator/ResumePilotAi`
++**Base commit:** `5bd2570` (`Merge branch 'freeze/ai-settings-10-10' into main`)
++**Audited tree:** working branch `arena/59e83a88-resumepilotai`, tree clean at audit start
++**Scope:** the routing/selection/execution engine — **not** the settings UI (frozen, PR #49 / `freeze/ai-settings-10-10`)
++**Mode:** read-only. No product code was changed, no commit, no push, no PR.
++
++---
++
++## 0. P0 alert (reported before the rest of this document)
++
++| # | P0 | Evidence | Impact |
++|---|----|----------|--------|
++| **F-01** | The OpenAI/Anthropic-compatible gateway `/v1/*` is **outside every AI admission control**: no `aiAccountLimiter`, no `aiGovernanceMiddleware`, no `enforceDailyAiQuota`, and no global rate limiter (that limiter is mounted on `/api` only). Any signed-in candidate's Firebase token is accepted as a `/v1` credential. | `backend/index.js:2786,2974,3034` (routes), `backend/index.js:2702-2722` (`resolveV1Principal`), `backend/index.js:390` (`app.use('/api', globalLimiter)`), `backend/index.js:556-569` (quota only on `/api/ai*`). Live probe §A.6: user token accepted; `ai_usage` rows stayed **0** across three `/v1` calls. | Unmetered, unthrottled access to paid provider capacity by any authenticated user (and, in non-production, anonymously when no platform keys are configured — `index.js:2718-2720`). Cost/abuse exposure and a complete bypass of the quota system the product advertises. |
++
++No other finding in this audit is rated P0. Everything else is P1 or lower (§7).
++
++---
++
++## 1. Executive verdict
++
++The product does **not** have one AI engine. It has **two**, stacked:
++
++1. `backend/freellmapi/` — the *legacy* multi-provider mesh (75-provider registry, key pools, cooldown manager, LRU prompt cache, SQLite metrics). This engine actually serves almost every inference today.
++2. `backend/services/aiRouting/` — the *new* "dynamic, explainable, tenant-scoped" selector (`selectModels`, `HealthStore`, `DiscoveryService`, `RoutingTelemetry`). It is reached from the product path **only when the legacy engine throws an error class that is not `ALL_PROVIDERS_FAILED` and not HTTP 503** (`backend/services/aiRuntime.js:1846-1871`).
++
++That inversion is the single most important structural finding. The sophisticated engine this audit was commissioned to evaluate is, in the live product path, a rarely-executed fallback. The engine that runs every day (`freellmapi`) has no intelligence signal at all, a single-observation latency heuristic, no tenant awareness in its metrics/cache/cooldown stores, and several correctness bugs (manual mode, cache scoping, metering).
++
++Honest ratings (`engine-rating.md`): **Overall 5.0/10**. The "fastest + smartest active model" claim does **not** survive (§4.7).
++
++---
++
++## 2. What "the engine" actually is
++
++### 2.1 Two engines, one façade
++
++| Layer | File | Role |
++|---|---|---|
++| Façade | `backend/services/aiGateway/index.js:1-16` | Claims "Single Source of Truth: backend/freellmapi"; re-exports `freellm` + a `compat` object |
++| "Compat" | `backend/services/aiGateway/compat/aiRoutingCompat.js:7-12` | Actually re-exports `backend/services/aiRouting` — a *different* engine, not a compatibility shim |
++| Product runtime | `backend/services/aiRuntime.js` | Loads config, builds prompts, calls `freellm.completeChat` first (`:1775-1796`); `ALL_PROVIDERS_FAILED` is translated to `502 AI_PROVIDER_ERROR` and thrown (`:1846-1869`), `503 AI_PROVIDER_UNAVAILABLE` is rethrown (`:1870`); `router.route` is reached only for other error codes (`:1871`) |
++| Legacy mesh | `backend/freellmapi/**` | Provider registry, key pools, cooldowns, cache, metrics, `/v1` wire protocols |
++| New selector | `backend/services/aiRouting/**` | Requirement profiles, capability gates, explainable scoring, tenant-scoped health/telemetry |
++
++### 2.2 Provider registry
++
++- **Location:** `backend/freellmapi/providers/registry.js:13` — `PROVIDER_REGISTRY = Object.freeze({...})`, **75 entries**.
++- **Fields:** `type` (`openai-compat` \| `google` \| `horde` \| `search` \| `media`), `baseUrl`, `defaultModel`, `recommendedModels`, `envKey`, `keyless`, `optIn`, `accessCategory`.
++- **How it is updated:** by **code change** for a genuinely new provider (`registry.js`); by **configuration only** for any OpenAI-compatible endpoint, because `buildCandidateList` accepts an unknown provider id when a `baseUrl` is stored (`backend/freellmapi/services/router.js:344-347`, `backend/services/freellmConfig.js:101-107`). Admin keys are written to `system_settings.ai_providers` (`backend/services/aiAdmin.js:434-441`).
++- **Version surface:** `/v1/models` and `/v1/status` publish the catalog (`backend/index.js:3088-3119`). `intelligenceScore` / `speedScore` / `reliabilityScore` / `latencyMs` are returned as **`null`** — the engine does not fabricate scores (`backend/services/aiAdmin.js:337-341`, `backend/freellmapi/index.js:106-107`). This is honest and should be preserved.
++
++### 2.3 Selection policies — there are three
++
++| # | Implementation | Where | Inputs |
++|---|---|---|---|
++| A | `_computeDynamicRankScore` (legacy) | `backend/freellmapi/services/router.js:399-428` | +120 primary, +10 non-keyless key, ±60×freshness success, +20×freshness × speed factor; 30-min freshness |
++| B | `rankCandidates` (mode-aware) | `backend/freellmapi/services/selectionPolicy.js:21-45` | +5 primary, `min(4,capabilityFlags)×fit/4`, `decay×((success?+1:-1)×reliability + speed×speed)`; `decay = 1-age/30min` |
++| C | `selectModels` (dynamic, explainable) | `backend/services/aiRouting/modelSelector.js:74-354` | Hard gates G1–G7, then weights (`WEIGHTS`, `:41-55`) |
++
++Policy B supersedes A in `selectionMode` configurations (A becomes a tie-breaker only, because B re-sorts and uses original order as a stable tiebreak — `router.js:225,388-394`). Policy C is the one described in the design docs and is **not on the hot path** (§2.1).
++
++### 2.4 Scoring formula, transcribed
++
++**Policy C (`modelSelector.js:261-299`)**
++
++```
++score = 40·[origin=configured] + 10·[origin=discovered]
++      + 10·[provider == primary] + 5·[provider is second in providerOrder]
++      + 15·[require.structuredOutput ∧ caps.structuredOutput = YES]
++      + 15·[require.streaming        ∧ caps.streaming        = YES]
++      + 15·[require.longContext      ∧ contextStatus = verified]
++      + 10·[require.qualityTier = premium ∧ caps.reasoning    = YES]
++      + 10·[require.modalities       ∧ caps.modalities present]
++      + round(successRate·20) + latencyScore(p50, sensitivity)      // only when sampleSize ≥ 3
++      + costScore   (0 | +5)                                        // within-provider only
++      + 50·[model == tenant primaryModel]
++tie-break: score desc → providerOrder asc → model id asc
++```
++
++`latencyScore` (`:356-369`): high sensitivity → 10/8/4/0/−10 at ≤1s/≤2.5s/≤5s/≤8s/>8s; otherwise 4/2/0.
++`costScore` (`:371-391`): only if the provider publishes pricing and ≥2 sibling models; +5 for cheapest quartile on standard/enhanced tiers, +5 for most expensive quartile on premium. **Cost never gates.**
++
++**Policy B (`selectionPolicy.js:21-45`)**
++
++```
++weights     = speed ? {rel:20, speed:60, fit:0}
++            : quality ? {rel:30, speed:0, fit:30}
++            :            {rel:40, speed:20, fit:10}      // auto, balanced AND manual share this
++score = 5·[provider == primary]
++      + min(4, trueCapabilityCount)·fit/4
++      + decay·( (success ? +1 : -1)·rel + max(0, 1-latency/10000)·speed )
++decay = max(0, 1 - age/30min)  when age ∈ [0,30min), else 0
++```
++
++### 2.5 Metrics store
++
++- **File:** `data/freellm_metrics.db` (SQLite via `node:sqlite`; resolved at `backend/freellmapi/services/persistence.js:23-37`; git-ignored by `.gitignore:153 /data/`).
++- **Schema** (`persistence.js:97-120`, verified live): `provider_metrics(provider, model, requests, successes, failures, total_latency_ms, last_latency_ms, last_status, p95_latency_ms, updated_at)` PK `(provider,model)`; `provider_cooldowns(provider, model, expires_at, reason, strikes, updated_at)`; `request_log(id, provider, model, ok, status, latency_ms, created_at)` + index.
++- **What is recorded:** one row per provider attempt (success and failure), latency, HTTP status (`router.js:483-489,643,676`; stream path `:858,879,893`).
++- **What is not:** prompts, tokens, cost, **tenant id**. `_recordMetrics` deliberately drops every tenant/BYOK-scoped observation (`router.js:483-485`) — so tenant traffic contributes nothing.
++- **Refresh cadence:** synchronous write per attempt; `request_log` pruned to 5000 rows with probability 1% per write (`persistence.js:196-198`). `p95_latency_ms` is computed from an **in-process ring of the last 200 samples** (`persistence.js:144-159`), so it resets to 0 on restart even though the counters persist.
++- **Operator surface:** `GET /api/freellmapi/metrics` (super-admin, `backend/index.js:3122`) and the unauthenticated `GET /v1/status` (`:3117`).
++
++### 2.6 Cooldown store
++
++- **Memory:** `backend/freellmapi/services/cooldown.js:15` Map keyed `provider:model`; provider-level key also consulted (`:61-79`).
++- **TTL:** 60 s base, doubled per consecutive strike within 10 min, **max 300 s** (`:16-17,86-92`).
++- **Durability:** mirrored to `provider_cooldowns` (`:105-112`) and re-hydrated at attach time (`:26-48`), so a restart does not hammer a benched provider.
++- **Global scope:** the cooldown key contains **no tenant id**. One tenant's 429 benches the destination for every tenant (see §6.2).
++- **Separate store** in the new engine: `HealthStore` keyed `tenantId|provider|model` (`backend/services/aiRouting/healthStore.js:44-46`), in-process only.
++
++### 2.7 Cache
++
++- **Where:** `backend/freellmapi/services/cache.js` — LRU-ish `Map`, 500 entries, 1 h TTL (`:14-18`).
++- **Key:** `sha256({ messages, model: cacheIdentity, temperature })` (`:20-23`), where `cacheIdentity = sha256({ tenantContext, candidates, maxTokens, jsonMode, responseFormat })` (`router.js:571-573`).
++- **Invalidation:** only TTL and capacity. There is **no** `cleanExpired()` method (`cache.js:56-62`), despite the 6-hourly maintenance job calling it (`freellmapi/index.js:165` → `F-11`). Cache entries are never cleared when settings change; they stop matching only because `candidates` (which embed the keys) change the identity.
++- **Scope:** for `/v1` callers `tenantContext` is always `null`, so the identity contains no principal at all → see `F-02`.
++
++### 2.8 Config propagation (settings → live request)
++
++| Path | Cache | TTL | Evidence |
++|---|---|---|---|
++| freellmapi mesh | `backend/services/freellmConfig.js:31-36,56-75` | **10 s** (`CONFIG_CACHE_MS`) | live probe §A.3: DB change visible after ≤12 s, no restart |
++| product runtime | `backend/services/aiRuntime.js:77,1623-1673` | **15 s** (`CONFIGURATION_CACHE_MS`) | same loader family |
++| admin save | `backend/services/aiAdmin.js:459-460` | cache cleared **synchronously** on save | static + §A.7 |
++
++No-restart guarantee **holds for a single process**. Both caches are process-local; a multi-instance deployment converges only after the TTL. There is no pub/sub or revision broadcast.
++
++### 2.9 Multi-tenancy inside the engine
++
++| Store | Tenant-aware? | Evidence |
++|---|---|---|
++| aiRouting `HealthStore` | **Yes** — key `tenantId\|provider\|model` | `healthStore.js:4-14,44-46` |
++| aiRouting `RoutingTelemetry` | **Yes** — entries carry `tenantId` | `routingTelemetry.js:14-16,69` |
++| aiRouting `DiscoveryService` | **Yes** — per-tenant credential access | `discoveryService.js` (tenant access state) |
++| freellmapi `provider_metrics` / `request_log` | **No** | schema has no tenant column |
++| freellmapi `CooldownManager` | **No** | `cooldown.js:55-59` |
++| freellmapi prompt cache | **Only when the caller passes `tenantContext`** | `router.js:571-573`; `/v1` passes `null` |
++
++---
++
++## 3. Consumer surface (summary — full chart in `engine-consumers.md`)
++
++Discovered by grepping the whole repository, not just `backend/routes/`.
++
++| Consumer | Entry | Auth | Engine |
++|---|---|---|---|
++| OpenAI SDK / Cursor / Cline | `POST /v1/chat/completions` | `optionalAuth` + platform key **or** Firebase token | freellmapi |
++| Anthropic SDK / Claude Code | `POST /v1/messages` | same | freellmapi |
++| Agent search | `POST /v1/search` | same | freellmapi search chain |
++| Model catalog | `GET /v1/models` | **none** | freellmapi |
++| Engine status | `GET /v1/status`, `/api/freellmapi/status` | **none** | freellmapi |
++| Durable metrics | `GET /api/freellmapi/metrics` | `requireSuperAdmin` | freellmapi |
++| Product content ops | `/api/ai/generate-content`, `/api/ai/parse-resume`, `/api/ai/check-grammar`, legacy `/api/generate-*` | `requireAuth` + governance + daily quota | freellm → aiRuntime → (rare) aiRouting |
++| Interview generation | `/api/ai/generate-interview` (+ legacy) | same | freellmapi |
++| Live interview | `/api/live-interview/*` | `requireAuth` + governance + quota on POST | freellmapi |
++| Cover letter | `/api/generate-ai-cover-letter` | same | freellmapi |
++| Enterprise content | `/api/enterprise/ai/generate-content` | tenant context + `ai.use` | freellm (tenant "BYOK" tier, fabricated) |
++| Enterprise interview | `/api/enterprise/ai/generate-interview` | same | freellmapi |
++| Admin settings | `GET/POST /api/admin/ai-settings` | `requireSuperAdmin` | config only |
++| Admin probes | `/api/admin/ai/test-provider`, `/api/admin/ai/fetch-models` | `requireSuperAdmin` | direct provider call |
++| Admin quota | `/api/admin/ai/quota-stats`, `/api/admin/ai/quota-limits`, `/api/admin/ai/reset-quota` | path policy (`ai.usage.read` / `ai.entitlements.manage`) | MariaDB quota ledger |
++| Tenant BYOK | `PATCH /api/admin/platform/tenants/:id/ai-policy`, `POST …/ai-keys/test` | `system.config.write` + recent auth + `requireSuperAdmin` | **encrypted store, never read by router** |
++| Cron | `startAutonomousMaintenance` every 6 h (`index.js:5294`, `freellmapi/index.js:158-174`) | — | cooldown purge (works) + cache purge (throws) |
++| Webhooks | none for AI | — | — |
++| Batch/backfill | none for AI | — | — |
++
++**No evidence found** for: a scheduled health-check job, quota-reset cron, metric-compaction cron, or a documented third-party partner integration beyond the OpenAI/Anthropic wire compatibility.
++
++---
++
++## 4. Routing intelligence audit
++
++### 4.1 Are the five modes real?
++
++`MODES = ['auto','quality','speed','balanced','manual']` (`selectionPolicy.js:3`), validated at `:4-7` and again on save (`aiAdmin.js:70`). `selectionMode` is read from `public_config.ai.selectionMode` (`freellmConfig.js:116`).
++
++| Mode | Code | What it optimises | Distinct formula? | Live behaviour |
++|---|---|---|---|---|
++| `auto` | `selectionPolicy.js:25` (else branch) | reliability 40 / speed 20 / fit 10 | **No — identical to `balanced` and to the formula `manual` uses before pinning** | `auto` with primary failing → fell over to the healthy provider (`§A.5`) |
++| `balanced` | `:25` | same as `auto` | **No** | not separately probed (same code path) |
++| `speed` | `:23` | reliability 20 / speed 60 / fit 0 | yes | after both providers had a fresh success, chose the 8 ms provider over the 3 s primary (`§A.9`) |
++| `quality` | `:24` | reliability 30 / speed 0 / fit 30 | yes | chose the **3 s primary** over the 8 ms alternative and reported `qualityEvidence: "unknown"` (`§A.10`) |
++| `manual` | `router.js:203,215,227-230` | pin to `platformConfig.primary` | pinning, not a formula | honoured — but with two live defects (`F-03`, `F-04`) |
++
++`manual` pinning is enforced by `chosen = candidates.filter(c => c.provider === primary)` and a final filter that keeps only the top candidate's provider+model (`router.js:227-230`). It is **not** silently overridden by cooldown: when the pinned provider failed with HTTP 500 the request returned **502 `ALL_PROVIDERS_FAILED`** and the healthy secondary received **zero** calls (`§A.8`). That is the documented contract (comment at `router.js:226`), and it is honoured — but see the outage coupling in `F-03`/`F-14`.
++
++When the *selected* provider is unavailable at config level (disabled/unconfigured), the pin cannot be honoured at all: `primary` falls back to `candidates[0].provider` (`router.js:202`) and traffic is served by a different provider while `routing_decision.mode` still says `manual` (`§A.7`). That is a UX honesty gap, not a routing bug.
++
++### 4.2 Signals that actually feed selection
++
++| Signal | Source | Real? | Stale? |
++|---|---|---|---|
++| Provider order / primary | `public_config.ai.provider` (`freellmConfig.js:110-112`) | yes | no |
++| Enabled / disabled | `ai_providers[*].enabled\|disabled` (`freellmConfig.js:98-99`) | yes | 10 s cache |
++| Credential present | key pool from env → DB pool → legacy field (`freellmConfig.js:89-94`) | yes | 10 s cache |
++| Success/failure | **last** `request_log` row per provider (`router.js:224-225,409-425`) | yes | yes — single sample, 30 min decay |
++| Latency | **last** `latency_ms` of that sample (`router.js:420-423`) | yes (wall clock around HTTP) | yes — one sample |
++| Capability fit | count of `true` flags in discovered metadata (`selectionPolicy.js:34`) | only if discovery published flags | n/a |
++| Cooldown | `cooldownManager.isOnCooldown` (`router.js:219,366`) | yes | per TTL |
++| Cost | provider-published pricing (policy C only) | often absent | n/a |
++| Intelligence / benchmark | **none anywhere** | — | — |
++
++Nothing is hardcoded except `DEFAULT_PRIORITY_ORDER` (`router.js:31-53`), which is a *tie-breaker/fallback ordering*, not a score.
++
++### 4.3 Latency signal
++
++- **Measurement:** wall-clock duration of the provider HTTP attempt (`router.js:606,628`), stored as `latency_ms`.
++- **Statistic used for ranking:** the **single most recent** observation (`getRecentRequests`, `router.js:224-225`), decayed linearly over 30 minutes (`:415-423`).
++- **Window / refresh:** none. `p95_latency_ms` exists in the schema but is **not read by any selector** (grep: only `persistence.js` writes/reads it for the metrics endpoint).
++- **Granularity:** per provider **and** per model (`_key(provider, model)`).
++- **Cold start:** no observation → `score += 0` from the evidence block; only the primary bonus (+120/+5) and key bonus apply. Deterministic and safe.
++- **Is it fake/stub-sourced?** No. Both engines measure real HTTP durations. In this audit they measured local stubs, but the code path is the production one.
++
++### 4.4 Intelligence ("smartest") signal
++
++- The only capability signal in the live engine is **a count of boolean flags** in model metadata (`selectionPolicy.js:34`) plus `quality: "unknown"` in the response (`:39-41`).
++- Static tiers from the registry are **rank/marketing strings only**; the engine never reads them (`router.js:404-405` comment: "Registry marketing scores and model-name size heuristics are not quality evidence"). Admin catalog exposes `intelligenceScore: null` (`aiAdmin.js:337`).
++- **Slower+smarter vs faster+dumber:** in `auto` the formula has no "smart" term at all; in `quality` the primary bonus (+5) dominates because `fit` is 0 when metadata carries no flags — observed: `quality` chose the 3 s primary over an 8 ms healthy alternative (`§A.10`). So the answer is: **it prefers the operator's primary, not the smarter model.**
++- **User-observable signal:** `_freellmapi.routing_decision` exists but is `null` unless `selectionMode` is configured (`§A.2`), and even then contains only `{mode, qualityEvidence, capabilityEvidence, observedLatencyMs, lastSuccessfulCatalogRefresh}` (`selectionPolicy.js:38-42`) — no score, no candidate list, no reason. `fallbacks[]` does explain a failover (`§A.5`).
++
++### 4.5 Active-provider filter — the five signals
++
++| Signal | Checked at routing time? | Evidence |
++|---|---|---|
++| enabled | **yes** | `router.js:336`, `modelSelector.js:107` |
++| has key / valid key shape | **yes** | `router.js:349-355`, placeholder filter `:239-248` |
++| not rate-limited | **yes** | cooldown key includes model; `:219,366` |
++| not in cooldown (failure backoff) | **yes** | `:219,366`; policy C `:226-242` |
++| health check | **no** | `probeProviderConnection` is only invoked by the admin "test key" actions (`routes/adminPlatformOperations.js:470-482`, `freellmapi/index.js:76-78`); nothing schedules it |
++
++**Live proof of the disable → skip path (same process, no restart, no cache clear):**
++
++```
++T+0    ai_providers.groq = {enabled:false, disabled:true}   (direct DB write, bypasses admin cache clear)
++T+12s  POST /v1/chat/completions  {"model":"auto"}
++       -> 200, _freellmapi.provider = "openai", actual_model = "alpha-model"
++       -> stub beta (/chat/completions) call count unchanged
++```
++`§A.4`. This exercises the 10 s `CONFIG_CACHE_MS` path rather than the admin save path; §A.7 exercises the synchronous clear.
++
++### 4.6 Failure and fallback
++
++- **Triggers:** any non-2xx (`router.js:661-697`), network error, timeout (`openaiCompat.js:284-331`), empty completion (`:304-306`), unparseable tool dialect (`router.js:459-468`), mid-stream failure (no replay — `router.js:876-881`).
++- **Bound:** one pass over the candidate list × key pool (`router.js:597-697`); it is capped at 12 candidates only when a `selectionMode` is configured (`router.js:232`), otherwise every enabled provider is attempted in priority order. **No retry of the same provider** in the legacy engine. The new engine retries a candidate once more, and only for latency-critical live operations (`attempts = latencyCritical ? 2 : 1`, `orchestrator.js:236`), always inside the operation's latency budget. Both are bounded.
++- **Provider disclosed?** Yes — `_freellmapi.provider`, `actual_model`, `latency_ms`, `cached`, `fallbacks[]` (`backend/index.js:2957-2965`). Probe `§A.5` shows a real failover recorded with provider, model, HTTP status, and error.
++- **All providers fail:** deterministic `502 ALL_PROVIDERS_FAILED` (`router.js:700-706`) / `503 AI_PROVIDER_UNAVAILABLE` when no candidate exists (`:562-567`); the new engine produces `502 AI_PROVIDER_ERROR` with a `failures[]` array (`orchestrator.js:425-449`). No hang: every attempt has a deadline (`httpDeadline.js`, `orchestrator.js:254-256`).
++- **Primary in cooldown:** the legacy engine skips it and serves the next eligible provider (probe `§A.5` — openai was in cooldown, groq served). The new engine additionally implements a "last-resort cooldown release" when *everything* is cooling (`modelSelector.js:310-328`), which the legacy engine does **not** (`F-14`).
++
++### 4.7 Verdict on "fastest + smartest active model"
++
++**No — the claim does not survive**, with one partial exception.
++
++What the engine actually does:
++
++1. It picks the operator's **primary** provider unless a *most-recent single observation* says that provider recently failed or was much slower (`router.js:399-428`).
++2. In `speed` mode it will prefer a provider whose **last** success was faster (proven, `§A.9`), but a single stale sample can mislead it (observed 3.0 s request served while an 8 ms provider existed, `§A.9` first attempt).
++3. In `quality` mode it has **no quality evidence whatsoever** (`qualityEvidence: "unknown"`), so "smartest" reduces to "primary" (`§A.10`).
++4. The genuinely explainable, capability-gated, tenant-scoped selector (`aiRouting`) is bypassed for normal product traffic (`§2.1`, `F-05`).
++
++To make the claim true, the engine needs (a) a real quality signal, (b) a windowed latency statistic rather than the last sample, and (c) product traffic actually routed through the selector. See `engine-findings.md` §"Path to a true 10/10".
++
++---
++
++## 5. BYOK and multi-tenancy
++
++### 5.1 Who can write a key
++
++| Route | Guard | Writes | Evidence |
++|---|---|---|---|
++| `POST /api/admin/ai-settings` | `requireSuperAdmin` only (**no recent-auth**, unlike the tenant policy route) | platform provider keys → `system_settings.ai_providers` | `backend/index.js:3840`; `aiAdmin.js:381-463` |
++| `POST /api/admin/ai/test-provider` | `requireSuperAdmin` + dedicated limiter | nothing (probe only) | `index.js:574,3861` |
++| `GET/POST /api/admin/ai/fetch-models` | `requireSuperAdmin` | nothing | `index.js:3874` |
++| `PATCH /api/admin/platform/tenants/:id/ai-policy` | `system.config.write` + `requireRecentAdminAuthentication` + `requireSuperAdmin` | tenant BYOK → **AES-256-GCM** `enterprise_tenant_credentials` | `adminPlatformOperations.js:393-417`; `mysqlTenantRegistry.js:1656-1699` |
++| `POST …/ai-keys/test` | `system.config.write` + recent auth | nothing | `adminPlatformOperations.js:451-464` |
++
++- **There is no user-level BYOK write path.** `routes/ai.js:343-351` explicitly rejects client-supplied credentials (`CLIENT_AI_KEY_REJECTED`); `resolveV1Principal` accepts only platform keys or Firebase identity (`index.js:2702-2722`). Grep for `byok|userApiKey|user_api_key` finds only the enterprise tenant store.
++- **A tenant-scoped write path does exist** (`enterprise_tenant_credentials`) and is admin-only.
++- **Platform keys are stored in plaintext** in `system_settings.ai_providers` (`aiAdmin.js:434-441`; verified with a SQL read of the stored DeepSeek key, `§A.12`). The tenant store is encrypted; the platform store is not.
++
++### 5.2 Does the routing engine know the tenant?
++
++- **freellmapi:** only if the caller passes `tenantContext`. The `/v1` routes never do (`index.js:2807-2819,2996-3030`), so those calls are platform-scope and share metrics, cooldowns and cache.
++- **Product/enterprise:** `applyTenantAiPolicy` stamps `tenantId` and `tenantPolicy` (`tenantAi.js:78-101`); `generateWithProviders` converts that into a `tenantContext` (`aiRuntime.js:1778-1789`) which *does* isolate the cache identity. But the `customProviderKeys` it builds are the **platform** keys from `configuration.providers`, not tenant credentials.
++
++**Consequences (all static, high confidence):**
++
++1. `hasTenantByok` becomes true for every enterprise request (`router.js:258-262`) → the request is executed in the "dedicated BYOK" tier with `isDedicatedByok: true`.
++2. That suppresses all durable metrics (`router.js:483-485`) and all cooldowns (`router.js:685`), so the engine learns nothing from tenant traffic — directly weakening "fastest" for the largest customers.
++3. Tenant BYOK written through the admin route is **never read by any inference path**: `getTenantCredentials` has exactly one consumer, the "test key" route (`adminPlatformOperations.js:464`). `applyTenantAiPolicy` reads `policy.customProviderKeys` (`tenantAi.js:38,52`), and `normalizeTenantConfiguration` deliberately strips that field on write (`mysqlTenantRegistry.js:143-146`). So the feature is **write-only dead storage**.
++4. Because all users share the admin key pool, one tenant can consume another tenant's capacity and rate limit. This is **not documented** in the engine code; the only mitigations are per-tenant quotas on the enterprise routes.
++
++### 5.3 Key lifecycle
++
++| Aspect | Behaviour | Evidence |
++|---|---|---|
++| Rotation / pools | Multi-key pools supported end-to-end (`apiKeys[]`, comma/newline split); round-robin cursor per provider; all keys tried before benching the provider | `router.js:100-116,137-142,598-604,683-691` |
++| Revocation | Admin save clears the config cache synchronously; next request rebuilds candidates without the key | `aiAdmin.js:459-460`; `§A.7` |
++| Expiry (401/403) | Classified `credential`; key is tried once, next key in pool, provider may be benched with reason "All pooled keys rejected" | `openaiCompat.js:90-91`; `router.js:678-690` |
++| Audit | `admin_audit_logs` row `AI_PROVIDER_SETTINGS_UPDATED` with revision + changed field names; **no key material, not even last-4** | `aiAdmin.js:443-451`; verified: SQL `LIKE` scan for every test key returned 0 rows (`§A.11`) |
++| Tenant credential audit | **none** — neither the route nor the registry writes an audit event for BYOK set/delete | `adminPlatformOperations.js:405-417`; `mysqlTenantRegistry.js:1656-1699` |
++| Platform key at rest | **plaintext JSON** | `§A.12` |
++
++### 5.4 Cross-tenant inference safety
++
++- **Prompt → provider with another tenant's key:** impossible today *because tenant BYOK is never used*. Every tenant request uses the platform key. The inverse risk (one tenant exhausting the shared pool) is real and unmitigated beyond quota counters.
++- **Result leakage via cache:** **proven.** Same prompt, two different bearer credentials, second response `cached: true` served from the first call's entry (`§A.2`). The cache identity for `/v1` has no tenant and no uid (`router.js:571-573`), so any two principals that produce the same message array share inference results. Deterministic prompts make collisions plausible ("write a cover letter for a barista"), and personalized content can be replayed to a different account.
++
++---
++
++## 6. Reliability, logic and observability defects
++
++Full prioritised list with fixes: `engine-findings.md`. Highlights:
++
++### 6.1 Logic errors (all reproduced or code-proven)
++
++| ID | Severity | Finding | Evidence |
++|---|---|---|---|
++| F-04 | **P1** | `selectionMode: "manual"` + a provider whose **model field is empty** (the common case; the admin UI treats model as optional) pins discovery to the literal string `"auto"`, matches no catalog entry, yields zero candidates, and returns **503** for *every* request. Setting an explicit model string fixes it. | `router.js:215-217` (pin = `providers[p].model \|\| candidate.model`), `:361` (`model = … \|\| 'auto'`), `:217` (`metadata.id !== pin → continue`). Live: `§A.7` (503 with an empty model pin) vs `§A.8` (502 once an explicit model was pinned — the request reached the provider, so routing no longer failed before dispatch) |
++| F-08 | **P1** | Tenant BYOK is write-only (see §5.2, item 3) | `adminPlatformOperations.js:405-417`; `tenantAi.js:38`; `mysqlTenantRegistry.js:143-146` |
++| F-09 | **P1** | Enterprise traffic is forced into the BYOK tier with platform keys, disabling metrics and cooldowns | `aiRuntime.js:1778-1789`; `router.js:258-262,483-485,685` |
++| F-02 | **P1** | Cache has no principal/tenant component on `/v1` | `router.js:571-573`; `§A.2` |
++| F-06 | **P1** | "quality" mode has no quality evidence | `selectionPolicy.js:23-37`; `§A.10` |
++| F-07 | **P1** | Ranking uses a single last observation; stale latency wins/loses decisions | `router.js:224-225,415-423`; `§A.9` |
++| F-15 | P2 | `publicAiSettings` defaults every `enable<Provider>` to **true** when omitted; a partial save silently re-enables all six legacy providers | `aiAdmin.js:81-83`; live: after one partial save `public_config.ai.enableNvidia/Gemini/Openrouter… = true` (`§A.11`) |
++| F-16 | P2 | Admin `configuredProviders` = "has credential", so a **disabled** provider still reports `configured: true` | `aiAdmin.js:243-248`; observed for `groq` after disabling it |
++
++### 6.2 Misalignments between layers
++
++| Settings UI says | Engine does | Verdict |
++|---|---|---|
++| "Manual pin" | Honoured, but a **disabled** pin yields 503 with no fallback; a pinned provider that 500s yields 502 with no fallback; if the pinned provider is *unconfigured*, traffic is silently served by another provider while `mode` still says `manual` | Contract should be explicit; the UI copy cannot promise "we always use X" |
++| "Quality" | Selects primary, no quality signal | Copy is misleading |
++| Provider "disabled" | Skipped by freellmapi; skipped by aiRuntime only when its `enable<Provider>` is `false` — a **second toggle** lives in `public_config.ai` | Two sources of truth (`freellmConfig.js:98-99` vs `aiRuntime.js:1652`) |
++| `enableFallback` toggle | Honoured (`modelSelector.js:57-63`, `buildCandidateList:379-381`) | Aligned |
++| `ai_settings_v2_enabled=false` | **No engine effect at all**; only echoed in the admin payload | Rollback flag is UI-only (`aiAdmin.js:348-353`; no engine reference) |
++| Quota limits | Enforced by middleware on `/api/ai*` **only**; `/v1` has none | F-01 |
++| Tenant BYOK | Stored encrypted, never used | F-08 |
++
++### 6.3 Reliability gaps
++
++- **Metrics DB locked/unavailable:** persistence swallows the error and keeps serving; routing falls back to static order (`persistence.js:199-201`; `buildCandidateList` wraps reads in `try/catch` `:317-329`). Good.
++- **`system_settings` unreachable mid-request:** `/v1` returns `503 AI_CONFIG_UNAVAILABLE` (`index.js:2797-2804`); product routes surface a controlled error. Bounded.
++- **429 `Retry-After`:** honoured by the new engine (`orchestrator.js:47-49,276,303-321`), **ignored by the live engine** — `classifyError` discards headers (`openaiCompat.js:86-103`) and `setCooldown` uses its own 60 s base (`cooldown.js:81-115`). `F-12`.
++- **5xx loops:** bounded (no same-provider retry in freellmapi; 1–2 attempts in aiRouting with a budget). Good.
++- **Cooldown with a single provider:** no release valve → up to 300 s of hard 503s. `F-14`.
++- **No operator cooldown reset:** `resetCooldowns()` exists (`freellmapi/index.js:143-146`) but no route calls it. `F-13`.
++
++### 6.4 Observability
++
++- **Routing decisions are not logged as decisions.** The live engine persists per-attempt rows (`request_log`) and exposes aggregates; the new engine keeps an in-memory `RoutingTelemetry` ring (`routingTelemetry.js:58-142`) that **no route exposes** (grep over `backend/index.js` and `backend/routes` returns nothing). `F-22`.
++- **Tenant audit record is structurally empty:** `recordTenantAiUsageIfApplicable` reads `decisionId/executedModel/selectionLatencyMs/...` (`routes/ai.js:282-292`) but `generateWithProviders` returns only `{latencyMs, cached, fallbacksAttempted}` (`aiRuntime.js:1820-1826`) → the audit metadata persists `aiRouting: {executedModel: null}` with every other key undefined. `F-17`.
++- **Failure context:** `fallbacks[]` carries provider, model, HTTP status, error code and latency (`§A.5`) — good — but the error **text** is forwarded to the client (`[openai] server error from alpha (HTTP 500)`), leaking internal ids. `F-20`.
++- **Human-readable live state:** `GET /v1/status` (no auth, F-10) and `GET /api/freellmapi/metrics` (super-admin). There is **no** endpoint for aiRouting health/telemetry, and `GET /v1/status` is unauthenticated.
++
++---
++
++## 7. Warnings inventory (Section 6 of the brief)
++
++Commands run at `5bd2570` + this branch, after `npm ci` in `frontend/` and `backend/`.
++
++| Command | Result |
++|---|---|
++| `npm --prefix frontend run lint` (`oxlint`, project script) | **295 warnings, 0 errors**, 239 files scanned, 58 files with findings |
++| `node_modules/.bin/eslint .` (repo flat config `eslint.config.js`) | **170 warnings, 0 errors**, 85 files |
++| `npx tsc -b` in `frontend/` | **0 errors, 0 diagnostics** (exit 0) |
++| backend lint | **no lint script exists**; `backend/package.json` has no linter dependency. Running `oxlint` with defaults over `backend/` gives 300 findings (193 `no-unused-vars`, 20 `no-control-regex`, 49 `unicorn/no-useless-fallback-in-spread`, …) — these are *not* project policy |
++| `npx tsc --noEmit` in `backend/` | not applicable (no TypeScript, no tsconfig) |
++
++### By rule
++
++| Rule | ESLint (repo config) | oxlint (frontend script) |
++|---|---|---|
++| `no-unused-vars` | 100 | **291** |
++| `react-refresh/only-export-components` | 44 | — |
++| `no-useless-escape` | 17 | — |
++| `react-hooks/exhaustive-deps` | 9 | — |
++| `unicorn/*` (3 rules) | — | 3 |
++| `no-constant-condition` | — | 1 |
++
++### By category (as requested)
++
++**(a) AI-engine files — must fix (9 ESLint / 46 oxlint-default findings)**
++- `backend/services/aiRuntime.js` — 8 ESLint warnings (3 unused vars, 5 useless escapes).
++- `backend/routes/adminPlatformOperations.js` — 1 unused var.
++- Frontend AI surfaces: `src/components/enterprise/EnterpriseAiTab.tsx` — 8 unused imports/vars; `tests/freellmapi-admin-e2e.spec.ts` — 1 unused const.
++- oxlint-default adds 4 `no-useless-fallback-in-spread` in `freellmapi/services/compression/index.js`, 3 in `aiAdmin.js`, 2 unused in `aiRouting/discoveryService.js`, 2 in `routes/ai.js`, 1 each in `modelDiscovery.js`, `aiGovernance.js`, `abuse.js`, `enterprise.js`.
++
++**(b) Non-AI legacy — inventory + triage**
++- Largest concentrations: `src/components/admin/AdminUsersTab.tsx` (15), `AdminSettingsTab.tsx` (14), `AdminModerationTab.tsx` (12), `AdminHelpDeskTab.tsx` (12), `src/pages/enterprise/console.tsx` (11), `AdminHealthTab.tsx` (10), plus `backend/index.js` (63 oxlint-default).
++- Recommended: **fix** the 4 non-unused-var warnings (`unicorn/no-useless-fallback-in-spread`, `unicorn/prefer-string-starts-ends-with`, `unicorn/no-useless-spread`, `no-constant-condition`) because they can hide real mistakes; **fix** unused imports mechanically (codemod); **drop** (`// eslint-disable-next-line` with a reason) only for intentionally-exported fixtures and for `no-control-regex` in sanitizers, where the repo config already documents the decision (`eslint.config.js:17`).
++
++**(c) Real (non-unused-var) warnings — each is a finding**
++1. `unicorn/no-useless-fallback-in-spread` (1 frontend, 49 backend-default) — dead defensive code, no behavioural defect.
++2. `unicorn/prefer-string-starts-ends-with` (1) — style.
++3. `unicorn/no-useless-spread` (1) — style.
++4. `eslint/no-constant-condition` (1) — **inspect**: could be a real loop bug; not in an AI file.
++5. `react-hooks/exhaustive-deps` (9) — potential stale-closure bugs in admin/enterprise tabs (UI, previously frozen).
++6. `no-useless-escape` (17) — regex hygiene; 5 in `aiRuntime.js` prompt/regex builders.
++
++**Cost to reach "0 warnings":** 58 frontend files (mostly unused imports) + 85 ESLint-reported files, of which ~20 are legacy components with 1–15 findings each; engine-specific work is **13 files / 9 warnings** in the ESLint view (≈0.5–1 day). Full zero is ≈2–3 engineer-days of mechanical work plus a decision on `no-control-regex` (currently off by design).
++
++---
++
++## 8. Appendix A — live probe log
++
++Environment: `NODE_ENV=development`, port 8080, MariaDB via `scripts/dev-db/mariadb-sandbox-bridge.mjs` (WASM 13.1.0), `TEST_AUTH_HMAC_SECRET=local-audit-secret-0123456789`, `FREELMAPI_API_KEYS=audit-platform-key-123`, `AI_ROUTING_DISCOVERY=false`, two OpenAI-compatible probe stubs at `:8791` (`alpha-model`) and `:8792` (`beta-model`). Release: `0.17.0-inprocess-74p`.
++
++| ID | Probe | Result |
++|---|---|---|
++| A.1 | `POST /v1/chat/completions {"model":"auto"}` | 200; `provider: groq`, `model: beta-model`, `routing_decision: null` |
++| A.2 | same body, second call with a **different** principal token | 200; `cached: true` → cross-principal cache hit |
++| A.3 | write `public_config.ai = {provider:groq, selectionMode:auto}` → wait 12 s | 200; `routing_decision.mode = "auto"`, `qualityEvidence: "unknown"`; no restart |
++| A.4 | set `ai_providers.groq.disabled = true` → wait 12 s | 200 served by `openai`; beta stub received no new call |
++| A.5 | `selectionMode=auto`, primary `openai` returns 500 | 200 served by `groq`; `fallbacks[0] = {provider: openai, status: 500, code: PROVIDER_SERVER_ERROR, latencyMs: 10}` |
++| A.6 | 3× `/v1` with a **USER** Firebase-style token | 502/503/503 (engine state), **not 401**; `ai_usage` rows 0 before and after |
++| A.7 | `selectionMode=manual`, primary `groq`, groq disabled, `openaiModel` **empty** | **503 `AI_PROVIDER_UNAVAILABLE`** (bug F-04) |
++| A.8 | after setting `openaiModel=alpha-model`: manual, pinned provider returns 500, secondary healthy | **502 `ALL_PROVIDERS_FAILED`**; secondary call count unchanged |
++| A.9 | `selectionMode=speed`, groq slow (3 s), openai fast | first attempt: served groq (stale 4 ms observation) → 3.0 s; after both had fresh samples: served **openai** (8 ms) in 5 ms |
++| A.10 | `selectionMode=quality`, same data | 200 in **3.08 s**, provider `groq`, `qualityEvidence: "unknown"` |
++| A.11 | admin `POST /api/admin/ai-settings` (super-admin), then audit query | 200, `maskedKeys` last-4 only, audit row `AI_PROVIDER_SETTINGS_UPDATED` with revision + field names, **0** rows matching any test key via `LIKE`; a partial save wrote `enableNvidia/Gemini/Openrouter = true` |
++| A.12 | SQL read of `system_settings.ai_providers` | `deepseek.apiKey = "sk-deepseek-audit-123456"` in clear text |
++| A.13 | `GET /v1/status` with no credentials | 200 — version, provider counts, cooldown list, cache size, SQLite path |
++| A.14 | `GET /api/admin/ai-settings` with a USER token | 403 `FORBIDDEN` (path policy) — access control holds |
++
++Not probed live (marked static): enterprise tenant BYOK end-to-end (requires tenant provisioning + `ai.use`), quota ledger under enterprise load, and multi-instance config propagation. All related findings cite code.
++
++## 9. Appendix B — test evidence
++
++```
++NODE_ENV=test node --test --test-concurrency=1 \
++  test/ai-model-routing-selection.test.js test/ai-model-routing-health-fallback.test.js \
++  test/ai-model-routing-discovery.test.js test/freellmapi-selection-policy.test.js \
++  test/ai-model-routing-byok-tenant.test.js
++# tests 55  pass 55  fail 0
++```
++
++These tests genuinely pin behaviour: deterministic ordering (`ai-model-routing-selection.test.js:244-275`), hard gates (`:122-188`), discovered-model demotion (`:276-297`), tenant cooldown + last-resort release (`:299-353`), tenant primary-model governance (`:377-391`), auto unpinning (`:425-...`). They test **policy C** — the engine that is not on the hot path. There is **no test that asserts mode `quality` prefers a better model**, because no such signal exists.
++
++## 10. Rating and ship/hold
++
++See `engine-rating.md`. Summary: **5.0/10 overall — HOLD.**
++
++---
++
++### Reproduction
++
++```bash
++# DB
++node scripts/dev-db/mariadb-sandbox-bridge.mjs
++# stubs (audit-only, outside the repo)
++NAME=alpha PORT=8791 MODE=ok   node /tmp/probe/stub.mjs
++NAME=beta  PORT=8792 MODE=ok DELAY=3000 node /tmp/probe/stub.mjs
++# backend
++cd backend && NODE_ENV=development PORT=8080 DB_HOST=127.0.0.1 DB_USER=root DB_NAME=ime365_sandbox \
++  TEST_AUTH_HMAC_SECRET=local-audit-secret-0123456789 FREELMAPI_API_KEYS=audit-platform-key-123 \
++  OPENAI_API_KEY=key-alpha-123456 OPENAI_BASE_URL=http://127.0.0.1:8791/v1 OPENAI_MODEL=alpha-model \
++  GROQ_API_KEY=key-beta-123456   GROQ_BASE_URL=http://127.0.0.1:8792/v1   GROQ_MODEL=beta-model \
++  node index.js
++```
+diff --git a/docs/ai-settings/engine-consumers.md b/docs/ai-settings/engine-consumers.md
+new file mode 100644
+index 0000000..728a5a4
+--- /dev/null
++++ b/docs/ai-settings/engine-consumers.md
+@@ -0,0 +1,208 @@
++# AI Multi-Provider Engine — Consumer Map
++
++**Date:** 2026-10-24 · **Base:** `5bd2570` · **Method:** repository-wide grep (`backend/`, `frontend/`, `scripts/`, `src/`) + live probes.
++Every node below cites the file that implements it. Where a consumer does not exist, it is listed as **absent** rather than guessed.
++
++---
++
++## 1. Mermaid — request origin → response
++
++```mermaid
++flowchart TD
++    %% ───────────── ORIGINS ─────────────
++    SDK["OpenAI / Anthropic SDK<br/>Cursor · Cline · Roo · Claude Code"]
++    BROWSER["Browser app (candidate)<br/>resume · interview · cover letter"]
++    ADMIN["Admin console<br/>/admin?tab=ai-settings"]
++    TENANT["Enterprise tenant client<br/>/api/enterprise/*"]
++    CRON["Cron: setInterval 6h<br/>freellmapi/index.js:158"]
++
++    %% ───────────── AUTH GATES ─────────────
++    V1AUTH{"resolveV1Principal<br/>index.js:2702<br/>platform key OR Firebase token<br/>anonymous only if non-prod & NO keys"}
++    APIAUTH{"requireAuth / optionalAuth<br/>index.js:464-480"}
++    ADMINAUTH{"requireSuperAdmin<br/>+ path policy<br/>security/auth.js:236<br/>security/policy.js:54-97"}
++    ENTAUTH{"createEnterpriseAuthMiddleware<br/>index.js:462<br/>+ tenant RBAC + ai.use"}
++    GOV{"aiGovernanceMiddleware<br/>security/aiGovernance.js:278<br/>only on /api/ai*"}
++    QUOTA{"enforceDailyAiQuota<br/>security/abuse.js:301<br/>only on /api/ai*"}
++    BURST{"aiAccountLimiter<br/>security/abuse.js:103<br/>12/min"}
++
++    %% ───────────── SERVICES ─────────────
++    V1SVC["/v1 handler<br/>index.js:2786 / 2974 / 3034"]
++    PRODSVC["routes/ai.js<br/>generate-content :1225<br/>parse-resume :1256<br/>generate-interview :784<br/>live-interview :986"]
++    COVERSVC["/api/generate-ai-cover-letter<br/>index.js:5075"]
++    ENTSVC["routes/enterprise.js<br/>ai/generate-content :743<br/>ai/generate-interview :794"]
++    ADMINSVC["admin AI routes<br/>index.js:3165-3978"]
++    CFGLOAD["loadFreeLlmPlatformConfig<br/>freellmConfig.js:56<br/>10 s cache"]
++
++    %% ───────────── CONFIG READS ─────────────
++    SETTINGS[("system_settings<br/>public_config.ai<br/>ai_providers<br/>system_settings.ai")]
++
++    %% ───────────── ENGINE ─────────────
++    AIRT["aiRuntime.generateWithProviders<br/>aiRuntime.js:1744"]
++    FREECALL["freellm.completeChat<br/>aiRuntime.js:1775"]
++    NEWROUTE["aiRouting.route<br/>aiRuntime.js:1870<br/>REACHED ONLY for non-502/non-503 errors"]
++    BUILD["FreeLlmRouter.buildCandidateList<br/>router.js:257"]
++    TENANTTIER{"tenantContext.customProviderKeys<br/>present? router.js:258"}
++    BYOKTIER["TIER 2 'dedicated BYOK'<br/>router.js:262-297<br/>isDedicatedByok=true"]
++    MESH["TIER 1 platform mesh<br/>router.js:300-396"]
++    POLICY["applySelectionPolicy<br/>router.js:191<br/>mode? → rankCandidates"]
++    MODE{"selectionMode<br/>public_config.ai"}
++    AUTO["auto / balanced<br/>rel 40 · speed 20 · fit 10"]
++    SPEED["speed<br/>rel 20 · speed 60 · fit 0"]
++    QUAL["quality<br/>rel 30 · speed 0 · fit 30"]
++    MANUAL["manual<br/>pin to primary<br/>router.js:203,215,227"]
++
++    %% ───────────── GATES AT ROUTING TIME ─────────────
++    GATE{"enabled? key?<br/>cooldown? reachable?<br/>router.js:336,349,366<br/>selectionPolicy.js:8-20"}
++    DISC["modelDiscovery.getOrDiscover<br/>1 h cache · /models per provider"]
++    CANDS["candidate list (≤12)<br/>router.js:232"]
++
++    %% ───────────── EXECUTION ─────────────
++    KEYS{"multi-key pool<br/>router.js:598"}
++    RETRY{"retry same provider?<br/>legacy: NO<br/>aiRouting: 1 (2 if latency-critical)"}
++    PROVIDER[("External provider<br/>openai-compat / google / horde")]
++    FAILover{"next candidate?<br/>router.js:683-697"}
++    ALLFAIL["502 ALL_PROVIDERS_FAILED<br/>router.js:700-706"]
++    NOELIG["503 AI_PROVIDER_UNAVAILABLE<br/>router.js:562-567"]
++
++    %% ───────────── OBSERVABILITY / STORES ─────────────
++    CACHE[("promptCache<br/>500 entries · 1 h · no tenant on /v1<br/>cache.js:14")]
++    COOLDOWN[("CooldownManager<br/>60 s → 300 s · provider:model<br/>global, not tenant-scoped")]
++    METRICS[("SQLite freellm_metrics.db<br/>provider_metrics · request_log<br/>no tenant column")]
++    HEALTH[("aiRouting HealthStore<br/>tenantId|provider|model<br/>healthStore.js:44")]
++    TELEM[("aiRouting RoutingTelemetry<br/>tenant-scoped ring<br/>NOT exposed by any route")]
++    RESP["Response<br/>_freellmapi.provider · model · latency<br/>routing_decision (only if mode set)<br/>fallbacks[]"]
++
++    %% ───────────── EDGES ─────────────
++    SDK --> V1AUTH --> V1SVC
++    BROWSER --> APIAUTH
++    APIAUTH --> GOV --> QUOTA --> BURST --> PRODSVC
++    APIAUTH --> COVERSVC
++    TENANT --> ENTAUTH --> ENTSVC
++    ADMIN --> ADMINAUTH --> ADMINSVC
++    CRON --> COOLDOWN
++    CRON -.->|"calls missing cleanExpired()"| CACHE
++
++    V1SVC --> CFGLOAD
++    PRODSVC --> AIRT
++    COVERSVC --> AIRT
++    ENTSVC --> AIRT
++    ADMINSVC --> SETTINGS
++    CFGLOAD --> SETTINGS
++    SETTINGS --> CFGLOAD
++
++    AIRT --> FREECALL
++    AIRT -.->|"error not ALL_PROVIDERS_FAILED and not 503"| NEWROUTE
++    FREECALL --> BUILD
++    NEWROUTE --> POLICY
++    BUILD --> TENANTTIER
++    TENANTTIER -->|yes| BYOKTIER
++    TENANTTIER -->|no| MESH
++    BYOKTIER --> POLICY
++    MESH --> POLICY
++    POLICY --> MODE
++    MODE --> AUTO & SPEED & QUAL & MANUAL
++    AUTO --> CANDS
++    SPEED --> CANDS
++    QUAL --> CANDS
++    MANUAL --> CANDS
++    POLICY --> DISC --> CANDS
++    CANDS --> GATE
++    GATE -->|reject| FAILover
++    GATE -->|eligible| KEYS --> RETRY --> PROVIDER
++    PROVIDER -->|2xx| RESP
++    PROVIDER -->|"4xx/5xx/timeout"| FAILover
++    FAILover -->|yes| KEYS
++    FAILover -->|no| ALLFAIL
++    GATE -->|"no candidates at all"| NOELIG
++
++    PROVIDER -->|success| COOLDOWN
++    PROVIDER -->|failure| COOLDOWN
++    PROVIDER -->|success| METRICS
++    PROVIDER -->|failure| METRICS
++    PROVIDER -->|"scoped=tenant ⇒ SKIPPED"| METRICS
++    AIRT -->|replays attempts| HEALTH
++    AIRT -->|replays attempts| TELEM
++    FREECALL --> CACHE
++    CACHE --> RESP
++
++    classDef p0 fill:#fee,stroke:#c00,stroke-width:2px
++    classDef p1 fill:#fff4e5,stroke:#e07b00
++    class V1AUTH,V1SVC p0
++    class BYOKTIER,MANUAL,CACHE p1
++```
++
++### Reading the chart
++
++- **Everything left of `aiRuntime` is admission control; everything right of it is the engine.** The `/v1` path (P0 red) has no admission control at all.
++- **`aiRouting.route` is a dotted edge.** It is only reached when `freellm.completeChat` throws a code that is neither `ALL_PROVIDERS_FAILED` nor HTTP 503 (`aiRuntime.js:1847-1870`). Normal product traffic never touches the new selector.
++- **Cache and cooldown are shared globals.** For `/v1` they carry no tenant/principal. For enterprise calls `tenantContext` isolates the cache key but suppresses metrics and cooldowns entirely (`BYOKTIER`).
++- **`CRON` has a dotted edge to cache** because `promptCache.cleanExpired` does not exist (`cache.js` has no such method); that call throws and is swallowed (`freellmapi/index.js:161-168`).
++
++---
++
++## 2. Tabular view
++
++`consumer | entry | auth | routing mode | settings read | failure handling`
++
++| Consumer | Entry (file:line) | Auth | Routing mode | Settings read | Failure handling |
++|---|---|---|---|---|---|
++| OpenAI-compatible SDK | `POST /v1/chat/completions` (`index.js:2786`) | `optionalAuth` + `resolveV1Principal` (`:2702`) — platform key or Firebase token; anonymous only non-prod & no keys | `selectionMode` if set, else legacy `_computeDynamicRankScore` | `ai_providers` (keys/pools/enabled/model/baseUrl), `public_config.ai` (provider, selectionMode, fallback, temperature, maxTokens) | per-candidate failover; 502 `ALL_PROVIDERS_FAILED`; 503 no candidate; stream committed after first token |
++| Anthropic SDK / Claude Code | `POST /v1/messages` (`index.js:2974`) | same | same | same | same, via `handleAnthropicMessages` |
++| Agent search | `POST /v1/search` (`index.js:3034`) | same | search chain (not chat) | search provider keys from env/DB | 502 `ALL_SEARCH_PROVIDERS_FAILED` |
++| Model catalog | `GET /v1/models` (`index.js:3088`) | **none** | n/a (static catalog) | env only | 500 on engine error |
++| Engine status | `GET /v1/status`, `/api/freellmapi/status` (`index.js:3117`) | **none** | n/a | live engine state incl. cooldowns + SQLite path | 200 always |
++| Durable metrics | `GET /api/freellmapi/metrics` (`index.js:3122`) | `requireSuperAdmin` | n/a | none | 503 on store error |
++| Product content ops | `/api/ai/generate-content` (`routes/ai.js:1225`), legacy `/api/generate-content` | `requireAuth` + governance + burst + daily quota (`index.js:556-569`) | freellm legacy / mode | full config + tenant policy | grounded fallback or explicit `AI_UNAVAILABLE`; never invented content (`aiRuntime.js:2084-2106`) |
++| Resume parsing | `/api/ai/parse-resume` (`routes/ai.js:1256`) | same | same | same | provider error → controlled error |
++| Grammar | `/api/ai/check-grammar` (`routes/ai.js:1180`) | same | same | same | same |
++| Interview questions | `/api/ai/generate-interview` (`routes/ai.js:784`), `/api/generate-interview` | same | same | same | 502 `INVALID_AI_OUTPUT` / provider error |
++| Live interview | `/api/live-interview/*` (`routes/ai.js:986-1091`) | `requireAuth`; POST also governance + quota (`index.js:565-568`) | same | same | per-turn abort signal; session state errors |
++| Cover letter | `/api/generate-ai-cover-letter` (`index.js:5075`) | `requireAuth` + quota list (`index.js:557-560`) | same | same | output validation → 503 `AI_OUTPUT_REJECTED`, no template substitution |
++| Enterprise content | `/api/enterprise/ai/generate-content` (`routes/enterprise.js:743`) | enterprise auth + `ai.use` + tenant quota | freellm **BYOK tier** (platform keys) | tenant `aiPolicy` (allowedProviders/models, primaryModel), platform config | 503 metering unavailable; 403 tenant policy; 502 generation |
++| Enterprise interview | `/api/enterprise/ai/generate-interview` (`routes/enterprise.js:794`) | same | same | same | same |
++| Admin settings read | `GET /api/admin/ai-settings` (`index.js:3165`) | `requireSuperAdmin` + `system.config.read` | n/a | all settings + catalog + cooldowns | 503 on repository error |
++| Admin settings write (BYOK) | `POST /api/admin/ai-settings` (`index.js:3840`) | `requireSuperAdmin` **only** (no recent auth) | n/a | read-modify-write with revision check | 409 `AI_SETTINGS_CONFLICT`; 400 validation; cache cleared on success |
++| Admin key probe | `POST /api/admin/ai/test-provider` (`index.js:3861`), `/api/admin/ai/fetch-models` (`:3874`) | `requireSuperAdmin` (+ limiter) | n/a | provider config or supplied key | provider error surfaced |
++| Admin quota | `GET /api/admin/ai/quota-stats` (`index.js:3888`), `POST /api/admin/ai/quota-limits` (`:3935`), `POST /api/admin/ai/reset-quota` (`:3958`) | path policy `ai.usage.read` / `ai.entitlements.manage` (+ recent auth on mutations) | n/a | MariaDB `ai_usage` + `ai_quota` | 503 `AI_QUOTA_STORAGE_UNAVAILABLE` |
++| Tenant AI policy / BYOK | `PATCH /api/admin/platform/tenants/:id/ai-policy` (`adminPlatformOperations.js:393`), `POST …/ai-keys/test` (`:451`) | `system.config.write` + recent auth + `requireSuperAdmin` | n/a | tenant config + encrypted credentials | 400/404/409 via `sendTenantError`; **no audit event** |
++| Cron (engine) | `startAutonomousMaintenance` 6 h (`freellmapi/index.js:158-174`, started `index.js:5294`) | none | n/a | none | cooldown purge OK; cache purge throws (swallowed) |
++| Cron (other) | live-session prune `index.js:5314`, CMS scheduler `:5337`, subscription reconciler `:5379`, outbox `:5423`, enterprise outbox `:5494`, tenant GC `:5531` | n/a | n/a | n/a | not AI routing (listed to prove they do not call the engine) |
++| Webhook | **no AI webhook exists** | — | — | — | — |
++| Batch / backfill | **no AI batch job exists** | — | — | — | — |
++| Partner integration | **none documented** beyond OpenAI/Anthropic wire compatibility | — | — | — | — |
++| SDK / embedded agent | `runClaudeCodeTask` exported (`freellmapi/index.js:225`, `agent/claudeCodeAgent.js:338`) but **no caller in the repo** | — | — | — | dead export |
++
++---
++
++## 3. Settings dependencies per consumer (what a settings change actually moves)
++
++| Setting | Read by | Effect | Latency to take effect |
++|---|---|---|---|
++| `ai_providers[*].apiKey/apiKeys` | `freellmConfig.buildFreeLlmPlatformConfig:89-94` | key pools, credential presence | 10 s cached; **immediate** on admin save (cache cleared) |
++| `ai_providers[*].enabled/disabled` | `freellmConfig.js:98-99` | candidate inclusion | 10 s / immediate |
++| `ai_providers[*].model` | `freellmConfig.js:96` | legacy model target; **manual-mode pin** (F-02) | 10 s / immediate |
++| `ai_providers[*].baseUrl` | `freellmConfig.js:97` | custom OpenAI-compatible endpoint | 10 s / immediate |
++| `public_config.ai.provider` | `freellmConfig.js:110-112` | primary + provider order | 10 s / immediate |
++| `public_config.ai.selectionMode` | `freellmConfig.js:116` | switches policy B on, enables `routing_decision` | 10 s / immediate |
++| `public_config.ai.enableFallback` | `freellmConfig.js:117` | pins to primary when `false` | 10 s / immediate |
++| `public_config.ai.temperature/maxTokens` | `freellmConfig.js:118-119` | generation parameters (clamped again in `aiRuntime.js:1663-1664`) | 10 s / immediate |
++| `public_config.ai.enable<P>` (legacy 6) | `aiRuntime.js:1652` | *second* enabled flag for the product engine | 15 s / immediate |
++| `public_config.ai.provider` (same) | `aiRuntime.js:1660` | product-engine primary | 15 s / immediate |
++| tenant `aiPolicy.allowedProviders` | `tenantAi.js:25-34` | deny-by-default provider allowlist (empty ⇒ 403) | next request |
++| tenant `aiPolicy.allowedModels/restrictedModels` | `tenantAi.js:43-50` | model gates | next request |
++| tenant `aiPolicy.primaryModel` | `tenantAi.js:65-71` | primary selection / +50 score in policy C | next request |
++| tenant `quotaPolicy.aiRequestsPerMinute/Day` | `routes/ai.js:212-225`, `routes/enterprise.js:760-761` | quota counters | next request |
++| `featureFlag ai_settings_v2_enabled` | `aiAdmin.js:348-353` (display only) | **no engine effect** | n/a |
++| `FREELMAPI_API_KEYS` (env) | `freellmConfig.platformApiKeys:128-130` | `/v1` admission | process restart |
++| `OPENAI/GROQ/…_API_KEY`, `_BASE_URL`, `_MODEL` (env) | `freellmConfig.js:89,97`; `aiRuntime.js:1644-1647` | highest-precedence credentials | process restart |
++
++---
++
++## 4. Absent consumers (explicitly stated, not guessed)
++
++- **No scheduled provider health check.** `probeProviderConnection` is only called from admin actions (`freellmapi/index.js:76-78`, `routes/adminPlatformOperations.js:470-482`).
++- **No AI webhook / callbacks.**
++- **No batch or backfill job** that calls the engine.
++- **No cron that resets quotas** — quota keys are date-scoped (`security/abuse.js:291-293`), so no reset is needed.
++- **No cron that compacts or prunes `ai_usage`** (grep for `ai_usage` + `DELETE` outside admin reset: none).
++- **No endpoint that exposes the aiRouting health/telemetry state** — `RoutingTelemetry` and `HealthStore.tenantSnapshot` have no route.
+diff --git a/docs/ai-settings/engine-findings.md b/docs/ai-settings/engine-findings.md
+new file mode 100644
+index 0000000..24a7662
+--- /dev/null
++++ b/docs/ai-settings/engine-findings.md
+@@ -0,0 +1,344 @@
++# AI Multi-Provider Engine — Prioritised Findings Register
++
++**Date:** 2026-10-24 · **Base:** `5bd2570` · **Companion docs:** `engine-audit-2026-10-24.md` (analysis), `engine-consumers.md` (map), `engine-rating.md` (score)
++**Read-only audit.** No product code was modified. Every item below is either reproduced live (`§A.x` refers to the appendix in the audit) or proven from a cited line.
++
++---
++
++## 0. How to read this
++
++| Field | Meaning |
++|---|---|
++| **Severity** | **P0** = production-critical, do today. **P1** = wrong behaviour or data exposure, fix this sprint. **P2** = correctness/UX/ops debt, schedule. **P3** = hygiene |
++| **Confidence** | `live` = reproduced against the running stack; `code` = deterministic from the cited lines; `inferred` = reasoned, not executed |
++| **Layer** | `freellmapi` (live engine) · `aiRouting` (new selector) · `runtime` (aiRuntime) · `api` (routes/middleware) · `admin` · `ops` |
++| **Fix** | Smallest change that removes the risk. Do **not** apply without authorisation. |
++
++---
++
++## 1. Register
++
++| ID | Sev | Title | Layer | Conf. |
++|---|---|---|---|---|
++| **F-01** | **P0** | `/v1/*` is outside all AI admission control (no quota, no governance, no rate limit) | api | live |
++| **F-02** | **P1** | Response cache has no principal/tenant dimension → cross-principal answer replay | freellmapi | live |
++| **F-03** | **P1** | `manual` mode has no failover: pinned provider 5xx ⇒ 502 for the user, healthy secondary idle | freellmapi | live |
++| **F-04** | **P1** | `manual` mode + unset model pin resolves the literal model `"auto"` ⇒ guaranteed 503 | freellmapi | live + code |
++| **F-05** | **P1** | The new selector (`aiRouting`) is not on the hot path — reached only for unusual error classes | runtime | code |
++| **F-06** | **P1** | `quality` mode has no quality signal; it is "primary wins" | freellmapi | live |
++| **F-07** | **P1** | Ranking uses one last observation; a stale latency sample misroutes for up to 30 min | freellmapi | live |
++| **F-08** | **P1** | Tenant BYOK is write-only — encrypted store is never read by any inference path | admin/freellmapi | code |
++| **F-09** | **P1** | Enterprise traffic is forced into "BYOK tier" using platform keys, disabling metrics and cooldowns | freellmapi | code |
++| **F-10** | **P1** | `/v1/status` is unauthenticated and exposes internals (cache size, cooldowns, SQLite path) | api | live |
++| **F-11** | P2 | `promptCache.cleanExpired()` does not exist → 6-hourly maintenance always throws at step 2 | freellmapi | code |
++| **F-12** | P2 | 429 `Retry-After` is discarded by the live engine; cooldown uses a fixed 60 s base | freellmapi | code |
++| **F-13** | P2 | No operator path resets cooldowns/cache/metrics (`resetCooldowns`, `clearCache` exist, unused) | freellmapi/api | code |
++| **F-14** | P2 | No last-resort cooldown release in the live engine: one provider ⇒ up to 300 s of hard 503s | freellmapi | code |
++| **F-15** | P2 | Partial settings save silently re-enables all legacy `enable<Provider>` flags (default-true) | admin | live |
++| **F-16** | P2 | `configuredProviders` reports `true` for disabled providers — misleading admin state | admin | live |
++| **F-17** | P2 | Tenant usage audit metadata is structurally empty (`aiRouting: {}`) — no executed model, no decision id | api | code |
++| **F-18** | P2 | Token/cost accounting is zero on every path | api | code |
++| **F-19** | P2 | Platform provider keys are stored in plaintext JSON (tenant keys are encrypted) | admin | live |
++| **F-20** | P2 | Provider error text is forwarded to clients (internal provider ids / upstream messages) | api | live |
++| **F-21** | P2 | Cooldown/metrics/cache are global (non-tenant) — one tenant's 429 degrades every tenant | freellmapi | code |
++| **F-22** | P2 | `RoutingTelemetry` and `HealthStore` state have no route; routing decisions are not auditable | aiRouting | code |
++| **F-23** | P2 | Two independent "enabled" flags for the same providers (`ai_providers.enabled` vs `public_config.ai.enable<P>`) | runtime/admin | code |
++| **F-24** | P2 | `ai_settings_v2_enabled=false` has no engine effect (rollback flag is cosmetic) | admin | code |
++| **F-25** | P3 | 170 ESLint warnings (0 errors): 100 unused vars, 44 react-refresh, 17 useless escapes, 9 hook deps | repo | live |
++| **F-26** | P3 | Config propagation is process-local (10 s / 15 s) — no cross-instance invalidation | ops | code |
++| **F-27** | P3 | `recordTenantAiUsageIfApplicable` quota defaults disagree (`|| 1` vs 60/1000) | api | code |
++| **F-28** | P3 | `temperature`/`maxTokens` defaults differ by engine path (0.7/2048 vs 0.3/4096) | runtime | code |
++| **F-29** | P3 | CAS escape hatch has two spellings (`-1` and `force:true`), neither visible in the audit row; code is `AI_SETTINGS_CONFLICT`, docs say `REVISION_CONFLICT` | admin | code |
++
++---
++
++## 2. P0
++
++### F-01 — `/v1/*` is outside every AI admission control
++
++**What happens.** The OpenAI-compatible and Anthropic-compatible gateway authenticates callers but then performs inference with no per-account limiter, no daily quota, and no governance middleware.
++
++**Evidence.**
++```
++backend/index.js:390   app.use('/api', globalLimiter);            // /v1 is not under /api
++backend/index.js:557-561  const aiPaths = ['/api/generate-interview', …];
++                          app.use(aiPaths, aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota);
++backend/index.js:569   app.use('/api/ai', aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota);
++backend/index.js:2786  app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, …)
++backend/index.js:2974  /v1/messages          — same
++backend/index.js:3034  /v1/search            — same
++backend/index.js:3088  /v1/models            — no auth
++backend/index.js:3117  /v1/status            — no auth
++```
++`resolveV1Principal` (`index.js:2702-2722`) accepts **any verified Firebase user**: `if (req.user?.uid) return { ok: true, kind: 'user', uid: req.user.uid }` (`:2712-2714`). Then `aiRuntime`'s quota ledger is never consulted, and `ai_usage` is written only by the tenant/legacy paths (`routes/ai.js:254-265`).
++
++**Proof (live).** Three `/v1/chat/completions` calls with a candidate-scope token:
++```
++POST /v1/chat/completions → 502/503/503 (engine-side, NOT 401)
++SELECT COUNT(*) FROM ai_usage WHERE ...  →  0   (before and after)
++```
++The call path is fully executed (it reaches the provider layer and returns provider errors), and nothing is metered.
++
++**Why it matters.** Every signed-in candidate holds a credential that can drive paid inference at unlimited rate, without appearing in quota dashboards or cost reports. In non-production with no platform keys configured, it is anonymous (`index.js:2718-2720`) — that branch must never be reachable from a deployed non-production environment that has a public IP.
++
++**Fix (smallest correct).**
++1. Mount `app.use('/v1', aiAccountLimiter, aiGovernanceMiddleware(), enforceDailyAiQuota)` **before** the v1 handlers — reuse the exact middleware used for `/api/ai`.
++2. Make `resolveV1Principal` require `kind === 'platform-key'` for `/v1/*` unless an explicit `V1_ALLOW_USER_TOKENS=true` flag is set; if user tokens stay, key the limiter by `req.user.uid` (the current `aiAccountLimiter` keys on account already).
++3. Record `ai_usage` for `/v1` completions (see F-18) — even provider/actual_model/latency/0-cost is better than nothing.
++4. Gate the anonymous-local branch behind `process.env.NODE_ENV === 'development' && process.env.ALLOW_ANON_V1 === 'true'`.
++
++**Effort:** ~0.5 day + tests. **Risk of not fixing:** cost abuse, unbounded load, false "quotas enforced" claims.
++
++---
++
++## 3. P1
++
++### F-02 — Response cache has no principal/tenant dimension
++
++**Evidence.** Cache key = `sha256({messages, model: cacheIdentity, temperature})` (`freellmapi/services/cache.js:20-23`); `cacheIdentity = sha256({tenantContext, candidates, maxTokens, jsonMode, responseFormat})` (`freellmapi/services/router.js:571-573`). `/v1` handlers never build a `tenantContext` (`index.js:2807-2819`), so `tenantContext` is `null` and the identity is identical for every caller with the same provider config. Cache lifetime 1 h, capacity 500 (`cache.js:14`).
++
++**Proof (live).** Same prompt + same body, first call with platform key, second with a different Bearer token → `second._freellmapi.cached === true`. The second caller received the first caller's completion.
++
++**Why it matters.** Any two principals producing byte-identical message arrays share model output. Deterministic prompts are common (template cover letters, ATS scoring, "improve this bullet"). With personalized content the same replay is a cross-account data leak; without personalization it is still an unreported shared-inference channel.
++
++**Fix.**
++- Add `principalId` (or `tenantId` + `uid`) to the cache identity, and pass it from `resolveV1Principal` into `completeChat` options.
++- Better: make caching opt-in per call site (`options.cacheable === true`) and never cache when `messages` contains user PII — the engine cannot know, so require the caller to assert it.
++
++**Effort:** ~2 h + regression test that two principals never share an entry.
++
++### F-03 — `manual` mode has no failover
++
++**Evidence.** `applySelectionPolicy` restricts candidates to the pinned provider (`router.js:203,215,227-230`) and the final filter keeps only the top candidate's provider+model. `enableFallback` is not consulted for a manual pin (it is consulted only when the primary is unconfigured: `:379-381`).
++
++**Proof (live).** `selectionMode=manual`, primary `openai` returning HTTP 500, `groq` healthy:
++```
++POST /v1/chat/completions → 502 ALL_PROVIDERS_FAILED
++groq stub calls: unchanged
++```
++Auto mode with the same providers: 200 served by groq with `fallbacks[0] = openai/500`.
++
++**Why it matters.** A pinned provider outage becomes a total product outage for every caller, even though the engine knows a healthy alternative. That is a defensible *product* choice ("manual means manual"), but it is currently an implicit one: the settings UI does not warn, and there is no "pin with fallback" option. Decide and document it.
++
++**Fix (choose one).**
++- **(a) Keep the semantics, surface the risk:** add `fallbackOnPrimaryFailure` to `public_config.ai` (default `false` now, documented) and show it in the admin UI. `manual` stays strict.
++- **(b) Make it graceful:** on pinned-provider 5xx, allow the next candidate **only** when `enableFallback !== false`, and mark the response `routing_decision.fallbackFrom = "manual"` so the deviation is visible.
++
++Do not silently change the semantics — `ai-model-routing-selection.test.js` and the design docs assert strict pinning.
++
++### F-04 — `manual` + empty model pin resolves to the model `"auto"` → 503
++
++**Evidence.** In selection modes the candidate model is `modelTarget || 'auto'` (`router.js:361`). The pin is `platformConfig.providers?.[candidate.provider]?.model || candidate.model` (`:215`); when the operator has not typed a model, that is the literal `"auto"`, which matches no catalog id (`:217`), so `expanded` is empty ⇒ `AI_PROVIDER_UNAVAILABLE` 503 (`:562-567`).
++**Proof (live).** `selectionMode=manual`, `provider=groq`, no `groqModel` ⇒ **503** on every request. After setting `groqModel: "beta-model"` ⇒ 200.
++**Why it matters.** `manual` is presented as the simple "always use this provider" mode, and the model field is optional in the UI. A plausible operator action yields a total outage with an opaque 503.
++
++**Fix.** When `mode === 'manual'` and the configured model is empty, derive the pin from the catalog (`defaultModel`) or skip pinning for that provider (i.e. treat `pin = null`). Add a validation error at save time: `selectionMode=manual` requires a model per pinned provider, or explicitly means "provider default".
++
++**Effort:** ~1 h + one test.
++
++### F-05 — The new selector is not on the hot path
++
++**Evidence.**
++```
++aiRuntime.js:1775      const result = await freellm.completeChat(...)          // live engine first
++aiRuntime.js:1846-1869 if (code === 'ALL_PROVIDERS_FAILED') → throw 502 AI_PROVIDER_ERROR
++aiRuntime.js:1870      if (code === 'AI_PROVIDER_UNAVAILABLE' || status === 503) throw
++aiRuntime.js:1871      return getSharedAiRouter().route(...)                  // aiRouting only here
++```
++So the new engine runs only when `completeChat` throws a code other than `ALL_PROVIDERS_FAILED` / `AI_PROVIDER_UNAVAILABLE` (e.g. `TENANT_BYOK_UNAVAILABLE`, adapter errors, unexpected internal failures). Normal provider outages are handled and thrown by the live engine.
++
++**Why it matters.** The capability gates, tenant-scoped health, discovery, last-resort cooldown release, explainable rationale and telemetry — all the things the design claims — are effectively dead code in production. Tests pass because they call the new selector directly (`test/ai-model-routing-*.test.js`).
++
++**Fix.** Make the engine choice explicit and observable: `AI_ENGINE=freellm|aiRouting|shadow` (default `freellm` today). In `shadow`, call `aiRouting.route` first and log divergences without changing the response; flip to `aiRouting` after a week of zero unexpected divergences. This is a much cheaper de-risking than rewriting `aiRuntime` at once.
++
++**Effort:** ~2-3 days (shadow mode + metrics), then a controlled flip.
++
++### F-06 — `quality` mode has no quality signal
++
++**Evidence.** Weights: `quality ? {reliability: 30, speed: 0, fit: 30}` (`selectionPolicy.js:24`), where `fit` = count of true capability flags (`:34`), not quality. The response hardcodes `qualityEvidence: 'unknown'` (`:39-41`). No intelligence/benchmark metric exists anywhere in the repo (grep for `qualityScore`, `benchmark`, `intelligence` → only documentation strings and the `null` placeholder in `aiAdmin.js:337`).
++**Proof (live).** Same data as speed mode: `quality` served the **3.08 s** primary while an 8 ms healthy alternative existed.
++**Why it matters.** The mode name promises model quality selection. It is primary-order selection with a speed weight of zero. An operator who switches to `quality` expecting better output gets the same primary they already had.
++
++**Fix.** Either (a) rename to `primary-first` / hide the mode until a quality signal exists, or (b) define a real signal: curated static tier per model in `providers/registry.js` (`qualityTier: premium|standard|economy`), and add a `quality` weight. Do **not** infer quality from model-name length or provider marketing (the code explicitly rejects that — keep it that way).
++
++### F-07 — Ranking uses one last observation
++
++**Evidence.** `getRecentRequests({limit:100})` then `recent.find(row => row.provider===… && row.model===…)` — a **single most-recent** row (`router.js:224-225,409-425`). Decay is linear over 30 min (`selectionPolicy.js:30-31`). `p95_latency_ms` exists in the schema but is never read by a selector.
++**Proof (live).** `speed` mode served the 3 s provider because its last recorded latency was a stale 4 ms; after one fresh success the choice flipped correctly in 5 ms.
++**Why it matters.** A single blip (one slow request, one 500) reroutes the next 30 minutes of traffic. One lucky fast sample hides a consistently slow provider.
++
++**Fix.** Use a windowed statistic: `p50`/`p95` over the last N successes **and** failures within the window from `provider_metrics`/`request_log`; require `n ≥ 3` before latency influences score (the new selector already does this — `modelSelector.js:280`); keep "last observation" only as a circuit-breaker input.
++
++### F-08 — Tenant BYOK is write-only
++
++**Evidence.**
++- Write: `POST/PATCH ai-policy` → `registry.setTenantCredentials` (`routes/adminPlatformOperations.js:405-414`) → AES-256-GCM row in `enterprise_tenant_credentials` (`mysqlTenantRegistry.js:1656-1699`).
++- Read: `getTenantCredentials` has **one** caller in the entire repo — the "test key" route (`adminPlatformOperations.js:464`). Inference reads `policy.customProviderKeys` (`tenantAi.js:38`), and `normalizeTenantConfiguration` explicitly **does not store** that field (`mysqlTenantRegistry.js:143-146`). The route even returns `customProviderKeys: {}` (`adminPlatformOperations.js:437`).
++
++**Why it matters.** The product presents per-tenant BYOK as delivered (encrypted store, test button, UI). No request is ever sent with the tenant's key; all enterprise inference runs on the platform key. Promised isolation and tenant cost ownership do not exist.
++
++**Fix.** Wire the read path: when building the tenant configuration, load credentials via `getTenantCredentials` for allowlisted providers and merge into `providers[p].key`, then pass as `tenantContext.customProviderKeys`. Cache per tenant with the same 10 s TTL; never log. Add an integration test: tenant with a distinct key ⇒ request hits a stub that only accepts that key.
++
++### F-09 — Enterprise traffic disables learning
++
++**Evidence.** `generateWithProviders` builds `tenantContext.customProviderKeys` from the **platform** configuration (`aiRuntime.js:1778-1789`); `hasTenantByok` is therefore true (`router.js:258-262`), the BYOK tier is chosen (`:262-297`), and `_recordMetrics` returns early for scoped calls (`:483-485`), as does cooldown (`:685`).
++**Why it matters.** The largest customers generate zero routing evidence: no metrics, no cooldowns, no health. A failing provider is never benched for enterprise traffic, and the global metrics view silently under-reports total usage.
++
++**Fix.** Distinguish "platform keys passed as tenant context" from "genuine dedicated BYOK": only set `isDedicatedByok` when the key source is `enterprise_tenant_credentials` (F-08). For platform-key tenant traffic, record metrics (they are not tenant-secret) and keep cooldowns.
++
++### F-10 — `/v1/status` is unauthenticated
++
++**Evidence.** `index.js:3117` registers `GET /v1/status` with no auth middleware; probe returned 200 with version `0.17.0-inprocess-74p`, request/failure counts, cache size, active cooldowns and the SQLite path.
++
++**Why it matters.** Provider topology, which providers are benched, and capacity hints are useful to an attacker; the file path leaks deployment layout.
++
++**Fix.** Require the platform key (or super-admin) and return a reduced payload (`{status, version, providers: {configured, enabled}}`). Keep the full view on `/api/freellmapi/metrics`.
++
++---
++
++## 4. P2
++
++### F-11 — Maintenance calls a method that does not exist
++`freellmapi/index.js:161-168` calls `promptCache.cleanExpired()`, but `services/cache.js` defines only `get/set/clear/size` (`:25-62`) → `TypeError` every 6 h, caught by the surrounding `try/catch`, so **expired entries are never proactively purged** and the log line reads like a maintenance failure. `cooldownManager.cleanExpired()` (step 1) does work, so the bug is masked.
++**Fix:** implement `cleanExpired()` on `LruPromptCache` (iterate + delete `expiresAt < now`) and call the two steps in separate try blocks.
++
++### F-12 — `Retry-After` ignored by the live engine
++`classifyError` (`providers/openaiCompat.js:86-103`) drops response headers; `setCooldown` uses 60 s × 2^n capped at 300 s (`services/cooldown.js:81-115`). A provider asking for 3600 s gets retried after 60 s — guaranteeing repeated 429s. The new engine honours it (`aiRouting/orchestrator.js:280,297-321`), including "never wait less than Retry-After".
++**Fix:** parse `retry-after` (seconds or HTTP date) in the adapter, clamp to `MAX_COOLDOWN_MS`, pass to `setCooldown`.
++
++### F-13 — No operator reset path
++`resetCooldowns()` and `clearCache()` exist in `freellmapi/index.js:143-151` but no route calls them (grep 0 hits). During an incident an operator must wait out up to 300 s and cannot flush a bad cached answer.
++**Fix:** `POST /api/admin/ai/reset-state {cooldowns?, cache?}` behind `requireSuperAdmin` + audit event.
++
++### F-14 — No last-resort cooldown release in the live engine
++With one provider, any 429/5xx benches it for 60–300 s and every request returns 503 (`router.js:366` skips the only candidate). The new selector deliberately releases the earliest-expiring cooldown when everything is benched (`modelSelector.js:310-328`) — the live engine does not.
++**Fix:** port that block into `applySelectionPolicy`: if `ordered.length === 0` and candidates were rejected only for cooldown, retry the earliest-expiring one and set `routing_decision.lastResort = true`.
++
++### F-15 — Partial save re-enables legacy providers
++`resolveAdminSettingsInput` defaults `result[ENABLE_FIELDS[item]] = input[...] !== false` (`aiAdmin.js:80-82`). Any save that omits those booleans sets them to `true`. Probe: after one partial save, `public_config.ai.enableNvidia/Gemini/OpenRouter/...` were `true` for providers with no key configured at all.
++**Fix:** preserve the previous value when the field is absent; only `!== false` when it is present. (A one-line change per field using `existing`.)
++
++### F-16 — `configuredProviders` ignores `enabled`
++`configuredProviders = credentialSources[provider] !== 'none'` (`aiAdmin.js:243-247`). Probe: `groq` disabled (`enableGroq:false`) still reported `configured: true`. The admin UI therefore shows a configured-but-disabled provider as healthy.
++**Fix:** return `{configured, enabled}` separately, or name the field `hasCredential`.
++
++### F-17 — Tenant audit metadata is empty
++`routes/ai.js:282-292` reads `decisionId`, `executedModel`, `selectionLatencyMs`, `candidatesConsidered`, `fallbackCount` from `generated.routing`; `generateWithProviders` returns only `{latencyMs, cached, fallbacksAttempted}` (`aiRuntime.js:1820-1826`). The persisted metadata is therefore `aiRouting: {executedModel: null}` — the executed model is hardcoded `null`, the decision id and every count are `undefined` and dropped by JSON serialisation.
++**Fix:** propagate `{engine, provider, model, cached, fallbacks: fallbacksAttempted, decisionId?}` into the result and into `recordAiUsage`; the new selector already returns a rationale object (`modelSelector.js:332-350`).
++
++### F-18 — Token/cost accounting is zero
++`recordAiUsage` posts `estimatedCostMicros: 0` (`routes/ai.js:263`), and no live path reads provider `usage` into the durable ledger. Even the `/v1` OpenAI-compatible response returns the provider `usage` object, but the engine discards it before returning (`router.js:640-650` builds `{text, usage}`; `index.js:2957` does not persist it).
++**Fix:** persist `usage.prompt_tokens/completion_tokens` per attempt in `request_log` (or a new `usage_events`), and compute cost from a static price table (per 1K tokens) — mark unknown prices as `null`, never `0`.
++
++### F-19 — Platform keys are plaintext at rest
++`system_settings.ai_providers` stores `apiKey`/`apiKeys` verbatim (`aiAdmin.js:434-441`; SQL read returned `sk-deepseek-audit-123456`). Tenant credentials use AES-256-GCM (`mysqlTenantRegistry.js:1667-1675`). The same product therefore treats tenant secrets better than platform secrets.
++**Fix:** encrypt at rest with the same envelope provider (`_getEncryptionProvider`), keep the plaintext only in memory, and mask on read (already masked, `aiAdmin.js:249`).
++
++### F-20 — Provider error text leaks to clients
++`sendV1AuthError`/`openAIErrorBody` forward `err.message` (`index.js:2740`), and `router.js` constructs messages as `[openai] server error from alpha (HTTP 500)` — the internal provider id. Probe A.5 shows this exact string in the response.
++**Fix:** map to a public message (`"Upstream provider error"`) and keep the detailed string in logs/`fallbacks[].error` only for admins.
++
++### F-21 — Cooldown/metrics are global
++`cooldown.js:55-59` key is `provider:model`; `provider_metrics`/`request_log` have no tenant column. One tenant's 429 (or a burst) benches the provider for everyone; one tenant's traffic dominates ranking for everyone.
++**Fix:** add `tenant_id` to both tables and key cooldowns `tenant|provider|model`. If schema change is too large, at least namespace cooldown keys and keep a separate aggregate view for platform health.
++
++### F-22 — Routing state is not observable
++`RoutingTelemetry` is a 500-entry, tenant-keyed, redacting ring buffer (`routingTelemetry.js:58-142`) with **no route**; `HealthStore.tenantSnapshot` likewise. The live engine exposes only aggregates via SQLite.
++**Fix:** `GET /api/admin/ai/routing-telemetry?tenantId=…` (super-admin, last N) and include `decisionId` in usage rows (F-17). Never expose prompts/keys — the redaction layer already exists.
++
++### F-23 — Two enabled flags
++`ai_providers[p].enabled` gates the live engine (`freellmConfig.js:98-99`); `public_config.ai.enable<P>` gates the product engine (`aiRuntime.js:1652`). The admin save writes only the second one (`aiAdmin.js:434-441,80-82`), so setting `enabledProviders.groq=false` (observed in the saved payload as `enableGroq:false`) leaves `ai_providers.groq` untouched and `/v1` keeps using that provider.
++**Fix:** one source of truth. Keep `ai_providers[p].enabled` and derive the legacy booleans from it for backwards compatibility.
++
++### F-24 — The v2 flag does nothing
++`ai_settings_v2_enabled` is read only to be echoed in the admin payload (`aiAdmin.js:348-353`); no engine code consults it. Rolling it back does not restore any behaviour.
++**Fix:** either implement a v1/v2 settings translation on read/write, or remove the flag and the UI control (dead switches are worse than none).
++
++---
++
++## 5. P3
++
++### F-25 — Lint baseline
++Repo-config ESLint: **0 errors, 170 warnings** (100 unused-vars, 44 react-refresh, 17 useless escapes, 9 hook deps). Project script `frontend/npm run lint` (oxlint 1.88): **0 errors, 295 warnings** across 58 files. `tsc -b`: clean.
++Engine files carry **9** ESLint warnings (`aiRuntime.js` 8, `adminPlatformOperations.js` 1) plus `EnterpriseAiTab.tsx` 8 unused imports/vars. Details and triage in `engine-audit-2026-10-24.md` §7.
++**Note:** the 5 `no-useless-escape` in `aiRuntime.js` are in prompt-building strings — worth checking by hand, they can silently change a regex.
++
++### F-26 — Process-local config cache
++`CONFIG_CACHE_MS = 10_000` (`freellmConfig.js:31-36`), `CONFIGURATION_CACHE_MS = 15_000` (`aiRuntime.js:77`), both per-process. `clearFreeLlmConfigCache()` is synchronous but only local (`aiAdmin.js:459-460`). Multi-instance deployments converge after ≤15 s; there is no version handshake.
++**Fix:** include a `settings_revision` in the cached value and compare per request (one cheap primary-key read), or publish invalidations (Redis/outbox).
++
++### F-27 — Quota default disagreement
++`routes/enterprise.js:760-761` uses `|| 1` for `aiRequestsPerMinute/Day`; `:811-812` uses 60/1000. A tenant with an explicit `0` (intended: block) becomes 1; a missing value becomes 1/minute in one branch and 60/minute in another.
++There is a third divergence on the same route pair: `generate-content` always consumes quota (`routes/enterprise.js:760-761`), while `generate-interview` consumes it only `if (enterpriseService(req).quotaGuard)` (`:810-812`) — a tenant on an installation without `quotaGuard` gets unlimited interview generation.
++
++**Fix:** one `resolveTenantQuota()` helper with documented defaults; treat `0` as "blocked", not "fallback"; make quota consumption unconditional (fail closed if the guard is missing).
++
++### F-28 — Divergent generation defaults
++`aiRuntime.js` falls back to `temperature 0.7 / maxTokens 2048` (`:1663-1664`) while `freellmConfig` uses `0.3 / 4096` (`:118-119`). Same tenant can get different sampling depending on which engine serves the call.
++**Fix:** single constant imported by both, or always require explicit values from config.
++
++### F-29 — Two force paths, undocumented in the audit trail
++`isBypass = resolvedExpectedRevision === -1 || input?.force === true` (`aiAdmin.js:405`) skips the CAS check entirely, and the audit row records only `{revision, changedFields}` (`aiAdmin.js:443-451`) — no `forced: true`, no actor justification. Separately, the conflict code returned to clients is `AI_SETTINGS_CONFLICT` (`aiAdmin.js:408`) while the frozen design docs specify `REVISION_CONFLICT` (`docs/ai-settings/security-review.md:17,43`), so a client written against the docs will not recognise the error.
++**Fix:** pick one force mechanism (`force: true`), record it in the audit metadata, and align the error code (or add both codes for a transition period).
++
++---
++
++## 6. Root causes (fixing these prevents the next ten findings)
++
++1. **Two engines, one façade, no contract.** `aiGateway/index.js` claims "Single Source of Truth: freellmapi" and then re-exports a second engine as `compat`. Nothing forces the two to agree on modes, failure semantics, or metrics. *Fix:* declare the engine choice (`AI_ENGINE`), make the other explicitly `shadow`, delete the word "compat".
++2. **Admission control is attached to paths, not to the inference boundary.** `/v1` was added without re-reading the middleware order. *Fix:* move governance/quota/limiter into the engine entry (`completeChat` wrapper) so any new route inherits it.
++3. **Tenant identity stops at the enterprise routes.** The wire protocol has no tenant concept, so cache/cooldown/metrics are global by construction. *Fix:* one `RoutingContext {tenantId, principalId, dataClass}` mandatory on every engine call.
++4. **"Configured" conflates credential, enablement, and reachability.** That is the source of F-15/F-16/F-23 and the manual-mode confusion. *Fix:* a single `resolveProviderState()` returning `{hasCredential, enabled, reachable, reason}` and use it everywhere (UI, routing, diagnostics).
++5. **No decision record.** Because routing choices are never persisted with an id, F-17/F-22 and most "why did it pick X" investigations are impossible. *Fix:* `decisionId` on every inference + a bounded, redacted decision log.
++
++---
++
++## 7. Path to a true 10/10
++
++| Step | Work | Removes | Effort |
++|---|---|---|---|
++| 1 | Put `/v1` under the existing admission middleware; restrict user tokens; persist usage | F-01, F-18 | 1 d |
++| 2 | Add principal/tenant to the cache key; disable caching for PII-bearing calls | F-02, F-21 (cache half) | 0.5 d |
++| 3 | Fix `manual` (F-03 decision + F-04 auto-model) and document the pin semantics in the UI | F-03, F-04 | 1 d |
++| 4 | Wire tenant BYOK into the router; distinguish platform-key tenants | F-08, F-09 | 1.5 d |
++| 5 | Windowed health statistics + real quality signal; wire `qualityMode` to it or rename the mode | F-06, F-07 | 2 d |
++| 6 | Shadow-run `aiRouting`, then flip; delete the legacy score or make it a tie-breaker | F-05, F-23 | 3 d |
++| 7 | Operator controls: reset cooldowns/cache, expose telemetry, unauthenticate nothing | F-10, F-13, F-22 | 1 d |
++| 8 | Encrypt platform keys; single provider-state resolver; settings revision handshake | F-15, F-16, F-19, F-26 | 2 d |
++| 9 | Lint to zero on engine files; triage the rest | F-25 | 1 d |
++
++**Total ≈ 13 engineering days** for a single senior engineer familiar with the code. Steps 1–3 are the ones that change the risk posture; everything else is quality.
++
++---
++
++## 8. Verification recipes (add these as tests)
++
++```js
++// 1. /v1 must consume quota and reject over-limit principals
++await request(app).post('/v1/chat/completions').set(userToken).send(body);      // expect 200
++await exhaustDailyQuota(userId);
++await request(app).post('/v1/chat/completions').set(userToken).send(body);      // expect 429 AI_DAILY_QUOTA_EXCEEDED
++
++// 2. cache must not cross principals
++const a = await callAs(platformKey, prompt);
++const b = await callAs(userToken, prompt);
++assert.equal(b._freellmapi.cached, false);
++
++// 3. manual pin must either fail over or fail with a documented code
++process.env.PINNED_PROVIDER_MODE = '500';
++const r = await callAs(platformKey, { model: 'auto' }, { selectionMode: 'manual', primary: 'openai' });
++assert.ok([200, 502].includes(r.status));
++if (r.status === 200) assert.equal(r._freellmapi.routing_decision.fallbackFrom, 'manual');
++
++// 4. empty manual model must not resolve to "auto"
++await saveSettings({ selectionMode: 'manual', provider: 'groq', groqModel: '' });
++assert.notEqual((await callAs(platformKey, body)).status, 503);
++
++// 5. tenant BYOK must actually reach the provider
++await setTenantCredential(tenantId, 'groq', 'tenant-only-key');
++await stub.assertNextCallUsesKey('tenant-only-key');
++```
++
++Static guards worth adding to CI:
++- a test that enumerates `app._router.stack` and asserts every path starting with `/v1` has `aiAccountLimiter` and `enforceDailyAiQuota` in its chain;
++- a test that fails if `require('./services/aiRouting')` is reachable only through `compat` (i.e. asserts `AI_ENGINE` wiring is intentional).
+diff --git a/docs/ai-settings/engine-rating.md b/docs/ai-settings/engine-rating.md
+new file mode 100644
+index 0000000..9f758ee
+--- /dev/null
++++ b/docs/ai-settings/engine-rating.md
+@@ -0,0 +1,95 @@
++# AI Multi-Provider Engine — Rating & Release Recommendation
++
++**Date:** 2026-10-24 · **Base:** `5bd2570` · **Auditor:** read-only review (no code changed)
++**Scope:** routing / selection / execution engine. Settings **UI** is out of scope by instruction; it is referenced only where a control changes engine behaviour.
++
++---
++
++## 1. The number
++
++# **5.0 / 10 — HOLD**
++
++Weighted 4.95 across eight dimensions, reported as 5.0. This is a *production-readiness* score for the multi-provider engine **as it exists on `main` today**, not a score for the effort or the design intent. The `aiRouting` module alone would score **7.5/10** — it is the better-engineered half, and it is the half that is not running (F-05).
++
++| Dimension | Weight | Score | One-line justification |
++|---|---:|---:|---|
++| Routing decision correctness | 20 % | **5.5** | Auto selection and the five modes are wired and validated; ranking evidence is a single last sample, so identical traffic can route differently for no durable reason (F-07). |
++| Resilience & failover | 15 % | **6.5** | Per-key, per-candidate failover is bounded and real (200 after a primary 500, with a populated `fallbacks[]`); cooldowns persist across restarts. Pinned-provider outage → hard 502 (F-03), single-provider deployment can 503 for 300 s (F-14). |
++| Honesty of the "smartest" claim | 15 % | **3.0** | No quality/intelligence signal exists anywhere; `quality` mode is primary-order (F-06); the response says `qualityEvidence: "unknown"` — honest, but the mode name is not. |
++| Multi-tenancy & isolation | 15 % | **4.5** | The new engine is tenant-keyed (health, discovery, telemetry); the live engine's metrics, cooldowns and cache are global (F-21); tenant BYOK is never consumed (F-08); tenant traffic produces no routing evidence (F-09). |
++| Security & cost metering | 15 % | **3.0** | `/v1` bypasses quota/governance/rate limits for any signed-in user (F-01); cache replays answers across principals (F-02); `/v1/status` is public (F-10). Secrets handling in the admin API itself is genuinely good (§3). |
++| Observability & explainability | 10 % | **6.0** | `_freellmapi` block, `fallbacks[]`, durable metrics, audit trail with revisions and masked keys; but no decision id, no persisted rationale, telemetry unexposed (F-17, F-22). |
++| Ops / config ergonomics | 5 % | **6.5** | Hot reload without restart in ≤10 s, revision-protected saves, no-restart rollbacks; but sticky default-true flags (F-15), misleading "configured" state (F-16), no reset controls (F-13). |
++| Code quality & tests | 5 % | **7.5** | 55/55 engine tests pass and they assert meaningful behaviour; `tsc -b` clean; 0 ESLint errors. 170 warnings (mostly unused vars) and dead code in maintenance paths (F-11). |
++
++**Why not higher:** four independent defects breach the product's own claims — unmetered gateway, cross-principal cache, dead tenant BYOK, and a quality mode without quality evidence. Any one of them would block a 9/10.
++
++**Why not lower:** the request path is honest. It returns 503/502 with explicit codes instead of inventing content (`aiRuntime.js:2084-2106`), it never sends client-supplied keys (`routes/ai.js:349-351`), it redacts secrets in telemetry (`routingTelemetry.js:58-141`), and it has real tests. The bones are good; the control plane and the evidence layer are not finished.
++
++---
++
++## 2. Ship / hold matrix
++
++| Claim in product / docs | Verdict | Evidence |
++|---|---|---|
++| "Multiple providers with automatic failover" | **TRUE** (auto mode) | primary 500 → 200 from secondary, `fallbacks[0].status = 500` (`§A.5`) |
++| "Manual pin always uses the chosen provider" | **TRUE**, but with an outage coupling the UI does not disclose | 502 `ALL_PROVIDERS_FAILED` while a healthy provider sat idle (`§A.8`) |
++| "Fastest model wins" | **PARTIAL** | `speed` chose the 8 ms provider once evidence was fresh, but served a 3 s provider on a stale 4 ms sample (`§A.9`) |
++| "Smartest model wins" | **FALSE** | no quality signal; `quality` served the slower primary (`§A.10`) |
++| "Per-tenant BYOK" | **FALSE** | encrypted store written, never read by inference (F-08) |
++| "Quotas enforced" | **FALSE for `/v1`** | 3 calls, 0 `ai_usage` rows (F-01) |
++| "Tenant isolation" | **PARTIAL** | tenant-keyed health/telemetry exist but are unused by the live path; cache leak across principals (F-02) |
++| "No restart to change providers" | **TRUE** | ≤10 s hot reload, verified (`§A.3`, `§A.4`) |
++| "Keys are never exposed" | **TRUE in the admin API**, **FALSE at rest** | masked last-4 + zero key material in audit (good); plaintext in `system_settings` (F-19) |
++| "Rollback with `ai_settings_v2_enabled`" | **FALSE** | flag has no engine effect (F-24) |
++
++---
++
++## 3. What is genuinely good (do not regress it)
++
++1. **Credential hygiene in the admin API.** Keys are masked to last-4 (`aiAdmin.js:249`), never echoed, never written to the audit row — a SQL `LIKE` scan for every test key returned **0** rows. Revision-based optimistic concurrency exists (`expectedRevision`), and settings take effect without restart.
++2. **Bounded failure behaviour.** Every provider attempt has a deadline; there is no unbounded retry loop; total failure is a deterministic 502/503 with a machine-readable code. No hangs observed across all probes.
++3. **Honest degradation.** The product engine refuses to fabricate content when the model output fails validation (`aiRuntime.js:2084-2106`). That is rarer than it should be.
++4. **Tenant-scoped state in the new engine.** `HealthStore` keys on `tenantId|provider|model`, `DiscoveryService` refuses to resurrect default capabilities after a failed discovery, `RoutingTelemetry` redacts secrets and is tenant-tagged. The design is right; it needs to be on the request path.
++5. **Durable cooldowns.** Hydrated at startup (`cooldown.js:26-48`) so a restart does not hammer a benched provider. Most systems miss this.
++6. **The tests are real.** `ai-model-routing-selection.test.js` asserts ordering, hard gates, discovered-model demotion, tenant cooldown release and tenant primary-model preference — not snapshot theatre. 55/55 pass.
++
++---
++
++## 4. What a 9.5/10 looks like
++
++The prior engagement accepted a 9.5 when the named gap was closed with evidence. The same bar applies here. To claim 9.5:
++
++1. **No unmetered inference path.** A CI test enumerates the router stack and fails if any `/v1` route lacks quota + governance + limiter (F-01 closed, F-18 closed by real token accounting).
++2. **Isolation is provable.** Cache identity includes principal/tenant; a test asserts two principals never share an entry. Cooldowns and metrics carry tenant scope, or a documented decision explains why not (F-02, F-21).
++3. **Pins and modes mean what they say.** Manual mode either fails over with `fallbackFrom: "manual"` or refuses to save without an explicit model; `quality` is backed by a real signal or renamed (F-03, F-04, F-06).
++4. **Tenant BYOK is live.** A request for a tenant with a stored key is observed using that key by a test stub; platform-key tenant traffic records metrics (F-08, F-09).
++5. **Selection evidence is durable.** Windowed p50/p95 + failure counts feed ranking; every inference carries a `decisionId` resolvable to a stored, redacted rationale (F-07, F-17, F-22).
++6. **One engine.** `AI_ENGINE` selects `freellm`, `aiRouting`, or `shadow`; the other is not silently reachable; `compat` is deleted or documented as a real compatibility layer (F-05, F-23).
++7. **Operable.** `POST /api/admin/ai/reset-state` and a read-only routing-telemetry endpoint exist behind super-admin + audit; `/v1/status` is authenticated (F-10, F-13, F-22).
++8. **Zero-warning bar.** 0 errors **and** 0 warnings under the repo `eslint.config.js` for engine files and their tests; the remaining legacy warnings have a tracked, dated triage plan (F-25).
++
++Realistic effort: **~13 engineering days** (see `engine-findings.md` §7). Steps 1–3 (≈2.5 days) change the risk posture; the rest is quality.
++
++---
++
++## 5. If I had to choose one thing
++
++**Put `/v1` under the same admission control as `/api/ai`, and include the principal in the cache key.** Two changes, under a day, remove the only P0 and the most serious data-exposure path. Everything else can be scheduled.
++
++Second choice: **wire tenant BYOK** — not because it is a security hole, but because it is a shipped feature that does nothing, and that is the kind of gap that erodes trust in every other claim on the settings page.
++
++---
++
++## 6. Confidence and limitations
++
++- **High confidence:** F-01, F-02, F-03, F-04, F-06, F-07, F-10, F-11, F-15, F-16, F-19, F-25 — each reproduced live or read line-by-line.
++- **Medium confidence:** F-08, F-09, F-17, F-21, F-23 — deterministic from code, but the enterprise path was not executed end-to-end (tenant provisioning + `ai.use` + quota ledger were out of the probe budget). No contrary code was found.
++- **Not audited:** the settings UI (by instruction), provider *output quality* (no real provider calls are possible from this sandbox — stubs only), billing/plan enforcement, and DB-level row security.
++- **Environment caveat:** all live probes used local OpenAI-compatible stubs. Latency numbers are real HTTP measurements against those stubs, not against OpenAI/Groq. The routing code path is identical; the absolute latencies are not indicative of production.
++
++---
++
++## 7. One-paragraph summary for a decision-maker
++
++The engine works, and it fails honestly, but it does not yet do what the product says. Automatic failover is real; "fastest and smartest" is half-real (speed is measured, quality is not); per-tenant BYOK is stored and never used; and the new, well-built selector is not on the request path. More seriously, the OpenAI-compatible gateway sits outside quota and rate limiting, so any signed-in user can drive unmetered inference, and its response cache is shared across principals. Fix the gateway admission control and the cache key first (under a day), then wire BYOK and make the mode names true. **Recommendation: hold the multi-provider marketing claims; ship the fixes in `engine-findings.md` §7 steps 1–4, then re-audit.**
