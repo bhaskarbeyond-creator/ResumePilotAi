@@ -251,3 +251,185 @@ test('ai_settings_v2_enabled feature flag is registered with defaultValue true a
   assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.defaultValue, true);
   assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.requiresRestart, false);
 });
+
+test('enabledProviders overrides merged legacy fields and persists correctly on both public_config and ai_providers', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia', enableGemini: true, enableNvidia: true }, aiRevision: 1 },
+    ai_providers: {
+      gemini: { model: 'gemini-2.0-flash' },
+      nvidia: { apiKey: 'test-nvidia-key-1234', enabled: true },
+      _revision: 1,
+    },
+  });
+
+  // Toggle OFF legacy provider gemini via enabledProviders
+  const res = await saveAiAdminSettings({
+    input: { enabledProviders: { gemini: false } },
+    expectedRevision: 1,
+    actorUid: 'super',
+  });
+
+  const storedPublic = settingsContract.settings.get('public_config').data;
+  const storedProviders = settingsContract.settings.get('ai_providers').data;
+  assert.equal(storedPublic.ai.enableGemini, false, 'public_config.ai.enableGemini must be updated to false');
+  assert.equal(storedProviders.gemini.enabled, false, 'ai_providers.gemini.enabled must be false');
+  assert.equal(storedProviders.gemini.disabled, true, 'ai_providers.gemini.disabled must be true');
+  const geminiCatalog = res.catalog.find(p => p.id === 'gemini');
+  assert.equal(geminiCatalog.enabled, false, 'catalog reflects gemini as disabled');
+  assert.equal(geminiCatalog.disabled, true, 'catalog disabled flag is true');
+});
+
+test('disabling the active primary provider throws 400 CANNOT_DISABLE_PRIMARY_PROVIDER', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia', enableNvidia: true }, aiRevision: 1 },
+    ai_providers: {
+      nvidia: { apiKey: 'test-nvidia-key-1234', enabled: true },
+      _revision: 1,
+    },
+  });
+
+  await assert.rejects(
+    async () => {
+      await saveAiAdminSettings({
+        input: { enabledProviders: { nvidia: false } },
+        expectedRevision: 1,
+        actorUid: 'super',
+      });
+    },
+    (err) => {
+      assert.equal(err.code, 'CANNOT_DISABLE_PRIMARY_PROVIDER');
+      assert.equal(err.status, 400);
+      return true;
+    }
+  );
+});
+
+test('saveAiAdminSettings requires expectedRevision for administrative writes unless force: true', async () => {
+  settingsContract.reset({
+    public_config: { ai: { provider: 'nvidia' }, aiRevision: 2 },
+    ai_providers: { nvidia: { apiKey: 'test-key' }, _revision: 2 },
+  });
+
+  // Omitting expectedRevision without force: true throws 400 EXPECTED_REVISION_REQUIRED
+  await assert.rejects(
+    async () => {
+      await saveAiAdminSettings({
+        input: { temperature: 0.7 },
+        actorUid: 'super',
+      });
+    },
+    (err) => {
+      assert.equal(err.code, 'EXPECTED_REVISION_REQUIRED');
+      assert.equal(err.status, 400);
+      return true;
+    }
+  );
+
+  // Supplying expectedRevision succeeds
+  const withRevision = await saveAiAdminSettings({
+    input: { temperature: 0.7 },
+    expectedRevision: 2,
+    actorUid: 'super',
+  });
+  assert.equal(withRevision.revision, 3);
+
+  // Supplying force: true bypasses expectedRevision requirement
+  const withForce = await saveAiAdminSettings({
+    input: { temperature: 0.8, force: true },
+    actorUid: 'super',
+  });
+  assert.equal(withForce.revision, 4);
+});
+
+test('sanitizeAuditValue redacts sensitive keys and secret value patterns in audit metadata', () => {
+  const { sanitizeAuditValue } = require('../security/adminAudit');
+
+  // Direct sensitive key redaction
+  assert.equal(sanitizeAuditValue('apiKey', 'candidate-secret-key-1234'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('nvidiaApiKey', 'nvapi-some-secret-token'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('password', 'p@ssw0rd123'), '[REDACTED]');
+  assert.equal(sanitizeAuditValue('clientSecret', 'stripe_secret_key'), '[REDACTED]');
+
+  // Nested object redaction preserving non-sensitive fields
+  const metadata = {
+    providerId: 'cerebras',
+    fieldChanged: ['provider', 'model'],
+    revision: 5,
+    apiKey: 'transient-candidate-secret',
+    nested: {
+      safeField: 'safeValue',
+      token: 'bearer-token-val',
+    },
+  };
+  const sanitized = sanitizeAuditValue('metadata', metadata);
+  assert.equal(sanitized.providerId, 'cerebras');
+  assert.deepEqual(sanitized.fieldChanged, ['provider', 'model']);
+  assert.equal(sanitized.revision, 5);
+  assert.equal(sanitized.apiKey, '[REDACTED]');
+  assert.equal(sanitized.nested.safeField, 'safeValue');
+  assert.equal(sanitized.nested.token, '[REDACTED]');
+});
+
+test('A1 Assertion 2: candidate key passed to testAiProvider is never logged or leaked to server-side stdout/stderr', async () => {
+  const candidateKey = 'fixture-a1-unit-test-candidate-key-XYZ99';
+  const interceptedLogs = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  console.log = (...args) => interceptedLogs.push(args.map(String).join(' '));
+  console.error = (...args) => interceptedLogs.push(args.map(String).join(' '));
+  console.warn = (...args) => interceptedLogs.push(args.map(String).join(' '));
+
+  try {
+    const mockFetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{ message: { content: 'Candidate probe success' } }],
+      }),
+    });
+
+    await testAiProvider({
+      provider: 'groq',
+      model: 'llama-3.3-70b-versatile',
+      apiKey: candidateKey,
+      fetchImpl: mockFetch,
+      timeoutMs: 5000,
+    });
+
+    // Zero server-side log lines touch candidateKey
+    for (const line of interceptedLogs) {
+      assert.doesNotMatch(line, new RegExp(candidateKey));
+    }
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+    console.warn = originalWarn;
+  }
+});
+
+test('GAP 7 audit: mask pattern ^•{8,}\\S{4}$ prevents plaintext prefix leaks while accepting valid non-alphanumeric suffix characters', () => {
+  // \S{4} also matches all-bullets, which is unreachable: mask is
+  // generated server-side from the last 4 chars of a real provider key,
+  // which cannot be bullet characters.
+  const maskRegex = /^•{8,}\S{4}$/;
+
+
+  // Valid masked keys with alphanumeric and special suffix chars
+  assert.equal(maskRegex.test('••••••••1234'), true);
+  assert.equal(maskRegex.test('••••••••ab12'), true);
+  assert.equal(maskRegex.test('••••••••a-b_'), true);
+  assert.equal(maskRegex.test('••••••••X_9$'), true);
+
+  // Security proofs: ANY plaintext prefix leak MUST FAIL the pattern
+  assert.equal(maskRegex.test('gsk_••••••••1234'), false, 'Prefix leak gsk_ must fail mask pattern');
+  assert.equal(maskRegex.test('sk-••••••••1234'), false, 'Prefix leak sk- must fail mask pattern');
+  assert.equal(maskRegex.test('nvapi-••••••••1234'), false, 'Prefix leak nvapi- must fail mask pattern');
+  assert.equal(maskRegex.test('••••••••gsk_1234'), false, 'Too many suffix chars must fail mask pattern');
+  assert.equal(maskRegex.test('gsk_1234'), false, 'Unmasked short key must fail mask pattern');
+  assert.equal(maskRegex.test('••••1234'), false, 'Fewer than 8 bullets must fail mask pattern');
+  assert.equal(maskRegex.test('••••••••12 4'), false, 'Space in suffix must fail mask pattern (\\S requirement)');
+  assert.equal(maskRegex.test('••••••••12\n4'), false, 'Newline in suffix must fail mask pattern (\\S requirement)');
+});
+
+

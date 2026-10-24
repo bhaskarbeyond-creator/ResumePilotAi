@@ -51,3 +51,17 @@ Every cell below is verified automatically in `frontend/tests/engine-authenticat
 | `/admin/ai-settings?subtab=playground` | Renders live `Playground` (`/api/v1/chat/completions`) across `F5` | Scoped `AI Quota Governance` | `admin-tab-forbidden` (`403`) card | Redirects to `/dashboard` | Redirects to `/login?next=...` | Closed |
 | `/admin?tab=ai`, `?tab=aisettings`, `?tab=ai_settings`, `?tab=aimodels` | Normalizes to `/admin/ai-settings` preserving remaining query params | Scoped `AI Quota Governance` | `admin-tab-forbidden` (`403`) card | Redirects to `/dashboard` | Redirects to `/login?next=...` | Preserves `?dialog=*` |
 | `/adm/ai-settings?subtab=metrics` & `/platform/ai-settings?subtab=discovery&q=llama` | `<LegacyRedirect>` -> `/admin/ai-settings?...` with full query string preserved | Scoped `AI Quota Governance` | `admin-tab-forbidden` (`403`) card | Redirects to `/dashboard` | Redirects to `/login?next=...` | Preserves `?dialog=*` |
+
+---
+
+## 4. API Endpoints & Mandatory CAS Contract
+
+| Endpoint | Method | Role | Payload Requirements | Error Contract |
+| --- | --- | --- | --- | --- |
+| `/api/admin/ai-settings` | `GET` | `SUPER_ADMIN` | None | `401` Unauthenticated, `403` Non-SuperAdmin |
+| `/api/admin/ai-settings` | `POST` | `SUPER_ADMIN` | `expectedRevision` (**REQUIRED**, integer >= 0)<br>`settings` / provider inputs<br>`force` (optional, emergency CAS bypass only) | `400 EXPECTED_REVISION_REQUIRED` if `expectedRevision` omitted<br>`409 REVISION_CONFLICT` if revision stale<br>`400 CANNOT_DISABLE_PRIMARY_PROVIDER` |
+| `/api/admin/ai/test-provider` | `POST` | `SUPER_ADMIN` | `{ provider: "<id>", apiKey?: "<candidate-key>", model?: "<model>" }` | Rate limited: **10 req/min/user** (`adminAiTestLimiter`)<br>`429 RATE_LIMITED` on 11th request<br>`400 AI_PROVIDER_NOT_CONFIGURED`<br>`422 AI_PROVIDER_AUTHENTICATION_FAILED` |
+| `/api/admin/ai/fetch-models` | `POST` | `SUPER_ADMIN` | `{ provider: "<id>", apiKey?: "<candidate-key>" }` | `503 AI_MODELS_FETCH_FAILED` |
+| `/api/admin/ai/quota-stats` | `GET` | `ADMIN`, `SUPER_ADMIN` | None | `403` if role not admin |
+| `/api/admin/ai/quota-limits` | `POST` | `ADMIN`, `SUPER_ADMIN` | `expectedRevision` (REQUIRED)<br>`basicDailyLimit`, `premiumDailyLimit`, `adminDailyLimit` | `400 AI_QUOTA_REVISION_REQUIRED`<br>`409 AI_QUOTA_CONFLICT` |
+
