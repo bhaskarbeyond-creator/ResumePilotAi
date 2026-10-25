@@ -235,3 +235,129 @@ test('A8: scoped reset wipes exactly one scope (C.4 seam, persistence half)', ()
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ── A.2: provider_cooldowns scoped rebuild + credential_kind ─────────────────
+
+function seedLegacyCooldowns(file, rows) {
+  const sqlite = loadSqliteModule();
+  const db = new sqlite.DatabaseSync(file);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS provider_cooldowns (
+      provider TEXT NOT NULL,
+      model TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      reason TEXT,
+      strikes INTEGER NOT NULL DEFAULT 1,
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY (provider, model)
+    );
+  `);
+  const insert = db.prepare('INSERT INTO provider_cooldowns (provider, model, expires_at, reason, strikes, updated_at) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const row of rows) insert.run(row.provider, row.model, row.expiresAt, row.reason, row.strikes, row.updatedAt);
+  db.close();
+}
+
+test('B1: legacy cooldown rows rebuild verbatim into the platform scope with credential_kind=platform', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    seedLegacyCooldowns(file, [
+      { provider: 'groq', model: 'm1', expiresAt: NOW + 60_000, reason: 'HTTP 429 across all pooled keys', strikes: 2, updatedAt: NOW - 1000 },
+    ]);
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(store.scopedSchema, true);
+    assert.equal(store.error, null);
+    const rows = store.loadCooldowns({ now: NOW });
+    assert.equal(rows.length, 1, 'the legacy cooldown survives the rebuild');
+    assert.equal(rows[0].scopeKey, 'platform');
+    assert.equal(rows[0].credentialKind, 'platform', 'pre-021 cooldowns were platform-credential cooldowns by definition');
+    assert.equal(rows[0].strikes, 2);
+    assert.equal(rows[0].expiresAt, NOW + 60_000);
+    assert.equal(rows[0].reason, 'HTTP 429 across all pooled keys');
+    const sqlite = loadSqliteModule();
+    const raw = new sqlite.DatabaseSync(file);
+    const leftover = raw.prepare("SELECT name FROM sqlite_master WHERE name = 'provider_cooldowns_v2'").all();
+    assert.equal(leftover.length, 0);
+    const integrity = raw.prepare('PRAGMA integrity_check').get();
+    assert.equal(String(Object.values(integrity)[0]), 'ok');
+    raw.close();
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('B2: both legacy tables rebuild in one open — mixed metrics+cooldowns parity', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    seedLegacyDb(file, LEGACY_ROWS);
+    seedLegacyCooldowns(file, [
+      { provider: 'openrouter', model: '', expiresAt: NOW + 30_000, reason: 'Provider unavailable', strikes: 1, updatedAt: NOW - 500 },
+    ]);
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(store.scopedSchema, true);
+    assert.equal(store.getProviderMetrics({ limit: 10 }).length, LEGACY_ROWS.length);
+    assert.equal(store.loadCooldowns({ now: NOW }).length, 1);
+    store.close();
+    const reopened = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(reopened.scopedSchema, true, 'second open is a no-op (PRAGMA guards)');
+    assert.equal(reopened.getProviderMetrics({ limit: 10 }).length, LEGACY_ROWS.length);
+    assert.equal(reopened.loadCooldowns({ now: NOW }).length, 1);
+    reopened.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('B3: scoped cooldown isolation — tenant row never touches platform, scoped clear never clears platform (F-14 persistence half)', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordCooldown({ provider: 'groq', model: 'm1', expiresAt: NOW + 60_000, reason: 'HTTP 429 across all pooled keys', strikes: 1, at: NOW });
+    store.recordCooldown({ provider: 'groq', model: 'm1', expiresAt: NOW + 30_000, reason: 'tenant byok 429', strikes: 1, at: NOW, scopeKey: 'tenant:t1', credentialKind: 'byok' });
+    store.recordCooldown({ provider: 'groq', model: 'm1', expiresAt: NOW + 45_000, reason: 'tenant-penalty', strikes: 3, at: NOW, scopeKey: 'tenant:t2', credentialKind: 'tenant-penalty' });
+    assert.equal(store.loadCooldowns({ now: NOW }).length, 3);
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 1);
+    const tenant1 = store.loadCooldowns({ now: NOW, scopeKey: 'tenant:t1' });
+    assert.equal(tenant1.length, 1);
+    assert.equal(tenant1[0].credentialKind, 'byok');
+    // F-14 rule at the store level: a tenant-scoped clear must never remove the platform row.
+    store.clearCooldown({ provider: 'groq', model: 'm1', scopeKey: 'tenant:t1' });
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'tenant:t1' }).length, 0);
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 1, 'the platform cooldown survives a tenant release');
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'tenant:t2' }).length, 1, 'the other tenant is untouched too');
+    // Scoped wipe (C.4 seam): platform-only reset keeps tenant rows.
+    store.clearAllCooldowns({ scopeKey: 'platform' });
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 0);
+    assert.equal(store.loadCooldowns({ now: NOW }).length, 1, 'tenant:t2 penalty row survives the platform wipe');
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('B4: expiry filter composes with scope filter', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordCooldown({ provider: 'groq', model: '', expiresAt: NOW - 1, reason: 'expired tenant', at: NOW - 1000, scopeKey: 'tenant:t1', credentialKind: 'byok' });
+    store.recordCooldown({ provider: 'groq', model: '', expiresAt: NOW + 60_000, reason: 'active platform', at: NOW });
+    assert.equal(store.loadCooldowns({ now: NOW }).length, 1, 'the expired tenant row is filtered');
+    assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'tenant:t1' }).length, 0);
+    assert.equal(store.loadCooldowns({ now: NOW - 2 }).length, 2, 'both rows are active in the past frame');
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('B5: memory backend cooldown scoping parity', () => {
+  const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: ':memory:' } });
+  store.recordCooldown({ provider: 'groq', model: 'm1', expiresAt: NOW + 60_000, reason: 'platform 429', at: NOW });
+  store.recordCooldown({ provider: 'groq', model: 'm1', expiresAt: NOW + 60_000, reason: 'byok 429', at: NOW, scopeKey: 'uid:hash1', credentialKind: 'byok' });
+  assert.equal(store.loadCooldowns({ now: NOW }).length, 2);
+  assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 1);
+  assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'uid:hash1' })[0].credentialKind, 'byok');
+  store.clearCooldown({ provider: 'groq', model: 'm1', scopeKey: 'uid:hash1' });
+  assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 1, 'scoped clear leaves the platform row');
+  store.close();
+});
