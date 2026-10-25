@@ -7,14 +7,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  HelpCircle,
   ShieldAlert,
-  Clock,
   Plus,
   Trash2,
   Check,
   AlertCircle,
-  Lock,
   X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

@@ -32,10 +32,9 @@ const SyncProfileModal = lazy(() => import('./SyncProfileModal'));
 import { calculateAtsScore } from '../../utils/atsScore';
 
 // Import necessary modules for PDF export
-import download from 'downloadjs';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings, getAccountInfo } from '../../services/api/platform';
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
-import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
+import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { getCandidateContext } from '../../utils/candidateContext';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
@@ -95,8 +94,8 @@ const BuildResume = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadRetry, setLoadRetry] = useState(0);
     const [authChecked, setAuthChecked] = useState(false);
-    const [isManualSaving, setIsManualSaving] = useState(false);
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
+    const [, setIsManualSaving] = useState(false);
+    const [, setSaveSuccessMsg] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleInput, setTitleInput] = useState('');
     const [showQuickActions, setShowQuickActions] = useState(false);
@@ -105,9 +104,8 @@ const BuildResume = () => {
     // Mobile responsiveness and studio drawer states
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
-    const [isFooterCompressed, setIsFooterCompressed] = useState(true);
     const [showAtsDrawer, setShowAtsDrawer] = useState(false);
-    const [showDesktopSplitPreview, setShowDesktopSplitPreview] = useState(false);
+    const [showDesktopSplitPreview] = useState(false);
     const [showAllStepsModal, setShowAllStepsModal] = useState(false);
     const stepRibbonRef = useRef(null);
 
@@ -313,6 +311,7 @@ const BuildResume = () => {
                 }
             } catch (_e) {}
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'performDocxDownload', 'performDownload', 'userData.membershipEnds', and 'userData.subscriptionsStatus'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
     }, [authChecked, userData.user, userData.membership]);
 
     // DIR-048: a login-gated export stores its explanation in sessionStorage
@@ -346,6 +345,7 @@ const BuildResume = () => {
         };
         window.addEventListener('userMembershipUpdated', handleMembershipUpdated);
         return () => window.removeEventListener('userMembershipUpdated', handleMembershipUpdated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'performDocxDownload' and 'performDownload'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
     }, [pendingExportType]);
 
     const steps = [
@@ -1086,19 +1086,6 @@ const BuildResume = () => {
         }
     };
 
-    const handleStopSharing = async () => {
-        const userId = userIdRef.current;
-        const resumeId = resumeIdRef.current;
-        if (!userId || !resumeId) return;
-        setPublicationState(current => ({ ...current, status: 'saving', message: 'Revoking public link…' }));
-        try {
-            const unpublished = await unpublishResume(userId, resumeId, { expectedPublicationRevision: publicationState.publicationRevision });
-            setPublicationState(current => ({ ...current, ...unpublished, status: 'saved', message: 'Public link revoked' }));
-        } catch (error) {
-            setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to revoke link' }));
-        }
-    };
-
     // Enhanced Download PDF functionality with unified subscription verification
     const handleDownload = async () => {
         if (isDownloading || showPremiumUpgradeModal || showSubscriptionModal) return;
@@ -1309,60 +1296,6 @@ const BuildResume = () => {
     };
 
     // Export resume in standardized JSON Resume format (jsonresume.org)
-    const handleExportJson = () => {
-        const data = previewData;
-        const jsonResumeSchema = {
-            $schema: "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
-            basics: {
-                name: `${data.firstname || ''} ${data.lastname || ''}`.trim(),
-                label: data.occupation || '',
-                email: data.email || '',
-                phone: data.phone || '',
-                location: {
-                    city: data.city || '',
-                    countryCode: data.country || '',
-                    address: data.address || '',
-                    postalCode: data.postalcode || ''
-                },
-                summary: data.summary || ''
-            },
-            work: (data.employments || []).map(emp => ({
-                name: emp.employer || '',
-                position: emp.jobTitle || '',
-                startDate: emp.startDate || '',
-                endDate: emp.endDate || '',
-                summary: emp.description || ''
-            })),
-            education: (data.educations || []).map(edu => ({
-                institution: edu.school || '',
-                area: edu.degree || '',
-                startDate: edu.startDate || '',
-                endDate: edu.endDate || ''
-            })),
-            skills: (data.skills || []).map(s => ({
-                name: s.skillName || s.name || ''
-            })),
-            languages: (data.languages || []).map(l => ({
-                language: l.language || l.name || '', fluency: l.level || l.proficiency || ''
-            })),
-            projects: (data.projects || []).map(project => ({
-                name: project.title || project.name || '', description: project.description || '', url: project.url || project.link || ''
-            })),
-            certificates: (data.certifications || []).map(certificate => ({
-                name: certificate.title || certificate.name || '', issuer: certificate.issuer || certificate.organization || '', date: certificate.date || ''
-            })),
-            awards: (data.achievements || []).map(achievement => ({
-                title: achievement.title || achievement.name || '', awarder: achievement.issuer || '', summary: achievement.description || ''
-            })),
-            references: (data.references || []).map(reference => ({
-                name: reference.name || '', reference: reference.reference || reference.description || ''
-            }))
-        };
-
-        const blob = new Blob([JSON.stringify(jsonResumeSchema, null, 2)], { type: 'application/json' });
-        download(blob, 'resume.json', 'application/json');
-    };
-
     // Complete and save resume handler
     const handleCompleteResume = async () => {
         const requiredPersonalFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];

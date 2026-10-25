@@ -8,25 +8,19 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/loading';
-import { get, post, put, normalizeError } from '@/lib/api-client';
+import { get, post, put } from '@/lib/api-client';
 import {
-  Save,
   Eye,
   Edit3,
   ArrowLeft,
   Sparkles,
   Globe,
-  Tag,
-  Clock,
   CheckCircle,
-  FileText,
-  Image as ImageIcon,
-  Share2,
 } from 'lucide-react';
 
 interface BlogPostData {

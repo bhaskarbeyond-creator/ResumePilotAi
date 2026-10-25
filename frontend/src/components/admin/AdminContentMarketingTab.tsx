@@ -19,15 +19,10 @@ import {
   Building,
   Globe,
   Plus,
-  Search,
   CheckCircle2,
   XCircle,
   Trash2,
-  Edit2,
   ExternalLink,
-  Tag,
-  ShieldCheck,
-  Eye,
 } from 'lucide-react';
 
 interface PhraseItem {

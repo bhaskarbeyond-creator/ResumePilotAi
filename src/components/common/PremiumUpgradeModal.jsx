@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSubscriptionStatus } from '../../services/api/platform';
 
@@ -14,10 +13,8 @@ const PremiumUpgradeModal = ({
     isOpen,
     onClose,
     onUpgrade,
-    downloadType = 'pdf',
-    resumeTitle = 'Resume'
+    downloadType = 'pdf'
 }) => {
-    const { t } = useTranslation('common');
     const modalRef = useRef(null);
     const upgradeBtnRef = useRef(null);
     const returnFocusRef = useRef(null);

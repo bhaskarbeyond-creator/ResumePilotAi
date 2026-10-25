@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getProfileOfUser } from '../../services/api/platform';
 import { saveProfile } from '../../services/profilePersistence';
 import { normalizeProfileData } from '../../utils/profileData';
-import { normalizeResumeData } from '../../utils/resumeData';
 import { stripHtml } from '../../utils/atsScore';
 
 /**

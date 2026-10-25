@@ -4,7 +4,7 @@
  * Accessible dropdown menu built with Radix UI primitives.
  */
 
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef } from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { Check, ChevronRight, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';

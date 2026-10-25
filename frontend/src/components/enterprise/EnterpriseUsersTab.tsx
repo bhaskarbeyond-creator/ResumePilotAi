@@ -13,18 +13,13 @@ import {
   Shield,
   Download,
   Mail,
-  RefreshCw,
   Trash2,
   Check,
   X,
   AlertCircle,
-  ShieldAlert,
-  ChevronDown,
   UserCheck,
-  Sliders,
   Building,
   Key,
-  Cpu,
   Sparkles,
   Lock,
   RotateCcw,
@@ -73,9 +68,8 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'INVITED'>(
     (initialStatus && STATUS_FILTERS.includes(initialStatus as any)) ? (initialStatus as any) : 'ALL'
   );
-  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [roleFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Invite Modal
   const [showInviteModal, setShowInviteModal] = useState(autoOpenInvite);

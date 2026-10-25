@@ -5,22 +5,17 @@
  * provider allowlists (NVIDIA NIM, Gemini, OpenAI, Groq, DeepSeek), and model limits.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Zap,
   Cpu,
   Check,
-  RefreshCw,
   Play,
-  Sliders,
   Shield,
-  Layers,
-  Sparkles,
   AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { AiQuotaRing } from './AiQuotaRing';
@@ -78,7 +73,7 @@ const MODEL_CATALOG: ModelMeta[] = [
 export function EnterpriseAiTab() {
   const { tenant, hasPermission } = useEnterprise();
   const [config, setConfig] = useState<EnterpriseConfiguration | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -98,22 +93,6 @@ export function EnterpriseAiTab() {
 
   // Platform status (dedicated BYOK vs shared gateway)
   const [platformStatus, setPlatformStatus] = useState<{ hasDedicatedBYOK: boolean; credentialCount: number; providers: string[] } | null>(null);
-
-  const loadPlatformStatus = useCallback(async () => {
-    if (!tenant?.id) return;
-    try {
-      const res = await enterpriseApi.getPlatformStatus(tenant.id);
-      if (res.success) {
-        setPlatformStatus({
-          hasDedicatedBYOK: res.hasDedicatedBYOK,
-          credentialCount: res.credentialCount,
-          providers: res.providers || [],
-        });
-      }
-    } catch {
-      // Silently ignore platform status errors
-    }
-  }, [tenant?.id]);
 
   const loadConfig = useCallback(async () => {
     if (!tenant?.id) {

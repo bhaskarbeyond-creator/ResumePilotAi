@@ -9,23 +9,15 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { get, post, patch } from '@/lib/api-client';
 import {
   HelpCircle,
-  MessageSquare,
   Send,
   CheckCircle2,
-  AlertCircle,
-  RefreshCw,
   Search,
-  User,
-  Clock,
-  Filter,
 } from 'lucide-react';
 
 interface TicketMessage {
@@ -129,7 +121,7 @@ export function AdminHelpDeskTab() {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   const loadTickets = async () => {
     try {

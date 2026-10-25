@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FaCheckCircle, FaShieldAlt, FaAward, FaBolt } from 'react-icons/fa';
 import { apiJson } from '../../../services/api/platform';
-import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 
 export default function HomepageTrustedBy() {
-  const [trustedItems, setTrustedItems] = useState([]);
+  const [, setTrustedItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

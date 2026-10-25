@@ -7,7 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { getPool } = require('../database/mysql');
-const { setTokenVerifierForTests, issueLocalTestToken } = require('../security/auth');
+const { setTokenVerifierForTests } = require('../security/auth');
 const { isSafeInternalPath, loginPathWithNext } = require('../../src/utils/safeInternalPath');
 const app = require('../index');
 

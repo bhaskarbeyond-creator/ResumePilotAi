@@ -23,7 +23,7 @@ import RoleAiCopilotModal from './components/RoleAiCopilotModal.jsx';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
-import { serializeBullets, extractBulletList } from '../../../utils/bulletQuality.js';
+import { serializeBullets } from '../../../utils/bulletQuality.js';
 
 // Invariant Safety Anchor: AiPromptCard architectural pattern preserved via RoleAiCopilotModal
 /**

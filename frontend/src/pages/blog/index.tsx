@@ -6,17 +6,14 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
-import { get, normalizeError } from '@/lib/api-client';
+import { get } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
   Search,
   Clock,
   BookOpen,
-  Tag,
-  ArrowRight,
   User,
   CalendarDays,
 } from 'lucide-react';

@@ -65,7 +65,7 @@ const LEVEL_COLOR_CLASSES = {
  * - ATS JD Alignment Engine (Matched / Partial / Missing) & Real-time Duplicate Detection.
  * - Zero-Data Loss Autosaving & Synchronous Step Flush on Unmount.
  */
-const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const SkillsStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [skills, setSkills] = useState(resumeData.skills || []);
     const candidateContext = getCandidateContext(resumeData, resumeData.targetJobDescription || '');

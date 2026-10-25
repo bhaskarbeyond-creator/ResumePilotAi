@@ -13,7 +13,6 @@ import JobApplicationModal from './JobApplicationModal';
 import CreateJobModal from './CreateJobModal';
 import FavoritesModal from './FavoritesModal';
 import { AuthContext } from '../../context/AuthContext';
-import fire from '../../conf/fire';
 import { SALARY_FILTER_BANDS, formatSalaryBandLabel, salaryRowMatchesBand } from '../../services/jobs/salaryFilters';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus, checkIsEmployer } from '../../services/api/platform';
@@ -23,6 +22,7 @@ import CubaInlineNotice from '../cuba/CubaInlineNotice';
 // Normalize only facts returned by the public job API. Missing salary, company,
 // location, workplace, and engagement fields stay missing instead of acquiring
 // demo defaults that would misrepresent a real requisition.
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function normalizeJobRecord(job) {
     if (!job || typeof job !== 'object') return null;
     const numeric = value => {
@@ -81,7 +81,7 @@ export function normalizeJobRecord(job) {
     };
 }
 
-const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, sidebarCollapsed, handleSidebarToggle } = {}) => {
+const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard } = {}) => {
     const { t } = useTranslation('common');
     const { pathname } = useLocation();
     const isInsideDashboard = Boolean(propIsInsideDashboard || pathname.startsWith('/dashboard'));
@@ -109,13 +109,6 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
 
     const closeAuthModal = () => {
         setIsAuthModalOpen(false);
-    };
-
-    const logout = () => {
-        fire.auth().signOut();
-        localStorage.removeItem('user');
-        localStorage.removeItem('currentResumeId');
-        localStorage.removeItem('currentResumeItem');
     };
 
     const [searchTerm, setSearchTerm] = useState(initialSearchTerm);

@@ -74,6 +74,7 @@ const ICONS = {
     favorites: FiStar,
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const buildCommands = (groups, navigate) =>
     groups.flatMap((group) => group.items.map((item) => ({
         id: item.id,
@@ -97,6 +98,7 @@ export const buildCommands = (groups, navigate) =>
  * plausible-looking placeholder, so `buildCopilotPayload` can correctly report
  * the context as missing and the palette can fail closed.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function buildCopilotContext(resume) {
     if (!resume || typeof resume !== 'object') return null;
     const source = (resume.data && typeof resume.data === 'object') ? resume.data : resume;

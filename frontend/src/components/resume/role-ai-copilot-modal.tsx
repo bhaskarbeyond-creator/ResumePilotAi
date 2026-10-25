@@ -32,13 +32,10 @@ import {
   Plus,
   Loader2,
   AlertCircle,
-  Briefcase,
   TrendingUp,
   Target,
   HelpCircle,
   Zap,
-  CheckCircle2,
-  RefreshCw,
 } from 'lucide-react';
 import { AI_TONES, runContentOperation, type AiTone } from '@/lib/ai-content';
 import { cn } from '@/lib/utils';

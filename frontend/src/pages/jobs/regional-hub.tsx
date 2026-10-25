@@ -24,10 +24,6 @@ import {
   ExternalLink,
   AlertCircle,
   RefreshCw,
-  TrendingUp,
-  Users,
-  Globe,
-  Zap,
   ChevronLeft,
   Bookmark,
 } from 'lucide-react';

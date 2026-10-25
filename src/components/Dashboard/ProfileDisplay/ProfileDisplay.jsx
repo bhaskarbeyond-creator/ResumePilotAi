@@ -12,13 +12,12 @@ import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
 import { useUnreadNotifications } from '../../../hooks/useUnreadNotifications';
-import { useServiceAvailability } from '../../../hooks/useServiceAvailability';
 import ContextSwitcher from '../../common/ContextSwitcher';
 
 const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapsed }) => {
     const { t } = useTranslation('common');
     const [darkMode, setDarkMode] = useState(false);
-    const [isEmployer, setIsEmployer] = useState(false);
+    const [, setIsEmployer] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [modulesConfig, setModulesConfig] = useState({
         enablePortfolioModule: false,
@@ -108,11 +107,6 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     // The build-time flag alone is not sufficient: if the client is built with
     // tenancy on but the backend has it dark, this link produces a 404. We
     // therefore require the backend to confirm tenancy is actually served.
-    const buildTimeEnterpriseFlag = import.meta.env?.VITE_ENTERPRISE_TENANCY_ENABLED === 'true';
-    const { availability: platformAvailability, status: availabilityStatus } = useServiceAvailability();
-    const enterpriseEnabled = availabilityStatus === 'ready'
-        && (buildTimeEnterpriseFlag || platformAvailability?.enterpriseTenancy === true)
-        && platformAvailability?.enterpriseTenancy === true;
 
     // Check system modules settings
     useEffect(() => {

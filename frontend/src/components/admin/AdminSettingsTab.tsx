@@ -28,33 +28,20 @@ import {
   Paintbrush,
   Globe,
   Key,
-  Shield,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
   Save,
   Lock,
-  Layers,
   Sparkles,
   Bot,
-  Search,
-  MessageSquare,
-  FileText,
   Briefcase,
-  FileCheck,
-  Check,
-  Eye,
-  EyeOff,
-  ExternalLink,
   Code2,
-  FileCode2,
   DollarSign,
   Receipt,
   FileStack,
   Cookie,
   Smartphone,
-  MapPin,
-  ChevronRight,
   Info,
 } from 'lucide-react';
 
@@ -627,7 +614,7 @@ function PaymentsConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' 
           }
           if (res.settings.gstPercentage) setGstPercentage(res.settings.gstPercentage);
         }
-      } catch (err) {
+      } catch {
         console.warn('[PaymentsConfigPanel] Using default payment configuration');
       }
     })();

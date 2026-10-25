@@ -16,7 +16,6 @@ import React, { useState, useId } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -175,7 +174,6 @@ export function CheckoutModal({
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvc, setCardCvc] = useState('');
-  const [cardZip, setCardZip] = useState('');
 
   // Execution & Status State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -214,7 +212,6 @@ export function CheckoutModal({
   const isIndia = currency === 'INR' || country.toLowerCase() === 'india';
   const isIntraState = isIndia && state.toLowerCase().includes('maharashtra'); // Base state 27
 
-  let taxRate = 0;
   let taxAmount = 0;
   let cgstAmount = 0;
   let sgstAmount = 0;
@@ -222,7 +219,6 @@ export function CheckoutModal({
 
   if (rawSubtotal > 0) {
     if (isIndia) {
-      taxRate = 18; // Standard 18% GST for software services
       taxAmount = Math.round(discountedSubtotal * 0.18);
       if (isIntraState) {
         cgstAmount = Math.round(taxAmount / 2);
@@ -232,7 +228,6 @@ export function CheckoutModal({
       }
     } else {
       // 0% standard export sales tax for international SaaS
-      taxRate = 0;
       taxAmount = 0;
     }
   }
@@ -352,7 +347,7 @@ export function CheckoutModal({
         } else {
           paymentRes = await axios.post('/api/paypal/create-order', orderPayload);
         }
-      } catch (_apiErr) {
+      } catch {
         // Safe graceful fallback for standalone headless test runs
         console.warn('Backend payment endpoint returned fallback, generating client order confirmation.');
       }

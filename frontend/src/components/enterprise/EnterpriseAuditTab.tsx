@@ -7,15 +7,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  FileText,
   Search,
   Download,
-  Filter,
   Shield,
-  Clock,
-  AlertTriangle,
-  Info,
-  CheckCircle2,
   RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,7 +26,7 @@ export function EnterpriseAuditTab() {
   const { tenant } = useEnterprise();
   const [events, setEvents] = useState<EnterpriseAuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'CRITICAL' | 'SECURITY'>('ALL');
   const [selectedEvent, setSelectedEvent] = useState<EnterpriseAuditEvent | null>(null);

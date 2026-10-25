@@ -26,6 +26,7 @@ import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
 import { generateUserAiContent } from '../../../services/aiService';
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const ACHIEVEMENT_TYPES = [
     { id: 'Award', label: 'Award', icon: FaTrophy, badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
     { id: 'Honor', label: 'Honor', icon: FaMedal, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
@@ -34,6 +35,7 @@ export const ACHIEVEMENT_TYPES = [
     { id: 'Milestone', label: 'Key Milestone', icon: FaStar, badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const SUGGESTION_CHIPS = [
     { label: '🏆 1st Place / Winner', text: 'Awarded 1st place out of 100+ competitors for engineering innovation and technical execution.' },
     { label: '🌟 Top 5% Performer', text: 'Recognized in top 5% of global team for outstanding quarterly performance and customer satisfaction.' },
@@ -41,6 +43,7 @@ export const SUGGESTION_CHIPS = [
     { label: '🎓 Dean\'s Honor Roll', text: 'Maintained top academic standing on Dean’s Honor List across consecutive semesters.' }
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const TYPE_STYLE_MAP = {
     Award: {
         cardBorder: 'border-amber-200/90 hover:border-amber-300 focus-within:border-amber-400',
@@ -86,7 +89,7 @@ function findAchievementSignals(resumeData = {}) {
     (resumeData.employments || []).forEach(emp => {
         const where = `${emp.jobTitle || ''} at ${emp.employer || ''}`.trim();
         String(emp.description || '').split(/\r?\n/).forEach(line => {
-            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·\-]\s*/, '').trim();
+            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·-]\s*/, '').trim();
             if (clean.length >= 15 && RECOGNITION_SIGNAL.test(clean)) {
                 sources.push({ text: clean.slice(0, 300), source: where || 'Work experience' });
             }
@@ -95,7 +98,7 @@ function findAchievementSignals(resumeData = {}) {
     (resumeData.projects || []).forEach(project => {
         const where = String(project.title || 'Project');
         String(project.description || '').split(/\r?\n/).forEach(line => {
-            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·\-]\s*/, '').trim();
+            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·-]\s*/, '').trim();
             if (clean.length >= 15 && RECOGNITION_SIGNAL.test(clean)) {
                 sources.push({ text: clean.slice(0, 300), source: where });
             }
@@ -104,7 +107,7 @@ function findAchievementSignals(resumeData = {}) {
     (resumeData.educations || []).forEach(edu => {
         const where = `${edu.degree || ''} ${edu.school || ''}`.trim();
         String(edu.description || '').split(/\r?\n/).forEach(line => {
-            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·\-]\s*/, '').trim();
+            const clean = line.replace(/<[^>]*>/g, ' ').replace(/^\s*[•▪·-]\s*/, '').trim();
             if (clean.length >= 15 && RECOGNITION_SIGNAL.test(clean)) {
                 sources.push({ text: clean.slice(0, 300), source: where || 'Education' });
             }

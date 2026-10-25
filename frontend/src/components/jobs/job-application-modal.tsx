@@ -14,7 +14,6 @@ import { useAuth } from '@/providers/auth-provider';
 import { get, post, normalizeError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   X,
   Building2,
@@ -26,8 +25,6 @@ import {
   Percent,
   Send,
   Loader2,
-  ChevronRight,
-  ExternalLink,
 } from 'lucide-react';
 
 export interface ApplicationJob {

@@ -9,7 +9,6 @@
 
 import { test, expect } from '@playwright/test';
 
-const path = '/admin?tab=ai-settings';
 
 // Authentication is through the actual non-production endpoint and server-side signed-token verifier.
 // No API mocking except the explicitly named single-response transport-failure recovery test.

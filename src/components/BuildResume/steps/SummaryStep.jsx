@@ -27,7 +27,7 @@ const TONES = [
  * Synthesizes full career history, education, skills, and projects with tone selection,
  * bidirectional Master Profile bio import/export, and safe AiPromptCard draft review (zero silent overwrites).
  */
-const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const SummaryStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const candidateContext = React.useMemo(
         () => getCandidateContext(resumeData, resumeData.targetJobDescription || ''),

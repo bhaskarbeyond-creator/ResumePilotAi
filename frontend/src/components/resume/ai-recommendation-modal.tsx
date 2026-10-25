@@ -25,7 +25,6 @@ import {
   Check,
   Search,
   Flame,
-  CheckCircle2,
   X,
   Plus,
 } from 'lucide-react';

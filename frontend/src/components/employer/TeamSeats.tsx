@@ -14,9 +14,6 @@ import {
   UserPlus,
   Shield,
   Check,
-  Mail,
-  MoreVertical,
-  AlertCircle,
   CheckCircle2,
   Lock,
 } from 'lucide-react';

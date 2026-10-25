@@ -1049,7 +1049,6 @@ export function ResumesPage() {
             const meta = getTemplateMeta(templateId);
             const score = getResumeScore(resume);
             const title = resume.title || resume.name || 'Untitled Resume';
-            const role = resume.occupation || resume.targetRole || '';
             const created = resume.createdAt || resume.created_at;
             const updated = resume.updatedAt || resume.updated_at;
             const dateStr = updated ? `Updated ${formatDate(updated)}` : created ? `Created ${formatDate(created)}` : 'Recently';

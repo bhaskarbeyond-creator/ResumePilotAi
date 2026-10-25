@@ -15,6 +15,7 @@ export const PORTALS = Object.freeze({
     ADMIN: 'admin',
 });
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const PORTAL_META = {
     [PORTALS.CANDIDATE]: { id: PORTALS.CANDIDATE, label: 'Candidate Dashboard', shortLabel: 'Candidate Suite', path: '/dashboard', icon: FiGrid },
     [PORTALS.RECRUITER]: { id: PORTALS.RECRUITER, label: 'Recruiter & Hiring Portal', shortLabel: 'Recruiter Portal', path: '/employer', icon: FiBriefcase },
@@ -22,6 +23,7 @@ export const PORTAL_META = {
     [PORTALS.ADMIN]: { id: PORTALS.ADMIN, label: 'Platform Admin Console', shortLabel: 'Admin Console', path: '/admin', icon: FiShield },
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const isKnownPortal = (value) => Object.prototype.hasOwnProperty.call(PORTAL_META, String(value || ''));
 
 const readStoredPortal = () => {
@@ -55,6 +57,7 @@ const portalForPathname = (pathname = '/') => {
  * actually carries a platform role. A stale or hand-edited localStorage value
  * can therefore never surface a portal the server would refuse.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function usePortalAvailability() {
     const user = useContext(AuthContext);
     const [availability, setAvailability] = useState({

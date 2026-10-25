@@ -5,7 +5,7 @@
  * Will be replaced with full implementations.
  */
 
-import { useLocation, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Construction, ArrowLeft, Home } from 'lucide-react';

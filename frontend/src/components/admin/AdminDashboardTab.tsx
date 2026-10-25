@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import { usePlatformStats } from '@/hooks/use-api-hooks';
 import { Link } from 'react-router-dom';
 import {
-  BarChart3,
   Users,
   FileText,
   Briefcase,
@@ -22,11 +21,9 @@ import {
   Activity,
   Shield,
   AlertTriangle,
-  Play,
   Brain,
   Edit3,
   Database,
-  HelpCircle,
   CheckCircle2,
   ArrowRight,
   ExternalLink,
@@ -37,7 +34,7 @@ interface AdminDashboardTabProps {
 }
 
 export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
-  const { data: stats, isLoading, error } = usePlatformStats();
+  const { data: stats, isLoading } = usePlatformStats();
   const [roleView, setRoleView] = useState<'super_admin' | 'candidate' | 'employer' | 'enterprise'>('super_admin');
 
   const statCards = [

@@ -5,7 +5,6 @@ import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { listBlogPosts, updateBlogPost, deleteBlogPost, listBlogCategories, getUserData } from '../../../services/api/platform';
 import { FiSearch, FiFilter, FiCheck, FiX, FiEye, FiEdit3, FiTrash2, FiClock, FiUser, FiTag, FiChevronDown, FiChevronUp, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import BlogPreviewModal from './BlogPreviewModal';
-import fire from '../../../conf/fire';
 
 const BlogManagement = () => {
     const [posts, setPosts] = useState([]);
@@ -53,6 +52,7 @@ const BlogManagement = () => {
 
     useEffect(() => {
         loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'loadCategories'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
     }, []);
 
     const loadData = async () => {

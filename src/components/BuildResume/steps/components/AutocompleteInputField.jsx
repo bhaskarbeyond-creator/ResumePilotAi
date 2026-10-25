@@ -85,6 +85,7 @@ function getProfileCandidates(suggestionType, context) {
 
 const RECENT_STORAGE_KEY_PREFIX = 'rp_recent_';
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function getRecentSelections(type) {
     if (typeof window === 'undefined' || !window.localStorage) return [];
     try {
@@ -97,6 +98,7 @@ export function getRecentSelections(type) {
     }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function saveRecentSelection(type, value) {
     if (typeof window === 'undefined' || !window.localStorage || !value || typeof value !== 'string') return;
     try {
@@ -174,8 +176,7 @@ const AutocompleteInputField = ({
     const fetchSuggestions = async (queryVal = '', forceOpen = false) => {
         const query = String(queryVal || '').trim();
         const cleanQ = query.toLowerCase();
-        const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
-
+    
         if (!AI_AUTOCOMPLETE_TYPES.has(suggestionType)) {
             const localList = getLocalProfileSuggestions(suggestionType, query, context);
             setSuggestions(localList);

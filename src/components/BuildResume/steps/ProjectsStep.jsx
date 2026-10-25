@@ -26,6 +26,7 @@ import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
 import { generateUserAiContent } from '../../../services/aiService';
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const PROJECT_TYPES = [
     { id: 'personal', label: 'Personal Build', icon: FaRocket, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     { id: 'enterprise', label: 'Work / Enterprise', icon: FaBuilding, badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -47,11 +48,10 @@ export const PROJECT_TYPES = [
  * - Zero-Data Loss Autosaving & Synchronous Step Flush on Unmount.
  * - Zero-Fabrication Safety: Initialized with empty description, strictly preserving invariants.
  */
-const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const ProjectsStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [projects, setProjects] = useState(resumeData.projects || []);
     const candidateContext = getCandidateContext(resumeData, resumeData.targetJobDescription || '');
-    const targetJd = resumeData.targetJobDescription || '';
 
     // Search and Filter States
     const [searchQuery, setSearchQuery] = useState('');
@@ -271,7 +271,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     triggerToast(`Added ${toAdd.length} project(s) to your resume! Check them out below.`);
                 }
             });
-        } catch (err) {
+        } catch {
             triggerToast('Unable to fetch project ideas. Please try again.', 'error');
         } finally {
             setIsAiGenerating(false);

@@ -5,9 +5,8 @@
  * inspection & replay, SAML 2.0 SSO configuration, and security posture.
  */
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Shield,
   Key,
   Layers,
   RotateCcw,
@@ -16,10 +15,6 @@ import {
   Check,
   Plus,
   AlertTriangle,
-  Lock,
-  Globe,
-  RefreshCw,
-  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

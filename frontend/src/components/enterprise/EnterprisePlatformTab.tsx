@@ -9,13 +9,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Command,
-  Building2,
   ShieldAlert,
-  RotateCcw,
   Check,
   AlertCircle,
   Search,
-  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

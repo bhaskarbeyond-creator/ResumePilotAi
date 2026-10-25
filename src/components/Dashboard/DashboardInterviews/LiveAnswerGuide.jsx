@@ -9,6 +9,7 @@ import { getAiCacheScope } from '../../../services/aiService';
 const guideCache = new Map();
 const GUIDE_CACHE_LIMIT = 100;
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function guideCacheKey(scope, role, question) {
     return `${scope}::${String(role || '').trim().toLowerCase()}::${String(question || '').trim().toLowerCase()}`;
 }

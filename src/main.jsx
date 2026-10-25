@@ -1,5 +1,5 @@
 import './bootstrap';
-import React, { Suspense, lazy, useState, useEffect, useRef, createContext } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearPostLoginRedirectPath } from './utils/safeInternalPath';
@@ -33,6 +33,7 @@ import axios from 'axios';
 // Single-flight token refresh lock so multiple parallel requests coalesce onto a single getIdToken(true) call
 let singleFlightRefreshPromise = null;
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: application entry module; a Fast Refresh boundary cannot apply to the root entry.
 export async function refreshApiTokenSingleFlight() {
     if (singleFlightRefreshPromise) {
         return singleFlightRefreshPromise;
@@ -131,6 +132,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Create/Import Context for authentication
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: application entry module; a Fast Refresh boundary cannot apply to the root entry.
 export { AuthContext, useAuth } from './context/AuthContext';
 import { AuthContext } from './context/AuthContext';
 

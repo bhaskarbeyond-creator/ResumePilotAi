@@ -8,16 +8,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Shield,
-  Lock,
-  Sliders,
-  FileText,
-  CreditCard,
-  Users,
   Check,
   X,
   Search,
-  Layers,
-  Sparkles,
   Plus,
   Trash2,
   AlertCircle,
@@ -289,7 +282,7 @@ export function EnterpriseRolesTab() {
     try {
       const configRes = await enterpriseApi.getConfiguration(tenant.id);
       const currentConfig = configRes.configuration || {};
-      const existingCustom = { ...((currentConfig.customRoles as Record<string, any>) || {}) };
+      const existingCustom = { ...(currentConfig.customRoles as Record<string, any>) };
       delete existingCustom[roleId];
 
       await enterpriseApi.updateConfiguration(tenant.id, currentConfig.revision || 1, {

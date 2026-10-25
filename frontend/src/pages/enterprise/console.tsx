@@ -10,18 +10,13 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
   Building2,
   Users,
   Shield,
-  Key,
   Activity,
-  Plus,
-  Search,
-  CheckCircle2,
   Lock,
-  Globe,
   Sliders,
   FileText,
   Zap,
@@ -32,8 +27,6 @@ import {
   Mail,
   AlertTriangle,
   RefreshCw,
-  ExternalLink,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/auth-provider';
@@ -140,13 +133,6 @@ const NAVIGATION: NavItem[] = [
   { id: 'platform', label: 'Platform Administration', group: 'Administration', icon: Command, platformOnly: true },
 ];
 
-const NAV_GROUPS: Array<'Home' | 'Organization' | 'Governance' | 'Administration'> = [
-  'Home',
-  'Organization',
-  'Governance',
-  'Administration',
-];
-
 function EnterpriseConsoleInner() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -160,8 +146,6 @@ function EnterpriseConsoleInner() {
     hasPermission,
     selectTenant,
     selectWorkspace,
-    loading,
-    error,
     emailVerificationRequired,
     clearEmailVerificationError,
     reload,

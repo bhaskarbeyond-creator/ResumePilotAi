@@ -19,7 +19,7 @@ export default function HomepageNavbar({ onOpenAuthModal }) {
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   const [resourcesDropdownOpen, setResourcesDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [brandTitle, setBrandTitle] = useState('IME365');
+  const [, setBrandTitle] = useState('IME365');
   const [portfolioEnabled, setPortfolioEnabled] = useState(false);
   const [blogEnabled, setBlogEnabled] = useState(true);
 

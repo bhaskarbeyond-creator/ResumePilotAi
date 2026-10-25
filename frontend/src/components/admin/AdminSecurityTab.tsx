@@ -8,15 +8,11 @@ import {
   Users,
   FileSpreadsheet,
   Megaphone,
-  Search,
-  RefreshCw,
   AlertTriangle,
   CheckCircle2,
   Lock,
   LogOut,
   Download,
-  Filter,
-  Plus,
   Trash2,
   Clock,
   Radio,
@@ -26,8 +22,6 @@ import {
   Check,
   X,
   Ban,
-  Globe,
-  Terminal,
 } from 'lucide-react';
 
 interface SecurityEvent {

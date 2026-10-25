@@ -3,14 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { MdAdd, MdCheck } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
 import Field from '../components/Field.jsx';
-import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
+import { moveResumeItem } from '../../../utils/resumeData';
 
 /**
  * References — privacy-first. The default is the "available upon request"
  * statement; named references are optional and include a consent note.
  * No AI, no invented statistics.
  */
-const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const ReferencesStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [references, setReferences] = useState(resumeData.references || []);
 
@@ -42,11 +42,6 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const removeReference = (id) => setReferences(prev => prev.filter(item => item.id !== id));
 
     const moveReference = (id, direction) => setReferences(current => moveResumeItem(current, id, direction));
-
-    const duplicateReference = (id) => setReferences(current => {
-        const source = current.find(item => item.id === id);
-        return duplicateResumeItem(current, id, { name: `${source?.name || 'Reference'} (Copy)` });
-    });
 
     const updateReference = (id, field, value) => {
         setReferences(prev => prev.map(item => (item.id === id ? { ...item, [field]: value } : item)));

@@ -142,15 +142,6 @@ test('Master Configuration Control: Dynamic Pricing & Zero Client Price Authorit
     stripeEnabled: true,
   };
 
-  // Mock repo
-  const repo = {
-    getSetting: async (key) => {
-      if (key === 'public_config') return { subscriptions: dynamicSubscriptions };
-      if (key === 'system_settings') return { currency: 'INR' };
-      return null;
-    }
-  };
-
   // Simulated server price lookup (mirrors getDynamicPlan)
   const currency = 'INR';
   const planId = 'monthly';
@@ -174,7 +165,6 @@ test('Master Configuration Control: Dynamic Pricing & Zero Client Price Authorit
 });
 
 test('Master Configuration Control: PDF Export Policy Gating (Free vs Pro vs Free Mode)', async () => {
-  const { isPaidMembershipTier } = require('../database/canonical');
   const { isMembershipActive } = require('../database/domain');
 
   // 1. When paywall active: Free user is not entitled

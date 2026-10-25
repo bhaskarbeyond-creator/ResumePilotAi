@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { listBlogPosts, listBlogCategories, getBlogSettings } from '../../../services/api/platform';
 import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import Spinner from '../../Spinner/Spinner';
@@ -23,7 +22,6 @@ import {
 } from 'react-icons/fa';
 
 export default function BlogList() {
-  const { t } = useTranslation('common');
   const user = React.useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -34,7 +32,7 @@ export default function BlogList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
+  const [, setPagination] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('newest');
   const [loadError, setLoadError] = useState('');
@@ -69,6 +67,7 @@ export default function BlogList() {
 
   useEffect(() => {
     fetchPosts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'fetchPosts'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
   }, [selectedCategory, currentPage]);
 
   useEffect(() => {

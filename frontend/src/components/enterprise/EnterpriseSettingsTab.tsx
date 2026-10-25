@@ -5,25 +5,20 @@
  * session timeouts, and verified data export.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Settings,
   Building,
-  Shield,
   Download,
   Check,
   AlertCircle,
   Lock,
-  Globe,
-  Key,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
-import { enterpriseApi, type EnterpriseConfiguration } from '@/lib/enterprise-api';
-import { cn } from '@/lib/utils';
+import { enterpriseApi } from '@/lib/enterprise-api';
 
 export function EnterpriseSettingsTab() {
   const { tenant, reload, hasPermission } = useEnterprise();
@@ -33,7 +28,6 @@ export function EnterpriseSettingsTab() {
   const [allowedDomains, setAllowedDomains] = useState('company.com, global.corp');
   const [sessionTimeout, setSessionTimeout] = useState(60);
 
-  const [loading, setLoading] = useState(false);
   const [busySave, setBusySave] = useState(false);
   const [busySaveSecurity, setBusySaveSecurity] = useState(false);
   const [busyExport, setBusyExport] = useState(false);

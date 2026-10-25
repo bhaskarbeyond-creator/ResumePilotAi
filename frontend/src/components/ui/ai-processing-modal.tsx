@@ -4,7 +4,6 @@ import {
   UserCheck,
   Target,
   Cpu,
-  CheckCircle2,
   X,
   Clock,
   Lightbulb,

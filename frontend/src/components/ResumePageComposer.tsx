@@ -98,7 +98,7 @@ function looksLikeSidebar(el: HTMLElement | null, boardWidth: number): boolean {
   if (!el) return false;
   const name = `${el.className || ''} ${el.id || ''}`;
   if (SIDEBAR_HINT.test(name)) return true;
-  if (/Left$/.test(String(el.className || ''))) return true;
+  if (String(el.className || '').endsWith('Left')) return true;
   const cs = getComputedStyle(el);
   const width = el.getBoundingClientRect().width;
   if (width > 0 && boardWidth > 0 && width < boardWidth * 0.45 && cs.flexGrow === '0') return true;
@@ -392,7 +392,7 @@ function composePages(options: ComposeOptions): ComposeResult {
   const removableInFlow = () => {
     if (!flowDeep) return [];
     const out: HTMLElement[] = [];
-    for (const child of [...flowDeep.children]) {
+    for (const child of flowDeep.children) {
       if (child.classList?.contains('resume-page-footer')) continue;
       if (child.classList?.contains('resume-continuation-header')) continue;
       out.push(child as HTMLElement);
@@ -500,6 +500,7 @@ function composePages(options: ComposeOptions): ComposeResult {
         break;
       }
       chainBlocks.unshift(...entries.slice(1));
+      // eslint-disable-next-line no-constant-condition -- F-25: deliberate do/while pagination loop; every path exits via the break/return guards above.
     } while (true);
 
     pages.push(page);

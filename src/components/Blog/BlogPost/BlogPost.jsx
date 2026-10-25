@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { fetchPublicConfig, getBlogPostBySlug, listBlogPosts } from '../../../services/api/platform';
 import { AuthContext } from '../../../context/AuthContext';
@@ -58,7 +57,6 @@ function clearArticleMetadata() {
 }
 
 export default function BlogPost() {
-  const { t } = useTranslation('common');
   const { slug } = useParams();
   const navigate = useNavigate();
   const user = useContext(AuthContext);

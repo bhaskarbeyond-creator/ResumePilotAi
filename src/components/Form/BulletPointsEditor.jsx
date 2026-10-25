@@ -4,8 +4,6 @@ import { generateUserAiContent } from '../../services/aiService';
 import {
     ACTION_VERBS,
     getBulletAnalysis,
-    hasStrongActionVerb,
-    detectLegitimateMetric,
     BULLET_PREFIX_REGEX,
     ensureAtsOptimizedBullet,
     getRolePlaceholder,
@@ -13,8 +11,11 @@ import {
 } from '../../utils/bulletQuality.js';
 
 export {
+    // eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
     ensureAtsOptimizedBullet,
+    // eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
     getRolePlaceholder,
+    // eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
     getRolePillars,
 };
 

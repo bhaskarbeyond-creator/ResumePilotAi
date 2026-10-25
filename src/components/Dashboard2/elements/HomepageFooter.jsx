@@ -1,6 +1,7 @@
 // Backward-compatible facade: 'HomepageFooter' now lives at
 // src/components/Marketing/elements/HomepageFooter.jsx. Retained so legacy or cached
 // consumers of 'Dashboard2/elements/HomepageFooter' keep resolving.
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: pure re-export shim; no local component is defined here, so a Fast Refresh boundary cannot apply.
 export { default } from '../../Marketing/elements/HomepageFooter';
 
 // bs-card-executive-dashboard
