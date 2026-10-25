@@ -361,3 +361,119 @@ test('B5: memory backend cooldown scoping parity', () => {
   assert.equal(store.loadCooldowns({ now: NOW, scopeKey: 'platform' }).length, 1, 'scoped clear leaves the platform row');
   store.close();
 });
+
+// ── A.3: request_log additive ALTER (F-18 precedent) + scoped window reads ───
+
+function seedLegacyRequestLog(file, rows) {
+  const sqlite = loadSqliteModule();
+  const db = new sqlite.DatabaseSync(file);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS request_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT,
+      model TEXT,
+      ok INTEGER NOT NULL,
+      status INTEGER,
+      latency_ms INTEGER,
+      prompt_tokens INTEGER,
+      completion_tokens INTEGER,
+      created_at INTEGER NOT NULL
+    );
+  `);
+  const insert = db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  for (const row of rows) insert.run(row.provider, row.model, row.ok ? 1 : 0, row.status, row.latencyMs, row.promptTokens ?? null, row.completionTokens ?? null, row.createdAt);
+  db.close();
+}
+
+test('C1: legacy ring gains scope_key + decision_id in place — parity, platform defaults, NULL history, idempotent', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    seedLegacyRequestLog(file, [
+      { provider: 'groq', model: 'm1', ok: true, status: 200, latencyMs: 100, promptTokens: 5, completionTokens: 7, createdAt: NOW - 2000 },
+      { provider: 'groq', model: 'm1', ok: false, status: 429, latencyMs: 3, createdAt: NOW - 1000 },
+      { provider: 'openrouter', model: 'm2', ok: true, status: 200, latencyMs: 300, promptTokens: 1, completionTokens: 2, createdAt: NOW - 500 },
+    ]);
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(store.scopedSchema, true);
+    const recent = store.getRecentRequests({ limit: 10 });
+    assert.equal(recent.length, 3, 'the ALTER preserves every ring row');
+    for (const row of recent) {
+      assert.equal(row.scopeKey, 'platform', 'history defaults to the platform scope');
+      assert.equal(row.decisionId, null, 'history has no decision id — NULL, never fabricated');
+    }
+    assert.equal(recent.find(row => row.status === 429).promptTokens, null, 'F-18 null-when-unknown survives the ALTER');
+    const aggregates = store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW });
+    assert.equal(aggregates.find(a => a.provider === 'groq').n, 2, 'windowed reads work over the altered ring');
+    store.close();
+    const reopened = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(reopened.scopedSchema, true, 'reopen is a no-op (PRAGMA guard)');
+    assert.equal(reopened.getRecentRequests({ limit: 10 }).length, 3);
+    reopened.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('C2: aggregates are scope-isolated — the platform window never sees tenant rows and vice versa', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 100, status: 200, at: NOW - 3000 });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 110, status: 200, at: NOW - 2000 });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: false, latencyMs: 5, status: 429, at: NOW - 1000, scopeKey: 'tenant:t1' });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 900, status: 200, at: NOW - 500, scopeKey: 'tenant:t1' });
+    const platform = store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW });
+    assert.equal(platform.length, 1);
+    assert.equal(platform[0].n, 2, 'the tenant failure/success are invisible to the platform window');
+    assert.equal(platform[0].failures, 0);
+    assert.equal(platform[0].scopeKey, 'platform');
+    const tenant = store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW, scopeKey: 'tenant:t1' });
+    assert.equal(tenant.length, 1);
+    assert.equal(tenant[0].n, 2);
+    assert.equal(tenant[0].failures, 1);
+    assert.equal(tenant[0].scopeKey, 'tenant:t1');
+    assert.equal(store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW, scopeKey: 'tenant:other' }).length, 0);
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('C3: sample cap applies within a scope — tenant volume never evicts platform samples', () => {
+  const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: ':memory:' } });
+  for (let i = 0; i < 4; i += 1) {
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 100 + i, status: 200, at: NOW + i });
+  }
+  for (let i = 0; i < 12; i += 1) {
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 900 + i, status: 200, at: NOW + 100 + i, scopeKey: 'tenant:t1' });
+  }
+  const platform = store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW + 10_000, maxSamples: 10 })[0];
+  assert.equal(platform.n, 4);
+  assert.equal(platform.successSamples.length, 4, 'platform samples intact despite tenant volume');
+  assert.ok(platform.successSamples.every(sample => sample.latencyMs < 200), 'no tenant latency leaked into the platform window');
+  const tenant = store.getRollingAggregates({ windowMs: 30 * 60_000, now: NOW + 10_000, maxSamples: 10, scopeKey: 'tenant:t1' })[0];
+  assert.equal(tenant.n, 12);
+  assert.equal(tenant.successSamples.length, 10, 'the cap applies within the tenant scope too');
+  store.close();
+});
+
+test('C4: decision_id round-trip through the ring, scoped reads', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 10, status: 200, at: NOW, decisionId: 'd-0001' });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 11, status: 200, at: NOW + 1, scopeKey: 'tenant:t1', decisionId: 'd-0002' });
+    store.recordRequest({ provider: 'groq', model: 'm1', ok: true, latencyMs: 12, status: 200, at: NOW + 2 });
+    const all = store.getRecentRequests({ limit: 10 });
+    assert.deepEqual(all.map(row => row.decisionId).sort(), ['d-0001', 'd-0002', null].sort());
+    const tenantRows = store.getRecentRequests({ limit: 10, scopeKey: 'tenant:t1' });
+    assert.equal(tenantRows.length, 1);
+    assert.equal(tenantRows[0].decisionId, 'd-0002');
+    store.reset({ scopeKey: 'tenant:t1' });
+    assert.equal(store.getRecentRequests({ limit: 10, scopeKey: 'tenant:t1' }).length, 0);
+    assert.equal(store.getRecentRequests({ limit: 10, scopeKey: 'platform' }).length, 2, 'the scoped ring wipe never touches platform rows');
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
