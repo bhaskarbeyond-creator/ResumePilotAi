@@ -1630,7 +1630,9 @@ async function loadProviderConfiguration(environment = process.env) {
         repo.getSetting('public_config'),
         repo.getSetting('system_settings'),
     ]);
-    const providerSecrets = secrets || {};
+    // F-19: platform keys are envelope-encrypted at rest; decrypt into the
+    // in-memory configuration only (plaintext never returns to the store).
+    const providerSecrets = require('./aiSecretStore').decryptProviderSecrets(secrets || {});
     const publicAi = publicConfig?.ai || {};
     const legacyAi = systemSettings?.ai || {};
     const effectiveAi = { ...legacyAi, ...publicAi };

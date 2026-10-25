@@ -77,7 +77,10 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
 // Pure builder shared with product content/parse operations. No second cache,
 // repository read or provider-normalization implementation is introduced.
 function buildFreeLlmPlatformConfig({ environment = process.env, secrets, publicConfig, systemSettings } = {}) {
-  const providerSecrets = secrets || {};
+  // F-19: platform keys are envelope-encrypted at rest; the engine consumes
+  // the decrypted in-memory view only. A stored envelope without a configured
+  // ENTERPRISE_ENCRYPTION_KEY(S) fails closed inside decryptProviderSecrets.
+  const providerSecrets = require('./aiSecretStore').decryptProviderSecrets(secrets || {});
   const publicAi = publicConfig?.ai || {};
   const legacyAi = systemSettings?.ai || {};
   const providers = {};

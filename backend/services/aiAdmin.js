@@ -2,6 +2,8 @@
 
 const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider, resolveAiEngineChoice, getAiEngineShadowLog } = require('./aiRuntime');
 const { getModelQualityTier } = require('../freellmapi/providers/registry');
+// F-19: envelope boundary for platform AI provider secrets at rest.
+const { decryptProviderSecrets, encryptProviderSecrets, getSecretEncryptionStatus } = require('./aiSecretStore');
 
 const SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -251,7 +253,9 @@ async function loadAiAdminSettings(environment = process.env) {
     repo.getSetting('system_settings'),
   ]);
   const publicConfig = stored || {};
-  const providerSecrets = secrets || {};
+  // F-19: platform keys are envelope-encrypted at rest; plaintext lives only
+  // in memory (masking below still shows the true last-4 of the real key).
+  const providerSecrets = decryptProviderSecrets(secrets || {});
   const legacyAi = systemSettings?.ai || {};
   const publicAi = publicConfig.ai || {};
   const credentialSources = Object.fromEntries(PROVIDERS.map(provider => [provider,
@@ -392,6 +396,12 @@ async function loadAiAdminSettings(environment = process.env) {
     settings, configuredProviders, enabledProviders, credentialSources, maskedKeys,
     catalog,
     cooldowns,
+    // F-19: honest at-rest encryption state for the platform key store —
+    // 'active' (envelopes sealed), 'unavailable' (no key configured; legacy
+    // plaintext), 'misconfigured' (encryption env present but invalid).
+    // Reflects the DEPLOYMENT environment (process.env), not the caller's
+    // env snapshot: it describes how this process seals/opens the store.
+    secretEncryption: getSecretEncryptionStatus(),
     featureFlags: { ai_settings_v2_enabled: aiSettingsV2Enabled },
     engine: {
       version: freellmEngine.ENGINE_VERSION,
@@ -426,7 +436,10 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
       data: typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
       revision: Number(row.revision || 0),
     }]));
-    const currentSecrets = byCategory.ai_providers?.data || {};
+    // F-19: secretPatch operates on the DECRYPTED in-memory view so mask
+    // detection, preservation and length validation keep working exactly as
+    // designed; the merged store is re-sealed into envelopes before the INSERT.
+    const currentSecrets = decryptProviderSecrets(byCategory.ai_providers?.data || {});
     const currentPublic = byCategory.public_config?.data || {};
     // F-15: `existing` lets absent toggles preserve the prior stored value
     // (including its absence) instead of being fabricated as true.
@@ -491,8 +504,13 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     }
     nextRevision = currentRevision + 1;
     const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
+    // F-19: seal at rest. With ENTERPRISE_ENCRYPTION_KEY(S) configured every
+    // plaintext apiKey/apiKeys becomes an AES-256-GCM envelope (legacy rows
+    // migrate on this authorized save); keyless deployments keep the legacy
+    // plaintext contract, surfaced via `secretEncryption` on the load path.
+    const storedSecrets = encryptProviderSecrets(mergedSecrets);
     const mergedPublic = { ...currentPublic, ai: { ...safePublic, ...(safePublic.selectionMode || currentPublic.ai?.selectionMode ? { selectionMode: safePublic.selectionMode || currentPublic.ai.selectionMode } : {}) }, aiRevision: nextRevision };
-    for (const [category, data] of [['ai_providers', mergedSecrets], ['public_config', mergedPublic]]) {
+    for (const [category, data] of [['ai_providers', storedSecrets], ['public_config', mergedPublic]]) {
       await connection.query(
         `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
