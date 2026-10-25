@@ -446,12 +446,30 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     if ((resolvedExpectedRevision === undefined || resolvedExpectedRevision === null) && input?.force !== true) {
       throw errorWith('EXPECTED_REVISION_REQUIRED', 'expectedRevision is required for administrative writes.', 400);
     }
-    const isBypass = resolvedExpectedRevision === -1 || input?.force === true;
+    // F-29: ONE force mechanism — the explicit `force: true`, the only
+    // spelling the frozen design docs recognise (security-review.md DEF-11:
+    // "unless explicit force: true overwrite is confirmed"). The undocumented
+    // `expectedRevision === -1` backdoor is removed: -1 is now simply a stale
+    // revision and 409s like any other mismatch.
+    const isBypass = input?.force === true;
     if (!isBypass && Number(resolvedExpectedRevision) !== currentRevision) {
-      const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+      // F-29: platform-wide CAS conflict spelling — the frozen docs, the
+      // enterprise CAS and the pre-existing wire translation in index.js all
+      // say REVISION_CONFLICT; the service now throws the same code.
+      const conflictErr = errorWith('REVISION_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
       conflictErr.currentRevision = currentRevision;
       throw conflictErr;
     }
+    // F-29: a forced overwrite is visible and attributable in the audit
+    // trail — the actor's justification (when given) is sanitized of control
+    // characters, bounded, and stored alongside forced:true.
+    const forceReason = isBypass
+      ? (String(input?.forceReason ?? '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 500) || null)
+      : null;
     const targetPrimary = safePublic.provider || currentPublic.ai?.provider || 'gemini';
     const primaryExplicitToggle = resolveExplicitEnableToggle(input, targetPrimary);
     if (primaryExplicitToggle === false) {
@@ -519,7 +537,14 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
        VALUES (?, ?, 'SUPER_ADMIN', 'AI_PROVIDER_SETTINGS_UPDATED', 'ai.governance', 'HIGH',
                'SUCCESS', 'POST', '/api/admin/ai-settings', 200, 'system_settings',
                'ai_providers', ?, ?, NOW())`,
-      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({ revision: nextRevision, changedFields: Object.keys(safePublic) }), requestId || null]
+      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({
+        revision: nextRevision,
+        changedFields: Object.keys(safePublic),
+        // F-29: forced saves are recorded as such, with the actor
+        // justification when supplied (null when not) — no silent CAS
+        // bypasses in the trail.
+        ...(isBypass ? { forced: true, forceReason } : {}),
+      }), requestId || null]
     );
     await connection.commit();
   } catch (error) {

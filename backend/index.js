@@ -3990,6 +3990,9 @@ app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
         });
         return res.json({ success: true, ...result, message: 'AI settings saved securely.' });
     } catch (error) {
+        // F-29: the service now throws REVISION_CONFLICT (single spelling,
+        // aligned with the frozen design docs); the legacy AI_SETTINGS_CONFLICT
+        // spelling stays accepted here through the transition.
         const isRevisionConflict = error.code === 'AI_SETTINGS_CONFLICT' || error.code === 'REVISION_CONFLICT';
         return res.status(error.status || 400).json({
             success: false,

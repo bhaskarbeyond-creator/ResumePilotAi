@@ -244,6 +244,11 @@ export function AiSettingsProvider({
         const rawDetails = norm.details as Record<string, any> | undefined;
         if (
           norm.status === 409 ||
+          // F-29: REVISION_CONFLICT is the platform-wide CAS spelling the wire
+          // sends; the legacy AI_SETTINGS_CONFLICT stays matched through the
+          // transition.
+          norm.code === 'REVISION_CONFLICT' ||
+          rawDetails?.code === 'REVISION_CONFLICT' ||
           norm.code === 'AI_SETTINGS_CONFLICT' ||
           rawDetails?.code === 'AI_SETTINGS_CONFLICT'
         ) {

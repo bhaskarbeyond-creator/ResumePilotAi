@@ -38,7 +38,9 @@ test('authorized AI settings save is revisioned, audited, split, and never retur
   assert.equal(settingsContract.settings.get('ai_providers').data.nvidia.apiKey, 'fixture-nvidia-key-value');
   assert.equal(settingsContract.settings.get('public_config').data.ai.provider, 'nvidia');
   assert.equal(settingsContract.auditEvents.some(event => event.action === 'AI_PROVIDER_SETTINGS_UPDATED'), true);
-  await assert.rejects(() => saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');
+  // F-29 literal-contract correction: the CAS conflict now throws the
+  // platform-wide spelling REVISION_CONFLICT (frozen docs + enterprise CAS).
+  await assert.rejects(() => saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'REVISION_CONFLICT');
 });
 
 test('AI secret lifecycle preserves blank values and accepts only explicit clears', () => {
