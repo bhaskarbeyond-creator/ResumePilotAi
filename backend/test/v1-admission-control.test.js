@@ -179,6 +179,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'user-a') return { uid: 'v1-user-a', email: 'a@test', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'user-b') return { uid: 'v1-user-b', email: 'b@test', email_verified: true, role: 'USER', auth_time: now };
   if (token === 'user-c') return { uid: 'v1-user-c', email: 'c@test', email_verified: true, role: 'USER', auth_time: now };
+  if (token === 'super-admin') return { uid: 'v1-admin-s', email: 's@test', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   throw new Error('invalid token');
 });
 
@@ -373,8 +374,17 @@ test('F-01: catalog reads require a principal and do not consume AI quota', asyn
   assert.equal(models.status, 200);
   assert.equal(models.body.object, 'list');
 
-  const status = await request(app).get('/v1/status').set('Authorization', 'Bearer user-c');
-  assert.equal(status.status, 200);
+  // F-10 supersedes the /v1/status leg of this contract: engine status is an
+  // operator-only reduced surface (asserted in the F-10 tests below). What
+  // must survive here: catalog reads are admitted with a principal and never
+  // consume the daily AI quota.
+  process.env.FREELMAPI_API_KEYS = 'v1-admission-platform-key';
+  try {
+    const status = await request(app).get('/v1/status').set('Authorization', 'Bearer v1-admission-platform-key');
+    assert.equal(status.status, 200);
+  } finally {
+    delete process.env.FREELMAPI_API_KEYS;
+  }
 
   assert.equal(pool.usage.size, 0, 'a catalog read is not an inference and must not be charged');
 });
@@ -397,4 +407,74 @@ test('F-01: the /api/v1 alias enforces the same admission chain', async () => {
   } finally {
     restore();
   }
+});
+
+// ── 7. F-10: /v1/status is an operator surface with a reduced payload ───────
+test('F-10: unauthenticated /v1/status is rejected 401 (no internals)', async () => {
+  const res = await request(app).get('/v1/status');
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, 'missing_api_key');
+});
+
+test('F-10: a plain user token is rejected 403 status_forbidden and is not charged', async () => {
+  const res = await request(app).get('/v1/status').set('Authorization', 'Bearer user-c');
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error.code, 'status_forbidden');
+  assert.equal(pool.usage.size, 0, 'a rejected status read never reaches the quota ledger');
+});
+
+test('F-10: the dev anonymous-local principal never sees engine internals', async () => {
+  process.env.ALLOW_ANON_V1 = 'true';
+  try {
+    const res = await request(app).get('/v1/status');
+    assert.equal(res.status, 403, 'anonymous-local is admitted to /v1 but is not an operator');
+    assert.equal(res.body.error.code, 'status_forbidden');
+  } finally {
+    delete process.env.ALLOW_ANON_V1;
+  }
+});
+
+const REDUCED_STATUS_INTERNALS = ['cacheEntries', 'activeCooldowns', 'persistence', 'supportedProviders', 'capabilities', 'claudeCodeAgent'];
+
+test('F-10: platform key reads the reduced status payload (no counts, cooldowns, paths)', async () => {
+  process.env.FREELMAPI_API_KEYS = 'v1-admission-platform-key';
+  try {
+    const res = await request(app).get('/v1/status').set('Authorization', 'Bearer v1-admission-platform-key');
+    assert.equal(res.status, 200);
+    assert.ok(res.body.status === 'ok' || res.body.status === 'degraded');
+    assert.equal(typeof res.body.version, 'string');
+    assert.equal(typeof res.body.providers?.configured, 'number');
+    assert.equal(typeof res.body.providers?.enabled, 'number');
+    assert.ok(res.body.providers.enabled <= res.body.providers.configured);
+    assert.ok(res.body.providers.configured >= 1, 'the spec env configures GROQ_API_KEY');
+    for (const field of REDUCED_STATUS_INTERNALS) {
+      assert.ok(!(field in res.body), `reduced payload must not expose ${field}`);
+    }
+    const serialized = JSON.stringify(res.body);
+    assert.ok(!/[.]db|sqlite|mariadb-data|[/]home[/]/i.test(serialized), 'no filesystem paths leak');
+  } finally {
+    delete process.env.FREELMAPI_API_KEYS;
+  }
+});
+
+test('F-10: super-admin session reads the same reduced payload on /v1/status', async () => {
+  const res = await request(app).get('/v1/status').set('Authorization', 'Bearer super-admin');
+  assert.equal(res.status, 200);
+  for (const field of REDUCED_STATUS_INTERNALS) {
+    assert.ok(!(field in res.body), `reduced payload must not expose ${field}`);
+  }
+});
+
+test('F-10: the full engine view lives on super-admin-only /api/freellmapi/status', async () => {
+  const anonymous = await request(app).get('/api/freellmapi/status');
+  assert.equal(anonymous.status, 401, 'the full view is no longer an unauthenticated surface');
+
+  const user = await request(app).get('/api/freellmapi/status').set('Authorization', 'Bearer user-c');
+  assert.equal(user.status, 403);
+
+  const admin = await request(app).get('/api/freellmapi/status').set('Authorization', 'Bearer super-admin');
+  assert.equal(admin.status, 200);
+  assert.ok(Array.isArray(admin.body.supportedProviders), 'admin console keeps the full engine view');
+  assert.ok('activeCooldowns' in admin.body);
+  assert.ok('cacheEntries' in admin.body);
 });

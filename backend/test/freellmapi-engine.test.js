@@ -263,7 +263,7 @@ test('FreeLLMAPI: Autonomous self-healing maintenance starts and stops cleanly',
   assert.ok(true);
 });
 
-test('FreeLLMAPI: Express app mounts /v1/models and /api/freellmapi/status', async () => {
+test('FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status', async () => {
   const request = require('supertest');
   const app = require('../index');
   const resModels = await request(app).get('/v1/models');
@@ -271,10 +271,27 @@ test('FreeLLMAPI: Express app mounts /v1/models and /api/freellmapi/status', asy
   assert.equal(resModels.body.object, 'list');
   assert.ok(resModels.body.data.length >= 8);
 
-  const resStatus = await request(app).get('/v1/status');
-  assert.equal(resStatus.status, 200);
-  assert.equal(resStatus.body.success, true);
-  assert.ok(resStatus.body.totalProvidersCount >= 50);
+  // F-10: /v1/status was an unauthenticated internals dump (the previous
+  // assertion `totalProvidersCount >= 50` pinned exactly the vulnerability the
+  // audit flagged). It is now an operator surface (platform key / super admin)
+  // with a reduced payload; the anonymous-local dev principal is rejected.
+  const anonStatus = await request(app).get('/v1/status');
+  assert.equal(anonStatus.status, 403);
+  assert.equal(anonStatus.body.error.code, 'status_forbidden');
+
+  process.env.FREELMAPI_API_KEYS = 'ime365-platform-key';
+  try {
+    const resStatus = await request(app).get('/v1/status').set('Authorization', 'Bearer ime365-platform-key');
+    assert.equal(resStatus.status, 200);
+    assert.equal(resStatus.body.success, true);
+    assert.equal(typeof resStatus.body.version, 'string');
+    assert.equal(typeof resStatus.body.providers?.configured, 'number');
+    assert.ok(!('totalProvidersCount' in resStatus.body), 'reduced payload carries no engine internals');
+    assert.ok(!('activeCooldowns' in resStatus.body));
+    assert.ok(!('persistence' in resStatus.body));
+  } finally {
+    delete process.env.FREELMAPI_API_KEYS;
+  }
 });
 
 

@@ -3177,7 +3177,49 @@ app.get('/v1/models', async (_req, res) => {
     }
 });
 
-app.get(['/v1/status', '/api/freellmapi/status'], async (_req, res) => {
+// F-10: /v1/status was an unauthenticated internals dump (engine version,
+// request/failure counts, cache size, active cooldowns, SQLite path). It is
+// now an OPERATOR surface: platform API key or super-admin session only, and
+// it answers with a reduced payload ({status, version, providers:
+// {configured, enabled}}). The full engine view stays on the authenticated
+// super-admin surfaces (/api/freellmapi/status below and
+// /api/freellmapi/metrics), which the admin console consumes.
+app.get(['/v1/status', '/api/v1/status'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+    const isOperator = principal.kind === 'platform-key'
+        || (principal.kind === 'user' && isSuperAdmin(req.user));
+    if (!isOperator) {
+        return res.status(403).json({
+            error: {
+                message: 'Engine status is an operator surface: use a platform API key or a super-admin session.',
+                type: 'invalid_request_error',
+                code: 'status_forbidden',
+                param: null,
+            },
+        });
+    }
+    const version = freellm.getEngineStatus().version;
+    let providers = { configured: 0, enabled: 0 };
+    let status = 'ok';
+    try {
+        const configuration = await loadFreeLlmPlatformConfig({ environment: process.env });
+        const entries = Object.values(configuration?.providers || {});
+        const hasCredential = entry => Boolean(String(entry?.key || '').trim()) || entry?.keyless === true;
+        providers = {
+            configured: entries.filter(hasCredential).length,
+            enabled: entries.filter(entry => entry?.enabled === true && hasCredential(entry)).length,
+        };
+    } catch {
+        // Honest degradation: never report fabricated provider counts.
+        status = 'degraded';
+    }
+    return res.json({ success: true, status, version, providers });
+});
+
+// Full engine status for the authenticated super-admin console (F-10: split
+// out of the public /v1/status mount; payload unchanged for admin consumers).
+app.get('/api/freellmapi/status', requireSuperAdmin, async (_req, res) => {
     return res.json({ success: true, ...freellm.getEngineStatus() });
 });
 
