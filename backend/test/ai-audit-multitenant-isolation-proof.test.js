@@ -9,6 +9,10 @@ const request = require('supertest');
 const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
+// F-27: production createTenantService always attaches a quota guard; the
+// double mirrors that shape (store already imported below) so unconditional
+// quota consumption exercises the real path instead of the removed skip.
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { setTokenVerifierForTests } = require('../security/auth');
 const { clearProviderConfigurationCache, resetSharedAiRouterForTests } = require('../services/aiRuntime');
 const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repositories');
@@ -65,7 +69,7 @@ let activeService = null;
 function installTestTenantService() {
   activeRegistry = new InMemoryTenantRegistry();
   activeRepository = new InMemoryEnterpriseRepository();
-  activeService = new TenantService({ registry: activeRegistry, repository: activeRepository });
+  activeService = new TenantService({ registry: activeRegistry, repository: activeRepository, quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }) });
   app.set('tenantService', activeService);
   governanceContract.bindTenantRegistry(activeRegistry);
   return { registry: activeRegistry, repository: activeRepository, service: activeService };
@@ -472,7 +476,6 @@ test('4. Cache Isolation: tenantCacheKey incorporates tenant, workspace, subject
 // ===========================================================================
 test('5. Retry Isolation: Failed/timed-out requests preserve per-request context and never mix with concurrent callers', async () => {
   let attemptA = 0;
-  let attemptB = 0;
   const originalFetch = global.fetch;
 
   global.fetch = async (url, options) => {
@@ -493,7 +496,6 @@ test('5. Retry Isolation: Failed/timed-out requests preserve per-request context
         }),
       };
     } else {
-      attemptB++;
       return {
         ok: true,
         status: 200,
@@ -574,7 +576,7 @@ test('7. Long Interview Memory: Maintains earlier concrete claims and bounds pro
 
   const service = new LiveInterviewService({
     store,
-    generate: async ({ prompt, operation }) => {
+    generate: async ({ operation }) => {
       generatedTurns++;
       if (operation === 'live-interview-open') {
         return {

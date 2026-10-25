@@ -9,6 +9,10 @@ const request = require('supertest');
 const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
+// F-27: production createTenantService always attaches a quota guard; the
+// double mirrors that shape (store already imported below) so unconditional
+// quota consumption exercises the real path instead of the removed skip.
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { setTokenVerifierForTests } = require('../security/auth');
 const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repositories');
@@ -58,12 +62,11 @@ function bearer(name) {
 let activeRegistry = null;
 let activeRepository = null;
 let activeService = null;
-let generatedWithProvidersCalls = [];
 
 function installTestTenantService() {
   activeRegistry = new InMemoryTenantRegistry();
   activeRepository = new InMemoryEnterpriseRepository();
-  activeService = new TenantService({ registry: activeRegistry, repository: activeRepository });
+  activeService = new TenantService({ registry: activeRegistry, repository: activeRepository, quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }) });
   app.set('tenantService', activeService);
   governanceContract.bindTenantRegistry(activeRegistry);
   return { registry: activeRegistry, repository: activeRepository, service: activeService };
@@ -84,7 +87,6 @@ test.beforeEach(() => {
   governanceContract = installAiRouteContract({ settings: { ai_providers: PLATFORM_AI_SECRETS, public_config: PLATFORM_AI_PUBLIC } });
   setRepositoryForTests(new TestAiRepository());
   clearProviderConfigurationCache();
-  generatedWithProvidersCalls = [];
   setTokenVerifierForTests(async token => {
     if (!tokens[token]) throw new Error('bad token');
     return tokens[token];
@@ -111,12 +113,8 @@ const BASE_INTERVIEW_INPUT = {
 test('1. Standard non-tenant candidate uses platform AI configuration without tenant headers', async () => {
   // Mock global fetch to return structured interview questions
   const originalFetch = global.fetch;
-  let interceptedKey = null;
-  let interceptedUrl = null;
 
-  global.fetch = async (url, options) => {
-    interceptedUrl = String(url);
-    interceptedKey = options?.headers?.['Authorization'] || options?.headers?.['x-api-key'] || (url.includes('key=') ? url.split('key=')[1] : null);
+  global.fetch = async () => {
     const mockQuestions = Array.from({ length: 6 }, (_, i) => ({
       id: i + 1,
       question: `Lead Architect Question ${i + 1}`,
@@ -229,10 +227,8 @@ test('4. Authorized tenant candidate with BYOK custom keys generates questions u
   // 4. Intercept outbound HTTP call to verify that Tenant BYOK Key is passed
   const originalFetch = global.fetch;
   let interceptedAuthHeader = null;
-  let interceptedUrl = null;
 
   global.fetch = async (url, options) => {
-    interceptedUrl = String(url);
     interceptedAuthHeader = options?.headers?.['Authorization'] || options?.headers?.['authorization'];
     const mockQuestions = Array.from({ length: 6 }, (_, i) => ({
       id: i + 1,

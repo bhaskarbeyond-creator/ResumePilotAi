@@ -17,7 +17,7 @@ const {
 } = require('../services/interviewCalibration');
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
-const { applyTenantAiPolicy, loadTenantByokKeys } = require('../enterprise/tenantAi');
+const { applyTenantAiPolicy, consumeTenantAiQuota, loadTenantByokKeys } = require('../enterprise/tenantAi');
 const router = express.Router();
 
 /**
@@ -218,22 +218,15 @@ async function resolveEffectiveAiConfiguration(req, res) {
         throw error;
     }
 
-    // Check tenant quota if configured and quota guard is available
-    const quota = resolved.tenant?.configuration?.quotaPolicy || {};
-    if (typeof tenantService.consumeTenantQuota === 'function' && tenantService.quotaGuard) {
-        await tenantService.consumeTenantQuota({
-            context: resolved.context,
-            metric: 'ai-minute',
-            limit: Number(quota.aiRequestsPerMinute || 60),
-            windowMs: 60_000,
-        });
-        await tenantService.consumeTenantQuota({
-            context: resolved.context,
-            metric: 'ai-day',
-            limit: Number(quota.aiRequestsPerDay || 1000),
-            windowMs: 24 * 60 * 60_000,
-        });
-    }
+    // F-27: unconditional tenant AI quota through the shared resolver — one
+    // documented default set (60/min, 1000/day), explicit 0 blocks (429), and
+    // a service without quota coordination fails closed (503) instead of the
+    // former `if (quotaGuard)` silent skip.
+    await consumeTenantAiQuota({
+        service: tenantService,
+        context: resolved.context,
+        quotaPolicy: resolved.tenant?.configuration?.quotaPolicy,
+    });
 
     const baseConfig = await baseConfigPromise; // resolved during tenant checks above
     const tenantAiPolicy = resolved.tenant?.aiPolicy || {};

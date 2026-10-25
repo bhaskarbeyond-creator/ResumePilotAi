@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('../enterprise/tenantContext');
 const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
 const { TENANT_ROLES } = require('../enterprise/constants');
-const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation, loadTenantByokKeys } = require('../enterprise/tenantAi');
+const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation, consumeTenantAiQuota, loadTenantByokKeys } = require('../enterprise/tenantAi');
 const { buildGroundedPrompt, extractJson, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { getPool } = require('../database/mysql');
@@ -778,9 +778,14 @@ router.post('/ai/generate-content', resolveTenantContext, requireTenantPermissio
       return res.status(503).json({ error: { code: 'TENANT_AI_METERING_UNAVAILABLE', message: 'Tenant AI metering is unavailable.', requestId: res.locals?.requestId } });
     }
     const aiOperation = buildTenantAiOperation({ context: req.tenantContext, operation, payload: validatedPayload, policy: req.tenant.aiPolicy || {} });
-    const quota = req.tenant.configuration?.quotaPolicy || {};
-    await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-minute', limit: Number(quota.aiRequestsPerMinute || 1), windowMs: 60_000 });
-    await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-day', limit: Number(quota.aiRequestsPerDay || 1), windowMs: 24 * 60 * 60_000 });
+    // F-27: one documented quota default set (60/min, 1000/day), explicit 0
+    // blocks with 429 TENANT_QUOTA_BLOCKED, consumption unconditional — a
+    // missing guard fails closed instead of granting unlimited generation.
+    await consumeTenantAiQuota({
+      service: enterpriseService(req),
+      context: req.tenantContext,
+      quotaPolicy: req.tenant.configuration?.quotaPolicy,
+    });
     const configuration = await buildTenantAiConfiguration(req);
     const generated = await generateWithProviders({ prompt, configuration, operation, timeoutMs: 45_000 });
     const data = parseAiResponse(operation, generated.raw, {
@@ -820,11 +825,14 @@ router.post('/ai/generate-interview', resolveTenantContext, requireTenantPermiss
 
     const configuration = await buildTenantAiConfiguration(req);
 
-    const quota = req.tenant.configuration?.quotaPolicy || {};
-    if (enterpriseService(req).quotaGuard) {
-      await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-minute', limit: Number(quota.aiRequestsPerMinute || 60), windowMs: 60_000 });
-      await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-day', limit: Number(quota.aiRequestsPerDay || 1000), windowMs: 24 * 60 * 60_000 });
-    }
+    // F-27: unconditional quota consumption through the shared resolver —
+    // the former `if (quotaGuard)` skip gave installations without a guard
+    // unlimited interview generation.
+    await consumeTenantAiQuota({
+      service: enterpriseService(req),
+      context: req.tenantContext,
+      quotaPolicy: req.tenant.configuration?.quotaPolicy,
+    });
 
     const built = buildInterviewPrompt({
       occupation,

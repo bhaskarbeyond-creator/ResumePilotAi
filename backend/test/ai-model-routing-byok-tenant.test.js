@@ -30,6 +30,11 @@ const request = require('supertest');
 const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
+// F-27: production createTenantService always attaches a quota guard; the
+// double mirrors that shape so unconditional quota consumption (fail-closed
+// on a missing guard) exercises the real path. In-memory, per-test store.
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const { setTokenVerifierForTests } = require('../security/auth');
 const {
   clearProviderConfigurationCache,
@@ -83,7 +88,7 @@ let activeRegistry = null;
 function installTestTenantService() {
   activeRegistry = new InMemoryTenantRegistry();
   const repository = new InMemoryEnterpriseRepository();
-  const service = new TenantService({ registry: activeRegistry, repository });
+  const service = new TenantService({ registry: activeRegistry, repository, quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }) });
   app.set('tenantService', service);
   aiContract.bindTenantRegistry(activeRegistry);
   return { registry: activeRegistry, repository, service };
