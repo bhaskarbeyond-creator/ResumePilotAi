@@ -53,6 +53,23 @@ class LruPromptCache {
     });
   }
 
+  /**
+   * F-11: proactively purge expired entries. The autonomous maintenance cycle
+   * called this method since day one, but it did not exist — the TypeError was
+   * swallowed by the shared try/catch, so expired entries were only evicted
+   * lazily on get() or by LRU pressure. Returns the number of entries purged.
+   */
+  cleanExpired(now = Date.now()) {
+    let purged = 0;
+    for (const [key, entry] of this.cache) {
+      if (!entry || now > entry.expiresAt) {
+        this.cache.delete(key);
+        purged += 1;
+      }
+    }
+    return purged;
+  }
+
   clear() {
     this.cache.clear();
   }

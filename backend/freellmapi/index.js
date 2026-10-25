@@ -161,13 +161,19 @@ let _maintenanceTimer = null;
 function startAutonomousMaintenance({ intervalMs = 6 * 60 * 60 * 1000 } = {}) {
   if (_maintenanceTimer) return;
   _maintenanceTimer = setInterval(async () => {
+    // F-11: the steps run in SEPARATE try blocks — one failing step must not
+    // skip the others, and the warning names the step that actually failed
+    // (previously a promptCache TypeError was masked as a generic cycle error
+    // AND silently skipped the cache purge every 6 hours).
     try {
-      // 1. Purge expired cooldowns
       cooldownManager.cleanExpired();
-      // 2. Clean prompt cache
+    } catch (err) {
+      console.warn('[FreeLLMAPI Autonomous] Maintenance step "cooldown purge" error:', err.message);
+    }
+    try {
       promptCache.cleanExpired();
     } catch (err) {
-      console.warn('[FreeLLMAPI Autonomous] Maintenance cycle error:', err.message);
+      console.warn('[FreeLLMAPI Autonomous] Maintenance step "prompt cache purge" error:', err.message);
     }
   }, intervalMs);
 
