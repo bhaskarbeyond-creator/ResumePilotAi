@@ -1812,7 +1812,10 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
     // F-05: explicit engine choice (see resolveAiEngineChoice above).
     const engineChoice = resolveAiEngineChoice();
     if (engineChoice === 'aiRouting') {
-        return router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+        // F-17: stamp the engine onto the selector's routing summary so the
+        // tenant audit can tell which engine produced the decision.
+        const routed = await router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+        return { ...routed, routing: { ...(routed?.routing || {}), engine: 'aiRouting' } };
     }
     let shadowOutcome = null;
     if (engineChoice === 'shadow') {
@@ -1899,12 +1902,36 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             });
         }
 
+        // F-17: audit-visible routing summary for the live engine. routes/ai.js
+        // persists decisionId/executedModel/selectionLatencyMs/fallbackCount/
+        // attempts/candidatesConsidered/candidatesRejected/lastResort from
+        // this object — previously only {latencyMs, cached, fallbacksAttempted}
+        // existed, so tenant audit metadata serialised to
+        // aiRouting:{executedModel:null} (undefined fields dropped by JSON).
+        // Fields the live engine does not measure stay honest nulls — never
+        // fabricated, never undefined. routingDecision is the live engine's
+        // rationale object (mode, evidence, observation counts, lastResort).
+        const fallbacks = result.fallbacksAttempted || [];
         return {
             raw: result.content,
             provider: result.provider,
             model: result.model,
             usage: result.usage,
             routing: {
+                engine: 'freellmapi',
+                decisionId: result.routingDecision?.decisionId || null,
+                selectedProvider: result.provider || null,
+                selectedModel: result.model || null,
+                executedProvider: result.provider || null,
+                executedModel: result.model || null,
+                fallbackCount: fallbacks.length,
+                attempts: result.cached ? 0 : fallbacks.length + 1,
+                selectionLatencyMs: result.routingDecision?.selectionLatencyMs ?? null,
+                executionLatencyMs: result.latencyMs ?? null,
+                candidatesConsidered: result.routingDecision?.candidatesConsidered ?? null,
+                candidatesRejected: result.routingDecision?.candidatesRejected ?? null,
+                lastResort: result.routingDecision?.lastResort === true,
+                rationale: result.routingDecision || null,
                 latencyMs: result.latencyMs,
                 cached: result.cached,
                 fallbacksAttempted: result.fallbacksAttempted,
