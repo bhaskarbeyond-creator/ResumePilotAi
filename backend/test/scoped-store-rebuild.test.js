@@ -477,3 +477,138 @@ test('C4: decision_id round-trip through the ring, scoped reads', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ── A.4: routing_decisions ring (schema-proposal 3.4) ───────────────────────
+
+const DECISION_COLUMNS = ['decision_id', 'created_at', 'scope_key', 'mode', 'requested_model', 'chosen_provider', 'chosen_model', 'exploration', 'quality_evidence', 'observed_latency_ms', 'observation_count', 'outcome', 'status', 'latency_ms', 'prompt_tokens', 'completion_tokens'];
+
+test('D1: routing_decisions exists after open with the exact proposed shape + indexes + integrity ok', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    assert.equal(store.scopedSchema, true);
+    const sqlite = loadSqliteModule();
+    const raw = new sqlite.DatabaseSync(file);
+    const columns = raw.prepare('PRAGMA table_info(routing_decisions)').all().map(column => column.name);
+    assert.deepEqual(columns, DECISION_COLUMNS);
+    const indexes = raw.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'routing_decisions'").all().map(row => row.name);
+    assert.ok(indexes.includes('idx_routing_decisions_created'));
+    assert.ok(indexes.includes('idx_routing_decisions_scope'));
+    const integrity = raw.prepare('PRAGMA integrity_check').get();
+    assert.equal(String(Object.values(integrity)[0]), 'ok');
+    raw.close();
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('D2: recordDecision round-trip — NULL-when-unknown, no fabricated values, missing id records nothing', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    const result = store.recordDecision({
+      decisionId: 'dec-0001',
+      createdAt: NOW,
+      mode: 'auto',
+      requestedModel: 'gpt-fixture',
+      chosenProvider: 'groq',
+      chosenModel: 'gpt-fixture',
+      exploration: 'cold-start',
+      qualityEvidence: 'unknown',
+      observedLatencyMs: null,
+      observationCount: 0,
+      outcome: 'success',
+      status: 200,
+      latencyMs: 123,
+      promptTokens: null,
+      completionTokens: null,
+    });
+    assert.equal(result.recorded, true);
+    const rows = store.getRecentDecisions({ limit: 10 });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].decisionId, 'dec-0001');
+    assert.equal(rows[0].scopeKey, 'platform');
+    assert.equal(rows[0].exploration, 'cold-start');
+    assert.equal(rows[0].observedLatencyMs, null, 'unknown latency stays NULL — never 0');
+    assert.equal(rows[0].promptTokens, null, 'unknown tokens stay NULL — never 0');
+    assert.equal(rows[0].status, 200);
+    const anonymous = store.recordDecision({ outcome: 'success' });
+    assert.deepEqual(anonymous, { recorded: false, reason: 'missing-decision-id' });
+    assert.equal(store.getRecentDecisions({ limit: 10 }).length, 1, 'an anonymous row is never stored');
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('D3: one decision per request — a repeated decision_id upserts the outcome, never duplicates', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordDecision({ decisionId: 'dec-fb', createdAt: NOW, outcome: 'failure', status: 429, chosenProvider: 'groq' });
+    store.recordDecision({ decisionId: 'dec-fb', createdAt: NOW, outcome: 'fallback', status: 200, chosenProvider: 'openrouter', latencyMs: 900, promptTokens: 10, completionTokens: 20 });
+    const rows = store.getRecentDecisions({ limit: 10 });
+    assert.equal(rows.length, 1, 'attempts share the decision id — one row per routed request');
+    assert.equal(rows[0].outcome, 'fallback');
+    assert.equal(rows[0].status, 200);
+    assert.equal(rows[0].promptTokens, 10);
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('D4: ring bound — pruneDecisions keeps the newest 5000 deterministically', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    for (let i = 0; i < 5005; i += 1) {
+      store.recordDecision({ decisionId: `dec-${String(i).padStart(5, '0')}`, createdAt: NOW + i, outcome: 'success' });
+    }
+    store.pruneDecisions();
+    const sqlite = loadSqliteModule();
+    const raw = new sqlite.DatabaseSync(file);
+    const count = Number(raw.prepare('SELECT COUNT(*) AS n FROM routing_decisions').get().n);
+    assert.equal(count, 5000, 'the ring is bounded at MAX_LOG_ROWS');
+    const oldest = raw.prepare('SELECT MIN(created_at) AS oldest FROM routing_decisions').get();
+    assert.equal(Number(oldest.oldest), NOW + 5, 'the five oldest rows were pruned');
+    raw.close();
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('D5: decision-ring scope filter + scoped reset wipes exactly one scope', () => {
+  const { dir, file } = tempDbFile();
+  try {
+    const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: file } });
+    store.recordDecision({ decisionId: 'dec-p', createdAt: NOW, scopeKey: 'platform', outcome: 'success' });
+    store.recordDecision({ decisionId: 'dec-t1', createdAt: NOW + 1, scopeKey: 'tenant:t1', outcome: 'success' });
+    store.recordDecision({ decisionId: 'dec-t2', createdAt: NOW + 2, scopeKey: 'tenant:t2', outcome: 'failure' });
+    assert.equal(store.getRecentDecisions({ limit: 10 }).length, 3);
+    assert.equal(store.getRecentDecisions({ limit: 10, scopeKey: 'tenant:t1' })[0].decisionId, 'dec-t1');
+    store.reset({ scopeKey: 'tenant:t1' });
+    const remaining = store.getRecentDecisions({ limit: 10 }).map(row => row.decisionId).sort();
+    assert.deepEqual(remaining, ['dec-p', 'dec-t2']);
+    store.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('D6: memory backend decision-ring parity (bounded, scoped, NULL-honest)', () => {
+  const store = new MetricsPersistence({ environment: { FREELMAPI_METRICS_DB: ':memory:' } });
+  store.recordDecision({ decisionId: 'dec-m1', createdAt: NOW, outcome: 'success', observedLatencyMs: 100, observationCount: 4 });
+  store.recordDecision({ decisionId: 'dec-m2', createdAt: NOW + 1, scopeKey: 'uid:hash1', outcome: 'failure', status: 429 });
+  assert.equal(store.getRecentDecisions({ limit: 10 }).length, 2);
+  assert.equal(store.getRecentDecisions({ limit: 10, scopeKey: 'platform' })[0].decisionId, 'dec-m1');
+  const tenant = store.getRecentDecisions({ limit: 10, scopeKey: 'uid:hash1' })[0];
+  assert.equal(tenant.observedLatencyMs, null);
+  assert.equal(tenant.status, 429);
+  assert.deepEqual(store.recordDecision({}), { recorded: false, reason: 'missing-decision-id' });
+  store.clearAllMetrics();
+  assert.equal(store.getRecentDecisions({ limit: 10 }).length, 0, 'the full wipe includes the decision ring');
+  store.close();
+});
