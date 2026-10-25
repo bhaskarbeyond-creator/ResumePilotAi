@@ -592,7 +592,7 @@ Return only valid JSON: {"skills":[{"name":"Skill Name","basis":"quoted evidence
         const facts = evidence.candidateFacts;
         user = `Suggest up to 6 professional certifications, licenses, or registrations the candidate should CONSIDER for the target role "${evidence.targetRole || 'their field'}" in ${language}.
 These are career-exploration SUGGESTIONS, not claims that the candidate holds them.
-Base suggestions on the candidate's actual profile (work, education, skills, existing certifications) and the target job description when provided. Recommend only credentials that belong to the field the candidate actually works in — never software or cloud credentials unless the profile or JD shows that work. Do not duplicate the candidate's existing certifications.
+Base suggestions on the candidate's actual profile (work, education, skills, existing certifications) and the target job description when provided. Recommend only credentials that belong to the field the candidate actually works in — never software or cloud credentials unless the profile, target role, or JD shows that work. Do not duplicate the candidate's existing certifications.
 For each suggestion, "basis" must quote the profile or JD text that inspired it (or be "target role").
 
 EVIDENCE:
@@ -613,7 +613,7 @@ These are project ideas for the candidate to review, personalize, and add to the
 CRITICAL PROFILE & INDUSTRY ALIGNMENT:
 1. STRICT RELEVANCE TO CANDIDATE FIELD:
    - Base all suggestions strictly on the candidate's actual field ("${targetRole}"), their work experience (${roleSummaries || 'their profession'}), and skills (${skillsList || 'their domain'}).
-   - DO NOT recommend software apps, web development, cloud, or coding projects unless the candidate's actual work history or skills explicitly involve software engineering!
+   - DO NOT recommend software apps, web development, cloud, or coding projects unless the candidate's actual work history, skills, or target role explicitly involve software engineering!
    - For Healthcare, Doctors, Surgeons, Nurses, Dentists: Suggest clinical protocol audits, patient flow/triage optimization, care unit quality initiatives, or infection control programs.
    - For Accounting, Audit, Finance, Banking: Suggest statutory audit readiness, financial forecasting/DCF valuation models, operational expenditure cost-reduction reviews, or IFRS compliance transitions.
    - For Legal, Attorneys, Compliance: Suggest contract lifecycle management (CLM) overhauls, regulatory compliance audits, case discovery indexing, or corporate governance frameworks.
@@ -1350,6 +1350,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             };
         }).filter(item => item.title && item.title.length >= 2);
         if (certifications.length) return { certifications, requiresUserConfirmation: true };
+        if (parsed && typeof parsed === 'object') return { certifications: [], requiresUserConfirmation: true };
     }
     if (operation === 'generate-job-description') {
         const jobDescription = parsed?.jobDescription || parsed?.description || parsed?.text || (!parsed ? raw : '');
@@ -1393,6 +1394,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
         }).filter(p => p.name && p.name.length >= 2);
 
         if (projects.length) return { projects, requiresUserConfirmation: true };
+        if (parsed && typeof parsed === 'object') return { projects: [], requiresUserConfirmation: true };
     }
     if (operation === 'enhance-single-bullet') {
         const enhancedBullet = sanitizeGeneratedText(parsed?.enhancedBullet || parsed?.suggestion || parsed?.bullet || parsed?.suggestions?.[0] || (!parsed ? raw : ''));

@@ -1600,6 +1600,8 @@ export function ResumeBuilderPage() {
                     entries={resume.certifications}
                     targetRole={resume.heading.title || resume.heading.targetRole}
                     experience={resume.experience}
+                    skillCategories={resume.skillCategories}
+                    education={resume.education}
                     onChange={(certifications) => setResume((prev) => ({ ...prev, certifications }))}
                     onOpenAiRecommendations={(config) => setAiRecModalState({ ...config, isOpen: true })}
                   />
@@ -3514,6 +3516,15 @@ function SkillsStep({
         companies: experience?.map((e) => e.company).filter(Boolean),
         educationFields: education?.map((ed) => ed.field).filter(Boolean),
       });
+      if (
+        outcome.kind === 'unavailable' ||
+        outcome.kind === 'error' ||
+        outcome.kind === 'rate-limited' ||
+        outcome.kind === 'rejected'
+      ) {
+        setSkillSuggestionNotice(outcome.message);
+        return;
+      }
       const rawItems: RecommendationItem[] = outcome.kind === 'skills'
         ? outcome.skills.map((s, idx) => ({
             id: `skill_${idx}_${s.name}`,
@@ -3531,6 +3542,10 @@ function SkillsStep({
             matchReason: `High-frequency ATS competency for ${targetRole || 'this role'}`,
           }))
         : [];
+      if (rawItems.length === 0) {
+        setSkillSuggestionNotice('No skill recommendations were returned. Try adding more experience details.');
+        return;
+      }
       const available = rawItems.filter((item) => !existingSkillsSet.has(item.name.toLowerCase().trim()));
       if (available.length === 0) {
         setSkillSuggestionNotice('You already have all recommended skills in your resume!');
@@ -3651,7 +3666,7 @@ function SkillsStep({
       )}
 
       {skillSuggestionNotice && (
-        <div className="p-3 rounded-xl border border-border bg-neutral-50 text-xs font-medium text-ink-muted">
+        <div data-testid="skills-ai-notice" className="p-3 rounded-xl border border-border bg-neutral-50 text-xs font-medium text-ink-muted">
           {skillSuggestionNotice}
         </div>
       )}
@@ -4392,12 +4407,16 @@ function CertificationsStep({
   entries,
   targetRole,
   experience,
+  skillCategories,
+  education,
   onChange,
   onOpenAiRecommendations,
 }: {
   entries: CertificationEntry[];
   targetRole?: string;
   experience?: ExperienceEntry[];
+  skillCategories?: SkillCategory[];
+  education?: EducationEntry[];
   onChange: (e: CertificationEntry[]) => void;
   onOpenAiRecommendations?: (config: {
     title: string;
@@ -4410,6 +4429,7 @@ function CertificationsStep({
 }) {
   const [generatingCerts, setGeneratingCerts] = useState(false);
   const [suggestedCerts, setSuggestedCerts] = useState<Array<{ name: string; issuer: string }>>([]);
+  const [certSuggestionNotice, setCertSuggestionNotice] = useState<string | null>(null);
 
   const addEntry = () => {
     onChange([...entries, {
@@ -4428,12 +4448,25 @@ function CertificationsStep({
 
   const handleGenerateCerts = async () => {
     setGeneratingCerts(true);
+    setCertSuggestionNotice(null);
     try {
       const outcome = await runContentOperation('generate-certifications', {
         jobTitle: targetRole || 'Software Engineer',
         recentRoles: experience?.map((e) => e.position).filter(Boolean),
         companies: experience?.map((e) => e.company).filter(Boolean),
+        skills: skillCategories?.flatMap((c) => c.skills),
+        educationFields: education?.map((ed) => ed.field).filter(Boolean),
+        existingCertifications: entries.map((e) => e.name).filter(Boolean),
       });
+      if (
+        outcome.kind === 'unavailable' ||
+        outcome.kind === 'error' ||
+        outcome.kind === 'rate-limited' ||
+        outcome.kind === 'rejected'
+      ) {
+        setCertSuggestionNotice(outcome.message);
+        return;
+      }
       const existingNames = new Set(entries.map((e) => e.name.toLowerCase().trim()));
       const certs: RecommendationItem[] = outcome.kind === 'certifications'
         ? outcome.certifications.map((c, idx) => ({
@@ -4454,7 +4487,15 @@ function CertificationsStep({
             matchReason: `Recognized industry certification for ${targetRole || 'this role'}`,
           }))
         : [];
+      if (certs.length === 0) {
+        setCertSuggestionNotice('No certification recommendations were returned. Try adding more profile details.');
+        return;
+      }
       const available = certs.filter((c) => !existingNames.has(c.name.toLowerCase().trim()));
+      if (available.length === 0) {
+        setCertSuggestionNotice('You already have all recommended certifications in your resume!');
+        return;
+      }
       if (onOpenAiRecommendations && available.length > 0) {
         onOpenAiRecommendations({
           type: 'certifications',
@@ -4526,6 +4567,12 @@ function CertificationsStep({
           </Button>
         </div>
       </div>
+
+      {certSuggestionNotice && (
+        <div data-testid="certs-ai-notice" className="p-3 rounded-xl border border-border bg-neutral-50 text-xs font-medium text-ink-muted">
+          {certSuggestionNotice}
+        </div>
+      )}
 
       {suggestedCerts.length > 0 && (
         <div className="p-4 rounded-2xl border border-purple-200/80 bg-purple-50/40 space-y-3">
@@ -4756,6 +4803,7 @@ function ProjectsStep({
   onOpenGrammarCheck?: (text: string, onApply: (fixed: string) => void) => void;
 }) {
   const [generatingProjects, setGeneratingProjects] = useState(false);
+  const [projectSuggestionNotice, setProjectSuggestionNotice] = useState<string | null>(null);
 
   const addEntry = () => {
     onChange([...entries, {
@@ -4774,6 +4822,7 @@ function ProjectsStep({
 
   const handleSuggestProjects = async () => {
     setGeneratingProjects(true);
+    setProjectSuggestionNotice(null);
     try {
       const outcome = await runContentOperation('generate-projects', {
         jobTitle: targetRole || 'Software Engineer',
@@ -4781,6 +4830,15 @@ function ProjectsStep({
         companies: experience?.map((e) => e.company).filter(Boolean),
         skills: skillCategories?.flatMap((c) => c.skills),
       });
+      if (
+        outcome.kind === 'unavailable' ||
+        outcome.kind === 'error' ||
+        outcome.kind === 'rate-limited' ||
+        outcome.kind === 'rejected'
+      ) {
+        setProjectSuggestionNotice(outcome.message);
+        return;
+      }
       if (outcome.kind === 'projects' && outcome.projects.length) {
         const newProjects = outcome.projects.map((p, idx) => ({
           id: crypto.randomUUID(),
@@ -4816,6 +4874,8 @@ function ProjectsStep({
           startDate: '',
           endDate: '',
         }]);
+      } else {
+        setProjectSuggestionNotice('No project ideas were returned. Try adding more work experience or skills.');
       }
     } catch (e) {
       console.error(e);
@@ -4848,6 +4908,12 @@ function ProjectsStep({
           </Button>
         </div>
       </div>
+
+      {projectSuggestionNotice && (
+        <div data-testid="projects-ai-notice" className="p-3 rounded-xl border border-border bg-neutral-50 text-xs font-medium text-ink-muted">
+          {projectSuggestionNotice}
+        </div>
+      )}
 
       {entries.length === 0 && (
         <div className="mt-8 flex flex-col items-center rounded-xl border-2 border-dashed border-border py-12 text-center">
