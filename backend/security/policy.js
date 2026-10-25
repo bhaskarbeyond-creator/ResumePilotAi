@@ -71,7 +71,6 @@ function resolveAdminReadPermission(pathname) {
   // resolved to `undefined` and was denied for everyone except a `*` holder,
   // while the matching POST required only `system.config.write`.
   if (pathname === '/admin/ai-settings') return 'system.config.read';
-  if (pathname === '/admin/operations/feature-flags/ai_settings_v2_enabled') return ['system.config.read', 'ai.usage.read'];
   if (pathname.startsWith('/admin/ai/quota-limits')) return 'ai.entitlements.manage';
   if (pathname.startsWith('/admin/ai/quota-stats')) return 'ai.usage.read';
   if (pathname === '/platform/search') return ['users.read', 'tenants.read', 'payments.read', 'tickets.manage', 'audit.read', 'security.read', 'system.config.read'];

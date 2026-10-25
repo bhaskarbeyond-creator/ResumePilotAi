@@ -8,7 +8,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { type ApiError, get, normalizeError, post, put } from '@/lib/api-client';
+import { type ApiError, get, normalizeError, post } from '@/lib/api-client';
 import { readPreviewSession } from '@/lib/preview-session';
 import type {
   AdminAiSettingsTabProps,
@@ -132,7 +132,6 @@ export function AiSettingsProvider({
   // Core Engine & Config State
   const [loading, setLoading] = useState<boolean>(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [v2Enabled, setV2Enabled] = useState<boolean>(true);
   const [revision, setRevision] = useState<number>(1);
   const [revisionConflict, setRevisionConflict] = useState<RevisionConflictState | null>(null);
 
@@ -189,7 +188,6 @@ export function AiSettingsProvider({
     closeDialog,
     showToast,
     redirectOn401,
-    setV2Enabled,
   });
 
   // Hydrate State Helper
@@ -201,9 +199,6 @@ export function AiSettingsProvider({
       if (typeof res.settings.temperature === 'number') setTemperature(res.settings.temperature);
       if (typeof res.settings.maxTokens === 'number') setMaxTokens(res.settings.maxTokens);
       if (typeof res.settings.enableFallback === 'boolean') setEnableFallback(res.settings.enableFallback);
-    }
-    if (res.featureFlags && typeof res.featureFlags.ai_settings_v2_enabled === 'boolean') {
-      setV2Enabled(res.featureFlags.ai_settings_v2_enabled);
     }
     if (Array.isArray(res.catalog)) {
       setProviders(res.catalog);
@@ -335,17 +330,6 @@ export function AiSettingsProvider({
     }
   }, [activeDialog, dialogTarget, setModalSelectedId, setModalError, setModalTestStatus]);
 
-  const handleRestoreV2Flag = async () => {
-    try {
-      await put('/admin/operations/feature-flags/ai_settings_v2_enabled', { value: true });
-      setV2Enabled(true);
-      showToast('AI Multi-Provider Engine v2 UI re-enabled.');
-    } catch (err: any) {
-      if (redirectOn401(err)) return;
-      setActionError(err?.message || 'Unable to toggle feature flag.');
-    }
-  };
-
   const configuredCount = useMemo(
     () => providers.filter((p) => p.configuredOnServer || p.hasKey).length,
     [providers]
@@ -381,7 +365,6 @@ export function AiSettingsProvider({
 
       loading,
       settingsError,
-      v2Enabled,
       revision,
       revisionConflict,
       setRevisionConflict,
@@ -421,7 +404,6 @@ export function AiSettingsProvider({
       ...discoveryPlayground,
 
       commitSettingsPatch,
-      handleRestoreV2Flag,
       loadSettings,
       redirectOn401,
     }),
@@ -445,7 +427,6 @@ export function AiSettingsProvider({
       selectSubtab,
       loading,
       settingsError,
-      v2Enabled,
       revision,
       revisionConflict,
       providers,

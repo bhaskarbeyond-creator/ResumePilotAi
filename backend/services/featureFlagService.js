@@ -81,15 +81,10 @@ const FLAG_DEFINITIONS = {
     defaultValue: false,
     dependencies: ['Firebase Admin SDK (identity only)'],
   },
-  ai_settings_v2_enabled: {
-    description: 'Enable rebuilt AI Multi-Provider Engine v2 settings UI',
-    impact: 'When enabled (default), /admin/ai-settings renders the rebuilt v2 interface. Toggle false for instant runtime rollback without redeployment.',
-    requiresRestart: false,
-    category: 'services',
-    securityRisk: 'low',
-    defaultValue: true,
-    dependencies: ['Admin AI Settings API'],
-  },
+  // F-24: `ai_settings_v2_enabled` was removed. It consulted no engine code —
+  // toggling it only swapped the admin UI into a banner view while every
+  // settings behaviour stayed identical (no v1 settings schema exists to
+  // translate to or roll back to). A dead switch is worse than none.
 };
 
 function timestampToIso(value) {

@@ -377,12 +377,8 @@ async function loadAiAdminSettings(environment = process.env) {
     enabledProviders[item.id] = item.enabled;
   }
 
-  let aiSettingsV2Enabled = true;
-  try {
-    const { getFlagValue } = require('./featureFlagService');
-    const flagVal = await getFlagValue('ai_settings_v2_enabled');
-    if (typeof flagVal === 'boolean') aiSettingsV2Enabled = flagVal;
-  } catch { /* fallback to default true */ }
+  // F-24: the ai_settings_v2_enabled flag was removed — no engine code ever
+  // consulted it, so it gated nothing but a cosmetic admin banner view.
 
   const platform = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: repo, bypassCache: true });
   const { modelDiscovery } = require('../freellmapi/services/modelDiscovery');
@@ -402,7 +398,6 @@ async function loadAiAdminSettings(environment = process.env) {
     // Reflects the DEPLOYMENT environment (process.env), not the caller's
     // env snapshot: it describes how this process seals/opens the store.
     secretEncryption: getSecretEncryptionStatus(),
-    featureFlags: { ai_settings_v2_enabled: aiSettingsV2Enabled },
     engine: {
       version: freellmEngine.ENGINE_VERSION,
       capabilities: freellmEngine.getEngineStatus().capabilities,

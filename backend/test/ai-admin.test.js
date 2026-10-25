@@ -245,13 +245,6 @@ test('temperature [0, 2], maxTokens [256, 8192], and enabled:false / disabled:tr
   assert.equal(reEnabled.maskedKeys.cerebras, '••••••••5678');
 });
 
-test('ai_settings_v2_enabled feature flag is registered with defaultValue true and no restart required', () => {
-  const { FLAG_DEFINITIONS } = require('../services/featureFlagService');
-  assert.ok(FLAG_DEFINITIONS.ai_settings_v2_enabled);
-  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.defaultValue, true);
-  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.requiresRestart, false);
-});
-
 test('enabledProviders overrides merged legacy fields and persists correctly on both public_config and ai_providers', async () => {
   settingsContract.reset({
     public_config: { ai: { provider: 'nvidia', enableGemini: true, enableNvidia: true }, aiRevision: 1 },
