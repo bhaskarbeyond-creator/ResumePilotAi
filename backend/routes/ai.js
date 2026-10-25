@@ -2,6 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const { answerGuideInput, buildAnswerGuidePrompt, validateAnswerGuide } = require('../services/answerGuideAi');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
+// F-18: static list-price table for honest usage-cost accounting.
+const { computeCostMicros } = require('../freellmapi/providers/pricing');
 const {
     SENIORITY_BANDS,
     DIFFICULTY_SEMANTICS,
@@ -269,15 +271,23 @@ async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, ge
     if (!tenantResolution?.tenantContext || !tenantResolution?.tenantService) return;
     try {
         if (typeof tenantResolution.tenantService.recordAiUsage === 'function') {
+            const inputTokens = Number(generated?.usage?.promptTokens ?? generated?.usage?.inputTokens) || 0;
+            const outputTokens = Number(generated?.usage?.completionTokens ?? generated?.usage?.outputTokens) || 0;
+            // F-18: real cost from the static list-price table (USD micros per
+            // 1K tokens). Unknown-priced models compute to null — never a
+            // fabricated price; the enterprise ledger's NOT NULL costMicros
+            // column coerces that null to 0 at persist time (pre-existing
+            // schema contract, no migration in this finding's scope).
+            const estimatedCostMicros = computeCostMicros(generated.model, inputTokens, outputTokens);
             await tenantResolution.tenantService.recordAiUsage({
                 context: tenantResolution.tenantContext,
                 input: {
                     provider: generated.provider,
                     model: generated.model,
                     operation,
-                    inputTokens: Number(generated?.usage?.promptTokens ?? generated?.usage?.inputTokens) || 0,
-                    outputTokens: Number(generated?.usage?.completionTokens ?? generated?.usage?.outputTokens) || 0,
-                    estimatedCostMicros: 0,
+                    inputTokens,
+                    outputTokens,
+                    estimatedCostMicros,
                 },
             });
         }

@@ -619,11 +619,13 @@ class FreeLlmRouter {
     };
   }
 
-  _recordMetrics({ scoped = false, provider, model, ok, latencyMs, status }) {
+  _recordMetrics({ scoped = false, provider, model, ok, latencyMs, status, usage = null }) {
     // Tenant/BYOK service observations must not train the shared platform rank.
     if (scoped) return;
     try {
-      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status });
+      // F-18: the attempt row carries the provider-reported token usage so the
+      // durable ledger can account for it (failures record null, never 0).
+      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status, usage });
     } catch { /* metrics are best-effort */ }
   }
 
@@ -801,7 +803,7 @@ class FreeLlmRouter {
 
           // Clear cooldown strikes on successful execution
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: rescued.usage || null });
 
           return {
             content: rescued.content,
@@ -1055,7 +1057,7 @@ class FreeLlmRouter {
 
           const latencyMs = Date.now() - startTime;
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: usage || null });
 
           if (usage) yield { type: 'usage', usage };
           yield {
