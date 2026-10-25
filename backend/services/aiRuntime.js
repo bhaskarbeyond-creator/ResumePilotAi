@@ -1650,7 +1650,15 @@ async function loadProviderConfiguration(environment = process.env) {
             key,
             model: isAuto ? 'auto' : safeModel(rawConfiguredModel, PROVIDER_DEFAULTS[provider].model),
             baseUrl: /^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(baseUrl) ? baseUrl : '',
-            enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
+            // F-23: ai_providers[p].enabled/disabled is the enabled source of
+            // truth; the legacy effectiveAi boolean stays as a compatibility
+            // input. A provider disabled in EITHER store is disabled in BOTH
+            // engines — previously this gate read only public_config while the
+            // /v1 mesh read only ai_providers, split-braining admin toggles.
+            enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false
+                && providerSecrets[provider]?.enabled !== false
+                && providerSecrets[provider]?.disabled !== true
+                && Boolean(key),
         };
     }
     const mesh = require('./freellmConfig').buildFreeLlmPlatformConfig({ environment, secrets, publicConfig, systemSettings });

@@ -28,6 +28,14 @@ const LEGACY_SECRET_FIELDS = Object.freeze({
   groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey',
 });
 
+// F-23: the legacy public_config booleans (enableGroq, …). ai_providers[p].
+// enabled/disabled is the source of truth; these remain a compatibility input
+// so an explicit legacy `false` (old saves, direct writes) still disables.
+const LEGACY_ENABLE_FIELDS = Object.freeze({
+  gemini: 'enableGemini', nvidia: 'enableNvidia', openai: 'enableOpenai',
+  groq: 'enableGroq', openrouter: 'enableOpenrouter', deepseek: 'enableDeepseek',
+});
+
 const CONFIG_CACHE_MS = 10_000;
 let configCache = null;
 
@@ -98,7 +106,12 @@ function buildFreeLlmPlatformConfig({ environment = process.env, secrets, public
 
     const model = String(stored.model || '').trim();
     const baseUrl = String(environment[`${id.toUpperCase()}_BASE_URL`] || stored.baseUrl || '').trim();
-    const enabled = stored.disabled !== true && stored.enabled !== false;
+    // F-23: single enabled source of truth = ai_providers[p].enabled/disabled.
+    // The legacy boolean is AND-ed as a compatibility input: a provider is
+    // disabled if EITHER store disables it, so both engines (this mesh and the
+    // aiRuntime product configuration) now agree on the same admin intent.
+    const legacyEnabled = LEGACY_ENABLE_FIELDS[id] ? publicAi[LEGACY_ENABLE_FIELDS[id]] !== false : true;
+    const enabled = stored.disabled !== true && stored.enabled !== false && legacyEnabled;
     if (!enabled) continue;
 
     providers[id] = {
