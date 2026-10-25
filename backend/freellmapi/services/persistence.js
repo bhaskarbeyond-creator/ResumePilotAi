@@ -190,11 +190,28 @@ class MetricsPersistence {
     try {
       this._migrateProviderMetrics(db);
       this._migrateProviderCooldowns(db);
+      this._migrateRequestLog(db);
       db.exec('COMMIT;');
     } catch (error) {
       try { db.exec('ROLLBACK;'); } catch { /* rollback is best-effort */ }
       throw error;
     }
+  }
+
+  /**
+   * A.3: request_log gains scope_key + decision_id — additive ALTERs only, no
+   * rebuild (the F-18 in-place precedent pattern: PRAGMA-guarded, idempotent,
+   * `:memory:` stores are unaffected because they never had a schema). Every
+   * pre-existing ring row honestly defaults to the 'platform' scope; decision
+   * ids stay NULL for history (NULL-when-unknown, never fabricated).
+   */
+  _migrateRequestLog(db) {
+    const columns = db.prepare('PRAGMA table_info(request_log)').all().map(column => column.name);
+    if (!columns.includes('scope_key')) db.exec("ALTER TABLE request_log ADD COLUMN scope_key TEXT NOT NULL DEFAULT 'platform'");
+    if (!columns.includes('decision_id')) db.exec('ALTER TABLE request_log ADD COLUMN decision_id TEXT');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_scope ON request_log (scope_key, created_at);');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_decision ON request_log (decision_id);');
+    return { altered: !columns.includes('scope_key') };
   }
 
   /**
@@ -282,10 +299,11 @@ class MetricsPersistence {
     return bucket;
   }
 
-  recordRequest({ provider, model, ok = true, latencyMs = 0, status = null, usage = null, at = Date.now(), scopeKey = PLATFORM_SCOPE } = {}) {
+  recordRequest({ provider, model, ok = true, latencyMs = 0, status = null, usage = null, at = Date.now(), scopeKey = PLATFORM_SCOPE, decisionId = null } = {}) {
     const p = String(provider || 'unknown').toLowerCase();
     const m = String(model || '');
     const scope = normalizeScopeKey(scopeKey);
+    const decision = decisionId === null || decisionId === undefined ? null : String(decisionId).slice(0, 64);
     const key = this._key(p, m, scope);
     const latency = Number.isFinite(latencyMs) ? Math.max(0, Math.round(latencyMs)) : 0;
     // F-18: per-attempt token usage rides along with the attempt row. Missing
@@ -310,7 +328,7 @@ class MetricsPersistence {
       row.p95LatencyMs = p95;
       row.updatedAt = at;
       this.memoryRequests.set(key, row);
-      this.memoryLog.push({ provider: p, model: m, ok, status, latencyMs: latency, promptTokens, completionTokens, createdAt: at });
+      this.memoryLog.push({ provider: p, model: m, ok, status, latencyMs: latency, promptTokens, completionTokens, createdAt: at, scopeKey: scope, decisionId: decision });
       if (this.memoryLog.length > MAX_LOG_ROWS) this.memoryLog.splice(0, this.memoryLog.length - MAX_LOG_ROWS);
       return { backend: 'memory', provider: p, model: m };
     }
@@ -351,8 +369,13 @@ class MetricsPersistence {
             updated_at = excluded.updated_at
         `).run(p, m, ok ? 1 : 0, ok ? 0 : 1, latency, latency, status, p95, at);
       }
-      this.db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(p, m, ok ? 1 : 0, status, latency, promptTokens, completionTokens, at);
+      if (this.scopedSchema) {
+        this.db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at, scope_key, decision_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(p, m, ok ? 1 : 0, status, latency, promptTokens, completionTokens, at, scope, decision);
+      } else {
+        this.db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(p, m, ok ? 1 : 0, status, latency, promptTokens, completionTokens, at);
+      }
       if (Math.random() < 0.01) {
         this.db.prepare('DELETE FROM request_log WHERE id <= (SELECT MAX(id) - ? FROM request_log)').run(MAX_LOG_ROWS);
       }
@@ -555,9 +578,32 @@ class MetricsPersistence {
     }
   }
 
-  getRecentRequests({ limit = 50 } = {}) {
-    if (!this.db) return this.memoryLog.slice(-limit).reverse();
+  getRecentRequests({ limit = 50, scopeKey = null } = {}) {
+    const scope = scopeKey === null || scopeKey === undefined ? null : normalizeScopeKey(scopeKey);
+    if (!this.db) {
+      return this.memoryLog
+        .filter(row => scope === null || (row.scopeKey || PLATFORM_SCOPE) === scope)
+        .slice(-limit).reverse();
+    }
     try {
+      if (this.scopedSchema) {
+        const rows = scope === null
+          ? this.db.prepare('SELECT provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at, scope_key, decision_id FROM request_log ORDER BY id DESC LIMIT ?').all(limit)
+          : this.db.prepare('SELECT provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at, scope_key, decision_id FROM request_log WHERE scope_key = ? ORDER BY id DESC LIMIT ?').all(scope, limit);
+        return rows.map(row => ({
+          provider: row.provider,
+          model: row.model,
+          ok: Boolean(row.ok),
+          status: row.status === null ? null : Number(row.status),
+          latencyMs: Number(row.latency_ms),
+          promptTokens: row.prompt_tokens === null || row.prompt_tokens === undefined ? null : Number(row.prompt_tokens),
+          completionTokens: row.completion_tokens === null || row.completion_tokens === undefined ? null : Number(row.completion_tokens),
+          createdAt: Number(row.created_at),
+          scopeKey: row.scope_key,
+          decisionId: row.decision_id === null || row.decision_id === undefined ? null : String(row.decision_id),
+        }));
+      }
+      if (scope !== null && scope !== PLATFORM_SCOPE) return []; // legacy shape cannot represent non-platform scopes
       return this.db.prepare('SELECT provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at FROM request_log ORDER BY id DESC LIMIT ?')
         .all(limit)
         .map(row => ({
@@ -569,6 +615,8 @@ class MetricsPersistence {
           promptTokens: row.prompt_tokens === null || row.prompt_tokens === undefined ? null : Number(row.prompt_tokens),
           completionTokens: row.completion_tokens === null || row.completion_tokens === undefined ? null : Number(row.completion_tokens),
           createdAt: Number(row.created_at),
+          scopeKey: PLATFORM_SCOPE,
+          decisionId: null,
         }));
     } catch (error) {
       this.error = error.message;
@@ -587,17 +635,23 @@ class MetricsPersistence {
    * Selectors compute the weighted p50 from successSamples; the last
    * observation is used ONLY as a circuit-breaker input.
    */
-  getRollingAggregates({ windowMs = 30 * 60_000, limit = 500, maxSamples = 10, now = Date.now() } = {}) {
+  getRollingAggregates({ windowMs = 30 * 60_000, limit = 500, maxSamples = 10, now = Date.now(), scopeKey = PLATFORM_SCOPE } = {}) {
     const cutoff = Number(now) - Math.max(1000, Number(windowMs) || 0);
     const rowLimit = Math.max(1, Number(limit) || 500);
     const sampleCap = Math.max(1, Number(maxSamples) || 10);
+    const scope = normalizeScopeKey(scopeKey);
     let rows;
     if (!this.db) {
-      rows = this.memoryLog.filter(row => Number(row.createdAt) >= cutoff).slice(-rowLimit).reverse();
+      rows = this.memoryLog
+        .filter(row => Number(row.createdAt) >= cutoff && (row.scopeKey || PLATFORM_SCOPE) === scope)
+        .slice(-rowLimit).reverse();
     } else {
       try {
-        rows = this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log WHERE created_at >= ? ORDER BY id DESC LIMIT ?')
-          .all(cutoff, rowLimit)
+        rows = (this.scopedSchema
+          ? this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log WHERE created_at >= ? AND scope_key = ? ORDER BY id DESC LIMIT ?')
+            .all(cutoff, scope, rowLimit)
+          : this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log WHERE created_at >= ? ORDER BY id DESC LIMIT ?')
+            .all(cutoff, rowLimit))
           .map(row => ({
             provider: row.provider,
             model: row.model,
@@ -621,6 +675,7 @@ class MetricsPersistence {
       const aggregate = byKey.get(key) || {
         provider: row.provider,
         model: row.model,
+        scopeKey: scope,
         n: 0,
         successes: 0,
         failures: 0,
@@ -691,11 +746,9 @@ class MetricsPersistence {
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM request_log WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
-        this.db.exec('DELETE FROM provider_metrics; DELETE FROM provider_cooldowns;');
-      }
-      if (scope === PLATFORM_SCOPE) {
-        this.db.exec('DELETE FROM request_log;');
+        this.db.exec('DELETE FROM provider_metrics; DELETE FROM provider_cooldowns; DELETE FROM request_log;');
       }
     } catch (error) {
       this.error = error.message;
@@ -725,11 +778,10 @@ class MetricsPersistence {
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM request_log WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
         this.db.prepare('DELETE FROM provider_metrics').run();
         this.db.prepare('DELETE FROM provider_cooldowns').run();
-      }
-      if (scope === PLATFORM_SCOPE) {
         this.db.prepare('DELETE FROM request_log').run();
       }
     } catch (error) {
