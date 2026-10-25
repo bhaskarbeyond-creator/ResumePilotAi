@@ -26,7 +26,7 @@ The delta is exactly the 15 tests of `mariadb-migration-gate.test.js`
 (`node --test` on that file alone reports `# tests 15`, reproduced twice).
 The file is **excluded from the sandbox protocol by design**, on the record:
 
-- `docs/infra/sandbox-suite-protocol.md` line 3: the gate is *"destructive (it drops
+- `scripts/dev-db/sandbox-suite-protocol.md` line 3: the gate is *"destructive (it drops
   every table and re-applies the full migration ledger)"*; line 25: the discovery glob
   filters it out; line 33: `EXCLUDE="${EXCLUDE:-mariadb-migration-gate}"` — it is
   *"exercised separately on native MariaDB in CI."*
@@ -61,7 +61,7 @@ exactly.
 To be inserted into §8.7 (and the audit appendix) when the prep branch lands:
 
 > Suite-count clarification: 1236 is the sandbox-protocol scope (150 files —
-> `mariadb-migration-gate.test.js` excluded per `docs/infra/sandbox-suite-protocol.md`
+> `mariadb-migration-gate.test.js` excluded per `scripts/dev-db/sandbox-suite-protocol.md`
 > as destructive/native-only); 1251 is full discovery (151 files) on native MariaDB;
 > both are green, and 1251 = 1236 + the gate's 15 tests.
 
