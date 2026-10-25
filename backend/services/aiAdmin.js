@@ -65,7 +65,7 @@ function resolveExplicitEnableToggle(input = {}, pId) {
   return undefined;
 }
 
-function publicAiSettings(input = {}) {
+function publicAiSettings(input = {}, existing = {}) {
   if (input.provider && !['openai-compat', 'google', 'horde'].includes(require('../freellmapi/providers/registry').getProviderMeta(input.provider)?.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
   const provider = input.provider || 'gemini';
   if (input.selectionMode !== undefined) require('../freellmapi/services/selectionPolicy').validateMode(input.selectionMode);
@@ -85,7 +85,16 @@ function publicAiSettings(input = {}) {
   };
   for (const item of PROVIDERS) {
     const explicitToggle = resolveExplicitEnableToggle(input, item);
-    result[ENABLE_FIELDS[item]] = explicitToggle !== undefined ? explicitToggle : (input[ENABLE_FIELDS[item]] !== false);
+    // F-15: a partial save must never fabricate toggles the operator did not
+    // send. Present fields normalize as before (`!== false`); ABSENT fields
+    // preserve the previously stored value — including its absence, so a
+    // fresh deployment's partial save no longer writes enableNvidia:true for
+    // providers nobody mentioned. Consumers treat a missing field exactly
+    // like an enabled one (`=== false` checks), so omission is inert.
+    const legacyField = ENABLE_FIELDS[item];
+    result[legacyField] = explicitToggle !== undefined
+      ? explicitToggle
+      : (input[legacyField] !== undefined ? input[legacyField] !== false : existing[legacyField]);
     const model = String(input[MODEL_FIELDS[item]] || '').trim();
     if (model && !modelPattern.test(model)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${item} model.`, 400);
     if (model) result[MODEL_FIELDS[item]] = model;
@@ -409,7 +418,9 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     }]));
     const currentSecrets = byCategory.ai_providers?.data || {};
     const currentPublic = byCategory.public_config?.data || {};
-    const safePublic = publicAiSettings({ ...(currentPublic.ai || {}), ...input });
+    // F-15: `existing` lets absent toggles preserve the prior stored value
+    // (including its absence) instead of being fabricated as true.
+    const safePublic = publicAiSettings({ ...(currentPublic.ai || {}), ...input }, currentPublic.ai || {});
     const legacyAi = byCategory.system_settings?.data?.ai || {};
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
