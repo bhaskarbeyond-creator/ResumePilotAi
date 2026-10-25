@@ -115,4 +115,45 @@ function rankCandidates(candidates, { mode, primary, observationFor = () => null
   }).sort((a, b) => b._score - a._score || a._index - b._index || a.model.localeCompare(b.model))
     .map(({ _score, _index, ...candidate }) => candidate);
 }
-module.exports = { MODES, validateMode, eligible, rankCandidates, weightedP50LatencyMs };
+// PH4-ENGINE-030 (closes precondition A.9): bounded cold-start exploration.
+// The F-07 maturity gate (latency influences selection only at n >= 3 windowed
+// observations) is preserved UNCHANGED — but an under-evidenced destination
+// that is never served never gathers evidence (primary-preference during
+// warm-up means a newly added, long-idle or post-cooldown candidate can stay
+// at n < 3 indefinitely while the primary keeps succeeding: the chicken-and-egg
+// miss documented in probe legs A.9r1/A.9r2). At most one call in
+// COLD_START_EXPLORE_INTERVAL intelligent-mode calls is diverted to the
+// eligible under-evidenced candidate with the fewest observations, so windows
+// mature on live traffic within a bounded budget (<= 5% of calls, only while
+// some candidate is under-evidenced). Circuit-breaker-demoted candidates
+// (fresh failure at n < 3) are never exploration targets, and the diversion is
+// marked on the wire as routingDecision.exploration = 'cold-start'.
+const COLD_START_MIN_OBSERVATIONS = 3; // the F-07 maturity gate (unchanged)
+const COLD_START_EXPLORE_INTERVAL = 20; // divert at most 1 call in 20
+function pickColdStartExploration(ordered, { callCount, interval = COLD_START_EXPLORE_INTERVAL, observationFor = () => null, now = Date.now() } = {}) {
+  if (!Array.isArray(ordered) || ordered.length < 2) return null;
+  if (!Number.isFinite(Number(callCount)) || Number(callCount) < 1) return null;
+  if (Number(callCount) % Math.max(1, Number(interval) || COLD_START_EXPLORE_INTERVAL) !== 0) return null;
+  const breakerTripped = observation => {
+    if (!observation || !Number.isFinite(Number(observation.n))) return false;
+    const n = Math.max(0, Number(observation.n) || 0);
+    const age = now - Number(observation.lastAt);
+    return n > 0 && n < COLD_START_MIN_OBSERVATIONS && observation.lastOk === false && age >= 0 && age < 30 * 60_000;
+  };
+  const underEvidenced = ordered.filter(candidate =>
+    Number(candidate?.routingDecision?.observationCount || 0) < COLD_START_MIN_OBSERVATIONS
+    && !breakerTripped(observationFor(candidate)));
+  if (underEvidenced.length === 0) return null;
+  // Fewest observations first; ties keep the current rank order (stable sort).
+  const target = underEvidenced.slice().sort((a, b) =>
+    Number(a.routingDecision?.observationCount || 0) - Number(b.routingDecision?.observationCount || 0))[0];
+  // The rank winner already gathers evidence on every call — diverting to it
+  // would be a no-op mislabelled as exploration.
+  if (target === ordered[0]) return null;
+  return target;
+}
+
+module.exports = {
+  MODES, validateMode, eligible, rankCandidates, weightedP50LatencyMs,
+  COLD_START_MIN_OBSERVATIONS, COLD_START_EXPLORE_INTERVAL, pickColdStartExploration,
+};
