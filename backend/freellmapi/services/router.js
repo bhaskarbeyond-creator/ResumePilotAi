@@ -211,6 +211,9 @@ class FreeLlmRouter {
     const primary = explicitProvider ? requestedModel : candidates.some(candidate => candidate.provider === configuredPrimary) ? configuredPrimary : candidates[0]?.provider;
     const chosen = (mode === 'manual' && !manualAllowFallback) || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
     const expanded = [];
+    // F-14: remember destinations rejected ONLY for an active cooldown so a
+    // last-resort release can recover them when nothing else is rankable.
+    const cooldownRejections = [];
     for (const source of chosen) {
       for (const key of source.keys) {
         const candidate = { ...source, key, keys: [key] };
@@ -236,7 +239,11 @@ class FreeLlmRouter {
         for (const metadata of catalog) {
           if (pin && metadata.id !== pin) continue;
           if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
-          if (this.cooldownManager.isOnCooldown(candidate.provider, metadata.id).onCooldown && !candidate.isDedicatedByok) continue;
+          const cooldown = this.cooldownManager.isOnCooldown(candidate.provider, metadata.id);
+          if (cooldown.onCooldown && !candidate.isDedicatedByok) {
+            cooldownRejections.push({ candidate, metadata, cooldown });
+            continue;
+          }
           expanded.push({ ...candidate, model: metadata.id, metadata });
         }
       }
@@ -249,7 +256,34 @@ class FreeLlmRouter {
     // are platform observations (the key, provider and model are the platform's).
     const dedicatedByokTier = candidates.some(candidate => candidate.isDedicatedByok);
     const aggregates = !dedicatedByokTier ? getMetricsPersistence()?.getRollingAggregates?.({ windowMs: 30 * 60_000 }) || [] : [];
-    const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) });
+    let ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) });
+    // F-14: last-resort cooldown release — ported from the aiRouting selector
+    // (services/aiRouting/modelSelector.js). With every destination benched on
+    // a TRANSIENT cooldown (429/5xx backoff) a single-provider deployment used
+    // to return a hard 503 for up to 300 s. Now the earliest-expiring benched
+    // destination is released and retried, marked `routingDecision.lastResort`
+    // so the deviation is visible. Credential rejections ('All pooled keys
+    // rejected') are NEVER released — retrying rejected keys only repeats the
+    // 401 — and strict pins (manual mode without `manualAllowFallback`, or an
+    // explicit model/provider request) keep the F-03 honest
+    // 503 + Retry-After contract instead of silently unpinning.
+    const strictPin = (mode === 'manual' && !manualAllowFallback) || explicit || explicitProvider;
+    if (ordered.length === 0 && !strictPin && cooldownRejections.length > 0) {
+      const transient = cooldownRejections
+        .filter(rejection => rejection.cooldown.reason !== 'All pooled keys rejected')
+        .sort((a, b) => a.cooldown.remainingMs - b.cooldown.remainingMs);
+      if (transient.length > 0) {
+        const released = transient[0];
+        this.cooldownManager.clearCooldown(released.candidate.provider, released.metadata.id);
+        ordered = rankCandidates(
+          [{ ...released.candidate, model: released.metadata.id, metadata: released.metadata }],
+          { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) },
+        ).map(candidate => ({
+          ...candidate,
+          routingDecision: { ...(candidate.routingDecision || {}), lastResort: true },
+        }));
+      }
+    }
     // F-03: with the opt-in manual fallback the PIN stays the preferred
     // destination — recent-failure ranking must not silently promote an
     // alternative above it. The deviation happens only ON pin failure, and is
@@ -375,6 +409,9 @@ class FreeLlmRouter {
 
     const allowedDestinations = Array.isArray(tenantContext?.allowedProviders)
       ? new Set(tenantContext.allowedProviders.map(id => String(id).toLowerCase())) : null;
+    // F-14: legacy-path (no selectionMode) cooldown rejections, retained for
+    // the last-resort release below.
+    const legacyCooldownRejections = [];
     for (const pId of orderedKeys) {
       if (allowedDestinations && !allowedDestinations.has(pId)) continue;
       const conf = providers[pId];
@@ -409,7 +446,11 @@ class FreeLlmRouter {
 
       // Check if on active cooldown (provider-level or model-level)
       const cooldown = this.cooldownManager.isOnCooldown(pId, model);
-      if (cooldown.onCooldown && !platformConfig.selectionMode) continue;
+      if (cooldown.onCooldown && !platformConfig.selectionMode) {
+        // F-14: remember legacy-path cooldown rejections for last-resort release.
+        legacyCooldownRejections.push({ provider: pId, keys, key: keys[0], model, baseUrl: baseUrl || meta?.baseUrl, cooldown });
+        continue;
+      }
 
       candidates.push({
         provider: pId,
@@ -423,6 +464,34 @@ class FreeLlmRouter {
       // If fallback is explicitly disabled, only retain the primary provider
       if (platformConfig?.enableFallback === false) {
         break;
+      }
+    }
+
+    // F-14: last-resort cooldown release for LEGACY pinned configurations (no
+    // selectionMode). The tier-1 loop benches a cooled-down provider outright,
+    // so a single-provider deployment returned a hard 503 for up to 300 s —
+    // the aiRouting selector releases the earliest-expiring transient bench in
+    // exactly this situation (services/aiRouting/modelSelector.js). Credential
+    // rejections ('All pooled keys rejected') are NEVER released — retrying
+    // rejected keys only repeats the 401. Policy-mode deployments get the same
+    // release inside applySelectionPolicy; the deviation is visible as
+    // routingDecision.lastResort === true either way.
+    if (candidates.length === 0 && legacyCooldownRejections.length > 0) {
+      const transient = legacyCooldownRejections
+        .filter(rejection => rejection.cooldown.reason !== 'All pooled keys rejected')
+        .sort((a, b) => a.cooldown.remainingMs - b.cooldown.remainingMs);
+      if (transient.length > 0) {
+        const released = transient[0];
+        this.cooldownManager.clearCooldown(released.provider, released.model);
+        candidates.push({
+          provider: released.provider,
+          keys: released.keys,
+          key: released.key,
+          model: released.model,
+          baseUrl: released.baseUrl,
+          isDedicatedByok: false,
+          routingDecision: { lastResort: true },
+        });
       }
     }
 
