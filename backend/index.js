@@ -4082,6 +4082,57 @@ app.post('/api/admin/ai/reset-quota', requireRecentQuotaAdminAuth, async (req, r
     }
 });
 
+// F-13: operator reset path for the live engine's in-memory state.
+// resetCooldowns()/clearCache() existed since day one but NO route called
+// them: during an incident an operator had to wait out cooldowns (up to
+// 300s) or restart the process to flush a poisoned cached answer. Mounted
+// under /api/admin so the admin-audit middleware records the mutation
+// automatically (actor, body, outcome) — the audit event the fix mandates.
+// Durable metrics are deliberately NOT resettable here: they are routing
+// evidence, not incident state.
+app.post('/api/admin/ai/reset-state', requireSuperAdmin, async (req, res) => {
+    try {
+        const body = req.body || {};
+        const isFlag = value => value === undefined || typeof value === 'boolean';
+        if (!isFlag(body.cooldowns) || !isFlag(body.cache)) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_RESET_STATE_FLAGS',
+                error: 'cooldowns and cache must be booleans when provided.',
+                requestId: res.locals.requestId,
+            });
+        }
+        const doCooldowns = body.cooldowns !== false;
+        const doCache = body.cache !== false;
+        if (!doCooldowns && !doCache) {
+            return res.status(400).json({
+                success: false,
+                code: 'RESET_STATE_NOTHING_TO_DO',
+                error: 'At least one of cooldowns or cache must be reset.',
+                requestId: res.locals.requestId,
+            });
+        }
+        const result = { success: true, cooldowns: null, cache: null };
+        if (doCooldowns) {
+            result.cooldowns = freellm.resetCooldowns();
+        }
+        if (doCache) {
+            const entriesBefore = freellm.getEngineStatus().cacheEntries ?? 0;
+            const cleared = freellm.clearCache();
+            result.cache = { ...cleared, entriesCleared: entriesBefore };
+        }
+        result.message = `Engine state reset completed (cooldowns=${doCooldowns}, cache=${doCache}).`;
+        return res.json(result);
+    } catch (error) {
+        return res.status(error.status && error.status < 500 ? error.status : 503).json({
+            success: false,
+            code: error.code || 'ENGINE_RESET_FAILED',
+            error: error.status && error.status < 500 ? error.message : 'Unable to reset engine state.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
 app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async (req, res) => {
     const input = req.body || {};
     let connection;
