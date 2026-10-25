@@ -2737,6 +2737,36 @@ function sendV1AuthError(res, principal) {
     });
 }
 
+// F-20: public error text for the OpenAI/Anthropic-compatible wires. Engine
+// error messages embed internal detail — provider ids in bracket prefixes,
+// upstream response text ("[openai] server error from alpha (HTTP 500)"),
+// pin diagnostics ("Pinned AI provider ... unavailable") — which audit probe
+// A.5 showed verbatim in client responses. Clients get a stable public
+// message; the machine-readable code, status and Retry-After stay, and the
+// detailed string survives only in server logs and the in-process engine
+// result (fallbacksAttempted) that admin surfaces consume.
+const INTERNAL_DETAIL_PATTERN = /^\[[^\]]+\]|server error from|rate limited by|HTTP \d{3}|All pooled keys|Pinned AI provider|ECONNREFUSED|ENOTFOUND|fetch failed|socket hang up|timed? ?out/i;
+function publicUpstreamMessage(err) {
+    const status = Number(err?.status) || 502;
+    const message = String(err?.message || '');
+    if (status >= 500 || INTERNAL_DETAIL_PATTERN.test(message)) return 'Upstream provider error';
+    return message;
+}
+function logUpstreamErrorDetail(scope, err) {
+    // The detailed message is for operators: log it where it does not ride
+    // back to the client.
+    console.warn(`[v1:${scope}] upstream error detail: code=${err?.code || 'n/a'} status=${err?.status || 'n/a'} message=${err?.message || 'n/a'}`);
+}
+
+// F-20: fallback entries keep their machine-readable fields
+// (provider/model/code/status) but the free-text upstream error stays
+// admin-only — clients get the public message.
+function publicFallbackEntries(fallbacksAttempted) {
+    return (fallbacksAttempted || []).map(entry => (entry && entry.error
+        ? { ...entry, error: 'Upstream provider error' }
+        : entry));
+}
+
 function openAiErrorBody(err) {
     const status = Number(err?.status) || 502;
     const type = status === 401 ? 'authentication_error'
@@ -2747,7 +2777,7 @@ function openAiErrorBody(err) {
         status,
         body: {
             error: {
-                message: err?.message || 'FreeLLMAPI provider error',
+                message: publicUpstreamMessage(err) || 'Upstream provider error',
                 type,
                 code: err?.code || 'ALL_PROVIDERS_FAILED',
                 param: null,
@@ -2766,7 +2796,8 @@ function anthropicErrorBody(err) {
         status,
         body: {
             type: 'error',
-            error: { type, message: err?.message || 'FreeLLMAPI provider error' },
+            // F-20: same public-message boundary as the OpenAI wire.
+            error: { type, message: publicUpstreamMessage(err) || 'Upstream provider error' },
         },
     };
 }
@@ -2976,11 +3007,14 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], async (req, res) 
             return res.end();
         } catch (error) {
             if (!res.headersSent) {
+                logUpstreamErrorDetail('openai-stream', error);
                 const { status, body: errorBody } = openAiErrorBody(error);
                 return res.status(status).json(errorBody);
             }
+            logUpstreamErrorDetail('openai-stream', error);
             res.write(`data: ${JSON.stringify({
-                error: { message: error.message || 'Stream failure', type: 'api_error', code: error.code || 'STREAM_ERROR' },
+                // F-20: the SSE wire gets the public message too.
+                error: { message: publicUpstreamMessage(error) || 'Stream failure', type: 'api_error', code: error.code || 'STREAM_ERROR' },
             })}\n\n`);
             res.write('data: [DONE]\n\n');
             return res.end();
@@ -3014,10 +3048,11 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], async (req, res) 
                 latency_ms: result.latencyMs,
                 cached: Boolean(result.cached),
                 compression: result.compression || null,
-                fallbacks: result.fallbacksAttempted || [],
+                fallbacks: publicFallbackEntries(result.fallbacksAttempted),
             },
         });
     } catch (error) {
+        logUpstreamErrorDetail('openai-chat', error);
         const { status, body: errorBody } = openAiErrorBody(error);
         // F-03: a strict-pin outage is reported as 503 provider_unavailable;
         // surface the engine's backoff hint on the OpenAI wire too.
@@ -3067,12 +3102,15 @@ app.post(['/v1/messages', '/api/v1/messages'], async (req, res) => {
             return res.end();
         } catch (error) {
             if (!res.headersSent) {
+                logUpstreamErrorDetail('anthropic-stream', error);
                 const { status, body: errorBody } = anthropicErrorBody(error);
                 return res.status(status).json(errorBody);
             }
+            logUpstreamErrorDetail('anthropic-stream', error);
             res.write(`event: error\ndata: ${JSON.stringify({
                 type: 'error',
-                error: { type: 'api_error', message: error.message || 'Stream failure' },
+                // F-20: the SSE wire gets the public message too.
+                error: { type: 'api_error', message: publicUpstreamMessage(error) || 'Stream failure' },
             })}\n\n`);
             return res.end();
         }
@@ -3084,6 +3122,7 @@ app.post(['/v1/messages', '/api/v1/messages'], async (req, res) => {
         res.setHeader('Cache-Control', 'no-store');
         return res.json(result);
     } catch (error) {
+        logUpstreamErrorDetail('anthropic-messages', error);
         const { status, body: errorBody } = anthropicErrorBody(error);
         // F-03: pinned-provider outage backoff hint (see /v1/chat/completions).
         if (Number(error?.retryAfterSeconds) > 0 && !res.headersSent) {
@@ -7481,5 +7520,10 @@ app.use((error, req, res, _next) => {
 
 module.exports = app;
 module.exports.publishDueBlogPosts = publishDueBlogPosts;
+// F-20: exported for the wire-sanitisation spec (test surface only).
+module.exports.publicUpstreamMessage = publicUpstreamMessage;
+module.exports.openAiErrorBody = openAiErrorBody;
+module.exports.anthropicErrorBody = anthropicErrorBody;
+module.exports.publicFallbackEntries = publicFallbackEntries;
 
 
