@@ -14,7 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
-const { generateWithProviders } = require('./services/aiRuntime');
+const { generateWithProviders, getSharedAiRouter } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
@@ -4167,6 +4167,47 @@ app.post('/api/admin/ai/reset-state', requireSuperAdmin, async (req, res) => {
             success: false,
             code: error.code || 'ENGINE_RESET_FAILED',
             error: error.status && error.status < 500 ? error.message : 'Unable to reset engine state.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
+// F-22: routing state is observable. RoutingTelemetry (a 500-entry,
+// tenant-keyed ring redacted at record time — prompts and credentials never
+// enter it) and HealthStore.tenantSnapshot previously had no HTTP surface;
+// the live engine could only be inspected through SQLite aggregates. This
+// super-admin read exposes the last N routing decisions plus per-provider/
+// model health for ONE scope: ?tenantId=… for a tenant, omitted for the
+// platform scope. Tenant scoping is enforced by the ring itself — a query
+// never returns another scope's entries.
+app.get('/api/admin/ai/routing-telemetry', requireSuperAdmin, (req, res) => {
+    try {
+        const router = getSharedAiRouter();
+        const rawTenantId = req.query.tenantId;
+        const tenantId = typeof rawTenantId === 'string' && rawTenantId.trim()
+            ? rawTenantId.trim().slice(0, 128)
+            : null;
+        const limit = Math.min(Math.max(1, Number.parseInt(req.query.limit, 10) || 100), 500);
+        const sinceMs = Math.max(0, Number.parseInt(req.query.sinceMs, 10) || 0);
+        const telemetry = router.telemetry
+            ? {
+                entries: router.telemetry.query({ tenantId, limit, sinceMs }),
+                stats: router.telemetry.stats({ tenantId }),
+            }
+            : null;
+        const health = router.health ? router.health.tenantSnapshot(tenantId) : null;
+        return res.json({
+            success: true,
+            scope: tenantId || 'platform',
+            telemetry,
+            health,
+            requestId: res.locals.requestId,
+        });
+    } catch (error) {
+        return res.status(error.status && error.status < 500 ? error.status : 500).json({
+            success: false,
+            code: error.code || 'ROUTING_TELEMETRY_READ_FAILED',
+            error: 'Unable to read routing telemetry.',
             requestId: res.locals.requestId,
         });
     }
