@@ -359,8 +359,18 @@ async function loadAiAdminSettings(environment = process.env) {
     };
   });
 
+  // F-16: `configuredProviders` used to mean "has a credential" at the top of
+  // this function but was then overwritten with the catalog's
+  // `configuredOnServer`, which for non-opt-in providers ignores `enabled` —
+  // a disabled groq with a stored key still reported configured:true and the
+  // flat map gave consumers no way to see the disable. The two facts are now
+  // reported separately: configuredProviders = hasCredential (credential
+  // source known, or keyless), enabledProviders = the catalog's effective
+  // enabled state (toggles, opt-in gates and credentials combined).
+  const enabledProviders = {};
   for (const item of catalog) {
-    configuredProviders[item.id] = item.configuredOnServer;
+    configuredProviders[item.id] = item.credentialSource !== 'none';
+    enabledProviders[item.id] = item.enabled;
   }
 
   let aiSettingsV2Enabled = true;
@@ -379,7 +389,7 @@ async function loadAiAdminSettings(environment = process.env) {
     isDefault: true, isActive: true, modelsCount: discoveredModels.length }];
 
   return {
-    settings, configuredProviders, credentialSources, maskedKeys,
+    settings, configuredProviders, enabledProviders, credentialSources, maskedKeys,
     catalog,
     cooldowns,
     featureFlags: { ai_settings_v2_enabled: aiSettingsV2Enabled },
