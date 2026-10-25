@@ -90,6 +90,7 @@ class MetricsPersistence {
     this.memoryRequests = new Map();
     this.memoryCooldowns = new Map();
     this.memoryLog = [];
+    this.memoryDecisions = [];
     this.scopedSchema = false; // A.1: true once the scoped SQLite shape is in place (or on the memory backend, which is scope-native)
     this._open();
   }
@@ -191,6 +192,7 @@ class MetricsPersistence {
       this._migrateProviderMetrics(db);
       this._migrateProviderCooldowns(db);
       this._migrateRequestLog(db);
+      this._migrateRoutingDecisions(db);
       db.exec('COMMIT;');
     } catch (error) {
       try { db.exec('ROLLBACK;'); } catch { /* rollback is best-effort */ }
@@ -212,6 +214,40 @@ class MetricsPersistence {
     db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_scope ON request_log (scope_key, created_at);');
     db.exec('CREATE INDEX IF NOT EXISTS idx_request_log_decision ON request_log (decision_id);');
     return { altered: !columns.includes('scope_key') };
+  }
+
+  /**
+   * A.4: the engine-local decision ring (schema-proposal §3.4). One row per
+   * routed request, sanitized-by-construction: NO fallback-chain blob, NO
+   * provider internals, NULL-when-unknown token/latency fields (F-18/F-20
+   * discipline). Bounded like request_log at MAX_LOG_ROWS. This is the
+   * engine-local join target; durable cross-instance joins are the MariaDB
+   * ledger's business (Phase S2, DDL-window-gated, not this file).
+   */
+  _migrateRoutingDecisions(db) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS routing_decisions (
+        decision_id TEXT PRIMARY KEY,
+        created_at INTEGER NOT NULL,
+        scope_key TEXT NOT NULL DEFAULT 'platform',
+        mode TEXT,
+        requested_model TEXT,
+        chosen_provider TEXT,
+        chosen_model TEXT,
+        exploration TEXT,
+        quality_evidence TEXT,
+        observed_latency_ms INTEGER,
+        observation_count INTEGER,
+        outcome TEXT,
+        status INTEGER,
+        latency_ms INTEGER,
+        prompt_tokens INTEGER,
+        completion_tokens INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_routing_decisions_created ON routing_decisions (created_at);
+      CREATE INDEX IF NOT EXISTS idx_routing_decisions_scope ON routing_decisions (scope_key, created_at);
+    `);
+    return { created: true };
   }
 
   /**
@@ -699,6 +735,146 @@ class MetricsPersistence {
     return [...byKey.values()];
   }
 
+  /**
+   * A.4/C.2 seam: append one routed-decision row. Best-effort like every
+   * other evidence write — a failing ring must never touch the response.
+   * Missing decisionId records nothing (an anonymous row could never be
+   * joined; honesty over volume). Token/latency fields stay NULL when unknown.
+   */
+  recordDecision({
+    decisionId,
+    createdAt = Date.now(),
+    scopeKey = PLATFORM_SCOPE,
+    mode = null,
+    requestedModel = null,
+    chosenProvider = null,
+    chosenModel = null,
+    exploration = null,
+    qualityEvidence = null,
+    observedLatencyMs = null,
+    observationCount = null,
+    outcome = null,
+    status = null,
+    latencyMs = null,
+    promptTokens = null,
+    completionTokens = null,
+  } = {}) {
+    const id = decisionId === null || decisionId === undefined ? '' : String(decisionId).trim().slice(0, 64);
+    if (!id) return { recorded: false, reason: 'missing-decision-id' };
+    const scope = normalizeScopeKey(scopeKey);
+    // F-18 discipline: null/undefined stay NULL — Number(null) is 0, and a
+    // fabricated 0 is a lie about an unknown.
+    const nullableInt = value => (value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? null : Math.round(Number(value)));
+    const nullableText = (value, max) => (value === null || value === undefined ? null : String(value).slice(0, max));
+    const row = {
+      decisionId: id,
+      createdAt: Number(createdAt) || Date.now(),
+      scopeKey: scope,
+      mode: nullableText(mode, 16),
+      requestedModel: nullableText(requestedModel, 150),
+      chosenProvider: nullableText(chosenProvider, 64),
+      chosenModel: nullableText(chosenModel, 150),
+      exploration: nullableText(exploration, 32),
+      qualityEvidence: nullableText(qualityEvidence, 64),
+      observedLatencyMs: nullableInt(observedLatencyMs),
+      observationCount: nullableInt(observationCount),
+      outcome: nullableText(outcome, 16),
+      status: nullableInt(status),
+      latencyMs: nullableInt(latencyMs),
+      promptTokens: nullableInt(promptTokens),
+      completionTokens: nullableInt(completionTokens),
+    };
+    if (!this.db) {
+      this.memoryDecisions.push(row);
+      if (this.memoryDecisions.length > MAX_LOG_ROWS) this.memoryDecisions.splice(0, this.memoryDecisions.length - MAX_LOG_ROWS);
+      return { recorded: true, backend: 'memory' };
+    }
+    if (!this.scopedSchema) return { recorded: false, reason: 'legacy-schema' }; // ring table absent; evidence dropped, never the request
+    try {
+      this.db.prepare(`
+        INSERT INTO routing_decisions
+          (decision_id, created_at, scope_key, mode, requested_model, chosen_provider, chosen_model,
+           exploration, quality_evidence, observed_latency_ms, observation_count, outcome, status,
+           latency_ms, prompt_tokens, completion_tokens)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(decision_id) DO UPDATE SET
+          outcome = excluded.outcome,
+          status = excluded.status,
+          latency_ms = excluded.latency_ms,
+          prompt_tokens = excluded.prompt_tokens,
+          completion_tokens = excluded.completion_tokens
+      `).run(
+        row.decisionId, row.createdAt, row.scopeKey, row.mode, row.requestedModel, row.chosenProvider, row.chosenModel,
+        row.exploration, row.qualityEvidence, row.observedLatencyMs, row.observationCount, row.outcome, row.status,
+        row.latencyMs, row.promptTokens, row.completionTokens
+      );
+      if (Math.random() < 0.01) this.pruneDecisions();
+    } catch (error) {
+      this.error = error.message;
+      return { recorded: false, reason: 'write-failed' };
+    }
+    return { recorded: true, backend: 'sqlite' };
+  }
+
+  /** Deterministic ring bound for routing_decisions (the request_log DELETE-max pattern, by recency). */
+  pruneDecisions() {
+    if (!this.db) {
+      if (this.memoryDecisions.length > MAX_LOG_ROWS) this.memoryDecisions.splice(0, this.memoryDecisions.length - MAX_LOG_ROWS);
+      return { pruned: true };
+    }
+    if (!this.scopedSchema) return { pruned: false };
+    try {
+      this.db.prepare(`
+        DELETE FROM routing_decisions WHERE rowid NOT IN (
+          SELECT rowid FROM routing_decisions ORDER BY created_at DESC, rowid DESC LIMIT ?
+        )
+      `).run(MAX_LOG_ROWS);
+      return { pruned: true };
+    } catch (error) {
+      this.error = error.message;
+      return { pruned: false };
+    }
+  }
+
+  getRecentDecisions({ limit = 50, scopeKey = null } = {}) {
+    const rowLimit = Math.max(1, Number(limit) || 50);
+    const scope = scopeKey === null || scopeKey === undefined ? null : normalizeScopeKey(scopeKey);
+    if (!this.db) {
+      return this.memoryDecisions
+        .filter(row => scope === null || row.scopeKey === scope)
+        .slice(-rowLimit)
+        .reverse()
+        .map(row => ({ ...row }));
+    }
+    if (!this.scopedSchema) return [];
+    try {
+      const rows = scope === null
+        ? this.db.prepare('SELECT * FROM routing_decisions ORDER BY created_at DESC, rowid DESC LIMIT ?').all(rowLimit)
+        : this.db.prepare('SELECT * FROM routing_decisions WHERE scope_key = ? ORDER BY created_at DESC, rowid DESC LIMIT ?').all(scope, rowLimit);
+      return rows.map(row => ({
+        decisionId: row.decision_id,
+        createdAt: Number(row.created_at),
+        scopeKey: row.scope_key,
+        mode: row.mode,
+        requestedModel: row.requested_model,
+        chosenProvider: row.chosen_provider,
+        chosenModel: row.chosen_model,
+        exploration: row.exploration,
+        qualityEvidence: row.quality_evidence,
+        observedLatencyMs: row.observed_latency_ms === null ? null : Number(row.observed_latency_ms),
+        observationCount: row.observation_count === null ? null : Number(row.observation_count),
+        outcome: row.outcome,
+        status: row.status === null ? null : Number(row.status),
+        latencyMs: row.latency_ms === null ? null : Number(row.latency_ms),
+        promptTokens: row.prompt_tokens === null ? null : Number(row.prompt_tokens),
+        completionTokens: row.completion_tokens === null ? null : Number(row.completion_tokens),
+      }));
+    } catch (error) {
+      this.error = error.message;
+      return [];
+    }
+  }
+
   getSummary({ now = Date.now() } = {}) {
     const metrics = this.getProviderMetrics();
     const cooldowns = this.loadCooldowns({ now });
@@ -726,6 +902,7 @@ class MetricsPersistence {
       this.memoryRequests.clear();
       this.memoryCooldowns.clear();
       this.memoryLog.length = 0;
+      this.memoryDecisions.length = 0;
     } else {
       for (const [key, row] of this.memoryRequests.entries()) {
         if ((row.scopeKey || PLATFORM_SCOPE) === scope) { this.memoryRequests.delete(key); this.samples.delete(key); }
@@ -736,17 +913,22 @@ class MetricsPersistence {
       for (let i = this.memoryLog.length - 1; i >= 0; i -= 1) {
         if ((this.memoryLog[i].scopeKey || PLATFORM_SCOPE) === scope) this.memoryLog.splice(i, 1);
       }
+      for (let i = this.memoryDecisions.length - 1; i >= 0; i -= 1) {
+        if (this.memoryDecisions[i].scopeKey === scope) this.memoryDecisions.splice(i, 1);
+      }
     }
     if (!this.db) return;
     try {
       if (scope === null) {
         this.db.exec('DELETE FROM provider_metrics; DELETE FROM provider_cooldowns; DELETE FROM request_log;');
+        if (this.scopedSchema) this.db.exec('DELETE FROM routing_decisions;');
         return;
       }
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM request_log WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM routing_decisions WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
         this.db.exec('DELETE FROM provider_metrics; DELETE FROM provider_cooldowns; DELETE FROM request_log;');
       }
@@ -762,6 +944,7 @@ class MetricsPersistence {
         this.memoryRequests.clear();
         this.memoryLog = [];
         this.memoryCooldowns.clear();
+        this.memoryDecisions.length = 0;
         this.samples.clear();
         return;
       }
@@ -773,12 +956,14 @@ class MetricsPersistence {
         this.db.prepare('DELETE FROM provider_metrics').run();
         this.db.prepare('DELETE FROM request_log').run();
         this.db.prepare('DELETE FROM provider_cooldowns').run();
+        if (this.scopedSchema) this.db.prepare('DELETE FROM routing_decisions').run();
         return;
       }
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
         this.db.prepare('DELETE FROM request_log WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM routing_decisions WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
         this.db.prepare('DELETE FROM provider_metrics').run();
         this.db.prepare('DELETE FROM provider_cooldowns').run();
