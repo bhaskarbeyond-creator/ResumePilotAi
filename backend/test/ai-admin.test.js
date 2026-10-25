@@ -34,8 +34,19 @@ test('authorized AI settings save is revisioned, audited, split, and never retur
   const result = await saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1', requestId: 'req-1' });
   assert.equal(result.revision, 1);
   assert.equal(result.configuredProviders.nvidia, true);
-  assert.doesNotMatch(JSON.stringify(result), /fixture-nvidia-key-value/);
-  assert.equal(settingsContract.settings.get('ai_providers').data.nvidia.apiKey, 'fixture-nvidia-key-value');
+  const storedKey = settingsContract.settings.get('ai_providers').data.nvidia.apiKey;
+  if (process.env.ENTERPRISE_ENCRYPTION_KEY) {
+    assert.equal(storedKey?.__enterpriseEncrypted, true);
+    assert.equal(storedKey?.alg, 'AES-256-GCM');
+    assert.ok(typeof storedKey?.ciphertext === 'string' && storedKey.ciphertext.length > 0);
+    assert.ok(typeof storedKey?.iv === 'string' && storedKey.iv.length > 0);
+    assert.ok(typeof storedKey?.tag === 'string' && storedKey.tag.length > 0);
+    assert.ok(typeof storedKey?.keyVersion === 'string' && storedKey.keyVersion.length > 0);
+    assert.ok(typeof storedKey?.wrappedKey === 'string' && storedKey.wrappedKey.length > 0);
+    assert.doesNotMatch(JSON.stringify(storedKey), /fixture-nvidia-key-value/);
+  } else {
+    assert.equal(storedKey, 'fixture-nvidia-key-value');
+  }
   assert.equal(settingsContract.settings.get('public_config').data.ai.provider, 'nvidia');
   assert.equal(settingsContract.auditEvents.some(event => event.action === 'AI_PROVIDER_SETTINGS_UPDATED'), true);
   // F-29 literal-contract correction: the CAS conflict now throws the
