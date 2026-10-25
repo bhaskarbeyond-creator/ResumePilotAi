@@ -156,12 +156,14 @@ class MetricsPersistence {
       if (!logColumns.includes('completion_tokens')) db.exec('ALTER TABLE request_log ADD COLUMN completion_tokens INTEGER');
       this.db = db;
       this.backend = 'sqlite';
-      // PH4-ENGINE-021 Phase A.1: guarded in-place rebuild of provider_metrics
-      // to the scoped PK (provider, model, scope_key). Idempotent (PRAGMA
-      // guard), transaction-wrapped, preservation-copy semantics. A failure
-      // degrades to the legacy SQL shapes instead of dropping the store.
+      // PH4-ENGINE-021 Phase A.1/A.2: guarded in-place rebuilds to the scoped
+      // shapes (provider_metrics A.1, provider_cooldowns A.2). Idempotent
+      // (PRAGMA guards), ONE transaction for the whole scoped migration (the
+      // capability flag must never describe a half-migrated store),
+      // preservation-copy semantics. A failure degrades to the legacy SQL
+      // shapes instead of dropping the store.
       try {
-        this._migrateProviderMetrics(db);
+        this._migrateScopedSchema(db);
         const integrity = db.prepare('PRAGMA integrity_check').get();
         const integrityOk = String(Object.values(integrity || {})[0] || '') === 'ok';
         this.scopedSchema = integrityOk;
@@ -178,48 +180,92 @@ class MetricsPersistence {
   }
 
   /**
-   * A.1: rebuild provider_metrics to PK (provider, model, scope_key).
-   * SQLite cannot ALTER a PRIMARY KEY, so the F-18-style guarded rebuild is:
-   * CREATE v2 -> INSERT-SELECT (every legacy row preserved verbatim in the
-   * 'platform' scope) -> DROP -> RENAME -> scope index. Runs at most once per
-   * database file; the PRAGMA guard makes every later open a no-op.
+   * A.1+A.2: the whole scoped migration in ONE transaction — either every
+   * table reaches its scoped shape or none does, so `scopedSchema` never
+   * describes a half-migrated store. Each step is PRAGMA-guarded and runs at
+   * most once per database file; later opens are no-ops.
    */
-  _migrateProviderMetrics(db) {
-    const columns = db.prepare('PRAGMA table_info(provider_metrics)').all().map(column => column.name);
-    if (columns.includes('scope_key')) return { rebuilt: false };
-    const before = Number(db.prepare('SELECT COUNT(*) AS n FROM provider_metrics').get().n);
+  _migrateScopedSchema(db) {
     db.exec('BEGIN IMMEDIATE;');
     try {
-      db.exec(`
-        CREATE TABLE provider_metrics_v2 (
-          provider TEXT NOT NULL,
-          model TEXT NOT NULL,
-          scope_key TEXT NOT NULL DEFAULT 'platform',
-          requests INTEGER NOT NULL DEFAULT 0,
-          successes INTEGER NOT NULL DEFAULT 0,
-          failures INTEGER NOT NULL DEFAULT 0,
-          total_latency_ms INTEGER NOT NULL DEFAULT 0,
-          last_latency_ms INTEGER NOT NULL DEFAULT 0,
-          last_status INTEGER,
-          p95_latency_ms INTEGER NOT NULL DEFAULT 0,
-          updated_at INTEGER NOT NULL,
-          PRIMARY KEY (provider, model, scope_key)
-        );
-        INSERT INTO provider_metrics_v2
-          SELECT provider, model, 'platform', requests, successes, failures,
-                 total_latency_ms, last_latency_ms, last_status, p95_latency_ms, updated_at
-          FROM provider_metrics;
-        DROP TABLE provider_metrics;
-        ALTER TABLE provider_metrics_v2 RENAME TO provider_metrics;
-        CREATE INDEX IF NOT EXISTS idx_provider_metrics_scope ON provider_metrics (scope_key, updated_at);
-      `);
+      this._migrateProviderMetrics(db);
+      this._migrateProviderCooldowns(db);
       db.exec('COMMIT;');
     } catch (error) {
       try { db.exec('ROLLBACK;'); } catch { /* rollback is best-effort */ }
       throw error;
     }
+  }
+
+  /**
+   * A.1: rebuild provider_metrics to PK (provider, model, scope_key).
+   * SQLite cannot ALTER a PRIMARY KEY, so the F-18-style guarded rebuild is:
+   * CREATE v2 -> INSERT-SELECT (every legacy row preserved verbatim in the
+   * 'platform' scope) -> DROP -> RENAME -> scope index.
+   */
+  _migrateProviderMetrics(db) {
+    const columns = db.prepare('PRAGMA table_info(provider_metrics)').all().map(column => column.name);
+    if (columns.includes('scope_key')) return { rebuilt: false };
+    const before = Number(db.prepare('SELECT COUNT(*) AS n FROM provider_metrics').get().n);
+    db.exec(`
+      CREATE TABLE provider_metrics_v2 (
+        provider TEXT NOT NULL,
+        model TEXT NOT NULL,
+        scope_key TEXT NOT NULL DEFAULT 'platform',
+        requests INTEGER NOT NULL DEFAULT 0,
+        successes INTEGER NOT NULL DEFAULT 0,
+        failures INTEGER NOT NULL DEFAULT 0,
+        total_latency_ms INTEGER NOT NULL DEFAULT 0,
+        last_latency_ms INTEGER NOT NULL DEFAULT 0,
+        last_status INTEGER,
+        p95_latency_ms INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (provider, model, scope_key)
+      );
+      INSERT INTO provider_metrics_v2
+        SELECT provider, model, 'platform', requests, successes, failures,
+               total_latency_ms, last_latency_ms, last_status, p95_latency_ms, updated_at
+        FROM provider_metrics;
+      DROP TABLE provider_metrics;
+      ALTER TABLE provider_metrics_v2 RENAME TO provider_metrics;
+      CREATE INDEX IF NOT EXISTS idx_provider_metrics_scope ON provider_metrics (scope_key, updated_at);
+    `);
     const after = Number(db.prepare('SELECT COUNT(*) AS n FROM provider_metrics').get().n);
     if (after !== before) throw new Error(`provider_metrics rebuild row parity failed (${before} -> ${after})`);
+    return { rebuilt: true, rowsPreserved: after };
+  }
+
+  /**
+   * A.2: rebuild provider_cooldowns to PK (provider, model, scope_key) plus
+   * the credential_kind attribute ('platform' | 'byok' | 'tenant-penalty').
+   * Same guarded preservation-copy pattern as A.1: a cooldown recorded before
+   * this migration was by definition a platform-credential cooldown.
+   */
+  _migrateProviderCooldowns(db) {
+    const columns = db.prepare('PRAGMA table_info(provider_cooldowns)').all().map(column => column.name);
+    if (columns.includes('scope_key')) return { rebuilt: false };
+    const before = Number(db.prepare('SELECT COUNT(*) AS n FROM provider_cooldowns').get().n);
+    db.exec(`
+      CREATE TABLE provider_cooldowns_v2 (
+        provider TEXT NOT NULL,
+        model TEXT NOT NULL,
+        scope_key TEXT NOT NULL DEFAULT 'platform',
+        credential_kind TEXT NOT NULL DEFAULT 'platform',
+        expires_at INTEGER NOT NULL,
+        reason TEXT,
+        strikes INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (provider, model, scope_key)
+      );
+      INSERT INTO provider_cooldowns_v2
+        SELECT provider, model, 'platform', 'platform', expires_at, reason, strikes, updated_at
+        FROM provider_cooldowns;
+      DROP TABLE provider_cooldowns;
+      ALTER TABLE provider_cooldowns_v2 RENAME TO provider_cooldowns;
+      CREATE INDEX IF NOT EXISTS idx_provider_cooldowns_scope ON provider_cooldowns (scope_key, expires_at);
+    `);
+    const after = Number(db.prepare('SELECT COUNT(*) AS n FROM provider_cooldowns').get().n);
+    if (after !== before) throw new Error(`provider_cooldowns rebuild row parity failed (${before} -> ${after})`);
     return { rebuilt: true, rowsPreserved: after };
   }
 
@@ -316,64 +362,122 @@ class MetricsPersistence {
     return { backend: 'sqlite', provider: p, model: m };
   }
 
-  recordCooldown({ provider, model = '', expiresAt, reason = '', strikes = 1, at = Date.now() } = {}) {
+  recordCooldown({ provider, model = '', expiresAt, reason = '', strikes = 1, at = Date.now(), scopeKey = PLATFORM_SCOPE, credentialKind = 'platform' } = {}) {
     const p = String(provider || '').toLowerCase();
     const m = String(model || '');
-    const key = this._key(p, m);
+    const scope = normalizeScopeKey(scopeKey);
+    const kind = String(credentialKind || 'platform').slice(0, 32);
+    const key = this._key(p, m, scope);
     if (!this.db) {
-      this.memoryCooldowns.set(key, { provider: p, model: m, expiresAt, reason, strikes, updatedAt: at });
+      this.memoryCooldowns.set(key, { provider: p, model: m, scopeKey: scope, credentialKind: kind, expiresAt, reason, strikes, updatedAt: at });
       return { backend: 'memory' };
     }
     try {
-      this.db.prepare(`
-        INSERT INTO provider_cooldowns (provider, model, expires_at, reason, strikes, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(provider, model) DO UPDATE SET
-          expires_at = excluded.expires_at,
-          reason = excluded.reason,
-          strikes = excluded.strikes,
-          updated_at = excluded.updated_at
-      `).run(p, m, expiresAt, reason, strikes, at);
+      if (this.scopedSchema) {
+        this.db.prepare(`
+          INSERT INTO provider_cooldowns (provider, model, scope_key, credential_kind, expires_at, reason, strikes, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(provider, model, scope_key) DO UPDATE SET
+            credential_kind = excluded.credential_kind,
+            expires_at = excluded.expires_at,
+            reason = excluded.reason,
+            strikes = excluded.strikes,
+            updated_at = excluded.updated_at
+        `).run(p, m, scope, kind, expiresAt, reason, strikes, at);
+      } else {
+        // Legacy shape: platform cooldowns keep flowing; scoped rows cannot be
+        // represented and are dropped (fail-open on evidence).
+        if (scope !== PLATFORM_SCOPE) return { backend: this.backend, scopeDropped: true };
+        this.db.prepare(`
+          INSERT INTO provider_cooldowns (provider, model, expires_at, reason, strikes, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(provider, model) DO UPDATE SET
+            expires_at = excluded.expires_at,
+            reason = excluded.reason,
+            strikes = excluded.strikes,
+            updated_at = excluded.updated_at
+        `).run(p, m, expiresAt, reason, strikes, at);
+      }
     } catch (error) {
       this.error = error.message;
     }
     return { backend: this.backend };
   }
 
-  clearCooldown({ provider, model = '' } = {}) {
+  clearCooldown({ provider, model = '', scopeKey = PLATFORM_SCOPE } = {}) {
     const p = String(provider || '').toLowerCase();
-    const key = this._key(p, model);
+    const m = String(model || '');
+    const scope = normalizeScopeKey(scopeKey);
+    const key = this._key(p, m, scope);
     if (!this.db) {
       this.memoryCooldowns.delete(key);
       return;
     }
     try {
-      this.db.prepare('DELETE FROM provider_cooldowns WHERE provider = ? AND model = ?').run(p, String(model || ''));
+      if (this.scopedSchema) {
+        this.db.prepare('DELETE FROM provider_cooldowns WHERE provider = ? AND model = ? AND scope_key = ?').run(p, m, scope);
+      } else if (scope === PLATFORM_SCOPE) {
+        this.db.prepare('DELETE FROM provider_cooldowns WHERE provider = ? AND model = ?').run(p, m);
+      }
     } catch (error) {
       this.error = error.message;
     }
   }
 
-  clearAllCooldowns() {
+  clearAllCooldowns({ scopeKey = null } = {}) {
+    const scope = scopeKey === null || scopeKey === undefined ? null : normalizeScopeKey(scopeKey);
     if (!this.db) {
-      this.memoryCooldowns.clear();
+      if (scope === null) {
+        this.memoryCooldowns.clear();
+        return;
+      }
+      for (const [key, row] of this.memoryCooldowns.entries()) {
+        if ((row.scopeKey || PLATFORM_SCOPE) === scope) this.memoryCooldowns.delete(key);
+      }
       return;
     }
-    try { this.db.prepare('DELETE FROM provider_cooldowns').run(); } catch (error) { this.error = error.message; }
+    try {
+      if (scope === null) {
+        this.db.prepare('DELETE FROM provider_cooldowns').run();
+      } else if (this.scopedSchema) {
+        this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
+      } else if (scope === PLATFORM_SCOPE) {
+        this.db.prepare('DELETE FROM provider_cooldowns').run();
+      }
+    } catch (error) { this.error = error.message; }
   }
 
-  loadCooldowns({ now = Date.now() } = {}) {
+  loadCooldowns({ now = Date.now(), scopeKey = null } = {}) {
+    const scope = scopeKey === null || scopeKey === undefined ? null : normalizeScopeKey(scopeKey);
     if (!this.db) {
       return [...this.memoryCooldowns.values()]
-        .filter(row => row.expiresAt > now)
+        .filter(row => row.expiresAt > now && (scope === null || (row.scopeKey || PLATFORM_SCOPE) === scope))
         .map(row => ({ ...row }));
     }
     try {
+      if (this.scopedSchema) {
+        const rows = scope === null
+          ? this.db.prepare('SELECT provider, model, scope_key, credential_kind, expires_at, reason, strikes, updated_at FROM provider_cooldowns WHERE expires_at > ?').all(now)
+          : this.db.prepare('SELECT provider, model, scope_key, credential_kind, expires_at, reason, strikes, updated_at FROM provider_cooldowns WHERE expires_at > ? AND scope_key = ?').all(now, scope);
+        return rows.map(row => ({
+          provider: row.provider,
+          model: row.model,
+          scopeKey: row.scope_key,
+          credentialKind: row.credential_kind,
+          expiresAt: Number(row.expires_at),
+          reason: row.reason,
+          strikes: Number(row.strikes),
+          updatedAt: Number(row.updated_at),
+        }));
+      }
+      if (scope !== null && scope !== PLATFORM_SCOPE) return []; // legacy shape cannot represent non-platform scopes
       return this.db.prepare('SELECT provider, model, expires_at, reason, strikes, updated_at FROM provider_cooldowns WHERE expires_at > ?')
         .all(now)
         .map(row => ({
           provider: row.provider,
           model: row.model,
+          scopeKey: PLATFORM_SCOPE,
+          credentialKind: 'platform',
           expiresAt: Number(row.expires_at),
           reason: row.reason,
           strikes: Number(row.strikes),
@@ -586,11 +690,12 @@ class MetricsPersistence {
       }
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
-        this.db.exec('DELETE FROM provider_metrics;');
+        this.db.exec('DELETE FROM provider_metrics; DELETE FROM provider_cooldowns;');
       }
       if (scope === PLATFORM_SCOPE) {
-        this.db.exec('DELETE FROM provider_cooldowns; DELETE FROM request_log;');
+        this.db.exec('DELETE FROM request_log;');
       }
     } catch (error) {
       this.error = error.message;
@@ -619,12 +724,13 @@ class MetricsPersistence {
       }
       if (this.scopedSchema) {
         this.db.prepare('DELETE FROM provider_metrics WHERE scope_key = ?').run(scope);
+        this.db.prepare('DELETE FROM provider_cooldowns WHERE scope_key = ?').run(scope);
       } else if (scope === PLATFORM_SCOPE) {
         this.db.prepare('DELETE FROM provider_metrics').run();
+        this.db.prepare('DELETE FROM provider_cooldowns').run();
       }
       if (scope === PLATFORM_SCOPE) {
         this.db.prepare('DELETE FROM request_log').run();
-        this.db.prepare('DELETE FROM provider_cooldowns').run();
       }
     } catch (error) {
       this.error = error.message;
