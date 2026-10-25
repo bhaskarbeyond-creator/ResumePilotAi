@@ -189,6 +189,8 @@ async function handleAnthropicMessages(reqBody, options = {}) {
     toolChoice: tools.length > 0 ? toolChoice : undefined,
     fetchImpl: options.fetchImpl,
     signal: options.signal,
+    // F-02: principal-bound cache scope from the /v1 admission layer.
+    cacheScope: options.cacheScope ?? null,
   });
 
   return translateToAnthropicResponse(result, reqBody.model || 'claude-3-7-sonnet');
@@ -354,6 +356,7 @@ ${JSON.stringify(context, null, 2)}`;
     temperature,
     platformConfig: options.platformConfig || {},
     tenantContext: options.tenantContext || null,
+    cacheScope: options.cacheScope ?? null,
   });
 
   return {

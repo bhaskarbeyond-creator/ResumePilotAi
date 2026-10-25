@@ -3,6 +3,12 @@
 // Keep the suite hermetic: the durable metrics store must not write inside the
 // repository during tests. Production uses data/freellm_metrics.db.
 process.env.FREELMAPI_METRICS_DB = process.env.FREELMAPI_METRICS_DB || ':memory:';
+// F-01: anonymous /v1 access is closed by default and requires this explicit
+// dev flag. The wire-parity tests below exercise engine behaviour (SSE, tool
+// rescue, failover), not authentication posture; they opt into the documented
+// local-dev anonymous principal. The closed default is pinned separately in
+// test/v1-admission-control.test.js.
+process.env.ALLOW_ANON_V1 = 'true';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -64,7 +70,7 @@ test('FreeLLMAPI: Fallback cascade switches to second provider when first fails 
   freellm.clearCache();
 
   // Mock fetch implementation: Groq returns 429, Cerebras succeeds
-  const mockFetch = async (url, options) => {
+  const mockFetch = async (url, _options) => {
     if (url.includes('groq.com')) {
       return {
         ok: false,

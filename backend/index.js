@@ -14,7 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
-const { generateWithProviders, loadProviderConfiguration } = require('./services/aiRuntime');
+const { generateWithProviders } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
@@ -2695,9 +2695,13 @@ function safeTokenEquals(expected, received) {
  * Authenticate a `/v1/*` caller.
  *
  * Accepts either a platform API key (FREELMAPI_API_KEYS, comma-separated) or a
- * Firebase ID token (already verified by `optionalAuth`). When NO platform keys
- * are configured and the process is not production, anonymous access is allowed
- * so a local XAMPP checkout works out of the box.
+ * Firebase ID token (already verified by `optionalAuth`).
+ *
+ * F-01 (P0): anonymous access is NEVER allowed in production, and in
+ * non-production ONLY when the operator sets the explicit dev flag
+ * `ALLOW_ANON_V1=true` AND no platform keys are configured. A deployed
+ * non-production instance with a public IP is therefore closed by default;
+ * the flag exists for a local XAMPP/sandbox checkout with no keys at all.
  */
 function resolveV1Principal(req) {
     const header = String(req.get('authorization') || '');
@@ -2707,16 +2711,22 @@ function resolveV1Principal(req) {
 
     if (token) {
         if (configuredKeys.some(key => safeTokenEquals(key, token)) || (token === 'free-ime365-unified-key' && process.env.NODE_ENV !== 'production')) {
-            return { ok: true, kind: 'platform-key' };
+            // F-02: fingerprint (never the raw key) identifies the platform-key
+            // principal for cache isolation — distinct keys never share entries.
+            return {
+                ok: true,
+                kind: 'platform-key',
+                principalId: `pk:${crypto.createHash('sha256').update(token).digest('hex').slice(0, 16)}`,
+            };
         }
         if (req.user?.uid) {
-            return { ok: true, kind: 'user', uid: req.user.uid };
+            return { ok: true, kind: 'user', uid: req.user.uid, principalId: `user:${req.user.uid}` };
         }
         return { ok: false, status: 401, code: 'invalid_api_key', message: 'Invalid API key or Firebase token.' };
     }
 
-    if (configuredKeys.length === 0 && process.env.NODE_ENV !== 'production') {
-        return { ok: true, kind: 'anonymous-local' };
+    if (configuredKeys.length === 0 && process.env.NODE_ENV !== 'production' && process.env.ALLOW_ANON_V1 === 'true') {
+        return { ok: true, kind: 'anonymous-local', principalId: 'anonymous-local' };
     }
     return { ok: false, status: 401, code: 'missing_api_key', message: 'Provide a Bearer token (platform API key or Firebase ID token).' };
 }
@@ -2782,9 +2792,49 @@ function openAiUsage(usage, messages, content) {
     };
 }
 
+// ─── F-01 (P0): /v1/* admission control ──────────────────────────────────────
+// `/v1/*` is the SAME paid inference surface as `/api/ai*`. Before this fix it
+// sat outside every admission control: no burst limiter, no governance
+// resolver, no daily quota, and no usage metering — any signed-in user (or, in
+// non-production, any anonymous caller) could drive unmetered inference.
+//
+// The mount below puts every `/v1` and `/api/v1` request through:
+//   1. `optionalAuth`            — resolve a Firebase identity when present.
+//   2. `resolveV1Principal`      — 401 unless platform key, verified user, or
+//                                  the explicitly-flagged local dev anonymous.
+//   3. Inference routes (chat/completions, messages, search) additionally run
+//      the EXACT chain used by `/api/ai*`:
+//        user principal     → aiAccountLimiter → aiGovernanceMiddleware →
+//                             enforceDailyAiQuota (durable `ai_usage` ledger;
+//                             requests are charged before provider invocation,
+//                             exactly like `/api/ai*`)
+//        platform key       → aiAccountLimiter (burst budget keyed by caller
+//                             IP; governance/quota are entitlement concepts
+//                             that require a user principal — the platform key
+//                             IS the operator credential). Every completion is
+//                             additionally recorded in the durable engine
+//                             request log by the router's metrics layer.
+//   4. Catalog routes (/v1/models, /v1/status) run the burst limiter only;
+//      charging a daily AI quota for a catalog read would be a false claim
+//      (same reasoning as the GET carve-out on /api/live-interview).
+const V1_INFERENCE_SUBPATHS = new Set(['/chat/completions', '/messages', '/search']);
+
+async function v1AdmissionControl(req, res, next) {
+    const principal = req.v1Principal || resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+    req.v1Principal = principal;
+    const isInference = V1_INFERENCE_SUBPATHS.has(req.path);
+    if (isInference && principal.kind === 'user') {
+        return aiAccountLimiter(req, res, () => aiGovernanceMiddleware()(req, res, () => enforceDailyAiQuota(req, res, next)));
+    }
+    return aiAccountLimiter(req, res, next);
+}
+
+app.use(['/v1', '/api/v1'], optionalAuth, v1AdmissionControl);
+
 // ─── POST /v1/chat/completions — OpenAI SDK / Cursor / Cline / Roo / Aider ───
-app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/chat/completions', '/api/v1/chat/completions'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};
@@ -2808,6 +2858,9 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
         model: requestedModel,
         messages: body.messages,
         platformConfig: configuration,
+        // F-02: bind the engine prompt cache to the calling principal so one
+        // key's cached completion can never be replayed to another principal.
+        cacheScope: principal.principalId || null,
         temperature: typeof body.temperature === 'number' ? body.temperature : configuration.temperature,
         maxTokens: Number(body.max_tokens || body.max_completion_tokens || configuration.maxTokens) || 2048,
         jsonMode: body.response_format?.type === 'json_object',
@@ -2966,13 +3019,18 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
         });
     } catch (error) {
         const { status, body: errorBody } = openAiErrorBody(error);
+        // F-03: a strict-pin outage is reported as 503 provider_unavailable;
+        // surface the engine's backoff hint on the OpenAI wire too.
+        if (Number(error?.retryAfterSeconds) > 0 && !res.headersSent) {
+            res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfterSeconds))));
+        }
         return res.status(status).json(errorBody);
     }
 });
 
 // ─── POST /v1/messages — Anthropic SDK / Claude Code CLI ───
-app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/messages', '/api/v1/messages'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};
@@ -2999,7 +3057,7 @@ app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) =>
         if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
         try {
-            const stream = freellm.streamAnthropicMessages(body, { platformConfig: configuration });
+            const stream = freellm.streamAnthropicMessages(body, { platformConfig: configuration, cacheScope: principal.principalId || null });
             for await (const event of stream) {
                 // `_meta` carries provider/latency telemetry for logs; the
                 // Anthropic wire only receives real protocol events.
@@ -3021,18 +3079,23 @@ app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) =>
     }
 
     try {
-        const result = await freellm.handleAnthropicMessages(body, { platformConfig: configuration });
+        // F-02: principal-bound cache scope (see resolveV1Principal).
+        const result = await freellm.handleAnthropicMessages(body, { platformConfig: configuration, cacheScope: principal.principalId || null });
         res.setHeader('Cache-Control', 'no-store');
         return res.json(result);
     } catch (error) {
         const { status, body: errorBody } = anthropicErrorBody(error);
+        // F-03: pinned-provider outage backoff hint (see /v1/chat/completions).
+        if (Number(error?.retryAfterSeconds) > 0 && !res.headersSent) {
+            res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfterSeconds))));
+        }
         return res.status(status).json(errorBody);
     }
 });
 
 // ─── POST /v1/search — agent web search / extraction tools ───
-app.post(['/v1/search', '/api/v1/search'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/search', '/api/v1/search'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};

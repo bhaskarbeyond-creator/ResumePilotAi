@@ -83,6 +83,14 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
     // telemetry are all keyed by this). Null only on the platform scope.
     tenantId: context && context.tenantId ? String(context.tenantId) : null,
     principalId: context && context.principalId ? String(context.principalId) : null,
+    // F-09: the providers whose EFFECTIVE KEY is genuinely tenant-owned BYOK
+    // (read from the encrypted enterprise_tenant_credentials store, F-08).
+    // Platform keys must never be re-labelled as dedicated BYOK — that tier
+    // disables metrics and cooldowns, so mislabelling hides the largest
+    // traffic class from routing intelligence.
+    tenantByokProviders: Object.freeze(
+      Object.keys(providers).filter(name => Boolean(String(customKeys[name] || '').trim()))
+    ),
     // Tenant AI governance data (no credentials) for the dynamic model
     // selector: allowlist/denylist apply to discovered models as well as the
     // configured model; primaryModel is a preference signal.
@@ -99,6 +107,80 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
     tenantPolicyVersion: Number(policy.version || context.policyVersion),
     tenantAiProfile: String(policy.profile || context.dataPlane.aiProfile || 'platform-default'),
   });
+}
+
+/**
+ * F-08: tenant BYOK read path.
+ *
+ * `aiPolicy.customProviderKeys` is write-only by design — the MySQL registry
+ * stores tenant keys exclusively in the encrypted `enterprise_tenant_credentials`
+ * table and normalizeTenantConfiguration drops any inline keys on read. This
+ * loader closes the loop: it reads the stored credentials for the tenant's
+ * allowed providers and returns them as a providerId -> apiKey map, ready to be
+ * merged into the policy passed to applyTenantAiPolicy. Resolution order is
+ * therefore tenant BYOK -> platform admin config -> environment default.
+ *
+ * Guarantees:
+ * - Key material is never logged and never appears in error messages.
+ * - Results are cached per tenant for `ttlMs` (default 10s) so a decrypt round
+ *   trip does not sit on every AI request.
+ * - A registry without credential-store capability yields {} (BYOK not
+ *   deployed / test harnesses that carry keys inline on the policy).
+ * - If the store IS supported but cannot be read (encryption unconfigured,
+ *   database error) the loader fails CLOSED with 503 TENANT_BYOK_UNAVAILABLE:
+ *   silently serving platform keys would break the tenant's cost and data
+ *   isolation promise. Failures are not cached.
+ */
+const TENANT_BYOK_CACHE_TTL_MS = 10_000;
+const tenantByokCache = new Map();
+
+async function loadTenantByokKeys({ registry, tenantId, allowedProviders, ttlMs = TENANT_BYOK_CACHE_TTL_MS, now = Date.now() } = {}) {
+  const id = String(tenantId || '').trim();
+  if (!registry || typeof registry.getTenantCredentials !== 'function' || !id) return {};
+
+  const cached = tenantByokCache.get(id);
+  if (cached && cached.expiresAt > now) return cached.keys;
+
+  let providerIds = (Array.isArray(allowedProviders) ? allowedProviders : [])
+    .map(providerId => String(providerId || '').toLowerCase().trim())
+    .filter(Boolean);
+  if (!providerIds.length && typeof registry.listTenantCredentialProviders === 'function') {
+    try {
+      const rows = await registry.listTenantCredentialProviders({ tenantId: id });
+      providerIds = (rows || []).map(row => String(row?.providerId || '').toLowerCase().trim()).filter(Boolean);
+    } catch (error) {
+      throw Object.assign(new Error('Tenant BYOK credentials are temporarily unavailable; refusing to fall back to platform keys'), {
+        code: 'TENANT_BYOK_UNAVAILABLE',
+        status: 503,
+        cause: error?.code || 'TENANT_BYOK_STORE_ERROR',
+      });
+    }
+  }
+
+  const keys = {};
+  for (const providerId of providerIds) {
+    let credentials;
+    try {
+      credentials = await registry.getTenantCredentials({ tenantId: id, providerId });
+    } catch (error) {
+      throw Object.assign(new Error('Tenant BYOK credentials are temporarily unavailable; refusing to fall back to platform keys'), {
+        code: 'TENANT_BYOK_UNAVAILABLE',
+        status: 503,
+        cause: error?.code || 'TENANT_BYOK_STORE_ERROR',
+      });
+    }
+    const apiKey = typeof credentials === 'string'
+      ? credentials.trim()
+      : String(credentials?.apiKey || '').trim();
+    if (apiKey) keys[providerId] = apiKey;
+  }
+
+  tenantByokCache.set(id, { expiresAt: now + Math.max(0, Number(ttlMs) || 0), keys });
+  return keys;
+}
+
+function clearTenantByokCache() {
+  tenantByokCache.clear();
 }
 
 function buildTenantAiOperation({ context, operation, payload, sourceResources = [], policy = {} }) {
@@ -144,4 +226,6 @@ module.exports = {
   applyTenantAiPolicy,
   assertNoClientAuthority,
   buildTenantAiOperation,
+  clearTenantByokCache,
+  loadTenantByokKeys,
 };

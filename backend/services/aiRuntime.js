@@ -19,7 +19,6 @@ const {
     deriveRequirementProfile,
     selectModels,
     classifyProviderError,
-    classifyThrownError,
     RETRYABLE_CLASSES,
 } = require('./aiGateway/compat/aiRoutingCompat');
 
@@ -1338,7 +1337,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             }
             if (regexMatches.length) values = regexMatches;
         }
-        const certifications = (Array.isArray(values) ? values : []).slice(0, 8).map((item, index) => {
+        const certifications = (Array.isArray(values) ? values : []).slice(0, 8).map((item) => {
             const rawCategory = typeof item === 'object' && item?.category ? item.category : 'recommended';
             const category = ['mandatory', 'recommended'].includes(rawCategory) ? rawCategory : 'recommended';
             return {
@@ -1415,14 +1414,14 @@ function parseAiResponse(operation, rawContent, context = {}) {
         let suggestions = normalizeStrings(values).slice(0, operation === 'autocomplete' ? 8 : 6);
         if (operation === 'generate-education-description') {
             suggestions = suggestions.map(s => {
-                const clean = s.replace(/^[•*–—\-]\s*/, '').trim();
+                const clean = s.replace(/^[•*–—-]\s*/, '').trim();
                 return clean ? `• ${clean}` : '';
             }).filter(Boolean);
         }
         if (operation === 'autocomplete' && context.payload?.query) {
             const cleanQ = String(context.payload.query).trim().toLowerCase();
             const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
-            const qTokens = cleanQ.split(/[\s,./()\-]+/).filter(Boolean);
+            const qTokens = cleanQ.split(/[\s,./()-]+/).filter(Boolean);
             if (cleanQ.length > 0) {
                 const calcLevenshtein = (a, b) => {
                     if (a === b) return 0;
@@ -1553,7 +1552,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
                     if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(stripAccents(tok)))) return true;
 
                     // Spell check & typo tolerance (e.g. "oncolgist" matches "Medical Oncologist")
-                    const itemTokens = itemLower.split(/[\s,./()\-]+/).filter(Boolean);
+                    const itemTokens = itemLower.split(/[\s,./()-]+/).filter(Boolean);
                     return qTokens.every(rawQTok => {
                         const qTok = stripAccents(rawQTok);
                         if (qTok.length < 3) return itemTokens.some(iTok => iTok.startsWith(qTok));
@@ -1729,6 +1728,47 @@ function resetSharedAiRouterForTests() {
     engine.resetCooldowns();
     engine.modelDiscovery.clear();
     engine.resetMetricsForTests();
+    clearAiEngineShadowLogForTests();
+}
+
+// ─── F-05: explicit, observable engine choice ───────────────────────────────
+// Before this, the aiRouting selector ran ONLY when the live engine threw an
+// unexpected error code — its capability gates, tenant-scoped health and
+// explainable routing were effectively dead code in production while its
+// tests passed by calling it directly. The choice is now an explicit env:
+//   AI_ENGINE=freellm   (default) live engine authoritative, aiRouting only
+//                       on the legacy unexpected-error fallback path.
+//   AI_ENGINE=shadow    aiRouting.route runs FIRST, the divergence between
+//                       its decision and the authoritative freellm response
+//                       is recorded in a bounded in-process log, and the
+//                       RESPONSE IS UNCHANGED. Flip only after a clean
+//                       shadow period (zero unexpected divergences).
+//   AI_ENGINE=aiRouting the dynamic selector serves the request end-to-end.
+const AI_ENGINE_SHADOW_LOG_MAX = 100;
+const aiEngineShadowLog = [];
+
+function resolveAiEngineChoice(environment = process.env) {
+    const raw = String(environment?.AI_ENGINE || '').trim().toLowerCase();
+    if (raw === 'airouting' || raw === 'ai-routing' || raw === 'airouter') return 'aiRouting';
+    if (raw === 'shadow') return 'shadow';
+    return 'freellm';
+}
+
+function recordAiEngineShadowEntry(entry) {
+    aiEngineShadowLog.push({ ts: Date.now(), ...entry });
+    if (aiEngineShadowLog.length > AI_ENGINE_SHADOW_LOG_MAX) {
+        aiEngineShadowLog.splice(0, aiEngineShadowLog.length - AI_ENGINE_SHADOW_LOG_MAX);
+    }
+    return entry;
+}
+
+/** Bounded, secret-free shadow divergence log (newest last). */
+function getAiEngineShadowLog() {
+    return aiEngineShadowLog.map(entry => ({ ...entry }));
+}
+
+function clearAiEngineShadowLogForTests() {
+    aiEngineShadowLog.length = 0;
 }
 
 /**
@@ -1741,7 +1781,7 @@ function resetSharedAiRouterForTests() {
  *  - the result carries { raw, provider, model, usage } plus a `routing`
  *    explainability summary (selection latency, fallbacks, rationale).
  */
-async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
+async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs, principalId = null }) {
     const order = providerOrder(configuration);
     if (!order.length && !configuration?.tenantContext?.customProviderKeys) {
         throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
@@ -1769,6 +1809,22 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         }
     }
 
+    // F-05: explicit engine choice (see resolveAiEngineChoice above).
+    const engineChoice = resolveAiEngineChoice();
+    if (engineChoice === 'aiRouting') {
+        return router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+    }
+    let shadowOutcome = null;
+    if (engineChoice === 'shadow') {
+        const shadowStartedAt = Date.now();
+        try {
+            const shadow = await router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+            shadowOutcome = { provider: shadow?.provider || null, model: shadow?.model || null, latencyMs: Date.now() - shadowStartedAt };
+        } catch (shadowError) {
+            shadowOutcome = { error: shadowError?.code || 'SHADOW_ROUTE_FAILED', detail: String(shadowError?.message || '').slice(0, 160), latencyMs: Date.now() - shadowStartedAt };
+        }
+    }
+
     try {
         const freellm = require('./aiGateway');
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
@@ -1777,9 +1833,17 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             platformConfig: configuration,
             tenantContext: configuration?.tenantContext || (configuration?.tenantId ? {
                 tenantId: configuration.tenantId,
+                // F-09: only GENUINE tenant-owned BYOK keys (enterprise_tenant_
+                // credentials via F-08, stamped as tenantByokProviders by
+                // applyTenantAiPolicy) become customProviderKeys. Platform keys
+                // must not force the dedicated-BYOK sanctuary tier — that tier
+                // disables metrics, cooldowns and health for the tenant, so
+                // mislabelling platform-key enterprise traffic hides the
+                // largest traffic class from routing intelligence.
                 customProviderKeys: Object.fromEntries(
                     Object.entries(configuration.providers || {})
-                        .filter(([_, p]) => p.key && p.enabled)
+                        .filter(([pId, p]) => p.key && p.enabled
+                            && (configuration.tenantByokProviders || []).includes(pId))
                         .map(([pId, p]) => [pId, p.key])
                 ),
                 allowedProviders: configuration.tenantPolicy?.allowedProviders,
@@ -1793,6 +1857,13 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             timeoutMs: timeoutMs || 45000,
             fetchImpl: fetchImpl || globalThis.fetch,
             signal,
+            // F-02: principal-bound cache scope. Explicit argument wins; otherwise
+            // fall back to the stamped configuration (tenant policy resolution
+            // already carries principalId for tenant-scoped requests). Null means
+            // the caller has no principal (in-process/cron) — not HTTP user traffic.
+            cacheScope: principalId != null && principalId !== ''
+                ? `user:${principalId}`
+                : (configuration?.principalId ? `user:${configuration.principalId}` : null),
         });
 
         for (const attempt of result.fallbacksAttempted || []) {
@@ -1815,6 +1886,19 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             latencyMs: result.latencyMs,
         });
 
+        // F-05 shadow: record the divergence between the aiRouting decision
+        // and the authoritative freellm response. The response is unchanged.
+        if (engineChoice === 'shadow') {
+            recordAiEngineShadowEntry({
+                operation,
+                authoritative: { provider: result.provider, model: result.model },
+                shadow: shadowOutcome,
+                diverged: Boolean(shadowOutcome?.error)
+                    || shadowOutcome?.provider !== result.provider
+                    || shadowOutcome?.model !== result.model,
+            });
+        }
+
         return {
             raw: result.content,
             provider: result.provider,
@@ -1827,6 +1911,16 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             },
         };
     } catch (freellmErr) {
+        // F-05 shadow: the authoritative engine failed — record whether the
+        // shadow selector would have served (divergence) or also failed.
+        if (engineChoice === 'shadow') {
+            recordAiEngineShadowEntry({
+                operation,
+                authoritative: { error: freellmErr?.code || 'ENGINE_FAILURE', status: Number(freellmErr?.status) || null },
+                shadow: shadowOutcome,
+                diverged: !shadowOutcome?.error,
+            });
+        }
         router.telemetry?.record?.({
             tenantId,
             operation,
@@ -1901,7 +1995,7 @@ function getContentOperationFallback(operation, rawPayload = {}) {
             }
             // Split the candidate's own notes into reviewable bullets — source-preserving.
             const bullets = notes
-                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•\-])/)
+                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•-])/)
                 .map(item => sanitizeSourceText(item, 1000).replace(/^[•\-*\d.\s]+/, '').trim())
                 .filter(item => item.length >= 12)
                 .slice(0, 5);
@@ -1915,7 +2009,7 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         const hasCustomNotes = userNotes.length >= 10 && !/^(?:Completed\s|Degree in\s|Institution:\s|Relevant academic coursework, research, and capstone project$)/i.test(userNotes.trim());
         if (hasCustomNotes) {
             const highlights = userNotes
-                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•\-])/)
+                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•-])/)
                 .map(item => sanitizeSourceText(item, 1000).replace(/^[•\-*\d.\s]+/, '').trim())
                 .filter(item => item.length >= 8)
                 .map(item => `• ${item}`)
@@ -2023,7 +2117,7 @@ function needsClarification(operation, payload) {
     return false;
 }
 
-async function executeContentOperation({ operation, payload, environment, fetchImpl, signal, requestId, configuration: providedConfiguration }) {
+async function executeContentOperation({ operation, payload, environment, fetchImpl, signal, requestId, configuration: providedConfiguration, principalId = null }) {
     const isClarificationNeeded = needsClarification(operation, payload);
     const promptBuilder = isClarificationNeeded ? buildClarificationPrompt : buildGroundedPrompt;
     const { prompt, payload: validatedPayload } = promptBuilder(operation, payload, { sessionId: requestId });
@@ -2040,6 +2134,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
                 fetchImpl,
                 signal,
                 timeoutMs: 4500, // Fast 4.5s timeout for questions so UI never hangs
+                principalId,
             });
             const data = parseAiResponse(operation, generated.raw, {
                 payload: validatedPayload,
@@ -2054,7 +2149,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
                     grounding: 'ask',
                 };
             }
-        } catch (err) {
+        } catch (_err) {
             // Graceful fallback to deterministic section questions when provider is unavailable/offline/errors
             return ask;
         }
@@ -2069,6 +2164,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
             fetchImpl,
             signal,
             timeoutMs: operation === 'autocomplete' ? 10000 : undefined,
+            principalId,
         });
         const data = parseAiResponse(operation, generated.raw, {
             payload: validatedPayload,
@@ -2244,12 +2340,12 @@ function groundResumeExtraction(rawData, rawText) {
     };
 }
 
-async function executeResumeParsing({ rawText, environment, fetchImpl, signal, configuration: providedConfiguration }) {
+async function executeResumeParsing({ rawText, environment, fetchImpl, signal, configuration: providedConfiguration, principalId = null }) {
     const prompt = buildResumeParsingPrompt(rawText);
     // Clone: tenant-applied configurations are frozen; generation overrides
     // must not mutate (or fail on) the shared object.
     const configuration = { ...(providedConfiguration || await loadProviderConfiguration(environment)), temperature: 0.15, maxTokens: 4096 };
-    const generated = await generateWithProviders({ prompt, configuration, operation: 'parse-resume', fetchImpl, signal, timeoutMs: 45000 });
+    const generated = await generateWithProviders({ prompt, configuration, operation: 'parse-resume', fetchImpl, signal, timeoutMs: 45000, principalId });
     const extracted = extractJson(generated.raw);
     if (!extracted || typeof extracted !== 'object' || Array.isArray(extracted)) {
         throw Object.assign(new Error('AI resume response did not match the product contract'), { code: 'INVALID_AI_RESPONSE', status: 502 });
@@ -2278,6 +2374,9 @@ module.exports = {
     extractJson,
     fetchWithDeadline,
     generateWithProviders,
+    resolveAiEngineChoice,
+    getAiEngineShadowLog,
+    clearAiEngineShadowLogForTests,
     getContentOperationFallback,
     getSharedAiRouter,
     groundResumeExtraction,

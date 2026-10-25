@@ -24,12 +24,12 @@ const assert = require('node:assert/strict');
 const {
   createAiModelRouter,
   HealthStore,
-  deriveRequirementProfile,
 } = require('../services/aiRouting');
 const {
   generateWithProviders,
   executeContentOperation,
 } = require('../services/aiRuntime');
+const freellm = require('../freellmapi');
 
 const NOW = 1_760_000_000_000;
 
@@ -327,6 +327,12 @@ test('7. Zero fabricated content on total failure: honest error contract + expli
     openai: () => jsonResponse({ error: { message: 'openai down' } }, 500),
     groq: () => jsonResponse({ error: { message: 'groq down' } }, 502),
   });
+  // F-09 state isolation: this tenant-shaped config carries PLATFORM keys, so
+  // it now routes through the platform tier — where total-failure rounds SET
+  // COOLDOWNS (exactly what F-09 mandates). Each sub-call below asserts the
+  // error contract of a FIRST failure round, so the shared cooldown state is
+  // reset between them. No assertion is changed.
+  freellm.resetCooldowns();
 
   // 7a. Low-level contract: AI_PROVIDER_ERROR with per-candidate failures, no raw content.
   await assert.rejects(
@@ -345,6 +351,7 @@ test('7. Zero fabricated content on total failure: honest error contract + expli
 
   // 7b. Product contract: executeContentOperation degrades to the explicit
   //     AI-unavailable state with source-preserving data — never AI text.
+  freellm.resetCooldowns(); // F-09: isolate 7a's cooldowns from this sub-call
   const marker = 'UNIQUE-SOURCE-FACT-778899';
   const result = await executeContentOperation({
     operation: 'generate-summary',
@@ -359,6 +366,7 @@ test('7. Zero fabricated content on total failure: honest error contract + expli
   assert.ok(!/openai down|groq down/.test(serialized), 'provider error text is not presented as content');
 
   // 7c. noFallback contract: explicit failure instead of silent degradation.
+  freellm.resetCooldowns(); // F-09: 7c asserts the FIRST-round noFallback error
   await assert.rejects(
     () => executeContentOperation({
       operation: 'generate-summary',

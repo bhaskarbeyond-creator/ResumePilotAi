@@ -20,7 +20,7 @@
  *   ✔ durable metrics + cooldown persistence (`node:sqlite`)
  */
 
-const { PROVIDER_REGISTRY, getProviderMeta, listSupportedProviders } = require('./providers/registry');
+const { PROVIDER_REGISTRY, getProviderMeta, listSupportedProviders, getModelQualityTier } = require('./providers/registry');
 const { freeLlmRouter, isChatCapableMeta, isSearchOrMediaMeta } = require('./services/router');
 const { cooldownManager } = require('./services/cooldown');
 const { promptCache } = require('./services/cache');
@@ -103,7 +103,10 @@ function getEngineStatus() {
       defaultModel: p.defaultModel,
       freeTierAvailable: p.freeTierAvailable,
       keyless: Boolean(p.keyless),
-      intelligenceScore: null,
+      // F-06: curated quality tier of the default model (premium|standard|
+      // economy) or null when uncurated — replaces the bare null placeholder.
+      // It is a tier label, not a fabricated numeric score.
+      intelligenceScore: getModelQualityTier(p.defaultModel),
       speedScore: null,
     })),
     capabilities: {

@@ -15,7 +15,7 @@ const {
 } = require('../services/interviewCalibration');
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
-const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
+const { applyTenantAiPolicy, loadTenantByokKeys } = require('../enterprise/tenantAi');
 const router = express.Router();
 
 /**
@@ -154,8 +154,16 @@ async function resolveEffectiveAiConfiguration(req, res) {
         || (req?.aiGovernance && !req?.aiGovernance?.tenant);
 
     if (!requestedTenantId || isPersonalScope) {
+        const configuration = await baseConfigPromise;
+        // F-02: stamp the authenticated principal on the personal-scope
+        // configuration so the engine prompt cache is bound per user
+        // (tenant-scoped configurations get principalId from
+        // applyTenantAiPolicy). `loadProviderConfiguration()` returns a fresh
+        // clone per call, so mutating here is request-local. Null means the
+        // route ran unauthenticated — no cross-user cache binding possible.
+        configuration.principalId = req?.user?.uid || null;
         return {
-            configuration: await baseConfigPromise,
+            configuration,
             tenantContext: null,
             tenant: null,
             tenantService: null,
@@ -226,10 +234,19 @@ async function resolveEffectiveAiConfiguration(req, res) {
     }
 
     const baseConfig = await baseConfigPromise; // resolved during tenant checks above
+    const tenantAiPolicy = resolved.tenant?.aiPolicy || {};
+    // F-08: read tenant BYOK keys from the encrypted credential store and merge
+    // them into the policy before applying it — resolution order is
+    // tenant BYOK -> platform admin config -> environment default.
+    const storedByokKeys = await loadTenantByokKeys({
+        registry: tenantService.registry,
+        tenantId: resolved.context?.tenantId,
+        allowedProviders: tenantAiPolicy.allowedProviders,
+    });
     const effectiveConfig = applyTenantAiPolicy(
         baseConfig,
         resolved.context,
-        resolved.tenant?.aiPolicy || {}
+        { ...tenantAiPolicy, customProviderKeys: { ...storedByokKeys, ...(tenantAiPolicy.customProviderKeys || {}) } }
     );
 
     return {

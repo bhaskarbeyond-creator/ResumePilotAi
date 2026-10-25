@@ -115,6 +115,11 @@ function buildFreeLlmPlatformConfig({ environment = process.env, secrets, public
     primary,
     ...(publicAi.selectionMode ? { selectionMode: publicAi.selectionMode } : {}),
     enableFallback: publicAi.enableFallback !== false,
+    // F-03: opt-in graceful manual pin ("pin with fallback"). Strict by
+    // default; an admin save (publicAi.manualAllowFallback) or the deployment
+    // env (MANUAL_ALLOW_FALLBACK=true) widens a down manual pin to the ranked
+    // alternatives, and the deviation is marked routingDecision.fallbackFrom.
+    manualAllowFallback: publicAi.manualAllowFallback === true || environment.MANUAL_ALLOW_FALLBACK === 'true',
     temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : 0.3,
     maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : 4096,
     promptTokenBudget: Number(environment.FREELMAPI_PROMPT_TOKEN_BUDGET || publicAi.promptTokenBudget || 0) || null,

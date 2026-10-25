@@ -324,6 +324,74 @@ class MetricsPersistence {
     }
   }
 
+  /**
+   * F-07: windowed rollups per (provider, model) from the request log — the
+   * rolling aggregate selectors must use instead of a single last row. One
+   * lucky/blip sample must not reroute the next 30 minutes of traffic.
+   * Returns newest-window rows aggregated as:
+   *   { provider, model, n, successes, failures,
+   *     lastAt, lastOk, lastStatus, lastLatencyMs,   // circuit-breaker input
+   *     successSamples: [{ latencyMs, createdAt }] } // newest-first, capped
+   * Selectors compute the weighted p50 from successSamples; the last
+   * observation is used ONLY as a circuit-breaker input.
+   */
+  getRollingAggregates({ windowMs = 30 * 60_000, limit = 500, maxSamples = 10, now = Date.now() } = {}) {
+    const cutoff = Number(now) - Math.max(1000, Number(windowMs) || 0);
+    const rowLimit = Math.max(1, Number(limit) || 500);
+    const sampleCap = Math.max(1, Number(maxSamples) || 10);
+    let rows;
+    if (!this.db) {
+      rows = this.memoryLog.filter(row => Number(row.createdAt) >= cutoff).slice(-rowLimit).reverse();
+    } else {
+      try {
+        rows = this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log WHERE created_at >= ? ORDER BY id DESC LIMIT ?')
+          .all(cutoff, rowLimit)
+          .map(row => ({
+            provider: row.provider,
+            model: row.model,
+            ok: Boolean(row.ok),
+            status: row.status === null ? null : Number(row.status),
+            latencyMs: Number(row.latency_ms),
+            createdAt: Number(row.created_at),
+          }));
+      } catch (error) {
+        this.error = error.message;
+        return [];
+      }
+    }
+    // Sort defensively: both backends are newest-first by insertion order, but
+    // out-of-order timestamps (clock skew, backfilled rows) must not corrupt
+    // the circuit-breaker "last" fields.
+    rows.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+    const byKey = new Map();
+    for (const row of rows) { // newest-first
+      const key = this._key(row.provider, row.model);
+      const aggregate = byKey.get(key) || {
+        provider: row.provider,
+        model: row.model,
+        n: 0,
+        successes: 0,
+        failures: 0,
+        lastAt: row.createdAt,
+        lastOk: row.ok,
+        lastStatus: row.status,
+        lastLatencyMs: row.latencyMs,
+        successSamples: [],
+      };
+      aggregate.n += 1;
+      if (row.ok) {
+        aggregate.successes += 1;
+        if (aggregate.successSamples.length < sampleCap) {
+          aggregate.successSamples.push({ latencyMs: row.latencyMs, createdAt: row.createdAt });
+        }
+      } else {
+        aggregate.failures += 1;
+      }
+      byKey.set(key, aggregate);
+    }
+    return [...byKey.values()];
+  }
+
   getSummary({ now = Date.now() } = {}) {
     const metrics = this.getProviderMetrics();
     const cooldowns = this.loadCooldowns({ now });

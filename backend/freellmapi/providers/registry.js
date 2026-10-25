@@ -246,8 +246,64 @@ function listSupportedProviders() {
   return Object.values(PROVIDER_REGISTRY);
 }
 
+// ─── F-06: curated model quality tiers ──────────────────────────────────────
+// The `quality` selection mode previously had NO quality signal: it ranked by
+// capability-flag count plus primary preference, so "quality" was effectively
+// "primary-first with zero speed weight" (review finding F-06). These tiers
+// are the real signal — a static, curated, documented judgement about the
+// general instruction-following/reasoning CLASS of models this platform
+// actually configures or recommends. Curation rules:
+//   premium  — published flagship / reasoning-class models
+//   standard — general-purpose mid-tier models
+//   economy  — small / fast / lite models
+// This is DATA, not inference: model-name length, parameter-count strings or
+// provider marketing must never be mapped to a tier, unverified mesh aliases
+// are deliberately absent, and UNKNOWN models stay null (fail closed —
+// rankCandidates treats null as "no quality evidence", exactly as before).
+const MODEL_QUALITY_TIERS = Object.freeze({
+  // premium — flagship / reasoning class
+  'gpt-4o': 'premium',
+  'gpt-4.1': 'premium',
+  'o1': 'premium',
+  'o3-mini': 'premium',
+  'gemini-2.5-pro': 'premium',
+  'claude-3-7-sonnet-latest': 'premium',
+  'deepseek-reasoner': 'premium',
+  'deepseek-chat': 'premium',
+  'mistral-large-latest': 'premium',
+  'command-r-plus': 'premium',
+  'llama-3.3-70b-versatile': 'premium',
+  'llama3.3-70b': 'premium',
+  'meta-llama/llama-3.3-70b-instruct': 'premium',
+  'meta-llama/llama-3.3-70b-instruct:free': 'premium',
+  '@cf/meta/llama-3.1-70b-instruct': 'premium',
+  'Meta-Llama-3_3-70B-Instruct': 'premium',
+  // standard — general-purpose mid-tier
+  'gpt-4o-mini': 'standard',
+  'gpt-4.1-mini': 'standard',
+  'gemini-2.0-flash': 'standard',
+  'gemini-2.5-flash': 'standard',
+  'meta/llama-3.2-11b-vision-instruct': 'standard',
+  'Qwen2.5-VL-72B-Instruct': 'standard',
+  // economy — small / fast / lite
+  'llama-3.1-8b-instant': 'economy',
+  'gemini-2.0-flash-lite': 'economy',
+  'gpt-4.1-nano': 'economy',
+  'mistral-small-latest': 'economy',
+  'Mistral-Nemo-Instruct-2407': 'economy',
+});
+
+/** Curated tier for an exact model id; null when not curated (never guessed). */
+function getModelQualityTier(modelId) {
+  const id = String(modelId || '').trim();
+  if (!id) return null;
+  return Object.prototype.hasOwnProperty.call(MODEL_QUALITY_TIERS, id) ? MODEL_QUALITY_TIERS[id] : null;
+}
+
 module.exports = {
   PROVIDER_REGISTRY,
   getProviderMeta,
   listSupportedProviders,
+  MODEL_QUALITY_TIERS,
+  getModelQualityTier,
 };

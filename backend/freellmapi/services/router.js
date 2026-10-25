@@ -25,7 +25,7 @@ const { compressMessages } = require('./compression');
 const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib/toolRescue');
 const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
-const { eligible, validateMode, rankCandidates } = require('./selectionPolicy');
+const { eligible, validateMode, rankCandidates, weightedP50LatencyMs } = require('./selectionPolicy');
 
 // Stable compatibility order. Intelligent modes are ranked only from capability/service evidence.
 const DEFAULT_PRIORITY_ORDER = Object.freeze([
@@ -196,11 +196,20 @@ class FreeLlmRouter {
     const mode = platformConfig.selectionMode;
     if (!mode) return candidates.filter(modelPermitted); // Preserve legacy pinned configurations until migrated by an authorized save.
     validateMode(mode);
+    // F-03: `manual` is strict by default — a pin never crosses provider/model
+    // boundaries. The opt-in `manualAllowFallback` flag (admin setting or
+    // MANUAL_ALLOW_FALLBACK env) permits failover away from a DOWN pin; such a
+    // deviation is made visible on the response as
+    // `routingDecision.fallbackFrom === 'manual'`. Request-level explicit pins
+    // (`model` naming a provider) always stay strict.
+    const manualAllowFallback = mode === 'manual'
+      && platformConfig.manualAllowFallback === true
+      && platformConfig.enableFallback !== false;
     const explicit = requestedModel && !['auto', 'dynamic'].includes(requestedModel) && !requestedModel.startsWith('auto:') && !getProviderMeta(requestedModel);
     const explicitProvider = getProviderMeta(requestedModel);
     const configuredPrimary = platformConfig.primary;
     const primary = explicitProvider ? requestedModel : candidates.some(candidate => candidate.provider === configuredPrimary) ? configuredPrimary : candidates[0]?.provider;
-    const chosen = mode === 'manual' || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
+    const chosen = (mode === 'manual' && !manualAllowFallback) || explicitProvider ? candidates.filter(candidate => candidate.provider === primary) : candidates;
     const expanded = [];
     for (const source of chosen) {
       for (const key of source.keys) {
@@ -212,7 +221,18 @@ class FreeLlmRouter {
           // Do not claim unknown capabilities or resurrect defaults after failed discovery in intelligent modes.
           continue;
         }
-        const pin = explicit ? requestedModel : mode === 'manual' ? (candidate.isDedicatedByok ? tenantContext?.primaryModel || candidate.model : platformConfig.providers?.[candidate.provider]?.model || candidate.model) : null;
+        // F-04: an EMPTY (or literal 'auto') configured model must never become
+        // the pin — 'auto' matches no catalog id, so manual mode died with an
+        // opaque 503 for a plausible operator configuration. An empty pin now
+        // means "provider default": every discovered model of the pinned
+        // provider stays eligible and ranked. New saves without an explicit
+        // pinned model are rejected at validation time (aiAdmin, F-04).
+        const manualPin = mode === 'manual'
+          ? String((candidate.isDedicatedByok
+            ? tenantContext?.primaryModel
+            : platformConfig.providers?.[candidate.provider]?.model) || '').trim()
+          : '';
+        const pin = explicit ? requestedModel : (manualPin && manualPin !== 'auto' ? manualPin : null);
         for (const metadata of catalog) {
           if (pin && metadata.id !== pin) continue;
           if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
@@ -221,15 +241,33 @@ class FreeLlmRouter {
         }
       }
     }
-    const recent = !tenantContext ? getMetricsPersistence()?.getRecentRequests({ limit: 100 }) || [] : [];
-    const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => recent.find(row => row.provider === candidate.provider && row.model === candidate.model) });
-    // Manual pins never silently cross provider/model boundaries, even with platform fallback enabled.
-    if (mode === 'manual' || explicit || explicitProvider || platformConfig.enableFallback === false) {
-      const first = ordered[0];
+    // F-07: windowed rolling aggregates per destination (p50 over the last N
+    // successes + windowed success rate) replace the single last observation —
+    // one lucky/blip sample must not reroute the next 30 minutes of traffic.
+    // F-09: dedicated-BYOK sanctuary traffic neither trains nor consults the
+    // shared platform rank; platform-key tenant traffic DOES — its observations
+    // are platform observations (the key, provider and model are the platform's).
+    const dedicatedByokTier = candidates.some(candidate => candidate.isDedicatedByok);
+    const aggregates = !dedicatedByokTier ? getMetricsPersistence()?.getRollingAggregates?.({ windowMs: 30 * 60_000 }) || [] : [];
+    const ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) });
+    // F-03: with the opt-in manual fallback the PIN stays the preferred
+    // destination — recent-failure ranking must not silently promote an
+    // alternative above it. The deviation happens only ON pin failure, and is
+    // marked routingDecision.fallbackFrom === 'manual' at execution time.
+    const finalOrdered = manualAllowFallback
+      ? [...ordered.filter(c => c.provider === primary), ...ordered.filter(c => c.provider !== primary)]
+      : ordered;
+    // Manual pins never SILENTLY cross provider/model boundaries: strict by
+    // default even with platform fallback enabled, and only widened by the
+    // explicit `manualAllowFallback` opt-in (F-03), which keeps the pin ranked
+    // first (+5 primary bonus in rankCandidates) and marks any deviation with
+    // routingDecision.fallbackFrom === 'manual'.
+    if ((mode === 'manual' && !manualAllowFallback) || explicit || explicitProvider || platformConfig.enableFallback === false) {
+      const first = finalOrdered[0];
       // A pin restricts destinations, not legitimate credentials for that same model.
-      return ordered.filter(candidate => candidate.provider === first?.provider && candidate.model === first?.model).slice(0, 12);
+      return finalOrdered.filter(candidate => candidate.provider === first?.provider && candidate.model === first?.model).slice(0, 12);
     }
-    return ordered.slice(0, 12);
+    return finalOrdered.slice(0, 12);
   }
 
   /**
@@ -314,6 +352,9 @@ class FreeLlmRouter {
 
     const metricsMap = new Map();
     const recentMap = new Map();
+    // F-07: rolling per-(provider, model) aggregates are the primary ranking
+    // evidence; metricsMap/recentMap remain as the legacy fallback inputs.
+    const aggregateMap = new Map();
     try {
       const persistence = getMetricsPersistence();
       if (persistence) {
@@ -324,6 +365,10 @@ class FreeLlmRouter {
         const recentList = persistence.getRecentRequests({ limit: 50 }) || [];
         for (const r of recentList) {
           if (!recentMap.has(r.provider)) recentMap.set(r.provider, r);
+        }
+        const aggregates = persistence.getRollingAggregates?.({ windowMs: 30 * 60_000 }) || [];
+        for (const aggregate of aggregates) {
+          aggregateMap.set(`${aggregate.provider}\u0000${aggregate.model}`, aggregate);
         }
       }
     } catch { /* metrics are best-effort */ }
@@ -387,8 +432,8 @@ class FreeLlmRouter {
     // If a provider recently failed or timed out, it is penalized and demoted.
     if (candidates.length > 1 && platformConfig?.enableFallback !== false) {
       candidates.sort((a, b) => {
-        const scoreA = this._computeDynamicRankScore(a, platformConfig, metricsMap, recentMap, requestedModel);
-        const scoreB = this._computeDynamicRankScore(b, platformConfig, metricsMap, recentMap, requestedModel);
+        const scoreA = this._computeDynamicRankScore(a, platformConfig, metricsMap, recentMap, requestedModel, aggregateMap);
+        const scoreB = this._computeDynamicRankScore(b, platformConfig, metricsMap, recentMap, requestedModel, aggregateMap);
         return scoreB - scoreA;
       });
     }
@@ -396,7 +441,7 @@ class FreeLlmRouter {
     return this.applySelectionPolicy(candidates, { platformConfig, requestedModel, requirements, fetchImpl, tenantContext });
   }
 
-  _computeDynamicRankScore(candidate, platformConfig, metricsMap, recentMap, requestedModel) {
+  _computeDynamicRankScore(candidate, platformConfig, metricsMap, recentMap, requestedModel, aggregateMap) {
     const metric = metricsMap?.get(candidate.provider);
     const recent = recentMap?.get(candidate.provider);
     const req = String(requestedModel || '').toLowerCase().trim();
@@ -406,6 +451,31 @@ class FreeLlmRouter {
     let score = platformConfig?.primary === candidate.provider ? 120 : 0;
     // Operator-managed credentials retain precedence over unconfigured public paths.
     if (candidate.key && candidate.key !== 'keyless') score += 10;
+    // F-07: prefer the windowed aggregate for this exact (provider, model):
+    // latency counts only at n >= 3 (recency-weighted p50), reliability is the
+    // windowed success rate, and the single last observation acts ONLY as a
+    // circuit breaker (one fresh failure still demotes immediately). The
+    // legacy single-observation path below remains as a fallback when no
+    // aggregate exists (e.g. cold metrics store or older call signatures).
+    const aggregate = aggregateMap?.get(`${candidate.provider}\u0000${candidate.model}`);
+    if (aggregate && Number(aggregate.n) > 0) {
+      const age = Date.now() - Number(aggregate.lastAt);
+      if (Number.isFinite(age) && age >= 0 && age < 30 * 60_000) {
+        const freshness = 1 - age / (30 * 60_000);
+        const n = Number(aggregate.n);
+        if (n >= 3) {
+          const successRate = Math.max(0, Number(aggregate.successes) || 0) / n;
+          score += (successRate >= 0.5 ? 60 : 100) * (2 * successRate - 1) * freshness;
+          const p50 = weightedP50LatencyMs(aggregate.successSamples || [], {});
+          if (p50 !== null && p50 > 0) {
+            score += 20 * Math.max(0, 1 - p50 / 10_000) * freshness;
+          }
+        } else if (aggregate.lastOk === false) {
+          score += -100 * freshness; // circuit breaker on a fresh failure
+        }
+        return score;
+      }
+    }
     const observation = recent?.model === candidate.model ? recent
       : metric?.model === candidate.model ? {
         ok: metric.lastStatus === 200, status: metric.lastStatus,
@@ -543,6 +613,7 @@ class FreeLlmRouter {
     signal,
     bypassCache = false,
     model: requestedModel = null,
+    cacheScope = null,
   }) {
     const prepared = this._resolveRequestOptions({
       prompt, messages: explicitMessages, systemPrompt, tools, compression, maxPromptTokens, platformConfig,
@@ -560,7 +631,12 @@ class FreeLlmRouter {
     } });
 
     if (candidates.length === 0) {
-      const err = new Error('No enabled AI provider is configured or healthy');
+      // F-04: when a selection policy is active, say WHICH policy excluded
+      // every destination — the generic wording hid operator-fixable causes
+      // (dead pin, cooldown, capability gate, failed discovery).
+      const err = new Error(platformConfig.selectionMode
+        ? `Selection mode "${platformConfig.selectionMode}" (primary "${platformConfig.primary || requestedModel || 'unset'}") excluded every destination: pin not in catalog, provider on cooldown, capability gate, or failed discovery.`
+        : 'No enabled AI provider is configured or healthy');
       err.code = 'AI_PROVIDER_UNAVAILABLE';
       err.status = 503;
       throw err;
@@ -568,8 +644,13 @@ class FreeLlmRouter {
 
     // Cache identity binds tenant policy, eligible destinations and request semantics.
     // Credentials are only hashed, never retained as plaintext cache keys.
+    // F-02: `cacheScope` binds the entry to the CALLING PRINCIPAL (user uid /
+    // platform-key fingerprint). Without it, two principals submitting
+    // byte-identical messages shared one entry — a cross-principal answer
+    // replay. Callers MUST pass a scope; null is reserved for trusted
+    // in-process callers with no principal concept (and never for HTTP traffic).
     const cacheIdentity = createHash('sha256').update(JSON.stringify({
-      tenantContext, candidates, maxTokens, jsonMode, responseFormat,
+      tenantContext, candidates, maxTokens, jsonMode, responseFormat, cacheScope: cacheScope || null,
     })).digest('hex');
     // 1. In-Memory LRU Cache Check (structured tool turns are never cached)
     if (!bypassCache && normalizedTools.length === 0) {
@@ -627,20 +708,30 @@ class FreeLlmRouter {
           const rescued = this._applyToolRescue(result, { tools: normalizedTools, toolNames });
           const latencyMs = rescued.latencyMs || (Date.now() - startTime);
 
+          // F-03: when the opt-in manual fallback carried the request away from
+          // the pinned provider, the deviation is never silent — the response
+          // (and the cache entry) carries routingDecision.fallbackFrom='manual'.
+          const routingDecision = platformConfig.selectionMode === 'manual'
+            && platformConfig.manualAllowFallback === true
+            && platformConfig.primary
+            && candidate.provider !== platformConfig.primary
+            ? { ...(candidate.routingDecision || {}), fallbackFrom: 'manual' }
+            : candidate.routingDecision || null;
+
           // Cache successful text-only responses in memory
           if (normalizedTools.length === 0 && !rescued.toolCalls) {
             this.promptCache.set(messages, cacheIdentity, temperature, {
               content: rescued.content,
               provider: candidate.provider,
               model: candidate.model,
-              routingDecision: candidate.routingDecision || null,
+              routingDecision,
               usage: rescued.usage,
             });
           }
 
           // Clear cooldown strikes on successful execution
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
 
           return {
             content: rescued.content,
@@ -649,7 +740,7 @@ class FreeLlmRouter {
             provider: candidate.provider,
             model: candidate.model,
             usage: rescued.usage,
-            routingDecision: candidate.routingDecision || null,
+            routingDecision,
             cached: false,
             latencyMs,
             fallbacksAttempted,
@@ -673,7 +764,7 @@ class FreeLlmRouter {
             status,
             latencyMs,
           });
-          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
 
           if (status === 429) sawRateLimit = true;
           if (status === 401 || status === 403) sawAuthFailure = true;
@@ -698,6 +789,36 @@ class FreeLlmRouter {
 
     // 4. All Candidates Exhausted
     const fallbackSummary = fallbacksAttempted.map(f => `${f.provider} (${f.code}: ${f.error})`).join('; ');
+    // F-03: when a STRICT pin was exhausted (manual mode without the opt-in
+    // `manualAllowFallback`, or a request naming one provider explicitly), the
+    // honest statement is "the PINNED provider is unavailable" — not
+    // "ALL_PROVIDERS_FAILED" 502, which falsely implies the engine tried
+    // everything. Healthy alternatives were deliberately NOT attempted; say so
+    // with 503 `provider_unavailable` + Retry-After so callers can back off.
+    const explicitProviderRequested = Boolean(requestedModel && getProviderMeta(requestedModel));
+    const manualFallbackActive = platformConfig.selectionMode === 'manual'
+      && platformConfig.manualAllowFallback === true
+      && platformConfig.enableFallback !== false;
+    const strictPinExhausted = (platformConfig.selectionMode === 'manual' && !manualFallbackActive)
+      || explicitProviderRequested;
+    if (strictPinExhausted) {
+      const lastAttempt = fallbacksAttempted[fallbacksAttempted.length - 1] || {};
+      const pinnedProvider = lastAttempt.provider || platformConfig.primary || String(requestedModel || 'pinned');
+      const cooldown = lastAttempt.model
+        ? this.cooldownManager.isOnCooldown(pinnedProvider, lastAttempt.model)
+        : { onCooldown: false, remainingMs: 0 };
+      const retryAfterSeconds = cooldown.onCooldown && cooldown.remainingMs > 0
+        ? Math.max(1, Math.ceil(cooldown.remainingMs / 1000))
+        : Math.max(1, Math.ceil(Number(this.cooldownManager.DEFAULT_COOLDOWN_MS || 60_000) / 1000));
+      const pinnedError = new Error(`Pinned AI provider "${pinnedProvider}" is unavailable: ${fallbackSummary}`);
+      pinnedError.code = 'provider_unavailable';
+      pinnedError.status = 503;
+      pinnedError.provider = pinnedProvider;
+      pinnedError.retryAfterSeconds = retryAfterSeconds;
+      pinnedError.fallbacksAttempted = fallbacksAttempted;
+      pinnedError.lastError = lastError;
+      throw pinnedError;
+    }
     const finalError = new Error(`All AI providers failed: ${fallbackSummary}`);
     finalError.code = 'ALL_PROVIDERS_FAILED';
     finalError.status = 502;
@@ -749,7 +870,12 @@ class FreeLlmRouter {
       outputTokens: maxTokens, contextTokens: estimateTokens(messages) + maxTokens,
     } });
     if (candidates.length === 0) {
-      const err = new Error('No enabled AI provider is configured or healthy');
+      // F-04: when a selection policy is active, say WHICH policy excluded
+      // every destination — the generic wording hid operator-fixable causes
+      // (dead pin, cooldown, capability gate, failed discovery).
+      const err = new Error(platformConfig.selectionMode
+        ? `Selection mode "${platformConfig.selectionMode}" (primary "${platformConfig.primary || requestedModel || 'unset'}") excluded every destination: pin not in catalog, provider on cooldown, capability gate, or failed discovery.`
+        : 'No enabled AI provider is configured or healthy');
       err.code = 'AI_PROVIDER_UNAVAILABLE';
       err.status = 503;
       throw err;
@@ -855,7 +981,7 @@ class FreeLlmRouter {
 
           const latencyMs = Date.now() - startTime;
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200 });
 
           if (usage) yield { type: 'usage', usage };
           yield {
@@ -876,7 +1002,7 @@ class FreeLlmRouter {
           if (opened || emitted) {
             // Mid-stream failure: the client already received partial content.
             // Surface it instead of replaying the answer from another provider.
-            this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
             throw error;
           }
 
@@ -890,7 +1016,7 @@ class FreeLlmRouter {
             status,
             latencyMs: Date.now() - startTime,
           });
-          this._recordMetrics({ scoped: Boolean(tenantContext || candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
         }
       }
 

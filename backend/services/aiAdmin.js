@@ -1,6 +1,7 @@
 'use strict';
 
-const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider } = require('./aiRuntime');
+const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider, resolveAiEngineChoice, getAiEngineShadowLog } = require('./aiRuntime');
+const { getModelQualityTier } = require('../freellmapi/providers/registry');
 
 const SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -76,6 +77,10 @@ function publicAiSettings(input = {}) {
     temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(2, temperatureValue)) : 0.7,
     maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(8192, Math.floor(maxTokensValue))) : 2048,
     enableFallback: input.enableFallback !== false,
+    // F-03: opt-in "pin with fallback" for selectionMode=manual. Default false
+    // keeps strict manual semantics unchanged unless an admin explicitly
+    // enables graceful failover away from a down pinned provider.
+    manualAllowFallback: input.manualAllowFallback === true,
     enableImportModule: input.enableImportModule === true,
   };
   for (const item of PROVIDERS) {
@@ -302,6 +307,7 @@ async function loadAiAdminSettings(environment = process.env) {
     const maskSourcePool = storedSecretPool.length > 0
       ? storedSecretPool
       : (envPool.length > 0 ? envPool : legacyKey);
+    const effectiveDefaultModel = providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '';
     if (maskSourcePool.length > 0) {
       maskedKeys[meta.id] = maskKeyPool(maskSourcePool);
     } else if (!PROVIDERS.includes(meta.id)) {
@@ -332,9 +338,12 @@ async function loadAiAdminSettings(environment = process.env) {
       docUrl: meta.docUrl || '',
       baseUrl: stored.baseUrl || environment[`${meta.id.toUpperCase()}_BASE_URL`] || meta.baseUrl || '',
       customBaseUrl: stored.baseUrl || '',
-      defaultModel: providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '',
+      defaultModel: effectiveDefaultModel,
       recommendedModels: meta.recommendedModels || [meta.defaultModel || 'default'],
-      intelligenceScore: null,
+      // F-06: curated quality tier of the effective default model, replacing
+      // the bare null placeholder. Tier label or null (uncurated) — never a
+      // fabricated numeric score.
+      intelligenceScore: getModelQualityTier(effectiveDefaultModel),
       speedScore: null,
       reliabilityScore: null,
       latencyMs: null,
@@ -369,6 +378,11 @@ async function loadAiAdminSettings(environment = process.env) {
       version: freellmEngine.ENGINE_VERSION,
       capabilities: freellmEngine.getEngineStatus().capabilities,
       persistence: freellmEngine.getEngineStatus().persistence,
+      // F-05: the engine choice is explicit and observable — the active
+      // AI_ENGINE mode plus the bounded shadow-divergence log (decision
+      // metadata only: operation/provider/model; never prompts or secrets).
+      aiEngine: resolveAiEngineChoice(environment),
+      shadowDivergences: getAiEngineShadowLog().slice(-20),
     },
     fallbackChains,
     curatedModels: [], // Legacy field kept empty; no hard-coded quality/latency/RPM claims.
@@ -429,6 +443,30 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
         throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
       }
       if (clearSecrets[provider] === true) delete providerPatch[provider].apiKey;
+    }
+    // F-04: `selectionMode=manual` without an explicit model for the pinned
+    // provider used to resolve at routing time to the literal model "auto",
+    // which matches no catalog id — every request died with an opaque 503.
+    // Reject at save time instead. Legacy six providers keep their pin in the
+    // public MODEL_FIELDS; registry providers (e.g. llamacpp) keep it in the
+    // ai_providers store, so both sources count as an explicit pin. The
+    // routing layer treats an empty pin as "provider default" for
+    // already-saved configurations (defence in depth).
+    if (safePublic.selectionMode === 'manual') {
+      const pinnedModelField = MODEL_FIELDS[targetPrimary];
+      const pinnedModel = String(
+        (pinnedModelField && safePublic[pinnedModelField]) ||
+        providerPatch[targetPrimary]?.model ||
+        currentSecrets[targetPrimary]?.model ||
+        ''
+      ).trim();
+      if (!pinnedModel || pinnedModel === 'auto') {
+        throw errorWith(
+          'AI_SETTINGS_VALIDATION_ERROR',
+          `selectionMode "manual" requires an explicit model for the pinned provider "${targetPrimary}"${pinnedModelField ? ` (set ${pinnedModelField})` : ''} — or choose another selection mode and the engine will use the provider's default model.`,
+          400
+        );
+      }
     }
     nextRevision = currentRevision + 1;
     const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
