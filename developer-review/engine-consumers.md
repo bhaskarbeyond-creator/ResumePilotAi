@@ -3,6 +3,8 @@
 **Date:** 2026-10-24 · **Base:** `5bd2570` · **Method:** repository-wide grep (`backend/`, `frontend/`, `scripts/`, `src/`) + live probes.
 Every node below cites the file that implements it. Where a consumer does not exist, it is listed as **absent** rather than guessed.
 
+> **2026-10-25 UPDATE:** sections 1–4 below are the preserved 2026-10-24 baseline (`5bd2570`). The **final-state** consumer map after remediation of all 29 findings (branch tip `e848552`) is in **§5** (Mermaid + route deltas), the settings→behaviour matrix with gap→wired SHAs is in **§6**, and the A.5/A.9/A.10 **design preconditions** — pending explicit reviewer accept/reject — are in **§7** (cross-ref `engine-findings.md` §10). Where §1–§4 and §5–§7 differ, §5–§7 describe the current tree.
+
 ---
 
 ## 1. Mermaid — request origin → response
@@ -206,3 +208,196 @@ flowchart TD
 - **No cron that resets quotas** — quota keys are date-scoped (`security/abuse.js:291-293`), so no reset is needed.
 - **No cron that compacts or prunes `ai_usage`** (grep for `ai_usage` + `DELETE` outside admin reset: none).
 - **No endpoint that exposes the aiRouting health/telemetry state** — `RoutingTelemetry` and `HealthStore.tenantSnapshot` have no route.
+
+---
+
+## 5. Post-fix consumer map (2026-10-25)
+
+**Basis:** branch tip `e848552` (docs land `eb0512f`+). Sections 1–4 above are the preserved 2026-10-24 baseline (`5bd2570`); this section restates the map at the final state — 26 findings FIXED, F-21/F-22-sub DEFERRED (PH4-ENGINE-021/022), F-26 ACCEPTED (PH4-ENGINE-026). Line numbers cite the current tree.
+
+### 5.1 Mermaid — final state
+
+```mermaid
+flowchart TD
+    %% ───────────── ORIGINS ─────────────
+    SDK["OpenAI / Anthropic SDK<br/>Cursor · Cline · Roo · Claude Code"]
+    BROWSER["Browser app<br/>resume · interview · cover letter"]
+    ADMIN["Admin console<br/>/admin?tab=ai-settings"]
+    TENANT["Enterprise tenant client<br/>/api/enterprise/*"]
+    CRON["Cron: setInterval 6h<br/>freellmapi/index.js"]
+
+    %% ───────────── AUTH GATES ─────────────
+    V1AUTH{"resolveV1Principal<br/>platform key OR Firebase token<br/>anonymous only if non-prod & NO keys"}
+    V1ADM{"F-01 admission (875d4c7)<br/>user principal ⇒ limiter → governance →<br/>durable daily quota, charged pre-invocation<br/>platform key ⇒ burst limiter<br/>catalog routes never quota-charged"}
+    APIAUTH{"requireAuth / optionalAuth"}
+    ADMINAUTH{"requireSuperAdmin<br/>+ path policy"}
+    ENTAUTH{"enterprise auth<br/>+ tenant RBAC + ai.use<br/>+ resolveTenantQuota (F-27 a3eb324)<br/>explicit 0 ⇒ 429 TENANT_QUOTA_BLOCKED<br/>guard missing ⇒ 503 fail-closed"}
+    GOV{"aiGovernanceMiddleware<br/>on /api/ai* AND /v1 user principals (F-01)"}
+    QUOTA{"enforceDailyAiQuota<br/>durable ai_usage ledger (F-01/F-18 4e5c8b0)<br/>tokens/cost persisted, null-when-unknown"}
+    BURST{"aiAccountLimiter 12/min"}
+
+    %% ───────────── SERVICES ─────────────
+    V1SVC["/v1 handlers<br/>chat/completions · messages · search"]
+    PRODSVC["routes/ai.js product ops"]
+    ENTSVC["routes/enterprise.js AI ops"]
+    ADMINSVC["admin AI routes<br/>GET: configuredProviders vs enabledProviders<br/>split (F-16 6222aab); masked keys; envelopes (F-19 d98739e)<br/>POST: F-04 save validation (manual pin needs explicit model)<br/>F-15 no fabricated toggles (31837fa)<br/>F-29 one force mechanism + forced:true audit (a0c343d)"]
+    RESET["POST /api/admin/ai/reset-state<br/>index.js:4135 (F-13 8f47713)<br/>super-admin · per-store results"]
+    TELEMROUTE["GET /api/admin/ai/routing-telemetry<br/>index.js:4186 (F-22 22349d2)<br/>super-admin · redacted ring + health snapshot"]
+
+    %% ───────────── ENGINE SELECTION (F-05) ─────────────
+    ENGINESEL{"AI_ENGINE (F-05 875d4c7)<br/>aiRuntime.js:1751-1777"}
+    FREECALL["freellm.completeChat (default)"]
+    SHADOW["shadow: aiRouting.route runs FIRST<br/>+ bounded 100-entry secret-free divergence log<br/>then freellm serves"]
+    AIRTFULL["aiRouting: end-to-end"]
+
+    %% ───────────── ROUTING ─────────────
+    BUILD["FreeLlmRouter.buildCandidateList<br/>router.js:257"]
+    TENANTTIER{"tenant BYOK keys present?"}
+    BYOKTIER["TIER 2 dedicated BYOK<br/>encrypted tenant store now READ<br/>by the inference path (F-08 875d4c7)"]
+    MESH["TIER 1 platform mesh<br/>platform-key tenant traffic records<br/>metrics + cooldowns (F-09 875d4c7)"]
+    POLICY["applySelectionPolicy → rankCandidates<br/>windowed recency-weighted p50, half-life 10 min,<br/>n≥3 gate, fresh-failure breaker (F-07 875d4c7)<br/>curated tier bonus ×40, primary bonus +5 (F-06 875d4c7)"]
+    MODE{"selectionMode"}
+    GATE{"enabled? key? cooldown? reachable?<br/>SINGLE enabled source = ai_providers[p].enabled<br/>gates BOTH engines (F-23 3a8475d)<br/>legacy enable&lt;P&gt; = AND-ed compat input only"}
+    DISC["modelDiscovery 1h cache"]
+    CANDS["candidate list (≤12)"]
+
+    %% ───────────── EXECUTION ─────────────
+    KEYS{"multi-key pool"}
+    PROVIDER[("External provider")]
+    FAILover{"next candidate?"}
+    MANUALDOWN{"manual pin down? (F-03 875d4c7)"}
+    M503["503 provider_unavailable<br/>+ Retry-After: 60 (clamped, F-12 6d595bf)<br/>default: honest refusal"]
+    MFALL["manualAllowFallback:true ⇒<br/>200 from secondary, routing_decision<br/>.fallbackFrom:'manual' (disclosed)"]
+    ALLFAIL["502 ALL_PROVIDERS_FAILED (auto paths)<br/>fallbacks[] populated, provider internals<br/>sanitized to 'Upstream provider error' (F-20 a8330f8)"]
+    LASTRES["all cooling ⇒ last-resort release of<br/>least-bad cooldown (F-14 a860d0b)"]
+
+    %% ───────────── STORES ─────────────
+    CACHE[("promptCache<br/>identity carries principal/tenant on /v1<br/>(F-02 875d4c7); cleanExpired() implemented (F-11 6dc5976)")]
+    COOLDOWN[("CooldownManager<br/>still PLATFORM-scoped ⇒ PH4-ENGINE-021<br/>(F-21 deferred, reviewer-approved)")]
+    METRICS[("SQLite freellm_metrics.db<br/>still no tenant column ⇒ PH4-ENGINE-021;<br/>no per-row decisionId ⇒ PH4-ENGINE-022")]
+    HEALTH[("aiRouting HealthStore tenant-scoped")]
+    TELEM[("aiRouting RoutingTelemetry<br/>NOW EXPOSED via TELEMROUTE (F-22)")]
+    RESP["Response<br/>_freellmapi.provider · model · latency<br/>routing_decision + observedLatencyMs + observationCount<br/>fallbacks[] sanitized · cached principal-honest<br/>generation defaults one source 0.7/2048 (F-28 b1cd2cc)"]
+
+    %% ───────────── EDGES ─────────────
+    SDK --> V1AUTH --> V1ADM --> V1SVC
+    BROWSER --> APIAUTH --> GOV --> QUOTA --> BURST --> PRODSVC
+    TENANT --> ENTAUTH --> ENTSVC
+    ADMIN --> ADMINAUTH --> ADMINSVC
+    ADMINAUTH --> RESET
+    ADMINAUTH --> TELEMROUTE
+    CRON --> COOLDOWN
+    CRON --> CACHE
+
+    V1SVC --> ENGINESEL
+    PRODSVC --> ENGINESEL
+    ENTSVC --> ENGINESEL
+    ENGINESEL -->|freellm| FREECALL
+    ENGINESEL -->|shadow| SHADOW
+    ENGINESEL -->|aiRouting| AIRTFULL
+    FREECALL --> BUILD
+    SHADOW --> BUILD
+    AIRTFULL --> POLICY
+    BUILD --> TENANTTIER
+    TENANTTIER -->|yes| BYOKTIER
+    TENANTTIER -->|no| MESH
+    BYOKTIER --> POLICY
+    MESH --> POLICY
+    POLICY --> MODE --> GATE
+    POLICY --> DISC --> CANDS --> GATE
+    GATE -->|reject| FAILover
+    GATE -->|eligible| KEYS --> PROVIDER
+    PROVIDER -->|2xx| RESP
+    PROVIDER -->|failure| FAILover
+    FAILover -->|yes| KEYS
+    FAILover -->|"no — manual pin"| MANUALDOWN
+    MANUALDOWN -->|default| M503
+    MANUALDOWN -->|opt-in| MFALL
+    FAILover -->|"no — auto paths"| ALLFAIL
+    FAILover -->|"all cooling"| LASTRES --> KEYS
+
+    PROVIDER --> COOLDOWN
+    PROVIDER --> METRICS
+    BYOKTIER -.->|"dedicated BYOK: platform metrics skipped BY DESIGN"| METRICS
+    AIRTFULL --> HEALTH
+    AIRTFULL --> TELEM
+    TELEMROUTE --> TELEM
+    TELEMROUTE --> HEALTH
+    RESET --> CACHE
+    RESET --> COOLDOWN
+    RESET --> METRICS
+    FREECALL --> CACHE
+    CACHE --> RESP
+
+    classDef fixed fill:#e6ffe6,stroke:#0a0
+    classDef still fill:#fff4e5,stroke:#e07b00
+    class V1ADM,GOV,QUOTA,CACHE,ENGINESEL,POLICY,GATE,TELEMROUTE,RESET fixed
+    class COOLDOWN,METRICS,BYOKTIER still
+```
+
+### 5.2 Reading the final-state chart
+
+- **The P0 red is gone.** `/v1` user principals now run the exact `/api/ai*` admission chain — limiter → governance → durable daily quota charged **pre-invocation** (F-01, `875d4c7`; live-proven A.6: `ai_usage` +3, and the A.9/A.10 first-run 429s are the ledger blocking the probes themselves). Platform keys run the burst limiter; catalog routes are never quota-charged.
+- **`aiRouting.route` is no longer a dotted accidental door.** `AI_ENGINE=freellm|shadow|aiRouting` (F-05) is an explicit deploy-time choice; shadow runs the new selector first with a bounded 100-entry secret-free divergence log.
+- **Cache and cooldown are no longer the same story.** Cache identity carries the principal on `/v1` (F-02, A.2 `cached:false`). Cooldowns/metrics remain **platform-scoped** — that is the deferred remainder PH4-ENGINE-021 (F-21), orange in the chart, not fixed.
+- **The BYOK sanctuary is closed:** the encrypted tenant store is read by the inference path (F-08), and platform-key tenant traffic records metrics + cooldowns (F-09). Dedicated-BYOK traffic still skips *platform* metrics by design (the tenant's own keys are not platform capacity).
+- **`CRON → CACHE` is a solid edge:** `cleanExpired()` exists (F-11).
+- **Telemetry is exposed** via `GET /api/admin/ai/routing-telemetry` (F-22, super-admin, redacted) and operator state is resettable via `POST /api/admin/ai/reset-state` (F-13) — §4's "no endpoint exposes aiRouting health/telemetry" is superseded.
+- **The dead `ai_settings_v2_enabled` switch and its UI control were removed** (F-24) — the §3 matrix row for it now reads "removed; no engine effect ever existed".
+
+### 5.3 Route-table deltas (rows that changed vs §2)
+
+| Consumer / route | Was (2026-10-24) | Now (final state) | Wired at |
+|---|---|---|---|
+| `POST /v1/chat/completions`, `/v1/messages` (user principal) | no admission control; unmetered | limiter → governance → durable daily quota charged pre-invocation; `ai_usage` rows with scope/email/limit | F-01/F-18 · `875d4c7`, `4e5c8b0` |
+| `/v1` failure bodies | provider internals forwarded (`"server error from alpha (HTTP 500)"`) | sanitized `"Upstream provider error"`; `fallbacks[]` disclosure kept | F-20 · `a8330f8` |
+| `/v1` sampling defaults (unconfigured) | engines disagreed (0.3/4096 vs admin defaults) | one frozen source: 0.7 / 2048 both engines (disclosed contract change) | F-28 · `b1cd2cc` |
+| `GET /v1/status` | public 200 with internals (cooldown list, SQLite path) | anonymous → 401 `missing_api_key`; super-admin → reduced payload | F-10 · `52e1a35` |
+| manual pin, provider down | 502 `ALL_PROVIDERS_FAILED`, secondary idle | 503 `provider_unavailable` + `Retry-After: 60`; opt-in `manualAllowFallback` → 200 with `fallbackFrom:"manual"` | F-03 · `875d4c7` |
+| admin save `manual` + model-less provider | saved, then phantom `"auto"` pin at routing | 400 `AI_SETTINGS_VALIDATION_ERROR` at save; already-saved empty pin = "provider default" | F-04 · `875d4c7` |
+| admin partial save | fabricated `enable<P>=true` | omitted toggles stay null | F-15 · `31837fa` |
+| admin forced save | two force spellings, thin audit | one mechanism; audit rows carry `forced:true` + sanitized `forceReason`; single CAS conflict code | F-29 · `a0c343d` |
+| admin GET payload | "configured" conflated with enabled | `configuredProviders` vs `enabledProviders` split (C3: dual map is a designed contract) | F-16 · `6222aab` |
+| secrets at rest | clear text in `ai_providers` | AES-256-GCM envelopes; fail-closed without `ENTERPRISE_ENCRYPTION_KEY(S)` | F-19 · `d98739e` |
+| `POST /api/admin/ai/reset-state` | **absent** | super-admin operator reset with per-store results | F-13 · `8f47713` |
+| `GET /api/admin/ai/routing-telemetry` | **absent** (telemetry existed, unexposed) | super-admin redacted ring + health snapshot | F-22 · `22349d2` |
+| tenant AI usage audit | structurally empty `aiRouting: {}` | executed provider/model/tier from the live engine | F-17 · `547dabc` |
+| tenant quota resolution | per-site coercion (`Number([])===0`), skippable guard | one `resolveTenantQuota()`; explicit 0 blocks (429); missing guard fail-closed (503) | F-27 · `a3eb324` |
+| all-cooling deployments | hard 503 up to 300 s | last-resort release of least-bad cooldown | F-14 · `a860d0b` |
+| cron cache purge | threw (no `cleanExpired`), swallowed | implemented | F-11 · `6dc5976` |
+| provider enable flag | two engines, two truths | `ai_providers[p].enabled/disabled` gates **both**; legacy `enable<P>` AND-ed compat input | F-23 · `3a8475d` |
+| `featureFlag ai_settings_v2_enabled` | display-only dead switch | **removed** (flag + UI control) | F-24 · `2f8f698` |
+
+---
+
+## 6. Settings → behaviour matrix, gap → wired SHA (supersedes §3 where they differ)
+
+| Setting | Gap at baseline (§3) | Final behaviour | Wired at |
+|---|---|---|---|
+| `public_config.ai.selectionMode=speed` | ranked on a single stale last sample | windowed recency-weighted p50, half-life 10 min, **n≥3 gate**, fresh-failure breaker; mature fast window flips selection off the primary (A.9r3) | F-07 · `875d4c7` |
+| `public_config.ai.selectionMode=quality` | no quality signal existed; mode name dishonest | curated static tier table decides (premium 1 / standard 0.55 / economy 0.2 ×40); uncurated models honestly `qualityEvidence:"unknown"`, no bonus (A.10r1/r2) | F-06 · `875d4c7` |
+| `public_config.ai.selectionMode=manual` (+`provider`) | empty pin became phantom `"auto"`; pinned-down = opaque 502 | save-time validation (400 with actionable message); empty saved pin = provider default; pinned-down = 503 + Retry-After; opt-in `manualAllowFallback` discloses `fallbackFrom:"manual"` | F-03/F-04 · `875d4c7` |
+| `public_config.ai.enable<P>` (legacy 6) | second independent enabled flag; partial saves fabricated `true` | AND-ed compatibility input only — never an independent gate; omitted toggles stay null | F-23 · `3a8475d`; F-15 · `31837fa` |
+| `ai_providers[*].enabled/disabled` | gated only the legacy engine | single enabled source of truth, gates **both** engines (A.4) | F-23 · `3a8475d` |
+| `ai_providers[*].apiKey(s)` | clear text at rest | AES-256-GCM envelopes, fail-closed without the key; masked in APIs; LIKE-scan 0 | F-19 · `d98739e` |
+| `public_config.ai.temperature/maxTokens` | engines disagreed when unconfigured | one frozen defaults module at all 5 fallback sites (0.7/2048) | F-28 · `b1cd2cc` |
+| `featureFlag ai_settings_v2_enabled` | dead switch implying rollback | removed | F-24 · `2f8f698` |
+| `AI_ENGINE` (env, new) | new selector reachable only via accidental error class | explicit `freellm\|shadow\|aiRouting` choice; shadow keeps bounded secret-free divergence log | F-05 · `875d4c7` |
+| `ENTERPRISE_ENCRYPTION_KEY(S)` (env) | n/a (no envelopes) | required for at-rest secrets; fail-closed; rotation = ops runbook item (rating §8.5 Q4) | F-19 · `d98739e` |
+| `FREELMAPI_API_KEYS` (env) | platform-key `/v1` traffic ungoverned | platform-key principals: burst limiter, no daily-quota charge; user principals: full chain | F-01 · `875d4c7` |
+| tenant `quotaPolicy.*` | per-site coercion bugs; guard skippable | single resolver; explicit 0 = blocked (429 `TENANT_QUOTA_BLOCKED`); missing guard = 503 fail-closed | F-27 · `a3eb324` |
+| tenant BYOK keys | write-only (never consumed) | read by the inference path; dedicated-BYOK tier uses the tenant key | F-08 · `875d4c7` |
+| admin save `expectedRevision` | conflict handling inconsistent | 409 `REVISION_CONFLICT`; forced saves attributable (`forced:true` + reason) | F-29 · `a0c343d` |
+| propagation latency | 10–15 s process-local | **unchanged by design** — bounded ≤15 s convergence, single-instance assumption documented | F-26 ACCEPTED · PH4-ENGINE-026 |
+
+---
+
+## 7. Design preconditions (cross-reference — reviewer decision pending)
+
+Three restated behaviours activate only under documented preconditions; they are stated in `engine-findings.md` **§10** and are **not self-accepted** here or anywhere in this doc set:
+
+- **A.5 — failing primary:** no precondition. A mature failure window causes preemptive avoidance (the primary is not dispatched at all); the classical attempt-then-failover path with populated, sanitized `fallbacks[]` still runs whenever the failure is not yet in the window (probe legs A.5/A.5r).
+- **A.9 — "fastest":** PRECONDITION ≥3 windowed observations per candidate (half-life 10 min). During warm-up (n<3) selection is primary-preference; a newly added fast provider may serve its first ~3 requests on the slower incumbent. Proven: A.9r1 (n=0, no flip), A.9r2 (n=2, no flip), A.9r3 (n=3, p50≈186 ms, flip). Candidate ticket if rejected: **PH4-ENGINE-030** (cold-start bounded exploration).
+- **A.10 — "smartest":** PRECONDITION model present in the curated tier registry. Uncurated models cannot be quality-differentiated and stay honestly `"unknown"`. Proven: A.10r1 (uncurated → unknown, primary served), A.10r2 (curated premium beats faster economy primary with zero latency observations). Candidate ticket if rejected: **PH4-ENGINE-031** (registry auto-discovery, never-guessed rule preserved).
+
+Consumer-facing consequence: SDK/product integrators should read `routing_decision.observedLatencyMs` / `observationCount` (present on the wire whenever a mode is configured) to see whether a candidate's evidence base is mature, and `qualityEvidence` to distinguish curated-tier decisions from honest `unknown`.
