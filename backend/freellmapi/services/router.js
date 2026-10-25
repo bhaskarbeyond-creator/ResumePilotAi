@@ -679,6 +679,7 @@ class FreeLlmRouter {
       const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
       let keyFailures = 0;
       let sawRateLimit = false;
+      let sawRetryAfterMs = 0; // F-12: strongest Retry-After seen across the key pool
       let sawAuthFailure = false;
 
       for (const keyIndex of keyOrder) {
@@ -767,6 +768,8 @@ class FreeLlmRouter {
           this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
 
           if (status === 429) sawRateLimit = true;
+          const requestedRetryMs = Number(error.retryAfterMs);
+          if (Number.isFinite(requestedRetryMs) && requestedRetryMs > sawRetryAfterMs) sawRetryAfterMs = requestedRetryMs;
           if (status === 401 || status === 403) sawAuthFailure = true;
         }
       }
@@ -778,6 +781,7 @@ class FreeLlmRouter {
           candidate.provider,
           candidate.model,
           sawRateLimit ? 'HTTP 429 across all pooled keys' : (sawAuthFailure ? 'All pooled keys rejected' : 'Provider unavailable'),
+          sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
         );
       }
 
@@ -888,6 +892,7 @@ class FreeLlmRouter {
       const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
       let keyFailures = 0;
       let sawRateLimit = false;
+      let sawRetryAfterMs = 0; // F-12: strongest Retry-After seen across the key pool
 
       for (const keyIndex of keyOrder) {
         const key = candidate.keys[keyIndex];
@@ -998,6 +1003,8 @@ class FreeLlmRouter {
           lastError = error;
           const status = Number(error.status) || 500;
           if (status === 429) sawRateLimit = true;
+          const requestedRetryMs = Number(error.retryAfterMs);
+          if (Number.isFinite(requestedRetryMs) && requestedRetryMs > sawRetryAfterMs) sawRetryAfterMs = requestedRetryMs;
 
           if (opened || emitted) {
             // Mid-stream failure: the client already received partial content.
@@ -1026,6 +1033,7 @@ class FreeLlmRouter {
           candidate.provider,
           candidate.model,
           sawRateLimit ? 'HTTP 429 across all pooled keys' : 'Provider unavailable',
+          sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
         );
       }
       if (candidate.isDedicatedByok && candidates.length === 1) {
