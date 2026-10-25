@@ -22,6 +22,8 @@
  */
 
 const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
+// F-28: one source of generation defaults shared with the product engine.
+const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('./aiGenerationDefaults');
 
 const LEGACY_SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -136,8 +138,8 @@ function buildFreeLlmPlatformConfig({ environment = process.env, secrets, public
     // env (MANUAL_ALLOW_FALLBACK=true) widens a down manual pin to the ranked
     // alternatives, and the deviation is marked routingDecision.fallbackFrom.
     manualAllowFallback: publicAi.manualAllowFallback === true || environment.MANUAL_ALLOW_FALLBACK === 'true',
-    temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : 0.3,
-    maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : 4096,
+    temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : DEFAULT_GENERATION_TEMPERATURE,
+    maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : DEFAULT_GENERATION_MAX_TOKENS,
     promptTokenBudget: Number(environment.FREELMAPI_PROMPT_TOKEN_BUDGET || publicAi.promptTokenBudget || 0) || null,
     providers,
     source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',

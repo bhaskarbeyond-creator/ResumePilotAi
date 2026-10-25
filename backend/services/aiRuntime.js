@@ -23,6 +23,8 @@ const {
 } = require('./aiGateway/compat/aiRoutingCompat');
 
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
+// F-28: one source of generation defaults shared with the /v1 mesh engine.
+const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('./aiGenerationDefaults');
 // Configuration SEEDS only: used when the operator/tenant has not configured a
 // model explicitly. These are NOT routing rankings — the dynamic router (./aiRouting)
 // overrides them with provider-discovered models and runtime health evidence.
@@ -1669,8 +1671,8 @@ async function loadProviderConfiguration(environment = process.env) {
         primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : providers.gemini?.enabled ? 'gemini' : providers[mesh.primary]?.enabled ? mesh.primary : 'gemini'),
         ...(effectiveAi.selectionMode ? { selectionMode: effectiveAi.selectionMode } : {}),
         enableFallback: effectiveAi.enableFallback !== false,
-        temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
-        maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),
+        temperature: clampNumber(effectiveAi.temperature, 0, 1, DEFAULT_GENERATION_TEMPERATURE),
+        maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, DEFAULT_GENERATION_MAX_TOKENS)),
         providers,
         // Platform scope; applyTenantAiPolicy stamps the tenant context for
         // tenant-scoped routing state (health, telemetry, model access).
@@ -1703,8 +1705,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         providerConfig,
         model: safeModel(providerConfig?.model, adapter.defaultModel),
         prompt,
-        temperature: generation?.temperature ?? 0.7,
-        maxTokens: generation?.maxTokens ?? 2048,
+        temperature: generation?.temperature ?? DEFAULT_GENERATION_TEMPERATURE,
+        maxTokens: generation?.maxTokens ?? DEFAULT_GENERATION_MAX_TOKENS,
     });
     const response = await fetchWithDeadline(fetchImpl, request.url, {
         method: request.method,
@@ -1864,8 +1866,8 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                 restrictedModels: configuration.tenantPolicy?.restrictedModels,
                 primaryModel: configuration.tenantPolicy?.primaryModel || configuration.providers?.[configuration.primary]?.model,
             } : null),
-            temperature: configuration?.temperature !== undefined ? configuration.temperature : 0.3,
-            maxTokens: configuration?.maxTokens !== undefined ? configuration.maxTokens : 4096,
+            temperature: configuration?.temperature !== undefined ? configuration.temperature : DEFAULT_GENERATION_TEMPERATURE,
+            maxTokens: configuration?.maxTokens !== undefined ? configuration.maxTokens : DEFAULT_GENERATION_MAX_TOKENS,
             jsonMode: isJson,
             timeoutMs: timeoutMs || 45000,
             fetchImpl: fetchImpl || globalThis.fetch,

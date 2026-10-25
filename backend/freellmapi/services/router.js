@@ -17,6 +17,8 @@
 
 const { createHash } = require('node:crypto');
 const { getProviderMeta } = require('../providers/registry');
+// F-28: engine-internal parameter defaults share the platform-wide source.
+const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('../../services/aiGenerationDefaults');
 const { callOpenAiCompat, streamOpenAiCompat } = require('../providers/openaiCompat');
 const { callGoogleGemini, streamGoogleGemini } = require('../providers/googleGemini');
 const { cooldownManager } = require('./cooldown');
@@ -671,8 +673,8 @@ class FreeLlmRouter {
     tenantContext = null,
     dataClassification = 'confidential',
     platformConfig = {},
-    temperature = 0.3,
-    maxTokens = 4096,
+    temperature = DEFAULT_GENERATION_TEMPERATURE,
+    maxTokens = DEFAULT_GENERATION_MAX_TOKENS,
     jsonMode = false,
     responseFormat,
     tools,
@@ -916,8 +918,8 @@ class FreeLlmRouter {
     tenantContext = null,
     dataClassification = 'confidential',
     platformConfig = {},
-    temperature = 0.3,
-    maxTokens = 4096,
+    temperature = DEFAULT_GENERATION_TEMPERATURE,
+    maxTokens = DEFAULT_GENERATION_MAX_TOKENS,
     jsonMode = false,
     responseFormat,
     tools,
