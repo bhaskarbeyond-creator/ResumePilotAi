@@ -11,14 +11,21 @@
  * what is "correct" — it is a test of what we decided, with the decision named in the
  * assertion message.
  *
- * Each block below corresponds to a documented decision:
+ * Each block below corresponds to a documented decision. The citations are the
+ * identifiers those decisions carry in `07-intentional-divergence-register.md`,
+ * `DECISION-LOG.md` and `decisions/ADR-*.md`; an earlier revision of this file
+ * used stale DIV numbers, which was itself a consistency defect (D-026-1):
  *
- *  - DIV-002 / ADR-001 — authority is the persisted bundle, never the token's claims.
- *  - DIV-004 — the legacy dotted permission vocabulary still resolves.
- *  - DIV-006 — `manage ⊃ write ⊃ read`, and nothing implies `*`.
- *  - DIV-008 — the target-authority ceiling (a lower-ranked actor cannot act on a higher).
- *  - DIV-011 — `superAdminOnly` surfaces are refused for a non-wildcard holder.
- *  - DIV-013 — configuration values resolve database → env → default.
+ *  - ADR-002 / D-005-3 — authority is the persisted bundle, never the token's claims.
+ *  - D-005-1 / DIV-002 — the legacy dotted permission vocabulary still resolves.
+ *  - ADR-001 / INV-3 — `manage ⊃ write ⊃ read`, and nothing implies `*`.
+ *  - RCA-005 / RCA-006 (REC-004) — the target-authority ceiling: a lower-ranked
+ *    actor cannot act on a higher one.
+ *  - INV-2 — the wildcard holder is the only authority for `superAdminOnly` surfaces.
+ *  - D-005-7 / ADR-005 — one audit row per authority change, with stable action names.
+ *  - DIV-014 / INV-4 — deployment-owned values are read-only, and every register
+ *    row is editable or justified. Resolution order (database → env → default) is
+ *    the RESOLUTION model in `config/registry.js`.
  *
  * Run: NODE_ENV=test node --test test/characterisation.test.js
  */
@@ -40,9 +47,9 @@ test.before(() => {
   rbac.invalidateRbacCache();
 });
 
-/* ── DIV-002: authority comes from the bundle, not from the token ────── */
+/* ── ADR-002 / D-005-3: authority comes from the bundle, not from the token ── */
 
-test('DIV-002: token-asserted permissions are ignored; only persisted grants count', () => {
+test('ADR-002: token-asserted permissions are ignored; only persisted grants count', () => {
   // The forged claims below are exactly what the legacy resolver merged in. USER holds only
   // resumes/coverletters/interviews/subscription, so a claim of `*` must not become one.
   const forged = { uid: 'u-forged', claims: { role: 'USER', permissions: ['users.manage', 'system.config.write', '*'] } };
@@ -54,15 +61,15 @@ test('DIV-002: token-asserted permissions are ignored; only persisted grants cou
   assert.strictEqual(rbac.satisfies(resolved, 'resumes.manage'), true, 'the role it actually holds still works');
 });
 
-test('DIV-002: an unknown role resolves to no authority at all, not to a default', () => {
+test('ADR-002: an unknown role resolves to no authority at all, not to a default', () => {
   assert.deepStrictEqual([...rbac.resolvePermissionSet({ claims: { role: 'GHOST_ROLE' } })], []);
   assert.deepStrictEqual([...rbac.resolvePermissionSet({})], []);
   assert.deepStrictEqual([...rbac.resolvePermissionSet(null)], []);
 });
 
-/* ── DIV-004: the legacy dotted vocabulary keeps working ─────────────── */
+/* ── D-005-1 / DIV-002: the legacy dotted vocabulary keeps working ────── */
 
-test('DIV-004: the eight legacy roles keep their documented bundle sizes', () => {
+test('D-005-9: the eight legacy roles keep their documented bundle sizes', () => {
   const expected = {
     SUPER_ADMIN: 1, // ['*']
     ADMIN: 23,
@@ -81,7 +88,7 @@ test('DIV-004: the eight legacy roles keep their documented bundle sizes', () =>
   }
 });
 
-test('DIV-004: dotted aliases resolve to the canonical resource:action key', () => {
+test('D-005-1: dotted aliases resolve to the canonical resource:action key', () => {
   // A handler written before REC-004 calls `permissions.has('users.update')`. It must keep
   // working, which is why the resolved set carries both forms.
   const admin = rbac.resolvePermissionSet({ claims: { role: 'ADMIN' } });
@@ -91,14 +98,14 @@ test('DIV-004: dotted aliases resolve to the canonical resource:action key', () 
   }
 });
 
-test('DIV-004: a role that exists only in the store is not blocked by a role allowlist', () => {
+test('D-005-9: a role that exists only in the store is not blocked by a role allowlist', () => {
   assert.deepStrictEqual(vocabulary.PERMISSIONS.AUDIT_LEAD, undefined,
     'AUDIT_LEAD is deliberately absent from the literal: the store is the only place it can come from');
 });
 
-/* ── DIV-006: the action hierarchy ───────────────────────────────────── */
+/* ── ADR-001 / INV-3: the action hierarchy ────────────────────────────── */
 
-test('DIV-006: manage ⊃ write ⊃ read, and no action implies the wildcard', () => {
+test('ADR-001: manage ⊃ write ⊃ read, and no action implies the wildcard', () => {
   assert.strictEqual(rbac.ACTION_IMPLIES.manage.includes('write'), true);
   assert.strictEqual(rbac.ACTION_IMPLIES.manage.includes('read'), true);
   assert.strictEqual(rbac.ACTION_IMPLIES.write.includes('read'), true);
@@ -126,7 +133,7 @@ test('DIV-006: manage ⊃ write ⊃ read, and no action implies the wildcard', (
   assert.strictEqual(rbac.satisfies(readOnly, 'users:manage'), false);
 });
 
-test('DIV-006: a wildcard holder satisfies every permission, and the check is not string-prefix based', () => {
+test('INV-2: a wildcard holder satisfies every permission, and the check is not string-prefix based', () => {
   const wildcard = new Set(['*']);
   assert.strictEqual(rbac.satisfies(wildcard, 'anything.at.all'), true);
   assert.strictEqual(rbac.satisfies(wildcard, ['a:read', 'b:write']), true);
@@ -134,9 +141,9 @@ test('DIV-006: a wildcard holder satisfies every permission, and the check is no
   assert.strictEqual(rbac.satisfies(prefixTrap, 'users:read'), false, 'a near-miss key must not satisfy the real one');
 });
 
-/* ── DIV-008: the target-authority ceiling ──────────────────────────── */
+/* ── RCA-005 / RCA-006 (REC-004): the target-authority ceiling ───────── */
 
-test('DIV-008: the rank ladder is ordered and monotonic', () => {
+test('RCA-005: the rank ladder is ordered and monotonic', () => {
   const ranks = ['SUPER_ADMIN', 'ADMIN', 'AUDITOR', 'SUPPORT', 'EMPLOYER', 'ENTERPRISE_ADMIN', 'ENTERPRISE_MEMBER', 'USER']
     .map(role => ({ role, rank: targetAuthority.rankOf(role) }));
   for (const { role, rank } of ranks) {
@@ -146,7 +153,7 @@ test('DIV-008: the rank ladder is ordered and monotonic', () => {
     'the ladder is a documented constant (targetAuthority.js); changing it changes who may act on whom');
 });
 
-test('DIV-008: an actor may act on an equal or lower rank and never on a higher one', () => {
+test('RCA-006: an actor may act on an equal or lower rank and never on a higher one', () => {
   const verdict = (actorRole, targetRole) => targetAuthority.evaluateTargetAuthority(
     { uid: 'actor-1', claims: { role: actorRole } },
     { uid: 'target-1', claims: { role: targetRole } },
@@ -162,16 +169,16 @@ test('DIV-008: an actor may act on an equal or lower rank and never on a higher 
   assert.strictEqual(verdict('ADMIN', 'ADMIN').allowed, true, 'acting on an equal is allowed; the last-admin guard is a separate rule');
 });
 
-/* ── DIV-013: configuration resolution order ────────────────────────── */
+/* ── DIV-014 / INV-4: deployment scope and the register's two columns ── */
 
-test('DIV-013: a deployment-scoped value can never be made editable by adding a registry entry', () => {
+test('DIV-014: a deployment-scoped value can never be made editable by adding a registry entry', () => {
   for (const entry of registry.ENTRIES.filter(candidate => candidate.scope === registry.SCOPE.DEPLOYMENT)) {
     assert.strictEqual(entry.editable, false, `${entry.key} is deployment-scoped and must stay read-only`);
     assert.ok(entry.readOnlyReason, `${entry.key} must carry the reason`);
   }
 });
 
-test('DIV-013: every business-affecting register row is either editable or justified', () => {
+test('INV-4: every business-affecting register row is either editable or justified', () => {
   const rows = registry.ENTRIES;
   const editable = rows.filter(entry => entry.editable);
   const justified = rows.filter(entry => !entry.editable && entry.readOnlyReason);
@@ -181,9 +188,9 @@ test('DIV-013: every business-affecting register row is either editable or justi
   assert.deepStrictEqual(unjustifiedInCode.map(entry => entry.key), []);
 });
 
-/* ── DIV-011: the audit trail's shape ───────────────────────────────── */
+/* ── D-005-7 / ADR-005: the audit trail's shape ──────────────────────── */
 
-test('DIV-011: audit actions are namespaced and stable, so a saved query does not rot', () => {
+test('D-005-7: audit actions are namespaced and stable, so a saved query does not rot', () => {
   // The two semantic actions the remediation introduced. Renaming them silently would
   // break every saved filter on the audit surface.
   const expected = ['CONFIG_VALUE_UPDATED', 'UPDATE_ROLE_PERMISSIONS', 'GRANT_ROLE', 'REVOKE_ROLE'];

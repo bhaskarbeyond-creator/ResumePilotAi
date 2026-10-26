@@ -1,0 +1,54 @@
+[
+  {
+    "path": "/",
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 2500 },
+      { "metric": "cumulative-layout-shift", "budget": 0.1 },
+      { "metric": "total-blocking-time", "budget": 200 },
+      { "metric": "interactive", "budget": 3500 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 512 },
+      { "resourceType": "total", "budget": 1500 }
+    ]
+  },
+  {
+    "path": "/login",
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 2500 },
+      { "metric": "cumulative-layout-shift", "budget": 0.1 },
+      { "metric": "total-blocking-time", "budget": 200 },
+      { "metric": "interactive", "budget": 3500 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 512 },
+      { "resourceType": "total", "budget": 1500 }
+    ]
+  },
+  {
+    "path": "/blog",
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 2500 },
+      { "metric": "cumulative-layout-shift", "budget": 0.1 },
+      { "metric": "total-blocking-time", "budget": 200 },
+      { "metric": "interactive", "budget": 3500 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 512 },
+      { "resourceType": "total", "budget": 1500 }
+    ]
+  },
+  {
+    "path": "/pricing",
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 2500 },
+      { "metric": "cumulative-layout-shift", "budget": 0.1 },
+      { "metric": "total-blocking-time", "budget": 200 },
+      { "metric": "interactive", "budget": 3500 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 512 },
+      { "resourceType": "total", "budget": 1500 }
+    ]
+  }
+]

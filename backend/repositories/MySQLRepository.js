@@ -703,7 +703,12 @@ class MySQLRepository {
 
     async getUserByEmail(email) {
         const pool = this._getPool();
-        const [rows] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [String(email).trim().toLowerCase()]);
+        // `email = ?` rather than `LOWER(email) = ?`: the function wrap hides
+        // `idx_user_email` from the planner (full scan per lookup), and it is
+        // redundant under the schema's `utf8mb4_unicode_ci` collation where
+        // equality is already case-insensitive. The collation premise is pinned
+        // by test/query-plan-regression.test.js, which fails if it ever changes.
+        const [rows] = await pool.query('SELECT * FROM users WHERE email = ? LIMIT 1', [String(email).trim().toLowerCase()]);
         if (!rows.length) return null;
         return this.getUser(rows[0].id);
     }

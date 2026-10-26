@@ -24,9 +24,14 @@ either direction.
 |---|---|---|
 | Backend gate (13 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **167 / 167 pass**, `c8 check-coverage` exit 0 |
 | Backend coverage | same command | **statements 98.42 %**, **branches 82.52 %**, **functions 97.53 %**, lines 98.42 % |
-| New tier files (7) | §2 | **39 / 39 pass** |
+| New tier files (10) | §2 | **50 / 50 pass** (51 with the opt-in EXPLAIN layer) |
 | Contract + registry + ownership | §2 | `api-contract` 4/4, `config-registry` 26/26, `config-api` 17/17, `config-validators` 14/14, `database-ownership-completeness` 3/3 |
 | Query budget | `test/mariadb-query-budget.test.js` | **15 / 15 pass** (admin page: 1 round trip cold, 1 batched read warm, max 1 concurrent acquisition) |
+| Query-plan regression | `test/query-plan-regression.test.js` | **6 / 6 static pass** + EXPLAIN layer gated on `RUN_MARIADB_INTEGRATION` (CI `migration-drill` job). Registry of 13 hot queries; every filter path index-covered, unbounded recency scans index-ordered. Two uncovered outbox plans found and fixed by `030_outbox_created_at_indexes`; one hidden index (`LOWER(email)`) found and fixed in `MySQLRepository.js:706` |
+| Load at agreed concurrency | `test/load-concurrency.test.js` | **4 / 4 pass** — 50 concurrent operators, p95 < 750 ms per control-plane read, zero 5xx, and 50 parallel reads of one config key cost 0 store round trips |
+| Migration rollback drill | `test/migration-rollback-drill.test.js` | **gated on `RUN_MARIADB_INTEGRATION`** (CI `migration-drill` job): empty → forward chain → marker rows → every `.down.sql` in reverse → documented residue only (`config_change_log`, `001_baseline`) → re-apply → idempotent, markers survive |
+| Lighthouse budgets | `npm run perf:budgets` (frontend) | **wired as a CI gate** (`lighthouse` job): per-page-class budgets in `frontend/budgets/per-page-class.json` — LCP < 2.5 s, CLS < 0.1, TBT < 200 ms (lab INP proxy), mobile simulated 4G. Browser-dependent, like Playwright (OI-TIER-1) |
+| Characterisation (divergences) | `test/characterisation-divergences.test.js` | **11 / 11 pass** — DIV-007/009/010/011/012/013/015/017 pinned behaviourally (or by the exact refusal codes where the behaviour is a route guard) |
 | Authority suites (spot re-run after the user-route change) | `admin-target-authority` + `admin-rbac-api` + `config-api` | **61 / 61 pass** |
 | Frontend types | `cd frontend && npx tsc -b` | **0 errors** |
 | Frontend types, strict, admin plane | `npm run typecheck:strict` | **0 errors** (strict + `noUnusedLocals` + `noImplicitOverride` + `noImplicitReturns`) |

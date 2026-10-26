@@ -488,3 +488,46 @@ filter that filters nothing. Found by the filter-branch tests written to close t
 gap (`D-022-1`): the test drove the chip and asserted the refetch.
 
 **Rollback.** Trivial; the hook semantics are unchanged.
+
+### D-026-1 — Correcting the characterisation citations where they were wrong
+
+- **Status:** ACCEPTED · **Invariants:** pack consistency · **Evidence:**
+  `test/characterisation.test.js` (relabeled), `test/characterisation-divergences.test.js`
+
+**Decision.** The characterisation suite labelled its pins with DIV numbers that
+did not match `07-intentional-divergence-register.md` (e.g. "DIV-013:
+configuration resolution order" while the register's DIV-013 is the
+payment-settings read guard; "DIV-011: audit actions namespaced" while register
+DIV-011 is the SUPER_ADMIN lifecycle). The pinned behaviours were real; the
+citations were not. The blocks are relabelled to the decisions that actually
+document them (ADR-001/002, D-005-1/7/9, RCA-005/006, INV-2/3/4, DIV-014), and a
+second file adds pins for the register's remaining code-level divergences
+(DIV-007/009/010/011/012/013/015/017).
+
+**Why it matters.** A characterisation pin whose citation is wrong is worse than
+no pin: it sends the next maintainer to the wrong decision and undermines the
+"every divergence justified" claim.
+
+**Rollback.** Revert both files; no runtime code depends on the labels.
+
+### D-027-1 — The query-plan tier owns the two plans it found
+
+- **Status:** ACCEPTED · **Invariants:** REC-020 (performance tier) · **Evidence:**
+  `database/migrations/030_outbox_created_at_indexes.sql`, `repositories/MySQLRepository.js:706`,
+  `test/query-plan-regression.test.js`
+
+**Decision.** The query-plan regression registry (13 hot queries) found three
+real defects on its first run: both outbox `ORDER BY created_at DESC LIMIT ?`
+scans (`routes/platform.js:478,480`) had no index that could serve an unscoped
+recency read, and the identity lookup wrapped its indexed column in `LOWER()`,
+hiding `idx_user_email` (and redundantly so, under `utf8mb4_unicode_ci`). The
+fixes are migration `030` (two recency indexes + their rollbacks) and the bare
+`email = ?` predicate — with the collation premise pinned in the test so a future
+collation change fails the gate instead of silently breaking equivalence.
+
+**Alternatives.** Leave the plans and mark them `boundedScan` exceptions
+(rejected: neither is bounded by an operator action); fix only the test to match
+the code (rejected: that is how query-plan drift becomes an outage).
+
+**Rollback.** `git revert` the migration and the one-line predicate change; the
+registry entry for `email` then fails loudly, which is the intended signal.

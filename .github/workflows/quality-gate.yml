@@ -81,7 +81,10 @@ jobs:
             test/setting-classification.test.js \
             test/security.test.js \
             test/database-ownership-completeness.test.js \
-            test/mariadb-query-budget.test.js
+            test/mariadb-query-budget.test.js \
+            test/query-plan-regression.test.js \
+            test/load-concurrency.test.js \
+            test/characterisation-divergences.test.js
 
       - name: Coverage gate (90 statements / 90 lines / 85 functions / 80 branches)
         working-directory: backend
@@ -151,6 +154,86 @@ jobs:
           path: |
             frontend/ux-audit.json
             frontend/contrast-audit.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  migration-drill:
+    name: migration · forward, rollback, re-apply on MariaDB (opt-in, destructive)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # The only job that proves the rollback chain works on a real engine
+    # (test/migration-rollback-drill.test.js) and that hot queries EXPLAIN to an
+    # index (test/query-plan-regression.test.js EXPLAIN layer). Destructive
+    # against a disposable service container — never a shared database.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: resumepilot_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: resumepilot_ci
+      RUN_MARIADB_INTEGRATION: 'true'
+      MARIADB_TEST_ALLOW_RESET: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install (backend)
+        working-directory: backend
+        run: npm ci --include=optional
+      - name: Rollback drill (forward → down chain → re-apply)
+        working-directory: backend
+        run: node --test --test-concurrency=1 --test-force-exit test/migration-rollback-drill.test.js
+      - name: Migration gate (checksums, idempotency, integration invariants)
+        working-directory: backend
+        run: node --test --test-concurrency=1 --test-force-exit test/mariadb-migration-gate.test.js
+      - name: Query-plan EXPLAIN layer (no hot query may full-scan)
+        working-directory: backend
+        run: node --test --test-concurrency=1 --test-force-exit test/query-plan-regression.test.js
+
+  lighthouse:
+    name: performance · Lighthouse budgets per page class (opt-in, needs a browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Like the e2e job, it needs a browser download. It runs on demand and on
+    # `dev`; the budgets in frontend/budgets/per-page-class.json are the gate.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install and build (frontend)
+        working-directory: frontend
+        run: |
+          npm ci --include=optional
+          npx playwright install --with-deps chromium
+          npm run build
+      - name: Lighthouse budgets (LCP < 2.5s, CLS < 0.1, TBT < 200ms, mobile 4G)
+        working-directory: frontend
+        run: npm run perf:budgets
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: frontend/lighthouse-results
           if-no-files-found: warn
           retention-days: 14
 

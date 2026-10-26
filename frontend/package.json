@@ -15,7 +15,8 @@
     "preview": "vite preview",
     "ux:audit": "node scripts/ux-audit.mjs",
     "a11y:contrast": "node scripts/contrast-audit.mjs",
-    "verify:ux": "node scripts/ux-audit.mjs && node scripts/contrast-audit.mjs"
+    "verify:ux": "node scripts/ux-audit.mjs && node scripts/contrast-audit.mjs",
+    "perf:budgets": "lhci autorun"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
@@ -62,6 +63,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
+    "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.50.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
