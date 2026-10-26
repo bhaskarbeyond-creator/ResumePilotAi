@@ -30,9 +30,9 @@ either direction.
 | Authority suites (spot re-run after the user-route change) | `admin-target-authority` + `admin-rbac-api` + `config-api` | **61 / 61 pass** |
 | Frontend types | `cd frontend && npx tsc -b` | **0 errors** |
 | Frontend types, strict, admin plane | `npm run typecheck:strict` | **0 errors** (strict + `noUnusedLocals` + `noImplicitOverride` + `noImplicitReturns`) |
-| Frontend lint | `npm run lint` | **0 warnings, 0 errors** (249 files, 96 rules) |
-| Frontend component tests | `npm run test:unit` | **53 / 53 pass** (5 files) |
-| Frontend component coverage | `npm run test:unit:coverage` | **statements 86.81 %**, **branches 76.63 %**, **functions 85.83 %**, lines 86.91 % on the six admin modules |
+| Frontend lint | `npm run lint` | **0 warnings, 0 errors** (267 files, 96 rules) |
+| Frontend component tests | `npm run test:unit` | **122 / 122 pass** (16 files) |
+| Frontend component coverage | `npm run test:unit:coverage` | **statements 83.90 %**, **branches 77.83 %**, **functions 82.77 %**, lines 84.47 % on the 14 admin-plane modules (thresholds 80/75/75/80, enforced by the command) |
 | UX gate | `npm run verify:ux` | **0 violations**, contrast **16 / 16 pass** |
 | Browser tier (E2E, a11y, visual) | `npm test` | **NOT RUN** — no browser binary; see §5 |
 
@@ -105,7 +105,7 @@ the gap closes.
 | Lint | `npm run lint` | 0 warnings, 0 errors |
 | Target size, text floor, focus rings, widths | `npm run ux:audit` | 0 violations (was 71 before `3a2ec1c`) |
 | Contrast, WCAG 2.2 AA, 16 rendered pairs | `npm run a11y:contrast` | 16 / 16 pass |
-| Component behaviour (jsdom) | `npm run test:unit` | 53 / 53 pass |
+| Component behaviour (jsdom) | `npm run test:unit` | 122 / 122 pass |
 
 **What the component tier covers** (`tests/unit/`, vitest + jsdom + Testing Library):
 
@@ -116,6 +116,17 @@ the gap closes.
 | `admin-attention-tab.test.tsx` | 6 | Real signals render with severity and id; an empty list renders "no signal is firing"; a `503` renders the code and request id and **not** the sample incidents the tab used to ship; Refresh re-reads the endpoint; a derived signal has no Acknowledge control |
 | `admin-users-tab.test.tsx` | 7 | Only server-returned identities render; a directory outage shows the error and no table; an empty directory says so; a refused password reset is reported as a failure and never claims a link was issued; `SUPER_ADMIN` is absent from the picker; suspension requires a reason |
 | `admin-users-actions.test.tsx` | 16 | The exact request each action sends (method, URL, body, concurrency guard) and the message the operator sees afterwards — role `PATCH` with `expectedRole`, 12-month Premium grant, suspension with reason, `ai-entitlement` `PUT` with justification required before the request, quota reset, tenant assign/remove, provisioning with only the accepted fields, filters |
+| `admin-security-tab.test.tsx` | 5 | Security events are the server's rows (`/platform/security-events?limit=100`); an empty table says so; a 503 surfaces `SECURITY_EVENTS_UNAVAILABLE` + request id; a refused role change (`ADMIN_TARGET_CHANGED`) leaves the stored role on screen; non-staff accounts get no privilege control |
+| `admin-security-panels.test.tsx` | 9 | The audit trail (rows + `/admin/audit-logs/stats`, empty and 503 variants), broadcasts (publish keeps the draft on refusal, supersede sends `expectedRevision`, delete only after confirmation), staff session revoke (refusal reported, success announces the server's message, `SUPER_ADMIN (claim-only)` shown but never assignable) |
+| `admin-helpdesk-tab.test.tsx` | 5 | Tickets are the server's rows (`/admin/support/tickets`); the desk says it is empty rather than inventing tickets; a refused reply is reported as a refusal and keeps the draft; a refused status change (`PATCH …/tickets/:id {status}`) leaves the stored status |
+| `admin-queues-tab.test.tsx` | 6 | Sampled outbox rows with the sampling caveat rendered; a platform retry exists only for a notification dead letter (never enterprise — the route answers `400 INVALID_RETRY_TARGET`); the retry body is `{jobId, queue:'notification'}`; refusals surface code + request id; empty and 503 variants |
+| `admin-moderation-tab.test.tsx` | 6 | Applications are the server's rows (`/admin/employer-applications`); approval sends `status` + `expectedStatus`; rejection requires a ≥3-character reason in the request; a job feature request carries exactly one field (the route rejects compound bodies); 409s surface |
+| `admin-moderation-registries.test.tsx` | 8 | Job status changes use the one-field contract with `expectedStatus`/`expectedFeatured`; the company registry and the operator-scoped tenant registry render rows, empty states and 503s (`TENANT_REGISTRY_UNAVAILABLE`) |
+| `admin-filter-branches.test.tsx` | 4 | Client-side filters are pinned branch by branch: help-desk status/search, queue/state filters + expandable job detail, security severity/search/row expansion, blog status/search |
+| `admin-health-tab.test.tsx` | 6 | Services and states come from `/platform/operational-status` with the collector's own counts (`8/9`); group + free-text filters; an uncollectable snapshot (`OPERATIONAL_STATUS_UNAVAILABLE`) never shows a healthy board; empty collector list renders as reported; the detail drawer reads `/…/:serviceId`; a failed provider probe is reported as a failure |
+| `admin-detail-surfaces.test.tsx` | 7 | Blog reader preview renders the stored body and closes on Escape; testimonials are read-only rows with empty and 503 variants; the service drawer shows dependency, remediation, metrics, `relatedEndpoints` and `auditEvents`; the job status filter refetches with `{status}` |
+| `admin-cms-tabs.test.tsx` | 8 | The blog read hits `/blog-data` (mounted route), not the non-existent `/blog/posts`; deletion sends `expectedRevision` and surfaces `CAS_CONFLICT`; the marketing tab offers only the two sections the backend serves (phrases + testimonials — no invented logo/SEO panels); a phrase write replaces the whole category exactly as the endpoint does |
+| `admin-operations-tab.test.tsx` | 5 | The maintenance save sends `expectedRevision` and reports the revision the server committed; `ADMIN_SETTINGS_CONFLICT` keeps the form buffer; the removed backup/cache-purge controls are explained (`OI-OPS-1`) instead of faked; an unreadable health summary never guesses settings |
 
 **NOT RUN, with reasons:**
 

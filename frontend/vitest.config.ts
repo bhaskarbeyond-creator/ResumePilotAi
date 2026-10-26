@@ -32,6 +32,16 @@ export default defineConfig({
         'src/components/admin/AdminDataState.tsx',
         'src/components/admin/AdminAttentionTab.tsx',
         'src/components/admin/AdminUsersTab.tsx',
+        // Rewritten from invented sample rows onto their real endpoints; each has a
+        // component test that drives all four states.
+        'src/components/admin/AdminSecurityTab.tsx',
+        'src/components/admin/AdminHelpDeskTab.tsx',
+        'src/components/admin/AdminQueuesTab.tsx',
+        'src/components/admin/AdminModerationTab.tsx',
+        'src/components/admin/AdminBlogManagementTab.tsx',
+        'src/components/admin/AdminContentMarketingTab.tsx',
+        'src/components/admin/AdminHealthTab.tsx',
+        'src/components/admin/AdminOperationsTab.tsx',
       ],
       // Thresholds are the gate, not a report: `npm run test:unit:coverage` fails below them.
       thresholds: {

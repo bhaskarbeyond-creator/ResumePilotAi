@@ -9,11 +9,14 @@
  * 1. IN-APP BLOG EDITOR PRESERVATION: Direct launch to /blog-editor for full authoring.
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { get, del } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -38,76 +41,42 @@ interface ArticleSummary {
   author: string;
   status: 'published' | 'draft';
   publishedAt: string;
-  readTime: string;
+  readTime?: string;
   excerpt?: string;
   content?: string;
+  /** Optimistic-concurrency token the delete route requires. */
+  revision?: number;
 }
 
-const DEFAULT_ARTICLES: ArticleSummary[] = [
-  {
-    id: 'post_001',
-    title: 'Modern Engineering Career Playbook: From Junior to Staff',
-    slug: 'modern-engineering-career-playbook',
-    category: 'Career Advice',
-    author: 'Antigravity Editorial',
-    status: 'published',
-    publishedAt: 'Oct 15, 2026',
-    readTime: '6 min read',
-    excerpt: 'Navigating technical leadership, systemic impact, and strategic architecture in enterprise software.',
-    content: `Engineering leadership is no longer just about writing code in isolation. As systems scale to millions of concurrent users, the defining traits of senior and staff engineers center around architectural clarity, empathetic code review, and reducing organizational friction.\n\n### 1. Focus on System Invariants\nBefore touching a single line of production code, identify the invariants that must never break: authorization boundaries, tenant isolation, and sub-100ms API budgets.\n\n### 2. Communicate Through Architectural Decision Records (ADRs)\nDocumenting the 'why' behind architectural trade-offs allows teams to move fast without recurring regressions.`,
-  },
-  {
-    id: 'post_002',
-    title: 'How to Beat Modern ATS Scanners Using Semantic Alignment',
-    slug: 'how-to-beat-ats-scanners',
-    category: 'Resume Building',
-    author: 'IME365 Research',
-    status: 'published',
-    publishedAt: 'Oct 12, 2026',
-    readTime: '4 min read',
-    excerpt: 'Deep learning parser algorithms and keyword extraction techniques used by Fortune 500 HR departments.',
-    content: `Modern Applicant Tracking Systems (ATS) have shifted from primitive regex matching to contextual semantic embeddings. Here is how candidates can ensure their experience is highlighted accurately.\n\n### The Semantic Density Metric\nAligning your project accomplishments with measurable impact (STAR format: Situation, Task, Action, Result) ensures semantic scoring models rank your application in the top 5th percentile.`,
-  },
-  {
-    id: 'post_003',
-    title: 'Top 50 Behavioral Interview Questions for Tech Leadership',
-    slug: 'top-behavioral-interview-questions',
-    category: 'Interviews',
-    author: 'Staff Talent Team',
-    status: 'draft',
-    publishedAt: 'Draft (Unpublished)',
-    readTime: '8 min read',
-    excerpt: 'Mastering conflict resolution, cross-functional prioritization, and post-incident retrospectives.',
-    content: `Behavioral evaluations assess leadership resilience under pressure. We analyze the 50 most prevalent scenarios asked across Tier 1 tech companies and how to structure compelling, authentic responses.`,
-  },
-];
-
 export function AdminBlogManagementTab() {
-  const [articles, setArticles] = useState<ArticleSummary[]>(DEFAULT_ARTICLES);
+  /**
+   * `GET /api/blog-data` — the route is mounted at `/api/blog-data` (index.js:544); the
+   * previous `/blog/posts` read 404'd on every load, which is why the tab always showed its
+   * sample articles.
+   */
+  const loadArticles = useCallback(
+    (signal: AbortSignal) =>
+      get<{ posts?: ArticleSummary[] }>('/blog-data', { limit: 100 }, { signal }),
+    [],
+  );
+  const resource = useAdminResource(loadArticles);
+  const articles = resource.data?.posts ?? [];
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'DRAFT'>('ALL');
-  const [, setLoading] = useState(true);
   const [previewArticle, setPreviewArticle] = useState<ArticleSummary | null>(null);
   const [deleteConfirmArticle, setDeleteConfirmArticle] = useState<ArticleSummary | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const navigate = useNavigate();
 
-  const loadArticles = async () => {
-    try {
-      const res = await get<{ posts?: ArticleSummary[] }>('/blog/posts');
-      if (res?.posts && Array.isArray(res.posts) && res.posts.length > 0) {
-        setArticles(res.posts);
-      }
-    } catch {
-      // Keep baseline
-    } finally {
-      setLoading(false);
-    }
+  const report = (error: unknown) => {
+    const failure = describeAdminFailure(error);
+    setFeedback({
+      tone: 'error',
+      text: `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`,
+    });
   };
-
-  useEffect(() => {
-    loadArticles();
-  }, []);
 
   // Escape key handler
   useEffect(() => {
@@ -121,15 +90,24 @@ export function AdminBlogManagementTab() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [previewArticle, deleteConfirmArticle]);
 
-  const handleDelete = async (postId: string) => {
+  /**
+   * `DELETE /api/blog-data/:id?expectedRevision=` — the repository refuses a delete without
+   * the revision it read (400 `REVISION_REQUIRED`) or when the post moved on (409
+   * `CAS_CONFLICT`). Both answers are surfaced rather than smoothed over.
+   */
+  const handleDelete = async (article: ArticleSummary) => {
+    setBusy(article.id);
     try {
-      await del(`/blog/posts/${postId}`).catch(() => {});
-      setArticles((prev) => prev.filter((a) => a.id !== postId));
+      await del(`/blog-data/${encodeURIComponent(article.id)}`, {
+        expectedRevision: article.revision,
+      });
       setDeleteConfirmArticle(null);
-      setFeedback(`Article ${postId} deleted successfully.`);
-      setTimeout(() => setFeedback(null), 3000);
-    } catch {
-      // Handled
+      setFeedback({ tone: 'success', text: `Article “${article.title}” deleted.` });
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -172,10 +150,38 @@ export function AdminBlogManagementTab() {
       </div>
 
       {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
-          <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-          <span>{feedback}</span>
+        <div
+          role={feedback.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            feedback.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
+          )}
+        >
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+          <span className="flex-1">{feedback.text}</span>
+          <button type="button" onClick={() => setFeedback(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">
+            Dismiss
+          </button>
         </div>
+      )}
+
+      {resource.status === 'loading' && resource.data === null && (
+        <AdminLoadingPanel label="Reading the article catalogue…" />
+      )}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel
+          title="The article catalogue could not be read"
+          error={resource.error}
+          onRetry={resource.reload}
+        />
+      )}
+      {resource.status === 'ready' && articles.length === 0 && (
+        <AdminEmptyPanel
+          title="No article yet"
+          description="The blog store answered with no rows. Create the first article in the editor."
+        />
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -208,6 +214,7 @@ export function AdminBlogManagementTab() {
       </div>
 
       {/* Articles Table */}
+      {articles.length > 0 && (
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
         <table className="w-full text-xs min-w-[700px]">
           <thead className="bg-canvas border-b border-border">
@@ -224,17 +231,21 @@ export function AdminBlogManagementTab() {
             {filteredArticles.map((article) => (
               <tr key={article.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                 <td className="px-4 py-3">
-                  <div className="font-bold text-ink hover:text-brand-600 dark:hover:text-brand-400 cursor-pointer" onClick={() => navigate(`/blog-editor/${article.id}`)}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/blog-editor/${article.id}`)}
+                    className="min-h-11 cursor-pointer text-left font-bold text-ink hover:text-brand-600 sm:min-h-0 dark:hover:text-brand-400"
+                  >
                     {article.title}
-                  </div>
+                  </button>
                   <div className="text-[11px] text-ink-muted font-mono">/blog/{article.slug}</div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="rounded bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-2xs font-medium text-ink-secondary">
-                    {article.category}
+                    {article.category || '—'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ink-secondary">{article.author}</td>
+                <td className="px-4 py-3 text-ink-secondary">{article.author || '—'}</td>
                 <td className="px-4 py-3">
                   <span
                     className={cn(
@@ -247,7 +258,7 @@ export function AdminBlogManagementTab() {
                     {article.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ink-muted">{article.publishedAt}</td>
+                <td className="px-4 py-3 text-ink-muted">{article.publishedAt || '—'}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
                     <Button
@@ -294,6 +305,7 @@ export function AdminBlogManagementTab() {
         </table>
       </div>
 
+      )}
       {/* ─── Modal 1: Live Blog Article Preview Modal ─── */}
       {previewArticle && (
         <div
@@ -442,7 +454,8 @@ export function AdminBlogManagementTab() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleDelete(deleteConfirmArticle.id)}
+                onClick={() => handleDelete(deleteConfirmArticle)}
+                loading={busy === deleteConfirmArticle.id}
                 className="text-xs font-bold"
               >
                 Delete Article

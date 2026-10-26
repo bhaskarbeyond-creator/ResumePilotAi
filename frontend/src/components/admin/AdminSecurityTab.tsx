@@ -1,928 +1,782 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+/**
+ * Security console — events, staff authority, the audit trail and platform broadcasts.
+ *
+ * Everything here is read from the endpoint that owns it, and every mutation is the server's
+ * answer. What it used to be: four hard-coded arrays (`INITIAL_EVENTS`, `INITIAL_OPERATORS`,
+ * `INITIAL_AUDITS`, `INITIAL_ANNOUNCEMENTS`) whose rows were indistinguishable from real
+ * telemetry, plus actions that only changed local state and then reported success — "Active
+ * tokens & refresh tokens revoked", "Edge IP block rule added for 203.0.113.44", "RBAC role
+ * updated to AUDITOR". None of those calls existed. A security console that invents its own
+ * incident list is worse than no console: it answers "are we breached?" with fiction.
+ *
+ * Endpoints used:
+ *   GET    /api/platform/security-events?limit=          security_audit_logs
+ *   GET    /api/admin/audit-logs?limit=&search=          administrative trail (audit.read)
+ *   GET    /api/admin/audit-logs/stats                   high-severity / failure counts
+ *   GET    /api/admin/users?limit=                       staff directory (role, suspended)
+ *   PATCH  /api/admin/users/:uid                         role change, revision-guarded
+ *   POST   /api/admin/users/:uid/revoke-sessions         real token revocation
+ *   GET    /api/platform/announcements                   broadcasts
+ *   POST   /api/platform/announcements                   create (audited)
+ *   PATCH  /api/platform/announcements/:id               enable/disable, revision-guarded
+ *   DELETE /api/platform/announcements/:id               remove (audited)
+ *
+ * There is no edge-proxy IP-block endpoint; the control that pretended to have one is gone
+ * rather than left as a button that does nothing (`OI-SEC-1`).
+ */
+
+import { useCallback, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  Download,
+  Megaphone,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import {
-  ShieldAlert,
-  Users,
-  FileSpreadsheet,
-  Megaphone,
-  AlertTriangle,
-  CheckCircle2,
-  Lock,
-  LogOut,
-  Download,
-  Trash2,
-  Clock,
-  Radio,
-  Eye,
-  Shield,
-  Copy,
-  Check,
-  X,
-  Ban,
-} from 'lucide-react';
+import { del, get, patch, post } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
+import { ASSIGNABLE_ROLES, readDirectory, type AdminDirectoryPayload, type AdminUserRecord } from './admin-users-model';
+
+/* ── wire shapes ─────────────────────────────────────────────────────── */
 
 interface SecurityEvent {
   id: string;
-  type: string;
-  severity: 'CRITICAL' | 'WARNING' | 'INFO';
-  principal: string;
-  ip: string;
   action: string;
-  timestamp: string;
-  category?: string;
-  outcome?: 'SUCCESS' | 'FAILED' | 'CHALLENGED';
-  metadata?: Record<string, unknown>;
+  actorUid: string | null;
+  actorEmail: string | null;
+  actorRole: string | null;
+  targetUid: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  tenantId: string | null;
+  category: string | null;
+  severity: string;
+  outcome: string;
+  method: string | null;
+  pathname: string | null;
+  statusCode: number | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  requestId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string | null;
 }
 
-interface OperatorUser {
-  uid: string;
-  name: string;
-  email: string;
-  role: 'super_admin' | 'security_officer' | 'support_lead' | 'content_moderator';
-  mfaEnabled: boolean;
-  lastActive: string;
-}
-
-interface AuditRecord {
+interface AuditLog {
   id: string;
-  actor: string;
   action: string;
-  target: string;
-  ipAddress: string;
-  timestamp: string;
-  status: 'SUCCESS' | 'REJECTED' | 'RATE_LIMITED';
+  actorEmail: string | null;
+  actorUid: string | null;
+  category: string | null;
+  severity: string;
+  outcome: string | null;
+  statusCode: number | null;
+  pathname: string | null;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string | null;
 }
 
 interface Announcement {
   id: string;
   title: string;
   message: string;
-  audience: 'ALL' | 'CANDIDATES' | 'EMPLOYERS' | 'ENTERPRISE';
-  severity: 'banner' | 'modal' | 'info';
-  createdAt: string;
+  severity: string;
+  audience: string;
+  enabled: boolean;
+  revision: number;
+  createdBy: string | null;
+  updatedAt: string | null;
 }
 
-const INITIAL_EVENTS: SecurityEvent[] = [
-  {
-    id: 'ev_001',
-    type: 'FAILED_REAUTH',
-    severity: 'WARNING',
-    principal: 'support-agent-3@internal.corp',
-    ip: '192.168.1.105',
-    action: 'Administrative re-auth threshold exceeded (attempt 2)',
-    timestamp: '2026-10-18 20:14:02',
-    category: 'AUTHENTICATION_GATE',
-    outcome: 'FAILED',
-    metadata: {
-      thresholdSeconds: 600,
-      attemptNumber: 2,
-      authMethod: 'FIREBASE_ID_TOKEN',
-      clientUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0',
-    },
-  },
-  {
-    id: 'ev_002',
-    type: 'CROSS_TENANT_BLOCK',
-    severity: 'CRITICAL',
-    principal: 'anonymous_probe_ip',
-    ip: '45.134.22.18',
-    action: 'Attempted IDOR traversal across tenant isolation boundary',
-    timestamp: '2026-10-18 19:42:18',
-    category: 'TENANT_ISOLATION_FIREWALL',
-    outcome: 'FAILED',
-    metadata: {
-      targetTenantId: 'tenant_alpha_enterprise',
-      requestPath: '/api/enterprise/tenants/tenant_alpha_enterprise/secrets',
-      blockedBy: 'TENANT_RBAC_GUARD',
-      geoCountry: 'NL',
-    },
-  },
-  {
-    id: 'ev_003',
-    type: 'API_KEY_ROTATED',
-    severity: 'INFO',
-    principal: 'superadmin@ime365.ai',
-    ip: '10.0.0.1',
-    action: 'NVIDIA NIM secondary provider credential updated',
-    timestamp: '2026-10-18 18:05:44',
-    category: 'CREDENTIAL_STORAGE',
-    outcome: 'SUCCESS',
-    metadata: {
-      provider: 'NVIDIA_NIM',
-      maskedKeyPrefix: 'nvapi-771***',
-      storageVault: 'SECURE_ENV_VAULT',
-    },
-  },
-  {
-    id: 'ev_004',
-    type: 'SESSION_REVOKED',
-    severity: 'INFO',
-    principal: 'security_gatekeeper',
-    ip: '127.0.0.1',
-    action: 'Mass operator session revocation dispatched post-deployment',
-    timestamp: '2026-10-18 16:30:11',
-    category: 'POLICY_ENFORCEMENT',
-    outcome: 'SUCCESS',
-    metadata: {
-      revocationScope: 'ALL_ACTIVE_JWT_REFRESH',
-      issuedBy: 'RELEASE_GATEKEEPER',
-    },
-  },
-];
+const STAFF_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'AUDITOR', 'SUPPORT']);
 
-const INITIAL_OPERATORS: OperatorUser[] = [
-  { uid: 'op_01', name: 'Executive Lead', email: 'lead@ime365.ai', role: 'super_admin', mfaEnabled: true, lastActive: 'Just now' },
-  { uid: 'op_02', name: 'Sarah Connor', email: 'sarah.c@ime365.ai', role: 'security_officer', mfaEnabled: true, lastActive: '12m ago' },
-  { uid: 'op_03', name: 'David Kim', email: 'david.k@ime365.ai', role: 'support_lead', mfaEnabled: true, lastActive: '1h ago' },
-  { uid: 'op_04', name: 'Maya Lin', email: 'maya.l@ime365.ai', role: 'content_moderator', mfaEnabled: false, lastActive: '3h ago' },
-];
+type SubTab = 'events' | 'staff' | 'audit' | 'broadcasts';
 
-const INITIAL_AUDITS: AuditRecord[] = [
-  { id: 'aud_1', actor: 'lead@ime365.ai', action: 'update_provider_routing', target: 'NVIDIA NIM -> Gemini 1.5 Pro', ipAddress: '10.0.0.1', timestamp: '2026-10-18 21:05:12', status: 'SUCCESS' },
-  { id: 'aud_2', actor: 'lead@ime365.ai', action: 'maintenance_mode_set', target: 'false (normal operations)', ipAddress: '10.0.0.1', timestamp: '2026-10-18 20:30:00', status: 'SUCCESS' },
-  { id: 'aud_3', actor: 'sarah.c@ime365.ai', action: 'revoke_user_sessions', target: 'user_candidate_8819', ipAddress: '192.168.1.4', timestamp: '2026-10-18 19:12:44', status: 'SUCCESS' },
-  { id: 'aud_4', actor: 'bot_scanner', action: 'post_support_ticket', target: '/api/admin/support/tickets', ipAddress: '185.220.101.5', timestamp: '2026-10-18 18:50:22', status: 'RATE_LIMITED' },
-];
+const SEVERITY_PILL: Record<string, string> = {
+  CRITICAL: 'bg-error-50 text-error-700 border-error-100',
+  HIGH: 'bg-error-50 text-error-700 border-error-100',
+  MEDIUM: 'bg-warning-50 text-warning-700 border-warning-100',
+  INFO: 'bg-info-50 text-info-700 border-info-100',
+};
 
-const INITIAL_ANNOUNCEMENTS: Announcement[] = [
-  { id: 'ann_1', title: 'Scheduled Database Maintenance Completed', message: 'All MariaDB clusters and sync pipes have successfully updated to v11.4 without disruption.', audience: 'ALL', severity: 'info', createdAt: '2026-10-18' },
-  { id: 'ann_2', title: 'New 12-Step Resume Engine Live', message: 'All candidates now enjoy full semantic ATS keyword scoring and multi-column DOCX exports.', audience: 'CANDIDATES', severity: 'banner', createdAt: '2026-10-17' },
-];
+function severityPill(severity: string): string {
+  return SEVERITY_PILL[severity] ?? 'bg-neutral-100 text-ink-secondary border-border dark:bg-neutral-800';
+}
+
+/* ── the tab ─────────────────────────────────────────────────────────── */
 
 export function AdminSecurityTab() {
-  const [subTab, setSubTab] = useState<'events' | 'operators' | 'audit' | 'broadcasts'>('events');
-  
-  // Events
-  const [events] = useState<SecurityEvent[]>(INITIAL_EVENTS);
-  const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  
-  // Confirmation action modal
-  const [confirmModal, setConfirmModal] = useState<{
-    title: string;
-    message: string;
-    confirmText: string;
-    danger?: boolean;
-    action: () => void;
-  } | null>(null);
+  const [subTab, setSubTab] = useState<SubTab>('events');
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  // Operators
-  const [operators, setOperators] = useState<OperatorUser[]>(INITIAL_OPERATORS);
-  const [opNotice, setOpNotice] = useState<string | null>(null);
-
-  // Audits & CSV
-  const [audits] = useState<AuditRecord[]>(INITIAL_AUDITS);
-  const [searchAudit, setSearchAudit] = useState('');
-
-  // Announcements
-  const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
-  const [showAnnModal, setShowAnnModal] = useState(false);
-  const [newAnnTitle, setNewAnnTitle] = useState('');
-  const [newAnnMsg, setNewAnnMsg] = useState('');
-  const [newAnnAudience, setNewAnnAudience] = useState<Announcement['audience']>('ALL');
-  const [newAnnSeverity, setNewAnnSeverity] = useState<Announcement['severity']>('banner');
-
-  // Handle escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (confirmModal) setConfirmModal(null);
-        else if (selectedEvent) setSelectedEvent(null);
-        else if (showAnnModal) setShowAnnModal(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmModal, selectedEvent, showAnnModal]);
-
-  const handleRevokeSessions = (uid: string, name: string) => {
-    setConfirmModal({
-      title: 'Revoke Active Sessions & Invalidate Tokens',
-      message: `Are you sure you want to forcibly revoke all active JWT tokens and refresh credentials for operator "${name}" (${uid})? Their current session will terminate immediately.`,
-      confirmText: 'Revoke All Sessions',
-      danger: true,
-      action: () => {
-        setOpNotice(`Active tokens & refresh tokens revoked for ${name} (${uid}). Next request will return 401.`);
-        setTimeout(() => setOpNotice(null), 4000);
-      },
-    });
+  const announce = (tone: 'success' | 'error', text: string) => setNotice({ tone, text });
+  const report = (error: unknown) => {
+    const failure = describeAdminFailure(error);
+    announce('error', `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`);
   };
 
-  const handleBlockIp = (ip: string) => {
-    setConfirmModal({
-      title: 'Block Client IP Address',
-      message: `Block traffic originating from ${ip} at the edge reverse proxy layer? Future requests will be rejected with HTTP 403 Forbidden.`,
-      confirmText: 'Block IP Address',
-      danger: true,
-      action: () => {
-        setOpNotice(`Edge IP block rule added for ${ip}.`);
-        setTimeout(() => setOpNotice(null), 4000);
-      },
-    });
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-ink">Security &amp; audit</h2>
+        <p className="text-xs text-ink-muted">
+          Live security telemetry, staff authority, the administrative trail and platform-wide
+          broadcasts. Every row is a stored record; nothing here is sampled or generated.
+        </p>
+      </div>
+
+      {notice && (
+        <div
+          role={notice.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            notice.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
+          )}
+        >
+          {notice.tone === 'success' ? (
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          )}
+          <span className="flex-1">{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <div role="tablist" aria-label="Security sections" className="flex gap-1 overflow-x-auto border-b border-border">
+        {(
+          [
+            { id: 'events', label: 'Security events', icon: ShieldAlert },
+            { id: 'staff', label: 'Staff authority', icon: Users },
+            { id: 'audit', label: 'Audit trail', icon: ShieldCheck },
+            { id: 'broadcasts', label: 'Broadcasts', icon: Megaphone },
+          ] as const
+        ).map((entry) => {
+          const Icon = entry.icon;
+          const active = subTab === entry.id;
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={`security-panel-${entry.id}`}
+              onClick={() => setSubTab(entry.id)}
+              className={cn(
+                'flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-3 text-xs font-bold transition-colors',
+                active ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink',
+              )}
+            >
+              <Icon className="size-3.5" />
+              {entry.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {subTab === 'events' && <EventsPanel />}
+      {subTab === 'staff' && <StaffPanel announce={announce} report={report} />}
+      {subTab === 'audit' && <AuditPanel />}
+      {subTab === 'broadcasts' && <BroadcastsPanel announce={announce} report={report} />}
+    </div>
+  );
+}
+
+/* ── events ──────────────────────────────────────────────────────────── */
+
+function EventsPanel() {
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ events?: SecurityEvent[]; count?: number; source?: string }>(
+        '/platform/security-events',
+        { limit: 100 },
+        { signal },
+      ),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const events = resource.data?.events ?? [];
+  const [severity, setSeverity] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const visible = events.filter((event) => {
+    if (severity !== 'ALL' && event.severity !== severity) return false;
+    const needle = search.trim().toLowerCase();
+    if (!needle) return true;
+    return `${event.action} ${event.actorEmail ?? ''} ${event.pathname ?? ''} ${event.ipAddress ?? ''}`
+      .toLowerCase()
+      .includes(needle);
+  });
+
+  return (
+    <section id="security-panel-events" role="tabpanel" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'INFO'].map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={severity === option}
+            onClick={() => setSeverity(option)}
+            className={cn(
+              'min-h-11 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors',
+              severity === option ? 'bg-brand-600 text-white' : 'bg-neutral-100 text-ink-muted dark:bg-neutral-800',
+            )}
+          >
+            {option}
+          </button>
+        ))}
+        <div className="relative ml-auto max-w-xs">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Filter action, actor, path, IP…"
+            aria-label="Filter security events"
+            className="h-11 pl-9 text-xs sm:h-9"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={resource.reload} disabled={resource.status === 'loading'}>
+          <RefreshCw className={cn('mr-1 size-3.5', resource.status === 'loading' && 'animate-spin')} />
+          Reload
+        </Button>
+      </div>
+
+      {resource.status === 'loading' && resource.data === null && <AdminLoadingPanel label="Reading security events…" />}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="Security events could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+      {resource.status === 'ready' && events.length === 0 && (
+        <AdminEmptyPanel
+          title="No security event recorded"
+          description="security_audit_logs is empty. That is an empty table, not a clean bill of health — the API said so."
+        />
+      )}
+
+      {visible.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <table className="w-full min-w-[860px] text-xs">
+            <caption className="sr-only">Security events, newest first</caption>
+            <thead className="border-b border-border bg-canvas">
+              <tr>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">When</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Severity</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Action</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Actor</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Path</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">IP</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {visible.map((event) => (
+                <tr key={event.id} className="align-top hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                  <td className="whitespace-nowrap px-3 py-2 text-ink-muted">{event.createdAt ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', severityPill(event.severity))}>
+                      {event.severity}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(expanded === event.id ? null : event.id)}
+                      aria-expanded={expanded === event.id}
+                      className="cursor-pointer text-left font-mono text-2xs text-brand-700 hover:underline"
+                    >
+                      {event.action}
+                    </button>
+                    {expanded === event.id && (
+                      <pre className="mt-1 max-w-md overflow-x-auto rounded-lg bg-canvas p-2 text-2xs text-ink-secondary">
+                        {JSON.stringify(
+                          {
+                            outcome: event.outcome,
+                            statusCode: event.statusCode,
+                            requestId: event.requestId,
+                            targetType: event.targetType,
+                            targetId: event.targetId,
+                            userAgent: event.userAgent,
+                            metadata: event.metadata,
+                          },
+                          null,
+                          2,
+                        )}
+                      </pre>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-ink-secondary">{event.actorEmail ?? event.actorUid ?? 'system'}</td>
+                  <td className="px-3 py-2 font-mono text-2xs text-ink-muted">{event.pathname ?? '—'}</td>
+                  <td className="px-3 py-2 font-mono text-2xs text-ink-muted">{event.ipAddress ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <p className="text-2xs text-ink-muted">
+        {visible.length} of {events.length} events shown · source {resource.data?.source ?? 'unknown'} · newest first
+      </p>
+    </section>
+  );
+}
+
+/* ── staff authority ─────────────────────────────────────────────────── */
+
+function StaffPanel({
+  announce,
+  report,
+}: {
+  announce: (tone: 'success' | 'error', text: string) => void;
+  report: (error: unknown) => void;
+}) {
+  const load = useCallback(
+    (signal: AbortSignal) => get<AdminDirectoryPayload>('/admin/users', { limit: 200 }, { signal }),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const staff = useMemo(
+    () => readDirectory(resource.data).filter((user) => STAFF_ROLES.has(user.role)),
+    [resource.data],
+  );
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const changeRole = async (user: AdminUserRecord, role: string) => {
+    setBusy(`role-${user.id}`);
+    try {
+      await patch(`/admin/users/${user.id}`, { role, expectedRole: user.role });
+      announce('success', `${user.email}: role ${user.role} → ${role}. Refresh tokens revoked by the server.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const handleRoleChange = (uid: string, newRole: OperatorUser['role']) => {
-    setConfirmModal({
-      title: 'Reassign Operator RBAC Role',
-      message: `Are you sure you want to change this operator's RBAC role to "${newRole}"? High-privilege actions will be immediately gated by this policy.`,
-      confirmText: 'Confirm Role Change',
-      danger: false,
-      action: () => {
-        setOperators(operators.map(op => op.uid === uid ? { ...op, role: newRole } : op));
-        setOpNotice(`RBAC role updated to ${newRole} for UID ${uid}.`);
-        setTimeout(() => setOpNotice(null), 3500);
-      },
-    });
+  const revoke = async (user: AdminUserRecord) => {
+    setBusy(`revoke-${user.id}`);
+    try {
+      const response = await post<{ message?: string }>(`/admin/users/${user.id}/revoke-sessions`, {});
+      announce('success', response?.message || `Refresh tokens revoked for ${user.email}.`);
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  return (
+    <section id="security-panel-staff" role="tabpanel" className="space-y-3">
+      {resource.status === 'loading' && resource.data === null && <AdminLoadingPanel label="Reading the staff directory…" />}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="The staff directory could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+      {resource.status === 'ready' && staff.length === 0 && (
+        <AdminEmptyPanel
+          title="No administrative identities"
+          description="No account in the directory holds ADMIN, SUPER_ADMIN, AUDITOR or SUPPORT."
+        />
+      )}
+
+      {staff.length > 0 && (
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+          {staff.map((user) => (
+            <li key={user.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-ink">{user.displayName}</p>
+                <p className="truncate text-2xs text-ink-muted">
+                  {user.email} · {user.id} · last sign-in {user.lastLogin}
+                  {user.mfaEnabled ? ' · MFA enrolled' : ' · no MFA'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="sr-only" htmlFor={`role-${user.id}`}>Role for {user.email}</label>
+                <select
+                  id={`role-${user.id}`}
+                  value={user.role}
+                  onChange={(event) => changeRole(user, event.target.value)}
+                  disabled={busy !== null}
+                  className="h-11 rounded-lg border border-border bg-surface px-2 text-xs font-semibold text-ink sm:h-9"
+                >
+                  {/* SUPER_ADMIN is shown when it is the current value — removing it from the
+                      list would misreport the account's authority — but it is not assignable. */}
+                  {user.role === 'SUPER_ADMIN' && <option value="SUPER_ADMIN">SUPER_ADMIN (claim-only)</option>}
+                  {ASSIGNABLE_ROLES.map((role) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => revoke(user)}
+                  loading={busy === `revoke-${user.id}`}
+                  className="min-h-11 sm:min-h-9"
+                >
+                  Revoke sessions
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ── audit trail ─────────────────────────────────────────────────────── */
+
+function AuditPanel() {
+  const [search, setSearch] = useState('');
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ logs?: AuditLog[]; count?: number; hasMore?: boolean; source?: string }>(
+        '/admin/audit-logs',
+        { limit: 100, ...(search.trim() ? { search: search.trim() } : {}) },
+        { signal },
+      ),
+    [search],
+  );
+  const resource = useAdminResource(load);
+  const logs = resource.data?.logs ?? [];
+
+  const loadStats = useCallback(
+    (signal: AbortSignal) =>
+      get<{ highSeverityCount?: number; failureCount?: number; categoryCounts?: Record<string, number> }>(
+        '/admin/audit-logs/stats',
+        undefined,
+        { signal },
+      ),
+    [],
+  );
+  const stats = useAdminResource(loadStats);
 
   /**
-   * FORMULA-NEUTRALIZED CSV EXPORT
-   * Invariant: Neutralizes dangerous spreadsheet formula characters (=, +, -, @, \t, \r)
-   * to protect security operators viewing CSVs in Microsoft Excel or Google Sheets.
+   * Formula-neutralised CSV. A cell beginning with `=`, `+`, `-`, `@`, tab or CR is prefixed
+   * with an apostrophe so a spreadsheet treats it as text instead of executing it. Exported
+   * from the rows the server returned, not from anything the component invented.
    */
-  const exportNeutralizedCsv = () => {
-    const sanitizeCell = (val: string) => {
-      let str = String(val ?? '');
-      if (/^[=+\-@\t\r]/.test(str)) {
-        str = `'${str}`; // Single quote prefix neutralizes formula execution
-      }
-      return `"${str.replace(/"/g, '""')}"`;
+  const exportCsv = () => {
+    const cell = (value: unknown) => {
+      let text = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
     };
-
-    const headers = ['Record ID', 'Actor', 'Action', 'Target Resource', 'IP Address', 'Timestamp', 'Status'];
-    const rows = audits.map(a => [
-      sanitizeCell(a.id),
-      sanitizeCell(a.actor),
-      sanitizeCell(a.action),
-      sanitizeCell(a.target),
-      sanitizeCell(a.ipAddress),
-      sanitizeCell(a.timestamp),
-      sanitizeCell(a.status),
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const header = ['id', 'createdAt', 'action', 'category', 'severity', 'outcome', 'actorEmail', 'pathname', 'statusCode'];
+    const body = logs.map((log) =>
+      [log.id, log.createdAt, log.action, log.category, log.severity, log.outcome, log.actorEmail, log.pathname, log.statusCode]
+        .map(cell)
+        .join(','),
+    );
+    const blob = new Blob([[header.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `ime365_admin_audit_trail_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
+    link.download = `admin-audit-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
-    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
-
-  const handleCreateAnnouncement = () => {
-    if (!newAnnTitle.trim() || !newAnnMsg.trim()) return;
-    const ann: Announcement = {
-      id: `ann_${Date.now()}`,
-      title: newAnnTitle.trim(),
-      message: newAnnMsg.trim(),
-      audience: newAnnAudience,
-      severity: 'banner',
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    setAnnouncements([ann, ...announcements]);
-    setNewAnnTitle('');
-    setNewAnnMsg('');
-  };
-
-  const handleDeleteAnnouncement = (id: string) => {
-    setAnnouncements(announcements.filter(a => a.id !== id));
-  };
-
-  const filteredAudits = audits.filter(a =>
-    a.actor.toLowerCase().includes(searchAudit.toLowerCase()) ||
-    a.action.toLowerCase().includes(searchAudit.toLowerCase()) ||
-    a.target.toLowerCase().includes(searchAudit.toLowerCase())
-  );
 
   return (
-    <div className="space-y-6">
-      {/* Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-        <div className="flex gap-2">
-          <Button
-            variant={subTab === 'events' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('events')}
-          >
-            <ShieldAlert className="mr-1.5 size-4" />
-            Security Events & Threats
-          </Button>
-          <Button
-            variant={subTab === 'operators' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('operators')}
-          >
-            <Users className="mr-1.5 size-4" />
-            Operators & Staff RBAC
-          </Button>
-          <Button
-            variant={subTab === 'audit' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('audit')}
-          >
-            <FileSpreadsheet className="mr-1.5 size-4" />
-            Audit Trail & CSV Export
-          </Button>
-          <Button
-            variant={subTab === 'broadcasts' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('broadcasts')}
-          >
-            <Megaphone className="mr-1.5 size-4" />
-            System Broadcasts
-          </Button>
+    <section id="security-panel-audit" role="tabpanel" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search action, actor, resource…"
+            aria-label="Search the audit trail"
+            className="h-11 pl-9 text-xs sm:h-9"
+          />
         </div>
+        <Button variant="outline" size="sm" onClick={resource.reload} disabled={resource.status === 'loading'}>
+          <RefreshCw className={cn('mr-1 size-3.5', resource.status === 'loading' && 'animate-spin')} />
+          Reload
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={logs.length === 0}>
+          <Download className="mr-1 size-3.5" />
+          Export CSV
+        </Button>
       </div>
 
-      {/* ─── 1. Security Events ─── */}
-      {subTab === 'events' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShieldAlert className="size-4 text-error-600" />
-              Real-Time Security Events & Threat Signals
-            </CardTitle>
-            <CardDescription>
-              Inspected anomaly feeds, brute-force detections, and tenant isolation integrity probes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-border rounded-lg border border-border">
-              {events.map((ev) => (
-                <div
-                  key={ev.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-neutral-50/80 gap-3 cursor-pointer transition-colors"
-                  onClick={() => setSelectedEvent(ev)}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        'rounded-full px-2 py-0.5 text-xs font-bold uppercase',
-                        ev.severity === 'CRITICAL' ? 'bg-error-50 text-error-700 border border-error-200' :
-                        ev.severity === 'WARNING' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        'bg-brand-50 text-brand-700 border border-brand-200'
-                      )}>
-                        {ev.severity}
-                      </span>
-                      <span className="font-mono text-xs font-bold text-ink">{ev.type}</span>
-                      <span className="text-xs text-ink-muted">· IP: {ev.ip}</span>
-                    </div>
-                    <p className="text-sm text-ink-secondary">{ev.action}</p>
-                    <p className="text-xs text-ink-muted">Principal: {ev.principal}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-xs font-mono text-ink-muted flex items-center gap-1.5">
-                      <Clock className="size-3.5" />
-                      {ev.timestamp}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEvent(ev);
-                      }}
-                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 h-7 px-2"
-                    >
-                      <Eye className="size-3.5 mr-1" /> Inspect
-                    </Button>
-                  </div>
-                </div>
+      {stats.data && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Rows returned" value={String(logs.length)} />
+          <StatTile label="High severity" value={String(stats.data.highSeverityCount ?? 0)} tone={(stats.data.highSeverityCount ?? 0) > 0 ? 'warn' : undefined} />
+          <StatTile label="Failures" value={String(stats.data.failureCount ?? 0)} tone={(stats.data.failureCount ?? 0) > 0 ? 'warn' : undefined} />
+          <StatTile label="Categories" value={String(Object.keys(stats.data.categoryCounts ?? {}).length)} />
+        </div>
+      )}
+
+      {resource.status === 'loading' && resource.data === null && <AdminLoadingPanel label="Reading the audit trail…" />}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="The audit trail could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+      {resource.status === 'ready' && logs.length === 0 && (
+        <AdminEmptyPanel
+          title="No audit rows match"
+          description={
+            search.trim()
+              ? `No administrative action matches “${search.trim()}”.`
+              : 'The administrative trail is empty. That is unusual — check that the audit middleware is mounted before reading it as "nothing happened".'
+          }
+        />
+      )}
+
+      {logs.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <table className="w-full min-w-[900px] text-xs">
+            <caption className="sr-only">Administrative audit trail, newest first</caption>
+            <thead className="border-b border-border bg-canvas">
+              <tr>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">When</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Action</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Category</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Severity</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Actor</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Resource</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                  <td className="whitespace-nowrap px-3 py-2 text-ink-muted">{log.createdAt ?? '—'}</td>
+                  <td className="px-3 py-2 font-mono text-2xs text-ink">{log.action}</td>
+                  <td className="px-3 py-2 text-ink-secondary">{log.category ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', severityPill(log.severity))}>
+                      {log.severity}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-ink-secondary">{log.actorEmail ?? log.actorUid ?? 'system'}</td>
+                  <td className="px-3 py-2 text-2xs text-ink-muted">
+                    {log.resourceType ? `${log.resourceType}:${log.resourceId ?? '—'}` : log.pathname ?? '—'}
+                  </td>
+                </tr>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ─── 2. Operators & Staff ─── */}
-      {subTab === 'operators' && (
-        <div className="space-y-4">
-          {opNotice && (
-            <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800 flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-brand-600 shrink-0" />
-              {opNotice}
-            </div>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="size-4 text-brand-600" />
-                Staff Directory & Role-Based Access Control (RBAC)
-              </CardTitle>
-              <CardDescription>
-                Manage platform permissions, enforce 2-Factor Authentication, and revoke active sessions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-neutral-50 text-xs font-semibold uppercase text-ink-muted">
-                    <tr>
-                      <th className="px-4 py-3">Operator Name</th>
-                      <th className="px-4 py-3">Email Address</th>
-                      <th className="px-4 py-3">RBAC Role</th>
-                      <th className="px-4 py-3">MFA Status</th>
-                      <th className="px-4 py-3">Last Active</th>
-                      <th className="px-4 py-3 text-right">Emergency Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border bg-white">
-                    {operators.map((op) => (
-                      <tr key={op.uid} className="hover:bg-neutral-50/50">
-                        <td className="px-4 py-3 font-semibold text-ink">{op.name}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-ink-secondary">{op.email}</td>
-                        <td className="px-4 py-3">
-                          <select
-                            value={op.role}
-                            onChange={(e) => handleRoleChange(op.uid, e.target.value as OperatorUser['role'])}
-                            className="rounded-md border border-border bg-white px-2 py-1 text-xs font-medium text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                          >
-                            <option value="super_admin">Super Admin (*)</option>
-                            <option value="security_officer">Security Officer</option>
-                            <option value="support_lead">Support Lead</option>
-                            <option value="content_moderator">Content Moderator</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          {op.mfaEnabled ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-xs font-semibold text-success-700">
-                              <Lock className="size-3" /> Enforced
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                              <AlertTriangle className="size-3" /> Pending
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-ink-muted">{op.lastActive}</td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="destructive"
-                            size="xs"
-                            onClick={() => handleRevokeSessions(op.uid, op.name)}
-                          >
-                            <LogOut className="mr-1 size-3.5" />
-                            Revoke Sessions
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* ─── 3. Audit Trail & CSV Export ─── */}
-      {subTab === 'audit' && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileSpreadsheet className="size-4 text-brand-600" />
-                Administrative Audit Log & Forensic Compliance
-              </CardTitle>
-              <CardDescription>
-                Immutable record of administrative mutations, configuration updates, and impersonations.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Search actor, action, target..."
-                value={searchAudit}
-                onChange={(e) => setSearchAudit(e.target.value)}
-                className="w-64"
-              />
-              <Button variant="outline" size="sm" onClick={exportNeutralizedCsv}>
-                <Download className="mr-1.5 size-4 text-brand-600" />
-                Export CSV (Safe Formula-Neutralized)
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-neutral-50 text-xs font-semibold uppercase text-ink-muted">
-                  <tr>
-                    <th className="px-4 py-3">Timestamp</th>
-                    <th className="px-4 py-3">Actor</th>
-                    <th className="px-4 py-3">Action</th>
-                    <th className="px-4 py-3">Target Resource</th>
-                    <th className="px-4 py-3">IP Address</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border bg-white">
-                  {filteredAudits.map((a) => (
-                    <tr key={a.id} className="hover:bg-neutral-50/50">
-                      <td className="px-4 py-3 font-mono text-xs text-ink-muted">{a.timestamp}</td>
-                      <td className="px-4 py-3 font-semibold text-xs text-ink">{a.actor}</td>
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-brand-700">{a.action}</td>
-                      <td className="px-4 py-3 text-xs text-ink-secondary">{a.target}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-ink-muted">{a.ipAddress}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn(
-                          'rounded-full px-2 py-0.5 text-xs font-bold uppercase',
-                          a.status === 'SUCCESS' ? 'bg-success-50 text-success-700' :
-                          a.status === 'RATE_LIMITED' ? 'bg-amber-50 text-amber-700' :
-                          'bg-error-50 text-error-700'
-                        )}>
-                          {a.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <p className="text-2xs text-ink-muted">
+        {logs.length} rows · source {resource.data?.source ?? 'unknown'}
+        {resource.data?.hasMore ? ' · more rows exist; narrow the search' : ''}
+      </p>
+    </section>
+  );
+}
 
-      {/* ─── 4. System Broadcasts ─── */}
-      {subTab === 'broadcasts' && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Megaphone className="size-4 text-brand-600" />
-                Dispatch System Broadcast Announcement
-              </CardTitle>
-              <CardDescription>
-                Surface an instant alert banner to targeted user groups across all active web shells.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input
-                  placeholder="Announcement Title (e.g. Scheduled Maintenance)"
-                  value={newAnnTitle}
-                  onChange={(e) => setNewAnnTitle(e.target.value)}
-                />
-                <select
-                  value={newAnnAudience}
-                  onChange={(e) => setNewAnnAudience(e.target.value as Announcement['audience'])}
-                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="ALL">All Platform Users</option>
-                  <option value="CANDIDATES">Candidates Only</option>
-                  <option value="EMPLOYERS">Employers & Recruiters</option>
-                  <option value="ENTERPRISE">Enterprise Organization Tenants</option>
-                </select>
-                <div className="sm:col-span-2">
-                  <Input
-                    placeholder="Broadcast message body details..."
-                    value={newAnnMsg}
-                    onChange={(e) => setNewAnnMsg(e.target.value)}
-                  />
-                </div>
-                <div className="sm:col-span-2 flex justify-end">
-                  <Button variant="primary" onClick={handleCreateAnnouncement}>
-                    <Radio className="mr-1.5 size-4" />
-                    Dispatch Broadcast
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+/* ── broadcasts ──────────────────────────────────────────────────────── */
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Active Broadcast Notices ({announcements.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {announcements.map((ann) => (
-                  <div key={ann.id} className="flex items-start justify-between rounded-xl border border-border p-4 bg-white hover:border-brand-200">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-ink">{ann.title}</span>
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
-                          Audience: {ann.audience}
-                        </span>
-                        <span className="text-xs text-ink-muted">· {ann.createdAt}</span>
-                      </div>
-                      <p className="text-sm text-ink-secondary">{ann.message}</p>
-                    </div>
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteAnnouncement(ann.id)}>
-                      <Trash2 className="size-4 text-error-600" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+function BroadcastsPanel({
+  announce,
+  report,
+}: {
+  announce: (tone: 'success' | 'error', text: string) => void;
+  report: (error: unknown) => void;
+}) {
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ announcements?: Announcement[]; source?: string }>('/platform/announcements', undefined, { signal }),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const rows = resource.data?.announcements ?? [];
 
-      {/* ─── Centered Forensic Security Event Inspector Modal ─── */}
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setSelectedEvent(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="security-event-title"
-        >
-          <div
-            className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={cn(
-                    'size-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-md shrink-0',
-                    selectedEvent.severity === 'CRITICAL' ? 'bg-rose-600 text-white' : 'bg-brand-600 text-white'
-                  )}
-                >
-                  <Shield className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 id="security-event-title" className="text-base font-extrabold text-white truncate font-mono">
-                    {selectedEvent.type}
-                  </h3>
-                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                    {selectedEvent.timestamp} · Event ID: {selectedEvent.id}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedEvent(null)}
-                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-                aria-label="Close inspector"
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [severity, setSeverity] = useState<'INFO' | 'MEDIUM' | 'HIGH'>('INFO');
+  const [audience, setAudience] = useState('ALL');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const createAnnouncement = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy('create');
+    try {
+      await post('/platform/announcements', { title: title.trim(), message: message.trim(), severity, audience });
+      announce('success', `Broadcast “${title.trim()}” published for ${audience}.`);
+      setTitle('');
+      setMessage('');
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const toggle = async (row: Announcement) => {
+    setBusy(row.id);
+    try {
+      await patch(`/platform/announcements/${encodeURIComponent(row.id)}`, {
+        enabled: !row.enabled,
+        expectedRevision: row.revision,
+      });
+      announce('success', `Broadcast “${row.title}” ${row.enabled ? 'withdrawn' : 'enabled'}.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (row: Announcement) => {
+    setBusy(`del-${row.id}`);
+    try {
+      await del(`/platform/announcements/${encodeURIComponent(row.id)}`);
+      announce('success', `Broadcast “${row.title}” deleted.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section id="security-panel-broadcasts" role="tabpanel" className="space-y-4">
+      <form onSubmit={createAnnouncement} className="space-y-3 rounded-xl border border-border bg-surface p-4">
+        <h3 className="text-xs font-bold uppercase tracking-wide text-ink">New broadcast</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label htmlFor="ann-title" className="block text-2xs font-bold text-ink">Title</label>
+            <Input
+              id="ann-title"
+              required
+              minLength={3}
+              maxLength={160}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className="h-11 text-xs sm:h-9"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label htmlFor="ann-severity" className="block text-2xs font-bold text-ink">Severity</label>
+              <select
+                id="ann-severity"
+                value={severity}
+                onChange={(event) => setSeverity(event.target.value as 'INFO' | 'MEDIUM' | 'HIGH')}
+                className="h-11 w-full rounded-lg border border-border bg-surface px-2 text-xs sm:h-9"
               >
-                <X className="size-5" />
-              </button>
+                <option value="INFO">INFO</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+              </select>
             </div>
+            <div className="space-y-1">
+              <label htmlFor="ann-audience" className="block text-2xs font-bold text-ink">Audience</label>
+              <select
+                id="ann-audience"
+                value={audience}
+                onChange={(event) => setAudience(event.target.value)}
+                className="h-11 w-full rounded-lg border border-border bg-surface px-2 text-xs sm:h-9"
+              >
+                <option value="ALL">ALL</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="ENTERPRISE">ENTERPRISE</option>
+                <option value="EMPLOYER">EMPLOYER</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="ann-message" className="block text-2xs font-bold text-ink">Message</label>
+          <Input
+            id="ann-message"
+            required
+            minLength={3}
+            maxLength={1000}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            className="h-11 text-xs sm:h-9"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button type="submit" variant="primary" size="sm" loading={busy === 'create'} className="min-h-11 sm:min-h-9">
+            Publish broadcast
+          </Button>
+        </div>
+      </form>
 
-            {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Severity</span>
-                  <p className="font-extrabold text-ink mt-0.5">{selectedEvent.severity}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Category</span>
-                  <p className="font-extrabold text-ink mt-0.5 truncate">{selectedEvent.category || 'GATEWAY'}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Outcome</span>
-                  <p className={cn('font-extrabold mt-0.5', selectedEvent.outcome === 'FAILED' ? 'text-rose-600' : 'text-emerald-600')}>
-                    {selectedEvent.outcome || 'BLOCKED'}
-                  </p>
-                </div>
-              </div>
+      {resource.status === 'loading' && resource.data === null && <AdminLoadingPanel label="Reading broadcasts…" />}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="Broadcasts could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+      {resource.status === 'ready' && rows.length === 0 && (
+        <AdminEmptyPanel title="No broadcast published" description="platform_announcements returned no rows." tone="neutral" />
+      )}
 
-              <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-border font-mono text-[11px]">
-                <div className="flex justify-between items-center py-1 border-b border-border/60">
-                  <span className="text-ink-muted">Principal / Actor:</span>
-                  <span className="text-ink font-bold select-all">{selectedEvent.principal}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-border/60">
-                  <span className="text-ink-muted">Client IP Address:</span>
-                  <span className="text-ink font-bold select-all">{selectedEvent.ip}</span>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-ink-muted">Audited Mutation:</span>
-                  <span className="text-ink font-bold select-all">{selectedEvent.action}</span>
-                </div>
-              </div>
-
-              {/* JSON Payload */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink uppercase tracking-wide">
-                    Forensic Payload & Environmental Metadata
+      {rows.length > 0 && (
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+          {rows.map((row) => (
+            <li key={row.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-xs font-bold text-ink">
+                  {row.title}
+                  <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', severityPill(row.severity))}>
+                    {row.severity}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(JSON.stringify(selectedEvent.metadata || selectedEvent, null, 2), 'payload')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 cursor-pointer"
-                  >
-                    {copiedKey === 'payload' ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
-                    <span>{copiedKey === 'payload' ? 'Copied JSON!' : 'Copy JSON'}</span>
-                  </button>
-                </div>
-                <pre className="text-[11px] bg-neutral-950 text-emerald-400 rounded-xl p-4 overflow-x-auto font-mono max-h-52 border border-neutral-800 leading-relaxed shadow-inner">
-                  {JSON.stringify(selectedEvent.metadata || selectedEvent, null, 2)}
-                </pre>
+                  {!row.enabled && (
+                    <span className="rounded-full border border-border bg-neutral-100 px-2 py-0.5 text-2xs font-bold uppercase text-ink-muted dark:bg-neutral-800">
+                      withdrawn
+                    </span>
+                  )}
+                </p>
+                <p className="line-clamp-2 text-2xs text-ink-secondary">{row.message}</p>
+                <p className="text-2xs text-ink-muted">
+                  {row.audience} · revision {row.revision} · {row.createdBy ?? 'unknown'} · updated {row.updatedAt ?? '—'}
+                </p>
               </div>
-            </div>
-
-            {/* Footer with Remediation Actions */}
-            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBlockIp(selectedEvent.ip)}
-                  className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50"
+                  onClick={() => toggle(row)}
+                  loading={busy === row.id}
+                  className="min-h-11 sm:min-h-9"
                 >
-                  <Ban className="size-3 mr-1" />
-                  Block IP {selectedEvent.ip}
+                  {row.enabled ? 'Withdraw' : 'Enable'}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => handleRevokeSessions(selectedEvent.principal, selectedEvent.principal)}
-                  className="text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+                  onClick={() => remove(row)}
+                  loading={busy === `del-${row.id}`}
+                  className="min-h-11 text-error-700 sm:min-h-9"
                 >
-                  <LogOut className="size-3 mr-1" />
-                  Revoke Principal Sessions
+                  Delete
                 </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)} className="text-xs">
-                Close Inspector
-              </Button>
-            </div>
-          </div>
-        </div>
+            </li>
+          ))}
+        </ul>
       )}
+    </section>
+  );
+}
 
-      {/* ─── Confirmation Modal ─── */}
-      {confirmModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setConfirmModal(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={cn(
-                'p-4 border-b flex items-center gap-3',
-                confirmModal.danger ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-brand-50 border-brand-100 text-brand-900'
-              )}
-            >
-              {confirmModal.danger ? (
-                <AlertTriangle className="size-5 text-rose-600" />
-              ) : (
-                <ShieldAlert className="size-5 text-brand-600" />
-              )}
-              <h3 className="font-bold text-sm">{confirmModal.title}</h3>
-            </div>
-            <div className="p-5 text-xs text-ink-muted leading-relaxed">
-              {confirmModal.message}
-            </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setConfirmModal(null)} className="text-xs">
-                Cancel
-              </Button>
-              <Button
-                variant={confirmModal.danger ? 'destructive' : 'primary'}
-                size="sm"
-                onClick={() => {
-                  const act = confirmModal.action;
-                  setConfirmModal(null);
-                  act();
-                }}
-                className="text-xs font-bold"
-              >
-                {confirmModal.confirmText}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── System Announcement Composer Modal ─── */}
-      {showAnnModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setShowAnnModal(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="broadcast-composer-title"
-        >
-          <div
-            className="w-full max-w-lg bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-border flex items-center justify-between bg-neutral-50">
-              <div className="flex items-center gap-2.5">
-                <div className="size-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
-                  <Megaphone className="size-5" />
-                </div>
-                <div>
-                  <h3 id="broadcast-composer-title" className="text-sm font-bold text-ink">
-                    Compose System Broadcast
-                  </h3>
-                  <p className="text-xs text-ink-muted">Surface alert banner or notification to active sessions.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAnnModal(false)}
-                className="p-1.5 text-ink-muted hover:text-ink rounded-lg hover:bg-neutral-100"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-ink block mb-1">Notice Title</label>
-                <Input
-                  placeholder="e.g. Scheduled Infrastructure Maintenance"
-                  value={newAnnTitle}
-                  onChange={(e) => setNewAnnTitle(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold text-ink block mb-1">Target Audience</label>
-                  <select
-                    value={newAnnAudience}
-                    onChange={(e) => setNewAnnAudience(e.target.value as Announcement['audience'])}
-                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  >
-                    <option value="ALL">All Users</option>
-                    <option value="CANDIDATES">Candidates Only</option>
-                    <option value="EMPLOYERS">Employers & Recruiters</option>
-                    <option value="ENTERPRISE">Enterprise Organizations</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-semibold text-ink block mb-1">Display Severity</label>
-                  <select
-                    value={newAnnSeverity}
-                    onChange={(e) => setNewAnnSeverity(e.target.value as Announcement['severity'])}
-                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  >
-                    <option value="banner">Banner (Top of Page)</option>
-                    <option value="modal">Modal Dialog (Must Acknowledge)</option>
-                    <option value="info">Subtle Toast Notification</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-semibold text-ink block mb-1">Announcement Message Body</label>
-                <textarea
-                  rows={3}
-                  placeholder="Provide precise details, maintenance windows, or instructions..."
-                  value={newAnnMsg}
-                  onChange={(e) => setNewAnnMsg(e.target.value)}
-                  className="w-full rounded-lg border border-border p-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-              </div>
-
-              {/* Live Preview Card */}
-              {newAnnTitle && (
-                <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5 space-y-1">
-                  <span className="text-2xs font-bold uppercase text-brand-700 tracking-wider">
-                    Live Broadcast Preview
-                  </span>
-                  <p className="font-bold text-xs text-brand-950">{newAnnTitle}</p>
-                  <p className="text-[11px] text-brand-800 leading-relaxed">{newAnnMsg || 'Message body preview...'}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-neutral-50 border-t border-border flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowAnnModal(false)} className="text-xs">
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  handleCreateAnnouncement();
-                  setShowAnnModal(false);
-                }}
-                disabled={!newAnnTitle.trim() || !newAnnMsg.trim()}
-                className="text-xs font-semibold"
-              >
-                <Radio className="size-3 mr-1" />
-                Publish Broadcast
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+function StatTile({ label, value, tone }: { label: string; value: string; tone?: 'warn' }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd className={cn('mt-1 text-sm font-bold', tone === 'warn' ? 'text-warning-700' : 'text-ink')}>{value}</dd>
     </div>
   );
 }

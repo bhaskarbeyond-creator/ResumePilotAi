@@ -8,11 +8,14 @@
  * 3. Status updates bind to: PATCH /api/admin/support/tickets/:ticketId
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { get, post, patch } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
 import {
   HelpCircle,
   Send,
@@ -44,107 +47,42 @@ interface SupportTicket {
   messages?: TicketMessage[];
 }
 
-const DEFAULT_TICKETS: SupportTicket[] = [
-  {
-    id: 'tkt_8021',
-    userEmail: 'sarah.jenkins@acme-corp.com',
-    email: 'sarah.jenkins@acme-corp.com',
-    subject: 'DOCX High-Fidelity Export table border styling issue',
-    description: 'When downloading template Cv14 in Word, the experience section column alignment is slightly shifted.',
-    status: 'OPEN',
-    priority: 'HIGH',
-    createdAt: '12 mins ago',
-    messages: [
-      {
-        id: 'msg_1',
-        role: 'USER',
-        body: 'When downloading template Cv14 in Word, the experience section column alignment is slightly shifted.',
-        createdAt: '12 mins ago',
-      },
-    ],
-  },
-  {
-    id: 'tkt_8020',
-    userEmail: 'dev.lead@techstart.io',
-    email: 'dev.lead@techstart.io',
-    subject: 'AI Interview Simulation token allocation inquiry',
-    description: 'How do we request a higher rate limit for our 50-candidate technical interview cohort?',
-    status: 'IN_PROGRESS',
-    priority: 'NORMAL',
-    createdAt: '1 hour ago',
-    messages: [
-      {
-        id: 'msg_2',
-        role: 'USER',
-        body: 'How do we request a higher rate limit for our 50-candidate technical interview cohort?',
-        createdAt: '1 hour ago',
-      },
-      {
-        id: 'msg_3',
-        role: 'STAFF',
-        body: 'Hello! You can adjust your RPM and daily allocations directly in the Enterprise Console AI tab.',
-        createdAt: '30 mins ago',
-      },
-    ],
-  },
-  {
-    id: 'tkt_8019',
-    userEmail: 'recruiter@global-hr.com',
-    email: 'recruiter@global-hr.com',
-    subject: 'Job application bulk review CSV export format',
-    description: 'Can we include candidate ATS score directly in the downloaded spreadsheet?',
-    status: 'RESOLVED',
-    priority: 'LOW',
-    createdAt: 'Yesterday',
-    messages: [
-      {
-        id: 'msg_4',
-        role: 'USER',
-        body: 'Can we include candidate ATS score directly in the downloaded spreadsheet?',
-        createdAt: 'Yesterday',
-      },
-      {
-        id: 'msg_5',
-        role: 'STAFF',
-        body: 'Yes, candidate ATS score is automatically included as column G in all recruiter export spreadsheets.',
-        createdAt: 'Yesterday',
-      },
-    ],
-  },
-];
-
 export function AdminHelpDeskTab() {
-  const [tickets, setTickets] = useState<SupportTicket[]>(DEFAULT_TICKETS);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(DEFAULT_TICKETS[0]?.id ?? '');
+  const loadTickets = useCallback(
+    (signal: AbortSignal) =>
+      get<{ success?: boolean; tickets?: SupportTicket[] }>(
+        '/admin/support/tickets',
+        undefined,
+        { signal },
+      ),
+    [],
+  );
+  const resource = useAdminResource(loadTickets);
+  // `null` until the server answers: a ticket list the server did not send does not exist.
+  const tickets = resource.data?.tickets ?? [];
+
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  /** Selection is derived, not stored twice: the first ticket is selected until one is picked. */
+  const selectedTicket = useMemo(
+    () => tickets.find((ticket) => ticket.id === selectedTicketId) ?? tickets[0] ?? null,
+    [tickets, selectedTicketId],
+  );
+
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [, setLoading] = useState(true);
+  const [flash, setFlash] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  const loadTickets = async () => {
-    try {
-      const res = await get<{ success?: boolean; tickets?: SupportTicket[] }>('/admin/support/tickets');
-      if (res?.tickets && Array.isArray(res.tickets) && res.tickets.length > 0) {
-        setTickets(res.tickets);
-        if (!selectedTicketId) {
-          const [firstTicket] = res.tickets;
-          if (firstTicket) setSelectedTicketId(firstTicket.id);
-        }
-      }
-    } catch {
-      // Keep baseline
-    } finally {
-      setLoading(false);
-    }
+  const report = (error: unknown) => {
+    const failure = describeAdminFailure(error);
+    setFlash({
+      tone: 'error',
+      text: `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`,
+    });
   };
-
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  const selectedTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,28 +92,14 @@ export function AdminHelpDeskTab() {
     const text = replyText.trim();
 
     try {
-      // CONTRACT: POST /api/admin/support/tickets/:ticketId/messages
-      await post(`/admin/support/tickets/${selectedTicket.id}/messages`, {
+      await post(`/admin/support/tickets/${encodeURIComponent(selectedTicket.id)}/messages`, {
         body: text,
-        message: text,
-      }).catch(() => {});
-
-      const newMsg: TicketMessage = {
-        id: `msg_${Date.now()}`,
-        role: 'STAFF',
-        body: text,
-        createdAt: 'Just now',
-      };
-
-      setTickets((prev) =>
-        prev.map((t) =>
-          t.id === selectedTicket.id
-            ? { ...t, status: 'IN_PROGRESS', messages: [...(t.messages || []), newMsg] }
-            : t
-        )
-      );
-
+      });
       setReplyText('');
+      setFlash({ tone: 'success', text: `Reply sent to ticket ${selectedTicket.id}.` });
+      resource.reload();
+    } catch (error) {
+      report(error);
     } finally {
       setSendingReply(false);
     }
@@ -185,12 +109,13 @@ export function AdminHelpDeskTab() {
     if (!selectedTicket) return;
     setUpdatingStatus(true);
     try {
-      // CONTRACT: PATCH /api/admin/support/tickets/:ticketId
-      await patch(`/admin/support/tickets/${selectedTicket.id}`, { status: newStatus }).catch(() => {});
-
-      setTickets((prev) =>
-        prev.map((t) => (t.id === selectedTicket.id ? { ...t, status: newStatus } : t))
-      );
+      await patch(`/admin/support/tickets/${encodeURIComponent(selectedTicket.id)}`, {
+        status: newStatus,
+      });
+      setFlash({ tone: 'success', text: `Ticket ${selectedTicket.id} marked ${newStatus}.` });
+      resource.reload();
+    } catch (error) {
+      report(error);
     } finally {
       setUpdatingStatus(false);
     }
@@ -241,6 +166,44 @@ export function AdminHelpDeskTab() {
         </div>
       </div>
 
+      {flash && (
+        <div
+          role={flash.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            flash.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
+          )}
+        >
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+          <span className="flex-1">{flash.text}</span>
+          <button type="button" onClick={() => setFlash(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {resource.status === 'loading' && resource.data === null && (
+        <AdminLoadingPanel label="Reading the support queue…" />
+      )}
+
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel
+          title="The support queue could not be read"
+          error={resource.error}
+          onRetry={resource.reload}
+        />
+      )}
+
+      {resource.status === 'ready' && tickets.length === 0 && (
+        <AdminEmptyPanel
+          title="No support ticket"
+          description="The ticket store answered with no rows. Nothing is queued for this desk."
+        />
+      )}
+
+      {tickets.length > 0 && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 rounded-xl border border-border bg-surface overflow-hidden shadow-sm">
         {/* Ticket List (5 cols) */}
         <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-border divide-y divide-border overflow-y-auto max-h-[550px]">
@@ -259,11 +222,13 @@ export function AdminHelpDeskTab() {
           {filteredTickets.map((t) => {
             const isSelected = selectedTicket?.id === t.id;
             return (
-              <div
+              <button
                 key={t.id}
+                type="button"
                 onClick={() => setSelectedTicketId(t.id)}
+                aria-pressed={isSelected}
                 className={cn(
-                  'p-3.5 cursor-pointer text-left transition-colors',
+                  'block w-full min-h-11 cursor-pointer p-3.5 text-left transition-colors',
                   isSelected ? 'bg-brand-50/70 dark:bg-brand-950/30' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
                 )}
               >
@@ -291,7 +256,7 @@ export function AdminHelpDeskTab() {
                     {t.priority}
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
           {filteredTickets.length === 0 && (
@@ -376,6 +341,7 @@ export function AdminHelpDeskTab() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

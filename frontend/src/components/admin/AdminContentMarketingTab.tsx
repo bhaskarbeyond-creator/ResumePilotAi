@@ -1,456 +1,385 @@
 /**
- * Content & Marketing CMS Sub-Module Tab
+ * Marketing content: the ATS phrase dictionary and published testimonials.
  *
- * Encompasses:
- * 1. ATS Action Phrases Dictionary (Localization & Phrases)
- * 2. Reviews & Testimonials Moderation
- * 3. Trusted By Logo Registry
- * 4. Dynamic Landing Pages Directory
+ * Two sections, because those are the two surfaces the backend actually serves:
+ *
+ *   GET    /api/phrases                     canonical_documents('phrases') — category tree
+ *   POST   /api/phrases                     whole-category replace {categories:{name:[…]}}
+ *   DELETE /api/phrases/:category           remove a category
+ *   GET    /api/reviews?limit=              approved testimonials only (repository filters)
+ *
+ * Two sections were **removed**, not implemented: "Trusted By logos" and "Landing pages &
+ * SEO". Neither has a route, a table or a document type in this codebase, and both were
+ * rendering invented rows (Google Cloud Partner, NVIDIA Inception, `/executive-resume-builder`
+ * with 24 190 views and a 14.2 % conversion rate) that no one could edit, publish or verify.
+ * Keeping a fabricated analytics table is worse than an empty tab: it invites decisions.
+ * Topic tracked as `OI-CMS-1`; if those surfaces are wanted they need schema first.
+ *
+ * The review list is read-only for the same reason: the repository exposes approved reviews
+ * (`getReviews({approvedOnly:true})`) and no moderation route, so the previous
+ * approve/reject buttons changed local state and nothing else.
  */
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useCallback, useMemo, useState } from 'react';
+import { BookOpen, Plus, Star, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import {
-  BookOpen,
-  Star,
-  Building,
-  Globe,
-  Plus,
-  CheckCircle2,
-  XCircle,
-  Trash2,
-  ExternalLink,
-} from 'lucide-react';
+import { del, get, post } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
 
-interface PhraseItem {
-  id: string;
-  phrase: string;
-  category: 'Leadership' | 'Technical' | 'Innovation' | 'Operations' | 'Finance';
-  impactLevel: 'High' | 'Executive' | 'Standard';
-  language: string;
-}
-
-interface ReviewItem {
-  id: string;
-  author: string;
-  role: string;
-  company: string;
-  rating: number;
-  content: string;
-  status: 'approved' | 'pending' | 'rejected';
-  date: string;
-}
-
-interface TrustedByItem {
+interface PhraseCategory {
   id: string;
   name: string;
-  category: 'Enterprise' | 'Scaleup' | 'Tech' | 'Global';
-  logoPlaceholder: string;
-  status: 'active' | 'inactive';
-  sortOrder: number;
+  phrases: string[];
+  revision: number;
 }
 
-interface LandingPageItem {
+interface ReviewRow {
   id: string;
-  slug: string;
-  title: string;
-  category: string;
-  views: number;
-  conversionRate: string;
-  status: 'published' | 'draft';
+  author?: string;
+  name?: string;
+  role?: string;
+  company?: string;
+  rating?: number;
+  content?: string;
+  text?: string;
+  createdAt?: string;
 }
 
-const INITIAL_PHRASES: PhraseItem[] = [
-  { id: 'p1', phrase: 'Spearheaded zero-downtime distributed system migration reducing latency by 42%', category: 'Technical', impactLevel: 'Executive', language: 'en' },
-  { id: 'p2', phrase: 'Orchestrated cross-functional product roadmap driving $14M ARR expansion across EMEA', category: 'Leadership', impactLevel: 'Executive', language: 'en' },
-  { id: 'p3', phrase: 'Formulated automated QA regression gates cutting bug-escape velocity to sub-0.1%', category: 'Operations', impactLevel: 'High', language: 'en' },
-  { id: 'p4', phrase: 'Engineered high-throughput event sourcing pipeline processing 850k events/sec', category: 'Innovation', impactLevel: 'Executive', language: 'en' },
-  { id: 'p5', phrase: 'Standardized SOC2 Type II compliance framework across multi-cloud tenant architecture', category: 'Finance', impactLevel: 'High', language: 'en' },
-];
+type SubTab = 'phrases' | 'reviews';
 
-const INITIAL_REVIEWS: ReviewItem[] = [
-  { id: 'r1', author: 'Elena Rostova', role: 'Principal Architect', company: 'HyperScale Corp', rating: 5, content: 'The Cuba Design system and 12-step resume builder completely streamlined our executive candidate presentations. ATS match jumped instantly.', status: 'approved', date: '2026-10-12' },
-  { id: 'r2', author: 'Marcus Vance', role: 'VP of Engineering', company: 'Nexus Logistics', rating: 5, content: 'DOCX high-fidelity export preserved all column layouts flawlessly. Unbelievably accurate ATS phrase suggestions.', status: 'approved', date: '2026-10-15' },
-  { id: 'r3', author: 'Aria Chen', role: 'Staff SRE', company: 'CloudWave', rating: 4, content: 'Multi-provider AI failover worked seamlessly when OpenAI experienced quota spikes. Great platform.', status: 'pending', date: '2026-10-17' },
-];
+function readCategories(payload: unknown): PhraseCategory[] {
+  const rows = (payload as { categories?: unknown })?.categories;
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null)
+    .map((row) => ({
+      id: String(row.id ?? row.name ?? ''),
+      name: String(row.name ?? row.id ?? ''),
+      phrases: Array.isArray(row.phrases) ? row.phrases.map(String) : [],
+      revision: Number(row.revision ?? 0),
+    }))
+    .filter((category) => category.id !== '');
+}
 
-const INITIAL_TRUSTED: TrustedByItem[] = [
-  { id: 't1', name: 'Google Cloud Partner', category: 'Enterprise', logoPlaceholder: 'GCP', status: 'active', sortOrder: 1 },
-  { id: 't2', name: 'NVIDIA Inception', category: 'Tech', logoPlaceholder: 'NVDA', status: 'active', sortOrder: 2 },
-  { id: 't3', name: 'Microsoft for Startups', category: 'Enterprise', logoPlaceholder: 'MSFT', status: 'active', sortOrder: 3 },
-  { id: 't4', name: 'AWS Activate', category: 'Global', logoPlaceholder: 'AWS', status: 'active', sortOrder: 4 },
-  { id: 't5', name: 'Stripe Climate', category: 'Scaleup', logoPlaceholder: 'STRP', status: 'active', sortOrder: 5 },
-];
-
-const INITIAL_PAGES: LandingPageItem[] = [
-  { id: 'lp1', slug: '/executive-resume-builder', title: 'Executive Resume Builder & ATS Optimizer', category: 'Executive', views: 24190, conversionRate: '14.2%', status: 'published' },
-  { id: 'lp2', slug: '/ai-interview-preparation', title: 'AI Mock Interview Coach with Real-Time Audio', category: 'Interview', views: 18450, conversionRate: '18.9%', status: 'published' },
-  { id: 'lp3', slug: '/enterprise-talent-cloud', title: 'Multi-Tenant Enterprise Talent Cloud for Organizations', category: 'Enterprise', views: 8900, conversionRate: '9.4%', status: 'published' },
-];
+function readReviews(payload: unknown): ReviewRow[] {
+  const rows = (payload as { reviews?: unknown })?.reviews;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row): row is ReviewRow => typeof row === 'object' && row !== null);
+}
 
 export function AdminContentMarketingTab() {
-  const [subTab, setSubTab] = useState<'phrases' | 'reviews' | 'trusted' | 'landing'>('phrases');
-  
-  // Phrases State
-  const [phrases, setPhrases] = useState<PhraseItem[]>(INITIAL_PHRASES);
-  const [searchPhrase, setSearchPhrase] = useState('');
-  const [newPhraseText, setNewPhraseText] = useState('');
-  const [newPhraseCategory, setNewPhraseCategory] = useState<PhraseItem['category']>('Technical');
-  
-  // Reviews State
-  const [reviews, setReviews] = useState<ReviewItem[]>(INITIAL_REVIEWS);
-  
-  // Trusted By State
-  const [trustedList, setTrustedList] = useState<TrustedByItem[]>(INITIAL_TRUSTED);
-  const [newBrandName, setNewBrandName] = useState('');
-  
-  // Landing Pages State
-  const [landingPages] = useState<LandingPageItem[]>(INITIAL_PAGES);
+  const [subTab, setSubTab] = useState<SubTab>('phrases');
+  const [flash, setFlash] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  const handleAddPhrase = () => {
-    if (!newPhraseText.trim()) return;
-    const item: PhraseItem = {
-      id: `p_${Date.now()}`,
-      phrase: newPhraseText.trim(),
-      category: newPhraseCategory,
-      impactLevel: 'High',
-      language: 'en',
-    };
-    setPhrases([item, ...phrases]);
-    setNewPhraseText('');
+  const announce = (tone: 'success' | 'error', text: string) => setFlash({ tone, text });
+  const report = (error: unknown) => {
+    const failure = describeAdminFailure(error);
+    announce('error', `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`);
   };
 
-  const handleDeletePhrase = (id: string) => {
-    setPhrases(phrases.filter(p => p.id !== id));
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-ink">Content &amp; marketing</h2>
+        <p className="text-xs text-ink-muted">
+          Phrase dictionaries and published testimonials. Every row is stored; nothing is
+          generated for display.
+        </p>
+      </div>
+
+      {flash && (
+        <div
+          role={flash.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            flash.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
+          )}
+        >
+          <span className="flex-1">{flash.text}</span>
+          <button type="button" onClick={() => setFlash(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">Dismiss</button>
+        </div>
+      )}
+
+      <div role="tablist" aria-label="Content sections" className="flex gap-1 overflow-x-auto border-b border-border">
+        {(
+          [
+            { id: 'phrases', label: 'ATS phrase dictionary', icon: BookOpen },
+            { id: 'reviews', label: 'Testimonials', icon: Star },
+          ] as const
+        ).map((entry) => {
+          const Icon = entry.icon;
+          const active = subTab === entry.id;
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={`content-panel-${entry.id}`}
+              onClick={() => setSubTab(entry.id)}
+              className={cn(
+                'flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-3 text-xs font-bold transition-colors',
+                active ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink',
+              )}
+            >
+              <Icon className="size-3.5" />
+              {entry.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {subTab === 'phrases' && <PhrasesPanel announce={announce} report={report} />}
+      {subTab === 'reviews' && <ReviewsPanel />}
+    </div>
+  );
+}
+
+function PhrasesPanel({
+  announce,
+  report,
+}: {
+  announce: (tone: 'success' | 'error', text: string) => void;
+  report: (error: unknown) => void;
+}) {
+  const load = useCallback(
+    (signal: AbortSignal) => get<unknown>('/phrases', undefined, { signal }).then(readCategories),
+    [],
+  );
+  const resource = useAdminResource<PhraseCategory[]>(load);
+  const categories = useMemo(() => resource.data ?? [], [resource.data]);
+
+  const [category, setCategory] = useState<string>('');
+  const [phrase, setPhrase] = useState('');
+  const [filter, setFilter] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const activeCategory = categories.find((entry) => entry.name === category) ?? categories[0] ?? null;
+
+  /** The write route replaces a whole category, so the list is sent complete. */
+  const writeCategory = async (name: string, phrases: string[]) => {
+    await post('/phrases', { categories: { [name]: phrases } });
   };
 
-  const handleReviewAction = (id: string, status: 'approved' | 'rejected') => {
-    setReviews(reviews.map(r => r.id === id ? { ...r, status } : r));
+  const addPhrase = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!activeCategory || phrase.trim().length < 3) return;
+    setBusy('add');
+    try {
+      const next = [...activeCategory.phrases, phrase.trim()];
+      await writeCategory(activeCategory.name, next);
+      announce('success', `Phrase added to “${activeCategory.name}” (${next.length} total).`);
+      setPhrase('');
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const handleToggleTrusted = (id: string) => {
-    setTrustedList(trustedList.map(t => t.id === id ? { ...t, status: t.status === 'active' ? 'inactive' : 'active' } : t));
+  const removePhrase = async (target: string) => {
+    if (!activeCategory) return;
+    setBusy(target);
+    try {
+      const next = activeCategory.phrases.filter((entry) => entry !== target);
+      await writeCategory(activeCategory.name, next);
+      announce('success', `Phrase removed from “${activeCategory.name}”.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const handleAddTrusted = () => {
-    if (!newBrandName.trim()) return;
-    const item: TrustedByItem = {
-      id: `t_${Date.now()}`,
-      name: newBrandName.trim(),
-      category: 'Enterprise',
-      logoPlaceholder: newBrandName.trim().slice(0, 4).toUpperCase(),
-      status: 'active',
-      sortOrder: trustedList.length + 1,
-    };
-    setTrustedList([...trustedList, item]);
-    setNewBrandName('');
+  const removeCategory = async () => {
+    if (!activeCategory) return;
+    setBusy('category');
+    try {
+      await del(`/phrases/${encodeURIComponent(activeCategory.name)}`);
+      announce('success', `Category “${activeCategory.name}” deleted.`);
+      setCategory('');
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const filteredPhrases = phrases.filter(p =>
-    p.phrase.toLowerCase().includes(searchPhrase.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchPhrase.toLowerCase())
+  if (resource.status === 'loading' && resource.data === null) {
+    return <AdminLoadingPanel label="Reading the phrase dictionary…" />;
+  }
+  if (resource.status === 'failed' && resource.error) {
+    return <AdminErrorPanel title="The phrase dictionary could not be read" error={resource.error} onRetry={resource.reload} />;
+  }
+  if (categories.length === 0) {
+    return (
+      <AdminEmptyPanel
+        title="No phrase category"
+        description="canonical_documents('phrases') returned no documents. The dictionary is empty, so AI bullet suggestions have no curated source."
+      />
+    );
+  }
+
+  const visible = (activeCategory?.phrases ?? []).filter((entry) =>
+    entry.toLowerCase().includes(filter.trim().toLowerCase()),
   );
 
   return (
-    <div className="space-y-6">
-      {/* Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-        <div className="flex gap-2">
-          <Button
-            variant={subTab === 'phrases' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('phrases')}
+    <section id="content-panel-phrases" role="tabpanel" className="space-y-4">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <label htmlFor="phrase-category" className="block text-2xs font-bold text-ink">Category</label>
+          <select
+            id="phrase-category"
+            value={activeCategory?.name ?? ''}
+            onChange={(event) => setCategory(event.target.value)}
+            className="h-11 rounded-lg border border-border bg-surface px-2 text-xs font-semibold text-ink sm:h-9"
           >
-            <BookOpen className="mr-1.5 size-4" />
-            ATS Phrases Dictionary
-          </Button>
-          <Button
-            variant={subTab === 'reviews' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('reviews')}
-          >
-            <Star className="mr-1.5 size-4" />
-            Reviews & Testimonials ({reviews.filter(r => r.status === 'pending').length} Pending)
-          </Button>
-          <Button
-            variant={subTab === 'trusted' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('trusted')}
-          >
-            <Building className="mr-1.5 size-4" />
-            Trusted By Logos
-          </Button>
-          <Button
-            variant={subTab === 'landing' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setSubTab('landing')}
-          >
-            <Globe className="mr-1.5 size-4" />
-            Landing Pages & SEO
-          </Button>
+            {categories.map((entry) => (
+              <option key={entry.id} value={entry.name}>
+                {entry.name} ({entry.phrases.length})
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={removeCategory}
+          loading={busy === 'category'}
+          className="min-h-11 text-error-700 sm:min-h-9"
+        >
+          <Trash2 className="mr-1 size-3.5" />
+          Delete category
+        </Button>
+        <div className="ml-auto w-full max-w-xs space-y-1">
+          <label htmlFor="phrase-filter" className="block text-2xs font-bold text-ink">Filter</label>
+          <Input
+            id="phrase-filter"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            placeholder="Filter phrases…"
+            className="h-11 text-xs sm:h-9"
+          />
         </div>
       </div>
 
-      {/* ─── 1. ATS Phrases Dictionary ─── */}
-      {subTab === 'phrases' && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <BookOpen className="size-4 text-brand-600" />
-                Add Semantic Action Phrase to ATS Engine
-              </CardTitle>
-              <CardDescription>
-                Phrases registered here automatically populate AI bullet suggestions and contextual recommendations.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  placeholder="Enter high-impact action phrase (e.g. Architected resilient multi-region...)"
-                  value={newPhraseText}
-                  onChange={(e) => setNewPhraseText(e.target.value)}
-                  className="flex-1"
-                />
-                <select
-                  value={newPhraseCategory}
-                  onChange={(e) => setNewPhraseCategory(e.target.value as PhraseItem['category'])}
-                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="Technical">Technical</option>
-                  <option value="Leadership">Leadership</option>
-                  <option value="Innovation">Innovation</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Finance">Finance</option>
-                </select>
-                <Button variant="primary" onClick={handleAddPhrase}>
-                  <Plus className="mr-1.5 size-4" />
-                  Add Phrase
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
+            {activeCategory?.name} — {activeCategory?.phrases.length ?? 0} phrases
+          </CardTitle>
+          <CardDescription>
+            Revision {activeCategory?.revision ?? 0}. Saving replaces the whole category, which is
+            what the endpoint does; the page never patches a single phrase optimistically.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <form onSubmit={addPhrase} className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={phrase}
+              onChange={(event) => setPhrase(event.target.value)}
+              placeholder="Architected a multi-region failover that cut p99 latency by 38%…"
+              aria-label="New phrase"
+              className="h-11 flex-1 text-xs sm:h-9"
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              loading={busy === 'add'}
+              disabled={phrase.trim().length < 3}
+              className="min-h-11 sm:min-h-9"
+            >
+              <Plus className="mr-1.5 size-4" />
+              Add phrase
+            </Button>
+          </form>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div>
-                <CardTitle className="text-base">Registered Action Phrases ({filteredPhrases.length})</CardTitle>
-                <CardDescription>Actionable verbs and high-impact accomplishment templates</CardDescription>
-              </div>
-              <div className="w-64">
-                <Input
-                  placeholder="Filter phrases..."
-                  value={searchPhrase}
-                  onChange={(e) => setSearchPhrase(e.target.value)}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y divide-border rounded-lg border border-border">
-                {filteredPhrases.map((phrase) => (
-                  <div key={phrase.id} className="flex items-center justify-between p-3 hover:bg-neutral-50 transition-colors">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-ink">{phrase.phrase}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                          {phrase.category}
-                        </span>
-                        <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700">
-                          {phrase.impactLevel} Impact
-                        </span>
-                        <span className="text-xs text-ink-muted uppercase">Lang: {phrase.language}</span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleDeletePhrase(phrase.id)}>
-                      <Trash2 className="size-4 text-error-600" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ─── 2. Reviews & Testimonials ─── */}
-      {subTab === 'reviews' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Star className="size-4 text-amber-500 fill-amber-500" />
-              Customer Testimonials & Verified Reviews Moderation
-            </CardTitle>
-            <CardDescription>
-              Approved reviews are surfaced across the Surface 1 Public Website and Enterprise landing hubs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {reviews.map((rev) => (
-                <div key={rev.id} className="rounded-xl border border-border p-4 bg-white hover:border-brand-200 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-ink text-sm">{rev.author}</span>
-                        <span className="text-xs text-ink-muted">· {rev.role} at {rev.company}</span>
-                        <span className={cn(
-                          'rounded-full px-2 py-0.5 text-xs font-bold uppercase',
-                          rev.status === 'approved' ? 'bg-success-50 text-success-700' :
-                          rev.status === 'pending' ? 'bg-amber-50 text-amber-700' :
-                          'bg-error-50 text-error-700'
-                        )}>
-                          {rev.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 my-1.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn('size-3.5', i < rev.rating ? 'text-amber-500 fill-amber-500' : 'text-neutral-300')}
-                          />
-                        ))}
-                        <span className="ml-2 text-xs text-ink-muted">{rev.date}</span>
-                      </div>
-                      <p className="text-sm text-ink-secondary mt-1 italic">"{rev.content}"</p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {rev.status !== 'approved' && (
-                        <Button
-                          variant="success"
-                          size="xs"
-                          onClick={() => handleReviewAction(rev.id, 'approved')}
-                        >
-                          <CheckCircle2 className="mr-1 size-3.5" />
-                          Approve
-                        </Button>
-                      )}
-                      {rev.status !== 'rejected' && (
-                        <Button
-                          variant="destructive"
-                          size="xs"
-                          onClick={() => handleReviewAction(rev.id, 'rejected')}
-                        >
-                          <XCircle className="mr-1 size-3.5" />
-                          Reject
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ─── 3. Trusted By Logos ─── */}
-      {subTab === 'trusted' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building className="size-4 text-brand-600" />
-              Enterprise & Ecosystem Trust Badges
-            </CardTitle>
-            <CardDescription>
-              Rendered on the Surface 1 landing page trust carousel and employer registration headers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Partner or Organization Name (e.g. Snowflake, Datadog...)"
-                value={newBrandName}
-                onChange={(e) => setNewBrandName(e.target.value)}
-                className="max-w-md"
-              />
-              <Button variant="primary" onClick={handleAddTrusted}>
-                <Plus className="mr-1.5 size-4" />
-                Add Brand Badge
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {trustedList.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border p-4 bg-neutral-50/60 flex flex-col justify-between items-center text-center gap-2">
-                  <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-xs border border-border font-extrabold text-brand-700 text-sm">
-                    {item.logoPlaceholder}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{item.name}</p>
-                    <span className="text-xs text-ink-muted">{item.category}</span>
-                  </div>
+          {visible.length === 0 ? (
+            <p className="rounded-lg border border-border p-4 text-center text-xs text-ink-muted">
+              {activeCategory?.phrases.length === 0
+                ? 'This category holds no phrase yet.'
+                : `No phrase contains “${filter.trim()}”.`}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border">
+              {visible.map((entry) => (
+                <li key={entry} className="flex items-center justify-between gap-3 p-3 hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                  <p className="text-xs text-ink">{entry}</p>
                   <Button
-                    variant={item.status === 'active' ? 'outline' : 'ghost'}
+                    variant="ghost"
                     size="xs"
-                    onClick={() => handleToggleTrusted(item.id)}
-                    className={cn(item.status === 'active' ? 'text-success-700 border-success-200 bg-success-50' : 'text-neutral-500')}
+                    onClick={() => removePhrase(entry)}
+                    loading={busy === entry}
+                    aria-label={`Remove phrase: ${entry}`}
+                    className="min-h-11 text-error-700 sm:min-h-7"
                   >
-                    {item.status === 'active' ? 'Active' : 'Disabled'}
+                    <Trash2 className="size-3.5" />
                   </Button>
-                </div>
+                </li>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
 
-      {/* ─── 4. Landing Pages Directory ─── */}
-      {subTab === 'landing' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Globe className="size-4 text-brand-600" />
-              Dynamic Landing Pages & Conversion Tracks
-            </CardTitle>
-            <CardDescription>
-              SEO-targeted specialized landing paths with dynamic CTA tracking.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-neutral-50 text-xs font-semibold uppercase text-ink-muted">
-                  <tr>
-                    <th className="px-4 py-3">Slug / Path</th>
-                    <th className="px-4 py-3">Page Title</th>
-                    <th className="px-4 py-3">Audience Category</th>
-                    <th className="px-4 py-3">Organic Views</th>
-                    <th className="px-4 py-3">Conversion Rate</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border bg-white">
-                  {landingPages.map((lp) => (
-                    <tr key={lp.id} className="hover:bg-neutral-50/50">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-600">{lp.slug}</td>
-                      <td className="px-4 py-3 font-medium text-ink">{lp.title}</td>
-                      <td className="px-4 py-3 text-ink-secondary">{lp.category}</td>
-                      <td className="px-4 py-3 text-ink font-mono">{lp.views.toLocaleString()}</td>
-                      <td className="px-4 py-3 font-semibold text-success-600">{lp.conversionRate}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-bold text-success-700 uppercase">
-                          {lp.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="xs" onClick={() => window.open(lp.slug, '_blank')}>
-                          <ExternalLink className="mr-1 size-3.5" />
-                          Preview
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+function ReviewsPanel() {
+  const load = useCallback(
+    (signal: AbortSignal) => get<unknown>('/reviews', { limit: 50 }, { signal }).then(readReviews),
+    [],
+  );
+  const resource = useAdminResource<ReviewRow[]>(load);
+  const reviews = resource.data ?? [];
+
+  if (resource.status === 'loading' && resource.data === null) {
+    return <AdminLoadingPanel label="Reading testimonials…" />;
+  }
+  if (resource.status === 'failed' && resource.error) {
+    return <AdminErrorPanel title="Testimonials could not be read" error={resource.error} onRetry={resource.reload} />;
+  }
+  if (reviews.length === 0) {
+    return <AdminEmptyPanel title="No testimonial" description="No approved testimonial exists yet." />;
+  }
+
+  return (
+    <section id="content-panel-reviews" role="tabpanel" className="space-y-3">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        {reviews.map((review) => (
+          <li key={review.id} className="space-y-1 p-4">
+            <p className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink">
+              {review.author || review.name || 'Anonymous'}
+              {typeof review.rating === 'number' && (
+                <span className="rounded-full border border-warning-100 bg-warning-50 px-2 py-0.5 text-2xs font-bold text-warning-700">
+                  {review.rating}/5
+                </span>
+              )}
+            </p>
+            <p className="text-2xs text-ink-muted">
+              {[review.role, review.company].filter(Boolean).join(' · ') || 'no role recorded'}
+              {review.createdAt ? ` · ${review.createdAt.slice(0, 10)}` : ''}
+            </p>
+            <p className="text-xs text-ink-secondary">{review.content || review.text || ''}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="text-2xs text-ink-muted">
+        {reviews.length} approved testimonials · the repository exposes approved rows only, and
+        there is no moderation route, so this list is read-only (`OI-CMS-1`).
+      </p>
+    </section>
   );
 }

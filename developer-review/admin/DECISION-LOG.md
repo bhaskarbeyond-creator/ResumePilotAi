@@ -419,3 +419,72 @@ mandatory reason on every PATCH (breaks the role/membership paths that have noth
 explain, and would have required a client change for every caller).
 
 **Rollback.** Ignore the field on the server; the extra metadata key is harmless.
+
+### D-024-1 — The seven remaining seeded tabs read their real endpoints, or render nothing
+
+- **Status:** ACCEPTED · **Invariants:** INV-1, INV-5 · **Evidence:**
+  `frontend/src/components/admin/Admin{Security,HelpDesk,Queues,Moderation,BlogManagement,ContentMarketing,Health,Operations}Tab.tsx`,
+  `frontend/tests/unit/admin-*.test.{ts,tsx}` (69 component tests)
+
+**Decision.** Every remaining admin tab with sample rows was rebuilt on the endpoint that owns
+the data, with `useAdminResource` for the three honest states and `describeAdminFailure` for
+refusals. Where no endpoint exists, the surface is **removed and explained**, not faked:
+
+- Security & audit → `/platform/security-events`, `/admin/audit-logs(+/stats)`,
+  `/admin/users`, `/platform/announcements` (create/supersede/delete, `expectedRevision`).
+  The "IP block" control is gone: no edge-proxy route exists.
+- Help desk → `/admin/support/tickets` (+ messages, status `PATCH`). Replies and status
+  changes that fail are reported as failures; the ticket list is never seeded.
+- Outbox & dead letters → `/platform/queues`. The "Purge dead letters" button is gone —
+  the route answers `410 DEAD_LETTER_PURGE_RETIRED` by design; "Retry all" is gone —
+  the retry route accepts one notification dead letter and answers `400` otherwise. The
+  page states that the payload is a sample (`summary.sampled`, `sampleSize`).
+- Marketplace moderation → `/admin/employer-applications` (the route that sets the
+  `employer` claim and revokes tokens — not the fictional `/verify`), `/admin/jobs`
+  (exactly one field per request), `/admin/companies`, `/enterprise/tenants`.
+- Blog → `/blog-data` (the mounted route; `/blog/posts` 404'd on every load and is why
+  the sample articles were permanent). Deletes carry `expectedRevision`.
+- Content & marketing → `/phrases` (whole-category replace, which is what the endpoint
+  does) and `/reviews`. The "Trusted By logos" and "Landing pages & SEO" sections are
+  removed: no schema, no route, no document type, and their rows carried invented
+  conversion rates. Tracked as `OI-CMS-1`.
+- Platform health → `/platform/operational-status` (+ detail + probe). `DEFAULT_28_SERVICES`
+  and the merge that hid unlisted-but-down services are gone.
+- Platform operations → `/admin/health-summary` + `/admin/system-health-settings`. The
+  backup and cache-purge cards are gone (`OI-OPS-1`): both announced success for routes
+  that do not exist, with a fabricated last-snapshot timestamp.
+
+**Why remove rather than disable.** A disabled button preserves the lie at one remove ("it
+will work later") and keeps the invented rows on screen. An absent control with a sentence
+naming the missing route and the runbook path is checkable — and it is what `OI-001-1` /
+`OI-TRUTH-1` acceptance demands.
+
+**Alternatives.** Implement the missing routes (backup trigger, IP block, logo registry):
+rejected — each needs a schema, an audited write and a drill before a console may offer it,
+and inventing the backend to match an invented UI is the same defect upstream. Keep the
+buttons and surface `501 Not Implemented`: rejected — a control that always fails is noise.
+
+**Trade-offs.** Two marketing sections and two operations cards are gone from the console;
+if the product intent wants them, they return as RECs with schema first. Coverage thresholds
+for the component tier stay at 80/75/75/80 (`D-022-1`); the measured 83.90/77.83/82.77/84.47
+now spans 14 modules instead of 6.
+
+**Rollback.** `git revert` of the console-integrity commits restores the old tabs wholesale;
+nothing else reads their exports except the admin router.
+
+### D-025-1 — Fix the admin job-status filter by making the query parameter explicit
+
+- **Status:** ACCEPTED · **Invariants:** INV-1 · **Evidence:**
+  `frontend/src/components/admin/AdminModerationTab.tsx` (JobsPanel filter),
+  `frontend/tests/unit/admin-moderation-registries.test.tsx`
+
+**Decision.** `useAdminResource` refetches on `reload()`, not on loader identity (the loader
+is held in a ref precisely to avoid infinite loops). The job-status filter is a query
+parameter, so changing it calls `resource.reload()` explicitly instead of relying on the
+callback identity changing. This is the pattern every future filtered read must follow.
+
+**Why.** Without it the status chips changed `aria-pressed` while the rows stayed put — a
+filter that filters nothing. Found by the filter-branch tests written to close the coverage
+gap (`D-022-1`): the test drove the chip and asserted the refetch.
+
+**Rollback.** Trivial; the hook semantics are unchanged.

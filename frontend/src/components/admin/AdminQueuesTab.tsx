@@ -1,683 +1,333 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+/**
+ * Outbox and dead-letter inspection.
+ *
+ * Reads `GET /api/platform/queues`, which inspects the two outboxes that actually exist
+ * (`notification_outbox`, `enterprise_outbox`) and returns a **sample**: `summary.sampled`
+ * and `summary.sampleSize` say so, and the page repeats it rather than implying it holds the
+ * full backlog.
+ *
+ * What it used to be: a hard-coded list of queue cards (`email-outbox` waiting 42, completed
+ * 14 820, `dead-letter-queue` failed 2 …) into which the live counts were merged, plus three
+ * controls the API does not offer — "retry all", "purge dead-letter queue" (the server
+ * answers `410 DEAD_LETTER_PURGE_RETIRED` by design) and a per-job retry that fell back to a
+ * second, non-existent endpoint when the first failed. Retrying an *enterprise* job through
+ * this route returns `400 INVALID_RETRY_TARGET`; the button is therefore only shown for
+ * notification dead letters, where the server accepts it.
+ *
+ * Contracts: `routes/platform.js:465` (list), `:512` (retry one), `:551` (purge retired).
+ */
+
+import { useCallback, useMemo, useState } from 'react';
+import { AlertTriangle, Inbox, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { get, post } from '@/lib/api-client';
-import {
-  Layers,
-  CheckCircle2,
-  RefreshCw,
-  RotateCcw,
-  Eye,
-  Trash2,
-  Copy,
-  Check,
-  X,
-  AlertTriangle,
-  Terminal,
-} from 'lucide-react';
-
-interface QueueStatus {
-  name: string;
-  description: string;
-  active: number;
-  waiting: number;
-  completed: number;
-  failed: number;
-  status: 'IDLE' | 'PROCESSING' | 'ALERT';
-}
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
 
 interface QueueJob {
   id: string;
-  queue: string;
+  queue: 'notification' | 'enterprise' | string;
   channel: string;
-  recipient: string;
-  templateType: string;
-  state: 'DEAD_LETTER' | 'DELIVERY_ATTEMPTED' | 'QUEUED' | 'PROCESSING';
+  /** Already masked by the server (`ab***@domain.tld`); never a full address. */
+  recipient: string | null;
+  templateType: string | null;
+  state: string;
   attemptCount: number;
-  maxAttempts: number;
-  createdAt: string;
-  error?: {
-    name: string;
-    message: string;
-    stack?: string;
-  };
-  payload?: Record<string, unknown>;
+  lastError: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
-const DEFAULT_QUEUES: QueueStatus[] = [
-  { name: 'email-outbox', description: 'Outbound transactional SMTP mail queue', active: 0, waiting: 0, completed: 1845, failed: 0, status: 'IDLE' },
-  { name: 'ai-synthesis', description: 'Asynchronous LLM executive summary & interview worker', active: 2, waiting: 1, completed: 4290, failed: 0, status: 'PROCESSING' },
-  { name: 'pdf-renderer', description: 'DOCX-to-PDF high fidelity headless Chromium rendering pool', active: 0, waiting: 0, completed: 890, failed: 0, status: 'IDLE' },
-  { name: 'dead-letter-queue', description: 'Dead-Letter Queue (DLQ) for unrecoverable third-party failures', active: 0, waiting: 0, completed: 12, failed: 1, status: 'ALERT' },
-];
+interface QueuePayload {
+  summary: {
+    totalInspected: number;
+    deadLetterCount: number;
+    pendingCount: number;
+    successCount: number;
+    source: string;
+    sampled: boolean;
+    sampleSize: number;
+  };
+  jobs: QueueJob[];
+}
 
-const INITIAL_JOBS: QueueJob[] = [
-  {
-    id: 'job_dlq_99182',
-    queue: 'dead-letter-queue',
-    channel: 'SMTP / SES',
-    recipient: 'candidate.lead.991@example.com',
-    templateType: 'INTERVIEW_INVITATION_CONFIRMATION',
-    state: 'DEAD_LETTER',
-    attemptCount: 5,
-    maxAttempts: 5,
-    createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    error: {
-      name: 'SES_RATE_LIMIT_EXCEEDED',
-      message: 'Maximum send rate 14 msgs/sec exceeded for transactional outbound tier.',
-      stack: `SES_RATE_LIMIT_EXCEEDED: Maximum send rate exceeded\n  at SESClient.sendTransactional (/backend/services/mailTransport.js:142:19)\n  at Worker.processJob (/backend/services/queues/emailWorker.js:88:24)\n  at JobPool.drain (/backend/services/queues/pool.js:204:11)`,
-    },
-    payload: {
-      candidateId: 'cand_882910',
-      jobListingId: 'job_senior_fullstack_2026',
-      interviewDate: '2026-10-22T14:00:00.000Z',
-      organizerEmail: 'talent-acquisitions@ime365.ai',
-      urgency: 'HIGH',
-    },
-  },
-  {
-    id: 'job_ai_100293',
-    queue: 'ai-synthesis',
-    channel: 'NVIDIA NIM Worker',
-    recipient: 'user_cand_9941',
-    templateType: 'EXECUTIVE_BIO_SYNTHESIS',
-    state: 'PROCESSING',
-    attemptCount: 1,
-    maxAttempts: 3,
-    createdAt: new Date(Date.now() - 1000 * 45).toISOString(),
-    payload: {
-      model: 'meta/llama-3.2-11b-vision-instruct',
-      targetLength: '3_PARAGRAPHS',
-      industry: 'Artificial Intelligence',
-    },
-  },
-  {
-    id: 'job_pdf_771822',
-    queue: 'pdf-renderer',
-    channel: 'Chromium Headless',
-    recipient: 'user_cand_1044',
-    templateType: 'DOCX_HIGH_FIDELITY_EXPORT',
-    state: 'DELIVERY_ATTEMPTED',
-    attemptCount: 1,
-    maxAttempts: 3,
-    createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    payload: {
-      template: 'cuba-executive-sapphire',
-      pageSize: 'A4',
-      atsOptimized: true,
-    },
-  },
-];
+const STATE_PILL: Record<string, string> = {
+  DEAD_LETTER: 'bg-error-50 text-error-700 border-error-100',
+  NOTIFICATION_QUEUED: 'bg-info-50 text-info-700 border-info-100',
+  QUEUED: 'bg-info-50 text-info-700 border-info-100',
+  PROCESSING: 'bg-warning-50 text-warning-700 border-warning-100',
+  RETRYING: 'bg-warning-50 text-warning-700 border-warning-100',
+  DELIVERED: 'bg-success-50 text-success-700 border-success-100',
+  COMPLETED: 'bg-success-50 text-success-700 border-success-100',
+};
+
+function statePill(state: string): string {
+  return STATE_PILL[state] ?? 'bg-neutral-100 text-ink-secondary border-border dark:bg-neutral-800';
+}
 
 export function AdminQueuesTab() {
-  const [queues, setQueues] = useState<QueueStatus[]>(DEFAULT_QUEUES);
-  const [jobs, setJobs] = useState<QueueJob[]>(INITIAL_JOBS);
-  const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{
-    id: 'replay-all' | 'purge-dlq';
-    title: string;
-    message: string;
-    confirmText: string;
-    danger?: boolean;
-    action: () => Promise<void>;
-  } | null>(null);
+  const load = useCallback(
+    (signal: AbortSignal) => get<QueuePayload>('/platform/queues', undefined, { signal }),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const jobs = useMemo(() => resource.data?.jobs ?? [], [resource.data]);
+  const summary = resource.data?.summary ?? null;
 
-  const [retrying, setRetrying] = useState<string | null>(null);
-  const [retryFeedback, setRetryFeedback] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [queueFilter, setQueueFilter] = useState<'all' | 'notification' | 'enterprise'>('all');
+  const [stateFilter, setStateFilter] = useState<'all' | 'DEAD_LETTER' | 'pending' | 'success'>('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  const loadQueueStatus = async () => {
+  const visible = jobs.filter((job) => {
+    if (queueFilter !== 'all' && job.queue !== queueFilter) return false;
+    if (stateFilter === 'DEAD_LETTER') return job.state === 'DEAD_LETTER';
+    if (stateFilter === 'pending') return ['NOTIFICATION_QUEUED', 'QUEUED', 'PROCESSING', 'RETRYING'].includes(job.state);
+    if (stateFilter === 'success') return ['DELIVERED', 'COMPLETED', 'REJECTED', 'SKIPPED_NO_RECIPIENT'].includes(job.state);
+    return true;
+  });
+
+  const retry = async (job: QueueJob) => {
+    setBusy(job.id);
+    setNotice(null);
     try {
-      type QueueResponse = {
-        queues?: QueueStatus[];
-        jobs?: QueueJob[];
-        summary?: { deadLetterCount?: number; pendingCount?: number; successCount?: number };
-      };
-      const res = await get<QueueResponse>('/platform/queues').catch(() => get<QueueResponse>('/admin/queues'));
-
-      if (res?.jobs && Array.isArray(res.jobs)) {
-        setJobs(res.jobs);
-        if (res.summary) {
-          setQueues((prev) =>
-            prev.map((q) => {
-              if (q.name === 'dead-letter-queue') {
-                return { ...q, failed: res.summary?.deadLetterCount ?? q.failed };
-              }
-              if (q.name === 'email-outbox') {
-                return { ...q, waiting: res.summary?.pendingCount ?? q.waiting, completed: res.summary?.successCount ?? q.completed };
-              }
-              return q;
-            })
-          );
-        }
-      } else if (res?.queues && Array.isArray(res.queues)) {
-        setQueues(res.queues);
-      }
-    } catch {
-      // Keep baseline
+      const response = await post<{ retriedCount?: number }>('/platform/queues/retry', {
+        jobId: job.id,
+        queue: 'notification',
+      });
+      setNotice({
+        tone: 'success',
+        text: `Job ${job.id} re-queued (${response?.retriedCount ?? 0} row updated, recorded in the admin audit trail).`,
+      });
+      resource.reload();
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      setNotice({
+        tone: 'error',
+        text: `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`,
+      });
     } finally {
-      setLoading(false);
+      setBusy(null);
     }
   };
-
-  useEffect(() => {
-    loadQueueStatus();
-  }, []);
-
-  const handleRetryQueue = async (queueName: string) => {
-    setRetrying(queueName);
-    setRetryFeedback(null);
-    try {
-      await post('/platform/queues/retry', { queue: queueName }).catch(() => post(`/admin/queues/${queueName}/retry`, {}));
-      setRetryFeedback(`Queued jobs in ${queueName} successfully re-dispatched.`);
-      setTimeout(() => setRetryFeedback(null), 3000);
-      loadQueueStatus();
-    } finally {
-      setRetrying(null);
-    }
-  };
-
-  const handleRetrySingleJob = async (jobId: string) => {
-    setRetrying(jobId);
-    try {
-      await post('/platform/queues/retry', { jobId, queue: 'notification' }).catch(() =>
-        post('/admin/queues/dead-letter-queue/retry', { jobId })
-      );
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, state: 'QUEUED', attemptCount: 0 } : j))
-      );
-      if (selectedJob?.id === jobId) {
-        setSelectedJob((prev) => (prev ? { ...prev, state: 'QUEUED', attemptCount: 0 } : null));
-      }
-      setRetryFeedback(`Job ${jobId} successfully re-dispatched for immediate delivery.`);
-      setTimeout(() => setRetryFeedback(null), 3000);
-    } finally {
-      setRetrying(null);
-    }
-  };
-
-  const handlePurgeJob = async (jobId: string) => {
-    setRetrying(jobId);
-    try {
-      await post('/admin/queues/dead-letter-queue/purge', { jobId }).catch(() => {});
-      setJobs((prev) => prev.filter((j) => j.id !== jobId));
-      if (selectedJob?.id === jobId) {
-        setSelectedJob(null);
-      }
-      setRetryFeedback(`Job ${jobId} purged from outbox records.`);
-      setTimeout(() => setRetryFeedback(null), 3000);
-    } finally {
-      setRetrying(null);
-    }
-  };
-
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  // Keyboard navigation: Escape key closes active modals
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (confirmModal) setConfirmModal(null);
-        else if (selectedJob) setSelectedJob(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmModal, selectedJob]);
-
-  const deadLetterCount = queues.find((q) => q.name === 'dead-letter-queue')?.failed || 1;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink flex items-center gap-2">
-            <Layers className="size-5 text-brand-600" />
-            Background Queues & Dead-Letter Queue (DLQ)
-          </h2>
+          <h2 className="text-xl font-bold text-ink">Outbox &amp; dead letters</h2>
           <p className="text-xs text-ink-muted">
-            Inspect operational background workers, worker concurrency, and manually re-dispatch failed tasks from DLQ.
+            A sample of both outboxes, newest first. Dead letters are retained for
+            investigation; there is no bulk purge.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {deadLetterCount > 0 && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setConfirmModal({
-                    id: 'replay-all',
-                    title: 'Replay All Dead-Letter Jobs',
-                    message: `Are you sure you want to replay all ${deadLetterCount} dead-letter jobs? This will queue them for immediate delivery attempt across worker pools.`,
-                    confirmText: 'Replay All Jobs',
-                    danger: false,
-                    action: async () => {
-                      await post('/admin/queues/dead-letter-queue/retry', { all: true }).catch(() => {});
-                      setRetryFeedback(`Re-dispatched all dead-letter jobs.`);
-                      loadQueueStatus();
-                    },
-                  })
-                }
-                className="border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-900/50"
-              >
-                <RotateCcw className="size-3.5 mr-1 text-amber-700 dark:text-amber-400" />
-                Replay All DLQ ({deadLetterCount})
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setConfirmModal({
-                    id: 'purge-dlq',
-                    title: 'Purge Dead-Letter Queue',
-                    message:
-                      'Are you sure you want to permanently purge all dead-letter jobs from the transactional outbox? This operation is irreversible.',
-                    confirmText: 'Purge DLQ',
-                    danger: true,
-                    action: async () => {
-                      await post('/admin/queues/dead-letter-queue/purge', { all: true }).catch(() => {});
-                      setJobs((prev) => prev.filter((j) => j.state !== 'DEAD_LETTER'));
-                      setRetryFeedback('Dead-letter queue purged successfully.');
-                      loadQueueStatus();
-                    },
-                  })
-                }
-                className="border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
-              >
-                <Trash2 className="size-3.5 mr-1 text-rose-600 dark:text-rose-400" />
-                Purge DLQ
-              </Button>
-            </>
+        <Button variant="outline" size="sm" onClick={resource.reload} disabled={resource.status === 'loading'}>
+          <RefreshCw className={cn('mr-1 size-3.5', resource.status === 'loading' && 'animate-spin')} />
+          Reload
+        </Button>
+      </div>
+
+      {notice && (
+        <div
+          role={notice.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            notice.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
           )}
-          <Button variant="outline" size="sm" onClick={loadQueueStatus} loading={loading}>
-            <RefreshCw className="size-3.5 mr-1" />
-            Refresh Queues
-          </Button>
-        </div>
-      </div>
-
-      {retryFeedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
-          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>{retryFeedback}</span>
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span className="flex-1">{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Queue Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {queues.map((q) => (
-          <Card key={q.name} className="border border-border/80">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold font-mono text-ink">{q.name}</CardTitle>
-                  <p className="text-[11px] text-ink-muted mt-0.5">{q.description}</p>
-                </div>
-                <span
+      {resource.status === 'loading' && resource.data === null && (
+        <AdminLoadingPanel label="Reading the outboxes…" />
+      )}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="Queue telemetry could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+
+      {summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <SummaryTile label="Inspected" value={String(summary.totalInspected)} />
+          <SummaryTile
+            label="Dead letters"
+            value={String(summary.deadLetterCount)}
+            tone={summary.deadLetterCount > 0 ? 'bad' : undefined}
+          />
+          <SummaryTile label="Pending" value={String(summary.pendingCount)} tone={summary.pendingCount > 0 ? 'warn' : undefined} />
+          <SummaryTile label="Settled" value={String(summary.successCount)} />
+        </div>
+      )}
+
+      {resource.status === 'ready' && jobs.length === 0 && (
+        <AdminEmptyPanel
+          title="No outbox rows"
+          description="Both outboxes answered with no rows in the sample window. Nothing is waiting."
+          tone="success"
+        />
+      )}
+
+      {jobs.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by queue">
+              {(['all', 'notification', 'enterprise'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={queueFilter === option}
+                  onClick={() => setQueueFilter(option)}
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-2xs font-black uppercase tracking-wider',
-                    q.failed > 0
-                      ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                      : q.status === 'PROCESSING'
-                      ? 'bg-brand-100 text-brand-800 border border-brand-300'
-                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    'min-h-11 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors',
+                    queueFilter === option ? 'bg-brand-600 text-white' : 'bg-neutral-100 text-ink-muted dark:bg-neutral-800',
                   )}
                 >
-                  {q.failed > 0 ? `${q.failed} FAILED` : q.status}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-2 text-center border-y border-border/50 py-3 my-2 text-xs">
-                <div>
-                  <span className="text-2xs text-ink-muted block">Active</span>
-                  <span className="font-bold text-ink text-sm">{q.active}</span>
-                </div>
-                <div>
-                  <span className="text-2xs text-ink-muted block">Waiting</span>
-                  <span className="font-bold text-ink text-sm">{q.waiting}</span>
-                </div>
-                <div>
-                  <span className="text-2xs text-ink-muted block">Completed</span>
-                  <span className="font-bold text-emerald-600 text-sm">{q.completed}</span>
-                </div>
-                <div>
-                  <span className="text-2xs text-ink-muted block">Failed</span>
-                  <span className={cn('font-bold text-sm', q.failed > 0 ? 'text-rose-600' : 'text-ink-muted')}>
-                    {q.failed}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-1">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => handleRetryQueue(q.name)}
-                  loading={retrying === q.name}
-                >
-                  <RotateCcw className="size-3 mr-1" />
-                  Re-Dispatch / Drain
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Outbox & Worker Events Ledger */}
-      <Card className="border border-border/80">
-        <CardHeader className="pb-3 border-b border-border/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-sm font-bold text-ink flex items-center gap-2">
-                <Terminal className="size-4 text-brand-600" />
-                Recent Outbox & Worker Events
-              </CardTitle>
-              <CardDescription className="text-xs text-ink-muted">
-                Inspect raw payloads, failure stack traces, and trigger surgical retries.
-              </CardDescription>
+                  {option === 'all' ? 'All queues' : option}
+                </button>
+              ))}
             </div>
-            <span className="text-xs text-ink-muted font-mono">{jobs.length} jobs inspected</span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by state">
+              {(
+                [
+                  { id: 'all', label: 'Any state' },
+                  { id: 'DEAD_LETTER', label: 'Dead letter' },
+                  { id: 'pending', label: 'Pending' },
+                  { id: 'success', label: 'Settled' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={stateFilter === option.id}
+                  onClick={() => setStateFilter(option.id)}
+                  className={cn(
+                    'min-h-11 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors',
+                    stateFilter === option.id ? 'bg-brand-600 text-white' : 'bg-neutral-100 text-ink-muted dark:bg-neutral-800',
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-neutral-50/60 border-b border-border text-[11px] font-bold text-ink-muted uppercase tracking-wider">
-                <tr>
-                  <th className="py-2.5 px-4">Event ID</th>
-                  <th className="py-2.5 px-4">Queue / Channel</th>
-                  <th className="py-2.5 px-4">Recipient</th>
-                  <th className="py-2.5 px-4">Template / Action</th>
-                  <th className="py-2.5 px-4">State</th>
-                  <th className="py-2.5 px-4">Attempts</th>
-                  <th className="py-2.5 px-4">Time</th>
-                  <th className="py-2.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-ink-muted">
-                      {job.id}
-                    </td>
-                    <td className="py-2.5 px-4 font-semibold text-ink">
-                      <span className="text-2xs font-mono text-ink-muted block uppercase">{job.queue}</span>
-                      <span>{job.channel}</span>
-                    </td>
-                    <td className="py-2.5 px-4 font-mono text-ink">
-                      {job.recipient}
-                    </td>
-                    <td className="py-2.5 px-4 font-medium text-ink-secondary">
-                      {job.templateType}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <span
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-2xs font-bold uppercase',
-                          job.state === 'DEAD_LETTER' && 'bg-rose-100 text-rose-800 border border-rose-300',
-                          job.state === 'PROCESSING' && 'bg-brand-100 text-brand-800 border border-brand-300',
-                          job.state === 'DELIVERY_ATTEMPTED' && 'bg-emerald-100 text-emerald-800 border border-emerald-300',
-                          job.state === 'QUEUED' && 'bg-amber-100 text-amber-800 border border-amber-300'
-                        )}
-                      >
-                        {job.state}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 font-mono font-bold">
-                      {job.attemptCount} / {job.maxAttempts}
-                    </td>
-                    <td className="py-2.5 px-4 text-ink-muted text-[11px] whitespace-nowrap">
-                      {new Date(job.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-2.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => setSelectedJob(job)}
-                          className="h-7 px-2 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                        >
-                          <Eye className="size-3.5 mr-1" />
-                          Inspect
-                        </Button>
-                        {job.state === 'DEAD_LETTER' && (
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => handleRetrySingleJob(job.id)}
-                            loading={retrying === job.id}
-                            className="h-7 px-2 text-xs border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                          >
-                            <RotateCcw className="size-3 mr-1" />
-                            Retry
-                          </Button>
-                        )}
-                      </div>
-                    </td>
+
+          {visible.length === 0 ? (
+            <p className="rounded-xl border border-border bg-surface p-6 text-center text-xs text-ink-muted">
+              No job matches this filter. {jobs.length} jobs are in the sample.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+              <table className="w-full min-w-[880px] text-xs">
+                <caption className="sr-only">
+                  Outbox jobs, newest first{summary?.sampled ? `, sampled at ${summary.sampleSize} rows per outbox` : ''}
+                </caption>
+                <thead className="border-b border-border bg-canvas">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Queue / state</th>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Recipient</th>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Template</th>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Attempts</th>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Created</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold text-ink-secondary">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ─── Centered Job Telemetry & Stack Trace Inspector Modal ─── */}
-      {selectedJob && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setSelectedJob(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="job-inspector-title"
-        >
-          <div
-            className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={cn(
-                    'size-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-md shrink-0',
-                    selectedJob.state === 'DEAD_LETTER' ? 'bg-rose-600 text-white' : 'bg-brand-600 text-white'
-                  )}
-                >
-                  <Layers className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 id="job-inspector-title" className="text-base font-extrabold text-white truncate font-mono">
-                    {selectedJob.id}
-                  </h3>
-                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                    Queue: {selectedJob.queue} · Channel: {selectedJob.channel}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedJob(null)}
-                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-                aria-label="Close inspector"
-              >
-                <X className="size-5" />
-              </button>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {visible.map((job) => {
+                    const canRetry = job.queue === 'notification' && job.state === 'DEAD_LETTER';
+                    const open = expanded === job.id;
+                    return (
+                      <tr key={job.id} className="align-top hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-2xs font-bold uppercase tracking-wide text-ink-muted">{job.queue}</span>
+                            <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold', statePill(job.state))}>
+                              {job.state}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExpanded(open ? null : job.id)}
+                            aria-expanded={open}
+                            className="mt-1 min-h-11 cursor-pointer font-mono text-2xs text-brand-700 hover:underline"
+                          >
+                            {job.id}
+                          </button>
+                          {open && (
+                            <dl className="mt-1 space-y-0.5 rounded-lg bg-canvas p-2 text-2xs text-ink-secondary">
+                              <div>channel: <span className="font-mono">{job.channel}</span></div>
+                              <div>updated: <span className="font-mono">{job.updatedAt ?? '—'}</span></div>
+                              <div className="break-words">
+                                last error: <span className="font-mono">{job.lastError ?? 'none recorded'}</span>
+                              </div>
+                            </dl>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-2xs text-ink-secondary">{job.recipient ?? '—'}</td>
+                        <td className="px-3 py-2 text-2xs text-ink-secondary">{job.templateType ?? '—'}</td>
+                        <td className="px-3 py-2 text-2xs text-ink-secondary">{job.attemptCount}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-2xs text-ink-muted">{job.createdAt ?? '—'}</td>
+                        <td className="px-3 py-2 text-right">
+                          {canRetry ? (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => retry(job)}
+                              loading={busy === job.id}
+                            >
+                              <RotateCcw className="mr-1 size-3" />
+                              Retry
+                            </Button>
+                          ) : (
+                            <span className="text-2xs text-ink-muted">
+                              {job.queue === 'enterprise' ? 'replay from tenant context' : 'no action'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">State</span>
-                  <p className="font-extrabold text-ink mt-0.5">{selectedJob.state}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Attempts</span>
-                  <p className="font-extrabold text-ink mt-0.5">
-                    {selectedJob.attemptCount} / {selectedJob.maxAttempts}
-                  </p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Template</span>
-                  <p className="font-extrabold text-ink mt-0.5 truncate">{selectedJob.templateType}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Created</span>
-                  <p className="font-extrabold text-ink mt-0.5">
-                    {new Date(selectedJob.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Error Stack Trace if Present */}
-              {selectedJob.error && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wide flex items-center gap-1.5">
-                      <AlertTriangle className="size-3.5 text-rose-600" />
-                      Failure Stack Trace & Root Cause
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(
-                          `${selectedJob.error?.name}: ${selectedJob.error?.message}\n${selectedJob.error?.stack || ''}`,
-                          'stack'
-                        )
-                      }
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 hover:text-rose-900 cursor-pointer"
-                    >
-                      {copiedKey === 'stack' ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
-                      <span>{copiedKey === 'stack' ? 'Copied Stack!' : 'Copy Stack'}</span>
-                    </button>
-                  </div>
-                  <p className="text-xs font-semibold text-rose-950 font-mono">
-                    {selectedJob.error.name}: {selectedJob.error.message}
-                  </p>
-                  {selectedJob.error.stack && (
-                    <pre className="text-2xs bg-neutral-950 text-rose-300 rounded-lg p-3 overflow-x-auto font-mono max-h-40 leading-relaxed border border-neutral-800">
-                      {selectedJob.error.stack}
-                    </pre>
-                  )}
-                </div>
-              )}
-
-              {/* Payload JSON */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink uppercase tracking-wide">
-                    Transactional Job Payload
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(JSON.stringify(selectedJob.payload || {}, null, 2), 'payload')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 cursor-pointer"
-                  >
-                    {copiedKey === 'payload' ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
-                    <span>{copiedKey === 'payload' ? 'Copied JSON!' : 'Copy JSON'}</span>
-                  </button>
-                </div>
-                <pre className="text-[11px] bg-neutral-950 text-emerald-400 rounded-xl p-4 overflow-x-auto font-mono max-h-52 border border-neutral-800 leading-relaxed shadow-inner">
-                  {JSON.stringify(selectedJob.payload || {}, null, 2)}
-                </pre>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
-              <div>
-                {selectedJob.state === 'DEAD_LETTER' && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handlePurgeJob(selectedJob.id)}
-                    loading={retrying === selectedJob.id}
-                    className="text-xs"
-                  >
-                    <Trash2 className="size-3 mr-1" />
-                    Purge from DLQ
-                  </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setSelectedJob(null)} className="text-xs">
-                  Close Inspector
-                </Button>
-                {selectedJob.state === 'DEAD_LETTER' && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleRetrySingleJob(selectedJob.id)}
-                    loading={retrying === selectedJob.id}
-                    className="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white"
-                  >
-                    <RotateCcw className="size-3 mr-1" />
-                    Re-Dispatch Job
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
-      {/* ─── Confirmation Modal ─── */}
-      {confirmModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setConfirmModal(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={cn(
-                'p-4 border-b flex items-center gap-3',
-                confirmModal.danger ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-amber-50 border-amber-100 text-amber-900'
-              )}
-            >
-              {confirmModal.danger ? (
-                <AlertTriangle className="size-5 text-rose-600" />
-              ) : (
-                <RotateCcw className="size-5 text-amber-600" />
-              )}
-              <h3 className="font-bold text-sm">{confirmModal.title}</h3>
-            </div>
-            <div className="p-5 text-xs text-ink-muted leading-relaxed">
-              {confirmModal.message}
-            </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setConfirmModal(null)} className="text-xs">
-                Cancel
-              </Button>
-              <Button
-                variant={confirmModal.danger ? 'destructive' : 'primary'}
-                size="sm"
-                onClick={async () => {
-                  const act = confirmModal.action;
-                  setConfirmModal(null);
-                  await act();
-                }}
-                className={cn('text-xs font-bold', !confirmModal.danger && 'bg-amber-600 hover:bg-amber-700 text-white')}
-              >
-                {confirmModal.confirmText}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {summary && (
+        <p className="flex items-start gap-2 text-2xs text-ink-muted">
+          <Inbox className="mt-0.5 size-3.5 shrink-0" />
+          Source {summary.source}
+          {summary.sampled ? ` · sampled: the newest ${summary.sampleSize} rows per outbox, not the whole backlog` : ''}
+          {summary.deadLetterCount > 0
+            ? ' · dead letters stay until they are delivered or investigated; bulk purge is retired by design.'
+            : ''}
+        </p>
       )}
+    </div>
+  );
+}
+
+function SummaryTile({ label, value, tone }: { label: string; value: string; tone?: 'warn' | 'bad' }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd
+        className={cn(
+          'mt-1 text-sm font-bold',
+          tone === 'bad' ? 'text-error-700' : tone === 'warn' ? 'text-warning-700' : 'text-ink',
+        )}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

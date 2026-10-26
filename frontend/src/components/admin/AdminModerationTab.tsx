@@ -1,674 +1,598 @@
 /**
- * Marketplace & Hiring Moderation Tab
+ * Marketplace moderation: employer applications, job postings, companies and organizations.
  *
- * Covers:
- * - Employer Applications Verification Workflow
- * - Jobs Moderation & Anti-Spam Gating
- * - Company Registry & Domain Badging
- * - Enterprise Tenants Registry & Quota Overrides
+ * Every list is a server read and every decision is a server write:
+ *
+ *   GET   /api/admin/employer-applications          canonical_documents('employer_applications')
+ *   PATCH /api/admin/employer-applications/:uid     status + expectedStatus + reason (409 on drift)
+ *   GET   /api/admin/jobs?limit=                    jobs table, filtered and paginated server-side
+ *   PATCH /api/admin/jobs/:jobId                    exactly one of {status} | {isFeatured}
+ *   GET   /api/admin/companies                      companies table (+ jobs counted server-side)
+ *   GET   /api/enterprise/tenants                   organizations this operator can see
+ *
+ * What this replaced: two hard-coded catalogues (`DEFAULT_APPLICATIONS` with invented
+ * companies, tax ids and phone numbers; `DEFAULT_JOBS` with an invented spam posting), an
+ * approve/reject flow that posted to a route that does not exist
+ * (`/admin/employer-applications/:id/verify`) and then announced success anyway, and a
+ * "mark spam" action posting to another non-existent route (`/admin/jobs/:id/moderate`).
+ * A moderation console whose approvals do not reach the identity provider is a compliance
+ * incident waiting to be discovered, so the decisions now use the endpoints that exist — the
+ * application route is the one that sets `employer: true` in custom claims and revokes tokens.
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useCallback, useMemo, useState } from 'react';
+import { Building2, Check, ExternalLink, ShieldCheck, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { post } from '@/lib/api-client';
-import {
-  CheckCircle2,
-  Building2,
-  ShieldCheck,
-  ExternalLink,
-  Check,
-  X,
-  Eye,
-  FileText,
-  Mail,
-  MapPin,
-  Globe,
-  AlertTriangle,
-} from 'lucide-react';
+import { get, patch } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
+import { readTenantOptions, type TenantOption } from './admin-users-model';
 
 interface EmployerApplication {
   id: string;
-  companyName: string;
-  contactEmail: string;
+  companyName?: string;
+  name?: string;
+  contactEmail?: string;
+  email?: string;
   contactPerson?: string;
-  contactPersonTitle?: string;
-  contactPhone?: string;
-  taxId: string;
-  website: string;
+  website?: string;
   location?: string;
   companySize?: string;
-  companyDescription?: string;
-  linkedinProfile?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  submittedAt: string;
+  status?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
 }
 
-interface JobModerationItem {
+interface JobRow {
   id: string;
-  title: string;
-  company: string;
-  location: string;
-  status: 'active' | 'flagged' | 'archived';
-  isSpam: boolean;
-  postedAt: string;
+  title?: string;
+  company?: string;
+  location?: string;
+  status?: string;
+  isFeatured?: boolean;
+  applicants?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-const DEFAULT_APPLICATIONS: EmployerApplication[] = [
-  {
-    id: 'app_101',
-    companyName: 'Nexus AI Robotics GmbH',
-    contactEmail: 'legal@nexus-robotics.de',
-    contactPerson: 'Klaus Schmidt',
-    contactPersonTitle: 'Director of Talent Acquisition',
-    contactPhone: '+49 30 9182 301',
-    taxId: 'DE391829104',
-    website: 'https://nexus-robotics.de',
-    location: 'Berlin, Germany',
-    companySize: '51-200 employees',
-    companyDescription: 'Pioneering humanoid robotics and autonomous factory inspection systems.',
-    linkedinProfile: 'https://linkedin.com/company/nexus-ai-robotics',
-    status: 'PENDING',
-    submittedAt: '2 hours ago',
-  },
-  {
-    id: 'app_102',
-    companyName: 'Apex Health Systems Inc',
-    contactEmail: 'hr@apexhealth.com',
-    contactPerson: 'Dr. Evelyn Reed',
-    contactPersonTitle: 'Chief People Officer',
-    contactPhone: '+1 (415) 882-9011',
-    taxId: 'US-829104812',
-    website: 'https://apexhealth.com',
-    location: 'San Francisco, CA',
-    companySize: '501-1000 employees',
-    companyDescription: 'Enterprise health tech providing unified medical data interchange.',
-    linkedinProfile: 'https://linkedin.com/company/apex-health-systems',
-    status: 'APPROVED',
-    submittedAt: 'Yesterday',
-  },
-  {
-    id: 'app_103',
-    companyName: 'Quick Money Crypto Ltd',
-    contactEmail: 'scam@suspicious-crypto.biz',
-    contactPerson: 'Anonymous Operator',
-    contactPersonTitle: 'Lead Recruiter',
-    contactPhone: '+1 (000) 000-0000',
-    taxId: 'UNKNOWN',
-    website: 'http://quick-money-crypto.biz',
-    location: 'Unregistered Offshore',
-    companySize: '1-10 employees',
-    companyDescription: 'High frequency crypto arbitrage recruiting data clerks.',
-    status: 'REJECTED',
-    submittedAt: '3 days ago',
-  },
-];
+interface CompanyRow {
+  id: string;
+  name?: string;
+  displayName?: string;
+  domain?: string;
+  website?: string;
+  verified?: boolean;
+  createdAt?: string;
+}
 
-const DEFAULT_JOBS: JobModerationItem[] = [
-  { id: 'job_201', title: 'Senior Distributed Systems Architect', company: 'Nexus AI Robotics', location: 'Berlin / Hybrid', status: 'active', isSpam: false, postedAt: 'Today' },
-  { id: 'job_202', title: 'Earn $5000/day Data Entry Typist', company: 'Online Work Group', location: 'Remote', status: 'flagged', isSpam: true, postedAt: 'Yesterday' },
-  { id: 'job_203', title: 'Lead Full Stack TypeScript Engineer', company: 'Apex Health Systems', location: 'San Francisco, CA', status: 'active', isSpam: false, postedAt: '2 days ago' },
-];
+type Section = 'applications' | 'jobs' | 'companies' | 'organizations';
+
+const STATUS_PILL: Record<string, string> = {
+  pending: 'bg-warning-50 text-warning-700 border-warning-100',
+  approved: 'bg-success-50 text-success-700 border-success-100',
+  active: 'bg-success-50 text-success-700 border-success-100',
+  rejected: 'bg-error-50 text-error-700 border-error-100',
+  inactive: 'bg-neutral-100 text-ink-secondary border-border dark:bg-neutral-800',
+  archived: 'bg-neutral-100 text-ink-muted border-border dark:bg-neutral-800',
+};
+
+function statusPill(status: string | undefined): string {
+  return STATUS_PILL[String(status ?? '').toLowerCase()] ?? 'bg-neutral-100 text-ink-secondary border-border dark:bg-neutral-800';
+}
 
 export function AdminModerationTab() {
-  const [subSection, setSubSection] = useState<'applications' | 'jobs' | 'companies' | 'tenants'>('applications');
-  const [applications, setApplications] = useState<EmployerApplication[]>(DEFAULT_APPLICATIONS);
-  const [jobs, setJobs] = useState<JobModerationItem[]>(DEFAULT_JOBS);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>('applications');
+  const [flash, setFlash] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  // Modals state
-  const [inspectApplication, setInspectApplication] = useState<EmployerApplication | null>(null);
-  const [reviewConfirmation, setReviewConfirmation] = useState<{
-    app: EmployerApplication;
-    action: 'approve' | 'reject';
-  } | null>(null);
-  const [reviewReason, setReviewReason] = useState('');
-  const [jobSpamModal, setJobSpamModal] = useState<{
-    job: JobModerationItem;
-    action: 'flag' | 'clear';
-  } | null>(null);
-
-  // Escape key handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (reviewConfirmation) {
-          setReviewConfirmation(null);
-          setReviewReason('');
-        } else if (jobSpamModal) {
-          setJobSpamModal(null);
-        } else if (inspectApplication) {
-          setInspectApplication(null);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [reviewConfirmation, jobSpamModal, inspectApplication]);
-
-  const handleApproveApplication = async (appId: string) => {
-    try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'APPROVED' }).catch(() => {});
-      setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, status: 'APPROVED' } : a))
-      );
-      setFeedback(`Employer application ${appId} approved & verified badge assigned.`);
-      setReviewConfirmation(null);
-      setInspectApplication(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
-    }
-  };
-
-  const handleRejectApplication = async (appId: string, reason: string) => {
-    try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'REJECTED', reason }).catch(() => {});
-      setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, status: 'REJECTED' } : a))
-      );
-      setFeedback(`Employer application ${appId} rejected. Reason logged to security audit ledger.`);
-      setReviewConfirmation(null);
-      setReviewReason('');
-      setInspectApplication(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
-    }
-  };
-
-  const handleToggleJobSpam = async (jobId: string, isSpam: boolean) => {
-    try {
-      const newStatus = isSpam ? 'flagged' : 'active';
-      await post(`/admin/jobs/${jobId}/moderate`, { isSpam, status: newStatus }).catch(() => {});
-
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, isSpam, status: newStatus } : j))
-      );
-
-      setFeedback(`Job listing ${jobId} status updated to ${isSpam ? 'SPAM / FLAGGED' : 'APPROVED / ACTIVE'}.`);
-      setJobSpamModal(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
-    }
+  const announce = (tone: 'success' | 'error', text: string) => setFlash({ tone, text });
+  const report = (error: unknown) => {
+    const failure = describeAdminFailure(error);
+    announce('error', `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`);
   };
 
   return (
     <div className="space-y-4">
-      {/* ─── Header & Sub-Navigation ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-ink flex items-center gap-2">
-            <ShieldCheck className="size-5 text-brand-600" />
-            Marketplace & Hiring Moderation
-          </h2>
-          <p className="text-xs text-ink-muted">
-            Employer company document verifications, global job postings anti-spam moderation, and tenant quota controls.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs">
-          {[
-            { id: 'applications', label: 'Employer Verifications' },
-            { id: 'jobs', label: 'Job Moderation' },
-            { id: 'companies', label: 'Company Badges' },
-            { id: 'tenants', label: 'Tenants Registry' },
-          ].map((sec) => (
-            <button
-              key={sec.id}
-              onClick={() => setSubSection(sec.id as any)}
-              className={cn(
-                'rounded-lg px-3 py-1 font-semibold transition-colors cursor-pointer',
-                subSection === sec.id
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-ink-muted hover:bg-neutral-200'
-              )}
-            >
-              {sec.label}
-            </button>
-          ))}
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-ink">Marketplace moderation</h2>
+        <p className="text-xs text-ink-muted">
+          Employer verification, job postings, the company registry and organization access.
+          Nothing is approved locally: each decision is a server write with a revision guard.
+        </p>
       </div>
 
-      {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
-          <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-          <span>{feedback}</span>
-        </div>
-      )}
-
-      {/* ─── Sub-Section 1: Employer Applications ─── */}
-      {subSection === 'applications' && (
-        <div className="space-y-3">
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
-            <table className="w-full text-xs min-w-[700px]">
-              <thead className="bg-canvas border-b border-border">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Company Name & Tax ID</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Contact Email</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Official Domain</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Submitted</th>
-                  <th className="px-4 py-3 text-right font-semibold text-ink-secondary">Verification Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {applications.map((app) => (
-                  <tr key={app.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-ink">{app.companyName}</div>
-                      <div className="text-[11px] text-ink-muted font-mono">Tax ID: {app.taxId}</div>
-                    </td>
-                    <td className="px-4 py-3 text-ink-secondary">{app.contactEmail}</td>
-                    <td className="px-4 py-3">
-                      <a href={app.website} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-brand-400">
-                        {app.website.replace('https://', '')}
-                        <ExternalLink className="size-3" />
-                      </a>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-2xs font-bold uppercase',
-                          app.status === 'APPROVED'
-                            ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
-                            : app.status === 'REJECTED'
-                            ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
-                            : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
-                        )}
-                      >
-                        {app.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-ink-muted">{app.submittedAt}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => setInspectApplication(app)}
-                          className="h-7 px-2 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                        >
-                          <Eye className="size-3.5 mr-1" />
-                          Dossier
-                        </Button>
-                        {app.status === 'PENDING' ? (
-                          <>
-                            <Button
-                              variant="success"
-                              size="xs"
-                              onClick={() => setReviewConfirmation({ app, action: 'approve' })}
-                              className="h-7 px-2 text-xs"
-                            >
-                              <Check className="size-3 mr-1" />
-                              Verify
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="xs"
-                              onClick={() => setReviewConfirmation({ app, action: 'reject' })}
-                              className="h-7 px-2 text-xs"
-                            >
-                              <X className="size-3 mr-1" />
-                              Reject
-                            </Button>
-                          </>
-                        ) : (
-                          <span className="text-ink-muted text-[11px] font-mono">Audited</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Sub-Section 2: Job Postings Moderation ─── */}
-      {subSection === 'jobs' && (
-        <div className="space-y-3">
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
-            <table className="w-full text-xs min-w-[700px]">
-              <thead className="bg-canvas border-b border-border">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Job Title & Employer</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Location</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Spam Filter</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Posted</th>
-                  <th className="px-4 py-3 text-right font-semibold text-ink-secondary">Moderation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-ink">{job.title}</div>
-                      <div className="text-[11px] text-ink-muted">{job.company}</div>
-                    </td>
-                    <td className="px-4 py-3 text-ink-secondary">{job.location}</td>
-                    <td className="px-4 py-3">
-                      {job.isSpam ? (
-                        <span className="rounded bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 px-2 py-0.5 text-2xs font-bold">
-                          SPAM FLAGGED
-                        </span>
-                      ) : (
-                        <span className="rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 text-2xs font-bold">
-                          CLEAN
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn('rounded-full px-2 py-0.5 text-2xs font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50')}>
-                        {job.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-ink-muted">{job.postedAt}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant={job.isSpam ? 'outline' : 'destructive'}
-                        size="xs"
-                        onClick={() => setJobSpamModal({ job, action: job.isSpam ? 'clear' : 'flag' })}
-                      >
-                        {job.isSpam ? 'Clear Spam Flag' : 'Flag as Spam'}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Sub-Section 3 & 4: Companies & Tenants ─── */}
-      {(subSection === 'companies' || subSection === 'tenants') && (
-        <Card>
-          <CardContent className="p-6 text-center space-y-2">
-            <Building2 className="size-8 text-brand-600 mx-auto" />
-            <h3 className="text-sm font-bold text-ink">
-              {subSection === 'companies' ? 'Enterprise Company Verification Registry' : 'Multi-Tenant Organizations Directory'}
-            </h3>
-            <p className="text-xs text-ink-muted max-w-md mx-auto">
-              Automated DNS TXT record challenge verification and contract tier quota overrides are fully active against MariaDB.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ─── Modal 1: Employer Verification Dossier Modal ─── */}
-      {inspectApplication && (
+      {flash && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setInspectApplication(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="employer-dossier-title"
+          role={flash.tone === 'success' ? 'status' : 'alert'}
+          className={cn(
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            flash.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
+          )}
         >
-          <div
-            className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
+          {flash.tone === 'success' ? <Check className="mt-0.5 size-4 shrink-0" /> : <X className="mt-0.5 size-4 shrink-0" />}
+          <span className="flex-1">{flash.text}</span>
+          <button type="button" onClick={() => setFlash(null)} className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9">Dismiss</button>
+        </div>
+      )}
+
+      <div role="tablist" aria-label="Moderation sections" className="flex gap-1 overflow-x-auto border-b border-border">
+        {(
+          [
+            { id: 'applications', label: 'Employer applications' },
+            { id: 'jobs', label: 'Job postings' },
+            { id: 'companies', label: 'Company registry' },
+            { id: 'organizations', label: 'Organizations' },
+          ] as const
+        ).map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={section === entry.id}
+            aria-controls={`moderation-panel-${entry.id}`}
+            onClick={() => setSection(entry.id)}
+            className={cn(
+              'min-h-11 cursor-pointer whitespace-nowrap border-b-2 px-3 text-xs font-bold transition-colors',
+              section === entry.id ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink',
+            )}
           >
-            {/* Header */}
-            <div className="bg-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
-                  <Building2 className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 id="employer-dossier-title" className="text-base font-extrabold text-white truncate font-mono">
-                    {inspectApplication.companyName}
-                  </h3>
-                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                    Application ID: {inspectApplication.id} · Submitted: {inspectApplication.submittedAt}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setInspectApplication(null)}
-                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-                aria-label="Close dossier"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+            {entry.label}
+          </button>
+        ))}
+      </div>
 
-            {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Verification Status</span>
-                  <p className="font-extrabold text-ink mt-0.5">{inspectApplication.status}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Tax ID / VAT</span>
-                  <p className="font-extrabold text-ink mt-0.5 font-mono">{inspectApplication.taxId}</p>
-                </div>
-                <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-2xs font-bold uppercase text-ink-muted">Company Size</span>
-                  <p className="font-extrabold text-ink mt-0.5">{inspectApplication.companySize || 'N/A'}</p>
-                </div>
-              </div>
+      {section === 'applications' && <ApplicationsPanel announce={announce} report={report} />}
+      {section === 'jobs' && <JobsPanel announce={announce} report={report} />}
+      {section === 'companies' && <CompaniesPanel />}
+      {section === 'organizations' && <OrganizationsPanel />}
+    </div>
+  );
+}
 
-              {/* Organization Profile Details */}
-              <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-border text-xs">
-                <h4 className="font-bold text-ink flex items-center gap-1.5 pb-1 border-b border-border">
-                  <FileText className="size-3.5 text-brand-600" /> Organization Profile & Identity
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-                  <div>
-                    <span className="text-ink-muted block font-semibold">Official Website</span>
-                    <a
-                      href={inspectApplication.website}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-brand-600 font-medium hover:underline flex items-center gap-1 mt-0.5"
-                    >
-                      <Globe className="size-3" /> {inspectApplication.website}
-                    </a>
-                  </div>
-                  <div>
-                    <span className="text-ink-muted block font-semibold">Operating Headquarters</span>
-                    <span className="text-ink font-medium flex items-center gap-1 mt-0.5">
-                      <MapPin className="size-3 text-ink-muted" /> {inspectApplication.location || 'Not Specified'}
-                    </span>
-                  </div>
-                </div>
-                {inspectApplication.companyDescription && (
-                  <div className="pt-2 border-t border-border/60">
-                    <span className="text-ink-muted block font-semibold">Company Overview</span>
-                    <p className="text-ink-secondary mt-0.5 leading-relaxed">{inspectApplication.companyDescription}</p>
-                  </div>
+/* ── employer applications ───────────────────────────────────────────── */
+
+function ApplicationsPanel({
+  announce,
+  report,
+}: {
+  announce: (tone: 'success' | 'error', text: string) => void;
+  report: (error: unknown) => void;
+}) {
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ applications?: EmployerApplication[]; count?: number; source?: string }>(
+        '/admin/employer-applications',
+        { limit: 200 },
+        { signal },
+      ),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const applications = resource.data?.applications ?? [];
+  const [busy, setBusy] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+
+  const decide = async (application: EmployerApplication, status: 'approved' | 'rejected') => {
+    setBusy(application.id);
+    try {
+      await patch(`/admin/employer-applications/${encodeURIComponent(application.id)}`, {
+        status,
+        expectedStatus: String(application.status ?? 'pending').toLowerCase(),
+        ...(status === 'rejected' && reason.trim() ? { reason: reason.trim() } : {}),
+      });
+      announce(
+        'success',
+        `${application.companyName || application.name || application.id} ${status}. Employer claim and token revocation were applied by the server.`,
+      );
+      setRejecting(null);
+      setReason('');
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (resource.status === 'loading' && resource.data === null) {
+    return <AdminLoadingPanel label="Reading employer applications…" />;
+  }
+  if (resource.status === 'failed' && resource.error) {
+    return <AdminErrorPanel title="Employer applications could not be read" error={resource.error} onRetry={resource.reload} />;
+  }
+  if (applications.length === 0) {
+    return (
+      <AdminEmptyPanel
+        title="No employer application"
+        description="No organization has applied for employer verification. Nothing is awaiting review."
+        tone="success"
+      />
+    );
+  }
+
+  return (
+    <section id="moderation-panel-applications" role="tabpanel" className="space-y-3">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        {applications.map((application) => (
+          <li key={application.id} className="space-y-2 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-ink">
+                  {application.companyName || application.name || application.id}
+                  <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', statusPill(application.status))}>
+                    {application.status ?? 'unknown'}
+                  </span>
+                </p>
+                <p className="text-2xs text-ink-muted">
+                  {application.contactEmail || application.email || 'no contact email'}
+                  {application.contactPerson ? ` · ${application.contactPerson}` : ''}
+                  {application.location ? ` · ${application.location}` : ''}
+                  {application.companySize ? ` · ${application.companySize}` : ''}
+                </p>
+                <p className="text-2xs text-ink-muted">
+                  id <span className="font-mono">{application.id}</span>
+                  {application.submittedAt ? ` · submitted ${application.submittedAt}` : ''}
+                  {application.rejectionReason ? ` · reason: ${application.rejectionReason}` : ''}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {application.website && (
+                  <a
+                    href={application.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-11 items-center gap-1 text-2xs font-bold text-brand-700 hover:underline sm:min-h-9"
+                  >
+                    Website
+                    <ExternalLink className="size-3" />
+                  </a>
                 )}
-              </div>
-
-              {/* Authorized Contact Person */}
-              <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-border text-xs">
-                <h4 className="font-bold text-ink flex items-center gap-1.5 pb-1 border-b border-border">
-                  <Mail className="size-3.5 text-brand-600" /> Authorized Representative
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-                  <div>
-                    <span className="text-ink-muted block font-semibold">Representative Name</span>
-                    <span className="text-ink font-semibold mt-0.5 block">{inspectApplication.contactPerson || 'Official Representative'}</span>
-                    <span className="text-ink-muted text-2xs">{inspectApplication.contactPersonTitle || 'Authorized Signatory'}</span>
-                  </div>
-                  <div>
-                    <span className="text-ink-muted block font-semibold">Contact Channels</span>
-                    <span className="text-ink font-mono text-[11px] block mt-0.5">{inspectApplication.contactEmail}</span>
-                    <span className="text-ink-muted font-mono text-2xs">{inspectApplication.contactPhone || '—'}</span>
-                  </div>
-                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  loading={busy === application.id}
+                  disabled={String(application.status ?? '').toLowerCase() === 'approved'}
+                  onClick={() => decide(application, 'approved')}
+                  className="min-h-11 sm:min-h-9"
+                >
+                  <Check className="mr-1 size-3.5" />
+                  Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={String(application.status ?? '').toLowerCase() === 'rejected'}
+                  onClick={() => setRejecting(rejecting === application.id ? null : application.id)}
+                  className="min-h-11 sm:min-h-9"
+                >
+                  Reject
+                </Button>
               </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => setInspectApplication(null)} className="text-xs">
-                Close Dossier
-              </Button>
-              {inspectApplication.status === 'PENDING' && (
-                <div className="flex items-center gap-2">
+            {rejecting === application.id && (
+              <div className="space-y-2 rounded-lg border border-error-100 bg-error-50 p-3">
+                <label htmlFor={`reason-${application.id}`} className="block text-2xs font-bold text-error-700">
+                  Rejection reason (stored on the application and in the audit row)
+                </label>
+                <Input
+                  id={`reason-${application.id}`}
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="Why this application is refused"
+                  className="h-11 border-error-100 bg-surface text-xs sm:h-9"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setRejecting(null)} className="min-h-11 sm:min-h-9">
+                    Cancel
+                  </Button>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => {
-                      const app = inspectApplication;
-                      setInspectApplication(null);
-                      setReviewConfirmation({ app, action: 'reject' });
-                    }}
-                    className="text-xs"
+                    loading={busy === application.id}
+                    disabled={reason.trim().length < 3}
+                    onClick={() => decide(application, 'rejected')}
+                    className="min-h-11 sm:min-h-9"
                   >
-                    <X className="size-3 mr-1" />
-                    Reject Application
-                  </Button>
-                  <Button
-                    variant="success"
-                    size="sm"
-                    onClick={() => {
-                      const app = inspectApplication;
-                      setInspectApplication(null);
-                      setReviewConfirmation({ app, action: 'approve' });
-                    }}
-                    className="text-xs font-semibold"
-                  >
-                    <Check className="size-3 mr-1" />
-                    Approve & Verify Organization
+                    Confirm rejection
                   </Button>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-2xs text-ink-muted">
+        {applications.length} applications · source {resource.data?.source ?? 'unknown'}
+      </p>
+    </section>
+  );
+}
+
+/* ── jobs ────────────────────────────────────────────────────────────── */
+
+function JobsPanel({
+  announce,
+  report,
+}: {
+  announce: (tone: 'success' | 'error', text: string) => void;
+  report: (error: unknown) => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'inactive' | 'archived'>('all');
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ jobs?: JobRow[]; pagination?: { totalItems?: number; totalPages?: number }; allJobs?: JobRow[] }>(
+        '/admin/jobs',
+        { limit: 100, status: statusFilter },
+        { signal },
+      ),
+    [statusFilter],
+  );
+  const resource = useAdminResource(load);
+  const jobs = useMemo(() => resource.data?.jobs ?? [], [resource.data]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const changeStatus = async (job: JobRow, status: 'active' | 'inactive' | 'archived') => {
+    setBusy(job.id);
+    try {
+      await patch(`/admin/jobs/${encodeURIComponent(job.id)}`, {
+        status,
+        expectedStatus: job.status,
+      });
+      announce('success', `Job ${job.id} set to ${status}.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const toggleFeatured = async (job: JobRow) => {
+    setBusy(job.id);
+    try {
+      await patch(`/admin/jobs/${encodeURIComponent(job.id)}`, {
+        isFeatured: job.isFeatured !== true,
+        expectedFeatured: job.isFeatured === true,
+      });
+      announce('success', `Job ${job.id} ${job.isFeatured ? 'unfeatured' : 'featured'}.`);
+      resource.reload();
+    } catch (error) {
+      report(error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section id="moderation-panel-jobs" role="tabpanel" className="space-y-3">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter jobs by status">
+        {(['all', 'pending', 'active', 'inactive', 'archived'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={statusFilter === option}
+            onClick={() => {
+              setStatusFilter(option);
+              // The resource hook refetches on `reload()`, not on loader identity: the
+              // filter is a query parameter, so changing it must ask for a new read.
+              resource.reload();
+            }}
+            className={cn(
+              'min-h-11 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors',
+              statusFilter === option ? 'bg-brand-600 text-white' : 'bg-neutral-100 text-ink-muted dark:bg-neutral-800',
+            )}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+
+      {resource.status === 'loading' && resource.data === null && <AdminLoadingPanel label="Reading job postings…" />}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel title="Job postings could not be read" error={resource.error} onRetry={resource.reload} />
+      )}
+      {resource.status === 'ready' && jobs.length === 0 && (
+        <AdminEmptyPanel title="No job posting" description="No job matches this status filter." />
+      )}
+
+      {jobs.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <table className="w-full min-w-[860px] text-xs">
+            <caption className="sr-only">Job postings, newest first</caption>
+            <thead className="border-b border-border bg-canvas">
+              <tr>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Job</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Company</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Status</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold text-ink-secondary">Applicants</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold text-ink-secondary">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {jobs.map((job) => (
+                <tr key={job.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                  <td className="px-3 py-2">
+                    <p className="font-bold text-ink">{job.title ?? 'Untitled'}</p>
+                    <p className="text-2xs text-ink-muted">
+                      <span className="font-mono">{job.id}</span>
+                      {job.location ? ` · ${job.location}` : ''}
+                      {job.isFeatured ? ' · featured' : ''}
+                    </p>
+                  </td>
+                  <td className="px-3 py-2 text-ink-secondary">{job.company ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', statusPill(job.status))}>
+                      {job.status ?? 'unknown'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-ink-secondary">{job.applicants ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => toggleFeatured(job)}
+                        loading={busy === job.id}
+                        className="min-h-11 sm:min-h-7"
+                      >
+                        {job.isFeatured ? 'Unfeature' : 'Feature'}
+                      </Button>
+                      {job.status !== 'archived' ? (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => changeStatus(job, 'archived')}
+                          loading={busy === job.id}
+                          className="min-h-11 text-error-700 sm:min-h-7"
+                        >
+                          Archive
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => changeStatus(job, 'active')}
+                          loading={busy === job.id}
+                          className="min-h-11 sm:min-h-7"
+                        >
+                          Restore
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* ─── Modal 2: Audited Approval/Rejection Reason Confirmation Modal ─── */}
-      {reviewConfirmation && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setReviewConfirmation(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-md bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={cn(
-                'p-4 border-b flex items-center gap-3',
-                reviewConfirmation.action === 'reject' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-emerald-50 border-emerald-100 text-emerald-900'
-              )}
-            >
-              {reviewConfirmation.action === 'reject' ? (
-                <AlertTriangle className="size-5 text-rose-600" />
-              ) : (
-                <Check className="size-5 text-emerald-600" />
-              )}
-              <h3 className="font-bold text-sm">
-                {reviewConfirmation.action === 'reject' ? 'Reject Employer Application?' : 'Approve & Verify Employer?'}
-              </h3>
+      <p className="text-2xs text-ink-muted">
+        {jobs.length} shown
+        {resource.data?.pagination?.totalItems !== undefined ? ` · ${resource.data.pagination.totalItems} match` : ''}
+        {' · the job route accepts exactly one change per request (status or featured)'}
+      </p>
+    </section>
+  );
+}
+
+/* ── companies ───────────────────────────────────────────────────────── */
+
+function CompaniesPanel() {
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      get<{ companies?: CompanyRow[]; source?: string }>('/admin/companies', undefined, { signal }),
+    [],
+  );
+  const resource = useAdminResource(load);
+  const companies = resource.data?.companies ?? [];
+
+  if (resource.status === 'loading' && resource.data === null) {
+    return <AdminLoadingPanel label="Reading the company registry…" />;
+  }
+  if (resource.status === 'failed' && resource.error) {
+    return <AdminErrorPanel title="The company registry could not be read" error={resource.error} onRetry={resource.reload} />;
+  }
+  if (companies.length === 0) {
+    return <AdminEmptyPanel title="No company registered" description="The companies table returned no rows." />;
+  }
+
+  return (
+    <section id="moderation-panel-companies" role="tabpanel" className="space-y-3">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        {companies.map((company) => (
+          <li key={company.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Building2 className="size-4 shrink-0 text-brand-600" />
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-ink">
+                  {company.displayName || company.name || company.id}
+                  {company.verified === true && (
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-success-100 bg-success-50 px-2 py-0.5 text-2xs font-bold text-success-700">
+                      <ShieldCheck className="size-3" />
+                      verified
+                    </span>
+                  )}
+                </p>
+                <p className="truncate text-2xs text-ink-muted">
+                  <span className="font-mono">{company.id}</span>
+                  {company.domain ? ` · ${company.domain}` : ''}
+                  {company.createdAt ? ` · since ${company.createdAt.slice(0, 10)}` : ''}
+                </p>
+              </div>
             </div>
-            <div className="p-5 space-y-3 text-xs">
-              <p className="text-ink-muted leading-relaxed">
-                Target organization: <strong className="text-ink">{reviewConfirmation.app.companyName}</strong> (Tax ID: {reviewConfirmation.app.taxId}).
-                {reviewConfirmation.action === 'approve'
-                  ? ' This will award the verified employer badge and grant full access to candidate resumes and hiring tools.'
-                  : ' Please specify the mandatory audited rejection reason for the applicant and platform audit logs.'}
+            {company.website && (
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center gap-1 text-2xs font-bold text-brand-700 hover:underline"
+              >
+                Website
+                <ExternalLink className="size-3" />
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-2xs text-ink-muted">{companies.length} companies · source {resource.data?.source ?? 'unknown'}</p>
+    </section>
+  );
+}
+
+/* ── organizations ───────────────────────────────────────────────────── */
+
+function OrganizationsPanel() {
+  const load = useCallback(
+    (signal: AbortSignal) => get<unknown>('/enterprise/tenants', undefined, { signal }).then(readTenantOptions),
+    [],
+  );
+  const resource = useAdminResource<TenantOption[]>(load);
+  const tenants = resource.data ?? [];
+
+  if (resource.status === 'loading' && resource.data === null) {
+    return <AdminLoadingPanel label="Reading organizations…" />;
+  }
+  if (resource.status === 'failed' && resource.error) {
+    return <AdminErrorPanel title="Organizations could not be read" error={resource.error} onRetry={resource.reload} />;
+  }
+  if (tenants.length === 0) {
+    return (
+      <AdminEmptyPanel
+        title="No organization"
+        description="This operator is not a member of any organization. Tenant-level administration needs a tenant registry surface (OI-007-1)."
+      />
+    );
+  }
+
+  return (
+    <section id="moderation-panel-organizations" role="tabpanel" className="space-y-3">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        {tenants.map((tenant) => (
+          <li key={tenant.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-ink">{tenant.displayName}</p>
+              <p className="truncate text-2xs text-ink-muted">
+                {tenant.slug} · <span className="font-mono">{tenant.id}</span>
               </p>
-
-              {reviewConfirmation.action === 'reject' && (
-                <div>
-                  <label className="font-semibold text-ink block mb-1">
-                    Audited Rejection Justification <span className="text-rose-600">*</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    autoFocus
-                    required
-                    placeholder="e.g. Invalid commercial Tax ID, unverified domain, or failed background check..."
-                    value={reviewReason}
-                    onChange={(e) => setReviewReason(e.target.value)}
-                    className="w-full rounded-lg border border-border p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  />
-                </div>
-              )}
             </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setReviewConfirmation(null)} className="text-xs">
-                Cancel
-              </Button>
-              <Button
-                variant={reviewConfirmation.action === 'reject' ? 'destructive' : 'primary'}
-                size="sm"
-                onClick={() => {
-                  if (reviewConfirmation.action === 'reject') {
-                    if (!reviewReason.trim()) return;
-                    handleRejectApplication(reviewConfirmation.app.id, reviewReason.trim());
-                  } else {
-                    handleApproveApplication(reviewConfirmation.app.id);
-                  }
-                }}
-                disabled={reviewConfirmation.action === 'reject' && !reviewReason.trim()}
-                className={cn('text-xs font-bold', reviewConfirmation.action === 'approve' && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
-              >
-                {reviewConfirmation.action === 'reject' ? 'Confirm Rejection' : 'Confirm Verification'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Modal 3: Job Spam Moderation Confirmation Dialog ─── */}
-      {jobSpamModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setJobSpamModal(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={cn(
-                'p-4 border-b flex items-center gap-3',
-                jobSpamModal.action === 'flag' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-emerald-50 border-emerald-100 text-emerald-900'
-              )}
-            >
-              <AlertTriangle className={cn('size-5', jobSpamModal.action === 'flag' ? 'text-rose-600' : 'text-emerald-600')} />
-              <h3 className="font-bold text-sm">
-                {jobSpamModal.action === 'flag' ? 'Flag Job Listing as Spam?' : 'Clear Spam Flag & Restore Job?'}
-              </h3>
-            </div>
-            <div className="p-5 text-xs text-ink-muted leading-relaxed">
-              Job listing: <strong className="text-ink">{jobSpamModal.job.title}</strong> by {jobSpamModal.job.company}.
-              {jobSpamModal.action === 'flag'
-                ? ' This listing will be immediately suppressed from the candidate job board.'
-                : ' This listing will be restored to active visibility across candidate searches.'}
-            </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setJobSpamModal(null)} className="text-xs">
-                Cancel
-              </Button>
-              <Button
-                variant={jobSpamModal.action === 'flag' ? 'destructive' : 'primary'}
-                size="sm"
-                onClick={() => handleToggleJobSpam(jobSpamModal.job.id, jobSpamModal.action === 'flag')}
-                className="text-xs font-bold"
-              >
-                {jobSpamModal.action === 'flag' ? 'Flag as Spam' : 'Restore Listing'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            <span className={cn('rounded-full border px-2 py-0.5 text-2xs font-bold uppercase', statusPill(tenant.lifecycleState))}>
+              {tenant.lifecycleState}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-2xs text-ink-muted">
+        {tenants.length} organizations · scoped to orgs this operator belongs to; a platform-wide
+        registry is OI-007-1.
+      </p>
+    </section>
   );
 }

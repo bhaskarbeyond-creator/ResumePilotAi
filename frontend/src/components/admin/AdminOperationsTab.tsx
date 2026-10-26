@@ -1,299 +1,316 @@
 /**
- * Platform Operations & Maintenance Controller Tab
+ * Platform operations: the maintenance barrier and the service-configuration summary.
  *
- * Binds to:
- * - GET /api/admin/health-summary (reads maintenance mode & revision)
- * - POST /api/admin/system-health-settings (atomic maintenance toggle & message commit)
- * - POST /api/admin/operations/backup (database snapshot trigger)
- * - POST /api/admin/operations/cache-clear (cache invalidation)
- * - GET /api/platform/operational-status (dual-DB sync status)
+ * What it used to be: a "MariaDB Hot Backup" card and a "Purge Node Caches" card whose
+ * buttons posted to `/api/admin/operations/backup` and `/api/admin/operations/cache-clear`
+ * — routes that do not exist — swallowed the failure with `.catch(() => {})`, then announced
+ * success after a `setTimeout` ("MariaDB hot backup snapshot completed successfully", with a
+ * fabricated "Last Verified Snapshot: Today, 02:00 UTC"). The sync telemetry beside them
+ * (`syncLatencyMs: 2`, `bufferedEvents: 0`) was a local constant wearing a metrics costume.
+ * A maintenance console that lies about backups is the single most dangerous lie an admin
+ * console can tell, so both cards are gone: backup and cache invalidation are runbook
+ * operations with no admin API (`OI-OPS-1`), and the page says exactly that.
  *
- * INVARIANTS:
- * 1. MAINTENANCE MODE CONTROLLER: Commits to MariaDB system_settings with expectedRevision.
- * 2. ADMIN BYPASS: Authenticated super admins retain full access while public traffic is blocked.
- * 3. AUDIT RECORD COMMIT: Maintenance changes are audited to administrative log.
+ * Endpoints used:
+ *   GET  /api/admin/health-summary          revision + maintenance settings + service config summary
+ *   POST /api/admin/system-health-settings  revision-guarded, transactional, audited
+ *
+ * The maintenance write is the same one the backend commits as one MariaDB transaction
+ * (`index.js:3502`): settings, public projection and the audit row move together or not at all.
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { AlertTriangle, Database, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { get, post } from '@/lib/api-client';
-import {
-  Wrench,
-  AlertTriangle,
-  CheckCircle2,
-  Database,
-  RefreshCw,
-  ShieldAlert,
-  Download,
-  Trash2,
-} from 'lucide-react';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
+
+interface HealthSummaryPayload {
+  success?: boolean;
+  checkedAt?: string;
+  revision?: number;
+  services?: {
+    backend?: { reachable?: boolean };
+    database?: { engine?: string; authoritative?: boolean };
+    firebaseAdmin?: { configured?: boolean };
+    aiProviders?: Record<string, { configured?: boolean }>;
+    payments?: Record<string, { configured?: boolean }>;
+  };
+  settings?: { maintenanceMode?: boolean; maintenanceMessage?: string };
+}
 
 export function AdminOperationsTab() {
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState(
-    'System is under scheduled maintenance. Please check back shortly.'
+  const load = useCallback(
+    (signal: AbortSignal) => get<HealthSummaryPayload>('/admin/health-summary', undefined, { signal }),
+    [],
   );
-  const [expectedRevision, setExpectedRevision] = useState(0);
-  const [, setLoading] = useState(true);
-  const [savingMaintenance, setSavingMaintenance] = useState(false);
-  const [statusFeedback, setStatusFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const resource = useAdminResource(load);
 
-  // Operations actions state
-  const [backingUp, setBackingUp] = useState(false);
-  const [clearingCache, setClearingCache] = useState(false);
-  const [syncStatus, setSyncStatus] = useState({
-    engine: 'MariaDB 10.11 InnoDB',
-    authoritative: true,
-    syncLatencyMs: 2,
-    bufferedEvents: 0,
-    lastBackup: 'Today, 02:00 UTC',
-  });
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
-  const loadHealthSummary = async () => {
-    try {
-      const res = await get<{
-        revision?: number;
-        settings?: { maintenanceMode?: boolean; maintenanceMessage?: string };
-      }>('/admin/health-summary');
-
-      if (res) {
-        setExpectedRevision(Number(res.revision) || 0);
-        if (res.settings) {
-          setMaintenanceMode(res.settings.maintenanceMode === true);
-          if (res.settings.maintenanceMessage) {
-            setMaintenanceMessage(res.settings.maintenanceMessage);
-          }
-        }
-      }
-    } catch {
-      // Keep baseline
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // The form is a local edit buffer of the stored settings; it is filled when a read lands,
+  // and every save is guarded by the revision that buffer was filled from.
+  const revision = Number(resource.data?.revision || 0);
   useEffect(() => {
-    loadHealthSummary();
-  }, []);
+    if (resource.status === 'ready' && resource.data) {
+      setMaintenanceMode(resource.data.settings?.maintenanceMode === true);
+      setMaintenanceMessage(resource.data.settings?.maintenanceMessage ?? '');
+    }
+  }, [resource.status, resource.data]);
 
-  const handleSaveMaintenance = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingMaintenance(true);
-    setStatusFeedback(null);
-
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setNotice(null);
     try {
-      const res = await post<{ success: boolean; settings?: any; revision?: number }>(
+      const response = await post<{ success?: boolean; revision?: number }>(
         '/admin/system-health-settings',
         {
           maintenanceMode,
           maintenanceMessage,
-          expectedRevision,
-        }
+          expectedRevision: revision,
+        },
       );
-
-      if (res.revision !== undefined) {
-        setExpectedRevision(Number(res.revision));
-      } else {
-        setExpectedRevision((r) => r + 1);
-      }
-
-      setStatusFeedback({
-        type: 'success',
+      setNotice({
+        tone: 'success',
         text: maintenanceMode
-          ? 'Platform Maintenance Mode is now ACTIVE. Public routes blocked; Super Admins retain bypass.'
-          : 'Platform Maintenance Mode DEACTIVATED. Full public traffic restored.',
+          ? `Maintenance barrier is active (revision ${response?.revision ?? revision + 1}). Public traffic is blocked; authenticated administrators bypass it.`
+          : `Maintenance barrier lifted (revision ${response?.revision ?? revision + 1}). Full public traffic restored.`,
       });
-    } catch (err: any) {
-      setStatusFeedback({
-        type: 'error',
-        text: err?.message || 'Failed to update maintenance configuration.',
+      resource.reload();
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      setNotice({
+        tone: 'error',
+        text: `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`,
       });
     } finally {
-      setSavingMaintenance(false);
+      setSaving(false);
     }
   };
 
-  const handleTriggerBackup = async () => {
-    setBackingUp(true);
-    try {
-      await post('/admin/operations/backup', {}).catch(() => {});
-      setTimeout(() => {
-        setBackingUp(false);
-        setSyncStatus((s) => ({ ...s, lastBackup: 'Just now (Verified OK)' }));
-        setStatusFeedback({ type: 'success', text: 'MariaDB hot backup snapshot completed successfully.' });
-      }, 1000);
-    } catch {
-      setBackingUp(false);
-    }
-  };
-
-  const handleClearCache = async () => {
-    setClearingCache(true);
-    try {
-      await post('/admin/operations/cache-clear', {}).catch(() => {});
-      setTimeout(() => {
-        setClearingCache(false);
-        setStatusFeedback({ type: 'success', text: 'Application route and model caches purged across nodes.' });
-      }, 800);
-    } catch {
-      setClearingCache(false);
-    }
-  };
+  const services = resource.data?.services ?? null;
+  const aiConfigured = Object.values(services?.aiProviders ?? {}).filter((entry) => entry?.configured).length;
+  const aiTotal = Object.keys(services?.aiProviders ?? {}).length;
+  const paymentsConfigured = Object.values(services?.payments ?? {}).filter((entry) => entry?.configured).length;
+  const paymentsTotal = Object.keys(services?.payments ?? {}).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-ink flex items-center gap-2">
-          <Wrench className="size-5 text-brand-600" />
-          Platform Operations & Maintenance Controller
-        </h2>
+        <h2 className="text-xl font-bold text-ink">Platform operations</h2>
         <p className="text-xs text-ink-muted">
-          Global maintenance mode barrier, MariaDB transactional backups, and dual-database sync orchestration.
+          The maintenance barrier and the service-configuration summary the backend reports.
+          Backup and cache invalidation are runbook operations — see below.
         </p>
       </div>
 
-      {statusFeedback && (
+      {notice && (
         <div
+          role={notice.tone === 'success' ? 'status' : 'alert'}
           className={cn(
-            'flex items-center justify-between rounded-xl p-3 text-xs border animate-[fade-in_150ms_ease-out]',
-            statusFeedback.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border-rose-200'
+            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            notice.tone === 'success'
+              ? 'border-success-100 bg-success-50 text-success-700'
+              : 'border-error-100 bg-error-50 text-error-700',
           )}
         >
-          <div className="flex items-center gap-2">
-            {statusFeedback.type === 'success' ? (
-              <CheckCircle2 className="size-4 text-emerald-600" />
-            ) : (
-              <AlertTriangle className="size-4 text-rose-600" />
-            )}
-            <span>{statusFeedback.text}</span>
-          </div>
-          <button type="button" onClick={() => setStatusFeedback(null)} className="inline-flex min-h-11 items-center rounded-lg px-2 font-bold opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          {notice.tone === 'success' ? (
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          )}
+          <span className="flex-1">{notice.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="min-h-11 cursor-pointer px-2 text-2xs font-bold uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-h-9"
+          >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* ─── Global Maintenance Controller ─── */}
-      <Card className={cn('border-2 transition-colors', maintenanceMode ? 'border-amber-500 bg-amber-50/20' : 'border-border')}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <ShieldAlert className={cn('size-5', maintenanceMode ? 'text-amber-600' : 'text-ink-muted')} />
-              <div>
-                <CardTitle className="text-sm">Platform Maintenance Mode Barrier</CardTitle>
-                <p className="text-xs text-ink-muted">Blocks public traffic with custom splash while granting verified admin bypass.</p>
+      {resource.status === 'loading' && resource.data === null && (
+        <AdminLoadingPanel label="Reading the health summary…" />
+      )}
+      {resource.status === 'failed' && resource.error && (
+        <AdminErrorPanel
+          title="The health summary could not be read"
+          error={resource.error}
+          onRetry={resource.reload}
+        />
+      )}
+      {resource.status === 'ready' && !resource.data?.settings && (
+        <AdminEmptyPanel
+          title="No stored maintenance configuration"
+          description="The health summary returned no settings block. Saving below would create the first one."
+        />
+      )}
+
+      {resource.data?.settings !== undefined && (
+        <Card className={cn('border-2 transition-colors', maintenanceMode ? 'border-warning-100 bg-warning-50/40' : 'border-border')}>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <ShieldAlert className={cn('size-5', maintenanceMode ? 'text-warning-700' : 'text-ink-muted')} />
+                <div>
+                  <CardTitle className="text-sm">Maintenance barrier</CardTitle>
+                  <p className="text-xs text-ink-muted">
+                    Stored in <span className="font-mono">system_settings</span> at revision {revision}; writes are
+                    transactional and audited by the server.
+                  </p>
+                </div>
               </div>
-            </div>
-            <span
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-wider',
-                maintenanceMode ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-              )}
-            >
-              {maintenanceMode ? 'BARRIER ACTIVE' : 'NORMAL TRAFFIC'}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveMaintenance} className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="maintenanceToggle"
-                checked={maintenanceMode}
-                onChange={(e) => setMaintenanceMode(e.target.checked)}
-                className="size-5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
-              />
-              <label htmlFor="maintenanceToggle" className="text-xs font-bold text-ink cursor-pointer">
-                Enable Scheduled Platform Maintenance Barrier
-              </label>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-ink">Public Notice Message</label>
-              <Input
-                value={maintenanceMessage}
-                onChange={(e) => setMaintenanceMessage(e.target.value)}
-                placeholder="Enter message to display to visitors during maintenance..."
-                className="mt-1 text-xs"
-                disabled={!maintenanceMode}
-              />
-              <p className="mt-1 text-[11px] text-ink-muted">
-                Visitors will see this announcement. Authenticated administrators automatically bypass this barrier.
-              </p>
-            </div>
-
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                variant={maintenanceMode ? 'destructive' : 'primary'}
-                size="sm"
-                loading={savingMaintenance}
+              <span
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wide',
+                  maintenanceMode
+                    ? 'border-warning-100 bg-warning-50 text-warning-700'
+                    : 'border-success-100 bg-success-50 text-success-700',
+                )}
               >
-                {maintenanceMode ? 'Enforce Maintenance Barrier' : 'Save Maintenance Settings'}
-              </Button>
+                {maintenanceMode ? 'barrier active' : 'normal traffic'}
+              </span>
             </div>
-          </form>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={save} className="space-y-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="maintenanceToggle"
+                  checked={maintenanceMode}
+                  onChange={(event) => setMaintenanceMode(event.target.checked)}
+                  className="size-5 rounded text-warning-700 focus:ring-warning-500 cursor-pointer"
+                />
+                <label htmlFor="maintenanceToggle" className="cursor-pointer text-xs font-bold text-ink">
+                  Block public traffic until this is switched off
+                </label>
+              </div>
+
+              <div>
+                <label htmlFor="maintenanceMessage" className="text-xs font-semibold text-ink">
+                  Public notice
+                </label>
+                <Input
+                  id="maintenanceMessage"
+                  value={maintenanceMessage}
+                  onChange={(event) => setMaintenanceMessage(event.target.value)}
+                  placeholder="What visitors see while the barrier is up"
+                  className="mt-1 h-11 text-xs sm:h-9"
+                  disabled={!maintenanceMode}
+                  required={maintenanceMode}
+                  maxLength={500}
+                />
+                <p className="mt-1 text-2xs text-ink-muted">
+                  Required while the barrier is up (the server rejects an empty message with
+                  <span className="font-mono"> INVALID_MAINTENANCE_MESSAGE</span>). Authenticated administrators
+                  bypass it; every save is recorded in the admin audit trail.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  variant={maintenanceMode ? 'destructive' : 'primary'}
+                  size="sm"
+                  loading={saving}
+                  disabled={maintenanceMode && maintenanceMessage.trim().length === 0}
+                  className="min-h-11 sm:min-h-9"
+                >
+                  {maintenanceMode ? 'Enforce maintenance barrier' : 'Save maintenance settings'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {services && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Database className="size-4 text-brand-600" />
+              Service configuration summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <SummaryRow label="Backend" value={services.backend?.reachable === true ? 'reachable' : 'unknown'} good={services.backend?.reachable === true} />
+              <SummaryRow
+                label="Configuration store"
+                value={`${services.database?.engine ?? 'unknown'}${services.database?.authoritative === true ? ' (authoritative)' : ''}`}
+                good={services.database?.authoritative === true}
+              />
+              <SummaryRow
+                label="Identity provider"
+                value={services.firebaseAdmin?.configured === true ? 'configured' : 'not configured'}
+                good={services.firebaseAdmin?.configured === true}
+              />
+              <SummaryRow
+                label="AI providers"
+                value={`${aiConfigured} of ${aiTotal} configured`}
+                good={aiTotal > 0 && aiConfigured === aiTotal}
+              />
+              <SummaryRow
+                label="Payment providers"
+                value={`${paymentsConfigured} of ${paymentsTotal} configured`}
+                good={paymentsTotal > 0 && paymentsConfigured === paymentsTotal}
+              />
+              <SummaryRow
+                label="Checked at"
+                value={resource.data?.checkedAt ?? 'unknown'}
+                good={Boolean(resource.data?.checkedAt)}
+              />
+            </dl>
+            <p className="mt-3 text-2xs text-ink-muted">
+              Provider details, per-service probes and the API matrix live on the{' '}
+              <span className="font-semibold">Platform health</span> tab. Outbox and dead-letter
+              state lives on <span className="font-semibold">Outbox &amp; dead letters</span>.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Backup &amp; cache invalidation — runbook, not console</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-xs text-ink-secondary">
+          <p>
+            This console offers no backup or cache-purge control because the platform exposes no
+            such API: the buttons that used to be here posted to
+            <span className="font-mono"> /api/admin/operations/backup</span> and
+            <span className="font-mono"> /api/admin/operations/cache-clear</span>, neither of which
+            is a route, and reported success anyway (<span className="font-mono">OI-OPS-1</span>).
+          </p>
+          <p>
+            Backup and restore are executed from the deployment host following{' '}
+            <span className="font-semibold">DEPLOYMENT-RUNBOOK.md</span> §4, and the rollback drill
+            in §7 records the restore path end to end. Operational-status staleness is cleared with
+            <span className="font-mono"> POST /api/platform/operational-status/refresh</span> from the
+            Platform health tab.
+          </p>
         </CardContent>
       </Card>
+    </div>
+  );
+}
 
-      {/* ─── Database Operations & Sync Telemetry ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Database className="size-4 text-emerald-600" />
-              MariaDB Hot Backup & Snapshot
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-xs">
-            <p className="text-ink-muted">
-              Trigger an instantaneous point-in-time MariaDB transactional dump with verified checksums.
-            </p>
-            <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800 p-3 space-y-1 font-mono text-[11px]">
-              <div>Target Store: MariaDB 10.11 Primary InnoDB</div>
-              <div>Last Verified Snapshot: {syncStatus.lastBackup}</div>
-              <div>Snapshot Format: gzip-compressed SQL schema + data</div>
-            </div>
-            <div className="pt-2 flex justify-end">
-              <Button variant="outline" size="sm" onClick={handleTriggerBackup} loading={backingUp}>
-                <Download className="size-3.5 mr-1" />
-                Trigger Live Hot Backup
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <RefreshCw className="size-4 text-brand-600" />
-              Application Cache & Route Invalidation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-xs">
-            <p className="text-ink-muted">
-              Purges in-memory operational status, AI routing latency metrics, and cached CMS blog structures.
-            </p>
-            <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800 p-3 space-y-1 font-mono text-[11px]">
-              <div>Cache Strategy: In-memory TTL + Durable Outbox</div>
-              <div>Sync Drain Latency: {syncStatus.syncLatencyMs}ms</div>
-              <div>Pending Outbox Events: {syncStatus.bufferedEvents}</div>
-            </div>
-            <div className="pt-2 flex justify-end">
-              <Button variant="outline" size="sm" onClick={handleClearCache} loading={clearingCache}>
-                <Trash2 className="size-3.5 mr-1" />
-                Purge Node Caches
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+function SummaryRow({ label, value, good }: { label: string; value: string; good: boolean }) {
+  return (
+    <div className="rounded-lg border border-border px-2.5 py-1.5">
+      <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd className={cn('mt-0.5 text-xs font-bold', good ? 'text-success-700' : 'text-ink-secondary')}>{value}</dd>
     </div>
   );
 }
