@@ -44,6 +44,10 @@ const state = {
   delayMs: Number(process.env.DELAY_MS || process.env.DELAY || 0) || 0,
   posts: 0,
   lastAuth: null,
+  // A.15 reconstruction-era extension (disclosed): comma-separated credential
+  // substrings that always receive a 500, regardless of MODE — per-key failure
+  // injection for the two-tenant BYOK divergence leg.
+  authFails: String(process.env.AUTHFAILS || '').split(',').map(s => s.trim()).filter(Boolean),
 };
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -91,6 +95,9 @@ const server = http.createServer(async (req, res) => {
     state.lastAuth = String(req.headers.authorization || '');
     // Drain the request body (the engine always sends one).
     for await (const chunk of req) { void chunk; }
+    if (state.authFails.some(needle => state.lastAuth.includes(needle))) {
+      return json(res, 500, { error: { message: `server error from ${NAME} (injected per-credential failure)`, type: 'server_error' } });
+    }
     if (state.mode === '429') {
       res.setHeader('Retry-After', '60');
       return json(res, 429, { error: { message: `rate limited by ${NAME} stub`, type: 'rate_limit_error', code: 'rate_limit_exceeded' } });
