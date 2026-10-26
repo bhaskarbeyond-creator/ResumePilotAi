@@ -1,5 +1,6 @@
 const { permissionsFor } = require('./auth');
 const { satisfies } = require('../services/adminRbac');
+const { resolveRoutePermission } = require('./routeManifest');
 
 const ADMIN_PREFIXES = [
   '/admin/',
@@ -57,54 +58,28 @@ function isReadMethod(method) {
   return ['GET', 'HEAD', 'OPTIONS'].includes(String(method || 'GET').toUpperCase());
 }
 
-function isSupportDeskPath(pathname) {
-  return pathname === '/admin/support' || pathname.startsWith('/admin/support/');
-}
-
-/** Least-privilege GET/HEAD/OPTIONS map for admin aliases. Mutations stay write-gated. */
+/**
+ * Least-privilege permission for a read of an admin path.
+ *
+ * Thin adapter over the declarative manifest (`security/routeManifest.js`), kept
+ * because callers and tests ask this question by path. The ladder it replaced is
+ * gone: it answered "system.config.read" for anything it did not recognise, which
+ * made an unlisted route indistinguishable from a restricted one.
+ *
+ * @param {string} pathname mount-relative path
+ * @returns {string|string[]|null} permission(s), or `null` when unconfinable
+ */
 function resolveAdminReadPermission(pathname) {
-  if (pathname === '/admin/firebase-service-account') return 'secrets.manage';
-  if (pathname === '/platform/operators' || pathname.startsWith('/platform/operators/') || pathname === '/admin/operators' || pathname.startsWith('/admin/operators/')) return '*';
-  if (pathname.startsWith('/platform/operational-status') || pathname === '/platform/health-indicator' || pathname.startsWith('/platform/health') || pathname.startsWith('/admin/health')) return 'security.read';
-  if (pathname === '/platform/security-events' || pathname === '/platform/queues' || pathname === '/platform/enterprise-queue' || pathname === '/platform/attention' || pathname === '/platform/maintenance' || pathname === '/platform/encryption' || pathname === '/platform/observability' || pathname === '/platform/backup-status') return 'security.read';
-  if (pathname === '/admin/users' || pathname.startsWith('/admin/users/')) return 'users.read';
-  if (pathname === '/admin/employer-applications' || pathname.startsWith('/admin/employer-applications/')) return 'users.read';
-  if (pathname === '/admin/jobs' || pathname.startsWith('/admin/jobs/') || pathname === '/admin/reviews' || pathname.startsWith('/admin/reviews/')) return ['users.read', 'tickets.manage'];
-  if (pathname === '/admin/tenants' || pathname.startsWith('/admin/tenants/') || pathname === '/platform/tenants') return 'tenants.read';
-  if (pathname === '/email/logs') return 'email.logs.read';
-  if (pathname === '/email/admin/deliverability' || pathname === '/email/admin/circuit-breaker-status') return 'email.logs.read';
-  if (pathname === '/admin/payment-settings' || pathname === '/platform/payment-settings') return 'payments.read';
-  if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-orders') return 'payments.read';
-  if (pathname.startsWith('/admin/subscriptions')) return 'payments.read';
-  if (pathname === '/admin/ai/entitlements') return 'ai.usage.read';
-  // DIR-106 / P0-4: the real route is hyphenated (`/admin/ai-settings`), which the
-  // slash-separated entries above never matched. Without this entry the read
-  // resolved to `undefined` and was denied for everyone except a `*` holder,
-  // while the matching POST required only `system.config.write`.
-  if (pathname === '/admin/ai-settings') return 'system.config.read';
-  if (pathname.startsWith('/admin/ai/quota-limits')) return 'ai.entitlements.manage';
-  if (pathname.startsWith('/admin/ai/quota-stats')) return 'ai.usage.read';
-  if (pathname === '/platform/search') return ['users.read', 'tenants.read', 'payments.read', 'tickets.manage', 'audit.read', 'security.read', 'system.config.read'];
-  if (pathname === '/admin/dashboard' || pathname === '/platform/overview' || pathname === '/platform/command-center') return ['system.config.read', 'users.read', 'audit.read'];
-  if (isSupportDeskPath(pathname)) return 'tickets.manage';
-  return 'system.config.read';
+  return resolveRoutePermission(pathname, 'GET')?.permission ?? null;
 }
 
+/**
+ * Least-privilege permission for a mutation of an admin path.
+ * @param {string} pathname mount-relative path
+ * @returns {string|string[]|null} permission(s), or `null` when unconfinable
+ */
 function resolveAdminMutationPermission(pathname) {
-  if (pathname === '/platform/operators' || pathname.startsWith('/platform/operators/') || pathname === '/admin/operators' || pathname.startsWith('/admin/operators/')) return '*';
-  if (isSupportDeskPath(pathname)) return 'tickets.manage';
-  // payments mutations → payments.manage (covers payment-settings POST,
-  // payment/test-provider, /admin/payments/*); the elevated-permission
-  // check earlier in enforceApiPolicy already gates these.
-  if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider') return 'payments.manage';
-  // DIR-022 / AC-5: POST /admin/subscriptions/:uid/reconcile WRITES entitlement
-  // state, so it must not fall through to the generic system.config.write
-  // default and must never be reachable with read-only payments access.
-  if (pathname.startsWith('/admin/subscriptions')) return 'payments.manage';
-  // Users endpoint mutations (role change, entitlement change, revoke,
-  // etc.) require users.update — enforced per-router.
-  if (pathname.startsWith('/admin/users/')) return 'users.update';
-  return 'system.config.write';
+  return resolveRoutePermission(pathname, 'POST')?.permission ?? null;
 }
 
 function deny(res, code, message) {
@@ -132,13 +107,16 @@ function enforceApiPolicy(req, res, next) {
   }
 
   if (isAdminPath(pathname)) {
-    const required = read ? resolveAdminReadPermission(pathname) : resolveAdminMutationPermission(pathname);
-    // Mutations on ordinary admin paths still require system.config.write.
-    // Help-desk mutations use tickets.manage so SUPPORT can reply without config write.
-    if (required === 'system.config.write' && !hasPermission(req, 'system.config.write')) {
+    // One engine: the manifest decides the resource/action pair for this path and
+    // method. It always returns a rule (the two declared defaults are catch-alls),
+    // so `null` here would mean the manifest itself is broken — deny, and say so in
+    // the log rather than silently authorising.
+    const resolved = resolveRoutePermission(pathname, req.method);
+    if (!resolved) {
+      console.warn('[Policy] admin.policy.no_rule', JSON.stringify({ pathname, method: req.method }));
       return deny(res, 'FORBIDDEN', 'Insufficient permission');
     }
-    if (required !== 'system.config.write' && !hasPermission(req, required)) {
+    if (!hasPermission(req, resolved.permission)) {
       return deny(res, 'FORBIDDEN', 'Insufficient permission');
     }
   }
