@@ -55,10 +55,10 @@ try {
     // Mature alpha (openai stub) to n>=3 under a manual pin, then flip to
     // speed mode with primary=groq (beta stub slowed to 3s): both attempts
     // must be served by the non-primary on windowed evidence alone (F-07).
-    await setPublicAiConfig(sql, { selectionMode: 'manual', provider: 'openai' });
+    await setPublicAiConfig(sql, { selectionMode: 'manual', provider: 'openai', enableOpenai: true, enableGroq: true });
     await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
     for (let i = 1; i <= 3; i += 1) await call(i, 'A.9r3 manual-pin warm-up');
-    await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'groq' });
+    await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'groq', enableOpenai: true, enableGroq: true });
     await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
     const a = await call(4, 'A.9r3 speed flip attempt');
     const b = await call(5, 'A.9r3 speed flip attempt');
@@ -73,7 +73,7 @@ try {
     // no pin. 61 calls: exploration ticks at calls 20/40/60 divert to alpha
     // (wire exploration:'cold-start', observationCount 0->1->2), call 61
     // flips to alpha ON MERIT (observationCount 3, no marker).
-    await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'groq' });
+    await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'groq', enableOpenai: true, enableGroq: true });
     await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
     const diversions = [];
     let flipCall = null;
@@ -98,7 +98,7 @@ try {
     // curated id on a 3000ms stub; alpha serves the premium curated id
     // (gemini-1.5-pro) on a 150ms stub. The tier signal alone must decide:
     // every call served by alpha with qualityEvidence 'curated-tier:premium'.
-    await setPublicAiConfig(sql, { selectionMode: 'quality', provider: 'groq' });
+    await setPublicAiConfig(sql, { selectionMode: 'quality', provider: 'groq', enableOpenai: true, enableGroq: true });
     await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
     const served = [];
     for (let i = 1; i <= 6; i += 1) {

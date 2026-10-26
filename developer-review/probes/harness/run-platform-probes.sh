@@ -39,13 +39,22 @@ for _ in $(seq 1 60); do (exec 3<>/dev/tcp/127.0.0.1/3306) 2>/dev/null && break;
 sleep 8
 echo "bridge up (pid $BRIDGE_PID)"
 
-init_db() { # TREE DB_NAME
+prep_db() { # TREE DB_NAME — fresh per-leg database: rate-limiter/quota/cooldown
+  # carry-over between legs invalidated the first a9r4 run (RATE_LIMITED storm);
+  # the original audit runs also re-ran legs with fresh state (documented precedent).
+  (cd "$1/backend" && timeout 60 env NEWDB="$2" NODE_ENV=development node -e "
+    const m = require('mysql2/promise');
+    (async () => {
+      const c = await m.createConnection({ host: '127.0.0.1', port: 3306, user: 'root', password: '' });
+      await c.query('DROP DATABASE IF EXISTS ' + process.env.NEWDB);
+      await c.query('CREATE DATABASE ' + process.env.NEWDB);
+      await c.end();
+      process.exit(0);
+    })()" >/dev/null 2>&1)
   (cd "$1/backend" && timeout 120 env DB_NAME="$2" DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD= NODE_ENV=development \
     node -e "require('./database/mysql').initializeSchema({mode:'apply'}).then(r=>{process.exit(r.success?0:1)})" >/dev/null 2>&1)
-  echo "init $2 via $1: exit $?"
+  echo "prep_db $2 via $1: exit $?"
 }
-init_db "$BASE" ime365_probe_base
-init_db "$ROOT" ime365_probe_tip
 
 start_stubs() { # ALPHA_MODEL ALPHA_DELAY BETA_MODEL BETA_DELAY
   NAME=alpha PORT=$ALPHA_PORT MODEL="$1" MODE=ok DELAY="$2" node "$H/stub-openai-compat.mjs" > /tmp/probe-stub-alpha.log 2>&1 &
@@ -88,9 +97,11 @@ run_leg() { # LEG TREE_BACKEND DB_NAME LABEL ALPHA_MODEL ALPHA_DELAY BETA_MODEL 
   start_stubs "$5" "$6" "$7" "$8"
   for target in baseline tip; do
     local tree db label
-    if [ "$target" = baseline ]; then tree="$BASE/backend"; db=ime365_probe_base; label=baseline-bb2b82b;
-    else tree="$ROOT/backend"; db=ime365_probe_tip; label=tip-flags-off; fi
-    echo "-- leg $leg target $label: engine boot"
+    if [ "$target" = baseline ]; then tree="$BASE/backend"; label=baseline-bb2b82b;
+    else tree="$ROOT/backend"; label=tip-flags-off; fi
+    db="ime365_probe_${target}_${leg}"
+    prep_db "$(dirname "$tree")" "$db"
+    echo "-- leg $leg target $label: engine boot (db $db)"
     start_engine "$tree" "$db" "/tmp/probe-engine-${leg}-${target}.log"
     TARGET_BACKEND="$tree" ENGINE_PORT=$ENGINE_PORT DB_NAME="$db" LEG="$leg" TARGET_LABEL="$label" \
       ALPHA_PORT=$ALPHA_PORT BETA_PORT=$BETA_PORT \
