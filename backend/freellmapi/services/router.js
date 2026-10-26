@@ -27,7 +27,7 @@ const { compressMessages } = require('./compression');
 const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib/toolRescue');
 const { getMetricsPersistence } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
-const { eligible, validateMode, rankCandidates, weightedP50LatencyMs } = require('./selectionPolicy');
+const { eligible, validateMode, rankCandidates, weightedP50LatencyMs, pickColdStartExploration } = require('./selectionPolicy');
 
 // Stable compatibility order. Intelligent modes are ranked only from capability/service evidence.
 const DEFAULT_PRIORITY_ORDER = Object.freeze([
@@ -284,6 +284,34 @@ class FreeLlmRouter {
           ...candidate,
           routingDecision: { ...(candidate.routingDecision || {}), lastResort: true },
         }));
+      }
+    }
+    // PH4-ENGINE-030 (closes precondition A.9): bounded cold-start exploration.
+    // Latency-weighted intelligent modes only (auto/balanced/speed — the modes
+    // whose speed weight is > 0). NEVER in quality mode (the curated-tier
+    // promise must not be diverted), never for manual pins or explicit
+    // provider/model requests, never for the dedicated-BYOK sanctuary tier
+    // (its observations are not persisted to the platform store, so exploring
+    // there could never mature a window), and never when fallback is disabled.
+    // At most one call in COLD_START_EXPLORE_INTERVAL is diverted to the
+    // eligible under-evidenced (n < 3) candidate with the fewest windowed
+    // observations, so a newly added, long-idle or post-cooldown destination
+    // reaches the F-07 maturity gate on live traffic instead of waiting for an
+    // outage or a manual pin (probe legs A.9r1/A.9r2). The diversion is
+    // visible on the wire as routingDecision.exploration = 'cold-start'.
+    const exploratoryMode = mode === 'auto' || mode === 'balanced' || mode === 'speed';
+    if (exploratoryMode && ordered.length > 1 && !dedicatedByokTier
+      && platformConfig.enableFallback !== false && !explicit && !explicitProvider) {
+      this._coldStartCalls = Number(this._coldStartCalls || 0) + 1;
+      const explorationTarget = pickColdStartExploration(ordered, {
+        callCount: this._coldStartCalls,
+        observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model),
+      });
+      if (explorationTarget) {
+        ordered = [
+          { ...explorationTarget, routingDecision: { ...explorationTarget.routingDecision, exploration: 'cold-start' } },
+          ...ordered.filter(candidate => candidate !== explorationTarget),
+        ];
       }
     }
     // F-03: with the opt-in manual fallback the PIN stays the preferred

@@ -39,9 +39,12 @@ export function useQuotaGovernance({
     try {
       const requests: Promise<any>[] = [
         get<QuotaDashboardResponse>('/admin/ai/quota-stats').catch((err) => ({ __err: err })),
-        get<EngineStatusResponse>('/freellmapi/status').catch(() => null),
       ];
       if (isSuperAdmin) {
+        // F-10: /freellmapi/status and /freellmapi/metrics are super-admin-only.
+        // Scoped roles must not request them at all — the guaranteed 403s are
+        // console/API-hygiene noise and leak nothing useful to the scoped view.
+        requests.push(get<EngineStatusResponse>('/freellmapi/status').catch(() => null));
         requests.push(get<EngineMetricsResponse>('/freellmapi/metrics').catch(() => null));
       }
       const [qRes, statusRes, thirdRes] = await Promise.all(requests);
