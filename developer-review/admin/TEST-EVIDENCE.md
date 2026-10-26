@@ -101,10 +101,15 @@ Lines        : 99.02% ( 3955/3994 )
 All files          |   95.45 |   86.02 |   95.16 |   96.11 |
 ```
 
-Frontend thresholds were **raised this turn** from 80/75/75/80 to 90/85/90/95 in
-`frontend/vitest.config.ts`; the per-module critical-path table, the trend and the qualification
-(no repository-wide frontend figure exists; `per-file=false`) are in
-`decisions/ADR-008-coverage-floor.md` and `DECISION-LOG.md` `D-032-1`.
+Frontend thresholds were raised to 90/85/90/95 in `frontend/vitest.config.ts`; the per-module
+critical-path table, the trend and the qualification (no repository-wide frontend figure exists;
+`per-file=false`) are in `decisions/ADR-008-coverage-floor.md` and `DECISION-LOG.md` `D-032-1`.
+
+**Re-verified from a fresh clone this round** (`D-037-1`): `cd backend && npm ci && npm run
+test:coverage` → 260/260 pass and the four numbers above, byte-identical to the working tree; `npm
+run test:tiers` → 113 pass, 2 skipped (the MariaDB-gated pair, `D-031`), 0 fail; `npm run smoke` →
+5/5. The five test scripts set `NODE_ENV=test` themselves (`f07b056`), so this reproduced without
+any shell prefix — which was the point of that fix.
 
 Enforced by `c8 check-coverage --statements=95 --lines=95 --functions=90 --branches=85
 --per-file=false` at the end of `npm run test:coverage`, and the same four numbers are in
@@ -150,45 +155,44 @@ exit code 1
 
 ## 4. Frontend evidence
 
-| Tier | Command | Result |
+All numbers below were re-run **from a fresh clone** this round (`D-037-1`): `git clone`, then
+`npm ci --include=optional`, then the commands in the table. Nothing was read from a cached
+`node_modules`, a stale `dist` or an existing coverage directory.
+
+| Gate | Command | Fresh-clone result |
 |---|---|---|
-| Types (project references) | `npx tsc -b` | 0 errors |
-| Types (strict, `src/components/admin`, `src/pages/admin`, `tests/unit`) | `npm run typecheck:strict` | 0 errors. `strict`, `noUnusedLocals`, `noImplicitOverride`, `noImplicitReturns`, on top of the repo's existing `noUncheckedIndexedAccess` |
-| Lint | `npm run lint` | 0 warnings, 0 errors |
-| Target size, text floor, focus rings, widths | `npm run ux:audit` | 0 violations (was 71 before `3a2ec1c`) |
-| Contrast, WCAG 2.2 AA, 16 rendered pairs | `npm run a11y:contrast` | 16 / 16 pass |
-| Component behaviour (jsdom) | `npm run test:unit` | 122 / 122 pass |
+| Types | `npx tsc -b` | 0 errors |
+| Strict types (admin + auth + tests) | `npm run typecheck:strict` | 0 errors |
+| Lint | `npm run lint` | **0 warnings, 0 errors**, 273 files |
+| Unit + coverage | `npm run test:unit:coverage` | **198 pass**, 95.45 / 86.02 / 95.16 / 96.11 against 90/85/90/95 |
+| Static UX audit | `npm run verify:ux` | PASS — targetSize 0, textSize 0, focus 0, width 0; 17/17 contrast pairs |
+| Auth UX (browser) | `npm run test:ux:auth` (locally with the Lambda Chromium, `ADR-010`) | **21 passed, 2 skipped**, 10 baselines committed |
+| Admin UX (browser) | `npm run test:ux:admin` | Assertions written and type-clean; executed by the CI `e2e` job (needs the backend + MariaDB for the capability census) |
+| Performance budgets | `npm run perf:budgets` | LHCI assertions in `lighthouserc.cjs`, executed by the CI `lighthouse` job; local Linux run recorded as *indicative* only (`ADR-010`) |
 
-**What the component tier covers** (`tests/unit/`, vitest + jsdom + Testing Library):
+### 4.1 Auth screens — what the browser run proved
 
-| File | Tests | Pins |
+`frontend/tests/auth-screens-ux.spec.ts` (23 tests, one project):
+
+| Assertion | Result | Evidence |
 |---|---|---|
-| `admin-data-state.test.ts` | 10 | `data` is `null` until a request succeeds; a failure clears the payload instead of leaving stale rows; an empty success is `ready`, not `failed`; the three server error envelopes normalise to one operator-facing shape; a cancelled request is not reported as a server failure |
-| `admin-users-model.test.ts` | 14 | The `adminUserProjection` → `AdminUserRecord` mapping; `status` derived from `suspended`/`identityStatus`; fields the endpoint does not return are `null`, never `0`; unknown roles degrade to `USER`; `SUPER_ADMIN` is not assignable |
-| `admin-attention-tab.test.tsx` | 6 | Real signals render with severity and id; an empty list renders "no signal is firing"; a `503` renders the code and request id and **not** the sample incidents the tab used to ship; Refresh re-reads the endpoint; a derived signal has no Acknowledge control |
-| `admin-users-tab.test.tsx` | 7 | Only server-returned identities render; a directory outage shows the error and no table; an empty directory says so; a refused password reset is reported as a failure and never claims a link was issued; `SUPER_ADMIN` is absent from the picker; suspension requires a reason |
-| `admin-users-actions.test.tsx` | 16 | The exact request each action sends (method, URL, body, concurrency guard) and the message the operator sees afterwards — role `PATCH` with `expectedRole`, 12-month Premium grant, suspension with reason, `ai-entitlement` `PUT` with justification required before the request, quota reset, tenant assign/remove, provisioning with only the accepted fields, filters |
-| `admin-security-tab.test.tsx` | 5 | Security events are the server's rows (`/platform/security-events?limit=100`); an empty table says so; a 503 surfaces `SECURITY_EVENTS_UNAVAILABLE` + request id; a refused role change (`ADMIN_TARGET_CHANGED`) leaves the stored role on screen; non-staff accounts get no privilege control |
-| `admin-security-panels.test.tsx` | 9 | The audit trail (rows + `/admin/audit-logs/stats`, empty and 503 variants), broadcasts (publish keeps the draft on refusal, supersede sends `expectedRevision`, delete only after confirmation), staff session revoke (refusal reported, success announces the server's message, `SUPER_ADMIN (claim-only)` shown but never assignable) |
-| `admin-helpdesk-tab.test.tsx` | 5 | Tickets are the server's rows (`/admin/support/tickets`); the desk says it is empty rather than inventing tickets; a refused reply is reported as a refusal and keeps the draft; a refused status change (`PATCH …/tickets/:id {status}`) leaves the stored status |
-| `admin-queues-tab.test.tsx` | 6 | Sampled outbox rows with the sampling caveat rendered; a platform retry exists only for a notification dead letter (never enterprise — the route answers `400 INVALID_RETRY_TARGET`); the retry body is `{jobId, queue:'notification'}`; refusals surface code + request id; empty and 503 variants |
-| `admin-moderation-tab.test.tsx` | 6 | Applications are the server's rows (`/admin/employer-applications`); approval sends `status` + `expectedStatus`; rejection requires a ≥3-character reason in the request; a job feature request carries exactly one field (the route rejects compound bodies); 409s surface |
-| `admin-moderation-registries.test.tsx` | 8 | Job status changes use the one-field contract with `expectedStatus`/`expectedFeatured`; the company registry and the operator-scoped tenant registry render rows, empty states and 503s (`TENANT_REGISTRY_UNAVAILABLE`) |
-| `admin-filter-branches.test.tsx` | 4 | Client-side filters are pinned branch by branch: help-desk status/search, queue/state filters + expandable job detail, security severity/search/row expansion, blog status/search |
-| `admin-health-tab.test.tsx` | 6 | Services and states come from `/platform/operational-status` with the collector's own counts (`8/9`); group + free-text filters; an uncollectable snapshot (`OPERATIONAL_STATUS_UNAVAILABLE`) never shows a healthy board; empty collector list renders as reported; the detail drawer reads `/…/:serviceId`; a failed provider probe is reported as a failure |
-| `admin-detail-surfaces.test.tsx` | 7 | Blog reader preview renders the stored body and closes on Escape; testimonials are read-only rows with empty and 503 variants; the service drawer shows dependency, remediation, metrics, `relatedEndpoints` and `auditEvents`; the job status filter refetches with `{status}` |
-| `admin-cms-tabs.test.tsx` | 8 | The blog read hits `/blog-data` (mounted route), not the non-existent `/blog/posts`; deletion sends `expectedRevision` and surfaces `CAS_CONFLICT`; the marketing tab offers only the two sections the backend serves (phrases + testimonials — no invented logo/SEO panels); a phrase write replaces the whole category exactly as the endpoint does |
-| `admin-operations-tab.test.tsx` | 5 | The maintenance save sends `expectedRevision` and reports the revision the server committed; `ADMIN_SETTINGS_CONFLICT` keeps the form buffer; the removed backup/cache-purge controls are explained (`OI-OPS-1`) instead of faked; an unreadable health summary never guesses settings |
+| No horizontal scroll + axe clean, sign-in at 320/480/768/1024/1441 | pass | `:103` |
+| Visual baseline per class (5 PNGs) | committed | `auth-login-{320,480,768,1024,1441}-small-laptop-linux.png` |
+| Dark, forced-colors, RTL at 320 px | pass, axe clean | `auth-login-{dark,high-contrast,rtl}-320-…png` |
+| Tab order: skip link → brand → email → password → button; focus ring present | pass | `:139` |
+| Skip link ≥ 44 px **when focused** | pass | `:139` |
+| Password reveal operable by keyboard, `aria-label` flips | pass | `:154` |
+| 44 px targets at 320 and 480 px | pass — 11 undersized controls found and fixed | `:248` |
+| 200 % text: no loss of content or function | pass — page was 433 px wide at 320 px; fixed | `:232` |
+| Credential error state → `role="alert"`, form usable again, screenshot | pass | `auth-login-error-480-…png` |
+| Offline state → sentence, not a hang, screenshot | pass | `auth-login-offline-480-…png` |
+| Held request (busy submit) and MFA challenge | **skip** — no Firebase project, so the SDK rejects before the network (`OI-UX-11`, exact command there) | inline skip reason |
 
-**NOT RUN, with reasons:**
-
-| Tier | Why | Command |
-|---|---|---|
-| E2E, accessibility, visual snapshots, device classes | No browser binary in the sandbox and no way to download one; the specs also need a database-backed `webServer` | `cd frontend && npx playwright install chromium && npm test` |
-| Lighthouse budgets (LCP < 2.5 s, INP < 200 ms, CLS < 0.1) | Needs a built app served over HTTP and a real browser | `npm --prefix frontend run build && npm --prefix frontend run preview` then Lighthouse against `/admin` |
-
-Both run in the `e2e` job of `.github/workflows/quality-gate.yml` (on `dev`, with a MariaDB
-service); neither is claimed as evidence here. `OI-TIER-1`.
+**Defects this run found and repaired** (each was a real 10/10-bar violation, not a test bug): the
+password-reveal control was 32 px (axe `target-size`); eleven controls were under 44 px; the page
+overflowed 320 px at 200 % text because two grids were fixed at two columns and the label row could
+not wrap; the card title was an `h3` under an `sr-only` `h1` (`heading-order`); the login route was
+a lazy chunk and eight Google Font families were render-blocking (`ADR-010`).
 
 ---
 
@@ -217,42 +221,25 @@ DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
 
 ## 6. What cannot be claimed from this evidence
 
-- **"The E2E suite passes."** It was not executed. The specs exist and are listed by
-  Playwright; none ran.
-- **"Per-file coverage meets the bar."** The *global* numbers do (98.82 / 87.23 / 97.95 /
-  98.82 against 90 / 85 / 95 / 90), and that is what `--per-file=false` gates. Per file,
-  `routes/config.js` (70.76 % branches), `security/policy.js` (81.08 %),
-  `services/configService.js` (82.50 %) and `routes/adminRbac.js` (79.66 %) are still under 85 %
-  branches; each remainder is I/O-callback arms or an unreachable-in-jsdom branch, and closing
-  them means a live pool, not a looser threshold. `OI-T-7`, decided in `D-028-1` / `ADR-006`.
-- **"The deployed smoke suite passes."** `scripts/smoke.mjs` needs a live base URL.
-- **"Migration apply and rollback were exercised against MariaDB."** Only static analysis of
-  the migration files ran (`migrations-integrity`). Applying `001_baseline.sql` upward has no
-  rollback by design, and the drill needs a disposable database.
-- **"Every admin tab shows live data."** Seven tabs still contain sample-data fallbacks;
-  the inventory and the per-file next action are in `OPEN-ITEMS.md` `OI-001-1`.
+Rewritten this round, because two of the previous entries are no longer true.
 
-### 6.1 Decision 2 — the EXPLAIN skip is opt-in locally, impossible in CI, and loud when unavailable
-
-The MariaDB EXPLAIN layer (`test/query-plan-regression.test.js`, the rollback drill and the five
-integration suites) skips when it cannot reach a database. A skip that is silent is a gate that
-was never run, so the decision was made explicit in `backend/test-support/integrationGate.js` and
-proven in `backend/test/integration-gate.test.js` (**14 / 14 pass**):
-
-| Requirement | Mechanism | Test that proves it |
-|---|---|---|
-| (a) Opt-in, developer machines only | `decide()` returns `skip` **only** when `RUN_MARIADB_INTEGRATION` is unset *and* `CI` is unset; the skip string names the exact command to run (`RUN_MARIADB_INTEGRATION=1 npm run test:query-plan`) | "local run without the flag skips with the command in the message" |
-| (b) Never skipped in CI | With `CI=true` (or `CI` set to any truthy spelling) an unset flag **throws** `INTEGRATION_GATE_CLOSED` instead of skipping | three sub-process tests that spawn `node` with the flag combinations and assert exit code 1 / 0 |
-| (c) Fails loud if EXPLAIN is unavailable in CI | The fail path is a `throw`, never a returned `{ skip: true }`, because `node:test` honours a returned skip and would print a green tick | "a closed gate throws rather than returning a skip" — asserts `assert.throws` and that no skip object is produced |
-
-Why a throw rather than a skip: `node:test` treats a returned `{ skip }` as a pass with a note, so
-a CI job with no database would report 0 failures and the caller would believe the plans were
-checked. The suite-conformity test asserts every gated file imports the same gate (no suite may
-re-introduce its own `process.env.CI ? skip : run`), and the workflow assertion pins
-`RUN_MARIADB_INTEGRATION: '1'` in the `migration-drill` job so the flag cannot be dropped from CI
-without failing that test.
-
----
+- **"No browser ran."** False now. A Chromium *is* installable from the npm registry
+  (`@sparticuz/chromium`, `ADR-010`), and it ran the auth spec: 21 passed, 2 skipped, 10 baselines
+  committed. What it still cannot do is capture screenshots for Lighthouse, so the performance
+  numbers stay indicative.
+- **"Admin console browser gates never executed."** Still true *here*, and for a different reason
+  than before: the console renders nothing until the capability census answers, which needs the
+  backend and MariaDB. The auth baselines needed neither, which is why they exist and the console's
+  do not (`OI-UX-9`).
+- **"Every screen of the app has a keyboard script."** Not claimed. The auth screens and the
+  console's tab strip and one drawer are proven; the low-traffic authenticated screens are `?` in
+  `UX-DEVICE-MATRIX.md` §2 with `OI-UX-10`.
+- **"INP measured."** Not measured. TBT is Lighthouse's documented lab proxy and is asserted at
+  ≤ 200 ms; a real INP needs field data.
+- **"Migration apply and rollback were exercised against MariaDB in this environment."** Still not:
+  the drill runs in the CI `migration-drill` job, which has a service container.
+- **"Every admin tab shows live data."** Still not: sample-data fallbacks remain in six tabs
+  (`OI-001-1`), unchanged by this round.
 
 ## 7. CI
 

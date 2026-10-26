@@ -732,3 +732,111 @@ static audit.
 
 **Rollback.** Delete the added `test.describe` blocks; the matrix's `C` cells become `?` and the
 commit must cite this entry. No product code depends on it.
+
+### D-034-1 — A Chromium *is* installable here; the auth gates are measured, not blocked
+
+**Decision.** Auth-screen evidence is produced locally with `@sparticuz/chromium` (an npm package
+whose tarball contains a compressed Lambda Chromium) plus its `al2023.tar.br` shared libraries,
+extracted to `/tmp/al2023` and pointed at with `LD_LIBRARY_PATH` + `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
+`npm run test:ux:auth` then runs the spec; ten baselines are committed. Details and the exact
+commands: `ADR-010`.
+
+**Result.** `tests/auth-screens-ux.spec.ts` — **21 passed, 2 skipped**, covering sign-in at all five
+device classes (overflow + axe + baseline), dark, `forced-colors` and RTL at 320 px, 200 % text,
+44 px targets at 320/480, the three modes (login, register, reset), and the credential-error and
+offline states with committed screenshots.
+
+**What could not be driven, and why it is honest rather than vague.** No `VITE_FIREBASE_API_KEY` is
+set in this environment, so the Firebase SDK rejects locally and **no request reaches the network**;
+a mocked `identitytoolkit` response is never consumed. The held-request (busy submit), the offline-
+with-live-network and the MFA-challenge states are therefore skipped with a named reason and an
+`OI-UX-11` entry carrying the exact command a developer with a Firebase project runs.
+
+**Alternatives.** (1) Keep the "no browser" block — false, as it turns out. (2) Install Chrome from
+Google's CDN — blocked (`storage.googleapis.com`). (3) Ship `puppeteer` — it downloads from the same
+blocked host. (4) Write the states as if they passed — rejected; a skip with a reason is truthful,
+a fake pass is not.
+
+**Rollback.** Delete the four added `test.describe` blocks and the snapshots; `npm run test:ux:auth`
+returns to nothing.
+
+### D-035-1 — The UX audit script was blind to multi-line JSX tags; 22 sub-12px uses were hiding behind its green tick
+
+**Decision.** `scripts/ux-audit.mjs` matched `<button(\s|>|/)` against one line at a time, so an
+opening tag whose attributes start on the next line — i.e. **most of the console** — was never
+inspected. With `$` added to the pattern the same files report **114 target-size and 100 focus
+findings**, and a widened text rule finds **22** `text-[10px]`/`text-[11px]` uses that the previous
+revision's "0 violations" claim had missed. The rules were then re-based on what actually
+guarantees the bar:
+
+- **Target size** is now a global `@media (max-width: 767px)` rule in `src/index.css` (44 px minimum
+  on every control type, inline links exempt per WCAG 2.2). The audit flags only an element that
+  *opts out* with an explicit sub-44 px height class; the rendered box is measured for real at
+  320/480 px in both Playwright specs.
+- **Focus** is the global `:focus-visible` rule at `index.css:208` (measured at 5.16:1 against its
+  background by `contrast-audit.mjs`). The audit flags only an element that removes the ring
+  (`outline-none`) without a replacement.
+- **Text size** now refuses 9/10/11 px; all 62 files that used them were moved to `text-xs`.
+
+**Why this matters beyond the numbers.** Three earlier revisions reported "0 violations, PASS" from
+this script. That claim was true of the script and false of the code. The repair is the finding.
+
+**Alternatives.** (1) Keep the per-element class rule and add `min-h-11` to 114 elements — rejected:
+a type-level CSS rule cannot be forgotten on the next `<button>`, and the class approach had already
+drifted. (2) Delete the audit now that a real browser runs — rejected: the browser specs need a
+download and a server; the static audit runs in every CI frontend job in under a second.
+
+**Rollback.** Revert the two rule changes and the `index.css` block; the audit returns to reporting
+zero by blindness. The `text-xs` sweep is independent and should not be reverted.
+
+### D-036-1 — The Lighthouse number from the Lambda Chromium is an estimate, and is labelled as one
+
+**Decision.** LCP returned **2708.765 / 2708.791 / 2708.755 ms** across three builds whose payloads
+differed by a 230 KB blocking bundle, a split font load and a static boot shell. Identical to a
+millisecond across different payloads is proof the instrument is not measuring paint. The Lambda
+build reports `NO_SCREENSHOTS`, so `speed-index` errors, the `performance` category is unscored and
+LCP is a Lantern estimate from an incomplete graph.
+
+So: the **budget gate is LHCI in CI** (`frontend/lighthouserc.cjs`, `lighthouse` job, assertions
+LCP ≤ 2500 / CLS ≤ 0.1 / TBT ≤ 200 / perf ≥ 0.9, no `continue-on-error`), plus the in-page
+`PerformanceObserver` assertions in the admin spec for the authenticated console. The local run is
+committed as `developer-review-artefacts/lighthouse-login-mobile-4g.json` **labelled indicative**,
+and its DOM-derived scores are kept as evidence because they are real: accessibility **1.00**,
+best-practices **0.96**, SEO **1.00**.
+
+**What the run did find, and what was fixed** (full table in `ADR-010`): a `heading-order` violation
+(card title `h3` under an `sr-only` `h1` → now `h2`); **eight Google Font families in one
+render-blocking stylesheet** (→ split: UI face deferred, template faces `media="print"` with a
+`<noscript>` fallback); the sign-in route being a lazy chunk (→ eager import); no first paint before
+230 KB of script (→ static boot shell, sized like the card so there is no CLS); missing `robots.txt`
+(→ added).
+
+**Alternatives.** (1) Report 2.71 s as measured — would fail the release for an artefact of the
+instrument, and is false. (2) Loosen the throttling until it passes — that is lowering the gate.
+(3) Drop the row — hides where the gate lives. (4) Install real Chrome — both CDNs are blocked.
+
+**Rollback.** The four payload changes are independent; the LHCI assertions were already in the repo
+and are untouched by this decision.
+
+### D-037-1 — Fresh-clone re-verification: every prior claim re-run from a clean checkout
+
+**Decision.** Every claim in `TEST-EVIDENCE.md` was re-executed against a fresh `git clone` of the
+branch (no `node_modules`, no `dist`, no coverage cache), not against the working tree.
+
+| Command (fresh clone) | Result |
+|---|---|
+| `cd backend && npm ci && npm run test:coverage` | **260 / 260 pass**, 99.02 / 87.76 / 97.95 / 99.02, thresholds 95/85/90/95 met |
+| `cd backend && npm run test:tiers` | **113 pass, 2 skipped, 0 fail** (the two MariaDB-gated suites, D-031 gate) |
+| `cd backend && npm run smoke` | **5 / 5 pass** |
+| `cd frontend && npm ci --include=optional && npx tsc -b` | 0 errors |
+| `npm run typecheck:strict` | 0 errors |
+| `npm run lint` | 0 warnings, 0 errors (273 files) after removing one unused import the fresh clone caught |
+| `npm run test:unit:coverage` | **198 / 198 pass**, 95.45 / 86.02 / 95.16 / 96.11 |
+| `npm run verify:ux` | PASS — 0 violations, 17/17 contrast pairs |
+
+**One prior claim did not survive.** The fresh clone's `oxlint` found `CardTitle` imported and
+unused in `src/pages/auth/login.tsx` — left behind when the card title became an `h2`. Removed. That
+is the second time a stale claim on this branch has been caught by re-running rather than re-reading.
+
+**Rollback.** Not applicable: verification is not a code change. The `CardTitle` import removal is
+its own commit.

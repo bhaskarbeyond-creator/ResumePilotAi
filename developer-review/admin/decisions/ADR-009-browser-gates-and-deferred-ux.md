@@ -1,6 +1,9 @@
 # ADR-009 — Browser-observable UX gates run in CI; two mandate items are deferred with criteria
 
-**Status:** Accepted · **Date:** 2026-10-27 · **Commit:** `[REC-019]`
+**Status:** Accepted, **revised 2026-10-27 (final round)** · **Commit:** `[REC-019|UX-001..004]`
+**Revision:** the auth-screen block is resolved (a Chromium *is* installable from npm — see
+`ADR-010`), so the auth gates are measured, not deferred. The density deferral is now final, with a
+testable acceptance checklist, a named owner and a dated trigger.
 **Invariants:** INV-1 (every Must/Should capability reachable) · the 10/10 UX bar.
 
 ## Context
@@ -63,29 +66,63 @@ is not load-bearing. A spec assertion would have to prove the *absence* of a tra
 Playwright cannot do reliably across engines without pinning timing; the CSS rule is the guarantee.
 This is the one presentation with an `S` and no `C`, and it is named as such.
 
-**Density modes are not implemented.** The mandate asks for density wired to the config registry.
-There is no `ui.*` registry entry and no console control. Deferring it is a decision, not an
-oversight, because a density control is not a CSS toggle in this codebase:
+### Density modes — final decision: deferred for this release, with a testable checklist
 
-- it is a **persisted preference**, so it needs a registry entry (typed, with a default and a
-  validation rule), an audit row on every change (INV-6), and a revision guard on the write
-  (the `expectedRevision` contract in `services/configService.js`), plus a capability in
-  `permissionVocabulary.js`;
-- the alternative — `localStorage` per browser — would give two operators on the same console
-  different layouts with no record of who changed what, which violates INV-6 for a value that
-  affects what an operator sees.
+**Decision.** Density modes (`comfortable` / `compact`) are **not shipped in this release** and are
+formally deferred. This is a scope decision, not an oversight, and it is recorded here so the
+mandate item is neither a silent gap nor an ambiguous PARTIAL.
 
-**Acceptance criteria when it is built:** `ui.admin_density` in `backend/config/registry.js` with
-values `comfortable|compact`, `scope: PLATFORM`, non-elevated; the console reads it through the
-existing census, applies it as a root `data-density` attribute, and every spacing token resolves
-through it; a config write produces exactly one audit row (already proven for every registry key by
-`test/config-api.test.js`); the setting is asserted at 320 and 1441 px in the spec.
+**Why deferral rather than shipment, stated as a cost argument.** A density control in this
+codebase is a configuration feature, not a CSS toggle:
 
-**Trigger:** build it with the next registry change, or immediately if an operator reports that the
-console is too dense to scan at C4/C5, whichever comes first.
+1. a typed entry in `backend/config/registry.js` (`ui.admin_density`, `scope: PLATFORM`, values
+   `comfortable|compact`, non-elevated, editable) — the registry is the only place a business-
+   affecting value may live (INV-4);
+2. a write path that already exists and is audited (`PUT /api/admin/config/:key` writes exactly one
+   `config_change_log` row and enforces `expectedRevision` — `services/configService.js:257/280/311`);
+3. a capability in `security/permissionVocabulary.js` if the value is scoped above standard;
+4. a surface: a control in the console settings tab and a `data-density` attribute on the console
+   root, with every spacing token resolving through it;
+5. four test layers (registry integrity, config API round-trip, component render, and an E2E
+   assertion at 320 and 1441 px).
 
-**Keyboard scripts for the auth screens and low-traffic authenticated screens** are not written
-(`OI-UX-10`). The console's strip and one drawer are proven; the rest are named.
+Steps 1–3 are a day's work and are well understood; step 4 is where the risk is, because "every
+spacing token resolves through it" touches all 15 tabs of a console that this engagement has just
+stabilised, and step 5 is meaningless without step 4. Shipping a `data-density` attribute that only
+half the tabs honour would be worse than not shipping it: it would give operators a control that
+lies.
+
+**Testable acceptance checklist (what "done" means, each item a command or a file):**
+
+- [ ] `backend/config/registry.js` contains `ui.admin_density` with `type: 'enum'`, `values:
+      ['comfortable','compact']`, `default: 'comfortable'`, `scope: 'PLATFORM'`, `editable: true`,
+      and appears in the census returned by `GET /api/admin/config` — verified by
+      `test/config-registry.test.js` (entry count and schema) and `test/config-api.test.js`.
+- [ ] A write produces **exactly one** `config_change_log` row with actor, timestamp, before/after
+      and scope — verified by the existing one-row-per-change assertion in `test/config-api.test.js`.
+- [ ] A stale `expectedRevision` returns `409 CONFIG_REVISION_CONFLICT` with `currentRevision`.
+- [ ] The console root carries `data-density="<value>"` read from the census, and **no** admin
+      component hard-codes a spacing value that the density token is supposed to control — verified
+      by extending `scripts/ux-audit.mjs` with a `density` rule (a spacing utility inside
+      `src/components/admin` that is not routed through the density token is a finding).
+- [ ] Compact mode changes vertical rhythm by ≥15 % on the users table and the queues table at
+      1441 px, and by 0 % on any control's width — verified by a Playwright measurement.
+- [ ] `UX-DEVICE-MATRIX.md` §6 has an `S` or `C` cell per device class for both modes.
+- [ ] `OI-UX-8` is closed as MET with those four evidence links.
+
+**Owner.** The developer who next touches `backend/config/registry.js` (the registry change and the
+console surface ship together), reviewed by whoever owns the console layout.
+
+**Reversal trigger — any of these, whichever comes first:**
+
+1. an operator reports that a table is too dense to scan at C4/C5 (the case density exists for);
+2. the next registry change lands for any other key — the entry and its surface ship with it;
+3. the console gains a second persisted layout preference, at which point one mechanism must serve
+   both and a `localStorage` shortcut would become a divergence.
+
+**What is explicitly *not* acceptable as an implementation:** a `localStorage`-only toggle. Two
+operators on the same console would see different layouts with no record of who changed what, which
+violates INV-6 for a value that changes what an operator sees.
 
 ## Alternatives considered
 
