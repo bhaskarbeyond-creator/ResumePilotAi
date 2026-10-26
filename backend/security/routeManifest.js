@@ -308,6 +308,13 @@ const RULES = [
     rationale: 'Recording a role-view is itself a privileged observation; the route requires SUPER_ADMIN and this rule keeps the policy engine in agreement with it.',
   },
   {
+    id: 'platform-public-config',
+    methods: 'read',
+    exact: ['/platform/public-config'],
+    permission: 'system.config.read',
+    rationale: 'The published module configuration is platform state the console reads to render the Modules tab; it is configuration, not a public document, because the policy gate still applies.',
+  },
+  {
     id: 'platform-meta',
     methods: 'read',
     exact: ['/platform/version', '/platform/announcements'],

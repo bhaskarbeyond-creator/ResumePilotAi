@@ -91,6 +91,11 @@
   --color-ink-on-brand: #ffffff;
 
   /* ─── Typography ─── */
+  /* The smallest readable step. Nothing in the admin plane may go below 12px:
+     10px/11px runs were the single largest legibility defect measured across the
+     14 tabs (UX-DEVICE-MATRIX OI-UX-5). */
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1rem;
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
