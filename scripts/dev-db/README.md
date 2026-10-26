@@ -67,7 +67,11 @@ With `NODE_ENV=test` (the backend unit suite) the auth limiters already default 
   shape: the chain ALTERs `users`, the next reset drops it). Across bridge lifetimes the defect
   does NOT fire: ALTER in lifetime L1 + DROP/recreate in L2 is clean, and `DROP DATABASE` +
   recreate clears existing ghosts. Ghosts are per-database, not datadir-wide.
-  **Green-suite recipe (mandatory order):** (1) start bridge, (2) apply the schema
+  **Green-suite recipe (mandatory order):** (1) start bridge — `BRIDGE_DATABASES` must include
+  the suite's `DB_NAME` (e.g. `airesume_test`); otherwise the bridge's handshake falls back to
+  the `test` schema and the gate's `resetSchema` targets nothing. (The bridge's built-in default
+  is `ime365_sandbox,airesume_test`; any explicit override must still include the suite's
+  `DB_NAME`.) (2) apply the schema
   (`initializeSchema({mode:'apply'})`), (3) **restart the bridge** (new lifetime; the datadir
   keeps the applied chain), (4) run the suite ONCE in that lifetime. Do not run the suite twice
   against one bridge lifetime after any chain-applying activity, and do not mix probe/DDL
