@@ -25,7 +25,7 @@ const { cooldownManager } = require('./cooldown');
 const { promptCache } = require('./cache');
 const { compressMessages } = require('./compression');
 const { rescueInlineToolCalls, toolNamesFrom, normalizeTools } = require('../lib/toolRescue');
-const { getMetricsPersistence } = require('./persistence');
+const { getMetricsPersistence, normalizeScopeKey } = require('./persistence');
 const { modelDiscovery } = require('./modelDiscovery');
 const { eligible, validateMode, rankCandidates, weightedP50LatencyMs, pickColdStartExploration } = require('./selectionPolicy');
 
@@ -238,11 +238,25 @@ class FreeLlmRouter {
             : platformConfig.providers?.[candidate.provider]?.model) || '').trim()
           : '';
         const pin = explicit ? requestedModel : (manualPin && manualPin !== 'auto' ? manualPin : null);
+        // C.1: dedicated-BYOK candidates carry an evidence scope when the flag
+        // is on; platform candidates (and the flag-off world) resolve to null
+        // and probe the legacy platform benches byte-identically.
+        const candidateScopeKey = this._scopeKeyForCandidate(candidate, tenantContext);
         for (const metadata of catalog) {
           if (pin && metadata.id !== pin) continue;
           if (!modelPermitted({ model: metadata.id }) || !eligible(metadata, requirements)) continue;
-          const cooldown = this.cooldownManager.isOnCooldown(candidate.provider, metadata.id);
-          if (cooldown.onCooldown && !candidate.isDedicatedByok) {
+          const cooldown = this.cooldownManager.isOnCooldown(candidate.provider, metadata.id, candidateScopeKey ? { scopeKey: candidateScopeKey } : {});
+          // C.1 rejection table: platform candidates are benched by platform
+          // rows (legacy). A dedicated-BYOK candidate is benched ONLY by its
+          // OWN scope's rows — a platform bench is a fact about the shared
+          // platform credentials, not about the tenant's keys, so the
+          // fall-through hit (scopeKey 'platform') must not block the sanctuary
+          // tier. With the flag off candidateScopeKey is null and this is the
+          // byte-identical legacy predicate.
+          const blocked = cooldown.onCooldown && (candidate.isDedicatedByok
+            ? (candidateScopeKey !== null && cooldown.scopeKey === candidateScopeKey)
+            : true);
+          if (blocked) {
             cooldownRejections.push({ candidate, metadata, cooldown });
             continue;
           }
@@ -257,7 +271,15 @@ class FreeLlmRouter {
     // shared platform rank; platform-key tenant traffic DOES — its observations
     // are platform observations (the key, provider and model are the platform's).
     const dedicatedByokTier = candidates.some(candidate => candidate.isDedicatedByok);
-    const aggregates = !dedicatedByokTier ? getMetricsPersistence()?.getRollingAggregates?.({ windowMs: 30 * 60_000 }) || [] : [];
+    // C.1: with scoped evidence ON, a dedicated-BYOK tier consults its OWN
+    // scope's windowed aggregates (it trains them now — F-21 closure); with
+    // the flag OFF this stays the F-09 byte-identical empty-array sink-hole.
+    const tierScopeKey = dedicatedByokTier ? this._scopedEvidenceScopeKey(tenantContext) : null;
+    const aggregates = !dedicatedByokTier
+      ? getMetricsPersistence()?.getRollingAggregates?.({ windowMs: 30 * 60_000 }) || []
+      : (tierScopeKey
+        ? getMetricsPersistence()?.getRollingAggregates?.({ windowMs: 30 * 60_000, scopeKey: tierScopeKey }) || []
+        : []);
     let ordered = rankCandidates(expanded, { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) });
     // F-14: last-resort cooldown release — ported from the aiRouting selector
     // (services/aiRouting/modelSelector.js). With every destination benched on
@@ -272,11 +294,19 @@ class FreeLlmRouter {
     const strictPin = (mode === 'manual' && !manualAllowFallback) || explicit || explicitProvider;
     if (ordered.length === 0 && !strictPin && cooldownRejections.length > 0) {
       const transient = cooldownRejections
-        .filter(rejection => rejection.cooldown.reason !== 'All pooled keys rejected')
+        // C.1: scoped credential rejections ('All tenant keys rejected') are
+        // never released either — retrying rejected tenant keys only repeats
+        // the 401. With the flag off that reason never occurs (identical list).
+        .filter(rejection => rejection.cooldown.reason !== 'All pooled keys rejected'
+          && rejection.cooldown.reason !== 'All tenant keys rejected')
         .sort((a, b) => a.cooldown.remainingMs - b.cooldown.remainingMs);
       if (transient.length > 0) {
         const released = transient[0];
-        this.cooldownManager.clearCooldown(released.candidate.provider, released.metadata.id);
+        // C.1 + F-14 scope guard: a scoped release clears ONLY the requesting
+        // scope's row (CooldownManager enforces it); a platform release never
+        // touches tenant benches and vice versa.
+        const releasedScopeKey = this._scopeKeyForCandidate(released.candidate, tenantContext);
+        this.cooldownManager.clearCooldown(released.candidate.provider, released.metadata.id, releasedScopeKey ? { scopeKey: releasedScopeKey } : {});
         ordered = rankCandidates(
           [{ ...released.candidate, model: released.metadata.id, metadata: released.metadata }],
           { mode, primary, observationFor: candidate => aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) },
@@ -649,13 +679,36 @@ class FreeLlmRouter {
     };
   }
 
-  _recordMetrics({ scoped = false, provider, model, ok, latencyMs, status, usage = null }) {
+  // PH4-ENGINE-021 C.1 (FREELMAPI_TENANT_SCOPED_EVIDENCE, default '0'):
+  // dedicated-BYOK observations get their own evidence scope instead of the
+  // sink-hole. The derivation is CONTEXT-level (one scope per routed request
+  // context), and the flag gates it completely: with the flag off (or for
+  // platform-key traffic) these return null and every call site below behaves
+  // byte-identically to the frozen platform contract (F-09 semantics).
+  _scopedEvidenceScopeKey(tenantContext) {
+    if (process.env.FREELMAPI_TENANT_SCOPED_EVIDENCE !== '1') return null;
+    const tenantId = String(tenantContext?.tenantId || '').trim();
+    if (tenantId) return normalizeScopeKey(`tenant:${tenantId}`);
+    const principal = String(tenantContext?.principalId || tenantContext?.uid || '').trim();
+    if (principal) {
+      return normalizeScopeKey(`uid:${createHash('sha256').update(principal).digest('hex').slice(0, 40)}`);
+    }
+    return null;
+  }
+
+  _scopeKeyForCandidate(candidate, tenantContext) {
+    return candidate?.isDedicatedByok ? this._scopedEvidenceScopeKey(tenantContext) : null;
+  }
+
+  _recordMetrics({ scoped = false, scopeKey = null, provider, model, ok, latencyMs, status, usage = null }) {
     // Tenant/BYOK service observations must not train the shared platform rank.
-    if (scoped) return;
+    // C.1: with scoped evidence ON they train THEIR OWN scope's rank instead;
+    // with the flag off this stays the byte-identical legacy sink-hole.
+    if (scoped && !scopeKey) return;
     try {
       // F-18: the attempt row carries the provider-reported token usage so the
       // durable ledger can account for it (failures record null, never 0).
-      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status, usage });
+      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status, usage, ...(scopeKey ? { scopeKey } : {}) });
     } catch { /* metrics are best-effort */ }
   }
 
@@ -778,6 +831,8 @@ class FreeLlmRouter {
     // 3. Failover Execution Loop: provider → key pool
     for (const candidate of candidates) {
       const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      // C.1: the candidate's evidence scope (null with the flag off / platform candidates).
+      const scopeKey = this._scopeKeyForCandidate(candidate, tenantContext);
       let keyFailures = 0;
       let sawRateLimit = false;
       let sawRetryAfterMs = 0; // F-12: strongest Retry-After seen across the key pool
@@ -831,9 +886,13 @@ class FreeLlmRouter {
             });
           }
 
-          // Clear cooldown strikes on successful execution
+          // Clear cooldown strikes on successful execution.
+          // C.1: a scoped success clears the tenant's OWN bench only (the
+          // manager guards cross-scope clears); flag off → scopeKey null →
+          // the dedicated-BYOK no-op stays byte-identical.
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: rescued.usage || null });
+          else if (scopeKey) this.cooldownManager.clearCooldown(candidate.provider, candidate.model, { scopeKey });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: rescued.usage || null });
 
           return {
             content: rescued.content,
@@ -866,7 +925,7 @@ class FreeLlmRouter {
             status,
             latencyMs,
           });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
 
           if (status === 429) sawRateLimit = true;
           const requestedRetryMs = Number(error.retryAfterMs);
@@ -883,6 +942,17 @@ class FreeLlmRouter {
           candidate.model,
           sawRateLimit ? 'HTTP 429 across all pooled keys' : (sawAuthFailure ? 'All pooled keys rejected' : 'Provider unavailable'),
           sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
+        );
+      } else if (candidate.isDedicatedByok && scopeKey && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
+        // C.1: the tenant's OWN credential failure benches the destination in
+        // the tenant's scope only (credential_kind 'byok'); platform benches
+        // and the platform rank are untouched (F-09 sanctuary preserved).
+        this.cooldownManager.setCooldown(
+          candidate.provider,
+          candidate.model,
+          sawRateLimit ? 'HTTP 429 on tenant credentials' : (sawAuthFailure ? 'All tenant keys rejected' : 'Tenant provider unavailable'),
+          sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
+          { scopeKey, credentialKind: 'byok' },
         );
       }
 
@@ -991,6 +1061,8 @@ class FreeLlmRouter {
 
     for (const candidate of candidates) {
       const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      // C.1: the candidate's evidence scope (null with the flag off / platform candidates).
+      const scopeKey = this._scopeKeyForCandidate(candidate, tenantContext);
       let keyFailures = 0;
       let sawRateLimit = false;
       let sawRetryAfterMs = 0; // F-12: strongest Retry-After seen across the key pool
@@ -1086,8 +1158,10 @@ class FreeLlmRouter {
           }
 
           const latencyMs = Date.now() - startTime;
+          // C.1: a scoped success clears the tenant's OWN bench only; flag off → identical no-op.
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: usage || null });
+          else if (scopeKey) this.cooldownManager.clearCooldown(candidate.provider, candidate.model, { scopeKey });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: usage || null });
 
           if (usage) yield { type: 'usage', usage };
           yield {
@@ -1110,7 +1184,7 @@ class FreeLlmRouter {
           if (opened || emitted) {
             // Mid-stream failure: the client already received partial content.
             // Surface it instead of replaying the answer from another provider.
-            this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
             throw error;
           }
 
@@ -1124,7 +1198,7 @@ class FreeLlmRouter {
             status,
             latencyMs: Date.now() - startTime,
           });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
         }
       }
 
@@ -1135,6 +1209,15 @@ class FreeLlmRouter {
           candidate.model,
           sawRateLimit ? 'HTTP 429 across all pooled keys' : 'Provider unavailable',
           sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
+        );
+      } else if (candidate.isDedicatedByok && scopeKey && !remainingCredential && (sawRateLimit || keyFailures === candidate.keys.length)) {
+        // C.1: scoped tenant-credential bench (stream path); platform untouched.
+        this.cooldownManager.setCooldown(
+          candidate.provider,
+          candidate.model,
+          sawRateLimit ? 'HTTP 429 on tenant credentials' : 'Tenant provider unavailable',
+          sawRetryAfterMs > 0 ? sawRetryAfterMs : null,
+          { scopeKey, credentialKind: 'byok' },
         );
       }
       if (candidate.isDedicatedByok && candidates.length === 1) {
