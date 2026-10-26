@@ -1,0 +1,1 @@
+import{t as e}from"./client-CPCewiF1.js";async function t(){return(await e(`/api/covers`)).covers||[]}export{t as getCovers};

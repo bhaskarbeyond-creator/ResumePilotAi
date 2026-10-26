@@ -1,0 +1,53 @@
+﻿{
+  "smtp": {
+    "host": "smtp.hostinger.com",
+    "port": 465,
+    "encryption": "ssl",
+    "username": "no-reply@airesume.projectdemo.guru",
+    "password": "REPLACE_WITH_HOSTINGER_SMTP_PASSWORD",
+    "senderName": "ResumePilot AI",
+    "replyTo": "bhaskar.beyond@gmail.com",
+    "adminEmail": "no-reply@airesume.projectdemo.guru"
+  },
+  "fallbackSmtp": {
+    "enabled": true,
+    "host": "smtp-relay.brevo.com",
+    "port": 587,
+    "encryption": "tls",
+    "username": "b57418001@smtp-brevo.com",
+    "password": "REPLACE_WITH_BREVO_SMTP_KEY",
+    "senderEmail": "no-reply@airesume.projectdemo.guru"
+  },
+  "imap": {
+    "enabled": true,
+    "host": "imap.hostinger.com",
+    "port": 993,
+    "encryption": "ssl",
+    "username": "no-reply@airesume.projectdemo.guru",
+    "password": "REPLACE_WITH_HOSTINGER_IMAP_PASSWORD",
+    "autoSync": true
+  },
+  "updatedAt": "2026-08-13T23:32:44.252Z",
+  "enabledTemplates": {
+    "tax_invoice": true,
+    "welcome": true,
+    "password_reset": true,
+    "email_verification": true,
+    "payment_failed": true,
+    "subscription_renewal": true,
+    "ai_resume_ready": true,
+    "ai_cover_letter_ready": true,
+    "portfolio_published": true,
+    "job_application_received": true,
+    "job_status_update": true,
+    "job_posted_employer": true,
+    "security_alert": true,
+    "account_created_admin": true,
+    "password_changed_confirm": true,
+    "refund_processed": true,
+    "subscription_cancelled": true,
+    "admin_system_alert": true,
+    "broadcast_announcement": true,
+    "default": true
+  }
+}
