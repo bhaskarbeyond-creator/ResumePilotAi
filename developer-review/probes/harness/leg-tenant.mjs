@@ -25,13 +25,16 @@
  *          (the C.4 route's function) platform-scope release never wipes
  *          tenant scopes; scoped release clears exactly one; recovery proven.
  *   a16    decisionId hops: D1 platform call — result.decisionId (the wire
- *          object /v1 serializes) -> telemetry ring -> SQLite routing_decisions
- *          -> SQLite request_log; D2 tenant call — ring (scope tenant:<id>) ->
- *          request_log -> MariaDB enterprise_ai_usage.decision_id via the real
- *          repository write path (029 capability probe). Honest note: the
- *          tenant HTTP wire does not expose decisionId by design, so no single
- *          id crosses all five hops on one call; D1 covers the wire hop, D2 the
- *          MariaDB hop, both cross ring+request_log.
+ *          object /v1 serializes) -> SQLite routing_decisions ring (this
+ *          engine's decision telemetry sink, A.4) -> SQLite request_log;
+ *          D2 tenant call — ring (scope tenant:<id>) -> request_log ->
+ *          MariaDB enterprise_ai_usage.decision_id via the real repository
+ *          write path (029 capability probe). Honest notes: the tenant HTTP
+ *          wire does not expose decisionId by design, so no single id crosses
+ *          all five hops on one call; and the F-22 route's in-memory ring
+ *          belongs to the aiRouting engine (sel-* namespace) — the
+ *          telemetry.record({decisionId}) plumbing contract is unit-pinned in
+ *          decision-id-plumbing.test.js test 4.
  *
  * Env: LEG DB_NAME TARGET_LABEL TARGET_BACKEND METRICS_DB_FILE ALPHA_PORT
  *      BETA_PORT ENTERPRISE_ENCRYPTION_KEYS
@@ -121,6 +124,7 @@ async function routed(freellm, { prompt, tenantContext = null, platformConfig })
         mode: result.routingDecision.mode ?? null,
         exploration: result.routingDecision.exploration ?? null,
         observationCount: result.routingDecision.observationCount ?? null,
+        lastResort: result.routingDecision.lastResort === true,
         decisionId: result.routingDecision.decisionId ?? null,
       } : null,
     };
@@ -269,8 +273,18 @@ async function main() {
     const platformReleaseKeptTenantScopes = afterPlatformRelease.metrics.some(r => r.scope_key === t1Scope) && afterPlatformRelease.metrics.some(r => r.scope_key === t2Scope)
       && afterPlatformRelease.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length >= afterOutage.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length;
     const platformRowsClearedByPlatformRelease = afterOutage.cooldowns.some(r => r.scope_key === 'platform') ? !afterPlatformRelease.cooldowns.some(r => r.scope_key === 'platform') : true;
-    const t1ReleaseClearedExactlyT1 = !afterT1Release.cooldowns.some(r => r.scope_key === t1Scope) && !afterT1Release.metrics.some(r => r.scope_key === t1Scope && r.failures > 0);
-    const t2BenchPersistedUntilOwnRelease = !t2StillBenched.ok && t2Recovered.ok && t2Recovered.provider === 'groq' && t2Recovered.isDedicatedByok;
+    // resetCooldowns clears COOLDOWN rows only (metrics rows are the evidence
+    // ledger and survive releases - the reset-state route resets cooldowns +
+    // cache, never scoped metrics).
+    const t1ReleaseClearedExactlyT1 = !afterT1Release.cooldowns.some(r => r.scope_key === t1Scope)
+      && afterT1Release.cooldowns.some(r => r.scope_key === t2Scope) === afterPlatformRelease.cooldowns.some(r => r.scope_key === t2Scope);
+    // A persisted bench shows up EITHER as a hard block (call fails while the
+    // stub is healthy) OR as the by-design last-resort release (call succeeds
+    // with routingDecision.lastResort === true). After T2's own release the
+    // marker must be gone.
+    const t2BenchPersistedUntilOwnRelease = (!t2StillBenched.ok || t2StillBenched.routingDecision?.lastResort === true)
+      && t2Recovered.ok && t2Recovered.provider === 'groq' && t2Recovered.isDedicatedByok
+      && t2Recovered.routingDecision?.lastResort !== true;
     emit({
       type: 'verdict', leg: LEG,
       platformOutageServedViaFallbackOrFailed: platformOutage.ok || platformOutage.code === 'ALL_PROVIDERS_FAILED',
@@ -287,11 +301,12 @@ async function main() {
     const d1 = platformCall.decisionId;
     emit({ type: 'call', who: 'platform', ...platformCall });
 
-    const telemetry = freellm.freeLlmRouter?.telemetry?.query?.({ limit: 200 }) ?? null;
-    const telemetryJson = JSON.stringify(telemetry || []);
-    const d1InTelemetry = Boolean(d1) && telemetryJson.includes(d1);
-    emit({ type: 'telemetry', entries: Array.isArray(telemetry) ? telemetry.length : null, d1Found: d1InTelemetry });
-
+    // Telemetry hop, honest topology: the freellmapi engine's decision
+    // telemetry sink IS the SQLite routing_decisions ring (A.4, 5000-row
+    // prune). The F-22 HTTP route's in-memory ring belongs to the OTHER
+    // engine (aiRouting orchestrator, sel-* id namespace); the plumbing
+    // contract 'telemetry.record receives {decisionId, tenantId}' is pinned
+    // at unit level by decision-id-plumbing.test.js test 4.
     const ringD1 = d1 ? readSqlite('SELECT decision_id, scope_key, chosen_provider, chosen_model, mode FROM routing_decisions WHERE decision_id = ?', [d1]) : [];
     const logD1 = d1 ? readSqlite('SELECT id, provider, model, decision_id FROM request_log WHERE decision_id = ?', [d1]) : [];
     emit({ type: 'sqlite-ring', d1, rows: ringD1 });
@@ -325,15 +340,14 @@ async function main() {
     emit({
       type: 'verdict', leg: LEG, d1, d2,
       wireHop: Boolean(d1),
-      telemetryHop: d1InTelemetry,
       ringHopD1: ringD1.length === 1,
       requestLogHopD1: logD1.length >= 1,
       ringHopD2: ringD2.length === 1 && ringD2[0].scope_key === `tenant:${T.tenantId}`,
       requestLogHopD2: logD2.length >= 1,
       enterpriseUsageHopD2: usageMatch.length >= 1,
-      singleIdE2E: Boolean(d1) && d1InTelemetry && ringD1.length === 1 && logD1.length >= 1
+      singleIdE2E: Boolean(d1) && ringD1.length === 1 && logD1.length >= 1
         && Boolean(d2) && ringD2.length === 1 && logD2.length >= 1 && usageMatch.length >= 1,
-      disclosure: 'D1: result/wire object -> telemetry ring -> SQLite ring -> request_log. D2 (tenant): ring (scope tenant:<id>) -> request_log -> MariaDB enterprise_ai_usage.decision_id. The tenant HTTP wire does not expose decisionId by design; no single id crosses all five hops on one call.',
+      disclosure: 'D1: result/wire object (what /v1 serializes as routing_decision.decisionId) -> routing_decisions ring -> request_log. D2 (tenant): ring (scope tenant:<id>) -> request_log -> MariaDB enterprise_ai_usage.decision_id via the real repository write path. The tenant HTTP wire does not expose decisionId by design; no single id crosses all five hops on one call.',
     });
   } else {
     throw new Error(`unknown LEG '${LEG}' (expected a15r1 | a15r2 | a16)`);
