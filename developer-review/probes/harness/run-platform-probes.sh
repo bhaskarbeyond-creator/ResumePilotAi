@@ -57,16 +57,31 @@ start_stubs() { # ALPHA_MODEL ALPHA_DELAY BETA_MODEL BETA_DELAY
 stop_stubs() { kill "$STUB_A" "$STUB_B" 2>/dev/null; STUB_A=""; STUB_B=""; sleep 1; }
 
 start_engine() { # TREE_BACKEND DB_NAME ENGINE_LOG
-  (cd "$1" && NODE_ENV=development PORT=$ENGINE_PORT DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD= DB_NAME="$2" \
+  # Stale-engine guard: a polluted port silently invalidates a leg (observed
+  # once during the rebuild: an orphaned engine answered for the tip target).
+  if (exec 3<>/dev/tcp/127.0.0.1/$ENGINE_PORT) 2>/dev/null; then
+    echo "FATAL: port $ENGINE_PORT busy before engine boot — stale engine" >&2
+    exit 1
+  fi
+  # exec-in-subshell: $! IS the node pid (no cd-chain backgrounding trap).
+  ( cd "$1" && exec env NODE_ENV=development PORT=$ENGINE_PORT DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD= DB_NAME="$2" \
     TEST_AUTH_HMAC_SECRET=sandbox-hmac-secret-resumepilot-2026 FREELMAPI_API_KEYS=audit-platform-key-123 \
     FREELMAPI_METRICS_DB=:memory: \
     OPENAI_API_KEY=key-alpha-123456 OPENAI_BASE_URL="http://127.0.0.1:${ALPHA_PORT}/v1" \
     GROQ_API_KEY=key-beta-123456 GROQ_BASE_URL="http://127.0.0.1:${BETA_PORT}/v1" \
     PREVIEW_SUPER_ADMIN_EMAILS=superadmin@probe.test \
-    node index.js > "$3" 2>&1 & echo $! > /tmp/probe-engine.pid)
-  ENGINE_PID=$(cat /tmp/probe-engine.pid)
+    node index.js ) > "$3" 2>&1 &
+  ENGINE_PID=$!
 }
-stop_engine() { [ -n "$ENGINE_PID" ] && kill "$ENGINE_PID" 2>/dev/null; ENGINE_PID=""; sleep 2; }
+stop_engine() {
+  [ -n "$ENGINE_PID" ] && kill "$ENGINE_PID" 2>/dev/null
+  ENGINE_PID=""
+  for _ in $(seq 1 20); do
+    (exec 3<>/dev/tcp/127.0.0.1/$ENGINE_PORT) 2>/dev/null || break
+    sleep 0.5
+  done
+  sleep 1
+}
 
 run_leg() { # LEG TREE_BACKEND DB_NAME LABEL ALPHA_MODEL ALPHA_DELAY BETA_MODEL BETA_DELAY
   local leg="$1"

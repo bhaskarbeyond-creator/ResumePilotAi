@@ -18,7 +18,7 @@ const FIELDS = ['call', 'status', 'provider', 'model', 'cached', 'mode', 'explor
 
 const loadCalls = file => readFileSync(file, 'utf8')
   .split('\n')
-  .filter(Boolean)
+  .filter(line => line.startsWith('{')) // dotenv banners leak into stdout — skipped (disclosed)
   .map(line => JSON.parse(line))
   .filter(row => row.type === 'call')
   .map(row => Object.fromEntries(FIELDS.map(field => [field, row[field] ?? null])));
