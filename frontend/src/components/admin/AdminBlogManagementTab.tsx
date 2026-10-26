@@ -338,7 +338,7 @@ export function AdminBlogManagementTab() {
                 type="button"
                 onClick={() => setPreviewArticle(null)}
                 className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-                aria-label="Close preview"
+                aria-label="Close article preview"
               >
                 <X className="size-5" />
               </button>

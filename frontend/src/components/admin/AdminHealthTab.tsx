@@ -550,11 +550,11 @@ function ServiceDetailDialog({
                 </section>
               )}
 
-              {service.affectedFeatures.length > 0 && (
+              {(service.affectedFeatures ?? []).length > 0 && (
                 <section>
                   <h4 className="mb-1 text-2xs font-bold uppercase tracking-wide text-ink-muted">What breaks when this does</h4>
                   <ul className="flex flex-wrap gap-1.5">
-                    {service.affectedFeatures.map((feature) => (
+                    {(service.affectedFeatures ?? []).map((feature) => (
                       <li key={feature} className="rounded-full border border-border bg-neutral-100 px-2 py-0.5 text-2xs text-ink-secondary dark:bg-neutral-800">
                         {feature}
                       </li>
@@ -563,13 +563,13 @@ function ServiceDetailDialog({
                 </section>
               )}
 
-              {detail.data && detail.data.relatedEndpoints.length > 0 && (
+              {detail.data && (detail.data.relatedEndpoints ?? []).length > 0 && (
                 <section>
                   <h4 className="mb-1 text-2xs font-bold uppercase tracking-wide text-ink-muted">
-                    Endpoints depending on it ({detail.data.relatedEndpoints.length})
+                    Endpoints depending on it ({(detail.data.relatedEndpoints ?? []).length})
                   </h4>
                   <ul className="divide-y divide-border rounded-lg border border-border">
-                    {detail.data.relatedEndpoints.slice(0, 8).map((endpoint) => (
+                    {(detail.data.relatedEndpoints ?? []).slice(0, 8).map((endpoint) => (
                       <li key={`${endpoint.method} ${endpoint.path}`} className="flex items-center justify-between gap-3 px-2.5 py-1.5">
                         <span className="truncate font-mono text-2xs text-ink-secondary">
                           {endpoint.method} {endpoint.path}
@@ -581,13 +581,13 @@ function ServiceDetailDialog({
                 </section>
               )}
 
-              {detail.data && detail.data.auditEvents.length > 0 && (
+              {detail.data && (detail.data.auditEvents ?? []).length > 0 && (
                 <section>
                   <h4 className="mb-1 text-2xs font-bold uppercase tracking-wide text-ink-muted">
                     Recent audit events ({detail.data.auditSource})
                   </h4>
                   <ul className="divide-y divide-border rounded-lg border border-border">
-                    {detail.data.auditEvents.map((event) => (
+                    {(detail.data.auditEvents ?? []).map((event) => (
                       <li key={event.id} className="flex items-center justify-between gap-3 px-2.5 py-1.5">
                         <span className="truncate font-mono text-2xs text-ink-secondary">{event.action}</span>
                         <span className="text-2xs text-ink-muted">{event.createdAt ?? '—'}</span>

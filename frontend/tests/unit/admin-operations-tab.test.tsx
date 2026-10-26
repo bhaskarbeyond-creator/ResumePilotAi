@@ -8,7 +8,7 @@
  * summary is the health-summary payload, not a local constant.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminOperationsTab } from '@/components/admin/AdminOperationsTab';
 import { get, post } from '@/lib/api-client';
@@ -125,4 +125,20 @@ describe('AdminOperationsTab', () => {
     expect(alert).toHaveTextContent('HEALTH_UNAVAILABLE');
     await waitFor(() => expect(screen.queryByLabelText(/block public traffic/i)).not.toBeInTheDocument());
   });
+
+  it('dismisses the maintenance notice it raised', async () => {
+    mockedGet.mockResolvedValue(summary);
+    mockedPost.mockResolvedValue({ success: true, revision: 5 });
+    render(<AdminOperationsTab />);
+
+    await userEvent.click(await screen.findByLabelText(/block public traffic/i));
+    await userEvent.type(screen.getByLabelText('Public notice'), 'Dismissal drill.');
+    await userEvent.click(screen.getByRole('button', { name: /enforce maintenance barrier/i }));
+
+    const notice = await screen.findByRole('status');
+    expect(notice).toHaveTextContent(/maintenance barrier is active/i);
+    await userEvent.click(within(notice).getByRole('button', { name: /dismiss/i }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
 });

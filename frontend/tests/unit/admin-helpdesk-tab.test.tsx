@@ -125,4 +125,48 @@ describe('AdminHelpDeskTab', () => {
     // Still open: the button is rendered from the server's status, never from the click.
     expect(await screen.findByRole('button', { name: /mark resolved/i })).toBeInTheDocument();
   });
+
+  it('sends a reply to the selected ticket and reports the ticket it went to', async () => {
+    mockedGet.mockResolvedValue({ success: true, tickets: [ticket], source: 'MYSQL_SERVER_READ' });
+    mockedPost.mockResolvedValue({ success: true });
+
+    render(<AdminHelpDeskTab />);
+    await screen.findAllByText(ticket.subject);
+    await userEvent.type(screen.getByPlaceholderText(/type staff response/i), 'Re-queued the export.');
+    await userEvent.click(screen.getByRole('button', { name: /send reply/i }));
+
+    expect(mockedPost).toHaveBeenCalledWith(
+      `/admin/support/tickets/${ticket.id}/messages`,
+      { body: 'Re-queued the export.' },
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(ticket.id);
+    // The buffer clears only after the server accepted it: a failed send must leave the
+    // operator's words on screen, and the mirror of that rule is what this asserts.
+    expect(screen.getByPlaceholderText(/type staff response/i)).toHaveValue('');
+  });
+
+  it('disables the reply control until there is something to send', async () => {
+    mockedGet.mockResolvedValue({ success: true, tickets: [ticket], source: 'MYSQL_SERVER_READ' });
+    render(<AdminHelpDeskTab />);
+    await screen.findAllByText(ticket.subject);
+    expect(screen.getByRole('button', { name: /send reply/i })).toBeDisabled();
+    expect(mockedPost).not.toHaveBeenCalled();
+  });
+
+  it('resolves a ticket with the documented status body, and dismisses the banner afterwards', async () => {
+    mockedGet.mockResolvedValue({ success: true, tickets: [ticket], source: 'MYSQL_SERVER_READ' });
+    mockedPatch.mockResolvedValue({ success: true });
+
+    render(<AdminHelpDeskTab />);
+    await screen.findAllByText(ticket.subject);
+    await userEvent.click(screen.getByRole('button', { name: /mark resolved/i }));
+
+    expect(mockedPatch).toHaveBeenCalledWith(
+      `/admin/support/tickets/${ticket.id}`,
+      { status: 'RESOLVED' },
+    );
+    const flash = await screen.findByRole('status');
+    expect(flash).toHaveTextContent(/resolved/i);
+  });
+
 });

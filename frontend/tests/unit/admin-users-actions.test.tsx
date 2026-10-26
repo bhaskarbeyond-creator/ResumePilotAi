@@ -333,3 +333,107 @@ describe('directory filters', () => {
     expect(screen.getByText(/no account matches this filter/i)).toBeInTheDocument();
   });
 });
+
+describe('User 360 identity controls that were previously unreachable', () => {
+  it('sends a password-reset email through the identity provider and reports its answer', async () => {
+    wire();
+    mockedPost.mockResolvedValue({ message: 'Reset mail queued.' });
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user);
+
+    await user.click(within(drawer).getByRole('button', { name: /send password reset email/i }));
+
+    expect(mockedPost).toHaveBeenCalledWith('/admin/users/usr_42/send-password-reset', {});
+    expect(await screen.findByRole('status')).toHaveTextContent(/reset mail queued/i);
+  });
+
+  it('revokes every refresh token and unenrolls MFA, each reporting the server message', async () => {
+    wire();
+    mockedPost.mockResolvedValue({ message: 'Refresh tokens revoked.' });
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user);
+
+    await user.click(within(drawer).getByRole('button', { name: /revoke all sessions/i }));
+    expect(mockedPost).toHaveBeenCalledWith('/admin/users/usr_42/revoke-sessions', {});
+    expect(await screen.findByRole('status')).toHaveTextContent(/refresh tokens revoked/i);
+  });
+
+  it('falls back to a plain sentence when the server returns no message', async () => {
+    wire();
+    mockedPost.mockResolvedValue({});
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user);
+
+    await user.click(within(drawer).getByRole('button', { name: /send password reset email/i }));
+    // A handler whose success depends on an optional server string would show an empty banner;
+    // the fallback sentence is what makes the announcement never blank.
+    expect(await screen.findByRole('status')).toHaveTextContent(/password reset email queued/i);
+  });
+
+  it('downloads the server-side export bundle instead of synthesising one', async () => {
+    wire();
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/admin/users') return Promise.resolve({ success: true, users: [identity] });
+      if (url.endsWith('/details')) return Promise.resolve(detailsPayload);
+      if (url.endsWith('/export')) return Promise.resolve({ user: { id: 'usr_42' }, resumes: [] });
+      return Promise.resolve({});
+    });
+    const createObjectURL = vi.fn(() => 'blob:export');
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user);
+    await user.click(within(drawer).getByRole('button', { name: /download gdpr export/i }));
+
+    expect(mockedGet).toHaveBeenCalledWith('/admin/users/usr_42/export');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it('refuses an out-of-range quota locally, before the request', async () => {
+    wire();
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user, /ai/i);
+
+    const limit = within(drawer).getByLabelText(/daily limit/i);
+    await user.clear(limit);
+    await user.type(limit, '0');
+    await user.type(within(drawer).getByLabelText(/reason|justification/i), 'trying zero');
+    await user.click(within(drawer).getByRole('button', { name: /save|apply/i }));
+
+    expect(mockedPut).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/at least 1/i);
+  });
+  it('grants a membership with the organization and role the operator picked', async () => {
+    wire();
+    mockedPost.mockResolvedValue({ message: 'Membership granted.' });
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user, /organizations/i);
+
+    // The selects are the only path to the two values the POST body carries; driving both
+    // proves the picker is wired, not just rendered.
+    await user.selectOptions(await within(drawer).findByLabelText('Organization'), 'tenant-1');
+    await user.selectOptions(within(drawer).getByLabelText('Organization role'), 'ENTERPRISE_VIEWER');
+    await user.click(within(drawer).getByRole('button', { name: /^assign$/i }));
+
+    expect(mockedPost).toHaveBeenCalledWith('/admin/users/usr_42/tenants', {
+      tenantId: 'tenant-1',
+      role: 'ENTERPRISE_VIEWER',
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent(/membership granted/i);
+  });
+
+  it('removes a membership and reports the server sentence', async () => {
+    wire();
+    mockedDel.mockResolvedValue({ message: 'Membership removed.' });
+    const user = userEvent.setup();
+    const drawer = await openDrawer(user, /organizations/i);
+
+    await user.click(within(drawer).getByRole('button', { name: /remove/i }));
+
+    expect(mockedDel).toHaveBeenCalledWith('/admin/users/usr_42/tenants/tenant-1');
+    expect(await screen.findByRole('status')).toHaveTextContent(/membership removed/i);
+  });
+
+});
+

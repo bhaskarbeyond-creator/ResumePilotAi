@@ -7,7 +7,7 @@
  * provider probe instead of assuming success.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminHealthTab } from '@/components/admin/AdminHealthTab';
 import type { HealthSnapshot } from '@/components/admin/AdminHealthTab';
@@ -165,6 +165,74 @@ describe('AdminHealthTab', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/failed — SMTP 550/i);
   });
+  it('re-probes every subsystem and reports the summary the server returns', async () => {
+    mockedGet.mockResolvedValue(snapshot);
+    mockedPost.mockResolvedValue({ overall: 'DEGRADED', checkedAt: '2026-10-26T06:10:00.000Z' });
+
+    render(<AdminHealthTab />);
+    await screen.findByText('MariaDB primary');
+    await userEvent.click(screen.getByRole('button', { name: /re-probe all/i }));
+
+    // Two arguments, no signal: a re-probe is a server-side action the operator must not
+    // abort by navigating away mid-scan — the audit row is written either way.
+    expect(mockedPost).toHaveBeenCalledWith('/platform/operational-status/refresh', {});
+    // The notice names the state the server reported, not the state the page wished for.
+    const notice = await screen.findByRole('status');
+    expect(notice).toHaveTextContent(/degraded/i);
+    expect(notice).toHaveTextContent('2026-10-26T06:10:00.000Z');
+  });
+
+  it('reports a refused re-probe instead of leaving the previous snapshot looking current', async () => {
+    mockedGet.mockResolvedValue(snapshot);
+    mockedPost.mockRejectedValue({
+      response: { status: 403, data: { error: { code: 'FORBIDDEN', message: 'security.read is required' } } },
+    });
+
+    render(<AdminHealthTab />);
+    await screen.findByText('MariaDB primary');
+    await userEvent.click(screen.getByRole('button', { name: /re-probe all/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('FORBIDDEN');
+  });
+
+  it('runs one service probe from the drawer and shows the round trip', async () => {
+    mockedGet.mockImplementation(async (url: string) =>
+      String(url).startsWith('/platform/operational-status/mariadb')
+        ? { service, checkedAt: '2026-10-26T06:01:00.000Z', relatedEndpoints: [], auditEvents: [], auditSource: 'MYSQL_SERVER_READ', elevated: true }
+        : snapshot,
+    );
+    mockedPost.mockResolvedValue({ passed: true, message: 'Ping answered', latencyMs: 4 });
+
+    render(<AdminHealthTab />);
+    await userEvent.click(await screen.findByRole('button', { name: /inspect mariadb primary/i }));
+    await screen.findByRole('dialog');
+    await userEvent.click(withinDialog(/probe/i));
+
+    expect(mockedPost).toHaveBeenCalledWith('/platform/operational-status/mariadb/test', {});
+    expect(await screen.findByRole('status')).toHaveTextContent(/ping answered/i);
+  });
+
+  it('closes the drawer with its close control and with Escape, so a keyboard user is never trapped', async () => {
+    mockedGet.mockImplementation(async (url: string) =>
+      String(url).startsWith('/platform/operational-status/mariadb')
+        ? { service, checkedAt: '2026-10-26T06:01:00.000Z', relatedEndpoints: [], auditEvents: [], auditSource: 'MYSQL_SERVER_READ', elevated: true }
+        : snapshot,
+    );
+
+    render(<AdminHealthTab />);
+    await userEvent.click(await screen.findByRole('button', { name: /inspect mariadb primary/i }));
+    const dialog = await screen.findByRole('dialog');
+    const close = Array.from(dialog.querySelectorAll('button')).find((candidate) => /close/i.test(candidate.getAttribute('aria-label') ?? candidate.textContent ?? ''));
+    expect(close, 'the drawer must expose a close control').toBeTruthy();
+    await userEvent.click(close as HTMLElement);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(await screen.findByRole('button', { name: /inspect mariadb primary/i }));
+    await screen.findByRole('dialog');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
 });
 
 function withinDialog(name: RegExp): HTMLElement {
@@ -174,4 +242,5 @@ function withinDialog(name: RegExp): HTMLElement {
   );
   if (!button) throw new Error(`No button matching ${String(name)} inside the dialog`);
   return button;
+
 }

@@ -5,7 +5,7 @@
  * them as `AdminUserRecord`s, so `status`, `plan` and `lastLogin` were `undefined` on screen;
  * and fields the directory endpoint never returns were shown as numbers (`usedToday ?? 18`).
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ASSIGNABLE_ROLES,
   deriveStatus,
@@ -14,6 +14,7 @@ import {
   readDirectory,
   readTenantOptions,
   readUser360,
+  downloadJson,
   toAdminUserRecord,
   type AdminDirectoryRow,
 } from '@/components/admin/admin-users-model';
@@ -132,4 +133,38 @@ describe('readTenantOptions', () => {
       { id: 't1', displayName: 'Northwind', slug: 't1', lifecycleState: 'ACTIVE' },
     ]);
   });
+  it('downloads the server bundle rather than re-serialising what the table had', () => {
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:bundle');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+
+    downloadJson('user_export_usr_42.json', { user: { id: 'usr_42' } });
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:bundle');
+    vi.unstubAllGlobals();
+  });
+
+  it('renders a future timestamp as a date instead of a negative relative time', () => {
+    const now = new Date('2026-10-26T12:00:00.000Z');
+    // Clock skew between the API host and the browser is normal; "-3 min ago" is not.
+    expect(formatLastSeen('2026-10-26T12:05:00.000Z', now)).toBe('2026-10-26');
+  });
+
+  it('defaults every missing timeline field, so a sparse audit row still renders', () => {
+    const model = readUser360({
+      user360: {
+        identity: { id: 'usr_42', email: 'ops@example.com', displayName: 'Ops', role: 'ADMIN', suspended: false },
+        auditTimeline: [{ id: 'a-1' }],
+      },
+    } as unknown as Parameters<typeof readUser360>[0]);
+    expect(model.timeline).toEqual([{ id: 'a-1', action: 'ADMIN_ACTION', createdAt: '', severity: 'INFO' }]);
+  });
+
+  it('drops a tenant row with no identifier instead of offering an empty option', () => {
+    expect(readTenantOptions({ tenants: [{ displayName: 'No id' }, { id: 't-1', slug: 'northwind' }] })).toEqual([
+      { id: 't-1', displayName: 'northwind', slug: 'northwind', lifecycleState: 'ACTIVE' },
+    ]);
+  });
+
 });

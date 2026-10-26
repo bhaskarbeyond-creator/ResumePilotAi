@@ -44,11 +44,13 @@ export default defineConfig({
         'src/components/admin/AdminOperationsTab.tsx',
       ],
       // Thresholds are the gate, not a report: `npm run test:unit:coverage` fails below them.
+      // Raised by ADR-008 (Decision 1, Path A) from 80/75/75/80 after the tests that close the
+      // gap landed; the numbers are the mandated floor, not the measured high-water mark.
       thresholds: {
-        statements: 80,
-        branches: 75,
-        functions: 75,
-        lines: 80,
+        statements: 90,
+        branches: 85,
+        functions: 90,
+        lines: 95,
       },
     },
   },

@@ -8,7 +8,7 @@
  * a revoke that is refused is not announced as done.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
 import { del, get, patch, post } from '@/lib/api-client';
@@ -208,4 +208,102 @@ describe('AdminSecurityTab — staff revoke', () => {
     // A claim-only super admin is reported as such, not as an assignable option.
     expect(screen.getByText(/SUPER_ADMIN \(claim-only\)/)).toBeInTheDocument();
   });
+
+  it('exports the trail as CSV with spreadsheet-injection neutralised', async () => {
+    // The audit trail is the one table an operator exports and opens in Excel. A row whose
+    // action begins with `=` is a formula, not a value — the export prefixes it with a quote.
+    const dangerous = { ...auditLog, id: 'log-2', action: '=HYPERLINK("http://evil.test")', actorEmail: 'x@example.test' };
+    mockedGet.mockImplementation(async (url: string) =>
+      String(url).endsWith('/stats') ? {} : { logs: [auditLog, dangerous], count: 2, hasMore: false },
+    );
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:trace');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+
+    render(<AdminSecurityTab />);
+    await userEvent.click(screen.getByRole('tab', { name: /audit trail/i }));
+    await screen.findByText('CONFIG_CHANGED');
+    await userEvent.click(screen.getByRole('button', { name: /export csv/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0]?.[0];
+    expect(blob).toBeInstanceOf(Blob);
+    if (!blob) throw new Error('no blob was created');
+    const text = await blob.text();
+    // The header is a fixed list of column names, so it is emitted bare; only data cells are
+    // quoted and escaped (a header that could be a formula would mean it was built from data).
+    expect(text.split('\n')[0]).toBe('id,createdAt,action,category,severity,outcome,actorEmail,pathname,statusCode');
+    // Expected CSV cell: the quote prefix, then the value with its own quotes doubled.
+    const expectedCell = `"'=HYPERLINK(""http://evil.test"")"`;
+    expect(text).toContain(expectedCell);
+    vi.unstubAllGlobals();
+  });
+
+  it('filters the trail by free text and reloads on demand', async () => {
+    mockedGet.mockImplementation(async (url: string) =>
+      String(url).endsWith('/stats') ? {} : { logs: [auditLog], count: 1, hasMore: false },
+    );
+    render(<AdminSecurityTab />);
+    await userEvent.click(screen.getByRole('tab', { name: /audit trail/i }));
+    await screen.findByText('CONFIG_CHANGED');
+
+    const before = mockedGet.mock.calls.filter(([url]) => url === '/admin/audit-logs').length;
+    await userEvent.type(screen.getByLabelText(/search the audit trail/i), 'CONFIG');
+    await userEvent.click(screen.getByRole('button', { name: /^reload$/i }));
+
+    expect(mockedGet.mock.calls.filter(([url]) => url === '/admin/audit-logs').length).toBeGreaterThan(before);
+  });
+
+  it('withdraws and re-enables a broadcast with the revision it read', async () => {
+    mockedGet.mockResolvedValue({ announcements: [announcement] });
+    mockedPatch.mockResolvedValue({ success: true });
+    render(<AdminSecurityTab />);
+    await userEvent.click(screen.getByRole('tab', { name: /broadcasts/i }));
+    await screen.findByText('Scheduled maintenance 02:00 UTC');
+
+    await userEvent.click(screen.getByRole('button', { name: /withdraw/i }));
+    expect(mockedPatch).toHaveBeenCalledWith('/platform/announcements/ann-1', {
+      enabled: false,
+      expectedRevision: 3,
+    });
+    const status = await screen.findByRole('status');
+    await userEvent.click(within(status).getByRole('button', { name: /dismiss/i }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('reports a refused broadcast deletion and keeps the row', async () => {
+    mockedGet.mockResolvedValue({ announcements: [announcement] });
+    mockedDel.mockRejectedValue({
+      response: { status: 409, data: { error: { code: 'ANNOUNCEMENT_CONFLICT', message: 'Changed since load' } } },
+    });
+    render(<AdminSecurityTab />);
+    await userEvent.click(screen.getByRole('tab', { name: /broadcasts/i }));
+    await screen.findByText('Scheduled maintenance 02:00 UTC');
+
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('ANNOUNCEMENT_CONFLICT');
+    expect(screen.getByText('Scheduled maintenance 02:00 UTC')).toBeInTheDocument();
+  });
+
+  it('records the chosen severity and audience when publishing', async () => {
+    mockedGet.mockResolvedValue({ announcements: [] });
+    mockedPost.mockResolvedValue({ success: true });
+    render(<AdminSecurityTab />);
+    await userEvent.click(screen.getByRole('tab', { name: /broadcasts/i }));
+
+    await userEvent.type(await screen.findByLabelText('Title'), 'Keys rotate');
+    await userEvent.type(screen.getByLabelText('Message'), 'Tonight.');
+    await userEvent.selectOptions(screen.getByLabelText(/severity/i), 'HIGH');
+    await userEvent.selectOptions(screen.getByLabelText(/audience/i), 'ADMIN');
+    await userEvent.click(screen.getByRole('button', { name: /publish broadcast/i }));
+
+    expect(mockedPost).toHaveBeenCalledWith('/platform/announcements', {
+      title: 'Keys rotate',
+      message: 'Tonight.',
+      severity: 'HIGH',
+      audience: 'ADMIN',
+    });
+  });
+
 });

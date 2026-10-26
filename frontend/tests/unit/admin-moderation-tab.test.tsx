@@ -11,7 +11,7 @@
  * exactly one field because the route rejects a compound body.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminModerationTab } from '@/components/admin/AdminModerationTab';
 import { get, patch } from '@/lib/api-client';
@@ -152,4 +152,37 @@ describe('AdminModerationTab', () => {
     const body = (call?.[1] ?? {}) as Record<string, unknown>;
     expect(Object.keys(body).sort()).toEqual(['expectedFeatured', 'isFeatured']);
   });
+
+
+  it('cancels a rejection without sending anything, then dismisses a success banner', async () => {
+    mockedGet.mockResolvedValue(applications);
+    mockedPatch.mockResolvedValue({ success: true });
+    render(<AdminModerationTab />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /^reject$/i }));
+    expect(screen.getByLabelText(/rejection reason/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(screen.queryByLabelText(/rejection reason/i)).not.toBeInTheDocument();
+    expect(mockedPatch).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+    const banner = await screen.findByRole('status');
+    await userEvent.click(within(banner).getByRole('button', { name: /dismiss/i }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('reports a refused decision with its code and leaves the application on the queue', async () => {
+    mockedGet.mockResolvedValue(applications);
+    mockedPatch.mockRejectedValue({
+      response: { status: 409, data: { error: { code: 'APPLICATION_STATE_CONFLICT', message: 'Decided already' } } },
+    });
+    render(<AdminModerationTab />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /^approve$/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('APPLICATION_STATE_CONFLICT');
+    expect(screen.getByText('Northwind Analytics')).toBeInTheDocument();
+  });
+
 });

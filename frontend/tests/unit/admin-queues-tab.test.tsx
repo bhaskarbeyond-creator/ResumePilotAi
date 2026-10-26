@@ -163,4 +163,35 @@ describe('AdminQueuesTab', () => {
 
     expect(await screen.findByText('No outbox rows')).toBeInTheDocument();
   });
+
+  it('filters the sample by state, including the pending and settled buckets', async () => {
+    mockedGet.mockResolvedValue(payload);
+    render(<AdminQueuesTab />);
+    await screen.findByText('ntf-1');
+
+    await userEvent.click(screen.getByRole('button', { name: /^pending$/i }));
+    // No row in the fixture is pending, so the honest answer is the empty sentence — not a
+    // filtered table that still shows the dead letters.
+    expect(screen.queryByText('ntf-1')).not.toBeInTheDocument();
+    expect(screen.getByText(/no job matches/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /^settled$/i }));
+    expect(screen.getByText('ntf-2')).toBeInTheDocument();
+    expect(screen.queryByText('ntf-1')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /^any state$/i }));
+    expect(screen.getByText('ntf-1')).toBeInTheDocument();
+  });
+
+  it('dismisses the retry notice', async () => {
+    mockedGet.mockResolvedValue(payload);
+    mockedPost.mockResolvedValue({ success: true, retriedCount: 1, jobId: 'ntf-1' });
+    render(<AdminQueuesTab />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /retry/i }));
+    const notice = await screen.findByRole('status');
+    await userEvent.click(within(notice).getByRole('button', { name: /dismiss/i }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
 });

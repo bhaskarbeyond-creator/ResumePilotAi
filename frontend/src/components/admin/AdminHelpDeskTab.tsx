@@ -132,7 +132,9 @@ export function AdminHelpDeskTab() {
 
     const q = searchQuery.toLowerCase();
     const mail = (t.userEmail || t.email || '').toLowerCase();
-    return mail.includes(q) || t.subject.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+    // A ticket the API returns without a subject must not take the whole desk down when the
+    // operator types in the search box; the id and address are still matchable.
+    return mail.includes(q) || (t.subject ?? '').toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
   });
 
   return (
