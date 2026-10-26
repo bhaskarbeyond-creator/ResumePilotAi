@@ -730,6 +730,10 @@ router.patch('/:uid', async (req, res) => {
   const body = req.body || {};
   const changes = {};
   const expected = {};
+  // Why the change was made. Optional, bounded, and carried into both audit entries below so
+  // a reviewer reading `USER_ADMIN_UPDATED` in three months knows the reason, not just the
+  // before/after. The console asks for it before a suspension can be submitted.
+  const changeReason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 500) : null;
 
   if (body.role !== undefined) {
     const rawRole = String(body.role || 'USER').toUpperCase();
@@ -855,7 +859,7 @@ router.patch('/:uid', async (req, res) => {
       actorUid: req.user?.uid, actorEmail: req.user?.email, actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
       action: 'USER_ADMIN_UPDATE_REQUESTED', category: 'iam.users', severity: 'HIGH', outcome: 'SUCCESS',
       method: 'PATCH', pathname: req.originalUrl, statusCode: 202,
-      resourceType: 'user', resourceId: uid, metadata: { before, after }, requestId: res.locals.requestId,
+      resourceType: 'user', resourceId: uid, metadata: { before, after, reason: changeReason }, requestId: res.locals.requestId,
     });
 
     let updatedProfile = profile;
@@ -894,7 +898,7 @@ router.patch('/:uid', async (req, res) => {
       actorUid: req.user?.uid, actorEmail: req.user?.email, actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
       action: 'USER_ADMIN_UPDATED', category: 'iam.users', severity: 'HIGH', outcome: 'SUCCESS',
       method: 'PATCH', pathname: req.originalUrl, statusCode: 200,
-      resourceType: 'user', resourceId: uid, metadata: { before, after }, requestId: res.locals.requestId,
+      resourceType: 'user', resourceId: uid, metadata: { before, after, reason: changeReason }, requestId: res.locals.requestId,
     });
     const updatedIdentity = await identityOrNull(identityAdmin, uid);
     const freshProfile = profileFieldChange ? (await repo.getUser(uid)) : updatedProfile;

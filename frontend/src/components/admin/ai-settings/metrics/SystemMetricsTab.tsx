@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAiSettingsContext } from '../context/AiSettingsContext';

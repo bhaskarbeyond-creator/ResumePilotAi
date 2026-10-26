@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Gauge, RefreshCw, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';

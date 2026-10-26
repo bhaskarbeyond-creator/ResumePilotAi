@@ -1,4 +1,3 @@
-import React from 'react';
 import { ConfigureProviderDialog } from '../providers/ConfigureProviderDialog';
 import { KeyPoolManagerDialog } from '../providers/KeyPoolManagerDialog';
 import { CooldownsDialog } from '../providers/CooldownsDialog';

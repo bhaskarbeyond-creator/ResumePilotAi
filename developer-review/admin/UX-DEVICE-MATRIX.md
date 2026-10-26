@@ -113,3 +113,35 @@ behaviour of a tab a phone user cannot open measures nothing.
 - It **is** a specification precise enough that a frontend engineer can execute it
   without re-deriving the requirements, which is what the brief actually asked of
   the documentation.
+
+---
+
+## 5. Data states across the five classes (Step 4)
+
+A device class changes layout, not honesty: the loading, empty and failed panels are the same
+three components at every width, and each is a single column that wraps rather than scrolls.
+
+| Class | Loading | Empty | Failed |
+|---|---|---|---|
+| C1 320–480 | Skeleton panel, one column; retry button full width inside the panel | Title + description stack; no table is rendered when there are no rows | `AdminErrorPanel` stacks its `<dl>` (code / HTTP / request) into two lines; the request id wraps rather than overflowing |
+| C2 481–767 | Same panel | Same | Same, `<dl>` on one line where it fits |
+| C3 768–1024 | Same panel | Same | Same |
+| C4 1025–1440 | Same panel | Same | Same |
+| C5 1441+ | Same panel, `max-w-md` search and the table's `min-w-[820px]` inside `overflow-x-auto` — the horizontal scroll is confined to the table, never the page | Same | Same |
+
+**Tokens, not overrides.** The panels use `bg-surface`, `border-border`, `text-ink`,
+`text-ink-muted`, `success-*` and `error-*` only. Dark mode needed **no panel-specific code**:
+instead, `src/index.css` now defines the semantic surface tokens inside `.dark`
+(`--color-success-50/100/600/700`, `--color-warning-*`, `--color-error-*`, `--color-info-*`).
+Before that, a failure card kept its light `#fef2f2` tint on a near-black page. High contrast
+is handled by the pre-existing `@media (prefers-contrast: more)` and
+`@media (forced-colors: active)` blocks, and reduced motion by the global
+`prefers-reduced-motion` rule (the skeleton spinner and the refresh spin both stop).
+
+**What is measured, and by what.** Target sizes, text floors and focus rings by
+`npm run ux:audit` (static, all files); contrast by `npm run a11y:contrast` (16 computed
+pairs, including the loading and unavailable states at 6.16:1 and 5.91:1); rendering at each
+class by the Playwright projects in `frontend/tests/admin-console-ux.spec.ts` — **NOT RUN
+here** (no browser binary, `OI-TIER-1`). Behaviour under a failed or empty response is
+measured in jsdom (`tests/unit/admin-*.test.tsx`, 53 tests) at every width, because it is
+width-independent.

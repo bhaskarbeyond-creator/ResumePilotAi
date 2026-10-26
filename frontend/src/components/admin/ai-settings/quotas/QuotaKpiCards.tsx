@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAiSettingsContext } from '../context/AiSettingsContext';
 
 export function QuotaKpiCards() {

@@ -271,6 +271,7 @@ function AdminTabBar({ tabs, activeTab, onSelect }: AdminTabBarProps) {
     const index = selectable.findIndex((tab) => tab.id === activeTab);
     if (index === -1 || selectable.length === 0) return;
     const next = selectable[(index + delta + selectable.length) % selectable.length];
+    if (!next) return;
     onSelect(next.id as AdminTabId);
     // Focus follows selection, which is what `aria-activedescendant`-less tablists
     // require for a screen reader to announce the new tab.

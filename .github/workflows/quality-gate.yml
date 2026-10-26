@@ -1,0 +1,211 @@
+# Quality gate — the checks a pull request must pass before it can merge.
+#
+# Every step here is a command the completion pack cites, run in the same order a
+# reviewer would run it. Nothing is `|| true`, nothing is allowed to fail: a gate that can
+# be ignored is a comment.
+#
+# Deliberate choices:
+#   - The database-backed suites are NOT run here. They need a disposable MariaDB and the
+#     test-only identity verifier, and a CI job that half-runs them would produce a green
+#     tick that means less than the honest "not executed" in TEST-EVIDENCE.md. The steps
+#     below cover every suite that runs without a database.
+#   - Coverage thresholds live in `backend/.c8rc.json` and are enforced by `check-coverage`
+#     at the end of `test:coverage`, so they cannot drift from the command in the docs.
+#   - The frontend gates are static (tsc, oxlint, the two audits). Playwright needs a
+#     browser download and a database-backed webServer; it is a separate, opt-in job.
+name: quality-gate
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+
+concurrency:
+  group: quality-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend · types, tests, coverage, smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install (backend)
+        working-directory: backend
+        run: npm ci --include=optional
+
+      - name: Syntax check every source file
+        working-directory: backend
+        run: |
+          # A require-time crash is the most expensive failure to discover later; this
+          # catches a stray syntax error in any file, including ones no test imports.
+          find . -path ./node_modules -prune -o -name '*.js' -print | xargs -n1 node --check
+
+      - name: Smoke (in-process, no database)
+        working-directory: backend
+        run: npm run smoke
+
+      - name: Tiers (contract, characterisation, chaos, performance, migration, integration)
+        working-directory: backend
+        run: |
+          NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
+            test/api-contract.test.js \
+            test/characterisation.test.js \
+            test/chaos-resilience.test.js \
+            test/performance-budget.test.js \
+            test/migrations-integrity.test.js \
+            test/runtime-limits.test.js \
+            test/config-api.test.js \
+            test/config-registry.test.js \
+            test/config-validators.test.js \
+            test/authz-visibility-matrix.test.js \
+            test/route-manifest.test.js \
+            test/admin-rbac-api.test.js \
+            test/admin-rbac-store.test.js \
+            test/admin-rbac-administration.test.js \
+            test/admin-rbac-resolver.test.js \
+            test/admin-rbac-contract.test.js \
+            test/admin-target-authority.test.js \
+            test/setting-classification.test.js \
+            test/security.test.js \
+            test/database-ownership-completeness.test.js \
+            test/mariadb-query-budget.test.js
+
+      - name: Coverage gate (90 statements / 90 lines / 85 functions / 80 branches)
+        working-directory: backend
+        run: npm run test:coverage
+
+      - name: Upload coverage artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            backend/coverage/coverage-summary.json
+            backend/coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
+
+  frontend:
+    name: frontend · types, lint, contrast, target size
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install (frontend)
+        working-directory: frontend
+        run: npm ci --include=optional
+
+      - name: Type check (project references)
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: Type check (strict — admin plane and its models)
+        working-directory: frontend
+        run: npm run typecheck:strict
+
+      - name: Component tests (jsdom, no browser)
+        working-directory: frontend
+        run: npm run test:unit:coverage
+
+      - name: Lint (zero warnings allowed)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: UX audit — touch targets, text size, focus rings, widths
+        working-directory: frontend
+        run: npm run ux:audit
+
+      - name: Contrast audit — WCAG 2.2 AA on the 16 rendered pairs
+        working-directory: frontend
+        run: npm run a11y:contrast
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload UX evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux-evidence
+          path: |
+            frontend/ux-audit.json
+            frontend/contrast-audit.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  e2e:
+    name: e2e · browser gates (opt-in, needs a database)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Not part of the required check set: it needs a disposable MariaDB and a Chromium
+    # download. It runs on demand and on `dev`, where the database service is available.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: resumepilot_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: resumepilot_test
+      ALLOW_TEST_AUTH_VERIFIER: 'true'
+      TEST_AUTH_HMAC_SECRET: ci-only-not-a-production-secret-32chars
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:4000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install (frontend + browsers)
+        working-directory: frontend
+        run: |
+          npm ci --include=optional
+          npx playwright install --with-deps chromium
+      - name: Apply migrations to the disposable database
+        working-directory: backend
+        run: for f in database/migrations/*.sql; do case "$f" in *.down.sql) continue;; esac; mysql -h 127.0.0.1 -uroot -proot resumepilot_test < "$f"; done
+      - name: Accessibility, device classes, keyboard, visual baseline, vitals
+        working-directory: frontend
+        run: npx playwright test tests/admin-console-ux.spec.ts tests/accessibility.spec.ts
+      - name: Upload Playwright artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: warn
+          retention-days: 7

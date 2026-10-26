@@ -1,21 +1,20 @@
 # Test evidence
 
-**Purpose.** What was executed, what it proves, what it does not, and how to
-reproduce every number. Anything that could not be executed in this environment is
-labelled **NOT RUN** with the reason and the command to run it elsewhere — never
-implied to have passed.
+**Purpose.** What was executed, what it proves, what it does **not** prove, and how to
+reproduce every number. Anything that could not be executed here is labelled **NOT RUN**
+with the reason and the command to run it elsewhere. A number in this file is a transcript
+of a command, never a target.
 
-**Environment.** Node v22.22.3 · `backend/node_modules` present ·
-`frontend/node_modules` installed (`npm install --no-audit --no-fund`, 280 packages,
-one `EBADENGINE` warning: `frontend` declares `node >= 24.12`) · **no
-MySQL/MariaDB in the sandbox** · Firebase Admin initialises "without credentials
-(limited local mode)".
+**Environment for every run below.** Node v22.22.3 · Linux sandbox · `backend/node_modules`
+and `frontend/node_modules` installed locally · **no MySQL/MariaDB** · Firebase Admin in
+"limited local mode" (no credentials) · **no browser binary** (Playwright browsers cannot be
+downloaded here, so the browser tier is NOT RUN — §5).
 
-**Consequence to keep in mind when reading any number below:** a route that touches
-the database returns `503` or `500`, and a suite that asserts on persisted state
-fails for an environmental reason. Those failures are listed explicitly in §4 and
-were proven pre-existing by re-running the same suites against the base commit
-(§4.1). They are never counted as product evidence in either direction.
+**Consequence to keep in mind.** A route that touches the database answers `503`/`500`, and a
+suite that asserts on persisted state fails for an environmental reason. Those failures are
+listed in §5 and were proven pre-existing by re-running the same files against the base
+commit with the branch's changes stashed. They are never counted as product evidence in
+either direction.
 
 ---
 
@@ -23,192 +22,189 @@ were proven pre-existing by re-running the same suites against the base commit
 
 | Run | Command | Result |
 |---|---|---|
-| Security and authority suites (12 files) | see §2 | **132 / 132 pass, 0 fail** |
-| Wider admin/security regression (21 files, incl. the three new suites) | see §3 | **182 / 184 pass, 2 fail** — both pre-existing DB-absent failures (§4.2) |
-| Frontend type check | `npx tsc -b` in `frontend/` | **0 errors** |
-| Frontend lint | `npm run lint` in `frontend/` | **0 warnings, 0 errors** (237 files, 96 rules) |
-| Analysis-phase documentation set | `9d922d2` | 13 documents, +2872 lines, no code changes |
+| Backend gate (13 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **167 / 167 pass**, `c8 check-coverage` exit 0 |
+| Backend coverage | same command | **statements 98.42 %**, **branches 82.52 %**, **functions 97.53 %**, lines 98.42 % |
+| New tier files (7) | §2 | **39 / 39 pass** |
+| Contract + registry + ownership | §2 | `api-contract` 4/4, `config-registry` 26/26, `config-api` 17/17, `config-validators` 14/14, `database-ownership-completeness` 3/3 |
+| Query budget | `test/mariadb-query-budget.test.js` | **15 / 15 pass** (admin page: 1 round trip cold, 1 batched read warm, max 1 concurrent acquisition) |
+| Authority suites (spot re-run after the user-route change) | `admin-target-authority` + `admin-rbac-api` + `config-api` | **61 / 61 pass** |
+| Frontend types | `cd frontend && npx tsc -b` | **0 errors** |
+| Frontend types, strict, admin plane | `npm run typecheck:strict` | **0 errors** (strict + `noUnusedLocals` + `noImplicitOverride` + `noImplicitReturns`) |
+| Frontend lint | `npm run lint` | **0 warnings, 0 errors** (249 files, 96 rules) |
+| Frontend component tests | `npm run test:unit` | **53 / 53 pass** (5 files) |
+| Frontend component coverage | `npm run test:unit:coverage` | **statements 86.81 %**, **branches 76.63 %**, **functions 85.83 %**, lines 86.91 % on the six admin modules |
+| UX gate | `npm run verify:ux` | **0 violations**, contrast **16 / 16 pass** |
+| Browser tier (E2E, a11y, visual) | `npm test` | **NOT RUN** — no browser binary; see §5 |
 
 ---
 
-## 2. The authoritative command for this pass
+## 2. Backend test tiers
 
-```bash
-cd backend
-NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
-  test/admin-rbac-api.test.js \
-  test/admin-rbac-resolver.test.js \
-  test/route-manifest.test.js \
-  test/admin-rbac-contract.test.js \
-  test/admin-target-authority.test.js \
-  test/setting-classification.test.js \
-  test/superadmin-control-plane.test.js \
-  test/superadmin-platform.test.js \
-  test/admin-audit-query.test.js \
-  test/security.test.js \
-  test/admin-routing-telemetry-route.test.js \
-  test/admin-tenant-assignment.test.js
-```
+Every suite below runs without a database. `--test-concurrency=1` because several suites
+install process-global injectables (`setTokenVerifierForTests`, `setRbacStoreForTests`,
+`setRepositoryForTests`); `--test-force-exit` because the MySQL pool and the FreeLLMAPI
+maintenance timer hold the process open after the last assertion. Both are harness
+properties, not product properties.
 
-```
-# tests 132
-# pass 132
-# fail 0
-```
-
-Why these flags: `--test-concurrency=1` because several suites install
-process-global injectables (`setTokenVerifierForTests`, `setRbacStoreForTests`,
-`setRepositoryForTests`); `--test-force-exit` because the MySQL pool and the
-FreeLLMAPI maintenance timer keep the process alive after the last assertion. Both
-are properties of the harness, not of the product.
-
-### 2.1 What each new suite proves
-
-| Suite | Tests | Proves |
+| Suite | Tests | What it proves |
 |---|---|---|
-| `admin-rbac-resolver.test.js` | 12 | Migration 028's seed equals the pre-028 literal (parsed from the SQL); §B is the only delta; `manage ⊃ write ⊃ read` in the resolver *and* on the request path; degradation falls back to the literal and never to the wildcard; unknown role → empty set; a role with no permission rows is zero-authority, not a fallback; token-claimed permissions are not authority; persisted grants union with the role bundle; the wildcard satisfies everything; the capability census has no orphans, with a negative control |
-| `route-manifest.test.js` | 7 | 152 inventory rows resolve to a named rule; **0** routes rely on a declared default; no dead rules; the four corrections resolve correctly; reads and writes resolved independently; every permission a rule names is held by some role or declared SUPER_ADMIN-exclusive; end-to-end `enforceApiPolicy` decisions for 4 roles × 6 paths |
-| `admin-rbac-api.test.js` | 12 | The full chain per request: middleware → validation → store write → audit row → cache invalidation → next authorisation decision. Includes 403 for non-SUPER_ADMIN, step-up (`RECENT_AUTH_REQUIRED`), 409 for wildcard removal / self-escalation / platform-managed roles, 400 for malformed permissions and missing reason, 404 for unknown role and missing grant, 503 for an unreachable store |
+| `test/smoke.test.js` | 5 | The app boots, `/healthz` answers, the capability census is served, an unauthenticated admin route is denied with the standard envelope, and a request id is echoed — in-process, no database, < 2 s |
+| `test/api-contract.test.js` | 4 | The payload shapes the console and the config editor read, field by field: capability census, config census (`authority`, `count`, `scopes`, `entries`), the `PUT` response (`auditRecorded`), and one error envelope (`success:false` + `error.code`/`message`/`requestId`) |
+| `test/characterisation.test.js` | 12 | Pins the six decisions legacy intent left ambiguous: claims are not grants (DIV-002), the legacy role bundles and their sizes (DIV-004), `manage ⊃ write ⊃ read` (DIV-006), the rank ceiling (DIV-008), the two-category config classification (DIV-013), and the audit action names a saved filter depends on (DIV-011) |
+| `test/chaos-resilience.test.js` | 5 | An RBAC store outage locks nobody out and widens nobody's authority; a config store outage serves declared defaults and says so; a write during an outage fails closed with no audit row; an audit-repository outage admits `auditRecorded:false` instead of implying a trail |
+| `test/performance-budget.test.js` | 4 | Payload budgets (capabilities ≤ 32 KB, census ≤ 96 KB and ≤ 200 ms) and cache behaviour (25 cached configuration reads cost one) |
+| `test/migrations-integrity.test.js` | 5 | Every schema-changing migration has a rollback; every rollback names only what its forward created; `029` carries every column INV-6 needs and its rollback refuses to erase evidence; `020`'s `CREATE INDEX` statements are `IF NOT EXISTS`. Static analysis, stated as such |
+| `test/runtime-limits.test.js` | 4 | The rate-limit snapshot is seeded from boot, replaced by a configuration write without a restart, keeps the last-known values through a store outage, and costs **zero** queries when read 500 times |
+| `test/mariadb-query-budget.test.js` | 15 | The admin directory page costs one round trip on a cold cache and one batched read on a warm cache; at most one pool acquisition is concurrent; a cached configuration read does not touch the pool |
+| `test/config-registry.test.js` | 26 | 35 configuration keys, typed, bounded, defaulted; `security.rateLimit.authHourly` 1–100 000 and `authBurst` 1–10 000 as declared |
+| `test/config-api.test.js` | 17 | `GET` census shape and `PUT` contract including every error code: `CONFIG_KEY_UNKNOWN` 404, `CONFIG_READ_ONLY` 403, `CONFIG_INVALID` 400, `CONFIG_REASON_REQUIRED` 400, `CONFIG_REVISION_CONFLICT` 409, store failure 503 |
+| `test/config-validators.test.js` | 14 | Every validator, including the arithmetic/geo bounds that used to be `Number('') === 0` |
+| `test/database-ownership-completeness.test.js` | 3 | Five RBAC/config entities resolve to an owning table and the alias map is closed |
+| `test/authz-visibility-matrix.test.js` | — | The frontend-visibility × backend-enforcement matrix (INV-5) as executable data |
+| `test/route-manifest.test.js` | 7 | 152 inventory rows resolve to a named rule; no route relies on a declared default; no dead rules; every permission named is held by some role or declared SUPER_ADMIN-exclusive |
+| `test/admin-rbac-*.test.js` (5 files) | 60 | The authority engine: seed parity with the pre-028 literal, resolver hierarchy, grants, self-escalation block, contract codes (`SELF_ESCALATION_BLOCKED` 409, `ROLE_NOT_FOUND`/`GRANT_NOT_FOUND` 404, 503 on store failure), and the administration surface |
+| `test/admin-target-authority.test.js` | 20 | A caller may never mutate an account that outranks it (`TARGET_OUTRANKS_CALLER`); SUPER_ADMIN → SUPER_ADMIN remains permitted (INV-2) |
+| `test/setting-classification.test.js` | — | Every business setting is classified runtime-editable or boot-only, with no third category |
 
-The other seven suites are pre-existing and were re-run to prove no regression
-(`TEST-EVIDENCE.md` §3 lists them).
+`scripts/smoke.mjs` (10 checks against a *running* deployment, `--base`, `--json`,
+`npm run smoke:deployed`) is written but **NOT RUN** here: it requires a deployed base URL.
 
 ---
 
-## 3. Wider regression batch
+## 3. Coverage
+
+```
+=============================== Coverage summary ===============================
+Statements   : 98.42% ( 3365/3419 )
+Branches     : 82.52% ( 595/721 )
+Functions    : 97.53% ( 79/81 )
+Lines        : 98.42% ( 3365/3419 )
+================================================================================
+```
+
+Enforced by `c8 check-coverage --branches=80 --lines=95 --functions=90 --per-file=false` at
+the end of `npm run test:coverage`, so the thresholds cannot drift from the command in this
+document. `backend/.c8rc.json` scopes `include` to the modules the remediation touched; a new
+module added to the surface must be added there, which is a deliberate speed bump.
+
+**Honest gap.** The 10/10 bar asks for ≥ 85 % branches; the gate is at 80 % and the measured
+value is 82.52 %. The shortfall is concentrated in three files — `routes/config.js` 63.15 %,
+`routes/adminRbac.js` 66 %, `services/adminRbacAdministration.js` 68.96 % — and the next
+action is *more tests*, not exclusions: `OI-COV-1` and `OI-COV-2` in `OPEN-ITEMS.md`. The gate
+was never lowered from a higher value; it was set at 80 % when introduced and is raised when
+the gap closes.
+
+---
+
+## 4. Frontend evidence
+
+| Tier | Command | Result |
+|---|---|---|
+| Types (project references) | `npx tsc -b` | 0 errors |
+| Types (strict, `src/components/admin`, `src/pages/admin`, `tests/unit`) | `npm run typecheck:strict` | 0 errors. `strict`, `noUnusedLocals`, `noImplicitOverride`, `noImplicitReturns`, on top of the repo's existing `noUncheckedIndexedAccess` |
+| Lint | `npm run lint` | 0 warnings, 0 errors |
+| Target size, text floor, focus rings, widths | `npm run ux:audit` | 0 violations (was 71 before `3a2ec1c`) |
+| Contrast, WCAG 2.2 AA, 16 rendered pairs | `npm run a11y:contrast` | 16 / 16 pass |
+| Component behaviour (jsdom) | `npm run test:unit` | 53 / 53 pass |
+
+**What the component tier covers** (`tests/unit/`, vitest + jsdom + Testing Library):
+
+| File | Tests | Pins |
+|---|---|---|
+| `admin-data-state.test.ts` | 10 | `data` is `null` until a request succeeds; a failure clears the payload instead of leaving stale rows; an empty success is `ready`, not `failed`; the three server error envelopes normalise to one operator-facing shape; a cancelled request is not reported as a server failure |
+| `admin-users-model.test.ts` | 14 | The `adminUserProjection` → `AdminUserRecord` mapping; `status` derived from `suspended`/`identityStatus`; fields the endpoint does not return are `null`, never `0`; unknown roles degrade to `USER`; `SUPER_ADMIN` is not assignable |
+| `admin-attention-tab.test.tsx` | 6 | Real signals render with severity and id; an empty list renders "no signal is firing"; a `503` renders the code and request id and **not** the sample incidents the tab used to ship; Refresh re-reads the endpoint; a derived signal has no Acknowledge control |
+| `admin-users-tab.test.tsx` | 7 | Only server-returned identities render; a directory outage shows the error and no table; an empty directory says so; a refused password reset is reported as a failure and never claims a link was issued; `SUPER_ADMIN` is absent from the picker; suspension requires a reason |
+| `admin-users-actions.test.tsx` | 16 | The exact request each action sends (method, URL, body, concurrency guard) and the message the operator sees afterwards — role `PATCH` with `expectedRole`, 12-month Premium grant, suspension with reason, `ai-entitlement` `PUT` with justification required before the request, quota reset, tenant assign/remove, provisioning with only the accepted fields, filters |
+
+**NOT RUN, with reasons:**
+
+| Tier | Why | Command |
+|---|---|---|
+| E2E, accessibility, visual snapshots, device classes | No browser binary in the sandbox and no way to download one; the specs also need a database-backed `webServer` | `cd frontend && npx playwright install chromium && npm test` |
+| Lighthouse budgets (LCP < 2.5 s, INP < 200 ms, CLS < 0.1) | Needs a built app served over HTTP and a real browser | `npm --prefix frontend run build && npm --prefix frontend run preview` then Lighthouse against `/admin` |
+
+Both run in the `e2e` job of `.github/workflows/quality-gate.yml` (on `dev`, with a MariaDB
+service); neither is claimed as evidence here. `OI-TIER-1`.
+
+---
+
+## 5. Failures that are environmental, not product
+
+Six files fail in this sandbox, with identical counts on the base commit (verified by
+`git stash -u` and re-running each file):
+
+| File | Failures | Cause |
+|---|---|---|
+| `test/freellmapi-engine.test.js` | 6 | Needs a disposable MariaDB |
+| `test/enterprise-role-view-simulation.test.js` | 1 | Needs seeded enterprise tables |
+| `test/forensic-data-lineage.test.js` | 1 | Needs MariaDB |
+| `test/rbac-role-visibility-forensic.test.js` | 3 | Needs MariaDB |
+| `test/session-reauth-lifecycle.test.js` | 1 | Needs MariaDB |
+| `test/superadmin-remediation-pass.test.js` | 2 | Needs MariaDB |
+
+They are excluded from the gate command in §1 precisely because they cannot pass here; they
+are not excluded because they fail. The command that would settle them:
 
 ```bash
-cd backend
-NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
-  test/admin-rbac-contract.test.js test/admin-target-authority.test.js \
-  test/setting-classification.test.js test/admin-rbac-resolver.test.js \
-  test/superadmin-control-plane.test.js test/superadmin-platform.test.js \
-  test/superadmin-remediation-pass.test.js test/admin-routing-telemetry-route.test.js \
-  test/admin-tenant-assignment.test.js test/security.test.js \
-  test/session-reauth-lifecycle.test.js test/payment-settings-rbac.test.js \
-  test/platform-health-rbac.test.js test/database-authority.test.js \
-  test/export-tokens-authority.test.js test/jobs-data-authorization.test.js \
-  test/ai-routing-security.test.js test/proxy-trust-security.test.js \
-  test/admin-backend-ux-control.test.js test/admin-audit-query.test.js
-```
-
-```
-# tests 184
-# pass 182
-# fail 2
-```
-
-The two failures are the payment-webhook tests in §4.2, both of which fail
-identically on the base commit.
-
-An earlier sweep of the same corpus plus nine further suites
-(`ai-governance-entitlement`, `ai-admin*`, `database-admin`, `payment-admin-settings`,
-`oauth`, `auth-token-outbox`, `route-manifest`) produced **242 pass / 2 fail** with
-the identical two failures. Adding `session-reauth-lifecycle.test.js` to a batch
-always adds one failure, because it opens a database connection before its first
-assertion (`test/session-reauth-lifecycle.test.js:83`); it is therefore excluded from
-the command above and reported separately in §4.2.
-
-### 4.1 Method
-
-```bash
-cd /home/user/ResumePilotAi
-git stash push -q -- backend/security backend/services backend/index.js backend/database \
-                    backend/test/admin-rbac-resolver.test.js
-cd backend
-NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
-  test/superadmin-remediation-pass.test.js test/superadmin-platform.test.js
-# -> pass 21 / fail 2   (the same two payment-webhook tests)
-git stash pop
-```
-
-Any suite that fails identically with the working tree reverted is recorded here as
-pre-existing. This is the only method used; no failure was dismissed because it
-"looked environmental".
-
-### 4.2 The failures
-
-| Suite | Test | Failure | Cause |
-|---|---|---|---|
-| `superadmin-remediation-pass.test.js` | Payment Webhooks Diagnostic | `500 !== 200` | `payment_webhook_events` requires MariaDB |
-| `superadmin-remediation-pass.test.js` | Payment Webhooks Replay | `500 !== 404` | same |
-| `session-reauth-lifecycle.test.js` | whole suite | `ECONNREFUSED 127.0.0.1:3306` | opens a real connection |
-| `rbac-role-visibility-forensic.test.js` | 3 of 7 | `503` on `/api/admin/settings` | same (pre-existing; proven in Phase 0 by `git stash`) |
-
-### 4.3 One intentional contract change
-
-`test/superadmin-platform.test.js` previously asserted that a `permissions: ['*']`
-**token claim** confers super-admin. That assertion encoded the hole closed by
-REC-005/RCA-009, so it now asserts the opposite, with a comment naming the change and
-the reason. This is a tightened contract, not a skipped or weakened test: the file
-still fails if a token claim ever confers authority again.
-
----
-
-## 5. Test-tier coverage
-
-The brief required twelve tiers. This table states which exist in the repository
-today, which were exercised in this pass, and which do not exist. A tier is not
-"covered" because a file with a similar name exists.
-
-| Tier | Where | Exercised here | Verdict |
-|---|---|---|---|
-| **Unit** | `backend/test/*.test.js` (156 files) | Yes | Present and extensive |
-| **Integration** | `supertest` against the real Express app with injected stores (`admin-rbac-api.test.js`, `admin-tenant-assignment.test.js`) | Yes | Present |
-| **Contract** | `admin-rbac-contract.test.js`, `test/fixtures/route-inventory-helpers.js`, repository-contract fakes | Yes | Present and extended (the route inventory is a new contract artefact) |
-| **E2E** | `frontend/tests/*.spec.ts` (Playwright: `engine-authenticated`, `engine-integrity`, `billing-checkout`, `freellmapi-admin-e2e`) | **No** | Exists, needs a running stack + browser. Command: `npm --prefix frontend run test` |
-| **Visual regression** | `frontend/tests/engine-responsive.spec.ts` + `engine-responsive.spec.ts-snapshots/` | **No** | Exists; snapshots were not regenerated. `OI-UX-1` |
-| **Accessibility** | `frontend/tests/accessibility.spec.ts` | **No** | Exists; not run. Also: no axe-core assertion over the admin console specifically — `OI-UX-2` |
-| **Security** | The 12 suites in §2, plus `scripts/adversarial-*` (12 scripts) | **Yes** (unit/integration level) | Present; live-token adversarial scripts NOT RUN (need a real identity provider) |
-| **Performance** | — | No | **Does not exist.** No LCP/INP/CLS budget is asserted anywhere. `OI-UX-3` |
-| **Characterisation** | `rbac-role-visibility-forensic.test.js` (encodes pre-existing role behaviour) | Yes (as a known-failing, DB-blocked suite) | Present |
-| **Chaos** | `scripts/adversarial-error-injection.mjs`, `adversarial-session-break.mjs` | No | Scripts exist, not run (need the stack) |
-| **Migration** | — | No | **Does not exist for 028.** The seed is proven *equal to the literal* by parsing the SQL, but nothing applies the migration to a real MariaDB and asserts the resulting rows. `OI-005-6` |
-| **Smoke** | `package.json` `dr:*`, `certify:*` scripts | No | Exist, need a deployed stack |
-
-**Honest summary:** the backend authority layer is at the "unit + integration +
-contract + security" tiers with a real fails-before proof. E2E, visual, a11y,
-performance, chaos, migration and smoke are **not** green in this environment, and
-two of them (performance, migration) do not exist as artefacts at all.
-
----
-
-## 6. Fails-before evidence (the discipline that makes the above meaningful)
-
-| Change | Reverted how | Result before | Result after |
-|---|---|---|---|
-| Phase 0 target-authority ceiling (`security/targetAuthority.js`) | `git checkout HEAD -- routes/adminUsers.js index.js` (backup in `/tmp/keep/`) | 0/6 "ADMIN against SUPER_ADMIN" cases fail | 28/28 pass |
-| Migration 028 seed equals the literal | N/A (new test) | Test cannot pass without the migration matching the vocabulary — it parses the SQL, so it fails on any drift | 8 roles equal |
-| `users.roles.manage` seed decomposition | Found by the golden-seed test on its first run | Seed stored `users:roles` instead of `users.roles:manage` | Fixed in `028_admin_rbac.sql:107` |
-| Route manifest covers every route | New test | N/A | 152/152 named, 0 on a default |
-| RBAC write audit produces exactly one row | New test | 2 rows (middleware + route) | 1 row |
-
----
-
-## 7. What must be run in CI, and what is still needed
-
-**Definition of done for CI (copy-paste):**
-
-```bash
-# 1. Backend, no database needed
-cd backend && NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
-  test/admin-rbac-api.test.js test/admin-rbac-resolver.test.js test/route-manifest.test.js
-
-# 2. Full backend suite WITH MariaDB (the only environment in which "all green" is
-#    a meaningful statement)
 DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
-
-# 3. Frontend static
-npm --prefix frontend run lint && (cd frontend && npx tsc -b)
-
-# 4. Frontend behavioural (needs the API)
-npm --prefix frontend run test
 ```
 
-**Not automatable yet, and therefore not claimed:**
+---
 
-- a coverage percentage (no `c8`/`nyc` config exists in `backend/package.json`);
-- the 10/10 bar's "≥90 % statements / ≥85 % branches / ≥95 % critical paths" —
-  **not measured, so not met**;
-- migration apply/rollback against a real MariaDB (`OI-005-6`);
-- the UX budgets (LCP/INP/CLS) — `OI-UX-3`.
+## 6. What cannot be claimed from this evidence
+
+- **"The E2E suite passes."** It was not executed. The specs exist and are listed by
+  Playwright; none ran.
+- **"Coverage meets the 10/10 bar."** Statements, functions and lines do; branches do not
+  (82.52 % measured against 85 % required). See §3.
+- **"The deployed smoke suite passes."** `scripts/smoke.mjs` needs a live base URL.
+- **"Migration apply and rollback were exercised against MariaDB."** Only static analysis of
+  the migration files ran (`migrations-integrity`). Applying `001_baseline.sql` upward has no
+  rollback by design, and the drill needs a disposable database.
+- **"Every admin tab shows live data."** Seven tabs still contain sample-data fallbacks;
+  the inventory and the per-file next action are in `OPEN-ITEMS.md` `OI-001-1`.
+
+---
+
+## 7. CI
+
+`.github/workflows/quality-gate.yml` runs, on every pull request to `dev`:
+
+| Job | Steps |
+|---|---|
+| `backend` | `npm ci` → `node --check` on every source file → `npm run smoke` → 21 tier files → `npm run test:coverage` (thresholds enforced) → upload coverage |
+| `frontend` | `npm ci` → `tsc -b` → `typecheck:strict` → `lint` → `test:unit:coverage` → `ux:audit` → `a11y:contrast` → `build` → upload UX evidence |
+| `e2e` (on `dev` only) | MariaDB service → migrations applied → `playwright install chromium` → `admin-console-ux.spec.ts` + `accessibility.spec.ts` → upload report |
+
+A step that can be ignored is a comment: there is no `continue-on-error` and no
+`|| true` anywhere in the workflow.
+
+---
+
+## 8. Reproduce everything
+
+```bash
+# Backend gate + coverage thresholds
+cd backend && NODE_ENV=test npm run test:coverage
+
+# The seven new tiers, individually
+cd backend && NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
+  test/smoke.test.js test/api-contract.test.js test/characterisation.test.js \
+  test/chaos-resilience.test.js test/performance-budget.test.js \
+  test/migrations-integrity.test.js test/runtime-limits.test.js
+
+# Re-establish that the six red files are red on the base commit too
+git stash -u && for f in freellmapi-engine enterprise-role-view-simulation \
+  forensic-data-lineage rbac-role-visibility-forensic session-reauth-lifecycle \
+  superadmin-remediation-pass; do
+  NODE_ENV=test node --test --test-concurrency=1 --test-force-exit test/$f.test.js \
+    | grep -E "^# (pass|fail)"; done; git stash pop
+
+# Frontend static + component tiers
+cd frontend && npm run typecheck:strict && npm run lint && npm run test:unit:coverage \
+  && npm run verify:ux
+
+# Deployed smoke (needs a base URL)
+node scripts/smoke.mjs --base https://staging.example.com --json
+```

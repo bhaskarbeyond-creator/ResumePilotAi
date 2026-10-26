@@ -1,4 +1,3 @@
-import React from 'react';
 import { Loader2, Play, Terminal } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

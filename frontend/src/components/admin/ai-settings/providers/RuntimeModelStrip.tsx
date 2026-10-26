@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Brain, ChevronDown, RefreshCw, Sliders } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';

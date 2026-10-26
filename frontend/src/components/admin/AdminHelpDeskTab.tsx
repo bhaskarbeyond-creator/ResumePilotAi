@@ -115,7 +115,7 @@ const DEFAULT_TICKETS: SupportTicket[] = [
 
 export function AdminHelpDeskTab() {
   const [tickets, setTickets] = useState<SupportTicket[]>(DEFAULT_TICKETS);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(DEFAULT_TICKETS[0].id);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(DEFAULT_TICKETS[0]?.id ?? '');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
@@ -129,7 +129,8 @@ export function AdminHelpDeskTab() {
       if (res?.tickets && Array.isArray(res.tickets) && res.tickets.length > 0) {
         setTickets(res.tickets);
         if (!selectedTicketId) {
-          setSelectedTicketId(res.tickets[0].id);
+          const [firstTicket] = res.tickets;
+          if (firstTicket) setSelectedTicketId(firstTicket.id);
         }
       }
     } catch {

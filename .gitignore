@@ -144,7 +144,11 @@ tests/screenshots/
 .agents/
 .bridge/
 .claude/
-.github/
+# `.github/` was ignored wholesale along with the agent scratch dirs above, which also
+# silently excluded GitHub Actions. CI is source: ignore everything in the directory
+# except the workflow definitions.
+.github/*
+!.github/workflows/
 .clinerules
 .roomodes
 AGENTS.md

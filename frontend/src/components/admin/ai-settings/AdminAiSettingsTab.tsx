@@ -7,7 +7,6 @@
  * - Shared context: AiSettingsContext provides central state & mutations without prop drilling
  */
 
-import React from 'react';
 import type { AdminAiSettingsTabProps } from './types/ai-settings.types';
 import { AiSettingsProvider, useAiSettingsContext } from './context/AiSettingsContext';
 import { SettingsShell, SubtabErrorBoundary } from './layout/SettingsShell';

@@ -310,3 +310,112 @@ second engine.
   4. The store's `listUserGrants` returns one row per *(role, permission)* pair, so
      "roles held" must be de-duplicated before it reaches an audit row. Fixed in
      `services/adminRbacAdministration.js`, caught by the grants test.
+
+---
+
+## Part 3 — Console integrity decisions (Step 4)
+
+### D-020-1 — A surface with no data renders no data
+
+- **Status:** ACCEPTED · **Invariants:** INV-1, INV-5 · **RCA:** RCA-012 · **Evidence:**
+  `frontend/src/components/admin/admin-data-state.ts`,
+  `tests/unit/admin-users-tab.test.tsx`, `tests/unit/admin-attention-tab.test.tsx`
+
+**Decision.** Administrative surfaces have exactly three renderable states — loading, ready,
+failed — and `data` is `null` until a request succeeds. Sample rows are deleted, not hidden.
+A failure renders `AdminErrorPanel` with the server's code, message and request id.
+
+**What this deletes, file by file.**
+
+| Surface | What was there | What is there now |
+|---|---|---|
+| `AdminUsersTab` | `DEFAULT_USERS` — five invented identities (`alex.rivera@…`, `spencer_bot@suspicious-net.org`, …) seeded as initial state; `const [, setLoading] = useState(true)` discarded the loading state; `loadUsers` swallowed the failure with `// Keep baseline` | `GET /api/admin/users` through `readDirectory`; skeleton → error panel → empty panel → table. A test asserts the invented names never appear, including after a `503` |
+| `AdminUsersTab` actions | 9 handlers, of which 6 ended `await post(...).catch(() => {})` and then announced success unconditionally; quota override and counter reset changed local state and never called an API; the password-reset fallback **fabricated a link** (`?reset_token=sec_rst_${Date.now()}`) and told the operator it was copied | Every action calls the endpoint that owns it and reports the server's answer; failures arrive as `role="alert"` with the error code. `PUT /:uid/ai-entitlement`, `POST /:uid/ai-quota-reset`, `GET /:uid/export`, `POST /:uid/tenants`, `DELETE /:uid/tenants/:id`, `POST /:uid/unenroll-mfa` are now reachable from the UI |
+| `AdminUsersTab` drawer | Documents tab rendered `Array.from({length: resumeCount})` with invented titles and a hard-coded `ATS 94%`; AI tab fell back to `usedToday ?? 18` and `dailyLimit ?? 100`; tenancy tab showed a fixed "Northwind Careers" membership | `GET /:uid/details` drives all four tabs: real resume titles and timestamps, real `effectiveLimit`/`usedToday`, real memberships, real audit timeline. Unknown numbers render as `—` |
+| `AdminUsersTab` pickers | Role picker offered `SUPER_ADMIN`, which `PATCH /:uid` refuses with `SUPER_ADMIN_ROLE_FORBIDDEN`; provisioning asked for a password and a tenant, both of which the endpoint rejects (`CREATE_THEN_ASSIGN_TENANT`) | `ASSIGNABLE_ROLES` excludes `SUPER_ADMIN`; provisioning sends only `email`, `displayName`, `role`, `emailVerified` |
+| `AdminUsersTab` view-as | Posted `{simulatedRole, targetUserId, action}` to `/platform/role-view-audit`, which reads `{targetRole, tenantId}` → every call was a `400 INVALID_ROLE` presented as a success | Posts `{targetRole}`; the endpoint's message is what the operator sees |
+| `AdminAttentionTab` | Five invented incidents, a Refresh button that spun a spinner for 600 ms without a request, and an "Acknowledge" control that hid a row locally | `GET /api/platform/attention`; the payload's own `note` is displayed; Refresh re-issues the request |
+
+**Alternatives considered.**
+
+1. *Keep the sample rows behind a `demo` flag.* Rejected: the flag becomes a permanent
+   second code path, and the failure mode it protects against (an operator acting on a
+   non-existent account) is exactly the one that must be impossible.
+2. *Keep "Acknowledge" and persist it server-side.* Rejected as scope, not as principle: the
+   items are derived from live probes, so a persisted acknowledgement is a second source of
+   truth that can disagree with the probe. Clearing the condition is the only correct clear.
+   If operators need "I have seen this", that is an incident record, not a row filter — and it
+   belongs in the ticket system this page explicitly is not (`routes/platform.js:1262`).
+
+**Trade-offs.** An empty directory now looks empty rather than populated, so a broken
+deployment is visible on first load. That is the point, and it costs a skeleton and an error
+panel. Two extra reads per drawer open (`details` + `enterprise/tenants`), both bounded.
+
+**Rollback.** Revert the commit; no schema, no API and no configuration change is involved.
+The backend change in the same commit (`D-023-1`) is additive metadata and is safe to keep.
+
+### D-021-1 — Strict TypeScript, applied to the surface being changed
+
+- **Status:** ACCEPTED · **Invariants:** quality bar · **Evidence:** `frontend/tsconfig.strict.json`,
+  `npm run typecheck:strict` in `.github/workflows/quality-gate.yml`
+
+**Decision.** `frontend/tsconfig.app.json` sets `"strict": false`. Turning it on for the whole
+app today is 203 errors across 30 files, concentrated in five screens outside this
+remediation (`ResumePageComposer` 47, `portfolio-view` 36, `resume-builder` 25,
+`interview-coach` 22, `support` 10). The admin plane therefore gets its own project —
+`tsconfig.strict.json`, covering `src/components/admin/**`, `src/pages/admin/**` and
+`tests/unit/**` — with `strict`, `noUnusedLocals`, `noImplicitOverride`, `noImplicitReturns`
+on top of the existing `noUncheckedIndexedAccess`. It is enforced in CI and is at 0 errors.
+
+**Why not just turn `strict` on everywhere.** Because it would be a 30-file refactor inside a
+PR whose subject is the admin plane, and a reviewer cannot tell a semantic fix from a cast
+added to silence the compiler. The ratchet is explicit: `OI-STRICT-1` lists the five files
+and the error count, and each is converted in its own change.
+
+**Trade-offs.** Two TypeScript projects to keep in sync; a new file under `src/components/admin`
+is strict by default (good), and a new file elsewhere is not (unchanged from before).
+
+**Rollback.** Delete the project and the CI step; nothing in the app depends on it.
+
+### D-022-1 — A component tier that runs where the browser cannot
+
+- **Status:** ACCEPTED · **Invariants:** quality bar (test tiers) · **Evidence:**
+  `frontend/vitest.config.ts`, `frontend/tests/unit/**` (53 tests)
+
+**Decision.** Behaviour that is not pixel-dependent is tested with vitest + jsdom + Testing
+Library, not with Playwright. The Playwright suite remains the browser tier and runs in the
+`e2e` CI job; this tier runs in seconds, needs no browser and no database, and covers exactly
+the properties whose absence produced the defects: which state a surface renders, whether a
+refused write is reported as a refusal, and whether the wire model is mapped honestly.
+
+**Why not only Playwright.** It cannot run in this environment (no browser binary), and a tier
+that only exists where a browser exists is a tier that gets skipped. The two tiers answer
+different questions and both are needed.
+
+**Trade-offs.** jsdom is not a browser: it does not compute layout, so it cannot prove a
+44 px target or a contrast ratio — the static audits and Playwright do that. The 80/75/75/80
+thresholds in `vitest.config.ts` are lower than the backend's because component branches
+include defensive `??` paths that need a hostile API to reach; the measured values
+(86.81 / 76.63 / 85.83 / 86.91) are recorded in `TEST-EVIDENCE.md §4`.
+
+**Rollback.** Remove the two scripts and the config; no runtime code depends on it.
+
+### D-023-1 — A suspension records its reason in the audit metadata
+
+- **Status:** ACCEPTED · **Invariants:** INV-6 · **Evidence:** `backend/routes/adminUsers.js`
+  (`changeReason`, both `USER_ADMIN_*` audit rows)
+
+**Decision.** `PATCH /api/admin/users/:uid` accepts an optional `reason` (trimmed, capped at
+500 characters) and carries it into the `metadata` of both the `USER_ADMIN_UPDATE_REQUESTED`
+and `USER_ADMIN_UPDATED` rows, beside `before`/`after`. The console requires a reason (≥ 3
+characters) before it will submit a suspension.
+
+**Why.** The UI had an "audited suspension reason (required for compliance)" field that the
+API never read — the reason was typed, required and discarded. Either the field goes or the
+reason goes into the trail; INV-6 makes it the second. Additive field, no consumer breaks.
+
+**Alternatives.** A separate `admin_audit_reasons` table (over-engineered for one field); a
+mandatory reason on every PATCH (breaks the role/membership paths that have nothing to
+explain, and would have required a client change for every caller).
+
+**Rollback.** Ignore the field on the server; the extra metadata key is harmless.

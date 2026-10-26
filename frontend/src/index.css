@@ -329,6 +329,31 @@
      is used for (measured by scripts/contrast-audit.mjs). #6b7280 is 4.83:1. */
   --color-ink-subtle: #6b7280;
 
+  /* Semantic surfaces, darkened for the dark theme. Without these the success/error
+     panels kept their light tints (#ecfdf5, #fef2f2) and every failure message rendered as
+     a pale cream card on a near-black page — legible, but a theme bug an operator reads as
+     "something is highlighted" rather than "something failed". Foregrounds are the light
+     variants so the pairs stay above 4.5:1 on the darkened tints. */
+  --color-success-50: #0f2419;
+  --color-success-100: #14301f;
+  --color-success-600: #34d399;
+  --color-success-700: #6ee7b7;
+
+  --color-warning-50: #2a1f0b;
+  --color-warning-100: #35270e;
+  --color-warning-600: #fbbf24;
+  --color-warning-700: #fcd34d;
+
+  --color-error-50: #2a1416;
+  --color-error-100: #3a1a1d;
+  --color-error-600: #f87171;
+  --color-error-700: #fca5a5;
+
+  --color-info-50: #101c30;
+  --color-info-100: #15243d;
+  --color-info-600: #60a5fa;
+  --color-info-700: #93c5fd;
+
   --color-neutral-25: #0e1017;
   --color-neutral-50: #141722;
   --color-neutral-100: #1a1e2b;

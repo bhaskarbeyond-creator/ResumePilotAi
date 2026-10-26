@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

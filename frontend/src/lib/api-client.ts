@@ -223,8 +223,17 @@ function createApiClient(): AxiosInstance {
 export const apiClient = createApiClient();
 
 // Convenience methods with typed responses
-export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const response = await apiClient.get<T>(url, { params });
+/**
+ * `config` is threaded through so a caller can pass an `AbortSignal`. Administrative reads
+ * use it: a tab that unmounts mid-flight must cancel its request rather than resolve into a
+ * dead component, and a reload must supersede the request it replaces instead of racing it.
+ */
+export async function get<T>(
+  url: string,
+  params?: Record<string, unknown>,
+  config?: import('axios').AxiosRequestConfig,
+): Promise<T> {
+  const response = await apiClient.get<T>(url, { ...config, params });
   return response.data;
 }
 

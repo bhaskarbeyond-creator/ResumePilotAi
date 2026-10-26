@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

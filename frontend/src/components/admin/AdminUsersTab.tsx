@@ -1,1131 +1,1163 @@
 /**
- * Admin Users Manager & User 360 Tab (Master Edition)
+ * User directory and User 360.
  *
- * Full-featured Administrative User Directory & Governance Hub:
- * - Provision User Modal (Create new candidate, recruiter, or admin accounts)
- * - 4-Tab User 360 Drawer Modal:
- *     1. Identity & RBAC (Role switcher, Plan upgrade, Password reset link, Session revoke, MFA reset, GDPR export, Suspension)
- *     2. Organizations & Tenants (Assign tenant membership, workspace preview, role delegation, membership revoke)
- *     3. AI Quotas & Entitlements (Daily quota monitor, custom token override with reason, daily counter reset)
- *     4. Resumes & Documents (Candidate resumes inventory with ATS score gauges and preview)
+ * Everything on this surface comes from the API or is visibly absent:
  *
- * INVARIANTS:
- * 1. ZERO FABRICATED DATA: Binds to live administrative user records and endpoints.
- * 2. AUDIT TRAIL GENERATION: Account mutations generate cryptographic audit logs.
+ *   - the directory is `GET /api/admin/users` through the adapter in `admin-users-model.ts`;
+ *     the table used to be seeded with five sample accounts, so an operator could suspend,
+ *     export or "reset the password" of people who did not exist;
+ *   - every action calls the endpoint that owns it and reports what the server said. The
+ *     previous implementation swallowed the error and announced success anyway
+ *     (`await post(...).catch(() => {})` followed by "User … marked as SUSPENDED"), and its
+ *     password-reset fallback synthesised a link (`?reset_token=sec_rst_<timestamp>`) that no
+ *     server had issued;
+ *   - fields the directory endpoint does not return are `null` and render as "—"; the drawer
+ *     loads `GET /api/admin/users/:uid/details` for quota usage, memberships and documents;
+ *   - a role the API refuses (`SUPER_ADMIN`) is not offered in the picker, and a provisioning
+ *     form no longer asks for values the API rejects (password, tenant association).
  */
 
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  Brain,
+  Building2,
+  CheckCircle2,
+  Copy,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  RotateCcw,
+  Search,
+  Shield,
+  ShieldAlert,
+  Unlock,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { get, post, patch } from '@/lib/api-client';
+import { del, get, patch, post, put } from '@/lib/api-client';
+import { AdminEmptyPanel, AdminErrorPanel, AdminLoadingPanel } from './AdminDataState';
+import { useAdminResource } from './use-admin-resource';
+import { describeAdminFailure } from './admin-data-state';
 import {
-  Users,
-  UserPlus,
-  Search,
-  CheckCircle2,
-  Shield,
-  Eye,
-  X,
-  FileText,
-  Unlock,
-  RotateCcw,
-  Building2,
-  Brain,
-  Download,
-  Copy,
-  ExternalLink,
-  ShieldAlert,
-  Check,
-} from 'lucide-react';
+  ASSIGNABLE_ROLES,
+  downloadJson,
+  readDirectory,
+  readTenantOptions,
+  readUser360,
+  type AdminDirectoryPayload,
+  type AdminUserRecord,
+  type PlatformRole,
+  type TenantOption,
+  type User360Payload,
+} from './admin-users-model';
 
-export type PlatformRole =
-  | 'USER'
-  | 'EMPLOYER'
-  | 'RECRUITER'
-  | 'SUPPORT'
-  | 'AUDITOR'
-  | 'ENTERPRISE_ADMIN'
-  | 'ENTERPRISE_MEMBER'
-  | 'ADMIN'
-  | 'SUPER_ADMIN';
+export type { AdminUserRecord, PlatformRole } from './admin-users-model';
 
-export interface AdminUserRecord {
+type DrawerTab = 'identity' | 'tenants' | 'ai' | 'documents';
+
+/** One organization membership, as User 360 reports it. */
+interface MembershipView {
   id: string;
-  email: string;
   displayName: string;
-  role: PlatformRole;
-  status: 'active' | 'suspended' | 'pending';
-  lastLogin: string;
-  createdAt: string;
-  resumeCount: number;
-  plan?: string;
-  tenantMembership?: string;
-  aiDailyLimit?: number;
-  aiUsedToday?: number;
+  slug: string;
+  roles: string[];
+}
+type Flash = { tone: 'success' | 'error'; text: string };
+
+const ROLE_LABELS: Record<PlatformRole, string> = {
+  USER: 'USER — candidate',
+  EMPLOYER: 'EMPLOYER — hiring manager',
+  RECRUITER: 'RECRUITER — agency recruiter',
+  SUPPORT: 'SUPPORT — help desk',
+  AUDITOR: 'AUDITOR — compliance',
+  ENTERPRISE_ADMIN: 'ENTERPRISE_ADMIN — tenant administrator',
+  ENTERPRISE_MEMBER: 'ENTERPRISE_MEMBER — workspaces member',
+  ADMIN: 'ADMIN — platform operator',
+  SUPER_ADMIN: 'SUPER_ADMIN — claim-only, not assignable',
+};
+
+/** Status pill colours, per theme, from the palette tokens only. */
+const STATUS_STYLES: Record<AdminUserRecord['status'], string> = {
+  active: 'bg-success-50 text-success-700 border border-success-100',
+  suspended: 'bg-error-50 text-error-700 border border-error-100',
+  pending: 'bg-warning-50 text-warning-700 border border-warning-100',
+};
+
+function FlashBanner({ flash, onDismiss }: { flash: Flash; onDismiss: () => void }) {
+  const success = flash.tone === 'success';
+  return (
+    <div
+      role={success ? 'status' : 'alert'}
+      aria-live={success ? 'polite' : 'assertive'}
+      className={cn(
+        'flex items-start gap-2 rounded-xl border p-3 text-xs',
+        success
+          ? 'border-success-100 bg-success-50 text-success-700'
+          : 'border-error-100 bg-error-50 text-error-700',
+      )}
+    >
+      {success ? (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+      ) : (
+        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+      )}
+      <span className="flex-1">{flash.text}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss message"
+        className="rounded p-0.5 hover:bg-black/5 dark:hover:bg-white/10"
+      >
+        <X className="size-3.5" />
+      </button>
+    </div>
+  );
 }
 
-const DEFAULT_USERS: AdminUserRecord[] = [
-  {
-    id: 'usr_001',
-    email: 'alex.rivera@example.com',
-    displayName: 'Alex Rivera',
-    role: 'SUPER_ADMIN',
-    status: 'active',
-    lastLogin: '10 mins ago',
-    createdAt: 'Jan 15, 2026',
-    resumeCount: 4,
-    plan: 'Enterprise',
-    tenantMembership: 'Northwind Careers (Owner)',
-    aiDailyLimit: 250,
-    aiUsedToday: 42,
-  },
-  {
-    id: 'usr_002',
-    email: 'elena.rostova@techcorp.de',
-    displayName: 'Elena Rostova',
-    role: 'RECRUITER',
-    status: 'active',
-    lastLogin: '2 hours ago',
-    createdAt: 'Feb 03, 2026',
-    resumeCount: 1,
-    plan: 'Pro Recruiter',
-    tenantMembership: 'Globex Talent (Admin)',
-    aiDailyLimit: 150,
-    aiUsedToday: 89,
-  },
-  {
-    id: 'usr_003',
-    email: 'marcus.vance@cloudsystems.io',
-    displayName: 'Marcus Vance',
-    role: 'ADMIN',
-    status: 'active',
-    lastLogin: 'Yesterday',
-    createdAt: 'Mar 12, 2026',
-    resumeCount: 2,
-    plan: 'Pro Candidate',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 100,
-    aiUsedToday: 15,
-  },
-  {
-    id: 'usr_004',
-    email: 'spammer_bot@suspicious-net.org',
-    displayName: 'Automated Account',
-    role: 'USER',
-    status: 'suspended',
-    lastLogin: '3 days ago',
-    createdAt: 'Oct 01, 2026',
-    resumeCount: 0,
-    plan: 'Basic Free',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 25,
-    aiUsedToday: 25,
-  },
-  {
-    id: 'usr_005',
-    email: 'chloe.dupont@paris-career.fr',
-    displayName: 'Chloe Dupont',
-    role: 'USER',
-    status: 'active',
-    lastLogin: '5 mins ago',
-    createdAt: 'Sep 22, 2026',
-    resumeCount: 6,
-    plan: 'Pro Candidate',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 100,
-    aiUsedToday: 18,
-  },
-];
-
 export function AdminUsersTab() {
-  const [users, setUsers] = useState<AdminUserRecord[]>(DEFAULT_USERS);
+  const loadDirectory = useCallback(
+    (signal: AbortSignal) =>
+      get<AdminDirectoryPayload>('/admin/users', { limit: 100 }, { signal }),
+    [],
+  );
+  const directory = useAdminResource(loadDirectory);
+  const users = useMemo(() => readDirectory(directory.data), [directory.data]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
-  const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
-  const [, setLoading] = useState(true);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-
-  // User 360 sub-tab
-  const [drawerTab, setDrawerTab] = useState<'identity' | 'tenants' | 'ai' | 'documents'>('identity');
-
-  // Provision User Modal state
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedFallback, setSelectedFallback] = useState<AdminUserRecord | null>(null);
+  const [flash, setFlash] = useState<Flash | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState<PlatformRole>('USER');
-  const [newTenant, setNewTenant] = useState('');
-  const [newVerifyEmail, setNewVerifyEmail] = useState(true);
-  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  // User 360 mutation state
-  const [editRole, setEditRole] = useState<string>('USER');
-  const [editPlan, setEditPlan] = useState<string>('Basic');
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [suspensionReason, setSuspensionReason] = useState('');
-  const [showSuspendInput, setShowSuspendInput] = useState(false);
-  const [customAiLimit, setCustomAiLimit] = useState<number>(100);
-  const [aiLimitReason, setAiLimitReason] = useState('');
-  const [selectedTenantId, setSelectedTenantId] = useState('northwind');
-  const [selectedTenantRole, setSelectedTenantRole] = useState('ENTERPRISE_MEMBER');
+  const selectedUser = useMemo(() => {
+    if (!selectedUserId) return null;
+    return users.find((user) => user.id === selectedUserId) ?? selectedFallback;
+  }, [selectedUserId, users, selectedFallback]);
 
-  const loadUsers = async () => {
+  /** One place where a mutation's outcome becomes a message, so no handler can invent one. */
+  const runMutation = async (key: string, work: () => Promise<string>) => {
+    setBusyKey(key);
     try {
-      const res = await get<{ users?: AdminUserRecord[] }>('/admin/users');
-      if (res?.users && Array.isArray(res.users) && res.users.length > 0) {
-        setUsers(res.users);
-      }
-    } catch {
-      // Keep baseline
+      const message = await work();
+      setFlash({ tone: 'success', text: message });
+      directory.reload();
+      return true;
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      setFlash({
+        tone: 'error',
+        text: `${failure.message} (${failure.code}${
+          failure.requestId ? ` · request ${failure.requestId}` : ''
+        })`,
+      });
+      return false;
     } finally {
-      setLoading(false);
+      setBusyKey(null);
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  // Sync edit states when selecting user
-  useEffect(() => {
-    if (selectedUser) {
-      setEditRole(selectedUser.role);
-      setEditPlan(selectedUser.plan || 'Basic');
-      setCustomAiLimit(selectedUser.aiDailyLimit || 100);
-      setCopiedLink(false);
-      setShowSuspendInput(false);
-      setSuspensionReason('');
-      setDrawerTab('identity');
-    }
-  }, [selectedUser]);
-
-  const handleToggleSuspend = async (user: AdminUserRecord) => {
-    const nextStatus = user.status === 'suspended' ? 'active' : 'suspended';
-    try {
-      await post(`/admin/users/${user.id}/status`, {
-        status: nextStatus,
-        reason: suspensionReason.trim() || undefined,
-      }).catch(() => {});
-
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u))
-      );
-
-      if (selectedUser?.id === user.id) {
-        setSelectedUser((prev) => (prev ? { ...prev, status: nextStatus } : null));
-      }
-
-      setActionSuccess(`User ${user.email} marked as ${nextStatus.toUpperCase()}.`);
-      setShowSuspendInput(false);
-      setSuspensionReason('');
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
-    }
-  };
-
-  const handleImpersonateAudit = async (user: AdminUserRecord) => {
-    try {
-      await post('/platform/role-view-audit', {
-        simulatedRole: user.role,
-        targetUserId: user.id,
-        action: 'SUPER_ADMIN_VIEW_AS_USER',
-      }).catch(() => {});
-
-      setActionSuccess(`Audit trail logged for session observation: ${user.email} (${user.role})`);
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
-    }
-  };
-
-  const handleSaveRole = async () => {
-    if (!selectedUser) return;
-    try {
-      await patch(`/admin/users/${selectedUser.id}`, { role: editRole });
-      setUsers((prev) =>
-        prev.map((u) => (u.id === selectedUser.id ? { ...u, role: editRole as PlatformRole } : u))
-      );
-      setSelectedUser((prev) => (prev ? { ...prev, role: editRole as PlatformRole } : null));
-      setActionSuccess(`Role updated to ${editRole} for ${selectedUser.email}.`);
-      setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setActionSuccess(`Failed to update role: ${err?.message || 'Verification rejected'}`);
-      setTimeout(() => setActionSuccess(null), 3500);
-    }
-  };
-
-  const handleCopyResetLink = async () => {
-    if (!selectedUser) return;
-    try {
-      await post(`/admin/users/${selectedUser.id}/send-password-reset`, {});
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-      setActionSuccess(`Password reset email queued for ${selectedUser.email}.`);
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      const resetLink = `${window.location.origin}/login?reset_token=sec_rst_${Date.now()}&uid=${selectedUser.id}`;
-      navigator.clipboard.writeText(resetLink);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-      setActionSuccess(`One-time password reset link copied to clipboard.`);
-      setTimeout(() => setActionSuccess(null), 3000);
-    }
-  };
-
-  const handleRevokeSessions = async () => {
-    if (!selectedUser) return;
-    try {
-      await post(`/admin/users/${selectedUser.id}/revoke-sessions`, {}).catch(() => {});
-      setActionSuccess(`All active JWT & refresh tokens revoked for ${selectedUser.email}.`);
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
-    }
-  };
-
-  const handleExportUserData = () => {
-    if (!selectedUser) return;
-    const dataStr = JSON.stringify(
-      {
-        exportedAt: new Date().toISOString(),
-        user: selectedUser,
-        compliance: 'GDPR / CCPA Right to Access Data Archive',
-        resumesCount: selectedUser.resumeCount,
-        sessionStatus: selectedUser.status,
-      },
-      null,
-      2
-    );
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `user_export_${selectedUser.id}_${Date.now()}.json`;
-    link.click();
-    setActionSuccess(`GDPR data bundle exported for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
-  };
-
-  const handleSaveAiQuota = () => {
-    if (!selectedUser) return;
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === selectedUser.id ? { ...u, aiDailyLimit: customAiLimit } : u
-      )
-    );
-    setSelectedUser((prev) => (prev ? { ...prev, aiDailyLimit: customAiLimit } : null));
-    setActionSuccess(`AI daily limit set to ${customAiLimit} for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
-  };
-
-  const handleResetDailyUsage = () => {
-    if (!selectedUser) return;
-    setUsers((prev) =>
-      prev.map((u) => (u.id === selectedUser.id ? { ...u, aiUsedToday: 0 } : u))
-    );
-    setSelectedUser((prev) => (prev ? { ...prev, aiUsedToday: 0 } : null));
-    setActionSuccess(`Daily AI usage counter reset to 0 for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
-  };
-
-  const handleProvisionUserSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEmail.trim() || !newName.trim()) return;
-
-    setIsProvisioning(true);
-    try {
-      const newUserRecord: AdminUserRecord = {
-        id: `usr_${Date.now().toString().slice(-4)}`,
-        email: newEmail.trim(),
-        displayName: newName.trim(),
-        role: newRole,
-        status: 'active',
-        lastLogin: 'Never (Just provisioned)',
-        createdAt: 'Just now',
-        resumeCount: 0,
-        plan: newRole === 'RECRUITER' ? 'Pro Recruiter' : newRole === 'ADMIN' ? 'Enterprise' : 'Basic Free',
-        tenantMembership: newTenant ? `${newTenant} (Member)` : 'None (Standalone)',
-        aiDailyLimit: newRole === 'SUPER_ADMIN' ? 500 : 100,
-        aiUsedToday: 0,
-      };
-
-      await post('/admin/users', {
-        email: newEmail.trim(),
-        displayName: newName.trim(),
-        role: newRole,
-        password: newPassword || undefined,
-        verified: newVerifyEmail,
-      }).catch(() => {});
-
-      setUsers([newUserRecord, ...users]);
-      setShowCreateModal(false);
-      setNewName('');
-      setNewEmail('');
-      setNewPassword('');
-      setActionSuccess(`User ${newEmail.trim()} successfully provisioned with role ${newRole}!`);
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch {
-      // Handled
-    } finally {
-      setIsProvisioning(false);
-    }
-  };
-
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = users.filter((user) => {
     const matchesFilter =
       statusFilter === 'ALL' ||
-      (statusFilter === 'ACTIVE' && u.status === 'active') ||
-      (statusFilter === 'SUSPENDED' && u.status === 'suspended');
-
+      (statusFilter === 'ACTIVE' && user.status === 'active') ||
+      (statusFilter === 'SUSPENDED' && user.status === 'suspended');
     if (!matchesFilter) return false;
-    if (!searchQuery.trim()) return true;
-
-    const q = searchQuery.toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
     return (
-      u.email.toLowerCase().includes(q) ||
-      u.displayName.toLowerCase().includes(q) ||
-      u.id.toLowerCase().includes(q)
+      user.email.toLowerCase().includes(query) ||
+      user.displayName.toLowerCase().includes(query) ||
+      user.id.toLowerCase().includes(query)
     );
   });
 
+  const openUser = (user: AdminUserRecord) => {
+    setSelectedFallback(user);
+    setSelectedUserId(user.id);
+  };
+
+  const recordViewAs = (user: AdminUserRecord) =>
+    runMutation(`role-view-${user.id}`, async () => {
+      const response = await post<{ message?: string }>('/platform/role-view-audit', {
+        targetRole: user.role,
+      });
+      return response?.message || `View-as ${user.role} recorded in the platform audit trail.`;
+    });
+
   return (
     <div className="space-y-4">
-      {/* ─── Header & Filters ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-ink flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-ink">
             <Users className="size-5 text-brand-600" />
-            User 360 & Account Governance
+            User 360 &amp; Account Governance
           </h2>
           <p className="text-xs text-ink-muted">
-            Authoritative directory, multi-tenant governance, User 360, and AI entitlements.
+            Authoritative directory read from the identity provider and MariaDB, with User 360,
+            tenancy and AI entitlements.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setShowCreateModal(true)}
-            className="text-xs font-bold gap-1.5 shadow-xs"
-          >
-            <UserPlus className="size-3.5" />
-            Provision User
-          </Button>
-
-          {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={cn(
-                'rounded-lg px-3 py-1 text-xs font-semibold transition-colors cursor-pointer',
-                statusFilter === filter
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-ink-muted hover:bg-neutral-200'
-              )}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          className="gap-1.5 text-xs font-bold"
+          onClick={() => setShowCreateModal(true)}
+        >
+          <UserPlus className="size-3.5" />
+          Provision User
+        </Button>
       </div>
 
-      {actionSuccess && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
-          <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-          <span>{actionSuccess}</span>
-        </div>
-      )}
+      {flash && <FlashBanner flash={flash} onDismiss={() => setFlash(null)} />}
 
-      {/* Search Input */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            onClick={() => setStatusFilter(filter)}
+            aria-pressed={statusFilter === filter}
+            className={cn(
+              'cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-colors',
+              statusFilter === filter
+                ? 'bg-brand-600 text-white'
+                : 'bg-neutral-100 text-ink-muted hover:bg-neutral-200 dark:bg-neutral-800',
+            )}
+          >
+            {filter}
+          </button>
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={directory.reload}
+          disabled={directory.status === 'loading'}
+          className="ml-auto"
+        >
+          <RotateCcw className={cn('mr-1.5 size-3.5', directory.status === 'loading' && 'animate-spin')} />
+          Reload directory
+        </Button>
+      </div>
+
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-muted" />
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
         <Input
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value)}
           placeholder="Search by name, email, or user ID…"
-          className="pl-9 text-xs h-9"
+          aria-label="Search the user directory"
+          className="h-9 pl-9 text-xs"
         />
       </div>
 
-      {/* ─── Users Table ─── */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
-        <table className="w-full text-xs min-w-[760px]">
-          <thead className="bg-canvas border-b border-border">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">User Identity</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Role</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Status</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Plan / Entitlement</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Resumes</th>
-              <th className="px-4 py-3 text-left font-semibold text-ink-secondary">Last Active</th>
-              <th className="px-4 py-3 text-right font-semibold text-ink-secondary">Governance Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/50 text-xs font-bold text-brand-700 dark:text-brand-300">
-                      {(user.displayName?.[0] ?? user.email?.[0] ?? 'U').toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-bold text-ink">{user.displayName || 'No name'}</div>
-                      <div className="text-[11px] text-ink-muted">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-2xs font-black uppercase tracking-wider',
-                      user.role === 'SUPER_ADMIN'
-                        ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50'
-                        : user.role === 'ADMIN'
-                        ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50'
-                        : user.role === 'SUPPORT'
-                        ? 'bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50'
-                        : user.role === 'AUDITOR'
-                        ? 'bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50'
-                        : user.role === 'ENTERPRISE_ADMIN'
-                        ? 'bg-violet-100 dark:bg-violet-950/50 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50'
-                        : user.role === 'ENTERPRISE_MEMBER'
-                        ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
-                        : user.role === 'EMPLOYER' || user.role === 'RECRUITER'
-                        ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
-                    )}
-                  >
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-2xs font-semibold',
-                      user.status === 'active'
-                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
-                        : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
-                    )}
-                  >
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="font-medium text-ink-secondary">{user.plan || 'Standard'}</span>
-                </td>
-                <td className="px-4 py-3 font-semibold text-ink-secondary">{user.resumeCount}</td>
-                <td className="px-4 py-3 text-ink-muted whitespace-nowrap">{user.lastLogin}</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => setSelectedUser(user)}
-                      title="Inspect User 360"
-                      className="font-bold"
-                    >
-                      <Eye className="size-3 mr-1 text-brand-600" />
-                      User 360
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => handleImpersonateAudit(user)}
-                      title="Observe role context"
-                    >
-                      Simulate
-                    </Button>
-                    <Button
-                      variant={user.status === 'suspended' ? 'outline' : 'destructive'}
-                      size="xs"
-                      onClick={() => handleToggleSuspend(user)}
-                    >
-                      {user.status === 'suspended' ? 'Activate' : 'Suspend'}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredUsers.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-ink-muted">
-                  No accounts found matching filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {directory.status === 'loading' && directory.data === null && (
+        <AdminLoadingPanel label="Reading the identity directory…" />
+      )}
 
-      {/* ─── 1. PROVISION USER MODAL ─── */}
+      {directory.status === 'failed' && directory.error && (
+        <AdminErrorPanel
+          title="The user directory could not be read"
+          error={directory.error}
+          onRetry={directory.reload}
+        />
+      )}
+
+      {directory.status === 'ready' && users.length === 0 && (
+        <AdminEmptyPanel
+          title="No identities yet"
+          description="The identity directory answered and holds no accounts. Provision the first one to get started."
+        />
+      )}
+
+      {directory.status === 'ready' && users.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+          <table className="w-full min-w-[820px] text-xs">
+            <caption className="sr-only">
+              User directory: {users.length} identities, filtered to {filteredUsers.length}.
+            </caption>
+            <thead className="border-b border-border bg-canvas">
+              <tr>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">User identity</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">Role</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">Status</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">Plan / entitlement</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">Organization</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold text-ink-secondary">Last sign-in</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold text-ink-secondary">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-muted">
+                    No account matches this filter. {users.length} identities exist.
+                  </td>
+                </tr>
+              )}
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="transition-colors hover:bg-neutral-25 dark:hover:bg-neutral-800/30">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                        {(user.displayName[0] ?? user.email[0] ?? 'U').toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-bold text-ink">{user.displayName}</div>
+                        <div className="truncate text-[11px] text-ink-muted">{user.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full border border-border bg-neutral-100 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-ink-secondary dark:bg-neutral-800">
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={cn('rounded-full px-2 py-0.5 text-2xs font-semibold', STATUS_STYLES[user.status])}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-ink-secondary">
+                    {user.membership}
+                    {user.membershipEnds && (
+                      <span className="ml-1 text-2xs text-ink-muted">until {user.membershipEnds.slice(0, 10)}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-ink-secondary">{user.tenantMembership}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{user.lastLogin}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button variant="outline" size="xs" onClick={() => openUser(user)} className="font-bold">
+                        <Eye className="mr-1 size-3 text-brand-600" />
+                        User 360
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => recordViewAs(user)}
+                        loading={busyKey === `role-view-${user.id}`}
+                        title="Record a view-as audit entry for this role"
+                      >
+                        Log view-as
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl border border-border space-y-4 animate-[scale-in_150ms_ease-out]">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-brand-50 text-brand-600 border border-brand-200">
-                  <UserPlus className="size-5" />
+        <ProvisionUserModal
+          onClose={() => setShowCreateModal(false)}
+          onProvisioned={(message) => {
+            setFlash({ tone: 'success', text: message });
+            setShowCreateModal(false);
+            directory.reload();
+          }}
+          onFailed={(message) => setFlash({ tone: 'error', text: message })}
+        />
+      )}
+
+      {selectedUser && (
+        <UserDrawer
+          key={selectedUser.id}
+          userId={selectedUser.id}
+          fallback={selectedUser}
+          onClose={() => {
+            setSelectedUserId(null);
+            setSelectedFallback(null);
+          }}
+          onChanged={(message) => {
+            setFlash({ tone: 'success', text: message });
+            directory.reload();
+          }}
+          onFailed={(message) => setFlash({ tone: 'error', text: message })}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProvisionUserModal({
+  onClose,
+  onProvisioned,
+  onFailed,
+}: {
+  onClose: () => void;
+  onProvisioned: (message: string) => void;
+  onFailed: (message: string) => void;
+}) {
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<PlatformRole>('USER');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      const response = await post<{ message?: string }>('/admin/users', {
+        email: email.trim(),
+        displayName: displayName.trim(),
+        role,
+        emailVerified,
+      });
+      onProvisioned(
+        response?.message || `Identity ${email.trim()} provisioned with role ${role}.`,
+      );
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      onFailed(`${failure.message} (${failure.code})`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="provision-user-title"
+    >
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md space-y-3.5 rounded-2xl border border-border bg-surface p-5 text-xs shadow-2xl"
+      >
+        <h3 id="provision-user-title" className="text-base font-bold text-ink">
+          Provision a new account
+        </h3>
+        <p className="text-2xs text-ink-muted">
+          Creates the identity and profile. Tenancy and paid membership are granted afterwards,
+          from User 360, because the provisioning endpoint accepts neither.
+        </p>
+        <div className="space-y-1">
+          <label htmlFor="provision-name" className="block font-bold text-ink">Display name</label>
+          <Input
+            id="provision-name"
+            required
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="Jordan Hayes"
+            className="h-9 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="provision-email" className="block font-bold text-ink">Email address</label>
+          <Input
+            id="provision-email"
+            required
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="jordan.h@company.com"
+            className="h-9 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="provision-role" className="block font-bold text-ink">Initial role</label>
+          <select
+            id="provision-role"
+            value={role}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (isPlatformRole(next)) setRole(next);
+            }}
+            className="h-9 w-full rounded-lg border border-border bg-canvas px-2.5 text-xs font-semibold text-ink"
+          >
+            {ASSIGNABLE_ROLES.map((option) => (
+              <option key={option} value={option}>{ROLE_LABELS[option]}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            id="provision-verified"
+            type="checkbox"
+            checked={emailVerified}
+            onChange={(event) => setEmailVerified(event.target.checked)}
+            className="mt-0.5 size-3.5 cursor-pointer rounded border-border text-brand-600"
+          />
+          <label htmlFor="provision-verified" className="cursor-pointer text-xs font-medium text-ink">
+            Mark the address as verified (skips the activation link)
+          </label>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={submitting}>
+            Provision account
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function isPlatformRole(value: string): value is PlatformRole {
+  return (ASSIGNABLE_ROLES as readonly string[]).includes(value);
+}
+
+function UserDrawer({
+  userId,
+  fallback,
+  onClose,
+  onChanged,
+  onFailed,
+}: {
+  userId: string;
+  fallback: AdminUserRecord;
+  onClose: () => void;
+  onChanged: (message: string) => void;
+  onFailed: (message: string) => void;
+}) {
+  const loadDetails = useCallback(
+    (signal: AbortSignal) => get<User360Payload>(`/admin/users/${userId}/details`, undefined, { signal }),
+    [userId],
+  );
+  const details = useAdminResource(loadDetails);
+  const view = useMemo(() => readUser360(details.data), [details.data]);
+  const profile = view.profile ?? fallback;
+
+  const [tab, setTab] = useState<DrawerTab>('identity');
+  const [role, setRole] = useState<PlatformRole>(fallback.role);
+  const [membership, setMembership] = useState(fallback.membership === 'Premium' ? 'Premium' : 'Basic');
+  const [suspensionReason, setSuspensionReason] = useState('');
+  const [quotaLimit, setQuotaLimit] = useState('');
+  const [quotaReason, setQuotaReason] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRole(profile.role);
+    setMembership(profile.membership === 'Premium' ? 'Premium' : 'Basic');
+    setQuotaLimit(view.ai.customLimit !== null ? String(view.ai.customLimit) : '');
+  }, [profile.role, profile.membership, view.ai.customLimit]);
+
+  const mutate = async (key: string, work: () => Promise<string>) => {
+    setBusy(key);
+    try {
+      const message = await work();
+      onChanged(message);
+      details.reload();
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      onFailed(
+        `${failure.message} (${failure.code}${failure.requestId ? ` · request ${failure.requestId}` : ''})`,
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const updateRole = () =>
+    mutate('role', async () => {
+      await patch(`/admin/users/${userId}`, { role, expectedRole: profile.role });
+      return `Role changed from ${profile.role} to ${role}.`;
+    });
+
+  const updateMembership = () =>
+    mutate('membership', async () => {
+      await patch(`/admin/users/${userId}`, {
+        membership,
+        ...(membership === 'Premium' ? { durationMonths: 12 } : {}),
+      });
+      return `Plan set to ${membership}.`;
+    });
+
+  const setSuspended = (suspended: boolean) =>
+    mutate('suspend', async () => {
+      await patch(`/admin/users/${userId}`, {
+        suspended,
+        ...(suspensionReason.trim() ? { reason: suspensionReason.trim() } : {}),
+      });
+      setSuspensionReason('');
+      return suspended ? 'Account suspended and refresh tokens revoked.' : 'Suspension lifted.';
+    });
+
+  const sendPasswordReset = () =>
+    mutate('reset', async () => {
+      const response = await post<{ message?: string }>(
+        `/admin/users/${userId}/send-password-reset`,
+        {},
+      );
+      return response?.message || 'Password reset email queued by the identity provider.';
+    });
+
+  const revokeSessions = () =>
+    mutate('revoke', async () => {
+      const response = await post<{ message?: string }>(`/admin/users/${userId}/revoke-sessions`, {});
+      return response?.message || 'All refresh tokens revoked for this identity.';
+    });
+
+  const unenrollMfa = () =>
+    mutate('mfa', async () => {
+      const response = await post<{ message?: string }>(`/admin/users/${userId}/unenroll-mfa`, {});
+      return response?.message || 'MFA factors removed for this identity.';
+    });
+
+  const exportArchive = () =>
+    mutate('export', async () => {
+      const bundle = await get<Record<string, unknown>>(`/admin/users/${userId}/export`);
+      downloadJson(`user_export_${userId}_${Date.now()}.json`, bundle);
+      return 'Server-side export bundle downloaded.';
+    });
+
+  const saveQuota = () =>
+    mutate('quota', async () => {
+      const dailyLimit = Number(quotaLimit);
+      if (!Number.isFinite(dailyLimit) || dailyLimit < 1) {
+        throw new Error('Enter a daily limit of at least 1.');
+      }
+      if (quotaReason.trim().length < 3) {
+        throw new Error('A justification of at least 3 characters is required for a quota override.');
+      }
+      await put(`/admin/users/${userId}/ai-entitlement`, {
+        dailyLimit,
+        reason: quotaReason.trim(),
+      });
+      setQuotaReason('');
+      return `Daily AI quota override set to ${dailyLimit}.`;
+    });
+
+  const resetUsage = () =>
+    mutate('quota-reset', async () => {
+      const response = await post<{ message?: string }>(`/admin/users/${userId}/ai-quota-reset`, {});
+      return response?.message || "Today's AI usage counter reset to zero.";
+    });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-xs sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-drawer-title"
+    >
+      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border bg-neutral-50/50 p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-brand-600 text-base font-black text-white">
+              {(profile.displayName[0] ?? profile.email[0] ?? 'U').toUpperCase()}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 id="user-drawer-title" className="text-base font-extrabold text-ink">
+                  {profile.displayName}
+                </h3>
+                <span className={cn('rounded-full px-2 py-0.5 text-2xs font-black uppercase', STATUS_STYLES[profile.status])}>
+                  {profile.status}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted">
+                {profile.email} • UID <span className="font-mono">{profile.id}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close User 360"
+            className="cursor-pointer rounded-lg p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div role="tablist" aria-label="User 360 sections" className="flex gap-1 overflow-x-auto border-b border-border bg-canvas px-4 sm:px-5">
+          {(
+            [
+              { id: 'identity', label: 'Identity & RBAC', icon: Shield },
+              { id: 'tenants', label: 'Organizations', icon: Building2 },
+              { id: 'ai', label: 'AI entitlements', icon: Brain },
+              { id: 'documents', label: `Documents (${view.content.resumeCount})`, icon: FileText },
+            ] as const
+          ).map((entry) => {
+            const Icon = entry.icon;
+            const active = tab === entry.id;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls={`user-panel-${entry.id}`}
+                onClick={() => setTab(entry.id)}
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-xs font-bold transition-colors',
+                  active
+                    ? 'border-brand-600 font-extrabold text-brand-700'
+                    : 'border-transparent text-ink-muted hover:border-neutral-300 hover:text-ink',
+                )}
+              >
+                <Icon className="size-3.5" />
+                {entry.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 text-xs sm:p-6">
+          {details.status === 'loading' && details.data === null && (
+            <AdminLoadingPanel label="Reading User 360…" />
+          )}
+          {details.status === 'failed' && details.error && (
+            <AdminErrorPanel
+              title="User 360 could not be read"
+              error={details.error}
+              onRetry={details.reload}
+            />
+          )}
+
+          {tab === 'identity' && (
+            <div id="user-panel-identity" role="tabpanel" className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-2 rounded-xl border border-border bg-neutral-25 p-3.5">
+                  <label htmlFor="drawer-role" className="block font-bold text-ink">Platform role</label>
+                  <div className="flex gap-2">
+                    <select
+                      id="drawer-role"
+                      value={role}
+                      onChange={(event) => {
+                        if (isPlatformRole(event.target.value)) setRole(event.target.value);
+                      }}
+                      className="h-9 flex-1 rounded-lg border border-border bg-surface px-2 text-xs font-semibold text-ink"
+                    >
+                      {ASSIGNABLE_ROLES.map((option) => (
+                        <option key={option} value={option}>{ROLE_LABELS[option]}</option>
+                      ))}
+                    </select>
+                    <Button
+                      size="xs"
+                      variant="primary"
+                      disabled={role === profile.role}
+                      loading={busy === 'role'}
+                      onClick={updateRole}
+                    >
+                      Update
+                    </Button>
+                  </div>
+                  <p className="text-2xs text-ink-muted">
+                    Writes custom claims and revokes refresh tokens. SUPER_ADMIN cannot be granted
+                    through the API, so it is not offered.
+                  </p>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-ink">Provision New User Account</h3>
-                  <p className="text-xs text-ink-muted">
-                    Create candidate, recruiter, or administrative identities with tenant bindings.
+
+                <div className="space-y-2 rounded-xl border border-border bg-neutral-25 p-3.5">
+                  <label htmlFor="drawer-membership" className="block font-bold text-ink">Subscription plan</label>
+                  <div className="flex gap-2">
+                    <select
+                      id="drawer-membership"
+                      value={membership}
+                      onChange={(event) => setMembership(event.target.value)}
+                      className="h-9 flex-1 rounded-lg border border-border bg-surface px-2 text-xs font-semibold text-ink"
+                    >
+                      <option value="Basic">Basic</option>
+                      <option value="Premium">Premium (12 months)</option>
+                    </select>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      disabled={membership === profile.membership}
+                      loading={busy === 'membership'}
+                      onClick={updateMembership}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                  <p className="text-2xs text-ink-muted">
+                    Recorded as an administrative grant; payment status is set to ADMIN_GRANTED.
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="rounded-lg p-1 text-ink-muted hover:bg-neutral-100 hover:text-ink cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleProvisionUserSubmit} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Full Name</label>
-                  <Input
-                    required
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g. Jordan Hayes"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Email Address</label>
-                  <Input
-                    required
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="jordan.h@company.com"
-                    className="h-8 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Initial Role</label>
-                  <select
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as PlatformRole)}
-                    className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs font-semibold text-ink"
-                  >
-                    <option value="USER">USER (Standard Candidate)</option>
-                    <option value="EMPLOYER">EMPLOYER (Hiring Manager / Talent Recruiter)</option>
-                    <option value="RECRUITER">RECRUITER (Agency & Sourcing Specialist)</option>
-                    <option value="SUPPORT">SUPPORT (Help Desk & Customer Care Specialist)</option>
-                    <option value="AUDITOR">AUDITOR (Security & Compliance Auditor)</option>
-                    <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
-                    <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
-                    <option value="ADMIN">ADMIN (System Operations & Staff Operator)</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane Authority)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Temporary Password (Optional)</label>
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Leave empty to auto-generate"
-                    className="h-8 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-ink block">Tenant / Organization Association (Optional)</label>
-                <select
-                  value={newTenant}
-                  onChange={(e) => setNewTenant(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs text-ink"
-                >
-                  <option value="">None (Standalone Individual)</option>
-                  <option value="Northwind Careers">Northwind Careers (Enterprise)</option>
-                  <option value="Globex Talent">Globex Talent (Recruitment Agency)</option>
-                  <option value="Initech HR">Initech HR (Corporate)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="verify-email-check"
-                  checked={newVerifyEmail}
-                  onChange={(e) => setNewVerifyEmail(e.target.checked)}
-                  className="size-3.5 rounded border-border text-brand-600 focus:ring-brand-500 cursor-pointer"
-                />
-                <label htmlFor="verify-email-check" className="text-xs text-ink cursor-pointer font-medium">
-                  Mark email as pre-verified (bypasses initial activation link requirement)
-                </label>
-              </div>
-
-              <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
+              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <Button variant="outline" size="sm" onClick={sendPasswordReset} loading={busy === 'reset'} className="justify-start gap-2 text-xs">
+                  <Copy className="size-4 text-brand-600" />
+                  Send password reset email
+                </Button>
+                <Button variant="outline" size="sm" onClick={revokeSessions} loading={busy === 'revoke'} className="justify-start gap-2 text-xs text-error-700 hover:bg-error-50">
+                  <ShieldAlert className="size-4" />
+                  Revoke all sessions
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportArchive} loading={busy === 'export'} className="justify-start gap-2 text-xs">
+                  <Download className="size-4 text-info-600" />
+                  Download GDPR export
+                </Button>
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={isProvisioning}
+                  onClick={unenrollMfa}
+                  loading={busy === 'mfa'}
+                  disabled={!view.mfaEnabled}
+                  title={view.mfaEnabled ? 'Remove enrolled MFA factors' : 'No MFA factor is enrolled'}
+                  className="justify-start gap-2 text-xs"
                 >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" size="sm" loading={isProvisioning}>
-                  Provision Account
+                  <Unlock className="size-4 text-warning-600" />
+                  {view.mfaEnabled ? 'Reset 2FA / unenroll' : 'No 2FA enrolled'}
                 </Button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* ─── 2. COMPLETE USER 360 DRAWER / MODAL ─── */}
-      {selectedUser && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-2xl rounded-2xl bg-surface shadow-2xl border border-border overflow-hidden flex flex-col max-h-[92vh] animate-[scale-in_150ms_ease-out]">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between border-b border-border p-4 sm:p-5 bg-neutral-50/50">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-brand-600 text-white font-black text-base shadow-xs">
-                  {(selectedUser.displayName?.[0] ?? selectedUser.email?.[0] ?? 'U').toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-extrabold text-ink">{selectedUser.displayName}</h3>
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.2 text-2xs font-black uppercase',
-                        selectedUser.status === 'active'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-rose-100 text-rose-800'
-                      )}
-                    >
-                      {selectedUser.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-ink-muted">{selectedUser.email} • UID: {selectedUser.id}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedUser(null)}
-                className="rounded-lg p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex border-b border-border px-4 sm:px-5 bg-canvas gap-1 overflow-x-auto">
-              {[
-                { id: 'identity', label: 'Identity & RBAC', icon: Shield },
-                { id: 'tenants', label: 'Organizations & Tenants', icon: Building2 },
-                { id: 'ai', label: 'AI Entitlements & Quotas', icon: Brain },
-                { id: 'documents', label: `Documents (${selectedUser.resumeCount})`, icon: FileText },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = drawerTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setDrawerTab(tab.id as any)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap',
-                      isActive
-                        ? 'border-brand-600 text-brand-700 font-extrabold'
-                        : 'border-transparent text-ink-muted hover:text-ink hover:border-neutral-300'
-                    )}
-                  >
-                    <Icon className="size-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Content Body */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1">
-              {/* TAB 1: IDENTITY & RBAC */}
-              {drawerTab === 'identity' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-border p-3.5 space-y-2 bg-neutral-25">
-                      <label className="font-bold text-ink block">Platform RBAC Role</label>
-                      <div className="flex gap-2">
-                        <select
-                          value={editRole}
-                          onChange={(e) => setEditRole(e.target.value)}
-                          className="flex-1 h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-ink"
-                        >
-                          <option value="USER">USER (Candidate)</option>
-                          <option value="EMPLOYER">EMPLOYER (Hiring Manager / Recruiter)</option>
-                          <option value="RECRUITER">RECRUITER (Agency Recruiter)</option>
-                          <option value="SUPPORT">SUPPORT (Help Desk & Customer Care Specialist)</option>
-                          <option value="AUDITOR">AUDITOR (Security & Compliance Auditor)</option>
-                          <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
-                          <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
-                          <option value="ADMIN">ADMIN (System Operations Operator)</option>
-                          <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane)</option>
-                        </select>
-                        <Button
-                          size="xs"
-                          variant="primary"
-                          disabled={editRole === selectedUser.role}
-                          onClick={handleSaveRole}
-                        >
-                          Update
-                        </Button>
-                      </div>
-                      <p className="text-2xs text-ink-muted">
-                        Controls global platform capability matrix and route guards.
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-border p-3.5 space-y-2 bg-neutral-25">
-                      <label className="font-bold text-ink block">Subscription Plan Tier</label>
-                      <div className="flex gap-2">
-                        <select
-                          value={editPlan}
-                          onChange={(e) => setEditPlan(e.target.value)}
-                          className="flex-1 h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-ink"
-                        >
-                          <option value="Basic Free">Basic Free</option>
-                          <option value="Pro Candidate">Pro Candidate (Monthly)</option>
-                          <option value="Pro Recruiter">Pro Recruiter (Seats)</option>
-                          <option value="Enterprise">Enterprise Annual</option>
-                        </select>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => {
-                            setActionSuccess(`Subscription plan set to ${editPlan}.`);
-                            setTimeout(() => setActionSuccess(null), 3000);
-                          }}
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                      <p className="text-2xs text-ink-muted">Entitlement level for DOCX export & AI models.</p>
-                    </div>
-                  </div>
-
-                  {/* Actions Grid */}
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Account Actions & Security</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyResetLink}
-                        className="justify-start gap-2 h-9 text-xs"
-                      >
-                        {copiedLink ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4 text-brand-600" />}
-                        <span>{copiedLink ? 'Reset Link Copied!' : 'Copy Password Reset Link'}</span>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRevokeSessions}
-                        className="justify-start gap-2 h-9 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      >
-                        <ShieldAlert className="size-4" />
-                        <span>Revoke All Active Sessions</span>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportUserData}
-                        className="justify-start gap-2 h-9 text-xs"
-                      >
-                        <Download className="size-4 text-blue-600" />
-                        <span>Export GDPR User Archive (JSON)</span>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setActionSuccess(`Two-Factor Authentication un-enrolled for ${selectedUser.email}.`);
-                          setTimeout(() => setActionSuccess(null), 3500);
-                        }}
-                        className="justify-start gap-2 h-9 text-xs"
-                      >
-                        <Unlock className="size-4 text-amber-600" />
-                        <span>Reset 2FA / Unenroll TOTP</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Suspension Drawer Section */}
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-rose-950 text-xs">Account Status & Suspension</h4>
-                        <p className="text-[11px] text-rose-800/80">
-                          {selectedUser.status === 'suspended'
-                            ? 'This account is currently blocked from signing in and issuing API requests.'
-                            : 'Suspending this account immediately challenges all active sessions with HTTP 401.'}
-                        </p>
-                      </div>
-                      <Button
-                        variant={selectedUser.status === 'suspended' ? 'outline' : 'destructive'}
-                        size="sm"
-                        onClick={() => {
-                          if (selectedUser.status === 'active' && !showSuspendInput) {
-                            setShowSuspendInput(true);
-                          } else {
-                            handleToggleSuspend(selectedUser);
-                          }
-                        }}
-                      >
-                        {selectedUser.status === 'suspended' ? 'Lift Suspension' : 'Suspend Account'}
-                      </Button>
-                    </div>
-
-                    {showSuspendInput && (
-                      <div className="pt-2 border-t border-rose-200 space-y-2 animate-[fade-in_100ms_ease-out]">
-                        <label className="font-bold text-rose-950 block text-[11px]">
-                          Audited Suspension Reason (Required for Compliance)
-                        </label>
-                        <Input
-                          value={suspensionReason}
-                          onChange={(e) => setSuspensionReason(e.target.value)}
-                          placeholder="e.g. Terms of Service violation / fraudulent activity"
-                          className="h-8 text-xs bg-white border-rose-300"
-                        />
-                        <div className="flex justify-end gap-2 pt-1">
-                          <Button size="xs" variant="ghost" onClick={() => setShowSuspendInput(false)}>
-                            Cancel
-                          </Button>
-                          <Button size="xs" variant="destructive" onClick={() => handleToggleSuspend(selectedUser)}>
-                            Confirm Suspension
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: TENANTS & ORGANIZATIONS */}
-              {drawerTab === 'tenants' && (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-border p-4 bg-neutral-25 space-y-3">
-                    <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Assign to Organization</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <select
-                        value={selectedTenantId}
-                        onChange={(e) => setSelectedTenantId(e.target.value)}
-                        className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
-                      >
-                        <option value="northwind">Northwind Careers</option>
-                        <option value="globex">Globex Talent</option>
-                        <option value="initech">Initech HR</option>
-                      </select>
-                      <select
-                        value={selectedTenantRole}
-                        onChange={(e) => setSelectedTenantRole(e.target.value)}
-                        className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
-                      >
-                        <option value="ENTERPRISE_ADMIN">Admin (Full Management)</option>
-                        <option value="ENTERPRISE_MANAGER">Manager (Department Lead)</option>
-                        <option value="ENTERPRISE_MEMBER">Member (Draft & Export)</option>
-                        <option value="ENTERPRISE_VIEWER">Viewer (Read-only)</option>
-                      </select>
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => {
-                          setActionSuccess(`Assigned ${selectedUser.displayName} to organization with role ${selectedTenantRole}.`);
-                          setTimeout(() => setActionSuccess(null), 3000);
-                        }}
-                      >
-                        Assign Membership
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-border overflow-hidden">
-                    <div className="p-3 bg-neutral-50 border-b border-border font-bold text-ink text-xs">
-                      Active Organization Memberships
-                    </div>
-                    <div className="divide-y divide-border">
-                      <div className="p-3.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <Building2 className="size-4 text-brand-600" />
-                          <div>
-                            <p className="font-bold text-ink">Northwind Careers</p>
-                            <p className="text-2xs text-ink-muted">Slug: northwind-careers • Workspace: Engineering</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-brand-50 text-brand-700 font-bold text-2xs">
-                            ENTERPRISE_ADMIN
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            className="text-rose-600 hover:text-rose-700"
-                            onClick={() => {
-                              setActionSuccess(`Membership removed for Northwind Careers.`);
-                              setTimeout(() => setActionSuccess(null), 3000);
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: AI ENTITLEMENTS & QUOTAS */}
-              {drawerTab === 'ai' && (
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-border p-4 bg-purple-50/50 border-purple-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Brain className="size-4 text-purple-600" />
-                        <h4 className="font-bold text-purple-950 text-xs">Daily AI Generation Quota</h4>
-                      </div>
-                      <span className="font-bold text-purple-900 text-xs">
-                        {selectedUser.aiUsedToday ?? 18} / {selectedUser.aiDailyLimit ?? 100} generations
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-purple-200 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-purple-600 h-full rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(((selectedUser.aiUsedToday ?? 18) / (selectedUser.aiDailyLimit ?? 100)) * 100)
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <p className="text-2xs text-purple-800">
-                      Resets automatically at midnight UTC. Rate-limits resume tailoring and AI coach simulations.
+              <div className="space-y-3 rounded-xl border border-error-100 bg-error-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-error-700">Account status</h4>
+                    <p className="text-2xs text-error-700/90">
+                      {profile.status === 'suspended'
+                        ? 'Sign-in and API access are blocked for this identity.'
+                        : 'Suspending blocks sign-in and revokes refresh tokens immediately.'}
                     </p>
                   </div>
-
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Custom Quota Override</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="font-bold text-ink block">Daily Limit</label>
-                        <Input
-                          type="number"
-                          value={customAiLimit}
-                          onChange={(e) => setCustomAiLimit(parseInt(e.target.value) || 0)}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="font-bold text-ink block">Justification Reason</label>
-                        <Input
-                          value={aiLimitReason}
-                          onChange={(e) => setAiLimitReason(e.target.value)}
-                          placeholder="e.g. VIP Enterprise demo"
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <Button variant="outline" size="xs" onClick={handleResetDailyUsage}>
-                        <RotateCcw className="size-3 mr-1" />
-                        Reset Today's Counter to 0
-                      </Button>
-                      <Button variant="primary" size="xs" onClick={handleSaveAiQuota}>
-                        Save Quota Override
-                      </Button>
-                    </div>
-                  </div>
+                  <Button
+                    variant={profile.status === 'suspended' ? 'outline' : 'destructive'}
+                    size="sm"
+                    loading={busy === 'suspend'}
+                    disabled={profile.status !== 'suspended' && suspensionReason.trim().length < 3}
+                    onClick={() => setSuspended(profile.status !== 'suspended')}
+                  >
+                    {profile.status === 'suspended' ? 'Lift suspension' : 'Suspend account'}
+                  </Button>
                 </div>
-              )}
-
-              {/* TAB 4: DOCUMENTS & RESUMES */}
-              {drawerTab === 'documents' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-ink-muted">Candidate resumes registered under this user identity:</p>
-                    <span className="font-bold text-ink text-xs">{selectedUser.resumeCount} documents</span>
+                {profile.status !== 'suspended' && (
+                  <div className="space-y-1">
+                    <label htmlFor="suspend-reason" className="block text-2xs font-bold text-error-700">
+                      Suspension reason (recorded in the audit entry)
+                    </label>
+                    <Input
+                      id="suspend-reason"
+                      value={suspensionReason}
+                      onChange={(event) => setSuspensionReason(event.target.value)}
+                      placeholder="Terms of Service violation / fraudulent activity"
+                      className="h-8 border-error-100 bg-surface text-xs"
+                    />
                   </div>
+                )}
+              </div>
 
-                  <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-                    {Array.from({ length: selectedUser.resumeCount || 1 }).map((_, idx) => (
-                      <div key={idx} className="p-3.5 flex items-center justify-between hover:bg-neutral-25">
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                            <FileText className="size-4" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-ink text-xs">
-                              {idx === 0
-                                ? 'Senior Systems Architect - Master'
-                                : idx === 1
-                                ? 'Cloud DevOps Lead Resume'
-                                : `Tailored Resume Document #${idx + 1}`}
-                            </p>
-                            <p className="text-2xs text-ink-muted">Template: Zurich Executive • Last modified 2 days ago</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-2xs border border-emerald-200">
-                            ATS 94%
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => {
-                              window.open(`/preview/res_${selectedUser.id}_${idx + 1}`, '_blank');
-                            }}
-                          >
-                            <ExternalLink className="size-3 mr-1" />
-                            Preview
-                          </Button>
-                        </div>
-                      </div>
+              {view.timeline.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-ink">Recent audit entries</h4>
+                  <ul className="divide-y divide-border rounded-xl border border-border">
+                    {view.timeline.slice(0, 8).map((entry) => (
+                      <li key={entry.id} className="flex items-center justify-between gap-3 p-3">
+                        <span className="font-mono text-2xs text-ink-secondary">{entry.action}</span>
+                        <span className="text-2xs text-ink-muted">{entry.createdAt || 'unknown time'}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Drawer Footer */}
-            <div className="p-4 border-t border-border flex items-center justify-between bg-neutral-50/50">
-              <span className="text-[11px] text-ink-muted">
-                Audit stamp: {selectedUser.email} (Recorded on MariaDB)
-              </span>
-              <Button variant="outline" size="sm" onClick={() => setSelectedUser(null)}>
-                Close Drawer
-              </Button>
+          {tab === 'tenants' && (
+            <div id="user-panel-tenants" role="tabpanel" className="space-y-4">
+              <TenantPanel
+                userId={userId}
+                memberships={view.memberships}
+                onChanged={(message) => {
+                  onChanged(message);
+                  details.reload();
+                }}
+                onFailed={onFailed}
+              />
             </div>
-          </div>
+          )}
+
+          {tab === 'ai' && (
+            <div id="user-panel-ai" role="tabpanel" className="space-y-4">
+              <div className="space-y-3 rounded-xl border border-border bg-neutral-25 p-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="flex items-center gap-2 text-xs font-bold text-ink">
+                    <Brain className="size-4 text-brand-600" />
+                    Daily AI quota
+                  </h4>
+                  <span className="text-xs font-bold text-ink">
+                    {view.ai.usedToday ?? '—'} / {view.ai.effectiveLimit ?? '—'} generations
+                  </span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={view.ai.effectiveLimit ?? 100}
+                  aria-valuenow={view.ai.usedToday ?? 0}
+                  aria-label="Daily AI quota used"
+                  className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+                >
+                  <div
+                    className="h-full rounded-full bg-brand-600 transition-all"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        view.ai.effectiveLimit && view.ai.usedToday !== null
+                          ? Math.round((view.ai.usedToday / view.ai.effectiveLimit) * 100)
+                          : 0,
+                      )}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-2xs text-ink-muted">
+                  Plan {view.ai.plan}
+                  {view.ai.customLimit !== null ? ` · override ${view.ai.customLimit}/day` : ' · no override'}
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-border p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wide text-ink">Quota override</h4>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="quota-limit" className="block font-bold text-ink">Daily limit</label>
+                    <Input
+                      id="quota-limit"
+                      type="number"
+                      min={1}
+                      value={quotaLimit}
+                      onChange={(event) => setQuotaLimit(event.target.value)}
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="quota-reason" className="block font-bold text-ink">Justification (required)</label>
+                    <Input
+                      id="quota-reason"
+                      value={quotaReason}
+                      onChange={(event) => setQuotaReason(event.target.value)}
+                      placeholder="Support case #1234"
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <Button variant="outline" size="xs" onClick={resetUsage} loading={busy === 'quota-reset'}>
+                    <RotateCcw className="mr-1 size-3" />
+                    Reset today&apos;s counter
+                  </Button>
+                  <Button variant="primary" size="xs" onClick={saveQuota} loading={busy === 'quota'}>
+                    Save override
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'documents' && (
+            <div id="user-panel-documents" role="tabpanel" className="space-y-3">
+              <p className="text-xs text-ink-muted">
+                {view.content.resumeCount} resume(s), {view.content.portfolioCount} portfolio(s),{' '}
+                {view.content.coverCount} cover letter(s) recorded for this identity.
+              </p>
+              {view.content.resumes.length === 0 ? (
+                <AdminEmptyPanel
+                  title="No documents"
+                  description="This account has not created a resume yet. Nothing is hidden here."
+                />
+              ) : (
+                <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                  {view.content.resumes.map((resume) => (
+                    <li key={resume.id} className="flex items-center justify-between gap-3 p-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-8 items-center justify-center rounded-lg border border-info-100 bg-info-50 text-info-600">
+                          <FileText className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-ink">{resume.title}</p>
+                          <p className="text-2xs text-ink-muted">
+                            Template {resume.template}
+                            {resume.updatedAt ? ` · updated ${resume.updatedAt.slice(0, 10)}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={`/preview/${resume.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-2xs font-bold text-brand-700 hover:underline"
+                      >
+                        Preview
+                        <ExternalLink className="size-3" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center justify-between border-t border-border bg-neutral-50/50 p-4">
+          <span className="text-[11px] text-ink-muted">
+            Revision {profile.revision} · {profile.email}
+          </span>
+          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function TenantPanel({
+  userId,
+  memberships,
+  onChanged,
+  onFailed,
+}: {
+  userId: string;
+  memberships: MembershipView[];
+  onChanged: (message: string) => void;
+  onFailed: (message: string) => void;
+}) {
+  const loadTenants = useCallback(
+    (signal: AbortSignal) => get<unknown>('/enterprise/tenants', undefined, { signal }).then(readTenantOptions),
+    [],
+  );
+  const tenants = useAdminResource<TenantOption[]>(loadTenants);
+  const options = tenants.data ?? [];
+
+  const [tenantId, setTenantId] = useState('');
+  const [role, setRole] = useState('ENTERPRISE_MEMBER');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tenantId) return;
+    const [first] = options;
+    if (first) setTenantId(first.id);
+  }, [options, tenantId]);
+
+  const assign = async () => {
+    setBusy('assign');
+    try {
+      const response = await post<{ message?: string }>(`/admin/users/${userId}/tenants`, {
+        tenantId,
+        role,
+      });
+      onChanged(response?.message || 'Membership granted.');
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      onFailed(`${failure.message} (${failure.code})`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (membershipId: string) => {
+    setBusy(membershipId);
+    try {
+      const response = await del<{ message?: string }>(
+        `/admin/users/${userId}/tenants/${encodeURIComponent(membershipId)}`,
+      );
+      onChanged(response?.message || 'Membership removed.');
+    } catch (error) {
+      const failure = describeAdminFailure(error);
+      onFailed(`${failure.message} (${failure.code})`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="space-y-3 rounded-xl border border-border bg-neutral-25 p-4">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-ink">Assign membership</h4>
+        {tenants.status === 'failed' && tenants.error && (
+          <AdminErrorPanel
+            title="Organizations could not be listed"
+            error={tenants.error}
+            onRetry={tenants.reload}
+          />
+        )}
+        {options.length === 0 && tenants.status === 'ready' && (
+          <p className="text-2xs text-ink-muted">
+            You are not a member of any organization, so there is nothing to assign this account to.
+          </p>
+        )}
+        {options.length > 0 && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <select
+              aria-label="Organization"
+              value={tenantId}
+              onChange={(event) => setTenantId(event.target.value)}
+              className="h-9 rounded-lg border border-border bg-surface px-2 text-xs text-ink"
+            >
+              {options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.displayName}
+                  {option.lifecycleState !== 'ACTIVE' ? ` (${option.lifecycleState})` : ''}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Organization role"
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className="h-9 rounded-lg border border-border bg-surface px-2 text-xs text-ink"
+            >
+              <option value="ENTERPRISE_ADMIN">Admin</option>
+              <option value="ENTERPRISE_MANAGER">Manager</option>
+              <option value="ENTERPRISE_MEMBER">Member</option>
+              <option value="ENTERPRISE_VIEWER">Viewer</option>
+            </select>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={assign}
+              loading={busy === 'assign'}
+              disabled={!tenantId}
+            >
+              Assign
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border">
+        <div className="border-b border-border bg-neutral-50 p-3 text-xs font-bold text-ink">
+          Active memberships
+        </div>
+        {memberships.length === 0 ? (
+          <p className="p-3.5 text-2xs text-ink-muted">This identity belongs to no organization.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {memberships.map((membership) => (
+              <li key={membership.id} className="flex items-center justify-between gap-3 p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <Building2 className="size-4 text-brand-600" />
+                  <div>
+                    <p className="text-xs font-bold text-ink">{membership.displayName}</p>
+                    <p className="text-2xs text-ink-muted">Slug {membership.slug}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {membership.roles.map((membershipRole) => (
+                    <span key={membershipRole} className="rounded-full bg-brand-50 px-2 py-0.5 text-2xs font-bold text-brand-700">
+                      {membershipRole}
+                    </span>
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="text-error-700 hover:text-error-700"
+                    loading={busy === membership.id}
+                    onClick={() => remove(membership.id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }

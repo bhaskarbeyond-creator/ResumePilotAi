@@ -297,3 +297,34 @@ audit event. The schema already has a `metadata` JSON column and needs no migrat
 | Audit suppression | Make the audit repository unavailable during a change | 503, no change applied |
 | Redaction bypass | `firebase.apiKey` through the private-key classifier | Redacted after the ordering bug fix in `settingClassification.js` (Phase 0) |
 | Peer-admin lateral move | ADMIN acts on another ADMIN's account | Allowed only for equal rank; acting on a *higher* rank is denied by `targetAuthority.js` (Phase 0, 28 tests) |
+
+---
+
+## 9. The UI offers only what the API accepts (INV-5, revisited after Step 4)
+
+INV-5 is usually read as "hiding a control is not authorisation". Its converse matters just as
+much, and the pre-Step-4 console failed it: a control that is *shown* but that the API always
+refuses trains an operator to distrust the interface, and — worse — the failure was then
+swallowed and reported as success, so the operator believed an authority change had happened.
+
+| Control | Before | Now | Server-side fact |
+|---|---|---|---|
+| Role picker, provisioning and User 360 | Offered `SUPER_ADMIN` | Not offered (`ASSIGNABLE_ROLES`, `frontend/src/components/admin/admin-users-model.ts`) | `PATCH /api/admin/users/:uid` → `400 SUPER_ADMIN_ROLE_FORBIDDEN` (`routes/adminUsers.js:737`); `POST /api/admin/users` → `400 SUPER_ADMIN_PROVISION_FORBIDDEN` (`routes/adminUsers.js:374`) |
+| Provisioning form | Asked for a password and a tenant association | Asks for email, display name, role, verified flag only | `400 CREATE_THEN_ASSIGN_TENANT`, `400 CREATE_THEN_GRANT_MEMBERSHIP` (`routes/adminUsers.js:376-377`); the created password is generated server-side (`routes/adminUsers.js:398`) |
+| Password reset | Fabricated `?reset_token=sec_rst_<ts>` when the API failed | Calls `POST /:uid/send-password-reset` and reports the endpoint's message | `routes/adminUsers.js:1070`; the identity provider generates the link |
+| AI quota override and counter reset | Changed local state, no request | `PUT /:uid/ai-entitlement`, `POST /:uid/ai-quota-reset` | `routes/adminUsers.js:1007`, `:1050`, both routed through `authorizeTargetMutation` |
+| Tenant membership | Fixed "Northwind Careers" row with a no-op Remove | `POST /:uid/tenants`, `DELETE /:uid/tenants/:tenantId` against the real registry | `routes/adminUsers.js:929`, `:981`; both audit `USER_TENANT_MEMBERSHIP_GRANTED`/`_REMOVED` |
+| View-as audit | Posted the wrong field names (`simulatedRole`) → `400` presented as success | Posts `{targetRole}` | `routes/platform.js:2035` reads `{targetRole, tenantId}` |
+
+**The invariant itself is unchanged and still enforced server-side.** The picker no longer
+*offers* `SUPER_ADMIN`, and that is a usability fix, not a control: the 400 is asserted by
+`test/admin-target-authority.test.js` and `test/api-contract.test.js` regardless of what any
+client sends. Removing a control never removes the check; adding one never adds a right.
+
+**Failure is now visible, which is a security property.** Nine handlers previously ended in
+`.catch(() => {})` followed by a success message. An operator who suspends an account and is
+told "suspended" when the identity provider refused has left a live account live while
+believing otherwise. `useAdminResource`/`describeAdminFailure` make the refusal
+`role="alert"` with the server's code and request id; `tests/unit/admin-users-tab.test.tsx`
+and `tests/unit/admin-users-actions.test.js` pin that behaviour for the reset, role, plan and
+suspension paths.
