@@ -177,6 +177,88 @@ function defaultStore() {
       );
       return rows.map(row => ({ role: String(row.role), resource: String(row.resource), action: String(row.action) }));
     },
+    /**
+     * Replace a role's bundle atomically. Deleting then inserting inside one
+     * transaction matters: a partial replace would leave a role with *more* or
+     * *less* authority than either the before or the after state, and the audit
+     * row would describe a state that never existed.
+     * @param {string} roleName
+     * @param {Array<{resource: string, action: string}>} permissions
+     * @param {string} actor
+     */
+    async replaceRolePermissions(roleName, permissions, actor) {
+      const pool = getPool();
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        const [[role]] = await connection.query('SELECT id FROM admin_roles WHERE name = ? FOR UPDATE', [roleName]);
+        if (!role) {
+          const error = new Error('Role not found');
+          error.code = 'ROLE_NOT_FOUND';
+          throw error;
+        }
+        await connection.query('DELETE FROM admin_role_permissions WHERE role_id = ?', [role.id]);
+        if (permissions.length) {
+          await connection.query(
+            'INSERT INTO admin_role_permissions (role_id, resource, action, granted_by) VALUES ?',
+            [permissions.map(permission => [role.id, permission.resource, permission.action, actor])],
+          );
+        }
+        await connection.commit();
+      } catch (error) {
+        try { await connection.rollback(); } catch { /* rollback is best effort */ }
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
+    /**
+     * Grant a role to a uid. `ON DUPLICATE KEY UPDATE` means re-granting an
+     * existing role refreshes its expiry and reason rather than failing, which is
+     * what an operator re-issuing a time-boxed grant expects.
+     */
+    async upsertGrant({ uid, role, grantedBy, reason, expiresAt }) {
+      const pool = getPool();
+      const [[row]] = await pool.query('SELECT id FROM admin_roles WHERE name = ?', [role]);
+      if (!row) {
+        const error = new Error('Role not found');
+        error.code = 'ROLE_NOT_FOUND';
+        throw error;
+      }
+      await pool.query(
+        `INSERT INTO admin_user_roles (uid, role_id, granted_by, reason, expires_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE granted_by = VALUES(granted_by), reason = VALUES(reason),
+                                 expires_at = VALUES(expires_at), granted_at = CURRENT_TIMESTAMP`,
+        [String(uid), row.id, String(grantedBy), String(reason), expiresAt || null],
+      );
+    },
+    /** @returns {Promise<Array<{uid: string, role: string, grantedBy: string, reason: string, expiresAt: string|null, grantedAt: string}>>} */
+    async listGrants() {
+      const [rows] = await getPool().query(
+        `SELECT ur.uid, r.name AS role, ur.granted_by, ur.reason, ur.expires_at, ur.granted_at
+           FROM admin_user_roles ur JOIN admin_roles r ON r.id = ur.role_id
+          ORDER BY ur.granted_at DESC`,
+      );
+      return rows.map(row => ({
+        uid: String(row.uid),
+        role: String(row.role),
+        grantedBy: String(row.granted_by),
+        reason: String(row.reason),
+        expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+        grantedAt: row.granted_at ? new Date(row.granted_at).toISOString() : null,
+      }));
+    },
+    /** @returns {Promise<number>} rows deleted */
+    async deleteGrant(uid, role) {
+      const pool = getPool();
+      const [result] = await pool.query(
+        `DELETE ur FROM admin_user_roles ur JOIN admin_roles r ON r.id = ur.role_id
+          WHERE ur.uid = ? AND r.name = ?`,
+        [String(uid), String(role)],
+      );
+      return Number(result.affectedRows) || 0;
+    },
   };
 }
 
@@ -301,6 +383,46 @@ function permissionsForUserGrants(uid) {
 }
 
 /**
+ * The store the administration module writes through.
+ *
+ * Deliberately not cached: a write-path store must not be a snapshot, and the
+ * injected test store has to be visible to this call. Read-path caching happens in
+ * `refreshRbacCache`, not here.
+ *
+ * @returns {object} the injected store, or the live MariaDB store
+ */
+function __storeForAdministration() {
+  return storeOverride || defaultStore();
+}
+
+/**
+ * Load one caller's explicit grants into the cache and return them.
+ *
+ * The request path resolves grants lazily (a cache miss schedules a load and serves
+ * the last known value) because blocking an authorisation decision on a query is
+ * unacceptable. That laziness has exactly one visible consequence: the *first*
+ * request after a grant would still use the old authority. This function closes
+ * that gap for the write path, where we are already awaiting the database, so
+ * "granting takes effect immediately" is true for the very next request.
+ *
+ * @param {string} uid
+ * @returns {Promise<Set<string>>}
+ */
+async function preloadUserGrants(uid) {
+  const key = String(uid || '');
+  if (!key) return new Set();
+  const store = storeOverride || defaultStore();
+  const rows = await store.listUserGrants(key);
+  const set = new Set();
+  for (const row of rows) {
+    if (!row.resource || !row.action) continue;
+    for (const expanded of expandGrant(row.resource, row.action)) set.add(expanded);
+  }
+  userGrantCache.set(key, { set, expiresAt: Date.now() + CACHE_TTL_MS });
+  return set;
+}
+
+/**
  * Full resolved authority for a caller.
  *
  * @param {{uid?: string, claims?: {role?: string}, role?: string}|null} user
@@ -388,6 +510,7 @@ module.exports = {
   resolvePermissionSet,
   permissionsForRole,
   permissionsForUserGrants,
+  preloadUserGrants,
   refreshRbacCache,
   scheduleRefresh,
   warmAdminRbac,
@@ -395,4 +518,5 @@ module.exports = {
   describeResolution,
   listStoredRolePermissions,
   setRbacStoreForTests,
+  __storeForAdministration,
 };

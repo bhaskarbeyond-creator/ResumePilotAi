@@ -730,6 +730,36 @@
    "method": "POST",
    "path": "/admin/support/tickets/:ticketId/messages",
    "registeredAt": "backend/routes/support.js:95"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/rbac/roles",
+   "registeredAt": "backend/routes/adminRbac.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/rbac/roles/:role/permissions",
+   "registeredAt": "backend/routes/adminRbac.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/rbac/grants",
+   "registeredAt": "backend/routes/adminRbac.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/admin/rbac/roles/:role/permissions",
+   "registeredAt": "backend/routes/adminRbac.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/rbac/grants",
+   "registeredAt": "backend/routes/adminRbac.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/rbac/grants/:uid/:role",
+   "registeredAt": "backend/routes/adminRbac.js"
   }
  ]
 }

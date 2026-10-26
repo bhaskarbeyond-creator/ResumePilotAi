@@ -70,6 +70,7 @@ const { adminAuditRouter } = require('./routes/adminAudit');
 const { platformRouter } = require('./routes/platform');
 const { adminUsersRouter } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
+const adminRbacRouter = require('./routes/adminRbac');
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
 const { coversRouter } = require('./routes/covers');
@@ -6907,6 +6908,9 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
 
 app.use('/api/admin/support', supportAdminRouter);
 app.use('/api/admin/users', adminUsersRouter);
+// REC-005/INV-3/INV-6: the surface that changes what a role may do. Mounted before
+// the catch-all admin router so `/rbac/*` cannot be shadowed by a broader mount.
+app.use('/api/admin/rbac', adminRbacRouter);
 app.use('/api/admin', adminPlatformOperationsRouter);
 // Durable account deletion removes the subject's personal content and credentials,
 // tombstones employer listings so other applicants retain their application history,

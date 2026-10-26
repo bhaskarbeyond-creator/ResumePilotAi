@@ -400,6 +400,14 @@ const RULES = [
     rationale: 'User mutations require users.update; destructive ones additionally pass the target-authority ceiling.',
   },
   {
+    id: 'rbac-administration',
+    methods: 'any',
+    exact: ['/admin/rbac/roles', '/admin/rbac/grants'],
+    prefix: ['/admin/rbac/'],
+    permission: { read: ['audit.read', 'security.read'], write: '*' },
+    rationale: 'Reading who-can-do-what is compliance information, so any auditor or security reader may see it; changing authority is SUPER_ADMIN-only because every other grant is derived from it.',
+  },
+  {
     id: 'default-admin-read',
     methods: 'read',
     exact: [],

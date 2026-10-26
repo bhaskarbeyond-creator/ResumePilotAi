@@ -149,6 +149,22 @@ async function recordAdminAuditLog(requestOrEvent, explicitEvent) {
   return docData;
 }
 
+/**
+ * Paths that write their own, richer audit row and must not also receive the
+ * generic post-response row.
+ *
+ * `/admin/rbac/*` records the `before`/`after` authority diff computed from the
+ * store. The generic middleware would add a second row for the same request whose
+ * `before`/`after` are whatever the client sent — two rows for one change is a
+ * trail that double-counts and a diff an operator cannot trust.
+ * @type {readonly string[]}
+ */
+// Matched against `originalUrl`, which is the un-rewritten path: by the time
+// `res.end` runs, Express has restored the mount prefix, so `req.path` here is the
+// full `/api/admin/rbac/...`. All three spellings are listed because the skip check
+// must not depend on when the URL was rewritten.
+const SELF_AUDITED_PREFIXES = Object.freeze(['/api/admin/rbac/', '/admin/rbac/', '/rbac/']);
+
 function createAdminAuditMiddleware() {
   return (req, res, next) => {
     const startTime = Date.now();
@@ -159,8 +175,10 @@ function createAdminAuditMiddleware() {
 
       const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
       const isSensitiveRead = req.path.includes('/audit-logs') || req.path.includes('/firebase-service-account');
+      const auditPath = String(req.originalUrl || req.path || '');
+      const isSelfAudited = SELF_AUDITED_PREFIXES.some(prefix => auditPath.startsWith(prefix) || String(req.path || '').startsWith(prefix));
 
-      if (isMutation || isSensitiveRead) {
+      if ((isMutation || isSensitiveRead) && !isSelfAudited) {
         const durationMs = Date.now() - startTime;
         const statusCode = res.statusCode;
 
@@ -230,6 +248,7 @@ async function queryAdminAuditLogs(repository, options = {}) {
 
 module.exports = {
   recordAdminAuditLog,
+  SELF_AUDITED_PREFIXES,
   createAdminAuditMiddleware,
   queryAdminAuditLogs,
   deriveAction,
