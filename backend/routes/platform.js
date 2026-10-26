@@ -465,11 +465,19 @@ router.get('/overview', async (_req, res) => {
 router.get('/queues', async (_req, res) => {
   try {
     const pool = getPool();
+    // REC-012/CFG-012: the sample size is a registry value, and the response already
+    // reports `sampled: true`. Previously the two were hard-coded at 50, so an operator
+    // investigating a backlog could not widen the window without a deploy, and the
+    // `sampled` flag could not tell them how wide it was.
+    const { getConfigValue } = require('../services/configService');
+    const sampleSize = Number(await getConfigValue('operations.queues.sampleSize', 50));
+    // `LIMIT ?` is parameterised with a number that has already passed the registry's
+    // integer range validator (10–500); it is not string-concatenated SQL.
     const [[notificationRows], [enterpriseRows]] = await Promise.all([
       pool.query(`SELECT id, channel, recipient, template_type, state, attempt_count, last_error, created_at, updated_at
-                  FROM notification_outbox ORDER BY created_at DESC LIMIT 50`),
+                  FROM notification_outbox ORDER BY created_at DESC LIMIT ?`, [sampleSize]),
       pool.query(`SELECT id, jobType, tenantId, status, attemptCount, lastError, created_at, updated_at
-                  FROM enterprise_outbox ORDER BY created_at DESC LIMIT 50`),
+                  FROM enterprise_outbox ORDER BY created_at DESC LIMIT ?`, [sampleSize]),
     ]);
     const maskEmail = value => {
       const [local, domain] = String(value || '').split('@');
@@ -493,7 +501,7 @@ router.get('/queues', async (_req, res) => {
     const pendingCount = jobs.filter(job => ['NOTIFICATION_QUEUED', 'QUEUED', 'PROCESSING', 'RETRYING'].includes(job.state)).length;
     const successCount = jobs.filter(job => ['DELIVERED', 'COMPLETED', 'REJECTED', 'SKIPPED_NO_RECIPIENT'].includes(job.state)).length;
     return res.json({
-      summary: { totalInspected: jobs.length, deadLetterCount, pendingCount, successCount, source: 'MARIADB_OUTBOXES', sampled: true },
+      summary: { totalInspected: jobs.length, deadLetterCount, pendingCount, successCount, source: 'MARIADB_OUTBOXES', sampled: true, sampleSize },
       jobs,
     });
   } catch (_error) {

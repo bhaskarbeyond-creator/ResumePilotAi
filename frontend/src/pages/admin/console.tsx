@@ -35,6 +35,7 @@ import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
 import { AdminRbacTab } from '@/components/admin/AdminRbacTab';
 import { AdminAuditTab } from '@/components/admin/AdminAuditTab';
+import { AdminConfigTab } from '@/components/admin/AdminConfigTab';
 import { useCapabilities } from '@/hooks/use-capabilities';
 
 /**
@@ -55,6 +56,7 @@ export type AdminTabId =
   | 'ai-settings'
   | 'email'
   | 'security'
+  | 'config'
   | 'settings'
   | 'modules'
   | 'rbac'
@@ -71,6 +73,8 @@ const TAB_ALIASES: Record<string, AdminTabId> = {
   'audit-logs': 'audit',
   trail: 'audit',
   modules: 'settings',
+  configuration: 'config',
+  configs: 'config',
 };
 
 /**
@@ -91,6 +95,7 @@ const TAB_SUBTITLES: Record<AdminTabId, string> = {
   'ai-settings': 'Provider orchestration, routing and quota governance.',
   email: 'Transport configuration, deliverability and template catalogue.',
   security: 'Security telemetry, encryption state and the audit trail.',
+  config: 'Every business value the platform reads, where it comes from and who last changed it.',
   settings: 'Configuration by category, with revision control.',
   modules: 'Published module configuration.',
   rbac: 'Roles, permission bundles and time-boxed grants.',
@@ -396,6 +401,8 @@ function TabSurface({ tabId, onSelectTab }: { tabId: AdminTabId | null; onSelect
     case 'settings':
     case 'modules':
       return <div {...panel(tabId)}><AdminSettingsTab initialSection="modules" /></div>;
+    case 'config':
+      return <div {...panel('config')}><AdminConfigTab /></div>;
     case 'rbac':
       return <div {...panel('rbac')}><AdminRbacTab /></div>;
     case 'audit':

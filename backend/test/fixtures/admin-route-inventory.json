@@ -1,770 +1,790 @@
 {
- "note": "Admin/platform/email/support route registrations, one row per method+path. Generated from the route table at commit b106012 (backend/index.js plus the routers mounted under /api/admin, /api/platform, /api/email, /api/admin/support). Regenerate when a route is added \u2014 the coverage test fails until the manifest names it.",
- "routes": [
-  {
-   "method": "GET",
-   "path": "/admin/payment-settings",
-   "registeredAt": "backend/index.js:3291"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/ai-settings",
-   "registeredAt": "backend/index.js:3309"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/blog/categories",
-   "registeredAt": "backend/index.js:3327"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/blog/categories/:categoryId",
-   "registeredAt": "backend/index.js:3338"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/blog/categories/:categoryId",
-   "registeredAt": "backend/index.js:3355"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/blog/posts/:postId",
-   "registeredAt": "backend/index.js:3376"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/blog/posts/:postId",
-   "registeredAt": "backend/index.js:3396"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/blog/publish-due",
-   "registeredAt": "backend/index.js:3412"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/health-summary",
-   "registeredAt": "backend/index.js:3434"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/system-health-settings",
-   "registeredAt": "backend/index.js:3475"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/settings",
-   "registeredAt": "backend/index.js:3776"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/settings/:category",
-   "registeredAt": "backend/index.js:3813"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/settings/:category",
-   "registeredAt": "backend/index.js:3843"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/ai-settings",
-   "registeredAt": "backend/index.js:3984"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/ai/test-provider",
-   "registeredAt": "backend/index.js:4008"
-  },
-  {
-   "method": "ALL",
-   "path": "/admin/ai/fetch-models",
-   "registeredAt": "backend/index.js:4021"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/ai/quota-stats",
-   "registeredAt": "backend/index.js:4035"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/ai/quota-limits",
-   "registeredAt": "backend/index.js:4082"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/ai/reset-quota",
-   "registeredAt": "backend/index.js:4105"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/ai/reset-state",
-   "registeredAt": "backend/index.js:4135"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/ai/routing-telemetry",
-   "registeredAt": "backend/index.js:4186"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/payment-settings",
-   "registeredAt": "backend/index.js:4219"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/coupons",
-   "registeredAt": "backend/index.js:4515"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/coupons",
-   "registeredAt": "backend/index.js:4649"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/payment/test-provider",
-   "registeredAt": "backend/index.js:4673"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/twilio-settings",
-   "registeredAt": "backend/index.js:4826"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/twilio-settings",
-   "registeredAt": "backend/index.js:4845"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/firebase-service-account",
-   "registeredAt": "backend/index.js:5895"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/payments/refund",
-   "registeredAt": "backend/index.js:6103"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/employer-applications",
-   "registeredAt": "backend/index.js:6250"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/companies",
-   "registeredAt": "backend/index.js:6257"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/jobs",
-   "registeredAt": "backend/index.js:6271"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/reviews",
-   "registeredAt": "backend/index.js:6286"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/ads",
-   "registeredAt": "backend/index.js:6295"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/payment-orders",
-   "registeredAt": "backend/index.js:6300"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/blog/categories",
-   "registeredAt": "backend/index.js:6390"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/blog/posts",
-   "registeredAt": "backend/index.js:6395"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/employer-applications/:uid",
-   "registeredAt": "backend/index.js:6411"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/ads/:adId",
-   "registeredAt": "backend/index.js:6474"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/pages",
-   "registeredAt": "backend/index.js:6592"
-  },
-  {
-   "method": "PUT",
-   "path": "/admin/pages/:slug",
-   "registeredAt": "backend/index.js:6601"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/pages/:slug",
-   "registeredAt": "backend/index.js:6629"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/website-meta",
-   "registeredAt": "backend/index.js:6645"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/trusted-by",
-   "registeredAt": "backend/index.js:6734"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/trusted-by",
-   "registeredAt": "backend/index.js:6743"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/trusted-by/:logoId",
-   "registeredAt": "backend/index.js:6757"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/trusted-by/:logoId",
-   "registeredAt": "backend/index.js:6775"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/reviews",
-   "registeredAt": "backend/index.js:6791"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/reviews/:reviewId",
-   "registeredAt": "backend/index.js:6815"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/companies/:companyId",
-   "registeredAt": "backend/index.js:6831"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/jobs/:jobId",
-   "registeredAt": "backend/index.js:6857"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/jobs/:jobId",
-   "registeredAt": "backend/index.js:6881"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/audit-logs",
-   "registeredAt": "backend/routes/adminAudit.js:14"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/audit-logs/stats",
-   "registeredAt": "backend/routes/adminAudit.js:49"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/audit-logs/:id",
-   "registeredAt": "backend/routes/adminAudit.js:90"
-  },
-  {
-   "method": "PUT",
-   "path": "/admin/platform/currency",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:73"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/subscriptions",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:94"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/subscriptions/:uid/reconcile",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:186"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/ai/entitlements",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:287"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/platform/tenants/:tenantId/members",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:295"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/platform/tenants/:tenantId/members/:principalId",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:352"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/platform/tenants/:tenantId/commercials",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:369"
-  },
-  {
-   "method": "PATCH",
-   "path": "/admin/platform/tenants/:tenantId/ai-policy",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:392"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/platform/tenants/:tenantId/ai-keys/test",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:450"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/platform/status",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:533"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/operations/feature-flags",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:576"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/operations/feature-flags/:flagKey",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:588"
-  },
-  {
-   "method": "PUT",
-   "path": "/admin/operations/feature-flags/:flagKey",
-   "registeredAt": "backend/routes/adminPlatformOperations.js:609"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/users/",
-   "registeredAt": "backend/routes/adminUsers.js:101"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/bulk",
-   "registeredAt": "backend/routes/adminUsers.js:249"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/",
-   "registeredAt": "backend/routes/adminUsers.js:312"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/users/:uid/details",
-   "registeredAt": "backend/routes/adminUsers.js:405"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/users/:uid",
-   "registeredAt": "backend/routes/adminUsers.js:635"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/:uid/tenants",
-   "registeredAt": "backend/routes/adminUsers.js:865"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/users/:uid/tenants/:tenantId",
-   "registeredAt": "backend/routes/adminUsers.js:917"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/users/:uid/ai-entitlement",
-   "registeredAt": "backend/routes/adminUsers.js:937"
-  },
-  {
-   "method": "PUT",
-   "path": "/admin/users/:uid/ai-entitlement",
-   "registeredAt": "backend/routes/adminUsers.js:943"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/:uid/verify-email",
-   "registeredAt": "backend/routes/adminUsers.js:1037"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/:uid/revoke-sessions",
-   "registeredAt": "backend/routes/adminUsers.js:1059"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/users/:uid/unenroll-mfa",
-   "registeredAt": "backend/routes/adminUsers.js:1079"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/users/:uid/export",
-   "registeredAt": "backend/routes/adminUsers.js:1101"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/database-settings/",
-   "registeredAt": "backend/routes/databaseAdmin.js:40"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/database-settings/sync-status",
-   "registeredAt": "backend/routes/databaseAdmin.js:90"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/database-settings/conflicts",
-   "registeredAt": "backend/routes/databaseAdmin.js:143"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/database-settings/retry-dead-letter",
-   "registeredAt": "backend/routes/databaseAdmin.js:157"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/database-settings/initialize-schema",
-   "registeredAt": "backend/routes/databaseAdmin.js:174"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/database-settings/",
-   "registeredAt": "backend/routes/databaseAdmin.js:187"
-  },
-  {
-   "method": "GET",
-   "path": "/enterprise/platform/tenants",
-   "registeredAt": "backend/routes/enterprise.js:608"
-  },
-  {
-   "method": "POST",
-   "path": "/enterprise/platform/tenants/:tenantId/suspend",
-   "registeredAt": "backend/routes/enterprise.js:621"
-  },
-  {
-   "method": "POST",
-   "path": "/enterprise/platform/tenants/:tenantId/reactivate",
-   "registeredAt": "backend/routes/enterprise.js:630"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/version",
-   "registeredAt": "backend/routes/platform.js:207"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/health",
-   "registeredAt": "backend/routes/platform.js:263"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/operational-status",
-   "registeredAt": "backend/routes/platform.js:287"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/operational-status/api-matrix",
-   "registeredAt": "backend/routes/platform.js:305"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/operational-status/:serviceId",
-   "registeredAt": "backend/routes/platform.js:317"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/operational-status/:serviceId/test",
-   "registeredAt": "backend/routes/platform.js:368"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/operational-status/refresh",
-   "registeredAt": "backend/routes/platform.js:403"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/overview",
-   "registeredAt": "backend/routes/platform.js:431"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/queues",
-   "registeredAt": "backend/routes/platform.js:465"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/queues/retry",
-   "registeredAt": "backend/routes/platform.js:504"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/queues/purge",
-   "registeredAt": "backend/routes/platform.js:543"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/maintenance",
-   "registeredAt": "backend/routes/platform.js:576"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/command-center",
-   "registeredAt": "backend/routes/platform.js:621"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/security-events",
-   "registeredAt": "backend/routes/platform.js:789"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/encryption",
-   "registeredAt": "backend/routes/platform.js:836"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/observability",
-   "registeredAt": "backend/routes/platform.js:860"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/backup-status",
-   "registeredAt": "backend/routes/platform.js:876"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/payments-health",
-   "registeredAt": "backend/routes/platform.js:901"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/search",
-   "registeredAt": "backend/routes/platform.js:921"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/announcements",
-   "registeredAt": "backend/routes/platform.js:977"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/announcements",
-   "registeredAt": "backend/routes/platform.js:999"
-  },
-  {
-   "method": "PATCH",
-   "path": "/platform/announcements/:id",
-   "registeredAt": "backend/routes/platform.js:1035"
-  },
-  {
-   "method": "DELETE",
-   "path": "/platform/announcements/:id",
-   "registeredAt": "backend/routes/platform.js:1091"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/attention",
-   "registeredAt": "backend/routes/platform.js:1229"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/health-indicator",
-   "registeredAt": "backend/routes/platform.js:1270"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/enterprise-queue",
-   "registeredAt": "backend/routes/platform.js:1289"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/operators",
-   "registeredAt": "backend/routes/platform.js:1304"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/operators",
-   "registeredAt": "backend/routes/platform.js:1342"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/operators/:uid/revoke-sessions",
-   "registeredAt": "backend/routes/platform.js:1402"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/tenants/:tenantId",
-   "registeredAt": "backend/routes/platform.js:1444"
-  },
-  {
-   "method": "PATCH",
-   "path": "/platform/tenants/:tenantId",
-   "registeredAt": "backend/routes/platform.js:1534"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/tenants/:tenantId/decommission",
-   "registeredAt": "backend/routes/platform.js:1547"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/tenants/garbage-collect",
-   "registeredAt": "backend/routes/platform.js:1587"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/feature-flags",
-   "registeredAt": "backend/routes/platform.js:1637"
-  },
-  {
-   "method": "PUT",
-   "path": "/platform/feature-flags/:flagKey",
-   "registeredAt": "backend/routes/platform.js:1646"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/configuration",
-   "registeredAt": "backend/routes/platform.js:1670"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/payment-settings",
-   "registeredAt": "backend/routes/platform.js:1707"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/payment-webhooks",
-   "registeredAt": "backend/routes/platform.js:1727"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/payment-webhooks/:eventId/replay",
-   "registeredAt": "backend/routes/platform.js:1809"
-  },
-  {
-   "method": "POST",
-   "path": "/platform/role-view-audit",
-   "registeredAt": "backend/routes/platform.js:2027"
-  },
-  {
-   "method": "GET",
-   "path": "/email/logs",
-   "registeredAt": "backend/routes/email.js:2034"
-  },
-  {
-   "method": "POST",
-   "path": "/email/resend",
-   "registeredAt": "backend/routes/email.js:2052"
-  },
-  {
-   "method": "GET",
-   "path": "/email/admin/circuit-breaker-status",
-   "registeredAt": "backend/routes/email.js:1420"
-  },
-  {
-   "method": "POST",
-   "path": "/email/admin/reset-circuit-breaker",
-   "registeredAt": "backend/routes/email.js:1433"
-  },
-  {
-   "method": "GET",
-   "path": "/email/admin/settings",
-   "registeredAt": "backend/routes/email.js:1662"
-  },
-  {
-   "method": "GET",
-   "path": "/email/admin/deliverability",
-   "registeredAt": "backend/routes/email.js:1691"
-  },
-  {
-   "method": "POST",
-   "path": "/email/admin/save-smtp",
-   "registeredAt": "backend/routes/email.js:1829"
-  },
-  {
-   "method": "POST",
-   "path": "/email/admin/test-imap",
-   "registeredAt": "backend/routes/email.js:1930"
-  },
-  {
-   "method": "POST",
-   "path": "/email/admin/save-template-customization",
-   "registeredAt": "backend/routes/email.js:1515"
-  },
-  {
-   "method": "GET",
-   "path": "/email/admin/custom-templates",
-   "registeredAt": "backend/routes/email.js:1516"
-  },
-  {
-   "method": "POST",
-   "path": "/email/admin/test-connection",
-   "registeredAt": "backend/routes/email.js:1524"
-  },
-  {
-   "method": "POST",
-   "path": "/email/send-email",
-   "registeredAt": "backend/routes/email.js:1966"
-  },
-  {
-   "method": "POST",
-   "path": "/email/templates",
-   "registeredAt": "backend/routes/email.js:2088"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/support/tickets",
-   "registeredAt": "backend/routes/support.js:71"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/support/tickets/:ticketId",
-   "registeredAt": "backend/routes/support.js:81"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/support/tickets/:ticketId/messages",
-   "registeredAt": "backend/routes/support.js:95"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/rbac/roles",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/rbac/roles/:role/permissions",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "GET",
-   "path": "/admin/rbac/grants",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "PUT",
-   "path": "/admin/rbac/roles/:role/permissions",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "POST",
-   "path": "/admin/rbac/grants",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "DELETE",
-   "path": "/admin/rbac/grants/:uid/:role",
-   "registeredAt": "backend/routes/adminRbac.js"
-  },
-  {
-   "method": "GET",
-   "path": "/platform/public-config",
-   "registeredAt": "backend/routes/platform.js:215"
-  }
- ]
+  "note": "Admin/platform/email/support route registrations, one row per method+path. Generated from the route table at commit b106012 and extended for REC-012 (config registry, /admin/config* and /config/runtime) (backend/index.js plus the routers mounted under /api/admin, /api/platform, /api/email, /api/admin/support). Regenerate when a route is added \u2014 the coverage test fails until the manifest names it.",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/admin/payment-settings",
+      "registeredAt": "backend/index.js:3291"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ai-settings",
+      "registeredAt": "backend/index.js:3309"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/blog/categories",
+      "registeredAt": "backend/index.js:3327"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/blog/categories/:categoryId",
+      "registeredAt": "backend/index.js:3338"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/blog/categories/:categoryId",
+      "registeredAt": "backend/index.js:3355"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/blog/posts/:postId",
+      "registeredAt": "backend/index.js:3376"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/blog/posts/:postId",
+      "registeredAt": "backend/index.js:3396"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/blog/publish-due",
+      "registeredAt": "backend/index.js:3412"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/health-summary",
+      "registeredAt": "backend/index.js:3434"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/system-health-settings",
+      "registeredAt": "backend/index.js:3475"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/settings",
+      "registeredAt": "backend/index.js:3776"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/settings/:category",
+      "registeredAt": "backend/index.js:3813"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/settings/:category",
+      "registeredAt": "backend/index.js:3843"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai-settings",
+      "registeredAt": "backend/index.js:3984"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/test-provider",
+      "registeredAt": "backend/index.js:4008"
+    },
+    {
+      "method": "ALL",
+      "path": "/admin/ai/fetch-models",
+      "registeredAt": "backend/index.js:4021"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ai/quota-stats",
+      "registeredAt": "backend/index.js:4035"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/quota-limits",
+      "registeredAt": "backend/index.js:4082"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/reset-quota",
+      "registeredAt": "backend/index.js:4105"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/ai/reset-state",
+      "registeredAt": "backend/index.js:4135"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ai/routing-telemetry",
+      "registeredAt": "backend/index.js:4186"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payment-settings",
+      "registeredAt": "backend/index.js:4219"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/coupons",
+      "registeredAt": "backend/index.js:4515"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/coupons",
+      "registeredAt": "backend/index.js:4649"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payment/test-provider",
+      "registeredAt": "backend/index.js:4673"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/twilio-settings",
+      "registeredAt": "backend/index.js:4826"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/twilio-settings",
+      "registeredAt": "backend/index.js:4845"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/firebase-service-account",
+      "registeredAt": "backend/index.js:5895"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/payments/refund",
+      "registeredAt": "backend/index.js:6103"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/employer-applications",
+      "registeredAt": "backend/index.js:6250"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/companies",
+      "registeredAt": "backend/index.js:6257"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/jobs",
+      "registeredAt": "backend/index.js:6271"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/reviews",
+      "registeredAt": "backend/index.js:6286"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ads",
+      "registeredAt": "backend/index.js:6295"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/payment-orders",
+      "registeredAt": "backend/index.js:6300"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/blog/categories",
+      "registeredAt": "backend/index.js:6390"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/blog/posts",
+      "registeredAt": "backend/index.js:6395"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/employer-applications/:uid",
+      "registeredAt": "backend/index.js:6411"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/ads/:adId",
+      "registeredAt": "backend/index.js:6474"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/pages",
+      "registeredAt": "backend/index.js:6592"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/pages/:slug",
+      "registeredAt": "backend/index.js:6601"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/pages/:slug",
+      "registeredAt": "backend/index.js:6629"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/website-meta",
+      "registeredAt": "backend/index.js:6645"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/trusted-by",
+      "registeredAt": "backend/index.js:6734"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/trusted-by",
+      "registeredAt": "backend/index.js:6743"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/trusted-by/:logoId",
+      "registeredAt": "backend/index.js:6757"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/trusted-by/:logoId",
+      "registeredAt": "backend/index.js:6775"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/reviews",
+      "registeredAt": "backend/index.js:6791"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/reviews/:reviewId",
+      "registeredAt": "backend/index.js:6815"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/companies/:companyId",
+      "registeredAt": "backend/index.js:6831"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/jobs/:jobId",
+      "registeredAt": "backend/index.js:6857"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/jobs/:jobId",
+      "registeredAt": "backend/index.js:6881"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "registeredAt": "backend/routes/adminAudit.js:14"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs/stats",
+      "registeredAt": "backend/routes/adminAudit.js:49"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/audit-logs/:id",
+      "registeredAt": "backend/routes/adminAudit.js:90"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/platform/currency",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:73"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/subscriptions",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:94"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/subscriptions/:uid/reconcile",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:186"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ai/entitlements",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:287"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/platform/tenants/:tenantId/members",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:295"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/platform/tenants/:tenantId/members/:principalId",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:352"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/platform/tenants/:tenantId/commercials",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:369"
+    },
+    {
+      "method": "PATCH",
+      "path": "/admin/platform/tenants/:tenantId/ai-policy",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:392"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/platform/tenants/:tenantId/ai-keys/test",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:450"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/platform/status",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:533"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/operations/feature-flags",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:576"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/operations/feature-flags/:flagKey",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:588"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/operations/feature-flags/:flagKey",
+      "registeredAt": "backend/routes/adminPlatformOperations.js:609"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/",
+      "registeredAt": "backend/routes/adminUsers.js:101"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/bulk",
+      "registeredAt": "backend/routes/adminUsers.js:249"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/",
+      "registeredAt": "backend/routes/adminUsers.js:312"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/:uid/details",
+      "registeredAt": "backend/routes/adminUsers.js:405"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/:uid",
+      "registeredAt": "backend/routes/adminUsers.js:635"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/:uid/tenants",
+      "registeredAt": "backend/routes/adminUsers.js:865"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/users/:uid/tenants/:tenantId",
+      "registeredAt": "backend/routes/adminUsers.js:917"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/:uid/ai-entitlement",
+      "registeredAt": "backend/routes/adminUsers.js:937"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/users/:uid/ai-entitlement",
+      "registeredAt": "backend/routes/adminUsers.js:943"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/:uid/verify-email",
+      "registeredAt": "backend/routes/adminUsers.js:1037"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/:uid/revoke-sessions",
+      "registeredAt": "backend/routes/adminUsers.js:1059"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/:uid/unenroll-mfa",
+      "registeredAt": "backend/routes/adminUsers.js:1079"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users/:uid/export",
+      "registeredAt": "backend/routes/adminUsers.js:1101"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/database-settings/",
+      "registeredAt": "backend/routes/databaseAdmin.js:40"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/database-settings/sync-status",
+      "registeredAt": "backend/routes/databaseAdmin.js:90"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/database-settings/conflicts",
+      "registeredAt": "backend/routes/databaseAdmin.js:143"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/database-settings/retry-dead-letter",
+      "registeredAt": "backend/routes/databaseAdmin.js:157"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/database-settings/initialize-schema",
+      "registeredAt": "backend/routes/databaseAdmin.js:174"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/database-settings/",
+      "registeredAt": "backend/routes/databaseAdmin.js:187"
+    },
+    {
+      "method": "GET",
+      "path": "/enterprise/platform/tenants",
+      "registeredAt": "backend/routes/enterprise.js:608"
+    },
+    {
+      "method": "POST",
+      "path": "/enterprise/platform/tenants/:tenantId/suspend",
+      "registeredAt": "backend/routes/enterprise.js:621"
+    },
+    {
+      "method": "POST",
+      "path": "/enterprise/platform/tenants/:tenantId/reactivate",
+      "registeredAt": "backend/routes/enterprise.js:630"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/version",
+      "registeredAt": "backend/routes/platform.js:207"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/health",
+      "registeredAt": "backend/routes/platform.js:263"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/operational-status",
+      "registeredAt": "backend/routes/platform.js:287"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/operational-status/api-matrix",
+      "registeredAt": "backend/routes/platform.js:305"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/operational-status/:serviceId",
+      "registeredAt": "backend/routes/platform.js:317"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/operational-status/:serviceId/test",
+      "registeredAt": "backend/routes/platform.js:368"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/operational-status/refresh",
+      "registeredAt": "backend/routes/platform.js:403"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/overview",
+      "registeredAt": "backend/routes/platform.js:431"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/queues",
+      "registeredAt": "backend/routes/platform.js:465"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/queues/retry",
+      "registeredAt": "backend/routes/platform.js:504"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/queues/purge",
+      "registeredAt": "backend/routes/platform.js:543"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/maintenance",
+      "registeredAt": "backend/routes/platform.js:576"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/command-center",
+      "registeredAt": "backend/routes/platform.js:621"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/security-events",
+      "registeredAt": "backend/routes/platform.js:789"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/encryption",
+      "registeredAt": "backend/routes/platform.js:836"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/observability",
+      "registeredAt": "backend/routes/platform.js:860"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/backup-status",
+      "registeredAt": "backend/routes/platform.js:876"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/payments-health",
+      "registeredAt": "backend/routes/platform.js:901"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/search",
+      "registeredAt": "backend/routes/platform.js:921"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/announcements",
+      "registeredAt": "backend/routes/platform.js:977"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/announcements",
+      "registeredAt": "backend/routes/platform.js:999"
+    },
+    {
+      "method": "PATCH",
+      "path": "/platform/announcements/:id",
+      "registeredAt": "backend/routes/platform.js:1035"
+    },
+    {
+      "method": "DELETE",
+      "path": "/platform/announcements/:id",
+      "registeredAt": "backend/routes/platform.js:1091"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/attention",
+      "registeredAt": "backend/routes/platform.js:1229"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/health-indicator",
+      "registeredAt": "backend/routes/platform.js:1270"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/enterprise-queue",
+      "registeredAt": "backend/routes/platform.js:1289"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/operators",
+      "registeredAt": "backend/routes/platform.js:1304"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/operators",
+      "registeredAt": "backend/routes/platform.js:1342"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/operators/:uid/revoke-sessions",
+      "registeredAt": "backend/routes/platform.js:1402"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/tenants/:tenantId",
+      "registeredAt": "backend/routes/platform.js:1444"
+    },
+    {
+      "method": "PATCH",
+      "path": "/platform/tenants/:tenantId",
+      "registeredAt": "backend/routes/platform.js:1534"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/tenants/:tenantId/decommission",
+      "registeredAt": "backend/routes/platform.js:1547"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/tenants/garbage-collect",
+      "registeredAt": "backend/routes/platform.js:1587"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/feature-flags",
+      "registeredAt": "backend/routes/platform.js:1637"
+    },
+    {
+      "method": "PUT",
+      "path": "/platform/feature-flags/:flagKey",
+      "registeredAt": "backend/routes/platform.js:1646"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/configuration",
+      "registeredAt": "backend/routes/platform.js:1670"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/payment-settings",
+      "registeredAt": "backend/routes/platform.js:1707"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/payment-webhooks",
+      "registeredAt": "backend/routes/platform.js:1727"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/payment-webhooks/:eventId/replay",
+      "registeredAt": "backend/routes/platform.js:1809"
+    },
+    {
+      "method": "POST",
+      "path": "/platform/role-view-audit",
+      "registeredAt": "backend/routes/platform.js:2027"
+    },
+    {
+      "method": "GET",
+      "path": "/email/logs",
+      "registeredAt": "backend/routes/email.js:2034"
+    },
+    {
+      "method": "POST",
+      "path": "/email/resend",
+      "registeredAt": "backend/routes/email.js:2052"
+    },
+    {
+      "method": "GET",
+      "path": "/email/admin/circuit-breaker-status",
+      "registeredAt": "backend/routes/email.js:1420"
+    },
+    {
+      "method": "POST",
+      "path": "/email/admin/reset-circuit-breaker",
+      "registeredAt": "backend/routes/email.js:1433"
+    },
+    {
+      "method": "GET",
+      "path": "/email/admin/settings",
+      "registeredAt": "backend/routes/email.js:1662"
+    },
+    {
+      "method": "GET",
+      "path": "/email/admin/deliverability",
+      "registeredAt": "backend/routes/email.js:1691"
+    },
+    {
+      "method": "POST",
+      "path": "/email/admin/save-smtp",
+      "registeredAt": "backend/routes/email.js:1829"
+    },
+    {
+      "method": "POST",
+      "path": "/email/admin/test-imap",
+      "registeredAt": "backend/routes/email.js:1930"
+    },
+    {
+      "method": "POST",
+      "path": "/email/admin/save-template-customization",
+      "registeredAt": "backend/routes/email.js:1515"
+    },
+    {
+      "method": "GET",
+      "path": "/email/admin/custom-templates",
+      "registeredAt": "backend/routes/email.js:1516"
+    },
+    {
+      "method": "POST",
+      "path": "/email/admin/test-connection",
+      "registeredAt": "backend/routes/email.js:1524"
+    },
+    {
+      "method": "POST",
+      "path": "/email/send-email",
+      "registeredAt": "backend/routes/email.js:1966"
+    },
+    {
+      "method": "POST",
+      "path": "/email/templates",
+      "registeredAt": "backend/routes/email.js:2088"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/support/tickets",
+      "registeredAt": "backend/routes/support.js:71"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/support/tickets/:ticketId",
+      "registeredAt": "backend/routes/support.js:81"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/support/tickets/:ticketId/messages",
+      "registeredAt": "backend/routes/support.js:95"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/rbac/roles",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/rbac/roles/:role/permissions",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/rbac/grants",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/rbac/roles/:role/permissions",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "POST",
+      "path": "/admin/rbac/grants",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/rbac/grants/:uid/:role",
+      "registeredAt": "backend/routes/adminRbac.js"
+    },
+    {
+      "method": "GET",
+      "path": "/platform/public-config",
+      "registeredAt": "backend/routes/platform.js:215"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/config",
+      "registeredAt": "backend/routes/config.js"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/config/:key/history",
+      "registeredAt": "backend/routes/config.js"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/config/:key",
+      "registeredAt": "backend/routes/config.js"
+    },
+    {
+      "method": "GET",
+      "path": "/config/runtime",
+      "registeredAt": "backend/routes/config.js"
+    }
+  ]
 }

@@ -1,0 +1,11 @@
+-- 029_config_overrides (down) — return every value to its declared resolution.
+--
+-- Safety: dropping `config_overrides` restores exactly the pre-migration behaviour,
+-- because `services/configService.js` falls back through env → declared default when a
+-- row is absent. No value is left in a state the runtime cannot read.
+--
+-- `config_change_log` is deliberately NOT dropped by the operator-facing rollback:
+-- it is the evidence of who changed what. A rollback that erased the reason for the
+-- rollback would be its own finding. To remove it, do so explicitly and knowingly.
+DROP TABLE IF EXISTS config_overrides;
+-- DROP TABLE IF EXISTS config_change_log;  -- intentional: evidence is retained

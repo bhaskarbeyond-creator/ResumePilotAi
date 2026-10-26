@@ -154,6 +154,15 @@ const CAPABILITIES = Object.freeze([
     probe: { method: 'GET', path: '/platform/security-events' },
   },
   {
+    id: 'config',
+    label: 'Configuration',
+    group: 'configuration',
+    // Any-of matches the manifest rule for `GET /admin/config`: an auditor may read the
+    // census (with elevated values redacted), so the tab must not be hidden from them.
+    requires: ['system.config.read', 'audit.read', 'security.read'],
+    probe: { method: 'GET', path: '/admin/config' },
+  },
+  {
     id: 'settings',
     label: 'Settings',
     group: 'configuration',
@@ -199,6 +208,9 @@ const ACTIONS = Object.freeze({
     editRole: 'system.config.manage',
     grantRole: 'system.config.manage',
   }),
+  // The registry's own editor. `save` is finer than the tab's `read`: an auditor may
+  // open the census and not change anything, which is the point of the permission split.
+  config: Object.freeze({ save: 'system.config.write', history: 'audit.read' }),
   settings: Object.freeze({ save: 'system.config.write' }),
   email: Object.freeze({ saveSmtp: 'system.config.write' }),
   'ai-settings': Object.freeze({ save: 'system.config.write' }),

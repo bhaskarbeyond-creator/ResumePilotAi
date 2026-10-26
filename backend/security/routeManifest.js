@@ -415,6 +415,21 @@ const RULES = [
     rationale: 'Reading who-can-do-what is compliance information, so any auditor or security reader may see it; changing authority is SUPER_ADMIN-only because every other grant is derived from it.',
   },
   {
+    id: 'config-registry',
+    methods: 'any',
+    exact: ['/admin/config'],
+    prefix: ['/admin/config/'],
+    permission: { read: ['system.config.read', 'audit.read', 'security.read'], write: 'system.config.write' },
+    rationale: 'The configuration census and its history are read by auditors and security readers; a write is a platform configuration change. Read-only keys are refused inside the handler with their written justification, which is why this rule cannot express the distinction.',
+  },
+  {
+    id: 'config:runtime-subset',
+    methods: 'read',
+    exact: ['/config/runtime'],
+    permission: '*',
+    rationale: 'The runtime subset is scoped to values the client must render (currency, tax, limits, maintenance state); every authenticated user may read it, and the handler enumerates the keys rather than accepting them from the caller.',
+  },
+  {
     id: 'default-admin-read',
     methods: 'read',
     exact: [],

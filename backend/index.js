@@ -72,6 +72,7 @@ const { adminUsersRouter } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
 const adminRbacRouter = require('./routes/adminRbac');
 const capabilitiesRouter = require('./routes/capabilities');
+const configRouter = require('./routes/config');
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
 const { coversRouter } = require('./routes/covers');
@@ -383,9 +384,25 @@ app.use(sanitizeRequest());
 // Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage).
 // GLOBAL_RATE_LIMIT_MAX overrides in every environment (previously ignored in
 // test mode, which made the limiter unmeasurable under load).
+// REC-012/CFG-004: the ceiling comes from the configuration registry (database
+// override → env → default) and is read through a 30-second cache, so an operator can
+// widen or tighten it without a deploy. `restartRequired: false` in the registry is
+// therefore true rather than aspirational. The `try` is not defensive noise: this
+// runs on the request path, and a configuration read must never be able to turn a
+// rate limiter into a 500.
+const readLimitFromConfig = async (key, fallback) => {
+    try {
+        const { getConfigValue } = require('./services/configService');
+        const value = Number(await getConfigValue(key, fallback));
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+    } catch (_error) {
+        return fallback;
+    }
+};
+const bootGlobalLimitMax = Number(process.env.GLOBAL_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 2500));
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: Number(process.env.GLOBAL_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 2500)),
+    max: () => readLimitFromConfig('security.rateLimit.global', bootGlobalLimitMax),
     message: { error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again in a few moments.', requestId: undefined } },
     standardHeaders: 'draft-6',
     legacyHeaders: false,
@@ -403,7 +420,10 @@ app.use('/api', globalLimiter);
 // certification/E2E suites that provision many accounts are not throttled.
 const authHourlyLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
+    max: () => readLimitFromConfig(
+        'security.rateLimit.authHourly',
+        process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20)
+    ),
     standardHeaders: 'draft-6',
     legacyHeaders: false,
     message: { error: { code: 'RATE_LIMITED', message: 'Too many sensitive requests from this IP, please try again after an hour', requestId: undefined } },
@@ -411,7 +431,10 @@ const authHourlyLimiter = rateLimit({
 });
 const authBurstLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 5),
+    max: () => readLimitFromConfig(
+        'security.rateLimit.authBurst',
+        process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 5)
+    ),
     standardHeaders: 'draft-6',
     legacyHeaders: false,
     message: { error: { code: 'AUTH_BURST_LIMITED', message: 'Too many authentication attempts. Please wait before trying again.', requestId: undefined } },
@@ -6915,6 +6938,10 @@ app.use('/api/admin/rbac', adminRbacRouter);
 // REC-018/INV-5: "what may I do?" — the console derives visibility from this
 // instead of from the role name, so a grant is visible without a deploy.
 app.use('/api/me', capabilitiesRouter);
+// REC-012/INV-4/INV-6: the configuration registry surface. Mounted before the
+// catch-all admin router so `/config/*` cannot be shadowed by a broader mount.
+app.use('/api/admin/config', configRouter);
+app.use('/api/config', configRouter.publicRouter);
 app.use('/api/admin', adminPlatformOperationsRouter);
 // Durable account deletion removes the subject's personal content and credentials,
 // tombstones employer listings so other applicants retain their application history,

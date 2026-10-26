@@ -192,14 +192,19 @@ test('INV-5: a super-admin-only tab is visible only to the wildcard holder', () 
 test('REC-018: a role that exists only in the database gets the tabs its permissions imply', () => {
   const caps = resolveCapabilities({ uid: 'lead-1', claims: { role: 'AUDIT_LEAD' } });
   const allowed = caps.tabs.filter(tab => tab.allowed).map(tab => tab.id);
-  // audit.read + users.read + security.read implies exactly these surfaces:
+  // audit.read + users.read + security.read implies exactly these surfaces. `config`
+  // is among them because `audit.read` may read the configuration census (elevated
+  // values redacted), and a tab an auditor can open must not be hidden from them.
   assert.deepEqual([...allowed].sort(), [
-    'attention', 'audit', 'dashboard', 'health', 'moderation', 'operations', 'queues', 'rbac', 'security', 'users',
+    'attention', 'audit', 'config', 'dashboard', 'health', 'moderation', 'operations', 'queues', 'rbac', 'security', 'users',
   ].sort(),
     'capability resolution must be driven by permissions, not by a role allowlist');
 
   // ...and it must not offer anything it cannot enforce.
   assert.equal(allowed.includes('settings'), false, 'AUDIT_LEAD has no system.config.read');
+  assert.equal(caps.tabs.find(tab => tab.id === 'config').allowed, true,
+    'the census is readable by audit.read, so the tab is visible — and its save action is not');
+  assert.equal(caps.actions.config?.save, false, 'a visible surface does not imply a writable one');
   assert.equal(allowed.includes('support'), false, 'AUDIT_LEAD has no tickets.manage');
   assert.equal(allowed.includes('ai-settings'), false, 'AUDIT_LEAD is not a wildcard holder');
 });

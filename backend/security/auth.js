@@ -267,7 +267,32 @@ function requireRecentAdminAuthentication(req, res, next) {
       error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId },
     });
   }
-  if (superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
+  return requireRecentAuthentication(req, res, next);
+}
+
+/**
+ * Freshness gate without the super-admin role requirement.
+ *
+ * `requireRecentAdminAuthentication` answers two questions at once — "is this a super
+ * admin?" and "did they sign in recently?" — and its name suggests only the second.
+ * Every caller that wanted freshness therefore also got a super-admin requirement, which
+ * is why a `system.config.write` holder could not save a value: a capability INV-3 says
+ * is a configurable bundle was in practice welded to the top role (RCA-011).
+ *
+ * This middleware asks only the freshness question. It still applies MFA when the caller
+ * *is* a super admin and enforcement is on, and it still skips enforcement outside
+ * production unless `REQUIRE_RECENT_AUTH_IN_TEST=true`, so the test-environment contract
+ * used across the suite is unchanged.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+function requireRecentAuthentication(req, res, next) {
+  if (!req.user) {
+    return requireAuth(req, res, () => requireRecentAuthentication(req, res, next));
+  }
+  if (isSuperAdmin(req.user) && superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
     return res.status(403).json({
       error: {
         code: 'SUPER_ADMIN_MFA_REQUIRED',
@@ -304,6 +329,7 @@ module.exports = {
   requireAdmin,
   requireSuperAdmin,
   requireRecentAdminAuthentication,
+  requireRecentAuthentication,
   requireRecentAuth: requireRecentAdminAuthentication,
   isSuperAdmin,
   hasSecondFactor,

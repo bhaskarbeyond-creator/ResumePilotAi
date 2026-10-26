@@ -163,7 +163,15 @@ async function recordAdminAuditLog(requestOrEvent, explicitEvent) {
 // `res.end` runs, Express has restored the mount prefix, so `req.path` here is the
 // full `/api/admin/rbac/...`. All three spellings are listed because the skip check
 // must not depend on when the URL was rewritten.
-const SELF_AUDITED_PREFIXES = Object.freeze(['/api/admin/rbac/', '/admin/rbac/', '/rbac/']);
+// Paths whose handlers write a semantic audit row themselves, with before/after.
+// Recording them here as well would double the trail: one row saying "a PUT happened"
+// and one saying what changed. Counting configuration changes from the request-level row
+// would then be wrong by a factor of two, and the request-level row adds nothing the
+// semantic row lacks (INV-6).
+const SELF_AUDITED_PREFIXES = Object.freeze([
+  '/api/admin/rbac/', '/admin/rbac/', '/rbac/',
+  '/api/admin/config/', '/admin/config/',
+]);
 
 function createAdminAuditMiddleware() {
   return (req, res, next) => {
