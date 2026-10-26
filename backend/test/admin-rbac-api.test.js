@@ -461,3 +461,75 @@ test('INV-6: an unreachable store is a 503 failure, never a silent success', asy
   assert.equal(response.body.success, false);
   assert.equal(auditRows.length, 0, 'a failed write must not produce a success audit row');
 });
+
+/* ── refusal envelopes ───────────────────────────────────────────────── */
+
+test('INV-3: invalid authority payloads are refused with a field, and nothing is written', async () => {
+  const store = memoryStore(SEED);
+  installFixtures(store);
+  await refreshRbacCache();
+  const app = require('../index');
+
+  const notAnArray = await request(app)
+    .put('/api/admin/rbac/roles/SUPPORT/permissions')
+    .set(bearer('SUPER_ADMIN'))
+    .send({ permissions: 'users.read', reason: 'a reason long enough to pass the reason check' });
+  assert.equal(notAnArray.status, 400);
+  assert.equal(notAnArray.body.error.field, 'permissions');
+
+  const badAction = await request(app)
+    .put('/api/admin/rbac/roles/SUPPORT/permissions')
+    .set(bearer('SUPER_ADMIN'))
+    .send({ permissions: [{ resource: 'users', action: 'read write' }], reason: 'a reason long enough to pass the reason check' });
+  assert.equal(badAction.status, 400);
+  assert.match(badAction.body.error.message, /unknown action/);
+
+  const unknownRole = await request(app)
+    .put('/api/admin/rbac/roles/GHOST/permissions')
+    .set(bearer('SUPER_ADMIN'))
+    .send({ permissions: [{ resource: 'users', action: 'read' }], reason: 'a reason long enough to pass the reason check' });
+  assert.equal(unknownRole.status, 404);
+  assert.equal(unknownRole.body.error.code, 'ROLE_NOT_FOUND');
+  // Captured before the refusals, so the assertion is about *this* run rather than about
+  // a seed count a future edit to SEED could invalidate.
+  assert.deepEqual(store.roles.get('SUPPORT'), [{ resource: 'users', action: 'read' }],
+    'a refused write must leave the bundle untouched');
+});
+
+test('INV-6: a grant to yourself is a 409 that names the second-approver rule', async () => {
+  installFixtures(memoryStore(SEED));
+  await refreshRbacCache();
+  const app = require('../index');
+  const response = await request(app)
+    .post('/api/admin/rbac/grants')
+    .set(bearer('SUPER_ADMIN'))
+    .send({ uid: 'sa-rbac', role: 'AUDITOR', reason: 'give myself an audit role for the review' });
+  assert.equal(response.status, 409);
+  assert.equal(response.body.error.code, 'SELF_ESCALATION_BLOCKED');
+});
+
+test('INV-6: revoking a grant that is not held is a 404, not a silent success', async () => {
+  installFixtures(memoryStore(SEED));
+  await refreshRbacCache();
+  const app = require('../index');
+  const response = await request(app)
+    .delete('/api/admin/rbac/grants/uid-unknown/AUDITOR')
+    .query({ reason: 'cleanup of a grant that was never issued' })
+    .set(bearer('SUPER_ADMIN'));
+  assert.equal(response.status, 404);
+  assert.equal(response.body.error.code, 'GRANT_NOT_FOUND');
+});
+
+test('INV-6: a store failure while re-bundling is a 503, never a 500 that reads as "maybe it saved"', async () => {
+  const store = memoryStore(SEED);
+  store.replaceRolePermissions = async () => { throw Object.assign(new Error('store down'), { code: 'ECONNREFUSED' }); };
+  installFixtures(store);
+  await refreshRbacCache();
+  const app = require('../index');
+  const response = await request(app)
+    .put('/api/admin/rbac/roles/SUPPORT/permissions')
+    .set(bearer('SUPER_ADMIN'))
+    .send({ permissions: [{ resource: 'users', action: 'read' }, { resource: 'tickets', action: 'manage' }], reason: 'a reason long enough to pass the reason check' });
+  assert.equal(response.status, 503, 'a genuinely different bundle must reach the store, and fail there');
+  assert.equal(response.body.success, false);
+});

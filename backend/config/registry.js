@@ -71,7 +71,12 @@ function invalid(message) {
  * @returns {(value: unknown) => number}
  */
 const intInRange = (min, max) => value => {
-  const parsed = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  // `Number('')` is 0, which would turn a cleared field into a real zero — for
+  // `schedulerIntervalMs` that silently disables the scheduler. Empty input is not a
+  // number, and is rejected before the range check runs.
+  if (typeof value === 'string' && value.trim() === '') throw invalid('must be a whole number');
+  if (value === null || value === undefined) throw invalid('must be a whole number');
+  const parsed = typeof value === 'number' ? value : Number(String(value).trim());
   if (!Number.isInteger(parsed)) throw invalid('must be a whole number');
   if (parsed < min || parsed > max) throw invalid(`must be between ${min} and ${max}`);
   return parsed;
@@ -85,7 +90,11 @@ const intInRange = (min, max) => value => {
  * @returns {(value: unknown) => number}
  */
 const decimalInRange = (min, max, places) => value => {
-  const parsed = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  // Same trap as the integer validator: an empty string is `0` to `Number`, and 0% is a
+  // valid tax rate, so clearing the field would silently set tax to zero.
+  if (typeof value === 'string' && value.trim() === '') throw invalid('must be a number');
+  if (value === null || value === undefined) throw invalid('must be a number');
+  const parsed = typeof value === 'number' ? value : Number(String(value).trim());
   if (!Number.isFinite(parsed)) throw invalid('must be a number');
   if (parsed < min || parsed > max) throw invalid(`must be between ${min} and ${max}`);
   return Number(parsed.toFixed(places));

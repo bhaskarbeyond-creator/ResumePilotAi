@@ -45,7 +45,11 @@ const router = express.Router();
 function respondWithError(res, error) {
   const status = Number(error?.status)
     || (error?.code === 'ECONNREFUSED' || error?.code === 'ER_NO_SUCH_TABLE' ? 503 : 500);
-  const code = error?.code && /^[A-Z_]+$/.test(String(error.code)) ? String(error.code) : 'CONFIG_OPERATION_FAILED';
+  // Only this module's own codes reach the client. A driver code (`ECONNREFUSED`,
+  // `ER_LOCK_DEADLOCK`) describes the store, not the request, and is not in the
+  // documented error table — a caller cannot act on it and should not have to learn it.
+  const rawCode = String(error?.code || '');
+  const code = /^CONFIG_[A-Z_]+$/.test(rawCode) ? rawCode : 'CONFIG_OPERATION_FAILED';
   const message = status === 500
     ? 'The configuration change could not be completed'
     : String(error?.message || 'The configuration change could not be completed');

@@ -240,3 +240,79 @@ test('INV-5: a writer without system.config.write cannot use the endpoint', asyn
     .send({ value: 60, expectedRevision: 3, reason: 'attempted by an auditor' });
   assert.equal(response.status, 403);
 });
+
+/* ── refusal and failure envelopes ───────────────────────────────────── */
+
+test('a body without a `value` field is a 400 that distinguishes "absent" from "empty"', async () => {
+  const app = require('../index');
+  const absent = await request(app)
+    .put('/api/admin/config/operations.queues.sampleSize')
+    .set(bearer('ADMIN'))
+    .send({ expectedRevision: 3 });
+  assert.equal(absent.status, 400);
+  assert.equal(absent.body.error.code, 'CONFIG_VALUE_REQUIRED');
+
+  // `null` and `''` are values, not omissions. They are rejected by the validator with a
+  // field message instead, which tells the operator what to fix.
+  const empty = await request(app)
+    .put('/api/admin/config/operations.queues.sampleSize')
+    .set(bearer('ADMIN'))
+    .send({ value: '', expectedRevision: 3 });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.error.code, 'CONFIG_INVALID');
+});
+
+test('history for an unregistered key is a 404, not an empty trail', async () => {
+  const app = require('../index');
+  const response = await request(app).get('/api/admin/config/not.a.key/history').set(bearer('ADMIN'));
+  assert.equal(response.status, 404);
+  assert.equal(response.body.error.code, 'CONFIG_KEY_UNKNOWN');
+});
+
+test('history honours a bounded limit so a clinical request cannot read the whole log', async () => {
+  const app = require('../index');
+  const response = await request(app)
+    .get('/api/admin/config/operations.queues.sampleSize/history?limit=1')
+    .set(bearer('ADMIN'));
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(response.body.history));
+});
+
+test('a store failure is reported as 503 with a code, never as a silent success', async () => {
+  const app = require('../index');
+  const before = store.log.length;
+  const currentRevision = store.rows.get('operations.queues.sampleSize').revision;
+  // Warm the resolution cache first, so the injected failure lands on the transactional
+  // `SELECT … FOR UPDATE` inside the write rather than on the read that precedes it.
+  await configService.getConfigValue('operations.queues.sampleSize');
+  store.failNext(Object.assign(new Error('store down'), { code: 'ECONNREFUSED' }));
+  const response = await request(app)
+    .put('/api/admin/config/operations.queues.sampleSize')
+    .set(bearer('ADMIN'))
+    .send({ value: 88, expectedRevision: currentRevision });
+  assert.equal(response.status, 503);
+  assert.equal(response.body.error.code, 'CONFIG_OPERATION_FAILED');
+  assert.equal(store.log.length, before, 'a failed write must not leave a change-log row');
+});
+
+test('history read failure and runtime read failure are 503s, not empty results', async () => {
+  const app = require('../index');
+  await configService.getConfigValue('operations.queues.sampleSize');
+
+  store.failNext(Object.assign(new Error('store down'), { code: 'ECONNREFUSED' }));
+  const history = await request(app)
+    .get('/api/admin/config/operations.queues.sampleSize/history')
+    .set(bearer('ADMIN'));
+  // Diagnostics: what a 200 here would actually claim.
+  assert.equal(history.status, 503, `an unreadable trail must not render as "no changes recorded" (body: ${JSON.stringify(history.body)})`);
+
+  // The runtime subset deliberately does NOT 503 when the store is down: a client must
+  // still be able to render with declared defaults, and a maintenance banner that
+  // disappears during an incident is worse than one showing its default. The contract is
+  // therefore "200 with defaults", and this asserts that rather than an error nobody wants.
+  configService.invalidateConfigCache();
+  store.failNext(Object.assign(new Error('store down'), { code: 'ECONNREFUSED' }));
+  const runtime = await request(app).get('/api/config/runtime').set(bearer('USER'));
+  assert.equal(runtime.status, 200);
+  assert.equal(runtime.body.values['payments.currency'], 'INR', 'the declared default is served when the store is unreachable');
+});

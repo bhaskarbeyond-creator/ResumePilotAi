@@ -1,0 +1,32 @@
+{
+  "include": [
+    "config/registry.js",
+    "services/configService.js",
+    "services/adminRbac.js",
+    "services/adminRbacAdministration.js",
+    "security/capabilityMap.js",
+    "security/routeManifest.js",
+    "security/policy.js",
+    "security/permissionVocabulary.js",
+    "routes/config.js",
+    "routes/capabilities.js",
+    "routes/adminRbac.js"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "test/**",
+    "test-support/**"
+  ],
+  "clean": true,
+  "check-coverage": true,
+  "per-file": true,
+  "lines": 90,
+  "statements": 90,
+  "functions": 85,
+  "branches": 60,
+  "reporter": [
+    "text-summary",
+    "json-summary",
+    "lcov"
+  ]
+}

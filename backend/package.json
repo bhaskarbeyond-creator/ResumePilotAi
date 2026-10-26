@@ -8,7 +8,8 @@
     "test:payments": "node --test --test-concurrency=1 --test-force-exit test/payment-reconciliation.test.js test/payments.test.js test/payment-activation.test.js",
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js"
+    "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js",
+    "test:coverage": "c8 node --test --test-concurrency=1 --test-force-exit test/config-validators.test.js test/config-registry.test.js test/config-api.test.js test/authz-visibility-matrix.test.js test/route-manifest.test.js test/admin-rbac-api.test.js test/admin-rbac-resolver.test.js test/admin-rbac-store.test.js test/admin-rbac-administration.test.js test/admin-rbac-contract.test.js test/admin-target-authority.test.js test/setting-classification.test.js test/security.test.js && c8 check-coverage --branches=80 --lines=95 --functions=90 --per-file=false"
   },
   "author": "",
   "license": "ISC",
@@ -34,6 +35,7 @@
     "uuid": "11.1.1"
   },
   "devDependencies": {
+    "c8": "^12.0.0",
     "supertest": "^7.1.4"
   }
 }

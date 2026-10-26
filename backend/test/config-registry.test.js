@@ -351,3 +351,77 @@ test('invalidation: a successful write is visible immediately, not after the cac
     restore();
   }
 });
+
+/* ── remaining refusal and env paths ─────────────────────────────────── */
+
+test('a malformed environment value is reported and the default is used instead', async () => {
+  const store = createFakeStore();
+  const restore = withStore(store);
+  process.env.AUTH_BURST_RATE_LIMIT_MAX = 'not-a-number';
+  try {
+    const resolved = await configService.resolveAll();
+    const entry = resolved.get('security.rateLimit.authBurst');
+    assert.strictEqual(entry.source, 'env-invalid');
+    assert.strictEqual(entry.valid, false);
+    assert.strictEqual(entry.value, 5, 'an unreadable deployment value must not take the platform down');
+  } finally {
+    delete process.env.AUTH_BURST_RATE_LIMIT_MAX;
+    restore();
+  }
+});
+
+test('an unknown key is a programming error unless the caller supplies an explicit fallback', async () => {
+  const store = createFakeStore();
+  const restore = withStore(store);
+  try {
+    await assert.rejects(() => configService.getConfigValue('no.such.key'), /unknown key/);
+    assert.strictEqual(await configService.getConfigValue('no.such.key', 42), 42,
+      'the fallback exists for call sites that must never throw mid-request');
+    await assert.rejects(() => configService.getConfigValues(['operations.queues.sampleSize', 'no.such.key']), /unknown key/);
+  } finally {
+    restore();
+  }
+});
+
+test('a write without an identified actor is refused: an unattributable change is not a change', async () => {
+  const store = createFakeStore();
+  const restore = withStore(store);
+  try {
+    await assert.rejects(
+      () => configService.writeConfigValue({ key: 'operations.queues.sampleSize', value: 60, expectedRevision: null, actor: null }),
+      error => error.code === 'CONFIG_ACTOR_REQUIRED'
+    );
+    await assert.rejects(
+      () => configService.writeConfigValue({ key: 'operations.queues.sampleSize', value: 60, expectedRevision: null, actor: {} }),
+      error => error.code === 'CONFIG_ACTOR_REQUIRED'
+    );
+  } finally {
+    restore();
+  }
+});
+
+test('a reason longer than the audit column is refused rather than truncated', async () => {
+  const store = createFakeStore();
+  const restore = withStore(store);
+  try {
+    await assert.rejects(
+      () => configService.writeConfigValue({
+        key: 'payments.tax.gstPercentage', value: 12, expectedRevision: null,
+        actor: ACTOR, reason: 'x'.repeat(501),
+      }),
+      error => error.code === 'CONFIG_REASON_TOO_LONG'
+    );
+  } finally {
+    restore();
+  }
+});
+
+test('history for an unregistered key is a 404 from the service too', async () => {
+  const store = createFakeStore();
+  const restore = withStore(store);
+  try {
+    await assert.rejects(() => configService.configHistory('no.such.key'), error => error.status === 404);
+  } finally {
+    restore();
+  }
+});
