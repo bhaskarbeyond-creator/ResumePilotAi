@@ -65,6 +65,21 @@ function makeRegistry() {
   return new MySqlTenantRegistry({ pool: getPool() });
 }
 
+async function grantTenantAi(sql, registry, tenantId) {
+  // Enterprise AI is deny-by-default (normalizeAllowedProviders): a freshly
+  // provisioned tenant's aiPolicy.allowedProviders is [] and EVERY provider is
+  // blocked (403 TENANT_AI_PROVIDER_UNAVAILABLE). The leg grants openai+groq
+  // through the real CAS-guarded configuration path.
+  const rows = await sql.query('SELECT revision FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
+  const revision = Number(rows?.[0]?.revision || 1);
+  await registry.updateTenantConfiguration({
+    tenantId,
+    input: { aiPolicy: { allowedProviders: ['openai', 'groq'], allowedModels: [], primaryModel: '' } },
+    expectedRevision: revision,
+  });
+  return revision;
+}
+
 async function tenantGenerate({ token, tenantId, tag }) {
   const started = Date.now();
   const response = await fetch(`http://127.0.0.1:${ENGINE_PORT}/api/generate-content`, {
@@ -142,6 +157,9 @@ async function main() {
     const T1 = await registry.provisionTenant({ ownerPrincipalId: shaUid(t1Email), displayName: `Probe T1 ${LEG}`, slug: `probe-t1-${LEG}` });
     const T2 = await registry.provisionTenant({ ownerPrincipalId: shaUid(t2Email), displayName: `Probe T2 ${LEG}`, slug: `probe-t2-${LEG}` });
     emit({ type: 'tenants', leg: LEG, t1: T1.tenantId, t2: T2.tenantId, t1Owner: shaUid(t1Email), t2Owner: shaUid(t2Email) });
+    const rev1 = await grantTenantAi(sql, registry, T1.tenantId);
+    const rev2 = await grantTenantAi(sql, registry, T2.tenantId);
+    emit({ type: 'ai-policy-granted', t1Revision: rev1, t2Revision: rev2, allowedProviders: ['openai', 'groq'] });
     await registry.setTenantCredentials({ tenantId: T1.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-t1-byok'] } });
     await registry.setTenantCredentials({ tenantId: T2.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-t2-byok'] } });
     emit({ type: 'byok-seeded', t1Key: 'key-t1-byok', t2Key: 'key-t2-byok', encryptedAtRest: true });
@@ -280,7 +298,8 @@ async function main() {
     const ownerToken = await previewLogin({ enginePort: ENGINE_PORT, email: ownerEmail });
     const T = await registry.provisionTenant({ ownerPrincipalId: shaUid(ownerEmail), displayName: 'Probe A16 tenant', slug: 'probe-a16' });
     await registry.setTenantCredentials({ tenantId: T.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-a16-byok'] } });
-    emit({ type: 'tenant', tenantId: T.tenantId });
+    const revT = await grantTenantAi(sql, registry, T.tenantId);
+    emit({ type: 'tenant', tenantId: T.tenantId, aiPolicyRevision: revT, allowedProviders: ['openai', 'groq'] });
     const tenantCall = await tenantGenerate({ token: ownerToken, tenantId: T.tenantId, tag: 'a16-decision' });
     emit({ type: 'call', leg: LEG, who: 'tenant', ...tenantCall });
     await sleep(3000); // usage write is fire-and-forget by design

@@ -45,21 +45,10 @@ prep_db() { # DB_NAME APPLY_MIGRATIONS(0|1)
   (cd "$ROOT/backend" && timeout 120 env DB_NAME="$1" DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD= NODE_ENV=development \
     node -e "require('./database/mysql').initializeSchema({mode:'apply'}).then(r=>{process.exit(r.success?0:1)})" >/dev/null 2>&1)
   echo "prep_db $1: schema exit $?"
-  if [ "$2" = 1 ]; then
-    (cd "$ROOT/backend" && timeout 60 env DB_NAME="$1" NODE_ENV=development node -e "
-      const fs = require('fs');
-      const m = require('mysql2/promise');
-      (async () => {
-        const c = await m.createConnection({ host: '127.0.0.1', port: 3306, user: 'root', password: '', database: process.env.DB_NAME, multipleStatements: true });
-        for (const f of ['028_ai_routing_decision_ledger.sql', '029_enterprise_ai_usage_decision_id.sql']) {
-          const sqlText = fs.readFileSync('./database/migrations/' + f, 'utf8');
-          await c.query(sqlText);
-          console.log('applied ' + f);
-        }
-        await c.end(); process.exit(0);
-      })()")
-    echo "prep_db $1: migrations exit $?"
-  fi
+  # 028/029 need no manual application: initializeSchema -> runMigrations reads
+  # backend/database/migrations/ (schema_migrations ledger), so probe databases
+  # already carry the decision-ledger DDL. (Run 2 proved this: the manual
+  # ALTER hit ER_DUP_FIELDNAME.) The leg's ddl-probe line verifies the column.
 }
 
 start_stubs() { # BETA_AUTHFAILS
@@ -118,7 +107,7 @@ run_tenant_leg() { # LEG BETA_AUTHFAILS APPLY_MIGRATIONS(0|1)
 FAILURES=0
 run_tenant_leg a15r1 "key-t1-byok" 0 || FAILURES=$((FAILURES+1))
 run_tenant_leg a15r2 "" 0 || FAILURES=$((FAILURES+1))
-run_tenant_leg a16 "" 1 || FAILURES=$((FAILURES+1))
+run_tenant_leg a16 "" 0 || FAILURES=$((FAILURES+1))
 
 echo "=============================="
 echo "TENANT_PROBE_LEG_EXIT_CODES=$FAILURES (0 = all legs completed; see verdict lines in transcripts)"
