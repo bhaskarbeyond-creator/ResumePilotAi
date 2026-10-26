@@ -35,9 +35,10 @@
 | 17 | [UX-DEVICE-MATRIX.md](UX-DEVICE-MATRIX.md) | Five viewport classes: measured state, acceptance criteria, nine work items | Frontend lead |
 | 18 | [DEPLOYMENT-RUNBOOK.md](DEPLOYMENT-RUNBOOK.md) | Pre-flight, apply, verify, three rollback levels, break-glass | Ops / on-call |
 | 19 | [OPEN-ITEMS.md](OPEN-ITEMS.md) | Every remaining gap with file, acceptance criterion and dependency | Everyone |
-| 20 | [decisions/](decisions/) | ADR-001…005: the five architectural decisions behind the remediation | Architect |
+| 20 | [OBSERVABILITY-AND-ROLLBACK.md](OBSERVABILITY-AND-ROLLBACK.md) | The four counters, their wiring, the SLOs and alert rules, scrape config, and the three-layer rollback drill | Ops / on-call |
+| 21 | [decisions/](decisions/) | ADR-001…007: the seven architectural decisions behind the remediation | Architect |
 
-**Start here if you are deploying:** document 18. **Start here if you are reviewing the work:** document 13, then 15. **Start here if you are continuing it:** document 19.
+**Start here if you are on call:** documents 18 and 20. **Start here if you are reviewing the work:** document 13, then 15. **Start here if you are continuing it:** document 19.
 
 Document order is also the recommended reading order for remediation planning.
 

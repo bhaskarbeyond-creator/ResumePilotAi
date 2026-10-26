@@ -134,12 +134,21 @@ test('load: sustained traffic reaches steady state instead of growing without bo
   const app = require('../index');
   await request(app).get('/api/me/capabilities').set('Authorization', 'Bearer ADMIN');
 
-  // Absent `--expose-gc` the heap is measured mid-collection and a single before/after pair
-  // is noise, not evidence. So the comparison is between two equal windows *after* a warm-up
-  // window: a retention bug grows the second window relative to the first, while a healthy
-  // process reuses the same memory and shows no such trend. Forcing GC when it is exposed
-  // only tightens the numbers; the assertion holds either way.
-  const settle = () => global.gc?.();
+  // A heap comparison without a forced collection measures uncollected garbage, not retention:
+  // the same healthy process can swing tens of megabytes between runs, which is how a memory
+  // test earns a reputation for flakiness and then gets deleted. So this tier declares its
+  // harness precondition and **fails** without it rather than quietly asserting noise — the
+  // `test:load` and `test:tiers` scripts pass `--expose-gc`, and CI uses them.
+  //
+  // Given a real collection, the comparison is between two equal windows after a warm-up: a
+  // retention bug grows the second window relative to the first, while a healthy process
+  // returns to the same baseline.
+  const settle = () => {
+    if (typeof global.gc !== 'function') {
+      assert.fail('the sustained-load tier must run with --expose-gc (use `npm run test:load`); without it the heap figures are garbage, not evidence');
+    }
+    global.gc();
+  };
   await drive(app, '/api/me/capabilities', 100, CONCURRENCY);
   settle();
   const windowOneStart = process.memoryUsage().heapUsed;

@@ -60,7 +60,7 @@ jobs:
       - name: Tiers (contract, characterisation, chaos, performance, load, query-plan, migration, integration)
         working-directory: backend
         run: |
-          NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
+          NODE_ENV=test node --expose-gc --test --test-concurrency=1 --test-force-exit \
             test/api-contract.test.js \
             test/characterisation.test.js \
             test/chaos-resilience.test.js \
@@ -89,6 +89,8 @@ jobs:
             test/load-concurrency.test.js \
             test/load-sustained.test.js \
             test/migration-drill-contract.test.js \
+            test/observability-metrics.test.js \
+            test/root-account-reconciliation.test.js \
             test/degraded-endpoint-semantics.test.js \
             test/characterisation-divergences.test.js
 

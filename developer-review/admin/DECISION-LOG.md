@@ -593,3 +593,64 @@ and this one is indistinguishable from "unknown server error".
 
 **Rollback.** Revert the `expectedMatches` block and `STORE_FAILURE_CODES`; the tests that pin
 both will fail, which is the intended signal.
+
+### D-030-1 — Counters in process, scraped without a database
+
+- **Status:** ACCEPTED · **Invariants:** INV-6, INV-2 · **ADR:**
+  `decisions/ADR-007-in-process-metrics-no-database.md` · **Evidence:**
+  `services/operationalMetrics.js`, `routes/platform.js` (`GET /metrics`),
+  `test/observability-metrics.test.js` (17)
+
+**Decision.** REC-025's three counters exist, plus a fourth (`config_write_total`), in an
+in-process registry with bounded cardinality, exposed as Prometheus text at
+`GET /api/platform/metrics` (`security.read`, no database) and embedded in
+`GET /api/platform/operational-status` at response time rather than inside its 30 s cache.
+
+**Why not the durable rollup table.** `admin_audit_write_failures` moves exactly when the audit
+store is unreachable; a counter stored there is silent during the incident it exists to catch.
+`enterprise_observability_rollups` remains the history; this is the alarm.
+
+**Why not `prom-client`.** Four counters and one exposition format do not need a registry
+library. The dependency earns its place the day histograms are needed — a counter registry
+answers "how many", not "how slow".
+
+**What it costs.** The counters reset on restart, so every alert must use `increase(...)` and
+never the raw value — stated in `OBSERVABILITY-AND-ROLLBACK.md §4.3`, and the reason
+`snapshot()` reports `since`/`uptimeMs`. Per-replica counters must be summed, not read from one
+target; no SLO is expressed as a total.
+
+**Rollback.** Delete the route and the four `metrics.*` call sites; there is no schema change
+and nothing persisted, so a revert leaves no residue.
+
+### D-031-1 — Root authority is attested, and the attestation refuses when it cannot see both halves
+
+- **Status:** ACCEPTED · **Invariants:** INV-2, INV-3, INV-6 · **Evidence:**
+  `services/rootAccountReconciliation.js`, `GET /api/platform/operators/attestation`
+  (`routes/platform.js`), `test/root-account-reconciliation.test.js` (13),
+  `docs/admin/super-admin-provisioning.md`
+
+**Decision.** Root authority is compared across the two stores that hold it — Firebase custom
+claims and `admin_user_roles` — and every disagreement is named with the operator action it
+implies: `CLAIM_WITHOUT_GRANT` (authority this platform cannot revoke), `GRANT_WITHOUT_CLAIM`
+(a revocation that may not have taken effect), `ROOT_WITHOUT_MFA`, `ROOT_UNVERIFIED_EMAIL`,
+`ROOT_SUSPENDED`. The endpoint is SUPER_ADMIN-only by the existing manifest rule
+(`platform-operators`, permission `*`) and it **writes nothing**: it does not repair, grant or
+revoke.
+
+**Why read-only.** A reconciler that fixes what it finds is a second, unaudited path to
+authority — the exact inversion of INV-6. The remediation text points at the audited API
+instead, so the repair leaves a row.
+
+**Why it refuses rather than degrades.** If the identity directory cannot be listed, the
+response is `503 IDENTITY_UNAVAILABLE`; if the grant store cannot be read,
+`503 GRANT_STORE_UNAVAILABLE`. Reporting "no grants" from an unreachable store would turn every
+root into `CLAIM_WITHOUT_GRANT` — a false incident, which costs more than a refusal. Tested
+both ways, including that the mismatch counter stays at zero when the directory is unavailable.
+
+**Alternatives.** (1) A scheduled job writing rollups — rejected as the primary mechanism
+because it needs a scheduler this deployment does not have, and the weekly check in the runbook
+is the same query with a human in the loop. (2) Repair-in-place — rejected above.
+
+**Rollback.** Delete the route and the service; nothing is persisted. The metric
+(`admin_root_account_mismatches_total`) stops being emitted, which is visible as a flat line
+rather than as silence only if the alert is on `increase()`.

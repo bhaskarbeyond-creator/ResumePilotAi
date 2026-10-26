@@ -26,6 +26,7 @@ const express = require('express');
 
 const { requireAuth, requireSuperAdmin, requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
 const { recordAdminAuditLog, sanitizeAuditValue } = require('../security/adminAudit');
+const metrics = require('../services/operationalMetrics');
 const administration = require('../services/adminRbacAdministration');
 const rbac = require('../services/adminRbac');
 
@@ -45,6 +46,9 @@ function respondWithError(res, error) {
   const status = Number(error?.status) || (error?.code === 'ECONNREFUSED' || error?.code === 'ER_NO_SUCH_TABLE' ? 503 : 500);
   const code = error?.code && /^[A-Z_]+$/.test(String(error.code)) ? String(error.code) : 'RBAC_OPERATION_FAILED';
   const message = status === 500 ? 'The authority change could not be completed' : String(error?.message || 'The authority change could not be completed');
+  // One place to count a lost trail: every path in this module funnels here, and a failed
+  // audit write is the one 503 that must raise an alarm rather than a retry.
+  if (code === 'AUDIT_WRITE_FAILED') metrics.recordAuditWriteFailure('route');
   if (status >= 500) {
     console.error('[AdminRBAC] rbac.write_failed', JSON.stringify({ code, message: String(error?.message || error) }));
   }

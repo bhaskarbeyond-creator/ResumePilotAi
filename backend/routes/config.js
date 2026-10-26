@@ -32,6 +32,7 @@ const { recordAdminAuditLog, sanitizeAuditValue } = require('../security/adminAu
 const configService = require('../services/configService');
 const runtimeLimits = require('../services/runtimeLimits');
 const registry = require('../config/registry');
+const metrics = require('../services/operationalMetrics');
 
 const router = express.Router();
 
@@ -50,6 +51,9 @@ function respondWithError(res, error) {
   // one request, and a trail that could not be written leaves the request in the same
   // retryable, no-false-success state as an unreachable database.
   const STORE_FAILURE_CODES = new Set(['ECONNREFUSED', 'ER_NO_SUCH_TABLE', 'POOL_CLOSED', 'AUDIT_WRITE_FAILED']);
+  // A lost audit row on a configuration write is counted here because this is the single
+  // exit for every failure in this module (REC-025).
+  if (String(error?.code || '') === 'AUDIT_WRITE_FAILED') metrics.recordAuditWriteFailure('route');
   const status = Number(error?.status)
     || (STORE_FAILURE_CODES.has(String(error?.code || '')) ? 503 : 500);
   // Only this module's own codes reach the client. A driver code (`ECONNREFUSED`,
@@ -193,6 +197,7 @@ router.put('/:key', requirePermission(['system.config.write']), requireRecentAut
       }),
     });
 
+    metrics.recordConfigWrite('SUCCESS');
     return res.json({
       success: true,
       key: result.key,
@@ -204,6 +209,15 @@ router.put('/:key', requirePermission(['system.config.write']), requireRecentAut
       auditRecorded: Boolean(audit),
     });
   } catch (error) {
+    // The outcome vocabulary is the caller's, not the driver's: a conflict is an operator
+    // problem, a 503 is ours. `FAILED` covers everything the mapper turns into a 500.
+    const status = Number(error?.status) || 0;
+    metrics.recordConfigWrite(
+      error?.code === 'CONFIG_REVISION_CONFLICT' ? 'CONFLICT'
+        : error?.code === 'CONFIG_READ_ONLY' ? 'READ_ONLY'
+          : status >= 500 ? 'FAILED'
+            : status >= 400 ? 'INVALID' : 'FAILED'
+    );
     return respondWithError(res, error);
   }
 });

@@ -22,10 +22,12 @@ either direction.
 
 | Run | Command | Result |
 |---|---|---|
-| Backend gate (16 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **211 / 211 pass**, `c8 check-coverage` exit 0 |
-| Backend coverage | same command | **statements 98.60 %**, **branches 86.68 %**, **functions 97.53 %**, lines 98.60 % — **the 10/10 bar's coverage floor is met** (§3) |
-| Tier pack as one command | `cd backend && NODE_ENV=test npm run test:tiers` | **71 tests, 69 pass, 2 conditional skips (database-gated), 0 fail** |
+| Backend gate (18 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **241 / 241 pass**, `c8 check-coverage` exit 0 |
+| Backend coverage | same command | **statements 98.82 %**, **branches 87.23 %**, **functions 97.95 %**, lines 98.82 % — **the 10/10 bar's coverage floor is met** (§3) |
+| Tier pack as one command | `cd backend && NODE_ENV=test npm run test:tiers` | **101 tests, 99 pass, 2 conditional skips (database-gated), 0 fail** |
 | Coverage closers (3 files) | §2 | **38 / 38 pass** (`config-edge-coverage` 16, `config-registry-guards` 14, `admin-rbac-edge-coverage` 8) |
+| Observability counters (REC-025) | `NODE_ENV=test node --test test/observability-metrics.test.js` | **17 / 17 pass** — deltas, an injected audit failure in one scrape, the cardinality ceiling, no PII in labels, admin-only boundary |
+| Root attestation (REC-026) | `NODE_ENV=test node --test test/root-account-reconciliation.test.js` | **13 / 13 pass** — five mismatch kinds, refusal when either half is blind, SUPER_ADMIN-only |
 | New tier files (10) | §2 | **50 / 50 pass** (51 with the opt-in EXPLAIN layer) |
 | Contract + registry + ownership | §2 | `api-contract` 4/4, `config-registry` 26/26, `config-api` 17/17, `config-validators` 14/14, `database-ownership-completeness` 3/3 |
 | Query budget | `test/mariadb-query-budget.test.js` | **15 / 15 pass** (admin page: 1 round trip cold, 1 batched read warm, max 1 concurrent acquisition) |
@@ -70,6 +72,8 @@ properties, not product properties.
 | `test/config-registry-guards.test.js` | 14 | The registry's own guards, executed rather than trusted: every validator refuses null/empty/whitespace instead of coercing (`Number('') === 0` was a real defect), `assertRegistryIntegrity` rejects each malformed shape it exists to catch (duplicate id, duplicate key, bad default, non-editable without a reason), and `findEntry`/`describeEntry` resolve by key, by case-insensitive id, and report default-origin with no revision for an unresolved key |
 | `test/config-edge-coverage.test.js` | 16 | The configuration route's edges: the read gate's three ways in, history with/without a limit, the write rejection ladder (value, revision sentinel, unknown key, invalid value, read-only, reason absent/empty/whitespace/short/long), the audit-row metadata, an armed audit outage, and the error mapper's driver-code whitelist — all pinned to the ELEVATED key `security.rateLimit.global` because only it requires a reason |
 | `test/admin-rbac-edge-coverage.test.js` | 8 | The authority route's edges: role-listing editability against `PLATFORM_MANAGED_ROLES` and rank ordering, an empty bundle answering `[]`, an unknown role, `DELETE …?reason=` recorded with `reasonSource: 'query'`, the 500/503 mapper split with its field passthrough, an armed store outage, and exactly one semantic audit row per mutation |
+| `test/observability-metrics.test.js` | 17 | The four counters move when something happens and do not when nothing does: a refusal increments by code/role/route, an injected audit-write failure appears in exactly one scrape, `expectedRevision` failures are counted as `CONFLICT` (not `FAILED`), a request rejected before the service is not counted at all, 500+ distinct labels saturate into a visible `__overflow__` bucket, and no label can carry an email, uid or token |
+| `test/root-account-reconciliation.test.js` | 13 | Root authority attested across Firebase claims and `admin_user_roles`: each of the five mismatch kinds, the three identity properties checked for root only, malformed rows skipped, case-insensitivity, and the route refusing (`503 IDENTITY_UNAVAILABLE` / `GRANT_STORE_UNAVAILABLE`) rather than reporting a false incident when it cannot see both halves |
 | `test/config-validators.test.js` | 14 | Every validator, including the arithmetic/geo bounds that used to be `Number('') === 0` |
 | `test/database-ownership-completeness.test.js` | 3 | Five RBAC/config entities resolve to an owning table and the alias map is closed |
 | `test/authz-visibility-matrix.test.js` | — | The frontend-visibility × backend-enforcement matrix (INV-5) as executable data |
@@ -87,10 +91,10 @@ properties, not product properties.
 
 ```
 =============================== Coverage summary ===============================
-Statements   : 98.60% ( 3388/3436 )
-Branches     : 86.68% ( 651/751 )
-Functions    : 97.53% ( 79/81 )
-Lines        : 98.60% ( 3388/3436 )
+Statements   : 98.82% ( 3947/3994 )
+Branches     : 87.23% ( 779/893 )
+Functions    : 97.95% ( 96/98 )
+Lines        : 98.82% ( 3947/3994 )
 ================================================================================
 ```
 
@@ -207,10 +211,10 @@ DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
 
 - **"The E2E suite passes."** It was not executed. The specs exist and are listed by
   Playwright; none ran.
-- **"Per-file coverage meets the bar."** The *global* numbers do (98.60 / 86.68 / 97.53 /
-  98.60 against 90 / 85 / 95 / 90), and that is what `--per-file=false` gates. Per file,
+- **"Per-file coverage meets the bar."** The *global* numbers do (98.82 / 87.23 / 97.95 /
+  98.82 against 90 / 85 / 95 / 90), and that is what `--per-file=false` gates. Per file,
   `routes/config.js` (70.76 % branches), `security/policy.js` (81.08 %),
-  `services/configService.js` (82.20 %) and `routes/adminRbac.js` (81.03 %) are still under 85 %
+  `services/configService.js` (82.50 %) and `routes/adminRbac.js` (79.66 %) are still under 85 %
   branches; each remainder is I/O-callback arms or an unreachable-in-jsdom branch, and closing
   them means a live pool, not a looser threshold. `OI-T-7`, decided in `D-028-1` / `ADR-006`.
 - **"The deployed smoke suite passes."** `scripts/smoke.mjs` needs a live base URL.
