@@ -58,6 +58,32 @@ With `NODE_ENV=test` (the backend unit suite) the auth limiters already default 
 - Known engine defect: after the 012→011 down-migration sequence, `CREATE TABLE IF NOT EXISTS
   credit_notes` reports Note 1050 although the table cannot be opened. Run DDL rollback gates
   (`scripts/verify-mariadb-migrations.mjs`) on native MariaDB.
+- **Same-lifetime ALTER→DROP→recreate ghost defect (isolated 2026-10-26, minimal repro):**
+  if a table is ALTERed and then DROPped **within one bridge process lifetime**, a later
+  `CREATE TABLE IF NOT EXISTS <t>` silently no-ops — the engine reports OK (sometimes Note
+  1050, sometimes no warning at all) while `SHOW TABLES`, `information_schema` and DML all say
+  the table does not exist. A migration chain can then record a version as APPLIED while its
+  tables never materialise (`mariadb-migration-gate` resetSchema + re-apply is exactly this
+  shape: the chain ALTERs `users`, the next reset drops it). Across bridge lifetimes the defect
+  does NOT fire: ALTER in lifetime L1 + DROP/recreate in L2 is clean, and `DROP DATABASE` +
+  recreate clears existing ghosts. Ghosts are per-database, not datadir-wide.
+  **Green-suite recipe (mandatory order):** (1) start bridge — `BRIDGE_DATABASES` must include
+  the suite's `DB_NAME` (e.g. `airesume_test`); otherwise the bridge's handshake falls back to
+  the `test` schema and the gate's `resetSchema` targets nothing. (The bridge's built-in default
+  is `ime365_sandbox,airesume_test`; any explicit override must still include the suite's
+  `DB_NAME`.) (2) apply the schema
+  (`initializeSchema({mode:'apply'})`), (3) **restart the bridge** (new lifetime; the datadir
+  keeps the applied chain), (4) run the suite ONCE in that lifetime. Do not run the suite twice
+  against one bridge lifetime after any chain-applying activity, and do not mix probe/DDL
+  experiments into the suite's lifetime. If ghosts appear: `DROP DATABASE` + recreate (or wipe
+  `BRIDGE_DATA_DIR` entirely) and redo the recipe.
+- Fixed in the bridge (2026-10-26): a transaction-ownership race — sockets woken by one COMMIT
+  could all pass `acquire()` with `owner === null` and all run `START TRANSACTION` on the shared
+  engine session (nested begins silently commit the previous transaction), losing updates in
+  serialized read-modify-write workloads (observed 8/24 surviving increments, zero lock-wait
+  warnings). Ownership is now claimed synchronously before executing a BEGIN, with a
+  post-`await` revalidation loop. Also fixed: `DROP DATABASE` of the currently selected schema
+  no longer leaves a stale selection cache ("No database selected" on the next statement).
 - Any credentials are accepted, which is why the listener refuses non-loopback addresses.
 
 ## Module flags for tests (`set-public-module.mjs`)

@@ -395,15 +395,33 @@ function handleConnection(socket) {
 
   async function runQuery(sql) {
     const head = leading(sql);
-    try {
-      await acquire(connId);
-    } catch (error) {
-      sendError(error);
-      return;
+    for (;;) {
+      try {
+        await acquire(connId);
+      } catch (error) {
+        sendError(error);
+        return;
+      }
+      // Synchronous revalidation (race fix, 2026-10-26): acquire() can pass while
+      // owner === null, but between that check and this continuation another woken
+      // socket may claim the session (its BEGIN ran first). Re-check in the same
+      // synchronous block that will claim/execute; only proceed when the session
+      // is still free or already ours.
+      if (owner === null || owner === connId) break;
     }
     // From here to the end of the try block there is no await: the ownership
-    // check above and the statement below execute atomically.
+    // claim below and the statement execute atomically with respect to other
+    // sockets.
     try {
+      // Race fix: claim the session BEFORE executing a BEGIN, not after. The
+      // old post-execute assignment let N sockets woken by one COMMIT all pass
+      // acquire() with owner === null and then all run START TRANSACTION on the
+      // single shared engine session — nested begins silently committed the
+      // previous transaction, so serialized read-modify-write transactions
+      // interleaved and lost updates (observed: 8 of 24 concurrent
+      // SELECT-FOR-UPDATE increments survived, zero lock-wait warnings logged).
+      const claimingBegin = isBegin(head) && owner === null;
+      if (claimingBegin) owner = connId;
       if (database && currentSchema !== database) {
         const selected = rawQuery(`USE \`${database}\``);
         if (selected.ok) currentSchema = database;
@@ -414,6 +432,12 @@ function handleConnection(socket) {
       else if (isEnd(head) || (inTransaction && isImplicitCommit(head))) { inTransaction = false; releaseOwnership(connId); }
       const useMatch = isUse(head);
       if (useMatch) database = useMatch[1];
+      // DROP DATABASE invalidates the engine session's selection even though the
+      // per-connection cache would still consider it current; drop the cache so
+      // the next statement re-issues USE instead of running "No database
+      // selected" (observed 2026-10-26 during probe-harness iterations).
+      const dropDbMatch = /^DROP\s+DATABASE\s+(?:IF\s+EXISTS\s+)?`?([A-Za-z0-9_]+)`?/i.exec(head);
+      if (dropDbMatch && dropDbMatch[1] === currentSchema) currentSchema = null;
       if (outcome.kind === 'rows') {
         const { fields, types, rows } = outcome.result;
         send(lenencInt(fields.length));

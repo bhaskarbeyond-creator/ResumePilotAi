@@ -4144,6 +4144,23 @@ app.post('/api/admin/ai/reset-state', requireSuperAdmin, async (req, res) => {
                 requestId: res.locals.requestId,
             });
         }
+        // C.4 (PH4-ENGINE-021): optional cooldown scope. Omitted/'platform'
+        // wipes ONLY platform benches (tenant scopes survive a platform
+        // incident reset); 'all' keeps the legacy full wipe; 'tenant:<id>' /
+        // 'uid:<hash>' wipes exactly one scope. The whole route is already
+        // super-admin-only, so scoped resets inherit that gate. The cache is
+        // deliberately NOT scoped here — entries are principal-bound through
+        // cacheScope identity, and clearCache keeps its legacy global flush.
+        const SCOPE_PATTERN = /^(platform|all|tenant:[A-Za-z0-9._-]{1,128}|uid:[a-fA-F0-9]{1,64})$/;
+        const rawScope = body.scope === undefined ? 'platform' : body.scope;
+        if (typeof rawScope !== 'string' || !SCOPE_PATTERN.test(rawScope)) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_RESET_STATE_SCOPE',
+                error: 'scope must be "platform", "all", "tenant:<id>" or "uid:<hash>".',
+                requestId: res.locals.requestId,
+            });
+        }
         const doCooldowns = body.cooldowns !== false;
         const doCache = body.cache !== false;
         if (!doCooldowns && !doCache) {
@@ -4154,16 +4171,16 @@ app.post('/api/admin/ai/reset-state', requireSuperAdmin, async (req, res) => {
                 requestId: res.locals.requestId,
             });
         }
-        const result = { success: true, cooldowns: null, cache: null };
+        const result = { success: true, cooldowns: null, cache: null, scope: rawScope };
         if (doCooldowns) {
-            result.cooldowns = freellm.resetCooldowns();
+            result.cooldowns = freellm.resetCooldowns({ scopeKey: rawScope === 'all' ? null : rawScope });
         }
         if (doCache) {
             const entriesBefore = freellm.getEngineStatus().cacheEntries ?? 0;
             const cleared = freellm.clearCache();
             result.cache = { ...cleared, entriesCleared: entriesBefore };
         }
-        result.message = `Engine state reset completed (cooldowns=${doCooldowns}, cache=${doCache}).`;
+        result.message = `Engine state reset completed (cooldowns=${doCooldowns}, cache=${doCache}, scope=${rawScope}).`;
         return res.json(result);
     } catch (error) {
         return res.status(error.status && error.status < 500 ? error.status : 503).json({

@@ -383,6 +383,24 @@ class MySqlEnterpriseRepository {
     return items;
   }
 
+  /**
+   * C.2 (PH4-ENGINE-022) capability probe: does THIS instance's
+   * enterprise_ai_usage table already carry the migration-029 decision_id
+   * column? Cached per instance; probed ONLY when a decisionId is actually
+   * present — pre-028 instances (and the flag-off world) emit zero
+   * unknown-column SQL and keep the byte-identical legacy INSERT.
+   */
+  async supportsUsageDecisionId() {
+    if (this._usageDecisionIdSupport !== undefined) return this._usageDecisionIdSupport;
+    try {
+      const [rows] = await this.pool.query("SHOW COLUMNS FROM enterprise_ai_usage LIKE 'decision_id'");
+      this._usageDecisionIdSupport = Array.isArray(rows) && rows.length > 0;
+    } catch {
+      this._usageDecisionIdSupport = false; // fail-closed on evidence writes
+    }
+    return this._usageDecisionIdSupport;
+  }
+
   async recordAiUsage(context, usageEvent = {}) {
     this.assertContext(context);
     const inputTokens = nonNegativeInteger(usageEvent.inputTokens ?? usageEvent.promptTokens, 'Input tokens', 4_294_967_295);
@@ -404,8 +422,23 @@ class MySqlEnterpriseRepository {
     const correlationId = String(usageEvent.correlationId || context.correlationId || '').slice(0, 160);
     const policyVersion = nonNegativeInteger(context.policyVersion, 'Policy version', 4_294_967_295);
 
+    // C.2: the join key is included ONLY when present AND the capability probe
+    // says the column exists on this instance (never emit unknown-column SQL
+    // against a pre-028 ledger). Money/token semantics are untouched either way.
+    const decisionId = usageEvent.decisionId === null || usageEvent.decisionId === undefined
+      ? null
+      : String(usageEvent.decisionId).trim().slice(0, 36) || null;
+    const withDecisionId = Boolean(decisionId) && await this.supportsUsageDecisionId();
+
     const [result] = await this.pool.query(
-      `INSERT INTO enterprise_ai_usage
+      withDecisionId
+        ? `INSERT INTO enterprise_ai_usage
+       (id, tenantId, workspaceId, principalId, dayKey, provider, model, operation,
+        eventKey, correlationId, policyVersion, promptTokens, completionTokens,
+        totalTokens, costEstimate, costMicros, recordedAt, decision_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = VALUES(id)`
+        : `INSERT INTO enterprise_ai_usage
        (id, tenantId, workspaceId, principalId, dayKey, provider, model, operation,
         eventKey, correlationId, policyVersion, promptTokens, completionTokens,
         totalTokens, costEstimate, costMicros, recordedAt)
@@ -416,12 +449,15 @@ class MySqlEnterpriseRepository {
         provider, model, operation, eventKey, correlationId, policyVersion,
         inputTokens, outputTokens, totalTokens, estimatedCostMicros / 1_000_000,
         estimatedCostMicros, now,
+        ...(withDecisionId ? [decisionId] : []),
       ]
     );
     const usage = {
       id, tenantId: context.tenantId, workspaceId: context.workspaceId || null,
       principalId: context.principalId, provider, model, operation, inputTokens,
       outputTokens, estimatedCostMicros, totalTokens, dayKey,
+      // C.2: honest echo — the join key only when it was actually persisted.
+      ...(withDecisionId ? { decisionId } : {}),
     };
     if (Number(result.affectedRows || 0) === 1) return { ...usage, outcome: 'RECORDED' };
 

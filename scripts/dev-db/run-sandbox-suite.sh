@@ -7,7 +7,12 @@ LOG="${LOG:-/tmp/sandbox-suite.log}"
 EXCLUDE="${EXCLUDE:-mariadb-migration-gate}"
 
 rm -rf "$HOME/.cache/ime365-tools/mariadb-data"
-node "$REPO/scripts/dev-db/mariadb-sandbox-bridge.mjs" > /tmp/bridge.log 2>&1 &
+# Pinned on purpose (2026-10-27, round-3 verifier note N1): BRIDGE_DATABASES MUST include the
+# suite's DB_NAME (airesume_test). Without it the bridge handshake falls back to the `test`
+# schema, the chain apply lands there, and mariadb-migration-gate's resetSchema (which drops by
+# table_schema='airesume_test') resets nothing — reproduced as 13/15 instead of 15/15.
+BRIDGE_DATABASES="airesume_test,ime365_sandbox" \
+  node "$REPO/scripts/dev-db/mariadb-sandbox-bridge.mjs" > /tmp/bridge.log 2>&1 &
 BRIDGE_PID=$!
 trap 'kill $BRIDGE_PID 2>/dev/null || true' EXIT
 

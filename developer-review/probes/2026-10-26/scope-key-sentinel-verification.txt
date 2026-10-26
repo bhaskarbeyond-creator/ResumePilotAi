@@ -1,0 +1,5 @@
+{"backend":"sqlite","scopedSchema":true,"error":null,"file":"/tmp/scope-key-verify-final.db"}
+{"table":"provider_metrics","groupByScopeKey":[{"scope_key":"platform","n":2}],"columnFacts":{"notnull":1,"dflt_value":"'platform'"}}
+{"table":"provider_cooldowns","groupByScopeKey":[{"scope_key":"platform","n":1}],"columnFacts":{"notnull":1,"dflt_value":"'platform'"}}
+{"table":"request_log","groupByScopeKey":[{"scope_key":"platform","n":2}],"columnFacts":{"notnull":1,"dflt_value":"'platform'"}}
+{"platformLiteralFilterSeesAllLegacyMetricsRows":2}

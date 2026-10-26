@@ -169,10 +169,20 @@ async function loadTenantByokKeys({ registry, tenantId, allowedProviders, ttlMs 
         cause: error?.code || 'TENANT_BYOK_STORE_ERROR',
       });
     }
-    const apiKey = typeof credentials === 'string'
-      ? credentials.trim()
-      : String(credentials?.apiKey || '').trim();
-    if (apiKey) keys[providerId] = apiKey;
+    // C.5 (PH4-ENGINE-021): the decrypted envelope may carry a KEY POOL —
+    // { apiKeys: [...] } (multiple 027-store credentials for one provider,
+    // envelope-encoded) or a comma/newline-delimited string, which the
+    // router's normalizeKeyPool already splits downstream. Single-key shapes
+    // pass through byte-identically. Key material is never logged.
+    let apiKey;
+    if (typeof credentials === 'string') {
+      apiKey = credentials.trim();
+    } else if (Array.isArray(credentials?.apiKeys)) {
+      apiKey = credentials.apiKeys.map(entry => String(entry || '').trim()).filter(Boolean);
+    } else {
+      apiKey = String(credentials?.apiKey || '').trim();
+    }
+    if (Array.isArray(apiKey) ? apiKey.length > 0 : Boolean(apiKey)) keys[providerId] = apiKey;
   }
 
   tenantByokCache.set(id, { expiresAt: now + Math.max(0, Number(ttlMs) || 0), keys });

@@ -100,6 +100,7 @@ const ENTITIES = Object.freeze({
     enterprise_audit: maria('enterprise_audit', 'enterprise_audit_events'),
     enterprise_observability_rollup: maria('enterprise_observability_rollup', 'enterprise_observability_rollups'),
     enterprise_ai_usage: maria('enterprise_ai_usage', 'enterprise_ai_usage'),
+    ai_routing_decision: maria('ai_routing_decision', 'ai_routing_decisions', 'PH4-ENGINE-022 routing decision observability ledger (migration 028); joins to enterprise_ai_usage via decision_id (migration 029). Observability data, not a system of record.'),
     enterprise_service_account: maria('enterprise_service_account', 'enterprise_service_accounts'),
     enterprise_support_grant: maria('enterprise_support_grant', 'enterprise_support_grants'),
     enterprise_quota: maria('enterprise_quota', 'enterprise_quota_buckets'),
@@ -143,6 +144,7 @@ const ALIASES = Object.freeze({
     enterprise_team_members: 'enterprise_team_member', enterprise_resources: 'enterprise_resource',
     enterprise_audit_events: 'enterprise_audit', enterprise_observability_rollups: 'enterprise_observability_rollup',
     enterprise_ai_usage: 'enterprise_ai_usage', enterprise_service_accounts: 'enterprise_service_account',
+    ai_routing_decisions: 'ai_routing_decision',
     enterprise_support_grants: 'enterprise_support_grant', enterprise_quota_buckets: 'enterprise_quota', enterprise_outbox: 'enterprise_job',
     roles: 'permission', permissions: 'permission',
 });
