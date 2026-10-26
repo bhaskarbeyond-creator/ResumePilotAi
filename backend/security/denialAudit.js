@@ -27,6 +27,7 @@
  */
 
 const { recordAdminAuditLog } = require('./adminAudit');
+const metrics = require('../services/operationalMetrics');
 
 /**
  * Record a denial, tolerating an unavailable audit store.
@@ -38,6 +39,10 @@ const { recordAdminAuditLog } = require('./adminAudit');
  * @returns {Promise<{recorded: boolean}>} `recorded:false` when the store was unavailable
  */
 async function recordDenialAudit(req, res, event = {}) {
+  // Counted before the write is attempted: a denial *happened*, and a denial spike is a
+  // security signal that must survive an audit outage. The row is the evidence; the counter
+  // is the alarm, and an alarm that only works when the evidence store is healthy is not one.
+  metrics.recordDenial({ code: event.code, role: req.user?.claims?.role || req.user?.role, pathname: req.originalUrl });
   try {
     await recordAdminAuditLog(req, {
       actorUid: req.user?.uid,
@@ -62,6 +67,7 @@ async function recordDenialAudit(req, res, event = {}) {
       reason: String(error?.code || error?.message || error),
       requestId: res.locals?.requestId || null,
     }));
+    metrics.recordAuditWriteFailure('denial');
     return { recorded: false };
   }
 }

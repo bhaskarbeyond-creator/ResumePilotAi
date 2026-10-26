@@ -2,6 +2,8 @@
   "include": [
     "config/registry.js",
     "services/configService.js",
+    "services/operationalMetrics.js",
+    "services/rootAccountReconciliation.js",
     "services/adminRbac.js",
     "services/adminRbacAdministration.js",
     "security/capabilityMap.js",

@@ -108,6 +108,7 @@ const RULES = [
       '/platform/observability',
       '/platform/backup-status',
       '/platform/payments-health',
+      '/platform/metrics',
     ],
     prefix: ['/platform/health', '/platform/operational-status', '/admin/health', '/admin/health-summary'],
     permission: 'security.read',

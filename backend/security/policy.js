@@ -1,3 +1,6 @@
+'use strict';
+
+const metrics = require('../services/operationalMetrics');
 const { permissionsFor } = require('./auth');
 const { satisfies } = require('../services/adminRbac');
 const { resolveRoutePermission } = require('./routeManifest');
@@ -94,6 +97,33 @@ function deny(res, code, message) {
   return res.status(403).json({ success: false, error: { code, message, requestId: res.locals.requestId } });
 }
 
+/**
+ * Denial + counter.
+ *
+ * The policy engine is the single largest producer of 403s in the admin plane, so it is where
+ * "how many operators are being refused, for what, on which route" has to be observable. The
+ * counter is synchronous and in-process on purpose: it must answer during a database outage,
+ * which is exactly when an operator is most likely to be poking at admin routes.
+ *
+ * The audit *row* is not written here — `recordDenialAudit` needs the response to have settled
+ * its request id and is invoked by the routes that own a richer event shape. The counter and
+ * the row are therefore not 1:1, and the metric's help text says so.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {string} code
+ * @param {string} message
+ * @returns {import('express').Response}
+ */
+function denyAndCount(req, res, code, message) {
+  metrics.recordDenial({
+    code,
+    role: req.user?.claims?.role || req.user?.role,
+    pathname: req.originalUrl || req.path,
+  });
+  return deny(res, code, message);
+}
+
 const RECENT_AUTHENTICATION_PATHS = new Set(['/account/delete', '/users-data/mfa/disable']);
 
 /** Route-level authorization policy installed after requireAuth. */
@@ -108,10 +138,10 @@ function enforceApiPolicy(req, res, next) {
         ? 'payments.manage'
         : (pathname.startsWith('/admin/employer-applications/') ? 'users.update' : null));
     if (elevatedPermission && !hasPermission(req, elevatedPermission)) {
-      return deny(res, 'FORBIDDEN', 'Insufficient permission');
+      return denyAndCount(req, res, 'FORBIDDEN', 'Insufficient permission');
     }
   } else if (pathname === '/admin/firebase-service-account' && !hasPermission(req, 'secrets.manage')) {
-    return deny(res, 'FORBIDDEN', 'Insufficient permission');
+    return denyAndCount(req, res, 'FORBIDDEN', 'Insufficient permission');
   }
 
   if (isAdminPath(pathname)) {
@@ -122,14 +152,14 @@ function enforceApiPolicy(req, res, next) {
     const resolved = resolveRoutePermission(pathname, req.method);
     if (!resolved) {
       console.warn('[Policy] admin.policy.no_rule', JSON.stringify({ pathname, method: req.method }));
-      return deny(res, 'FORBIDDEN', 'Insufficient permission');
+      return denyAndCount(req, res, 'FORBIDDEN', 'Insufficient permission');
     }
     if (!hasPermission(req, resolved.permission)) {
-      return deny(res, 'FORBIDDEN', 'Insufficient permission');
+      return denyAndCount(req, res, 'FORBIDDEN', 'Insufficient permission');
     }
   }
   if ((requiresVerifiedEmail(pathname) || isAdminPath(pathname)) && !req.user?.emailVerified) {
-    return deny(res, 'EMAIL_VERIFICATION_REQUIRED', 'A verified email address is required');
+    return denyAndCount(req, res, 'EMAIL_VERIFICATION_REQUIRED', 'A verified email address is required');
   }
   // Irreversible self-service operations need a recent sign-in. Firebase's
   // verified auth_time (time of the last real sign-in) is the source of truth;
@@ -139,7 +169,7 @@ function enforceApiPolicy(req, res, next) {
     const authTime = Number(req.user?.claims?.auth_time || 0) * 1000;
     const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
     if (!authTime || Date.now() - authTime > maxAgeMs) {
-      return deny(res, 'RECENT_AUTH_REQUIRED', 'Please reauthenticate before this sensitive operation');
+      return denyAndCount(req, res, 'RECENT_AUTH_REQUIRED', 'Please reauthenticate before this sensitive operation');
     }
   }
   return next();

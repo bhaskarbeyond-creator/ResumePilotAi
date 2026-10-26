@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const metrics = require('../services/operationalMetrics');
 const { getRepository } = require('../repositories');
 
 const SENSITIVE_KEY_PATTERN = /(password|secret|apikey|accesskey|token|privatekey|credential|keysecret|card|cvv|authorization|cookie|session)/i;
@@ -218,7 +219,18 @@ function createAdminAuditMiddleware() {
             query: req.query,
             body: sanitizeAuditValue('body', req.body || {}),
           },
-        }).catch(error => console.error('[AdminAudit] Post-response audit persistence failed:', error?.message || error));
+        }).then(() => {
+          // Counted only once the row exists. An action counted before its trail is written
+          // would report a mutation the audit log cannot show, which is the one discrepancy
+          // an incident review must never have to reconcile.
+          metrics.recordAdminAction({ action, outcome });
+        }).catch(error => {
+          // Two facts, both visible: the row is missing, and the failure is counted so an
+          // alert can fire without parsing logs. The log line stays — a counter says how
+          // many, not which request.
+          metrics.recordAuditWriteFailure('middleware');
+          console.error('[AdminAudit] Post-response audit persistence failed:', error?.message || error);
+        });
       }
     };
 
