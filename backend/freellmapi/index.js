@@ -143,9 +143,16 @@ function clearCache() {
   return { ok: true, message: 'In-memory prompt cache cleared' };
 }
 
-function resetCooldowns() {
-  cooldownManager.resetAll();
-  return { ok: true, message: 'All provider cooldowns reset' };
+function resetCooldowns({ scopeKey = null } = {}) {
+  // C.4 (PH4-ENGINE-021): null keeps the legacy FULL wipe byte-identically;
+  // a scope wipes exactly that scope's benches (manager + durable store).
+  cooldownManager.resetAll({ scopeKey });
+  return {
+    ok: true,
+    message: scopeKey === null || scopeKey === undefined
+      ? 'All provider cooldowns reset'
+      : `Provider cooldowns reset for scope "${scopeKey}"`,
+  };
 }
 
 function resetMetricsForTests() {
