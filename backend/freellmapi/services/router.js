@@ -15,7 +15,7 @@
  * 9. SSE streaming with provider failover before the first forwarded chunk
  */
 
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const { getProviderMeta } = require('../providers/registry');
 // F-28: engine-internal parameter defaults share the platform-wide source.
 const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('../../services/aiGenerationDefaults');
@@ -700,7 +700,46 @@ class FreeLlmRouter {
     return candidate?.isDedicatedByok ? this._scopedEvidenceScopeKey(tenantContext) : null;
   }
 
-  _recordMetrics({ scoped = false, scopeKey = null, provider, model, ok, latencyMs, status, usage = null }) {
+  // PH4-ENGINE-022 C.2 (FREELMAPI_DECISION_LEDGER, default '0'): one UUIDv4
+  // per routed request, threaded wire -> telemetry -> request_log.decision_id
+  // -> routing_decisions ring -> enterprise_ai_usage.decision_id (capability-
+  // probed). Flag off: every decisionId stays null and every path below is
+  // byte-identical to the frozen contract. Cache replays keep the ORIGINAL
+  // request's id — they never mint a new one (one id per ROUTED request).
+  _newDecisionId() {
+    return process.env.FREELMAPI_DECISION_LEDGER === '1' ? randomUUID() : null;
+  }
+
+  _recordDecision({ decisionId, scopeKey = null, mode = null, requestedModel = null, candidate = null, exploration = null, outcome, status = null, latencyMs = null, usage = null }) {
+    if (!decisionId) return; // flag off (or cache replay): zero ring writes, zero reads
+    try {
+      const persistence = getMetricsPersistence();
+      // Evidence at resolution time, scoped like the candidate itself.
+      const aggregates = persistence?.getRollingAggregates?.({ windowMs: 30 * 60_000, ...(scopeKey ? { scopeKey } : {}) }) || [];
+      const observation = candidate
+        ? aggregates.find(row => row.provider === candidate.provider && row.model === candidate.model) || null
+        : null;
+      persistence?.recordDecision?.({
+        decisionId,
+        scopeKey: scopeKey || undefined,
+        mode,
+        requestedModel,
+        chosenProvider: candidate?.provider || null,
+        chosenModel: candidate?.model || null,
+        exploration: exploration || null,
+        qualityEvidence: observation ? (observation.n >= 3 ? 'windowed-p50' : 'immature-window') : null,
+        observedLatencyMs: observation?.p50 ?? null,
+        observationCount: observation?.n ?? null,
+        outcome,
+        status,
+        latencyMs,
+        promptTokens: usage?.promptTokens ?? null,
+        completionTokens: usage?.completionTokens ?? null,
+      });
+    } catch { /* fail-open: a sinking evidence write must never touch the response or the charge */ }
+  }
+
+  _recordMetrics({ scoped = false, scopeKey = null, decisionId = null, provider, model, ok, latencyMs, status, usage = null }) {
     // Tenant/BYOK service observations must not train the shared platform rank.
     // C.1: with scoped evidence ON they train THEIR OWN scope's rank instead;
     // with the flag off this stays the byte-identical legacy sink-hole.
@@ -708,7 +747,9 @@ class FreeLlmRouter {
     try {
       // F-18: the attempt row carries the provider-reported token usage so the
       // durable ledger can account for it (failures record null, never 0).
-      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status, usage, ...(scopeKey ? { scopeKey } : {}) });
+      // C.2: every attempt row of one routed request shares its decisionId
+      // (attempt-vs-decision cardinality: request_log per attempt, ring once).
+      getMetricsPersistence().recordRequest({ provider, model, ok, latencyMs, status, usage, ...(scopeKey ? { scopeKey } : {}), ...(decisionId ? { decisionId } : {}) });
     } catch { /* metrics are best-effort */ }
   }
 
@@ -827,6 +868,9 @@ class FreeLlmRouter {
 
     const fallbacksAttempted = [];
     let lastError = null;
+    // C.2: one decision id for this routed request (null with the flag off;
+    // cache hits returned above never mint one).
+    const decisionId = this._newDecisionId();
 
     // 3. Failover Execution Loop: provider → key pool
     for (const candidate of candidates) {
@@ -892,7 +936,9 @@ class FreeLlmRouter {
           // the dedicated-BYOK no-op stays byte-identical.
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
           else if (scopeKey) this.cooldownManager.clearCooldown(candidate.provider, candidate.model, { scopeKey });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: rescued.usage || null });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, decisionId, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: rescued.usage || null });
+          // C.2: ONE ring row per routed request, written at resolution (fail-open).
+          this._recordDecision({ decisionId, scopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate, exploration: routingDecision?.exploration || null, outcome: fallbacksAttempted.length > 0 ? 'fallback' : 'success', status: 200, latencyMs, usage: rescued.usage || null });
 
           return {
             content: rescued.content,
@@ -901,7 +947,13 @@ class FreeLlmRouter {
             provider: candidate.provider,
             model: candidate.model,
             usage: rescued.usage,
-            routingDecision,
+            // C.2: the wire flows routing_decision automatically; a fresh object
+            // keeps the cached copy free of this request's id (a replay never
+            // re-mints and never inherits). Top-level decisionId is additive.
+            routingDecision: decisionId && routingDecision && typeof routingDecision === 'object'
+              ? { ...routingDecision, decisionId }
+              : routingDecision,
+            decisionId,
             cached: false,
             latencyMs,
             fallbacksAttempted,
@@ -925,7 +977,7 @@ class FreeLlmRouter {
             status,
             latencyMs,
           });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, decisionId, provider: candidate.provider, model: candidate.model, ok: false, latencyMs, status });
 
           if (status === 429) sawRateLimit = true;
           const requestedRetryMs = Number(error.retryAfterMs);
@@ -958,12 +1010,18 @@ class FreeLlmRouter {
 
       // Dedicated BYOK errors should not fail over to other tenants or public mesh
       if (candidate.isDedicatedByok && candidates.length === 1) {
+        // C.2: honest failure ring row in the candidate's own scope.
+        this._recordDecision({ decisionId, scopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate, outcome: 'failure', status: Number(lastError?.status) || 500, latencyMs: null });
+        if (lastError && decisionId && lastError.decisionId === undefined) lastError.decisionId = decisionId;
         throw lastError || new Error('Dedicated BYOK provider failed');
       }
     }
 
     // 4. All Candidates Exhausted
     const fallbackSummary = fallbacksAttempted.map(f => `${f.provider} (${f.code}: ${f.error})`).join('; ');
+    // C.2: terminal failures record the scoped ring row and carry the id on
+    // the error so upstream telemetry can thread it (additive field).
+    const failureScopeKey = candidates.some(c => c.isDedicatedByok) ? this._scopedEvidenceScopeKey(tenantContext) : null;
     // F-03: when a STRICT pin was exhausted (manual mode without the opt-in
     // `manualAllowFallback`, or a request naming one provider explicitly), the
     // honest statement is "the PINNED provider is unavailable" — not
@@ -992,6 +1050,8 @@ class FreeLlmRouter {
       pinnedError.retryAfterSeconds = retryAfterSeconds;
       pinnedError.fallbacksAttempted = fallbacksAttempted;
       pinnedError.lastError = lastError;
+      pinnedError.decisionId = decisionId;
+      this._recordDecision({ decisionId, scopeKey: failureScopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate: null, outcome: 'failure', status: 503, latencyMs: null });
       throw pinnedError;
     }
     const finalError = new Error(`All AI providers failed: ${fallbackSummary}`);
@@ -999,6 +1059,8 @@ class FreeLlmRouter {
     finalError.status = 502;
     finalError.fallbacksAttempted = fallbacksAttempted;
     finalError.lastError = lastError;
+    finalError.decisionId = decisionId;
+    this._recordDecision({ decisionId, scopeKey: failureScopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate: null, outcome: 'failure', status: 502, latencyMs: null });
     throw finalError;
   }
 
@@ -1058,6 +1120,8 @@ class FreeLlmRouter {
 
     const fallbacksAttempted = [];
     let lastError = null;
+    // C.2: one decision id for this routed stream (null with the flag off).
+    const decisionId = this._newDecisionId();
 
     for (const candidate of candidates) {
       const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
@@ -1115,6 +1179,8 @@ class FreeLlmRouter {
                 compression: compressionStats,
                 fallbacksAttempted,
                 isDedicatedByok: Boolean(candidate.isDedicatedByok),
+                // C.2: the stream wire attaches the id to meta (additive).
+                decisionId,
               };
               continue;
             }
@@ -1161,7 +1227,9 @@ class FreeLlmRouter {
           // C.1: a scoped success clears the tenant's OWN bench only; flag off → identical no-op.
           if (!candidate.isDedicatedByok) this.cooldownManager.clearCooldown(candidate.provider, candidate.model);
           else if (scopeKey) this.cooldownManager.clearCooldown(candidate.provider, candidate.model, { scopeKey });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: usage || null });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, decisionId, provider: candidate.provider, model: candidate.model, ok: true, latencyMs, status: 200, usage: usage || null });
+          // C.2: ONE ring row per routed stream, written at resolution (fail-open).
+          this._recordDecision({ decisionId, scopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate, exploration: candidate.routingDecision?.exploration || null, outcome: fallbacksAttempted.length > 0 ? 'fallback' : 'success', status: 200, latencyMs, usage: usage || null });
 
           if (usage) yield { type: 'usage', usage };
           yield {
@@ -1184,7 +1252,10 @@ class FreeLlmRouter {
           if (opened || emitted) {
             // Mid-stream failure: the client already received partial content.
             // Surface it instead of replaying the answer from another provider.
-            this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, decisionId, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+            // C.2: honest failure ring row; the id rides on the error (additive).
+            this._recordDecision({ decisionId, scopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate, outcome: 'failure', status, latencyMs: null });
+            if (decisionId && error.decisionId === undefined) error.decisionId = decisionId;
             throw error;
           }
 
@@ -1198,7 +1269,7 @@ class FreeLlmRouter {
             status,
             latencyMs: Date.now() - startTime,
           });
-          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
+          this._recordMetrics({ scoped: Boolean(candidate.isDedicatedByok), scopeKey, decisionId, provider: candidate.provider, model: candidate.model, ok: false, latencyMs: Date.now() - startTime, status });
         }
       }
 
@@ -1221,6 +1292,9 @@ class FreeLlmRouter {
         );
       }
       if (candidate.isDedicatedByok && candidates.length === 1) {
+        // C.2: honest failure ring row in the candidate's own scope (stream path).
+        this._recordDecision({ decisionId, scopeKey, mode: platformConfig?.selectionMode || null, requestedModel: requestedModel || null, candidate, outcome: 'failure', status: Number(lastError?.status) || 500, latencyMs: null });
+        if (lastError && decisionId && lastError.decisionId === undefined) lastError.decisionId = decisionId;
         throw lastError || new Error('Dedicated BYOK provider failed');
       }
     }
@@ -1231,6 +1305,18 @@ class FreeLlmRouter {
     finalError.status = 502;
     finalError.fallbacksAttempted = fallbacksAttempted;
     finalError.lastError = lastError;
+    // C.2: terminal stream failure carries the id and records the ring row.
+    finalError.decisionId = decisionId;
+    this._recordDecision({
+      decisionId,
+      scopeKey: candidates.some(c => c.isDedicatedByok) ? this._scopedEvidenceScopeKey(tenantContext) : null,
+      mode: platformConfig?.selectionMode || null,
+      requestedModel: requestedModel || null,
+      candidate: null,
+      outcome: 'failure',
+      status: 502,
+      latencyMs: null,
+    });
     throw finalError;
   }
 

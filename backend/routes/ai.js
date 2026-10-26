@@ -281,6 +281,10 @@ async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, ge
                     inputTokens,
                     outputTokens,
                     estimatedCostMicros,
+                    // C.2 (PH4-ENGINE-022): the decision-ledger join key rides
+                    // along when the engine produced one (null with the flag
+                    // off — the repository then never touches the column).
+                    decisionId: generated?.routing?.decisionId || generated?.decisionId || null,
                 },
             });
         }

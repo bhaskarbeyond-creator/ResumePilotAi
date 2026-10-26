@@ -1881,9 +1881,12 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                 : (configuration?.principalId ? `user:${configuration.principalId}` : null),
         });
 
+        // C.2 (PH4-ENGINE-022): the routed request's decisionId threads through
+        // telemetry (the ring already sanitizes it to safeString(64)); attempts
+        // SHARE the id — one decision, many attempt rows. Null with the flag off.
         for (const attempt of result.fallbacksAttempted || []) {
             router.health?.record?.({ tenantId, provider: attempt.provider, model: attempt.model, ok: false, latencyMs: attempt.latencyMs, errorClass: attempt.code });
-            router.telemetry?.record?.({ tenantId, operation, selectedProvider: attempt.provider, selectedModel: attempt.model, outcome: 'failure', errorClass: attempt.code });
+            router.telemetry?.record?.({ tenantId, operation, selectedProvider: attempt.provider, selectedModel: attempt.model, outcome: 'failure', errorClass: attempt.code, decisionId: result.decisionId || null });
         }
         router.telemetry?.record?.({
             tenantId,
@@ -1892,6 +1895,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             selectedModel: result.model,
             outcome: 'success',
             executionLatencyMs: result.latencyMs,
+            decisionId: result.decisionId || null,
         });
         router.health?.record?.({
             tenantId,
@@ -1931,7 +1935,9 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             usage: result.usage,
             routing: {
                 engine: 'freellmapi',
-                decisionId: result.routingDecision?.decisionId || null,
+                // C.2: prefer the routed request's top-level id; fall back to
+                // anything already riding on routingDecision (never fabricate).
+                decisionId: result.decisionId || result.routingDecision?.decisionId || null,
                 selectedProvider: result.provider || null,
                 selectedModel: result.model || null,
                 executedProvider: result.provider || null,
@@ -1968,6 +1974,8 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             outcome: 'failure',
             errorClass: freellmErr.code || 'provider_error',
             rejectionSummary: freellmErr.message,
+            // C.2: the router attaches the id to terminal errors (additive).
+            decisionId: freellmErr?.decisionId || null,
         });
         router.health?.record?.({
             tenantId,
