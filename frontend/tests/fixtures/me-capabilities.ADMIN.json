@@ -1,0 +1,248 @@
+{
+  "success": true,
+  "role": "ADMIN",
+  "tabs": [
+    {
+      "id": "dashboard",
+      "label": "Command Center",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "health",
+      "label": "Platform Health",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "queues",
+      "label": "Queues & DLQ",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "operations",
+      "label": "Operations",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "attention",
+      "label": "Attention Needed",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "users",
+      "label": "Users",
+      "group": "identity",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "support",
+      "label": "Help Desk",
+      "group": "identity",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "moderation",
+      "label": "Moderation",
+      "group": "moderation",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "blog",
+      "label": "Blog",
+      "group": "content",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "content",
+      "label": "Marketing CMS",
+      "group": "content",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "ai-settings",
+      "label": "AI Providers",
+      "group": "configuration",
+      "allowed": false,
+      "superAdminOnly": true,
+      "reason": "super-admin-only",
+      "missing": [
+        "*"
+      ]
+    },
+    {
+      "id": "email",
+      "label": "Email & SMTP",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "security",
+      "label": "Security & Audit",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "config",
+      "label": "Configuration",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "modules",
+      "label": "Modules",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "rbac",
+      "label": "Roles & Access",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "audit",
+      "label": "Audit Trail",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    }
+  ],
+  "actions": {
+    "rbac": {
+      "editRole": false,
+      "grantRole": false
+    },
+    "config": {
+      "save": true,
+      "history": true
+    },
+    "settings": {
+      "save": true
+    },
+    "email": {
+      "saveSmtp": true
+    },
+    "ai-settings": {
+      "save": true
+    },
+    "users": {
+      "mutate": true,
+      "delete": true
+    },
+    "support": {
+      "reply": true
+    },
+    "content": {
+      "write": true
+    },
+    "blog": {
+      "write": true
+    }
+  },
+  "defaultTab": "dashboard",
+  "permissions": [
+    "ai.entitlements.manage",
+    "ai.entitlements.read",
+    "ai.entitlements.write",
+    "ai.usage.read",
+    "audit.read",
+    "blog.manage",
+    "blog.read",
+    "blog.write",
+    "blog_management",
+    "content.manage",
+    "content.read",
+    "content.write",
+    "email.logs.read",
+    "email.template.manage",
+    "email.template.read",
+    "email.template.write",
+    "notifications.read",
+    "notifications.send",
+    "payments.manage",
+    "payments.read",
+    "payments.write",
+    "security.read",
+    "system.config.read",
+    "system.config.write",
+    "tenants.manage",
+    "tenants.read",
+    "tenants.write",
+    "tickets.manage",
+    "tickets.read",
+    "tickets.write",
+    "users.create",
+    "users.delete",
+    "users.read",
+    "users.roles.manage",
+    "users.roles.read",
+    "users.roles.write",
+    "users.update"
+  ],
+  "authority": {
+    "degraded": true,
+    "roles": 0,
+    "cachedAt": null,
+    "source": "literal-fallback"
+  }
+}

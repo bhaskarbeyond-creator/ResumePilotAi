@@ -18,7 +18,10 @@
     "verify:ux": "node scripts/ux-audit.mjs && node scripts/contrast-audit.mjs",
     "perf:budgets": "lhci autorun",
     "test:ux:auth": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/auth-screens-ux.spec.ts",
-    "test:ux:admin": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/admin-console-ux.spec.ts"
+    "test:ux:admin": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/admin-console-ux.spec.ts",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit",
+    "gen:fixtures": "node scripts/gen-capabilities-fixture.mjs",
+    "verify:fixtures": "node scripts/gen-capabilities-fixture.mjs --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

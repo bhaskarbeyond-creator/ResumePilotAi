@@ -33,9 +33,12 @@ interface AdminDashboardTabProps {
   onNavigateTab: (tabId: string) => void;
 }
 
+/** The personas the role-view selector can project. */
+type RoleView = 'super_admin' | 'candidate' | 'employer' | 'enterprise';
+
 export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
   const { data: stats, isLoading } = usePlatformStats();
-  const [roleView, setRoleView] = useState<'super_admin' | 'candidate' | 'employer' | 'enterprise'>('super_admin');
+  const [roleView, setRoleView] = useState<RoleView>('super_admin');
 
   const statCards = [
     { label: 'Total Platform Users', value: stats?.totalUsers ?? '48,290', icon: Users, color: 'bg-brand-50 text-brand-600' },
@@ -71,8 +74,12 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-semibold text-ink-secondary">Perspective:</span>
             <select
+              // The visible "Perspective:" text is a sibling, not a label, so axe flagged the
+              // control as unnamed (`select-name`) at every width. An explicit aria-label is
+              // the fix that survives a layout change; the union keeps the cast honest.
+              aria-label="Role view perspective"
               value={roleView}
-              onChange={(e) => setRoleView(e.target.value as any)}
+              onChange={(e) => setRoleView(e.target.value as RoleView)}
               className="rounded-lg border border-border bg-white dark:bg-canvas-soft px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="super_admin">Root Platform Admin (*)</option>

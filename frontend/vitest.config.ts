@@ -30,6 +30,9 @@ export default defineConfig({
         'src/components/admin/use-admin-resource.ts',
         'src/components/admin/admin-users-model.ts',
         'src/components/admin/AdminDataState.tsx',
+        // The tab strip, extracted from `pages/admin/console.tsx` so the Home/End and
+        // roving-focus rules are covered by the fast tier (see `admin-tabbar.test.tsx`).
+        'src/components/admin/AdminTabBar.tsx',
         'src/components/admin/AdminAttentionTab.tsx',
         'src/components/admin/AdminUsersTab.tsx',
         // Rewritten from invented sample rows onto their real endpoints; each has a

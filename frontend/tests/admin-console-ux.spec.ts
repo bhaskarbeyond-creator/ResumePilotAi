@@ -25,20 +25,21 @@
  *
  *   cd frontend && npx playwright test tests/admin-console-ux.spec.ts
  *
- * Requires a browser download (`npx playwright install chromium`) and a serving app.
- * The 2026-10 remediation environment could not download browsers — see
- * `developer-review/admin/TEST-EVIDENCE.md` §"Tiers that exist but could not execute".
+ * ## Running
+ *
+ *   cd frontend && npm run gen:fixtures     # once, and after any capability-map change
+ *   npm run test:ux:admin
+ *
+ * Needs no backend and no database. `tests/support/admin-console-backend.ts` serves the two
+ * answers the console depends on — the session check and the capability census — from the
+ * backend's own resolver output, and answers every other API call with a structured 503 so the
+ * tabs render the data state an operator sees when the store is down.
  */
 
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const ADMIN_USER = {
-  uid: 'demo-admin-1',
-  email: 'admin@ime365.com',
-  displayName: 'Sarah Administrator',
-  role: 'ADMIN',
-};
+import { CAPABILITY_FIXTURES, authenticateConsole, type ConsoleIdentity } from './support/admin-console-backend';
 
 const DEVICE_CLASSES = [
   { name: '320-small-phone', width: 320, height: 568 },
@@ -48,11 +49,9 @@ const DEVICE_CLASSES = [
   { name: '1441-desktop', width: 1441, height: 900 },
 ];
 
-/** Sign in through the dev-user seam the rest of the suite uses. */
-async function authenticate(page: Page) {
-  await page.addInitScript((user) => {
-    localStorage.setItem('ime_dev_user', JSON.stringify(user));
-  }, ADMIN_USER);
+/** Sign in through the preview-session seam, with the stubbed backend in place. */
+async function authenticate(page: Page, identity?: Partial<ConsoleIdentity>): Promise<void> {
+  await authenticateConsole(page, identity);
 }
 
 /** Open the console and wait for the tab list to exist. */
@@ -229,6 +228,9 @@ test.describe('admin console · touch targets at phone widths', () => {
           if (style.display === 'none' || style.visibility === 'hidden') continue;
           const rect = element.getBoundingClientRect();
           if (rect.width === 0 && rect.height === 0) continue;
+          // A visually-hidden skip link is 1x1 until it is focused, and the focus state is
+          // asserted separately (`auth-screens-ux.spec.ts:139` measures it *after* focus).
+          if (rect.width <= 1 && rect.height <= 1) continue;
           const disabled = element instanceof HTMLButtonElement && element.disabled;
           // WCAG 2.2 exempts inactive controls and inline links inside a sentence.
           if (disabled) continue;
@@ -283,15 +285,15 @@ test.describe('admin console · the four data states', () => {
     test(`renders the ${state} state without overflow`, async ({ page }) => {
       await authenticate(page);
 
-      // The console reads its census from /api/platform/capabilities; each state is a
+      // The console reads its census from /api/me/capabilities; each state is a
       // different answer from that one endpoint, so the states are driven at the network
       // layer rather than by seeding component props.
       if (state === 'loading') {
-        await page.route('**/api/platform/capabilities', async () => {
+        await page.route('**/api/me/capabilities', async () => {
           await new Promise((resolve) => setTimeout(resolve, 5_000));
         });
       } else if (state === 'error') {
-        await page.route('**/api/platform/capabilities', (route) =>
+        await page.route('**/api/me/capabilities', (route) =>
           route.fulfill({
             status: 503,
             contentType: 'application/json',
@@ -299,15 +301,22 @@ test.describe('admin console · the four data states', () => {
           }),
         );
       } else if (state === 'empty') {
-        await page.route('**/api/platform/capabilities', (route) =>
+        await page.route('**/api/me/capabilities', (route) =>
           route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, tabs: [] }) }),
         );
       } else {
-        await page.route('**/api/platform/capabilities', async (route) => {
-          const response = await route.fetch();
-          const body = (await response.json()) as Record<string, unknown>;
-          await route.fulfill({ response, json: { ...body, degraded: true, tabSource: 'DECLARED_DEFAULT' } });
-        });
+        // The store came back, but the authority did not: the census is present and marked
+        // degraded, which is the state that must still render every permitted tab.
+        await page.route('**/api/me/capabilities', (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              ...CAPABILITY_FIXTURES.SUPER_ADMIN,
+              authority: { ...CAPABILITY_FIXTURES.SUPER_ADMIN.authority, degraded: true, source: 'literal' },
+            }),
+          }),
+        );
       }
 
       await page.goto('/admin', { waitUntil: 'domcontentloaded' });

@@ -1,0 +1,230 @@
+{
+  "success": true,
+  "role": "AUDITOR",
+  "tabs": [
+    {
+      "id": "dashboard",
+      "label": "Command Center",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "health",
+      "label": "Platform Health",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "queues",
+      "label": "Queues & DLQ",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "operations",
+      "label": "Operations",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "attention",
+      "label": "Attention Needed",
+      "group": "observability",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "users",
+      "label": "Users",
+      "group": "identity",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "support",
+      "label": "Help Desk",
+      "group": "identity",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "tickets.manage"
+      ]
+    },
+    {
+      "id": "moderation",
+      "label": "Moderation",
+      "group": "moderation",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "blog",
+      "label": "Blog",
+      "group": "content",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "blog.read"
+      ]
+    },
+    {
+      "id": "content",
+      "label": "Marketing CMS",
+      "group": "content",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "content.manage"
+      ]
+    },
+    {
+      "id": "ai-settings",
+      "label": "AI Providers",
+      "group": "configuration",
+      "allowed": false,
+      "superAdminOnly": true,
+      "reason": "missing-permission",
+      "missing": [
+        "system.config.read"
+      ]
+    },
+    {
+      "id": "email",
+      "label": "Email & SMTP",
+      "group": "configuration",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "system.config.read"
+      ]
+    },
+    {
+      "id": "security",
+      "label": "Security & Audit",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "config",
+      "label": "Configuration",
+      "group": "configuration",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "group": "configuration",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "system.config.read"
+      ]
+    },
+    {
+      "id": "modules",
+      "label": "Modules",
+      "group": "configuration",
+      "allowed": false,
+      "superAdminOnly": false,
+      "reason": "missing-permission",
+      "missing": [
+        "system.config.read"
+      ]
+    },
+    {
+      "id": "rbac",
+      "label": "Roles & Access",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    },
+    {
+      "id": "audit",
+      "label": "Audit Trail",
+      "group": "governance",
+      "allowed": true,
+      "superAdminOnly": false,
+      "reason": null,
+      "missing": []
+    }
+  ],
+  "actions": {
+    "rbac": {
+      "editRole": false,
+      "grantRole": false
+    },
+    "config": {
+      "save": false,
+      "history": true
+    },
+    "settings": {
+      "save": false
+    },
+    "email": {
+      "saveSmtp": false
+    },
+    "ai-settings": {
+      "save": false
+    },
+    "users": {
+      "mutate": false,
+      "delete": false
+    },
+    "support": {
+      "reply": false
+    },
+    "content": {
+      "write": false
+    },
+    "blog": {
+      "write": false
+    }
+  },
+  "defaultTab": "dashboard",
+  "permissions": [
+    "ai.usage.read",
+    "audit.read",
+    "email.logs.read",
+    "payments.read",
+    "security.read",
+    "tenants.read",
+    "users.read"
+  ],
+  "authority": {
+    "degraded": true,
+    "roles": 0,
+    "cachedAt": null,
+    "source": "literal-fallback"
+  }
+}

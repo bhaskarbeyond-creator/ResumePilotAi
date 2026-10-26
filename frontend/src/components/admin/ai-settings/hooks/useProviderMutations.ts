@@ -54,7 +54,9 @@ export function useProviderMutations({
       const nextUrls: Record<string, string> = {};
       for (const item of providers) {
         nextModels[item.id] = item.defaultModel || '';
-        nextUrls[item.id] = (item as any).customBaseUrl || '';
+        // `customBaseUrl` is optional on the wire model; a narrow structural cast keeps the
+        // field typed instead of widening the whole provider to `any`.
+        nextUrls[item.id] = (item as { customBaseUrl?: string }).customBaseUrl || '';
       }
       setModelDrafts(nextModels);
       setBaseUrlDrafts(nextUrls);

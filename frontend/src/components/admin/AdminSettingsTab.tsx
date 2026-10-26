@@ -413,10 +413,16 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
     setSavingKey(key);
 
     try {
-      const patchData = { [key]: nextValue };
-      if (key === 'enableLinkedinAuthModule') (patchData as any).enableLinkedinLogin = nextValue;
-      if (key === 'enableGithubAuthModule') (patchData as any).enableGithubLogin = nextValue;
-      if (key === 'enableBlogModule') (patchData as any).blog = nextValue;
+      // The module endpoint expects the legacy mirrors alongside the canonical key, so the
+      // patch is assembled as one typed object rather than widened three times with a cast.
+      const patchData: Record<string, boolean> = { [key]: nextValue };
+      const MIRRORS: Record<string, string> = {
+        enableLinkedinAuthModule: 'enableLinkedinLogin',
+        enableGithubAuthModule: 'enableGithubLogin',
+        enableBlogModule: 'blog',
+      };
+      const mirror = MIRRORS[key];
+      if (mirror) patchData[mirror] = nextValue;
 
       const result = await post<{ success: boolean; revision?: number; settings?: Record<string, boolean> }>(
         '/api/admin/settings/modules',

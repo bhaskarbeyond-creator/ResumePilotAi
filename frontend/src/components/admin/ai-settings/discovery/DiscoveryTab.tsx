@@ -153,7 +153,7 @@ export function DiscoveryTab() {
               <select
                 aria-label="Filter by model capability"
                 value={modelsCapFilter}
-                onChange={(e) => setModelsCapFilter(e.target.value as any)}
+                onChange={(e) => setModelsCapFilter(e.target.value as 'all' | 'vision' | 'tools' | 'json')}
                 className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs font-semibold text-ink"
               >
                 <option value="all">All Capabilities</option>

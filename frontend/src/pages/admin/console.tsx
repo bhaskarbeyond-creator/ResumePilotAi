@@ -15,7 +15,7 @@
  * @module pages/admin/console
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck, RefreshCw, ServerCrash } from 'lucide-react';
 
@@ -37,30 +37,12 @@ import { AdminRbacTab } from '@/components/admin/AdminRbacTab';
 import { AdminAuditTab } from '@/components/admin/AdminAuditTab';
 import { AdminConfigTab } from '@/components/admin/AdminConfigTab';
 import { useCapabilities } from '@/hooks/use-capabilities';
+import { AdminTabBar } from '@/components/admin/AdminTabBar';
+import type { AdminTabId } from '@/components/admin/admin-tab-id';
 
-/**
- * Tab identifiers. Kept as a union so a typo in a route segment or a capability id
- * is a compile error rather than a blank screen.
- */
-export type AdminTabId =
-  | 'dashboard'
-  | 'health'
-  | 'queues'
-  | 'operations'
-  | 'attention'
-  | 'users'
-  | 'support'
-  | 'moderation'
-  | 'blog'
-  | 'content'
-  | 'ai-settings'
-  | 'email'
-  | 'security'
-  | 'config'
-  | 'settings'
-  | 'modules'
-  | 'rbac'
-  | 'audit';
+// Re-exported so the tab components keep importing one identifier from the page they
+// belong to, while the union itself lives in a module the tab bar can own and test.
+export type { AdminTabId };
 
 /** Aliases accepted in `?tab=` so old links keep working after the rename. */
 const TAB_ALIASES: Record<string, AdminTabId> = {
@@ -212,7 +194,8 @@ export function AdminConsolePage() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">Control plane</h1>
-            <span className="shrink-0 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-300">
+            {/* The dark fill is opaque on purpose: at 40% alpha the composited background depends on whatever scrolls behind it, and axe measured 1.19:1 for the 12px bold count. Opaque brand-950 gives 7.42:1 against brand-300 and does not move when the page behind changes. */}
+            <span className="shrink-0 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-300">
               {allowedTabs.length} of {tabs.length} surfaces
             </span>
           </div>
@@ -249,114 +232,6 @@ export function AdminConsolePage() {
 }
 
 /* ── tab bar ──────────────────────────────────────────────────────────── */
-
-interface AdminTabBarProps {
-  tabs: { id: string; label: string; group: string; allowed: boolean; reason?: string | null; missing?: string[] }[];
-  activeTab: AdminTabId | null;
-  onSelect: (tabId: AdminTabId) => void;
-}
-
-/**
- * A real tablist: one tab stop, arrow keys move between tabs, Home/End jump to the
- * ends. Hidden surfaces are rendered as disabled items with the reason in their
- * accessible name, so a person can see that a capability exists and why they lack it
- * — rather than wondering whether the product has the feature.
- */
-function AdminTabBar({ tabs, activeTab, onSelect }: AdminTabBarProps) {
-  const listRef = useRef<HTMLDivElement | null>(null);
-
-  const move = (delta: number) => {
-    if (!activeTab) return;
-    const selectable = tabs.filter((tab) => tab.allowed);
-    const index = selectable.findIndex((tab) => tab.id === activeTab);
-    if (index === -1 || selectable.length === 0) return;
-    const next = selectable[(index + delta + selectable.length) % selectable.length];
-    if (!next) return;
-    onSelect(next.id as AdminTabId);
-    // Focus follows selection, which is what `aria-activedescendant`-less tablists
-    // require for a screen reader to announce the new tab.
-    requestAnimationFrame(() => {
-      const element = listRef.current?.querySelector<HTMLButtonElement>(`[data-tab-id="${next.id}"]`);
-      element?.focus();
-    });
-  };
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        event.preventDefault();
-        move(1);
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        event.preventDefault();
-        move(-1);
-        break;
-      case 'Home':
-        event.preventDefault();
-        move(-tabs.filter((tab) => tab.allowed).length);
-        break;
-      case 'End':
-        event.preventDefault();
-        move(tabs.filter((tab) => tab.allowed).length);
-        break;
-      default:
-        break;
-    }
-  };
-
-  return (
-    <div
-      ref={listRef}
-      role="tablist"
-      aria-label="Control plane surfaces"
-      aria-orientation="horizontal"
-      data-testid="admin-tablist"
-      onKeyDown={onKeyDown}
-      className="-mx-4 flex snap-x snap-mandatory gap-1 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-    >
-      {tabs.map((tab) => {
-        const selected = tab.id === activeTab;
-        const reason = tab.reason === 'super-admin-only'
-          ? 'super-admin only'
-          : tab.missing?.length
-            ? `needs ${tab.missing.join(', ')}`
-            : null;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            data-tab-id={tab.id}
-            id={`admin-tab-${tab.id}`}
-            aria-selected={selected}
-            aria-controls={`admin-panel-${tab.id}`}
-            aria-disabled={!tab.allowed || undefined}
-            tabIndex={selected ? 0 : -1}
-            disabled={!tab.allowed}
-            title={reason ? `${tab.label} — ${reason}` : tab.label}
-            onClick={() => tab.allowed && onSelect(tab.id as AdminTabId)}
-            className={[
-              // 44 px minimum height at every width: the smallest target a thumb
-              // can hit reliably (WCAG 2.5.8 / platform HIG agree on 44).
-              'inline-flex min-h-11 shrink-0 snap-start items-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
-              selected
-                ? 'bg-brand-600 text-white'
-                : tab.allowed
-                  ? 'text-ink-secondary hover:bg-muted hover:text-ink'
-                  : 'cursor-not-allowed text-ink-muted/60 line-through decoration-1',
-            ].join(' ')}
-          >
-            {tab.label}
-            {!tab.allowed && reason && <span className="sr-only"> — unavailable: {reason}</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /* ── surfaces ─────────────────────────────────────────────────────────── */
 

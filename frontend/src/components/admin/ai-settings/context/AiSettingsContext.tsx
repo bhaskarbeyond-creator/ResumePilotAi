@@ -253,9 +253,9 @@ export function AiSettingsProvider({
           rawDetails?.code === 'AI_SETTINGS_CONFLICT'
         ) {
           const currentRev = Number(
-            (err as any)?.currentRevision ||
+            (err as { currentRevision?: number })?.currentRevision ||
               rawDetails?.currentRevision ||
-              (norm as any)?.currentRevision ||
+              (norm as { currentRevision?: number })?.currentRevision ||
               revision + 1
           );
           setRevisionConflict({

@@ -238,6 +238,22 @@
     [role='tab'] {
       min-width: 44px;
     }
+
+    /* Links that behave like controls: sidebar destinations, the header brand and actions,
+     * breadcrumb steps. They were 36x303, 32x157 and 20x117 at 320 px — a thumb cannot hit a
+     * 20 px row reliably, and the static audit could not see it because it only inspected
+     * buttons. Prose links inside a paragraph stay inline (WCAG 2.2 exempts them, and a 44 px
+     * body link would break the paragraph rhythm). */
+    nav a[href],
+    header a[href],
+    [role='banner'] a[href],
+    [role='navigation'] a[href],
+    aside a[href],
+    a[role='button'] {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
   }
 
   /* Reduced motion */
