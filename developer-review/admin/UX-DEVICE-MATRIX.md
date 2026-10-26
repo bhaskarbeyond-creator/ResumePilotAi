@@ -1,147 +1,145 @@
-# UX device matrix — five viewport classes
+# UX device matrix — five viewport classes, per-screen evidence
 
-**Status: NOT IMPLEMENTED. This document records the measured current state, the
-acceptance criteria for each class, and the exact work required. It does not claim
-any class is verified, because no browser run was performed in this environment.**
+**Status as of 2026-10-27.** The previous revision of this file said *NOT IMPLEMENTED* and was
+right for the code it described. Since then the responsive work landed: the tab strip exists with
+`role="tablist"` and roving focus, the safe-area inset is applied, high-contrast and print
+stylesheets exist, the 101 sub-12px runs are gone, and every interactive control carries a ≥44px
+minimum at phone widths. This revision replaces the prediction with three kinds of evidence and
+marks which kind each cell has:
 
-That is the single largest gap in this pass. The backend authority layer is done and
-proven (§`SECURITY-AND-RBAC-PROOF.md`); the responsive/accessibility work the brief
-asked for is *specified and measured* here, not delivered. Pretending otherwise
-would be the one thing this engagement has consistently refused to do.
+| Marker | Meaning | Where it runs |
+|---|---|---|
+| **S** | Static audit of the JSX — measured in this session, exit code recorded | `frontend/`, now |
+| **C** | Code assertion in the Playwright spec — the test exists and is type-clean, executed by the CI `e2e` job | CI job `e2e` (needs Chromium + a served app) |
+| **?** | Not observed here. The sandbox cannot download Chromium, so a `C` cell is *asserted*, never *observed*, in this session | — |
 
-**How the current state was measured** (all reproducible from `frontend/`):
+**The rule that keeps this honest:** no cell is marked ✅ on the strength of a `C` assertion alone.
+✅ means an `S` measurement passed. A `C` cell says "this is proven by a test that runs in CI", and
+the CI run — not this document — is where the proof lives. `?` means neither: nothing measured it.
 
-```bash
-grep -rn "safe-area" src | wc -l                                   # 0
-grep -rn "min-h-\[44px\]\|min-h-11\|h-11" src/components/admin src/pages/admin | wc -l   # 0
-grep -rn "dark:" src | wc -l                                       # 265
-grep -rn "prefers-contrast\|forced-colors" src | wc -l             # 0
-grep -rn "overflow-x-auto" src/components/admin src/pages/admin | wc -l   # 18
-grep -rn "text-\[10px\]\|text-\[11px\]" src/components/admin/*.tsx | wc -l # 101
-grep -rn "focus:ring\|focus-visible" src/components/admin/*.tsx | wc -l   # 12
-grep -c "@media" src/index.css                                     # 2 (reduced-motion, print)
+---
+
+## 1. What was measured in this session (S)
+
+```
+$ cd frontend && npm run verify:ux
+Admin-plane UX audit
+  targetSize     0 violation(s)
+  textSize       0 violation(s)
+  focus          0 violation(s)
+  width          0 violation(s)
+PASS
+Admin-plane colour contrast (WCAG 2.2 AA)
+  ... 17 measurements, lowest 3.64:1 (input boundary on the canvas, floor 3:1), lowest text 4.59:1 (floor 4.5:1)
+ALL PASS
 ```
 
----
-
-## 1. The five classes and what each one requires
-
-| Class | Width | Primary use | What "done" means |
-|---|---|---|---|
-| C1 | 320–480 px | phone, one hand | Everything reachable with the thumb; **no page-level horizontal scroll**; every control ≥ 44 × 44 px; data tables scroll *inside* a labelled region; primary action in the bottom third |
-| C2 | 481–767 px | large phone / small tablet | Same as C1 plus two-column card grids where content allows |
-| C3 | 768–1024 px | tablet, portrait | Persistent navigation visible; tables may show 4–5 columns without scrolling |
-| C4 | 1025–1440 px | laptop | Full console: sidebar + content; no sticky overlap; density comfortable |
-| C5 | 1441 px+ | desktop / wall display | Content max-width so line length stays readable; telemetry grids use the extra width rather than stretching cards |
-
-**Cross-cutting, all classes:** WCAG 2.2 AA · keyboard-only operability · 200 %
-zoom and 200 % text without loss of function · dark, high-contrast and reduced-motion
-modes · design tokens (no raw hex in components) · density modes · print stylesheet ·
-LCP < 2.5 s, INP < 200 ms, CLS < 0.1.
+| Deficit named in the mandate | Measured now | Anchor |
+|---|---|---|
+| 101 sub-12px runs raised to ≥12px | **0** violations of `text-[9px]` / `text-[10px]` / `text-[11px]` | `scripts/ux-audit.mjs` rule 2; the fix landed in the 14 admin tabs |
+| All interactive controls ≥44×44 at mobile widths | **0** violations of the class rule; rendered-box proof is `C` | `scripts/ux-audit.mjs` rule 1 (`min-h-11`, `h-11`, `size-11`) + `admin-console-ux.spec.ts:214-245` |
+| Safe-area insets | applied on the console container | `console.tsx:210` — `pb-[max(1rem,env(safe-area-inset-bottom))]` |
+| High-contrast / forced colours | present | `index.css:476` `@media (prefers-contrast: more)`, `index.css:484` `@media (forced-colors: active)` |
+| Reduced motion | present | `index.css:215` |
+| Print stylesheet | present, two blocks | `index.css:429` and `index.css:502` |
+| Design tokens, no magic numbers in the admin plane | 0 raw pixel widths above 320px outside a scroll container | `scripts/ux-audit.mjs` rule 4 |
+| Tab list in the accessibility tree | present, twice (page strip + drawer strip) | `console.tsx` `role="tablist"`; `AdminUsersTab.tsx:678` "User 360 sections" |
+| No page-level horizontal scroll (static) | no unscoped fixed width; the rendered check is `C` | `scripts/ux-audit.mjs` rule 4 |
 
 ---
 
-## 2. Measured state, class by class
+## 2. The five classes
 
-Legend: ✅ met and measured · ⚠️ partially met · ❌ not met · **?** not verified (no
-browser run) — an honest `?` is better than an invented tick.
+Legend for the per-class rows: **S** measured · **C** asserted by a spec test · **?** unverified.
 
 | Criterion | C1 320–480 | C2 481–767 | C3 768–1024 | C4 1025–1440 | C5 1441+ | Evidence |
 |---|---|---|---|---|---|---|
-| Layout container adapts | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | `console.tsx:163` — `p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto`. Padding only changes at `lg`/`xl`; there is no step between 320 and 1024 |
-| No page-level horizontal scroll | ? | ? | ? | ? | ? | 18 `overflow-x-auto` containers; three tables declare `min-w-[700px]` (`AdminBlogManagementTab.tsx:212`, `AdminModerationTab.tsx:246`, and one more). At 320 px the *container* must be the scroll owner; nothing asserts that the page is not. **Not verified.** |
-| Touch targets ≥ 44 px | ❌ | ❌ | n/a | n/a | n/a | **0** explicit 44 px targets in any admin component. Controls inherit `px-3 py-1.5 text-xs` (~26–30 px tall) |
-| Navigation discoverable | ❌ | ❌ | ⚠️ | ✅ | ✅ | The console renders **no tab list**: `console.tsx:205-225` renders only the active tab, and `handleSelectTab` is only called from inside a tab. The app shell (`cuba-app-shell.tsx:314-318`) links to three destinations (`/admin`, `/admin/support`, `/admin/health`); the other eleven tabs are reachable only by typing the URL |
-| Safe-area insets respected | ❌ | ❌ | n/a | n/a | n/a | `safe-area` appears **0** times in `src/` |
-| Text ≥ 12 px at default zoom | ❌ | ❌ | ⚠️ | ⚠️ | ⚠️ | **101** uses of `text-[10px]`/`text-[11px]` across the 14 admin tabs |
-| Dark mode | ✅ | ✅ | ✅ | ✅ | ✅ | 265 `dark:` variants; tokens in `index.css:94+` |
-| High-contrast / forced-colors | ❌ | ❌ | ❌ | ❌ | ❌ | `prefers-contrast` and `forced-colors` appear **0** times |
-| Reduced motion | ✅ | ✅ | ✅ | ✅ | ✅ | `index.css:189` `@media (prefers-reduced-motion: reduce)` |
-| Print | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | `index.css:376` `@media print`, but no admin surface is designed for paper (no page-break control, tables overflow) |
-| Visible keyboard focus | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | 12 `focus-visible`/`ring` occurrences across ~2 500 lines of admin UI |
-| 200 % zoom without loss | ? | ? | ? | ? | ? | Not verified; the fixed `min-w-[700px]` tables are the likely failure |
-| Keyboard-only operability | ? | ? | ? | ? | ? | No roving-tabindex or `role="tablist"` exists, so there is nothing to arrow through; `console.tsx` contains **1** `aria-*` attribute (`aria-label` on `<main>`, line 178) and one `role="alert"` |
-| Design tokens only | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | `ink`/`brand`/`border` tokens are used widely, but raw `min-w-[700px]` and `text-[10px]` are hard-coded values |
-| Density modes | ❌ | ❌ | ❌ | ❌ | ❌ | No density toggle or compact token set |
-| LCP < 2.5 s / INP < 200 ms / CLS < 0.1 | ❌ | ❌ | ❌ | ❌ | ❌ | **No performance assertion exists anywhere** in the repository |
-
-### 2.1 Viewport meta and zoom
-
-`frontend/index.html:5` sets `width=device-width, initial-scale=1.0`. There is no
-`maximum-scale` and no `user-scalable=no`, so pinch-zoom and 200 % zoom are not
-blocked by the document. Good baseline; it does not prove the layout survives it.
-
-### 2.2 What the existing tests do and do not cover
-
-`frontend/tests/engine-responsive.spec.ts` and its snapshot directory exist, and
-`frontend/tests/accessibility.spec.ts` exists. Neither was executed in this session
-(they need a running API and a browser). They are the natural home for the
-assertions this matrix demands; today they cover the candidate engine and the public
-pages, not the admin console.
+| Document has no horizontal scroll | C | C | C | C | C | `admin-console-ux.spec.ts:69` (one test per class: 320/480/768/1024/1441) |
+| Every tab reachable by keyboard, roving focus | C | C | C | C | C | `admin-console-ux.spec.ts:69` — `ArrowRight`, `End`, `Home`, focus stays `role="tab"` |
+| Tab strip renders and is named | S | S | S | S | S | `console.tsx` `role="tablist"` (grep count 2); spec `:326` asserts a disabled tab explains itself in its **accessible name**, not a `title` |
+| axe: zero serious/critical | C | C | C | C | C | `admin-console-ux.spec.ts:98`, WCAG 2.0/2.1/2.2 A+AA tags |
+| Visual regression, zero unreviewed diffs | C | C | C | C | C | `admin-console-ux.spec.ts:112` — `toHaveScreenshot` per class, 1 % tolerance. **Baselines are not committed** (generating one needs a browser); see `ADR-009` §"Visual baselines" |
+| Controls ≥44px rendered box | C | C | n/a (pointer) | n/a | n/a | `admin-console-ux.spec.ts:214` at 320 and 480; disabled controls and inline links exempt per WCAG 2.2 |
+| Text ≥12px | S | S | S | S | S | `ux-audit.mjs` textSize rule: 0 violations |
+| Safe-area inset | S | S | n/a | n/a | n/a | `console.tsx:210` |
+| Two-column card grids | C | C | C | S `/` C | S `/` C | `grid-cols-1 … sm:grid-cols-2` in the tabs; the `S` part is the class presence, the `C` part is layout at width |
+| Data tables scroll inside a labelled region, page does not | C | C | C | C | C | 18 `overflow-x-auto` containers; the page-level assertion in `:69` is what proves the containment |
+| Content max-width at desktop | S | S | S | S | S | `console.tsx:210` `max-w-7xl mx-auto` |
 
 ---
 
-## 3. Work required, in dependency order
+## 3. The three non-default presentations
 
-| ID | Work | Files | Acceptance criteria | Effort |
-|---|---|---|---|---|
-| `OI-UX-1` | Tab navigation that exists on every width | `frontend/src/pages/admin/console.tsx` | A `role="tablist"` with `aria-selected`, arrow-key roving focus, and a horizontally scrollable strip on C1/C2 that does not scroll the page; every one of the 15 tabs reachable without typing a URL; Playwright: tab bar present at 320 px, no `document.scrollingElement.scrollWidth > clientWidth` | M |
-| `OI-UX-2` | 44 px touch targets | 14 admin tab components | Every interactive element ≥ 44 × 44 px at ≤ 768 px (utility class, not per-site patching); axe-core reports 0 `target-size` violations | M |
-| `OI-UX-3` | Performance budget | `frontend/tests/performance.spec.ts` (new), CI job | Lighthouse CI asserts LCP < 2.5 s, INP < 200 ms, CLS < 0.1 on `/admin` at C1 and C4; the job fails the build | S |
-| `OI-UX-4` | Safe-area + viewport units | `index.css`, shell | `env(safe-area-inset-*)` on fixed/sticky chrome; `100dvh` instead of `100vh`; verified at C1 on a notched-device emulation | S |
-| `OI-UX-5` | Type scale floor | admin tabs | No `text-[10px]`/`text-[11px]`; a token (`--text-2xs`) with a minimum of 12 px; 200 % zoom run recorded | M |
-| `OI-UX-6` | Contrast / forced-colors | `index.css` | `@media (forced-colors: active)` and a high-contrast theme; axe-core 0 contrast violations at AA on all 15 tabs | M |
-| `OI-UX-7` | Focus visibility | all admin components | `:focus-visible` on every interactive element; keyboard walk-through of all 15 tabs recorded | S |
-| `OI-UX-8` | Density modes + print | tokens, `index.css` | `data-density="comfortable\|compact"`; print rules per admin surface (hide nav, avoid page breaks inside cards, table headers repeat) | M |
-| `OI-UX-9` | Visual regression for the console | `frontend/tests/` | One snapshot per tab at C1/C3/C5 (45 images), reviewed, committed | M |
+| Presentation | Assertion | Evidence |
+|---|---|---|
+| Dark mode | no horizontal scroll + axe zero serious/critical, at 320px | `admin-console-ux.spec.ts:136-156`, `colorScheme: 'dark'` |
+| High contrast (`forced-colors: active`) | same two assertions; the stylesheet rules are at `index.css:476` / `:484` | `admin-console-ux.spec.ts:136-156`, `forcedColors: 'active'` |
+| Right-to-left | no overflow + arrow-key roving focus follows the mirrored direction (`ArrowLeft` advances) | `admin-console-ux.spec.ts:158-184`; `dir="rtl"`, `lang="ar"` set before load |
+| 200 % text | root font-size doubled, no horizontal scroll, every tab keeps a measurable box | `admin-console-ux.spec.ts:186-212` |
+| Reduced motion | CSS-only today (`index.css:215`); no browser assertion | **?** — see `ADR-009` §"Reduced motion" for why this is the one presentation without a `C` |
+| Locale number/date formatting | not asserted | **?** — `ADR-009` records it as an open decision rather than a silent gap |
 
-**Sequencing rationale:** `OI-UX-1` first. Every other class of work is judged
-against screens that today cannot be reached at all on a phone, so measuring C1
-behaviour of a tab a phone user cannot open measures nothing.
+**Why dark and high-contrast need a browser and not the static audit:** `contrast-audit.mjs` reads
+the light token palette from `index.css`. A token that was never given a dark counterpart, or a
+`forced-colors` user agent override that turns a border transparent, is invisible to a grep and
+visible to axe. That is exactly the class of defect these two runs exist to catch.
 
 ---
 
-## 4. What this document must not be read as
+## 4. Keyboard and state coverage, screen by screen
 
-- It is **not** a claim that the console is responsive. Tailwind's `sm:`/`md:`/`lg:`
-  utilities are used widely and probably degrade acceptably, but "probably" is not a
-  measurement, and the specific failures listed above (no tab list, no 44 px
-  targets, no safe-area, sub-12 px text) are structural, not cosmetic.
-- It is **not** a WCAG 2.2 AA conformance claim. Two of the AA criteria are already
-  visibly unmet (2.5.8 target size is advisory in 2.2 AA via 44 px, and 1.4.3
-  contrast is unmeasured), and conformance requires an audit of every screen.
-- It **is** a specification precise enough that a frontend engineer can execute it
-  without re-deriving the requirements, which is what the brief actually asked of
-  the documentation.
+Screens in scope, and what each one has:
+
+| Screen | Keyboard script (focus order, trap, focus return) | States covered |
+|---|---|---|
+| Login / MFA challenge / MFA enrolment / password reset / session-expired / logout confirmation | **?** — `accessibility.spec.ts` covers the surfaces, but the per-screen focus-order script the mandate asks for is not written | `accessibility.spec.ts` |
+| Admin console, 15 tabs | `C` at `:69` for the strip; drawer trap + Escape + focus return at `:247-277` | loading / empty / error / partial at `:279-324` |
+| Every drawer and modal (User 360, Provision user, service detail, config edit, announcement compose, key-pool dialogs) | `C` for User 360 only (`:247`). The other drawers share the same `AdminDrawer`/`AdminModal` primitive, so the trap is a property of the primitive — asserted once, not per drawer | `C` via the four-state run |
+| Other authenticated screens (dashboard, enterprise, billing, settings) | **?** | **?** |
+
+The row-level truth matters more than a dashboard-average tick: **one drawer is proven keyboard
+trapped, the rest are proven to use the same primitive, and the auth screens have no per-screen
+keyboard script at all.** That is a written, named gap (`OI-UX-4` in `OPEN-ITEMS.md`), not a
+blank cell.
 
 ---
 
-## 5. Data states across the five classes (Step 4)
+## 5. Performance
 
-A device class changes layout, not honesty: the loading, empty and failed panels are the same
-three components at every width, and each is a single column that wraps rather than scrolls.
-
-| Class | Loading | Empty | Failed |
+| Metric | Budget | Status | Evidence |
 |---|---|---|---|
-| C1 320–480 | Skeleton panel, one column; retry button full width inside the panel | Title + description stack; no table is rendered when there are no rows | `AdminErrorPanel` stacks its `<dl>` (code / HTTP / request) into two lines; the request id wraps rather than overflowing |
-| C2 481–767 | Same panel | Same | Same, `<dl>` on one line where it fits |
-| C3 768–1024 | Same panel | Same | Same |
-| C4 1025–1440 | Same panel | Same | Same |
-| C5 1441+ | Same panel, `max-w-md` search and the table's `min-w-[820px]` inside `overflow-x-auto` — the horizontal scroll is confined to the table, never the page | Same | Same |
+| LCP | < 2.5 s | `C` | `admin-console-ux.spec.ts:349` — `PerformanceObserver` with `buffered: true`, asserted < 2500 ms |
+| CLS | < 0.1 | `C` | same test, `layout-shift` entries, `hadRecentInput` filtered |
+| INP | < 200 ms | `C` (synthetic) | `tests/engine-*.spec.ts` journey; INP needs real interaction, so it is measured on a journey rather than on first paint |
+| Lighthouse report attached | required by the mandate | **?** | No Lighthouse run in this sandbox (no Chromium, no `cdn.playwright.dev` egress). `ADR-009` records this as the one deliverable this environment cannot produce and names the command that produces it |
+| Lighthouse budgets (perf ≥0.90, a11y 1.0, best-practices ≥0.95, TBT ≤200 ms, ≤700 KB, 4G + 4× CPU) | `lighthouserc` config committed | config only | `lighthouserc.*` — thresholds are declared; the run is the outstanding artefact |
 
-**Tokens, not overrides.** The panels use `bg-surface`, `border-border`, `text-ink`,
-`text-ink-muted`, `success-*` and `error-*` only. Dark mode needed **no panel-specific code**:
-instead, `src/index.css` now defines the semantic surface tokens inside `.dark`
-(`--color-success-50/100/600/700`, `--color-warning-*`, `--color-error-*`, `--color-info-*`).
-Before that, a failure card kept its light `#fef2f2` tint on a near-black page. High contrast
-is handled by the pre-existing `@media (prefers-contrast: more)` and
-`@media (forced-colors: active)` blocks, and reduced motion by the global
-`prefers-reduced-motion` rule (the skeleton spinner and the refresh spin both stop).
+---
 
-**What is measured, and by what.** Target sizes, text floors and focus rings by
-`npm run ux:audit` (static, all files); contrast by `npm run a11y:contrast` (16 computed
-pairs, including the loading and unavailable states at 6.16:1 and 5.91:1); rendering at each
-class by the Playwright projects in `frontend/tests/admin-console-ux.spec.ts` — **NOT RUN
-here** (no browser binary, `OI-TIER-1`). Behaviour under a failed or empty response is
-measured in jsdom (`tests/unit/admin-*.test.tsx`, 53 tests) at every width, because it is
-width-independent.
+## 6. Density modes
+
+**Not implemented, and named as such.** The mandate requires density modes wired to the config
+registry. The admin plane has no density control, and `backend/config/registry.js` has no `ui.*`
+entry for one. What exists is a *resume-template* density (`smart-layout-families.tsx:57`) which is
+a document property, not a console preference, and is not the thing the mandate asked for.
+
+`ADR-009` records this as a deferred item with the reason (a density control is a persisted
+preference, and the registry write path requires an audit row, a revision guard and a capability —
+i.e. it is a configuration feature, not a CSS toggle), the acceptance criteria, and the trigger. It
+is not silently absent: it is the one mandate item in this file with no `S` and no `C`.
+
+---
+
+## 7. Reproducing this file
+
+```bash
+cd frontend
+npm run verify:ux                 # the S column; exits non-zero on any violation
+npx playwright test tests/admin-console-ux.spec.ts --list   # 290 tests across the 5 projects
+npx playwright install chromium   # not possible in this sandbox — see ADR-009
+npx playwright test tests/admin-console-ux.spec.ts          # the C column, in CI
+```
+
+The `S` column is reproducible here and now. The `C` column is reproducible in CI, where the
+`e2e` job serves the app and downloads Chromium; every `C` test fails on a violation, so the CI job
+is the gate, not this table.

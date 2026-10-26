@@ -703,3 +703,32 @@ route-layer fault arms already covered at the service layer; recorded as the nex
 **Rollback.** Revert the threshold block in `frontend/vitest.config.ts`; tests stay, only
 enforcement weakens, so the revert commit must cite this entry. The `NODE_ENV=test` prefixes are
 independent and should not be reverted — without them the local command does not reproduce CI.
+
+### D-033-1 — Step 4 evidence is split into measured (S), CI-asserted (C) and unknown (?)
+
+**Decision.** The browser-observable UX gates — visual regression at five classes, axe in dark and
+forced-colours, RTL, 200 % text, rendered 44 px boxes, drawer focus trap, the four data states —
+are implemented as Playwright tests in `frontend/tests/admin-console-ux.spec.ts` (290 tests listed
+across the configured projects) and executed by the existing CI `e2e` job. `UX-DEVICE-MATRIX.md`
+now marks every cell `S` (static audit, measured here), `C` (spec assertion, runs in CI) or `?`
+(neither). Reasoning, the Lighthouse/baseline gaps and the density deferral: `ADR-009`.
+
+**What this session actually measured:** `npm run verify:ux` → targetSize 0, textSize 0, focus 0,
+width 0 violations, and 17/17 contrast pairs pass (lowest text 4.59:1, lowest non-text 3.64:1).
+
+**What it did not measure, and says so:** no Chromium (no `cdn.playwright.dev` egress), so no
+screenshot, no axe run, no Lighthouse report. Those are `C`/`?` cells, not ticks.
+
+**Density modes are not implemented.** A console density preference is a persisted configuration
+value — registry entry, audit row, revision guard, capability — not a CSS toggle, so deferring it
+was a decision rather than an omission; acceptance criteria and the trigger are in `ADR-009`, and
+`OPEN-ITEMS.md` `OI-UX-8` is PARTIAL rather than closed.
+
+**Alternatives.** (1) Write the matrix as if the runs happened — rejected; it is the one thing this
+engagement has refused to do. (2) Install a browser from the package registry — `puppeteer` also
+downloads from an unreachable host, and there is no `apt` egress. (3) Run `jest-axe` in jsdom —
+no layout, so target-size and contrast rules silently pass; a green report that means less than the
+static audit.
+
+**Rollback.** Delete the added `test.describe` blocks; the matrix's `C` cells become `?` and the
+commit must cite this entry. No product code depends on it.

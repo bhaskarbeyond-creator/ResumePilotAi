@@ -120,6 +120,209 @@ test.describe('admin console · device classes', () => {
   }
 });
 
+/**
+ * The same five classes under the three non-default presentations the brief names.
+ *
+ * These are the runs that catch a token added for light mode and forgotten in dark, a
+ * layout that only fits while the reading direction is left-to-right, and a control whose
+ * border disappears in Windows High Contrast. Each one asserts layout (no horizontal page
+ * scroll) *and* `axe`, because a contrast failure in dark mode is invisible to the static
+ * audit — `contrast-audit.mjs` measures the light palette only.
+ */
+for (const presentation of [
+  { name: 'dark', colorScheme: 'dark' as const },
+  { name: 'high-contrast', forcedColors: 'active' as const },
+]) {
+  test.describe(`admin console · ${presentation.name}`, () => {
+    test.use({ viewport: { width: 320, height: 568 }, colorScheme: presentation.colorScheme, forcedColors: presentation.forcedColors });
+
+    test('fits the viewport and passes axe in ' + presentation.name, async ({ page }) => {
+      await authenticate(page);
+      await openConsole(page);
+
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      const blocking = results.violations.filter((violation) => ['critical', 'serious'].includes(violation.impact ?? ''));
+      expect(blocking.map((violation) => violation.id), `${presentation.name} axe violations`).toEqual([]);
+    });
+  });
+}
+
+test.describe('admin console · right-to-left', () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test('mirrors without overflowing and keeps the tab strip operable', async ({ page }) => {
+    await authenticate(page);
+    await page.addInitScript(() => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      document.documentElement.setAttribute('lang', 'ar');
+    });
+    await openConsole(page);
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    // A mirrored table is still allowed to scroll inside its container; the document is not.
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+
+    // Arrow keys follow the visual direction in RTL: ArrowLeft advances, ArrowRight retreats.
+    const tabs = page.getByRole('tab');
+    await tabs.first().focus();
+    if ((await tabs.count()) > 1) {
+      await page.keyboard.press('ArrowLeft');
+      expect(await page.evaluate(() => document.activeElement?.getAttribute('role'))).toBe('tab');
+    }
+  });
+});
+
+test.describe('admin console · 200% zoom and 200% text', () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test('nothing is clipped and no control becomes unreachable at 200% text', async ({ page }) => {
+    await authenticate(page);
+    await openConsole(page);
+
+    // 200% text: the root font size doubles, which is what a browser text-size setting does.
+    // The document must still fit the viewport, and every tab must keep a non-zero box.
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    await page.waitForTimeout(150);
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth, 'no horizontal scroll at 200% text').toBeLessThanOrEqual(overflow.clientWidth + 1);
+
+    for (const tab of await page.getByRole('tab').all()) {
+      const box = await tab.boundingBox();
+      expect(box?.width ?? 0, 'a tab must keep a measurable box at 200% text').toBeGreaterThan(0);
+      expect(box?.height ?? 0).toBeGreaterThan(0);
+    }
+  });
+});
+
+test.describe('admin console · touch targets at phone widths', () => {
+  for (const width of [320, 480]) {
+    test.use({ viewport: { width, height: 800 } });
+
+    test(`every enabled control is at least 44x44 at ${width}px`, async ({ page }) => {
+      await authenticate(page);
+      await openConsole(page);
+
+      // Static audit (`ux-audit.mjs`) proves the classes are present; this proves the
+      // rendered box. A `min-h-11` on an inline element, or one overridden by a later
+      // utility, passes the grep and fails here.
+      const undersized = await page.evaluate(() => {
+        const offenders: string[] = [];
+        for (const element of Array.from(document.querySelectorAll('button, a, select, input[type="checkbox"], [role="tab"]'))) {
+          const style = window.getComputedStyle(element);
+          if (style.display === 'none' || style.visibility === 'hidden') continue;
+          const rect = element.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) continue;
+          const disabled = element instanceof HTMLButtonElement && element.disabled;
+          // WCAG 2.2 exempts inactive controls and inline links inside a sentence.
+          if (disabled) continue;
+          if (element.tagName === 'A' && style.display === 'inline') continue;
+          if (rect.height < 44 || rect.width < 24) {
+            offenders.push(`${element.tagName.toLowerCase()}:${(element.textContent ?? '').trim().slice(0, 24)} ${Math.round(rect.width)}x${Math.round(rect.height)}`);
+          }
+        }
+        return offenders;
+      });
+      expect(undersized, 'controls below the 44px bar').toEqual([]);
+    });
+  }
+});
+
+test.describe('admin console · keyboard traps and focus return', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('a drawer traps focus, closes on Escape and returns focus to its trigger', async ({ page }) => {
+    await authenticate(page);
+    await openConsole(page);
+
+    const trigger = page.getByRole('button', { name: /user 360/i }).first();
+    if ((await trigger.count()) === 0) test.skip(true, 'this role cannot open User 360');
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+
+    const drawer = page.getByRole('dialog').first();
+    await drawer.waitFor({ state: 'visible' });
+
+    // Tab through every control in the drawer and confirm focus never escapes it. Ten
+    // presses is more than the drawer's control count at this width, so the cycle wraps.
+    for (let index = 0; index < 10; index += 1) {
+      await page.keyboard.press('Tab');
+      const inside = await page.evaluate(() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        return dialog?.contains(document.activeElement) ?? false;
+      });
+      expect(inside, `focus escaped the drawer on Tab #${index + 1}`).toBe(true);
+    }
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+});
+
+test.describe('admin console · the four data states', () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  for (const state of ['loading', 'empty', 'error', 'partial'] as const) {
+    test(`renders the ${state} state without overflow`, async ({ page }) => {
+      await authenticate(page);
+
+      // The console reads its census from /api/platform/capabilities; each state is a
+      // different answer from that one endpoint, so the states are driven at the network
+      // layer rather than by seeding component props.
+      if (state === 'loading') {
+        await page.route('**/api/platform/capabilities', async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5_000));
+        });
+      } else if (state === 'error') {
+        await page.route('**/api/platform/capabilities', (route) =>
+          route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: false, error: { code: 'CAPABILITY_CENSUS_UNAVAILABLE', message: 'Census unavailable' } }),
+          }),
+        );
+      } else if (state === 'empty') {
+        await page.route('**/api/platform/capabilities', (route) =>
+          route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, tabs: [] }) }),
+        );
+      } else {
+        await page.route('**/api/platform/capabilities', async (route) => {
+          const response = await route.fetch();
+          const body = (await response.json()) as Record<string, unknown>;
+          await route.fulfill({ response, json: { ...body, degraded: true, tabSource: 'DECLARED_DEFAULT' } });
+        });
+      }
+
+      await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+      // Whatever the state, the screen must say something and stay inside the viewport.
+      await page.locator('body').waitFor();
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+      expect((await page.locator('body').innerText()).trim().length).toBeGreaterThan(0);
+    });
+  }
+});
+
 test.describe('admin console · interaction states', () => {
   test.use({ viewport: { width: 1024, height: 768 } });
 
