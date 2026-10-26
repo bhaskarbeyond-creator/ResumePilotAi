@@ -64,7 +64,7 @@ const { PERMISSIONS } = require('./permissionVocabulary');
 const { resolvePermissionSet, satisfies } = require('../services/adminRbac');
 
 function unauthorized(res, code = 'AUTH_REQUIRED') {
-  return res.status(401).json({ error: { code, message: 'Authentication required', requestId: res.locals.requestId } });
+  return res.status(401).json({ success: false, error: { code, message: 'Authentication required', requestId: res.locals.requestId } });
 }
 
 let verifyToken = async token => {
@@ -150,7 +150,7 @@ async function optionalAuth(req, res, next) {
 }
 
 function requireVerifiedEmail(req, res, next) {
-  if (!req.user?.emailVerified) return res.status(403).json({ error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
+  if (!req.user?.emailVerified) return res.status(403).json({ success: false, error: { code: 'EMAIL_VERIFICATION_REQUIRED', message: 'A verified email address is required', requestId: res.locals.requestId } });
   return next();
 }
 
@@ -190,7 +190,7 @@ function permissionsFor(user) {
 function requirePermission(permission) {
   return (req, res, next) => {
     if (satisfies(permissionsFor(req.user), permission)) return next();
-    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals?.requestId } });
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals?.requestId } });
   };
 }
 
@@ -226,10 +226,11 @@ function requireSuperAdmin(req, res, next) {
     return requireAuth(req, res, () => requireSuperAdmin(req, res, next));
   }
   if (!isSuperAdmin(req.user)) {
-    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
   }
   if (superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
     return res.status(403).json({
+      success: false,
       error: {
         code: 'SUPER_ADMIN_MFA_REQUIRED',
         message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
@@ -264,6 +265,7 @@ function requireRecentAdminAuthentication(req, res, next) {
   //      (default 10 minutes).
   if (!isSuperAdmin(req.user)) {
     return res.status(403).json({
+      success: false,
       error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId },
     });
   }
@@ -294,6 +296,7 @@ function requireRecentAuthentication(req, res, next) {
   }
   if (isSuperAdmin(req.user) && superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
     return res.status(403).json({
+      success: false,
       error: {
         code: 'SUPER_ADMIN_MFA_REQUIRED',
         message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
@@ -308,6 +311,7 @@ function requireRecentAuthentication(req, res, next) {
   const ageMs = authTimeSeconds > 0 ? Date.now() - authTimeSeconds * 1000 : Infinity;
   if (!authTimeSeconds || !Number.isFinite(ageMs) || ageMs < 0 || ageMs > maxAgeMs) {
     return res.status(403).json({
+      success: false,
       error: {
         code: 'RECENT_AUTH_REQUIRED',
         message: 'Reauthenticate before changing platform credentials or executing this destructive operation.',

@@ -30,6 +30,7 @@ const express = require('express');
 const { requireAuth, requirePermission, requireRecentAuthentication, permissionsFor, isSuperAdmin } = require('../security/auth');
 const { recordAdminAuditLog, sanitizeAuditValue } = require('../security/adminAudit');
 const configService = require('../services/configService');
+const runtimeLimits = require('../services/runtimeLimits');
 const registry = require('../config/registry');
 
 const router = express.Router();
@@ -155,6 +156,12 @@ router.put('/:key', requirePermission(['system.config.write']), requireRecentAut
     });
 
     const entry = registry.findEntry(result.key);
+    // A limiter value must take effect on the next request, not on the next restart. The
+    // registry declares `restartRequired: false` for these keys, and that claim is only
+    // true because of this line.
+    if (String(result.key).startsWith('security.rateLimit.')) {
+      await runtimeLimits.refreshRuntimeLimits();
+    }
     const audit = await recordAdminAuditLog(req, {
       actorUid: actor.uid || 'unknown',
       actorEmail: actor.email || null,

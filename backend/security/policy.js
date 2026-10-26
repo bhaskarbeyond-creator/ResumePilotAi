@@ -82,8 +82,16 @@ function resolveAdminMutationPermission(pathname) {
   return resolveRoutePermission(pathname, 'POST')?.permission ?? null;
 }
 
+/**
+ * Denial envelope.
+ *
+ * `success: false` is included so a client can branch on one field for every error the
+ * API returns — a handler error, a policy denial and an authentication failure now share
+ * a shape. Before this, a client had to check both `response.ok` and whether `success`
+ * was present, which is how a 403 came to be read as a successful empty body.
+ */
 function deny(res, code, message) {
-  return res.status(403).json({ error: { code, message, requestId: res.locals.requestId } });
+  return res.status(403).json({ success: false, error: { code, message, requestId: res.locals.requestId } });
 }
 
 const RECENT_AUTHENTICATION_PATHS = new Set(['/account/delete', '/users-data/mfa/disable']);

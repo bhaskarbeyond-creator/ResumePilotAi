@@ -72,6 +72,7 @@ const { adminUsersRouter } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
 const adminRbacRouter = require('./routes/adminRbac');
 const capabilitiesRouter = require('./routes/capabilities');
+const runtimeLimits = require('./services/runtimeLimits');
 const configRouter = require('./routes/config');
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
@@ -390,19 +391,23 @@ app.use(sanitizeRequest());
 // therefore true rather than aspirational. The `try` is not defensive noise: this
 // runs on the request path, and a configuration read must never be able to turn a
 // rate limiter into a 500.
-const readLimitFromConfig = async (key, fallback) => {
-    try {
-        const { getConfigValue } = require('./services/configService');
-        const value = Number(await getConfigValue(key, fallback));
-        return Number.isFinite(value) && value > 0 ? value : fallback;
-    } catch (_error) {
-        return fallback;
-    }
-};
+// CFG-004/005: limit values come from the configuration registry (database override →
+// environment → declared default) through an in-memory snapshot that is replaced when a
+// configuration write changes one. The limiter reads the snapshot synchronously and never
+// touches the database: evaluating a limit runs on every request, and an earlier version
+// that queried here raised an unrelated page from one round trip to three (see
+// services/runtimeLimits.js).
 const bootGlobalLimitMax = Number(process.env.GLOBAL_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 2500));
+const bootAuthHourlyMax = Number(process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 20));
+const bootAuthBurstMax = Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 5));
+runtimeLimits.startRuntimeLimits({
+    global: bootGlobalLimitMax,
+    authHourly: bootAuthHourlyMax,
+    authBurst: bootAuthBurstMax,
+});
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: () => readLimitFromConfig('security.rateLimit.global', bootGlobalLimitMax),
+    max: () => runtimeLimits.currentLimits().global,
     message: { error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again in a few moments.', requestId: undefined } },
     standardHeaders: 'draft-6',
     legacyHeaders: false,
@@ -420,10 +425,7 @@ app.use('/api', globalLimiter);
 // certification/E2E suites that provision many accounts are not throttled.
 const authHourlyLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: () => readLimitFromConfig(
-        'security.rateLimit.authHourly',
-        process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20)
-    ),
+    max: () => runtimeLimits.currentLimits().authHourly,
     standardHeaders: 'draft-6',
     legacyHeaders: false,
     message: { error: { code: 'RATE_LIMITED', message: 'Too many sensitive requests from this IP, please try again after an hour', requestId: undefined } },
@@ -431,10 +433,7 @@ const authHourlyLimiter = rateLimit({
 });
 const authBurstLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: () => readLimitFromConfig(
-        'security.rateLimit.authBurst',
-        process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_BURST_RATE_LIMIT_MAX || 5)
-    ),
+    max: () => runtimeLimits.currentLimits().authBurst,
     standardHeaders: 'draft-6',
     legacyHeaders: false,
     message: { error: { code: 'AUTH_BURST_LIMITED', message: 'Too many authentication attempts. Please wait before trying again.', requestId: undefined } },

@@ -299,6 +299,14 @@ function installDirectory({ pageSize = 100, failBatchProfiles = false } = {}) {
 
 test('a full administrative page is served by batched reads, not per-identity round trips', async () => {
   const { directoryPool, uids } = installDirectory({ pageSize: 100 });
+  // Warm the authority path with one request, then reset the recording. The
+  // `admin_user_roles` read is a real per-request query on a cold cache, and this budget is
+  // about the *directory* fan-out. Doing it with a real request (rather than by calling the
+  // cache directly) also drains any background authority refresh scheduled by an earlier
+  // test, so the measurement cannot depend on which test ran before.
+  await request(app).get('/api/admin/users?limit=1').set('Authorization', 'Bearer super');
+  directoryPool.log.sql.length = 0;
+  directoryPool.log.maxConcurrent = 0;
   const res = await request(app).get('/api/admin/users?limit=100').set('Authorization', 'Bearer super');
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.equal(res.body.users.length, 100);
@@ -306,7 +314,7 @@ test('a full administrative page is served by batched reads, not per-identity ro
   const profileReads = directoryPool.log.sql.filter(entry => /FROM users/.test(entry.sql));
   assert.equal(profileReads.length, 1, 'profiles must be read once per page, not once per identity');
   assert.ok(directoryPool.log.maxConcurrent <= 2, `the page must not fan hundreds of acquisitions onto the shared pool (measured ${directoryPool.log.maxConcurrent})`);
-  assert.equal(directoryPool.log.sql.length, 1, `expected a single MariaDB round trip for ${uids.length} identities`);
+  assert.equal(directoryPool.log.sql.length, 1, `expected a single MariaDB round trip for ${uids.length} identities, saw ${JSON.stringify(directoryPool.log.sql.map(entry => entry.sql.slice(0, 70)))}`);
 });
 
 test('administrative directory falls back to per-identity reads when no batch reader exists', async () => {

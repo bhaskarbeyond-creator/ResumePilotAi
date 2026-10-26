@@ -79,6 +79,15 @@ const ENTITIES = Object.freeze({
     platform_statistic: maria('platform_statistic', 'stats'),
     platform_announcement: maria('platform_announcement', 'platform_announcements'),
     admin_audit: maria('admin_audit', 'admin_audit_logs'),
+    // Migration 028 — the persisted authority graph (REC-005, INV-3). MariaDB owns it:
+    // the resolver reads it on every authorisation decision and the RBAC API writes it,
+    // so there is exactly one writer path and one source of truth.
+    admin_role: maria('admin_role', 'admin_roles', 'Role catalogue; written only through the RBAC administration API.'),
+    admin_role_permission: maria('admin_role_permission', 'admin_role_permissions', 'Resource x action bundle per role; the authority source `services/adminRbac` resolves.'),
+    admin_user_role: maria('admin_user_role', 'admin_user_roles', 'Time-boxed role grants; expiry is evaluated in SQL so a stale grant cannot be honoured.'),
+    // Migration 029 — dashboard configuration (REC-012, INV-4, INV-6).
+    config_override: maria('config_override', 'config_overrides', 'Per-key value override with a revision guard; the only place the dashboard writes configuration.'),
+    config_change: maria('config_change', 'config_change_log', 'Append-only before/after trail for configuration changes; retained across a rollback.'),
     security_audit: maria('security_audit', 'security_audit_logs'),
     oauth_state: maria('oauth_state', 'oauth_states'),
     oauth_exchange: maria('oauth_exchange', 'oauth_exchange_codes'),
@@ -133,6 +142,8 @@ const ALIASES = Object.freeze({
     schema_migrations: 'schema_migration', schema_migration_attempts: 'schema_migration_attempt',
     stats: 'platform_statistic', platform_announcements: 'platform_announcement',
     admin_audit_logs: 'admin_audit', security_audit_logs: 'security_audit',
+    admin_roles: 'admin_role', admin_role_permissions: 'admin_role_permission', admin_user_roles: 'admin_user_role',
+    config_overrides: 'config_override', config_change_log: 'config_change',
     oauth_states: 'oauth_state', oauth_exchange_codes: 'oauth_exchange', export_render_tokens: 'export_token',
     enterprise_tenant_credential_tests: 'enterprise_tenant_credential_test',
     enterprise_tenant_credentials: 'enterprise_tenant_credential',

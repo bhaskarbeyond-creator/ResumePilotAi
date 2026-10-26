@@ -9,7 +9,9 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js",
-    "test:coverage": "c8 node --test --test-concurrency=1 --test-force-exit test/config-validators.test.js test/config-registry.test.js test/config-api.test.js test/authz-visibility-matrix.test.js test/route-manifest.test.js test/admin-rbac-api.test.js test/admin-rbac-resolver.test.js test/admin-rbac-store.test.js test/admin-rbac-administration.test.js test/admin-rbac-contract.test.js test/admin-target-authority.test.js test/setting-classification.test.js test/security.test.js && c8 check-coverage --branches=80 --lines=95 --functions=90 --per-file=false"
+    "test:coverage": "c8 node --test --test-concurrency=1 --test-force-exit test/config-validators.test.js test/config-registry.test.js test/config-api.test.js test/authz-visibility-matrix.test.js test/route-manifest.test.js test/admin-rbac-api.test.js test/admin-rbac-resolver.test.js test/admin-rbac-store.test.js test/admin-rbac-administration.test.js test/admin-rbac-contract.test.js test/admin-target-authority.test.js test/setting-classification.test.js test/security.test.js && c8 check-coverage --branches=80 --lines=95 --functions=90 --per-file=false",
+    "smoke": "node --test --test-concurrency=1 --test-force-exit test/smoke.test.js",
+    "smoke:deployed": "node ../scripts/smoke.mjs"
   },
   "author": "",
   "license": "ISC",

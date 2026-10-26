@@ -13,15 +13,23 @@ function read(rel) {
 
 describe('support ticket RBAC and ownership source contracts', () => {
   it('grants tickets.manage to SUPPORT and ADMIN, not AUDITOR', () => {
-    const auth = read('security/auth.js');
-    const support = auth.match(/\n {2}SUPPORT:\s*\[([\s\S]*?)\]/)?.[1] || '';
-    const auditor = auth.match(/\n {2}AUDITOR:\s*\[([\s\S]*?)\]/)?.[1] || '';
-    const admin = auth.match(/\n {2}ADMIN:\s*\[([\s\S]*?)\]/)?.[1] || '';
-    assert.match(support, /tickets\.manage/);
-    assert.match(admin, /tickets\.manage/);
-    assert.doesNotMatch(auditor, /tickets\.manage/);
-    assert.doesNotMatch(support, /system\.config\.read/);
-    assert.doesNotMatch(support, /security\.read/);
+    // Asserted against the resolved bundle rather than by regexing a source file: the
+    // literals moved to `security/permissionVocabulary.js` in REC-004, and a test that
+    // greps one file goes green or red based on *where* the data lives rather than on what
+    // the role may do. Resolving is also stronger — it proves the grant survives the
+    // hierarchy expansion and the alias mapping a handler actually sees.
+    // `permissionsForRole` returns `{ set, source }` — the set plus where it came from,
+    // which is what the resolver and the census both need.
+    const { permissionsForRole, satisfies } = require('../services/adminRbac');
+    const support = permissionsForRole('SUPPORT').set;
+    const admin = permissionsForRole('ADMIN').set;
+    const auditor = permissionsForRole('AUDITOR').set;
+
+    assert.equal(satisfies(support, 'tickets.manage'), true);
+    assert.equal(satisfies(admin, 'tickets.manage'), true);
+    assert.equal(satisfies(auditor, 'tickets.manage'), false, 'an auditor reads the trail; it does not answer tickets');
+    assert.equal(satisfies(support, 'system.config.read'), false, 'support must not hold platform configuration');
+    assert.equal(satisfies(support, 'security.read'), false);
   });
 
   it('keeps user ticket routes off the admin write gate and staffs admin routes with tickets.manage', () => {

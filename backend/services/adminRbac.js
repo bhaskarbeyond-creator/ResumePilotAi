@@ -64,6 +64,8 @@ let storeOverride = null;
 let cache = null;
 /** @type {Map<string, {set: Set<string>, expiresAt: number}>} */
 const userGrantCache = new Map();
+/** In-flight grant reads, so concurrent resolutions share one query. @type {Map<string, Promise<Set<string>>>} */
+const userGrantInFlight = new Map();
 
 let warnedDegraded = false;
 
@@ -362,11 +364,16 @@ function permissionsForUserGrants(uid) {
   const cached = userGrantCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.set;
   if (cached) userGrantCache.delete(key);
+
+  // One query per uid, not one per caller. A single request resolves the authority set
+  // several times (`enforceApiPolicy`, `requirePermission`, and any handler that asks) —
+  // before this guard each of those misses issued its own `admin_user_roles` read, which
+  // a query-budget test measured as a per-request N+1 on the authority graph. Sharing the
+  // in-flight promise collapses them into one round trip without making any caller wait
+  // longer than it already did.
   const store = storeOverride || defaultStore();
-  // Fire-and-forget refresh: the caller gets the last known set (possibly empty)
-  // and the next request sees the loaded value. Correctness never depends on it,
-  // because role bundles carry the baseline authority.
-  Promise.resolve()
+  const inFlight = userGrantInFlight.get(key);
+  const refresh = inFlight || Promise.resolve()
     .then(() => store.listUserGrants(key))
     .then(rows => {
       const set = new Set();
@@ -375,10 +382,19 @@ function permissionsForUserGrants(uid) {
         for (const expanded of expandGrant(row.resource, row.action)) set.add(expanded);
       }
       userGrantCache.set(key, { set, expiresAt: Date.now() + CACHE_TTL_MS });
+      return set;
     })
     .catch(() => {
-      userGrantCache.set(key, { set: new Set(), expiresAt: Date.now() + CACHE_TTL_MS });
-    });
+      // A failed grant read caches the empty set for one TTL: the role bundle still
+      // carries baseline authority, and retrying on every request during an outage would
+      // turn a degraded database into a queue of failing queries.
+      const set = new Set();
+      userGrantCache.set(key, { set, expiresAt: Date.now() + CACHE_TTL_MS });
+      return set;
+    })
+    .finally(() => { userGrantInFlight.delete(key); });
+
+  userGrantInFlight.set(key, refresh);
   return cached?.set || new Set();
 }
 

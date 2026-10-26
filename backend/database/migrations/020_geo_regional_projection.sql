@@ -59,5 +59,5 @@ UPDATE jobs SET
 -- LOWER(status) = 'active' AND (expires_at IS NULL OR expires_at > NOW()),
 -- so these composite indexes lead with the projection columns and still serve
 -- the expiry filter from the index tail instead of a filesort.
-CREATE INDEX idx_jobs_region ON jobs (region_city, status, expires_at, created_at);
-CREATE INDEX idx_jobs_region_state ON jobs (region_state, status, expires_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_region ON jobs (region_city, status, expires_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_region_state ON jobs (region_state, status, expires_at, created_at);

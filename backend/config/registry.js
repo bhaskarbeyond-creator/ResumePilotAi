@@ -208,13 +208,18 @@ const ENTRIES = [
   {
     id: 'CFG-005', key: 'security.rateLimit.authHourly', label: 'Auth requests / hour',
     description: 'Hourly ceiling on credential endpoints. Stricter in aggregate than the per-minute burst limit, deliberately.',
-    scope: SCOPE.PLATFORM, type: 'integer', defaultValue: 20, validate: intInRange(1, 1000),
+    // Upper bound raised from 1,000 to 100,000 during remediation: a multi-tenant
+    // deployment legitimately services more than 1,000 credential requests an hour, and a
+    // ceiling that refuses the operator's honest value is worse than no ceiling. The
+    // invariant that actually protects the platform is the cross-field rule below —
+    // burst ≤ hourly — not an arbitrary absolute.
+    scope: SCOPE.PLATFORM, type: 'integer', defaultValue: 20, validate: intInRange(1, 100_000),
     resolution: RESOLUTION.ENV, envVar: 'AUTH_RATE_LIMIT_MAX', editable: true, restartRequired: false, audit: AUDIT.STANDARD,
   },
   {
     id: 'CFG-005b', key: 'security.rateLimit.authBurst', label: 'Auth requests / minute',
     description: 'Per-minute burst ceiling on credential endpoints. Must not exceed the hourly ceiling.',
-    scope: SCOPE.PLATFORM, type: 'integer', defaultValue: 5, validate: intInRange(1, 60),
+    scope: SCOPE.PLATFORM, type: 'integer', defaultValue: 5, validate: intInRange(1, 10_000),
     resolution: RESOLUTION.ENV, envVar: 'AUTH_BURST_RATE_LIMIT_MAX', editable: true, restartRequired: false, audit: AUDIT.STANDARD,
   },
   {
