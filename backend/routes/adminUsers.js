@@ -12,6 +12,8 @@ const { getPool } = require('../database/mysql');
 const { queueEmail } = require('../services/notificationOutbox');
 const { ALERT_TYPES, emitAlert } = require('../database/alerts');
 const { resolveAssignableWorkspace } = require('../enterprise/workspaceResolution');
+const { evaluateTargetAuthority, auditTargetAuthority } = require('../security/targetAuthority');
+const { recordDenialAudit } = require('../security/denialAudit');
 
 const router = express.Router();
 
@@ -50,6 +52,51 @@ async function identityOrNull(identityAdmin, uid) {
     if (error.code === 'auth/user-not-found') return null;
     throw error;
   }
+}
+
+/**
+ * Second-dimension authorisation: may THIS caller act on THIS account?
+ *
+ * Resolves the target identity, evaluates the target-authority ceiling
+ * (`security/targetAuthority`) and, on denial, writes a HIGH-severity audit row
+ * before returning the 403. Returning `null` means the caller may proceed and
+ * `identity` carries the already-resolved record so the handler does not fetch
+ * it twice.
+ *
+ * Side effects: one audit row on denial only. Throws only what
+ * `identityOrNull` throws (503 when the identity directory is unavailable).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {object} identityAdmin Firebase admin handle
+ * @param {string} uid target uid
+ * @param {string} operation short operation key
+ * @returns {Promise<{identity: object, decision: object}|{response: import('express').Response}>}
+ */
+async function authorizeTargetMutation(req, res, identityAdmin, uid, operation) {
+  const identity = await identityOrNull(identityAdmin, uid);
+  if (!identity) {
+    return { response: res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'Identity not found.', requestId: res.locals?.requestId }) };
+  }
+  const decision = evaluateTargetAuthority(req.user, identity, operation);
+  if (!decision.allowed) {
+    await recordDenialAudit(req, res, {
+      action: 'TARGET_AUTHORITY_DENIED',
+      code: decision.code,
+      resourceId: uid,
+      metadata: auditTargetAuthority(decision),
+    });
+    return {
+      response: res.status(403).json({
+        success: false,
+        code: decision.code,
+        error: decision.message,
+        operation: decision.operation,
+        requestId: res.locals?.requestId,
+      }),
+    };
+  }
+  return { identity, decision };
 }
 
 function adminUserProjection(identity, profile = {}, id = identity?.uid || profile?.id || profile?.userId, authoritativeTenants = []) {
@@ -746,10 +793,26 @@ router.patch('/:uid', async (req, res) => {
 
   try {
     const identity = await identityOrNull(identityAdmin, uid);
-    const profile = (await repo.getUser(uid)) || {};
-    if (!identity && !profile.id && !profile.userId) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
     const claims = identity?.customClaims || {};
     const currentRole = String(claims.role || 'USER').toUpperCase();
+
+    // RCA-006: the rank ceiling is evaluated before any application-database
+    // read, so an unauthorised caller cannot use a degraded database as an
+    // oracle for whether the target exists, and a DB outage can never turn a
+    // denial into a 503.
+    const earlyDecision = evaluateTargetAuthority(req.user, currentRole, changes.role !== undefined || changes.suspended !== undefined ? 'change-role' : 'patch-profile');
+    if (!earlyDecision.allowed) {
+      await recordDenialAudit(req, res, {
+        action: 'TARGET_AUTHORITY_DENIED',
+        code: earlyDecision.code,
+        resourceId: uid,
+        metadata: { ...auditTargetAuthority(earlyDecision), fields: Object.keys(changes) },
+      });
+      return res.status(403).json({ success: false, code: earlyDecision.code, error: earlyDecision.message, requestId: res.locals.requestId });
+    }
+
+    const profile = (await repo.getUser(uid)) || {};
+    if (!identity && !profile.id && !profile.userId) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
     const currentSuspended = identity?.disabled === true;
     const currentMembership = profile.membership || 'Basic';
     if (expected.role !== undefined && expected.role !== currentRole) {
@@ -763,6 +826,7 @@ router.patch('/:uid', async (req, res) => {
     }
     const callerPermissions = permissionsFor(req.user);
     const callerIsSuperAdmin = callerPermissions.has('*') || String(req.user?.claims?.role || req.user?.role || '').toUpperCase() === 'SUPER_ADMIN';
+
 
     if (currentRole === 'SUPER_ADMIN') {
       if (!callerIsSuperAdmin) {
@@ -946,6 +1010,8 @@ router.put('/:uid/ai-entitlement', async (req, res) => {
   const { dailyLimit, maxTokens, expiresAt, reason } = req.body || {};
 
   try {
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'ai-entitlement');
+    if (guarded.response) return guarded.response;
     const updated = await setUserAiQuotaOverride({
       admin: identityAdmin,
       uid,
@@ -967,6 +1033,8 @@ router.delete('/:uid/ai-entitlement', async (req, res) => {
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
 
   try {
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'ai-entitlement');
+    if (guarded.response) return guarded.response;
     const updated = await removeUserAiQuotaOverride({
       admin: identityAdmin,
       uid,
@@ -984,6 +1052,8 @@ router.post('/:uid/ai-quota-reset', async (req, res) => {
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
 
   try {
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'ai-entitlement');
+    if (guarded.response) return guarded.response;
     const updated = await resetUserAiQuota({
       admin: identityAdmin,
       uid,
@@ -1006,8 +1076,9 @@ router.post(['/:uid/send-password-reset', '/:uid/password-reset'], async (req, r
     return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to trigger password reset.' });
   }
   try {
-    const identity = await identityOrNull(identityAdmin, uid);
-    if (!identity) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'Identity not found.' });
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'send-password-reset');
+    if (guarded.response) return guarded.response;
+    const identity = guarded.identity;
     if (!identity.email) return res.status(400).json({ success: false, code: 'NO_EMAIL', error: 'Identity has no email address.' });
     const resetLink = await identityAdmin.auth().generatePasswordResetLink(identity.email);
     const linkHash = crypto.createHash('sha256').update(resetLink).digest('hex');
@@ -1063,8 +1134,8 @@ router.post('/:uid/revoke-sessions', async (req, res) => {
   const callerPermissions = permissionsFor(req.user);
   if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to revoke user sessions.' });
   try {
-    const identity = await identityOrNull(identityAdmin, uid);
-    if (!identity) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'Identity not found.' });
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'revoke-sessions');
+    if (guarded.response) return guarded.response;
     await identityAdmin.auth().revokeRefreshTokens(uid);
     const updated = await identityAdmin.auth().getUser(uid);
     await recordAdminAuditLog(req, { actorUid: req.user?.uid, actorEmail: req.user?.email, action: 'USER_SESSIONS_REVOKED_BY_ADMIN', category: 'iam.users', severity: 'HIGH', method: 'POST', pathname: req.originalUrl, resourceType: 'user', resourceId: uid, metadata: { tokensValidAfterTime: updated.tokensValidAfterTime }, requestId: res.locals.requestId });
@@ -1083,8 +1154,11 @@ router.post('/:uid/unenroll-mfa', async (req, res) => {
   const callerPermissions = permissionsFor(req.user);
   if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.security.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to reset MFA.' });
   try {
-    const identity = await identityOrNull(identityAdmin, uid);
-    if (!identity) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'Identity not found.' });
+    // RCA-005: second-dimension authorisation. Resolving the target BEFORE any
+    // mutation is what makes the MFA-strip escalation impossible.
+    const guarded = await authorizeTargetMutation(req, res, identityAdmin, uid, 'unenroll-mfa');
+    if (guarded.response) return guarded.response;
+    const identity = guarded.identity;
     const factors = identity.multiFactor?.enrolledFactors || [];
     await recordAdminAuditLog(req, { actorUid: req.user?.uid, actorEmail: req.user?.email, action: 'USER_MFA_UNENROLL_REQUESTED', category: 'iam.users', severity: 'HIGH', method: 'POST', pathname: req.originalUrl, statusCode: 202, resourceType: 'user', resourceId: uid, metadata: { enrolledFactorCount: factors.length }, requestId: res.locals.requestId });
     await identityAdmin.auth().updateUser(uid, { multiFactor: { enrolledFactors: [] } });

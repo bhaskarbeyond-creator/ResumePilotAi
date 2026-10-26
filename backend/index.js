@@ -63,7 +63,9 @@ const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
 const { enterpriseM2mRouter } = require('./routes/enterpriseM2m');
 const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
-const { createAdminAuditMiddleware } = require('./security/adminAudit');
+const { createAdminAuditMiddleware, recordAdminAuditLog } = require('./security/adminAudit');
+const { evaluateTargetAuthority, auditTargetAuthority } = require('./security/targetAuthority');
+const { recordDenialAudit } = require('./security/denialAudit');
 const { adminAuditRouter } = require('./routes/adminAudit');
 const { platformRouter } = require('./routes/platform');
 const { adminUsersRouter } = require('./routes/adminUsers');
@@ -3655,13 +3657,7 @@ function normalizeLandingMarketingSettings(value = {}) {
     return normalized;
 }
 
-function isPrivateAdminSettingKey(category, key) {
-    const publicApiKeys = new Set(['googleMapsApiKey', 'cloudinaryApiKey']);
-    return /(?:secret|password|privateKey|authToken|clientToken|accessToken|refreshToken|serviceAccount|merchantKey|saltKey|keySecret|s3AccessKeyId)/i.test(key)
-        || (key === 'apiKey' && category !== 'firebase')
-        || (/apiKey$/i.test(key) && !publicApiKeys.has(key))
-        || (category === 'exportPdf' && ['chromiumPath', 'backendExportUrl'].includes(key));
-}
+const { isPrivateAdminSettingKey } = require('./security/settingClassification');
 
 function preserveAdminSettingSecrets(category, current, next) {
     if (Array.isArray(next)) {
@@ -7073,8 +7069,16 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
             return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID/email identity mismatch.' });
         }
         const targetRole = String(identity?.customClaims?.role || '').toUpperCase();
-        if (targetRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
-            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
+        // RCA-006 / REC-004: rank ceiling, not just a SUPER_ADMIN special case.
+        const deleteDecision = evaluateTargetAuthority(req.user, targetRole, 'delete-user');
+        if (!deleteDecision.allowed) {
+            await recordDenialAudit(req, res, {
+                action: 'TARGET_AUTHORITY_DENIED',
+                code: deleteDecision.code,
+                resourceId: targetUid,
+                metadata: auditTargetAuthority(deleteDecision),
+            });
+            return res.status(403).json({ success: false, code: deleteDecision.code, error: deleteDecision.message, requestId: res.locals?.requestId });
         }
 
         if (!profile && identity) {
