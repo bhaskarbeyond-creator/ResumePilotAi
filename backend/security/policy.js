@@ -1,4 +1,5 @@
 const { permissionsFor } = require('./auth');
+const { satisfies } = require('../services/adminRbac');
 
 const ADMIN_PREFIXES = [
   '/admin/',
@@ -34,12 +35,22 @@ function requiresVerifiedEmail(pathname) {
   return VERIFIED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 }
 
+/**
+ * Permission check for the route policy.
+ *
+ * Routed through the RBAC resolver's `satisfies` so the action hierarchy applies
+ * uniformly: a role holding `payments:manage` passes a `payments.read` gate, and
+ * `system.config:write` satisfies the `system.config.read` default that guards
+ * every unlisted admin GET. Before REC-005 this compared literal strings, so the
+ * hierarchy existed in the data model but not on the request path — which is why
+ * ADMIN was refused reads of settings it could already write.
+ *
+ * @param {object} req
+ * @param {string|string[]} permission one permission or an any-of list
+ * @returns {boolean}
+ */
 function hasPermission(req, permission) {
-  const permissions = permissionsFor(req.user);
-  if (Array.isArray(permission)) {
-    return permissions.has('*') || permission.some(p => permissions.has(p));
-  }
-  return permissions.has('*') || permissions.has(permission);
+  return satisfies(permissionsFor(req.user), permission);
 }
 
 function isReadMethod(method) {

@@ -88,7 +88,8 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, optionalAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, requireSuperAdmin, isSuperAdmin, hasSecondFactor, superAdminMfaEnforced, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
+const { requireAuth, optionalAuth, requirePermission, requireRecentAdminAuthentication, requireSuperAdmin, isSuperAdmin, hasSecondFactor, superAdminMfaEnforced, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
+const { warmAdminRbac } = require('./services/adminRbac');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -5523,7 +5524,22 @@ if (require.main === module) {
 
     // Startup schema bootstrap (idempotent, non-fatal). Fresh deployments become
     // operational on first boot; a MySQL outage degrades instead of crash-looping.
-    runSchemaBootstrap().catch(() => {});
+    //
+    // Platform RBAC (REC-005) is warmed immediately after the schema is in place,
+    // before the listener accepts traffic. A cold cache would still be *correct*
+    // (it resolves through the frozen literal), but it would silently ignore a
+    // role edited in the console until the first write invalidated it — so we
+    // make the database the authority from request one, and say so in the log.
+    runSchemaBootstrap()
+        .then(() => warmAdminRbac())
+        .then((result) => {
+            if (result.degraded) {
+                console.warn('[AdminRBAC] Store unavailable at boot — serving frozen literal authority (pre-028 behaviour).');
+            } else {
+                console.info(`[AdminRBAC] Loaded ${result.roles} role(s) and ${result.permissions} stored permission(s).`);
+            }
+        })
+        .catch(() => {});
 
     // FreeLLMAPI autonomous background maintenance cycle (unref'd timer)
     freellm.startAutonomousMaintenance();

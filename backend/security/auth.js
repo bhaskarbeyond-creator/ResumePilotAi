@@ -60,41 +60,8 @@ function issueLocalTestToken(payload, secret = process.env.TEST_AUTH_HMAC_SECRET
   return `rptest.${body}.${sig}`;
 }
 
-const PERMISSIONS = Object.freeze({
-  SUPER_ADMIN: ['*'],
-  ADMIN: [
-    'users.read', 'users.create', 'users.update', 'users.delete', 'users.roles.manage',
-    'tenants.read', 'tenants.write', 'tenants.manage',
-    'email.template.manage', 'email.logs.read',
-    'payments.manage', 'payments.read',
-    'notifications.send',
-    'ai.entitlements.manage', 'ai.usage.read',
-    'audit.read', 'security.read',
-    'tickets.manage',
-    'blog.write', 'blog.read', 'blog_management', 'content.manage', 'system.config.write'
-  ],
-  AUDITOR: [
-    'users.read', 'tenants.read', 'email.logs.read',
-    'payments.read', 'ai.usage.read', 'audit.read', 'security.read'
-  ],
-  SUPPORT: [
-    'users.read', 'email.logs.read', 'tenants.read', 'tickets.manage'
-  ],
-  ENTERPRISE_ADMIN: [
-    'tenant.members.manage', 'tenant.roles.manage', 'tenant.ai.policy',
-    'tenant.billing.view', 'tenant.audit.read', 'tenant.workspaces.manage',
-    'workspace.read', 'workspace.manage', 'workspace.members.manage'
-  ],
-  ENTERPRISE_MEMBER: [
-    'tenant.resumes.write', 'tenant.interviews.execute', 'tenant.ai.consume', 'workspace.read'
-  ],
-  EMPLOYER: [
-    'jobs.manage', 'applications.review', 'candidates.contact'
-  ],
-  USER: [
-    'resumes.manage', 'coverletters.manage', 'interviews.execute', 'subscription.self'
-  ]
-});
+const { PERMISSIONS } = require('./permissionVocabulary');
+const { resolvePermissionSet, satisfies } = require('../services/adminRbac');
 
 function unauthorized(res, code = 'AUTH_REQUIRED') {
   return res.status(401).json({ error: { code, message: 'Authentication required', requestId: res.locals.requestId } });
@@ -187,22 +154,43 @@ function requireVerifiedEmail(req, res, next) {
   return next();
 }
 
+/**
+ * Resolved authority for a caller (REC-005, RCA-009).
+ *
+ * Delegates to `services/adminRbac.resolvePermissionSet`, which reads
+ * `admin_roles` / `admin_role_permissions` / `admin_user_roles`, applies the
+ * `manage ⊃ write ⊃ read` hierarchy and falls back to the frozen vocabulary when
+ * the store is unavailable.
+ *
+ * The returned set contains BOTH canonical `resource:action` keys and the legacy
+ * dotted aliases, so existing handlers that call `permissions.has('users.update')`
+ * keep working unchanged while new code can express hierarchy-aware checks.
+ *
+ * Deliberate behaviour change (RCA-009): the token-asserted `claims.permissions`
+ * array is no longer merged in. A grant that is not persisted cannot be audited,
+ * so it is not authority.
+ *
+ * @param {{uid?: string, claims?: object}|null} user
+ * @returns {Set<string>} permission keys; `'*'` for a wildcard holder
+ */
 function permissionsFor(user) {
-  const role = String(user?.claims?.role || '').toUpperCase();
-  const declared = Array.isArray(user?.claims?.permissions)
-    ? user.claims.permissions.filter(value => typeof value === 'string' && value.length <= 100)
-    : [];
-  return new Set([...(PERMISSIONS[role] || []), ...declared]);
+  if (!user) return new Set();
+  return resolvePermissionSet(user);
 }
 
+/**
+ * Route middleware: require at least one of `permission`.
+ *
+ * Satisfied by a wildcard holder, an exact grant, or a higher action on the same
+ * resource (`manage ⊃ write ⊃ read`) — the hierarchy INV-3 requires.
+ *
+ * @param {string|string[]} permission one permission or an any-of list
+ * @returns {import('express').RequestHandler}
+ */
 function requirePermission(permission) {
   return (req, res, next) => {
-    const permissions = permissionsFor(req.user);
-    const required = Array.isArray(permission) ? permission : [permission];
-    if (!permissions.has('*') && !required.some(p => permissions.has(p))) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals?.requestId } });
-    }
-    return next();
+    if (satisfies(permissionsFor(req.user), permission)) return next();
+    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals?.requestId } });
   };
 }
 

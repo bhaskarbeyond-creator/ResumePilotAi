@@ -79,14 +79,21 @@ test('Super Admin & Platform Module: Severity derivation matches operational ris
   assert.equal(deriveSeverity('POST', '/api/platform/maintenance', 200), 'HIGH');
 });
 
-test('Super Admin & Platform Module: isSuperAdmin correctly identifies role & wildcard', () => {
+test('Super Admin & Platform Module: isSuperAdmin identifies role-based authority only', () => {
   const superAdminUser = { uid: 'sa1', email: 'sa@example.com', claims: { role: 'SUPER_ADMIN' } };
   const adminUser = { uid: 'a1', email: 'admin@example.com', claims: { role: 'ADMIN' } };
-  const wildcardUser = { uid: 'w1', email: 'w@example.com', claims: { permissions: ['*'] } };
   const regularUser = { uid: 'u1', email: 'user@example.com', claims: { role: 'USER' } };
+  // REC-005 / RCA-009: a `permissions` array on the identity token is no longer a
+  // source of authority. Nothing in this codebase ever mints that claim (custom
+  // claims carry `role` only), so anything present there is forged or stale — and
+  // a grant that is not persisted cannot be audited. This assertion used to
+  // expect `true`; the change is a hardening, not a regression.
+  const tokenClaimedWildcard = { uid: 'w1', email: 'w@example.com', claims: { permissions: ['*'] } };
+  const roleWildcard = { uid: 'w2', email: 'w2@example.com', claims: { role: 'SUPER_ADMIN', permissions: ['*'] } };
 
   assert.equal(isSuperAdmin(superAdminUser), true);
-  assert.equal(isSuperAdmin(wildcardUser), true);
+  assert.equal(isSuperAdmin(roleWildcard), true);
+  assert.equal(isSuperAdmin(tokenClaimedWildcard), false, 'an unaudited token claim must not confer super-admin authority');
   assert.equal(isSuperAdmin(adminUser), false);
   assert.equal(isSuperAdmin(regularUser), false);
   assert.equal(isSuperAdmin(null), false);
