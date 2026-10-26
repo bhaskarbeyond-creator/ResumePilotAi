@@ -9,7 +9,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { get, post, patch, normalizeError } from '@/lib/api-client';
+import { get, post, patch } from '@/lib/api-client';
 import {
   fetchNotifications,
   markAllNotificationsRead,

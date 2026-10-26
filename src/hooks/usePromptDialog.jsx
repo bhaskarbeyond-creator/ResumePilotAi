@@ -24,6 +24,7 @@ import CubaPromptDialog from '../components/cuba/CubaPromptDialog';
  * ZERO FABRICATION: the hook stores no value of its own; the resolved string is
  *   exactly what the user typed.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function usePromptDialog() {
     const [options, setOptions] = useState(null);
     const resolverRef = useRef(null);
@@ -62,6 +63,7 @@ export function usePromptDialog() {
     return { prompt, promptDialog, promptOpen: !!options };
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export default usePromptDialog;
 
 // bs-component-foundation

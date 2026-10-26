@@ -11,7 +11,7 @@ import HomepageNavbar from '../Marketing/elements/HomepageNavbar';
 // (see src/utils/contactFormValidation.js and backend `app.post('/api/contact')`).
 import { CONTACT_FIELD_LIMITS, validateContactForm } from '../../utils/contactFormValidation';
 
-const Contact = ({ user, t }) => {
+const Contact = ({ t }) => {
   const [state, setState] = useState({
     pages: [],
     socialLinks: [],

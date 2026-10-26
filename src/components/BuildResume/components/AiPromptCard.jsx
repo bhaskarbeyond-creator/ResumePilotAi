@@ -68,7 +68,7 @@ function QuestionsPanel({ questions, onSubmit }) {
     );
 }
 
-function SuggestionsPanel({ suggestions, onAccept, metaKind }) {
+function SuggestionsPanel({ suggestions, onAccept }) {
     const [selected, setSelected] = useState(() => new Set(suggestions.map(s => s.id)));
     useEffect(() => { setSelected(new Set(suggestions.map(s => s.id))); }, [suggestions]);
 

@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { toCanonicalMembership, isPaidMembershipTier } = require('../database/canonical');
 const { resolveEffectiveEntitlement } = require('../security/entitlements');
 
 test('UX-Entitlement Alignment: Tier Resolution & Privilege Inheritance', async () => {

@@ -32,7 +32,7 @@ function getOrganicRoleProgressions(baseRole) {
  * Optional links/extra fields live behind a quiet "Add more details"
  * disclosure. No AI in this step. Gap list lives in the Guide rail.
  */
-const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) => {
+const HeadingStep = ({ resumeData, updateResumeData, onPreview }) => {
     const { t } = useTranslation('common');
     const [formData, setFormData] = useState({
         firstname: resumeData?.firstname || '',
@@ -342,6 +342,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate, onPreview }) =>
             }
         }
         return unique.slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'isFetchingAiRoles'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
     }, [targetRole, formData.occupation, aiRoleSuggestions, resumeData?.employments, resumeData?.educations]);
 
     useEffect(() => {

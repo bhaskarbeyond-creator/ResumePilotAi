@@ -1,6 +1,7 @@
 // Backward-compatible facade: the marketing landing shell now lives at
 // src/components/Marketing/LandingPage.jsx. This module is retained so any
 // cached, external or legacy consumer of 'Dashboard2/dashboard2' still resolves.
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: pure re-export shim; no local component is defined here, so a Fast Refresh boundary cannot apply.
 export { default } from '../Marketing/LandingPage';
 // bs-card-executive-dashboard
 

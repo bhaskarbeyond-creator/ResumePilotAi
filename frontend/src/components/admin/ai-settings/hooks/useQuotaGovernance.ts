@@ -12,7 +12,6 @@ interface UseQuotaGovernanceOptions {
   closeDialog: () => void;
   showToast: (msg: string) => void;
   redirectOn401: (err: unknown) => boolean;
-  setV2Enabled: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export function useQuotaGovernance({
@@ -21,7 +20,6 @@ export function useQuotaGovernance({
   closeDialog,
   showToast,
   redirectOn401,
-  setV2Enabled,
 }: UseQuotaGovernanceOptions) {
   const [quotaData, setQuotaData] = useState<QuotaDashboardResponse | null>(null);
   const [quotaLoading, setQuotaLoading] = useState<boolean>(true);
@@ -41,16 +39,13 @@ export function useQuotaGovernance({
     try {
       const requests: Promise<any>[] = [
         get<QuotaDashboardResponse>('/admin/ai/quota-stats').catch((err) => ({ __err: err })),
-        get<EngineStatusResponse>('/freellmapi/status').catch(() => null),
       ];
       if (isSuperAdmin) {
+        // F-10: /freellmapi/status and /freellmapi/metrics are super-admin-only.
+        // Scoped roles must not request them at all — the guaranteed 403s are
+        // console/API-hygiene noise and leak nothing useful to the scoped view.
+        requests.push(get<EngineStatusResponse>('/freellmapi/status').catch(() => null));
         requests.push(get<EngineMetricsResponse>('/freellmapi/metrics').catch(() => null));
-      } else {
-        requests.push(
-          get<{ value?: boolean }>('/admin/operations/feature-flags/ai_settings_v2_enabled').catch(
-            () => null
-          )
-        );
       }
       const [qRes, statusRes, thirdRes] = await Promise.all(requests);
       if (qRes && qRes.__err) {
@@ -66,13 +61,11 @@ export function useQuotaGovernance({
       if (statusRes) setEngineStatus(statusRes);
       if (isSuperAdmin && thirdRes) {
         setEngineMetrics(thirdRes);
-      } else if (!isSuperAdmin && thirdRes && typeof thirdRes.value === 'boolean') {
-        setV2Enabled(thirdRes.value);
       }
     } finally {
       setQuotaLoading(false);
     }
-  }, [isSuperAdmin, redirectOn401, setV2Enabled]);
+  }, [isSuperAdmin, redirectOn401]);
 
   const handleSaveQuotaLimits = async (e: React.FormEvent) => {
     if (e?.preventDefault) e.preventDefault();

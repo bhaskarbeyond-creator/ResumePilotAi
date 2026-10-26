@@ -12,23 +12,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import {
-  BarChart3,
-  Server,
-  Database,
-  Activity,
-  AlertTriangle,
-  Users,
-  HelpCircle,
-  ShieldCheck,
-  Briefcase,
-  FileText,
-  Brain,
-  Mail,
-  Sliders,
-  Sparkles,
-} from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 // Sub-Module Tabs
 import { AdminDashboardTab } from '@/components/admin/AdminDashboardTab';
@@ -81,57 +65,6 @@ const VALID_TABS: AdminTabId[] = [
   'modules',
 ];
 
-interface NavGroup {
-  label: string;
-  items: {
-    id: AdminTabId;
-    label: string;
-    icon: typeof BarChart3;
-    badge?: string;
-  }[];
-}
-
-const NAVIGATION_GROUPS: NavGroup[] = [
-  {
-    label: 'Observability & Core',
-    items: [
-      { id: 'dashboard', label: 'Command Center', icon: BarChart3 },
-      { id: 'health', label: 'Platform Health (28 Services)', icon: Activity, badge: 'Live' },
-      { id: 'queues', label: 'Queues & Outbox DLQ', icon: Database },
-      { id: 'operations', label: 'Operations & Maintenance', icon: Server },
-      { id: 'attention', label: 'Attention Needed', icon: AlertTriangle, badge: '2' },
-    ],
-  },
-  {
-    label: 'Identity & Support',
-    items: [
-      { id: 'users', label: 'Users Manager & 360', icon: Users },
-      { id: 'support', label: 'Help Desk & Tickets', icon: HelpCircle },
-      { id: 'security', label: 'Security & Staff RBAC', icon: ShieldCheck },
-    ],
-  },
-  {
-    label: 'Moderation Hub',
-    items: [
-      { id: 'moderation', label: 'Employers, Jobs & Tenants', icon: Briefcase },
-    ],
-  },
-  {
-    label: 'Content & CMS',
-    items: [
-      { id: 'blog', label: 'Blog Engine (/blog-editor)', icon: FileText },
-      { id: 'content', label: 'ATS Phrases & Reviews', icon: Sparkles },
-    ],
-  },
-  {
-    label: 'System Configuration',
-    items: [
-      { id: 'settings', label: 'Platform Settings & Modules', icon: Sliders },
-      { id: 'ai-settings', label: 'AI Multi-Provider Engine', icon: Brain },
-      { id: 'email', label: 'Email & SMTP Deliverability', icon: Mail },
-    ],
-  },
-];
 
 import { useAuth } from '@/providers/auth-provider';
 
@@ -224,18 +157,6 @@ export function AdminConsolePage() {
     navigate(tabId === 'dashboard' ? '/admin' : `/admin/${tabId}`);
   };
 
-  const navGroups = useMemo(() => {
-    return NAVIGATION_GROUPS.map((g) => ({
-      ...g,
-      items: g.items.filter((item) => allowedTabs.includes(item.id)),
-    })).filter((g) => g.items.length > 0);
-  }, [allowedTabs]);
-
-  const allNavItems = useMemo(
-    () => navGroups.flatMap((g) => g.items),
-    [navGroups]
-  );
-
   return (
     <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-console-page">
       {/* Top Header */}
@@ -252,45 +173,6 @@ export function AdminConsolePage() {
           </p>
         </div>
       </div>
-
-      {/* Horizontal Tabs Strip for Quick Nav / Mobile & Tablet */}
-      <nav
-        className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-border/60 scrollbar-none"
-        aria-label="Admin Sub-Module Tabs"
-      >
-        {allNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => handleSelectTab(item.id)}
-              data-testid={`admin-tab-${item.id}`}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
-                isActive
-                  ? 'bg-brand-600 text-white shadow-2xs font-extrabold'
-                  : 'text-ink-secondary hover:text-ink hover:bg-neutral-100 dark:hover:bg-neutral-800'
-              )}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <Icon className="size-3.5 shrink-0" />
-              <span>{item.label}</span>
-              {item.badge && (
-                <span
-                  className={cn(
-                    'rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ml-0.5',
-                    isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
-                  )}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
 
       {/* Tab Content Surface */}
       <main className="min-w-0" aria-label="Admin Control Tab Content">

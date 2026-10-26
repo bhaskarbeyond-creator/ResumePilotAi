@@ -26,6 +26,7 @@ export const EMPLOYER_MESSAGES_PATH = '/employer/messages';
  * Project the recruiter navigation through the administrator's module flag and
  * the live unread count. Pure and framework-free so it can be asserted in Node.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export function buildEmployerNavGroups(groups, { messagesAllowed, unreadCount = 0, unreadStatus = 'ready' } = {}) {
     // An unread read that failed must not render as "0 / all clear" (see the
     // hook's fail-visible contract); '!' is the honest "status unknown" state.
@@ -43,6 +44,7 @@ export function buildEmployerNavGroups(groups, { messagesAllowed, unreadCount = 
 // Employer portal information architecture. Recruiter capability is deliberately
 // separate from the candidate sidebar: there are no resume-builder or admin
 // control-plane entries here, and no candidate-only asset links.
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const EMPLOYER_NAV = [
     {
         group: 'HIRING COMMAND',

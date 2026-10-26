@@ -6,14 +6,8 @@ import { get, post } from '@/lib/api-client';
 import {
   Layers,
   CheckCircle2,
-  AlertCircle,
   RefreshCw,
-  Play,
   RotateCcw,
-  Zap,
-  Mail,
-  FileText,
-  Clock,
   Eye,
   Trash2,
   Copy,
@@ -21,7 +15,6 @@ import {
   X,
   AlertTriangle,
   Terminal,
-  ShieldAlert,
 } from 'lucide-react';
 
 interface QueueStatus {

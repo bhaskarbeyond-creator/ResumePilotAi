@@ -15,10 +15,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { get, post, patch } from '@/lib/api-client';
 import {
@@ -26,17 +24,10 @@ import {
   UserPlus,
   Search,
   CheckCircle2,
-  AlertCircle,
   Shield,
-  Ban,
   Eye,
-  MoreVertical,
   X,
   FileText,
-  Mail,
-  Calendar,
-  Key,
-  Lock,
   Unlock,
   RotateCcw,
   Building2,
@@ -45,9 +36,7 @@ import {
   Copy,
   ExternalLink,
   ShieldAlert,
-  ShieldCheck,
   Check,
-  Zap,
 } from 'lucide-react';
 
 export type PlatformRole =
@@ -154,7 +143,7 @@ export function AdminUsersTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // User 360 sub-tab

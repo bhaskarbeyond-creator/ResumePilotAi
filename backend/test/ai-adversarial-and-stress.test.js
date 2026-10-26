@@ -360,7 +360,8 @@ test('Concurrency: Admin settings optimistic concurrency control with revision c
       expectedRevision: 0,
       actorUid: 'admin-b'
     }),
-    (error) => error.code === 'AI_SETTINGS_CONFLICT' && error.status === 409
+    // F-29 literal-contract correction: single CAS conflict spelling.
+    (error) => error.code === 'REVISION_CONFLICT' && error.status === 409
   );
 
   // Admin B refreshes and saves with expectedRevision 1 -> succeeds, becomes revision 2

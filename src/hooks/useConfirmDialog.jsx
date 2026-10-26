@@ -19,6 +19,7 @@ import EnterpriseConfirmModal from '../enterprise/components/EnterpriseConfirmMo
  * `busy` keeps the dialog open and its buttons disabled while the confirmed
  * action runs, so a slow mutation cannot be double-submitted.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export default function useConfirmDialog() {
   const [dialog, setDialog] = useState(null);
   const [busy, setBusy] = useState(false);

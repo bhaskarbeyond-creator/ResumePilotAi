@@ -10,7 +10,6 @@ const cx = (...parts) => parts.filter(Boolean).join(' ');
  * costs contrast and information density (§10).
  */
 const CubaCard = ({
-    as: Tag = 'section',
     glass = false,
     ai = false,
     padded = true,

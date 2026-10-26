@@ -16,7 +16,6 @@
 import fire from '../../conf/fire';
 import config from '../../conf/configuration';
 import { validateTrackedJob } from '../../utils/jobTracker';
-import { blogPostFitsStorageLimit, normalizeBlogPost } from '../../utils/blogData';
 // Imported (not only re-exported) so the vanity-base helpers below can normalize
 // the candidate's input. `export { ... } from` does NOT bind a local name, so
 // this separate import is required for `withVanityBase` to resolve.

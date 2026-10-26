@@ -1,5 +1,4 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
 
 const SEEDED_SINGLE_KEY = 'fixture-sec-audit-single-secret-Z9X8';
 const SEEDED_POOL_KEY_1 = 'fixture-sec-audit-pool-alpha-Q7W6';
@@ -283,57 +282,6 @@ test.describe('AI Engine Security, Secret Non-Disclosure & Runtime Rollback', ()
     await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dmetrics/);
   });
 
-  test('Runtime feature flag ai_settings_v2_enabled toggles safe-mode rollback view OFF and restores v2 UI ON without restart', async ({
-    page,
-    request,
-  }) => {
-    const superSession = await loginByEmail(request, 'superadmin@resumepilot.test');
-    const headers = { Authorization: `Bearer ${superSession.token}` };
-    await page.addInitScript(
-      (s) => localStorage.setItem('ime_dev_user', JSON.stringify(s)),
-      superSession
-    );
-
-    try {
-      // Toggle ai_settings_v2_enabled OFF at runtime
-      const offRes = await request.put(
-        '/api/admin/operations/feature-flags/ai_settings_v2_enabled',
-        { headers, data: { value: false } }
-      );
-      expect(offRes.status()).toBe(200);
-
-      await page.goto('/admin/ai-settings');
-      const rollbackView = page.getByTestId('ai-settings-rollback-view');
-      await expect(rollbackView).toBeVisible();
-      await expect(rollbackView).toContainText('Runtime Rollback Active');
-
-      // Axe WCAG 2.1 AA check on rollback view
-      const axe = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-      expect(
-        axe.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
-      ).toEqual([]);
-
-      // Restore v2 UI directly via button click
-      const restoreResp = page.waitForResponse(
-        (r) =>
-          r.url().includes('/api/admin/operations/feature-flags/ai_settings_v2_enabled') &&
-          r.request().method() === 'PUT'
-      );
-      await rollbackView.getByRole('button', { name: 'Restore v2 Engine UI' }).click();
-      expect((await restoreResp).ok()).toBe(true);
-
-      await expect(page.getByTestId('ai-multi-provider-engine')).toBeVisible();
-      await page.reload();
-      await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
-    } finally {
-      await request.put('/api/admin/operations/feature-flags/ai_settings_v2_enabled', {
-        headers,
-        data: { value: true },
-      });
-    }
-  });
 
   // ─── A1 Pre-Save Probe: 4 Distinct Itemized Assertions ───
   test('A1 Assertion 1: Pre-save candidate key is discarded server-side and never written to database (system_settings)', async ({

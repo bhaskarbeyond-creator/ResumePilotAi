@@ -26,12 +26,9 @@ import {
   CheckCircle2,
   Database,
   RefreshCw,
-  HardDrive,
   ShieldAlert,
-  Server,
   Download,
   Trash2,
-  Lock,
 } from 'lucide-react';
 
 export function AdminOperationsTab() {
@@ -40,7 +37,7 @@ export function AdminOperationsTab() {
     'System is under scheduled maintenance. Please check back shortly.'
   );
   const [expectedRevision, setExpectedRevision] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
   const [statusFeedback, setStatusFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 

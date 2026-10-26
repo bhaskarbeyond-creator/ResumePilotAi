@@ -124,10 +124,19 @@ class MetricsPersistence {
           ok INTEGER NOT NULL,
           status INTEGER,
           latency_ms INTEGER,
+          prompt_tokens INTEGER,
+          completion_tokens INTEGER,
           created_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_request_log_created ON request_log (created_at);
       `);
+      // F-18: metrics DBs created before usage accounting lack the token
+      // columns — add them (nullable) in place instead of dropping usage on
+      // the floor. This is the engine's own bounded SQLite ring, not the
+      // product schema; no MariaDB migration is involved.
+      const logColumns = db.prepare('PRAGMA table_info(request_log)').all().map(column => column.name);
+      if (!logColumns.includes('prompt_tokens')) db.exec('ALTER TABLE request_log ADD COLUMN prompt_tokens INTEGER');
+      if (!logColumns.includes('completion_tokens')) db.exec('ALTER TABLE request_log ADD COLUMN completion_tokens INTEGER');
       this.db = db;
       this.backend = 'sqlite';
     } catch (error) {
@@ -150,11 +159,17 @@ class MetricsPersistence {
     return bucket;
   }
 
-  recordRequest({ provider, model, ok = true, latencyMs = 0, status = null, at = Date.now() } = {}) {
+  recordRequest({ provider, model, ok = true, latencyMs = 0, status = null, usage = null, at = Date.now() } = {}) {
     const p = String(provider || 'unknown').toLowerCase();
     const m = String(model || '');
     const key = this._key(p, m);
     const latency = Number.isFinite(latencyMs) ? Math.max(0, Math.round(latencyMs)) : 0;
+    // F-18: per-attempt token usage rides along with the attempt row. Missing
+    // or malformed counts stay null — an unknown is never recorded as 0.
+    const promptTokens = Number.isFinite(Number(usage?.promptTokens)) && Number(usage?.promptTokens) >= 0
+      ? Math.round(Number(usage.promptTokens)) : null;
+    const completionTokens = Number.isFinite(Number(usage?.completionTokens)) && Number(usage?.completionTokens) >= 0
+      ? Math.round(Number(usage.completionTokens)) : null;
     const samples = this._sample(key, latency);
     const p95 = percentile([...samples].sort((a, b) => a - b), 0.95);
 
@@ -171,7 +186,7 @@ class MetricsPersistence {
       row.p95LatencyMs = p95;
       row.updatedAt = at;
       this.memoryRequests.set(key, row);
-      this.memoryLog.push({ provider: p, model: m, ok, status, latencyMs: latency, createdAt: at });
+      this.memoryLog.push({ provider: p, model: m, ok, status, latencyMs: latency, promptTokens, completionTokens, createdAt: at });
       if (this.memoryLog.length > MAX_LOG_ROWS) this.memoryLog.splice(0, this.memoryLog.length - MAX_LOG_ROWS);
       return { backend: 'memory', provider: p, model: m };
     }
@@ -191,8 +206,8 @@ class MetricsPersistence {
           p95_latency_ms = excluded.p95_latency_ms,
           updated_at = excluded.updated_at
       `).run(p, m, ok ? 1 : 0, ok ? 0 : 1, latency, latency, status, p95, at);
-      this.db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(p, m, ok ? 1 : 0, status, latency, at);
+      this.db.prepare('INSERT INTO request_log (provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(p, m, ok ? 1 : 0, status, latency, promptTokens, completionTokens, at);
       if (Math.random() < 0.01) {
         this.db.prepare('DELETE FROM request_log WHERE id <= (SELECT MAX(id) - ? FROM request_log)').run(MAX_LOG_ROWS);
       }
@@ -308,7 +323,7 @@ class MetricsPersistence {
   getRecentRequests({ limit = 50 } = {}) {
     if (!this.db) return this.memoryLog.slice(-limit).reverse();
     try {
-      return this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log ORDER BY id DESC LIMIT ?')
+      return this.db.prepare('SELECT provider, model, ok, status, latency_ms, prompt_tokens, completion_tokens, created_at FROM request_log ORDER BY id DESC LIMIT ?')
         .all(limit)
         .map(row => ({
           provider: row.provider,
@@ -316,12 +331,82 @@ class MetricsPersistence {
           ok: Boolean(row.ok),
           status: row.status === null ? null : Number(row.status),
           latencyMs: Number(row.latency_ms),
+          promptTokens: row.prompt_tokens === null || row.prompt_tokens === undefined ? null : Number(row.prompt_tokens),
+          completionTokens: row.completion_tokens === null || row.completion_tokens === undefined ? null : Number(row.completion_tokens),
           createdAt: Number(row.created_at),
         }));
     } catch (error) {
       this.error = error.message;
       return [];
     }
+  }
+
+  /**
+   * F-07: windowed rollups per (provider, model) from the request log — the
+   * rolling aggregate selectors must use instead of a single last row. One
+   * lucky/blip sample must not reroute the next 30 minutes of traffic.
+   * Returns newest-window rows aggregated as:
+   *   { provider, model, n, successes, failures,
+   *     lastAt, lastOk, lastStatus, lastLatencyMs,   // circuit-breaker input
+   *     successSamples: [{ latencyMs, createdAt }] } // newest-first, capped
+   * Selectors compute the weighted p50 from successSamples; the last
+   * observation is used ONLY as a circuit-breaker input.
+   */
+  getRollingAggregates({ windowMs = 30 * 60_000, limit = 500, maxSamples = 10, now = Date.now() } = {}) {
+    const cutoff = Number(now) - Math.max(1000, Number(windowMs) || 0);
+    const rowLimit = Math.max(1, Number(limit) || 500);
+    const sampleCap = Math.max(1, Number(maxSamples) || 10);
+    let rows;
+    if (!this.db) {
+      rows = this.memoryLog.filter(row => Number(row.createdAt) >= cutoff).slice(-rowLimit).reverse();
+    } else {
+      try {
+        rows = this.db.prepare('SELECT provider, model, ok, status, latency_ms, created_at FROM request_log WHERE created_at >= ? ORDER BY id DESC LIMIT ?')
+          .all(cutoff, rowLimit)
+          .map(row => ({
+            provider: row.provider,
+            model: row.model,
+            ok: Boolean(row.ok),
+            status: row.status === null ? null : Number(row.status),
+            latencyMs: Number(row.latency_ms),
+            createdAt: Number(row.created_at),
+          }));
+      } catch (error) {
+        this.error = error.message;
+        return [];
+      }
+    }
+    // Sort defensively: both backends are newest-first by insertion order, but
+    // out-of-order timestamps (clock skew, backfilled rows) must not corrupt
+    // the circuit-breaker "last" fields.
+    rows.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+    const byKey = new Map();
+    for (const row of rows) { // newest-first
+      const key = this._key(row.provider, row.model);
+      const aggregate = byKey.get(key) || {
+        provider: row.provider,
+        model: row.model,
+        n: 0,
+        successes: 0,
+        failures: 0,
+        lastAt: row.createdAt,
+        lastOk: row.ok,
+        lastStatus: row.status,
+        lastLatencyMs: row.latencyMs,
+        successSamples: [],
+      };
+      aggregate.n += 1;
+      if (row.ok) {
+        aggregate.successes += 1;
+        if (aggregate.successSamples.length < sampleCap) {
+          aggregate.successSamples.push({ latencyMs: row.latencyMs, createdAt: row.createdAt });
+        }
+      } else {
+        aggregate.failures += 1;
+      }
+      byKey.set(key, aggregate);
+    }
+    return [...byKey.values()];
   }
 
   getSummary({ now = Date.now() } = {}) {

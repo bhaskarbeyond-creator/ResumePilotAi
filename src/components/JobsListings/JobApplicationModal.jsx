@@ -1,4 +1,3 @@
-import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -239,7 +238,6 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const [showResumeSelector, setShowResumeSelector] = useState(false);
     const [userResumes, setUserResumes] = useState([]);
     const [loadingResumes, setLoadingResumes] = useState(false);
-    const [loadedTemplates, setLoadedTemplates] = useState({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewResume, setPreviewResume] = useState(null);
     const submissionGeneration = useRef(0);

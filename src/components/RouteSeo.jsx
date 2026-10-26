@@ -310,7 +310,7 @@ export default function RouteSeo() {
             setMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,follow' });
             setCanonical(null);
           }
-        } catch (error) {
+        } catch {
           if (!active) return;
           setMeta('meta[name="robots"]', { name: 'robots', content: 'noindex,nofollow' });
           setCanonical(null);

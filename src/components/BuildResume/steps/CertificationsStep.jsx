@@ -30,6 +30,7 @@ import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
 import { generateUserAiContent } from '../../../services/aiService';
 
+// eslint-disable-next-line react-refresh/only-export-components -- F-25: non-component export intentionally co-located with its consuming component(s); moving it churns import paths for a dev-only Fast Refresh benefit.
 export const CERT_TYPES = [
     { id: 'Certification', label: 'Certification', icon: FaCertificate, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     { id: 'License', label: 'License', icon: FaShieldAlt, badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -47,7 +48,7 @@ export const CERT_TYPES = [
  * live search, classification filtering, and the exact AI Recommendation Review Popup
  * from DashboardSettings (subtab=certifications).
  */
-const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const CertificationsStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [certifications, setCertifications] = useState(resumeData.certifications || []);
     const [searchQuery, setSearchQuery] = useState('');

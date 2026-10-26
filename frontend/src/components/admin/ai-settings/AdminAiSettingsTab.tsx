@@ -15,7 +15,6 @@ import { SettingsHeader } from './layout/SettingsHeader';
 import { SettingsSubNav } from './layout/SettingsSubNav';
 import { RuntimeModelStrip } from './providers/RuntimeModelStrip';
 import { AiSettingsDialogs } from './layout/AiSettingsDialogs';
-import { RollbackView } from './layout/RollbackView';
 import { AdminScopedView } from './layout/AdminScopedView';
 import { ProvidersTab } from './providers/ProvidersTab';
 import { KeyPoolTab } from './providers/KeyPoolTab';
@@ -26,11 +25,7 @@ import { ClaudeCodeTab } from './gateway/ClaudeCodeTab';
 import { PlaygroundTab } from './playground/PlaygroundTab';
 
 function AdminAiSettingsContent() {
-  const { isSuperAdmin, v2Enabled, activeSubtab } = useAiSettingsContext();
-
-  if (!v2Enabled) {
-    return <RollbackView />;
-  }
+  const { isSuperAdmin, activeSubtab } = useAiSettingsContext();
 
   if (!isSuperAdmin) {
     return <AdminScopedView />;

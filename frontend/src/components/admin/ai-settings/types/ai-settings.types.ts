@@ -79,7 +79,6 @@ export interface AiSettingsApiResponse {
   catalog?: ProviderCatalogEntry[];
   cooldowns?: Record<string, CooldownEntry>;
   discoveredModels?: CatalogModel[];
-  featureFlags?: { ai_settings_v2_enabled?: boolean };
 }
 
 export type SelectionMode = 'auto' | 'quality' | 'speed' | 'balanced' | 'manual';
@@ -140,7 +139,6 @@ export interface AiSettingsContextValue {
   // Core Engine & Config State
   loading: boolean;
   settingsError: string | null;
-  v2Enabled: boolean;
   revision: number;
   revisionConflict: RevisionConflictState | null;
   setRevisionConflict: React.Dispatch<React.SetStateAction<RevisionConflictState | null>>;
@@ -286,7 +284,6 @@ export interface AiSettingsContextValue {
   handleConfirmQuotaReset: (globalAll?: boolean) => Promise<void>;
   handleDiscoveryFetch: (providerId: string) => Promise<void>;
   handleRunPlayground: () => Promise<void>;
-  handleRestoreV2Flag: () => Promise<void>;
   loadSettings: () => Promise<void>;
   loadQuotaAndTelemetry: () => Promise<void>;
   redirectOn401: (err: unknown) => boolean;

@@ -4,7 +4,7 @@ import { MdAdd, MdClose } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
 import Field from '../components/Field.jsx';
 import AutocompleteInputField from './components/AutocompleteInputField';
-import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
+import { moveResumeItem } from '../../../utils/resumeData';
 import { getCandidateContext } from '../../../utils/candidateContext';
 
 const PROFICIENCY_LEVELS = [
@@ -20,7 +20,7 @@ const PROFICIENCY_LEVELS = [
  * No AI, no regional "recommended" language lists, no hobby suggestions —
  * the candidate's own words only.
  */
-const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const LanguagesStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [languages, setLanguages] = useState(resumeData.languages || []);
     const [hobbies, setHobbies] = useState(Array.isArray(resumeData.hobbies) ? resumeData.hobbies : (resumeData.hobbies ? [resumeData.hobbies] : []));
@@ -57,11 +57,6 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const moveLanguage = (id, direction) => setLanguages(current => moveResumeItem(current, id, direction));
-
-    const duplicateLanguage = (id) => setLanguages(current => {
-        const source = current.find(item => item.id === id || item.date === id);
-        return duplicateResumeItem(current, id, { name: `${source?.name || source?.language || 'Language'} (Copy)` });
-    });
 
     const updateLanguage = (id, field, value) => {
         setLanguages(prev =>

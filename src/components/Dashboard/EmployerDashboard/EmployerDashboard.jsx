@@ -305,25 +305,6 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
         );
     };
 
-    const getApplicationStatusBadge = (status) => {
-        const statusConfig = {
-            pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: FaClock, label: 'Pending' },
-            interview: { bg: 'bg-blue-100', text: 'text-blue-700', icon: FaUsers, label: 'Interview' },
-            accepted: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: FaCheckCircle, label: 'Accepted' },
-            rejected: { bg: 'bg-red-100', text: 'text-red-700', icon: FaTimesCircle, label: 'Rejected' },
-        };
-
-        const config = statusConfig[status] || statusConfig.pending;
-        const IconComponent = config.icon;
-
-        return (
-            <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${config.bg} ${config.text}`}>
-                <IconComponent className="w-3 h-3 mr-1" />
-                {config.label}
-            </span>
-        );
-    };
-
     // Helper function to format salary display with default Rupee symbol
     const formatSalaryDisplay = (minSalary, maxSalary, currencySymbol = '₹') => {
         if (!minSalary && !maxSalary) return 'Salary not specified';

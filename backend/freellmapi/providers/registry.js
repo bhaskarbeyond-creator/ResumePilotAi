@@ -246,8 +246,108 @@ function listSupportedProviders() {
   return Object.values(PROVIDER_REGISTRY);
 }
 
+// ─── F-06: curated model quality tiers ──────────────────────────────────────
+// The `quality` selection mode previously had NO quality signal: it ranked by
+// capability-flag count plus primary preference, so "quality" was effectively
+// "primary-first with zero speed weight" (review finding F-06). These tiers
+// are the real signal — a static, curated, documented judgement about the
+// general instruction-following/reasoning CLASS of models this platform
+// actually configures or recommends. Curation rules:
+//   premium  — published flagship / reasoning-class models
+//   standard — general-purpose mid-tier models
+//   economy  — small / fast / lite models
+// This is DATA, not inference: model-name length, parameter-count strings or
+// provider marketing must never be mapped to a tier, unverified mesh aliases
+// are deliberately absent, and UNKNOWN models stay null (fail closed —
+// rankCandidates treats null as "no quality evidence", exactly as before).
+// PH4-ENGINE-031 (closes precondition A.10, option b): wave-2 curation extends
+// the table across the platform catalog's verifiable model ids using public
+// benchmark evidence (LMSYS Chatbot Arena Elo bands, ArtificialAnalysis
+// intelligence-index classes) — the SAME documented-human-judgement contract
+// as wave 1, never runtime inference. Deliberate absences (fail closed to
+// 'unknown', per the never-guess rule):
+//   - opaque mesh/aggregator aliases (sail-70b, blaze-fast, xkiro-free, ...):
+//     a '-70b'/'-fast'/'-large' SUFFIX STRING IS NOT EVIDENCE of the backing
+//     model; promotion requires operator-verified backing identity.
+//   - specialized models whose general instruction-following class is not
+//     what quality mode ranks on (codestral-latest: code specialist;
+//     moondream-2 IS tiered economy as a small/lite model, see below).
+//   - ids without sufficient public benchmark coverage at curation time
+//     (typhoon-v1.5-instruct, doubao-pro-32k).
+//   - tool endpoints (search, tts, crawl): not chat models, never tiered.
+// Wave-2 aliases are tier-consistent with their canonical model
+// (meta-llama/Llama-3.3-70B-Instruct == Meta-Llama-3.3-70B-Instruct ==
+// Meta-Llama-3_3-70B-Instruct: one model, one class, every casing/alias).
+const MODEL_QUALITY_TIERS = Object.freeze({
+  // premium — flagship / reasoning class
+  'gpt-4o': 'premium',
+  'gpt-4.1': 'premium',
+  'o1': 'premium',
+  'o3-mini': 'premium',
+  'gemini-2.5-pro': 'premium',
+  'claude-3-7-sonnet-latest': 'premium',
+  'deepseek-reasoner': 'premium',
+  'deepseek-chat': 'premium',
+  'mistral-large-latest': 'premium',
+  'command-r-plus': 'premium',
+  'llama-3.3-70b-versatile': 'premium',
+  'llama3.3-70b': 'premium',
+  'meta-llama/llama-3.3-70b-instruct': 'premium',
+  'meta-llama/llama-3.3-70b-instruct:free': 'premium',
+  '@cf/meta/llama-3.1-70b-instruct': 'premium',
+  'Meta-Llama-3_3-70B-Instruct': 'premium',
+  // premium — wave 2 (PH4-ENGINE-031): frontier flagships and 70B-class open
+  // flagships in the Arena top band at curation time (2026-10-25).
+  'gemini-1.5-pro': 'premium',
+  'Qwen/Qwen2.5-72B-Instruct': 'premium',
+  'qwen/qwen-2.5-72b-instruct:free': 'premium',
+  'deepseek-ai/DeepSeek-V3': 'premium',
+  'meta-llama/Llama-3.3-70B-Instruct': 'premium',
+  'Meta-Llama-3.3-70B-Instruct': 'premium',
+  'mistralai/mistral-large-2-instruct': 'premium',
+  'nvidia/llama-3.1-nemotron-70b-instruct': 'premium',
+  // standard — general-purpose mid-tier
+  'gpt-4o-mini': 'standard',
+  'gpt-4.1-mini': 'standard',
+  'gemini-2.0-flash': 'standard',
+  'gemini-2.5-flash': 'standard',
+  'meta/llama-3.2-11b-vision-instruct': 'standard',
+  'Qwen2.5-VL-72B-Instruct': 'standard',
+  // standard — wave 2: documented mid-tier generals and canonical aliases.
+  'command-r': 'standard',
+  'mixtral-8x7b-32768': 'standard',
+  'gemini-1.5-flash': 'standard',
+  'google/gemini-2.0-flash-exp:free': 'standard',
+  // economy — small / fast / lite
+  'llama-3.1-8b-instant': 'economy',
+  'gemini-2.0-flash-lite': 'economy',
+  'gpt-4.1-nano': 'economy',
+  'mistral-small-latest': 'economy',
+  'Mistral-Nemo-Instruct-2407': 'economy',
+  // economy — wave 2: documented small/fast/lite variants and canonical
+  // aliases of tiered small models (moondream-2: small vision micro-model —
+  // lowest general class; capability gates, not tiers, decide eligibility).
+  'ernie-speed-128k': 'economy',
+  'glm-4-flash': 'economy',
+  'reka-edge': 'economy',
+  'open-mistral-nemo': 'economy',
+  'meta/llama-3.2-3b-instruct': 'economy',
+  '@cf/meta/llama-3.1-8b-instruct': 'economy',
+  'llama3.1-8b': 'economy',
+  'moondream-2': 'economy',
+});
+
+/** Curated tier for an exact model id; null when not curated (never guessed). */
+function getModelQualityTier(modelId) {
+  const id = String(modelId || '').trim();
+  if (!id) return null;
+  return Object.prototype.hasOwnProperty.call(MODEL_QUALITY_TIERS, id) ? MODEL_QUALITY_TIERS[id] : null;
+}
+
 module.exports = {
   PROVIDER_REGISTRY,
   getProviderMeta,
   listSupportedProviders,
+  MODEL_QUALITY_TIERS,
+  getModelQualityTier,
 };

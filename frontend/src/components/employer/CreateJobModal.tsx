@@ -20,8 +20,6 @@ import {
   Building2,
   MapPin,
   Coins,
-  Clock,
-  Users,
   FileText,
   Plus,
   Trash2,
@@ -30,7 +28,6 @@ import {
   AlertCircle,
   Sparkles,
   HelpCircle,
-  Calendar,
   CheckCircle2,
   ArrowRight,
 } from 'lucide-react';
@@ -38,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useEmployerCompanies, useCreateJob, type EmployerCompany } from '@/hooks/use-api-hooks';
+import { useEmployerCompanies, useCreateJob } from '@/hooks/use-api-hooks';
 
 export interface ScreeningQuestion {
   id: string;
@@ -111,7 +108,6 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
   const [currency, setCurrency] = useState('USD');
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
-  const [salaryPeriod, setSalaryPeriod] = useState('Annual');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [requirements, setRequirements] = useState<string[]>(['']);

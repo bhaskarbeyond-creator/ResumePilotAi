@@ -12,7 +12,7 @@ import { toEpochMs } from '../../utils/subscriptionUtils';
 
 const CubaCandidateHero = ({ displayName = 'Candidate', onNavigate }) => {
     const [resumes, setResumes] = useState(null);
-    const [trackedJobs, setTrackedJobs] = useState(null);
+    const [, setTrackedJobs] = useState(null);
     // DIR-058: the real application count (was previously mislabelled — the
     // "Job Applications" card used to show the Kanban TRACKED-jobs count).
     const [applications, setApplications] = useState(null);

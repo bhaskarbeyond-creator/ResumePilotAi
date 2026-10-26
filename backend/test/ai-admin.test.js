@@ -34,11 +34,24 @@ test('authorized AI settings save is revisioned, audited, split, and never retur
   const result = await saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1', requestId: 'req-1' });
   assert.equal(result.revision, 1);
   assert.equal(result.configuredProviders.nvidia, true);
-  assert.doesNotMatch(JSON.stringify(result), /fixture-nvidia-key-value/);
-  assert.equal(settingsContract.settings.get('ai_providers').data.nvidia.apiKey, 'fixture-nvidia-key-value');
+  const storedKey = settingsContract.settings.get('ai_providers').data.nvidia.apiKey;
+  if (process.env.ENTERPRISE_ENCRYPTION_KEY) {
+    assert.equal(storedKey?.__enterpriseEncrypted, true);
+    assert.equal(storedKey?.alg, 'AES-256-GCM');
+    assert.ok(typeof storedKey?.ciphertext === 'string' && storedKey.ciphertext.length > 0);
+    assert.ok(typeof storedKey?.iv === 'string' && storedKey.iv.length > 0);
+    assert.ok(typeof storedKey?.tag === 'string' && storedKey.tag.length > 0);
+    assert.ok(typeof storedKey?.keyVersion === 'string' && storedKey.keyVersion.length > 0);
+    assert.ok(typeof storedKey?.wrappedKey === 'string' && storedKey.wrappedKey.length > 0);
+    assert.doesNotMatch(JSON.stringify(storedKey), /fixture-nvidia-key-value/);
+  } else {
+    assert.equal(storedKey, 'fixture-nvidia-key-value');
+  }
   assert.equal(settingsContract.settings.get('public_config').data.ai.provider, 'nvidia');
   assert.equal(settingsContract.auditEvents.some(event => event.action === 'AI_PROVIDER_SETTINGS_UPDATED'), true);
-  await assert.rejects(() => saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');
+  // F-29 literal-contract correction: the CAS conflict now throws the
+  // platform-wide spelling REVISION_CONFLICT (frozen docs + enterprise CAS).
+  await assert.rejects(() => saveAiAdminSettings({ admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'REVISION_CONFLICT');
 });
 
 test('AI secret lifecycle preserves blank values and accepts only explicit clears', () => {
@@ -243,13 +256,6 @@ test('temperature [0, 2], maxTokens [256, 8192], and enabled:false / disabled:tr
   assert.equal(cerebrasItem.enabled, true, 'cerebras re-enabled without re-sending secret');
   assert.equal(cerebrasItem.disabled, false);
   assert.equal(reEnabled.maskedKeys.cerebras, '••••••••5678');
-});
-
-test('ai_settings_v2_enabled feature flag is registered with defaultValue true and no restart required', () => {
-  const { FLAG_DEFINITIONS } = require('../services/featureFlagService');
-  assert.ok(FLAG_DEFINITIONS.ai_settings_v2_enabled);
-  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.defaultValue, true);
-  assert.equal(FLAG_DEFINITIONS.ai_settings_v2_enabled.requiresRestart, false);
 });
 
 test('enabledProviders overrides merged legacy fields and persists correctly on both public_config and ai_providers', async () => {

@@ -6,7 +6,6 @@
  */
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,11 +14,8 @@ import {
   HelpCircle,
   MessageSquare,
   Send,
-  RefreshCw,
   Search,
-  Filter,
   X,
-  ChevronRight,
   Clock,
   AlertTriangle,
   CheckCircle2,
@@ -450,20 +446,3 @@ function TicketListSkeleton() {
 }
 
 /* ─── Status Config Helper ─── */
-function getStatusConfig(status: SupportTicket['status']) {
-  const configs = {
-    OPEN: { label: 'Open', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: Clock },
-    IN_PROGRESS: { label: 'In Progress', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Loader2 },
-    RESOLVED: { label: 'Resolved', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: CheckCircle2 },
-  };
-  return configs[status] || configs.OPEN;
-}
-
-function getPriorityConfig(priority: SupportPriority) {
-  const configs = {
-    urgent: { label: 'Urgent', color: 'bg-red-500/10 text-red-600 border-red-500/20', icon: AlertTriangle },
-    normal: { label: 'Normal', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: MessageSquare },
-    low: { label: 'Low', color: 'bg-neutral-500/10 text-neutral-600 border-neutral-500/20', icon: MessageSquare },
-  };
-  return configs[priority];
-}

@@ -16,7 +16,7 @@ import { formatDateRange } from '@/lib/resume-format';
 import type { TemplateMeta } from '@/lib/template-catalog';
 import type { FlowItem, PartitionedPage } from '@/lib/smart-partitioner';
 import { SECTION_TITLES } from '@/lib/smart-partitioner';
-import type { AsideSectionKey, SectionKey, TemplateLayoutSpec, TitleStyle } from '@/lib/template-layouts';
+import type { AsideSectionKey, SectionKey, TemplateLayoutSpec } from '@/lib/template-layouts';
 import {
   FlowItemRenderer,
   GithubIcon,
@@ -78,11 +78,6 @@ function initialsOf(name: string): string {
 
 function hasPhoto(heading: any): boolean {
   return Boolean(heading?.photo) && heading?.showPhoto !== false;
-}
-
-function candidateName(resume: any): string {
-  const heading = resume?.heading || {};
-  return `${heading.firstName || ''} ${heading.lastName || ''}`.trim() || resume?.name || resume?.fullName || 'Candidate';
 }
 
 function skillCategories(resume: any): any[] {

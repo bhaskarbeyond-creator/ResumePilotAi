@@ -74,7 +74,6 @@ export default function LiveAudioWaveform({
     useEffect(() => {
         if (!mediaStream || typeof window === 'undefined') return;
 
-        let isCleanedUp = false;
         try {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (AudioContextClass) {
@@ -95,7 +94,6 @@ export default function LiveAudioWaveform({
         }
 
         return () => {
-            isCleanedUp = true;
             try {
                 sourceRef.current?.disconnect?.();
                 audioContextRef.current?.close?.();

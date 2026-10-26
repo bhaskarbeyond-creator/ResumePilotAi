@@ -55,7 +55,7 @@ const formatPostedDate = (dateStr) => {
  * JobCard component displays high-fidelity job information with company branding,
  * structured compensation badges, quick metadata, and application status workflows.
  */
-const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, onApply, t }) => {
+const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onApply, t }) => {
     const user = useContext(AuthContext);
     const [showApplicationModal, setShowApplicationModal] = useState(false);
     const [imageError, setImageError] = useState(false);

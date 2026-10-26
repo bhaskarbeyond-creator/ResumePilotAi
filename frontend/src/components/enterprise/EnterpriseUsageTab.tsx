@@ -8,16 +8,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   BarChart2,
-  Calendar,
   Users,
-  Zap,
-  TrendingUp,
-  CreditCard,
-  Layers,
-  ArrowUpRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { AiQuotaRing } from './AiQuotaRing';
@@ -29,7 +22,7 @@ export function EnterpriseUsageTab() {
   const [days, setDays] = useState<7 | 30 | 90>(30);
   const [usage, setUsage] = useState<EnterpriseAiUsage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const loadUsage = useCallback(async () => {
     if (!tenant?.id) {
@@ -54,7 +47,6 @@ export function EnterpriseUsageTab() {
 
   const totalRequests = usage?.requests ?? usage?.totalRequests ?? 0;
   const totalTokens = usage?.tokensConsumed ?? (totalRequests * 420);
-  const byDay = usage?.byDay || [];
   const byUser = usage?.byUser || [];
 
   return (

@@ -41,8 +41,12 @@ const request = require('supertest');
 const { InMemoryTenantRegistry, membershipDocumentId } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
+// F-27: production createTenantService always attaches a quota guard; the
+// double mirrors that shape so unconditional quota consumption (fail-closed
+// on a missing guard) exercises the real path. In-memory, per-test store.
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { stablePrincipalHash } = require('../enterprise/tenantContext');
 const {
   clearProviderConfigurationCache,
   resetSharedAiRouterForTests,
@@ -90,10 +94,10 @@ let activeRepository = null;
 function installTestTenantService() {
   activeRegistry = new InMemoryTenantRegistry();
   activeRepository = new InMemoryEnterpriseRepository();
-  app.set('tenantService', new TenantService({ registry: activeRegistry, repository: activeRepository }));
+  app.set('tenantService', new TenantService({ registry: activeRegistry, repository: activeRepository, quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }) }));
 }
 
-function syncAiContractWithTenant(tenantId, principalId, aiPolicy) {
+function syncAiContractWithTenant(tenantId, principalId, _aiPolicy) {
   // Sync the aiRouteContract mock with the tenant/membership data
   // This is needed because aiGovernance.js queries the MariaDB pool directly
   const contract = aiContract;

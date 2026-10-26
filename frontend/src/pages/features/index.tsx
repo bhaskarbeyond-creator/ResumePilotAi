@@ -20,7 +20,6 @@ import {
   BarChart3,
   Globe,
   Download,
-  Shield,
   ArrowRight,
   Zap,
   CheckCircle2,

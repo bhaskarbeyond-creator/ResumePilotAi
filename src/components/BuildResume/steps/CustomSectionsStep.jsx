@@ -6,7 +6,6 @@ import EmptyState from '../components/EmptyState.jsx';
 import Field from '../components/Field.jsx';
 import BulletPointsEditor from '../../Form/BulletPointsEditor';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
-import { getCandidateContext } from '../../../utils/candidateContext';
 
 /**
  * Custom sections — "Add a section" (blank, named by the candidate).
@@ -47,13 +46,12 @@ function suggestSectionsFromProfile(resumeData = {}) {
     return found.slice(0, 4);
 }
 
-const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const CustomSectionsStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [customSections, setCustomSections] = useState(resumeData.customSections || []);
     const [expandedSections, setExpandedSections] = useState(new Set());
     const [expandedItems, setExpandedItems] = useState(new Set());
 
-    const candidateContext = getCandidateContext(resumeData, resumeData.targetJobDescription || '');
     const suggestions = useMemo(() => suggestSectionsFromProfile(resumeData), [resumeData]);
 
     useEffect(() => {

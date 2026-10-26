@@ -9,17 +9,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   FileText,
   Search,
-  Filter,
   Eye,
   Trash2,
-  Download,
   Star,
   Users,
   Layers,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
-  Plus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +61,7 @@ export function EnterpriseResumesTab() {
   const { tenant, hasPermission } = useEnterprise();
   const [resources, setResources] = useState<EnterpriseResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [atsFilter, setAtsFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
   const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('grouped');
@@ -73,7 +69,6 @@ export function EnterpriseResumesTab() {
   const [previewResource, setPreviewResource] = useState<EnterpriseResource | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<EnterpriseResource | null>(null);
   const [busyDelete, setBusyDelete] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const canManageResources = hasPermission('resource.update');
 

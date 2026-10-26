@@ -6,19 +6,15 @@
  */
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
   RefreshCw,
   CheckCircle2,
-  Activity,
   ArrowRight,
-  ShieldAlert,
   Clock,
-  Layers,
-  Users,
 } from 'lucide-react';
 
 interface AttentionSignal {

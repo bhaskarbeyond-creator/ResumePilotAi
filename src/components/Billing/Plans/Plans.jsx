@@ -5,7 +5,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
-import { getSubscriptionStatus, getCoupons, getActiveCoupons, validateCoupon, getUserTransactions, getUserInvoices, getSystemSettings } from '../../../services/api/platform';
+import { getSubscriptionStatus, getActiveCoupons, validateCoupon, getUserTransactions, getUserInvoices, getSystemSettings } from '../../../services/api/platform';
 import { useServiceAvailability, resolveUsable } from '../../../hooks/useServiceAvailability';
 import { getUserMembership } from '../../../data/entitlements';
 import { parseSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
@@ -336,12 +336,6 @@ const PlansPage = (props) => {
     const getProRatedCredit = () => 0;
 
     // Pricing calculations for Dashboard View
-    const getMonthlyEquivalent = () => {
-        if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
-        if (selectedDuration === '6') return Math.round(subscriptionConfig.quartarlyPrice / 6 * 10) / 10;
-        return Math.round(subscriptionConfig.yearlyPrice / 12 * 10) / 10;
-    };
-
     const getRawSubtotal = () => {
         if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
         if (selectedDuration === '6') return subscriptionConfig.quartarlyPrice;

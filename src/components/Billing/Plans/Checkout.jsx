@@ -965,7 +965,7 @@ class Checkout extends Component {
                         { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links', color: 'text-cuba-primary-ink-strong' },
                         { icon: FaRocket, text: 'ATS Keyword Optimization Engine', color: 'text-cuba-info' },
                         { icon: FaHeadset, text: '24/7 VIP Priority Support', color: 'text-cuba-success' },
-                    ].map(({ icon: IconComponent, text, color }, i) => (
+                    ].map(({ text, color }, i) => (
                         <div key={i} className="flex items-center gap-2.5 text-xs text-cuba-ink-muted">
                             <div className={`w-5 h-5 rounded-lg bg-cuba-canvas flex items-center justify-center shrink-0 ${color}`}>
                                 <IconComponent className="w-2.5 h-2.5" />
@@ -1877,7 +1877,7 @@ class Checkout extends Component {
                                                 { icon: FaHeadset, text: '24/7 Priority VIP Support' },
                                                 { icon: FaFileAlt, text: '51+ Premium ATS Resume Templates' },
                                                 { icon: FaInfinity, text: 'Unlimited Cloud Sync & Resume Storage' },
-                                            ].map(({ icon: IconComponent, text }, i) => (
+                                            ].map(({ text }, i) => (
                                                 <div key={i} className="flex items-center gap-3 text-xs text-cuba-ink-subtle">
                                                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-cuba-primary/20 border border-cuba-primary/30">
                                                         <IconComponent className="w-3 h-3 text-cuba-night-primary" />
@@ -2491,7 +2491,7 @@ class Checkout extends Component {
                                     { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links' },
                                     { icon: FaRocket, text: 'ATS Smart Keyword Optimization' },
                                     { icon: FaHeadset, text: '24/7 Priority VIP Support' },
-                                ].map(({ icon: IconComponent, text }, i) => (
+                                ].map(({ text }, i) => (
                                     <div key={i} className="flex items-center gap-2.5 text-xs text-cuba-ink-subtle">
                                         <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-cuba-primary-soft border border-cuba-primary-ring">
                                             <IconComponent className="w-2.5 h-2.5 text-cuba-night-primary" />

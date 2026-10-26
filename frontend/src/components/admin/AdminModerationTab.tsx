@@ -9,31 +9,23 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { get, post, patch } from '@/lib/api-client';
+import { post } from '@/lib/api-client';
 import {
-  Briefcase,
   CheckCircle2,
-  AlertCircle,
   Building2,
   ShieldCheck,
-  Ban,
-  FileCheck,
-  Search,
   ExternalLink,
   Check,
   X,
   Eye,
   FileText,
-  Phone,
   Mail,
   MapPin,
   Globe,
   AlertTriangle,
-  Lock,
 } from 'lucide-react';
 
 interface EmployerApplication {

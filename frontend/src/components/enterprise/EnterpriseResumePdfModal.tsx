@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Printer, Download, ZoomIn, ZoomOut, Maximize2, Star, FileText, Check, Briefcase, GraduationCap, Award } from 'lucide-react';
+import { X, Printer, Download, ZoomIn, ZoomOut, Star, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { EnterpriseResource } from '@/lib/enterprise-api';
 import { cn } from '@/lib/utils';

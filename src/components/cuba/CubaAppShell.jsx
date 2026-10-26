@@ -194,7 +194,6 @@ const CubaAppShell = ({
     // authenticated aiService boundary stays in one place (INV-2).
     copilotPortal = null,
     copilotDispatch = null,
-    copilotContext = null,
     copilotOnApply = null,
     children,
 }) => {

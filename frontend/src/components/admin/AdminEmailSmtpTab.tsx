@@ -15,18 +15,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { get, post } from '@/lib/api-client';
 import {
   Mail,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Send,
-  Shield,
-  Server,
-  Lock,
   Globe,
   Check,
 } from 'lucide-react';
@@ -67,7 +62,7 @@ export function AdminEmailSmtpTab() {
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   const [dnsChecks, setDnsChecks] = useState<DnsCheck[]>([
     { type: 'SPF', status: 'OPERATIONAL', record: 'v=spf1 include:_spf.hostinger.com ~all', detail: 'Authorized sender aligned' },

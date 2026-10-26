@@ -14,7 +14,6 @@ const JobSearchBar = ({
     onSubmitJob,
     onOpenFavorites,
     savedJobsCount,
-    user,
     canPostJob = false,
     isInsideDashboard = false,
     onQuickFilter,

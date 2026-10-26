@@ -19,11 +19,12 @@ const {
     deriveRequirementProfile,
     selectModels,
     classifyProviderError,
-    classifyThrownError,
     RETRYABLE_CLASSES,
 } = require('./aiGateway/compat/aiRoutingCompat');
 
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
+// F-28: one source of generation defaults shared with the /v1 mesh engine.
+const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('./aiGenerationDefaults');
 // Configuration SEEDS only: used when the operator/tenant has not configured a
 // model explicitly. These are NOT routing rankings — the dynamic router (./aiRouting)
 // overrides them with provider-discovered models and runtime health evidence.
@@ -591,7 +592,7 @@ Return only valid JSON: {"skills":[{"name":"Skill Name","basis":"quoted evidence
         const facts = evidence.candidateFacts;
         user = `Suggest up to 6 professional certifications, licenses, or registrations the candidate should CONSIDER for the target role "${evidence.targetRole || 'their field'}" in ${language}.
 These are career-exploration SUGGESTIONS, not claims that the candidate holds them.
-Base suggestions on the candidate's actual profile (work, education, skills, existing certifications) and the target job description when provided. Recommend only credentials that belong to the field the candidate actually works in — never software or cloud credentials unless the profile or JD shows that work. Do not duplicate the candidate's existing certifications.
+Base suggestions on the candidate's actual profile (work, education, skills, existing certifications) and the target job description when provided. Recommend only credentials that belong to the field the candidate actually works in — never software or cloud credentials unless the profile, target role, or JD shows that work. Do not duplicate the candidate's existing certifications.
 For each suggestion, "basis" must quote the profile or JD text that inspired it (or be "target role").
 
 EVIDENCE:
@@ -612,7 +613,7 @@ These are project ideas for the candidate to review, personalize, and add to the
 CRITICAL PROFILE & INDUSTRY ALIGNMENT:
 1. STRICT RELEVANCE TO CANDIDATE FIELD:
    - Base all suggestions strictly on the candidate's actual field ("${targetRole}"), their work experience (${roleSummaries || 'their profession'}), and skills (${skillsList || 'their domain'}).
-   - DO NOT recommend software apps, web development, cloud, or coding projects unless the candidate's actual work history or skills explicitly involve software engineering!
+   - DO NOT recommend software apps, web development, cloud, or coding projects unless the candidate's actual work history, skills, or target role explicitly involve software engineering!
    - For Healthcare, Doctors, Surgeons, Nurses, Dentists: Suggest clinical protocol audits, patient flow/triage optimization, care unit quality initiatives, or infection control programs.
    - For Accounting, Audit, Finance, Banking: Suggest statutory audit readiness, financial forecasting/DCF valuation models, operational expenditure cost-reduction reviews, or IFRS compliance transitions.
    - For Legal, Attorneys, Compliance: Suggest contract lifecycle management (CLM) overhauls, regulatory compliance audits, case discovery indexing, or corporate governance frameworks.
@@ -1338,7 +1339,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             }
             if (regexMatches.length) values = regexMatches;
         }
-        const certifications = (Array.isArray(values) ? values : []).slice(0, 8).map((item, index) => {
+        const certifications = (Array.isArray(values) ? values : []).slice(0, 8).map((item) => {
             const rawCategory = typeof item === 'object' && item?.category ? item.category : 'recommended';
             const category = ['mandatory', 'recommended'].includes(rawCategory) ? rawCategory : 'recommended';
             return {
@@ -1349,6 +1350,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             };
         }).filter(item => item.title && item.title.length >= 2);
         if (certifications.length) return { certifications, requiresUserConfirmation: true };
+        if (parsed && typeof parsed === 'object') return { certifications: [], requiresUserConfirmation: true };
     }
     if (operation === 'generate-job-description') {
         const jobDescription = parsed?.jobDescription || parsed?.description || parsed?.text || (!parsed ? raw : '');
@@ -1392,6 +1394,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
         }).filter(p => p.name && p.name.length >= 2);
 
         if (projects.length) return { projects, requiresUserConfirmation: true };
+        if (parsed && typeof parsed === 'object') return { projects: [], requiresUserConfirmation: true };
     }
     if (operation === 'enhance-single-bullet') {
         const enhancedBullet = sanitizeGeneratedText(parsed?.enhancedBullet || parsed?.suggestion || parsed?.bullet || parsed?.suggestions?.[0] || (!parsed ? raw : ''));
@@ -1415,14 +1418,14 @@ function parseAiResponse(operation, rawContent, context = {}) {
         let suggestions = normalizeStrings(values).slice(0, operation === 'autocomplete' ? 8 : 6);
         if (operation === 'generate-education-description') {
             suggestions = suggestions.map(s => {
-                const clean = s.replace(/^[•*–—\-]\s*/, '').trim();
+                const clean = s.replace(/^[•*–—-]\s*/, '').trim();
                 return clean ? `• ${clean}` : '';
             }).filter(Boolean);
         }
         if (operation === 'autocomplete' && context.payload?.query) {
             const cleanQ = String(context.payload.query).trim().toLowerCase();
             const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
-            const qTokens = cleanQ.split(/[\s,./()\-]+/).filter(Boolean);
+            const qTokens = cleanQ.split(/[\s,./()-]+/).filter(Boolean);
             if (cleanQ.length > 0) {
                 const calcLevenshtein = (a, b) => {
                     if (a === b) return 0;
@@ -1553,7 +1556,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
                     if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(stripAccents(tok)))) return true;
 
                     // Spell check & typo tolerance (e.g. "oncolgist" matches "Medical Oncologist")
-                    const itemTokens = itemLower.split(/[\s,./()\-]+/).filter(Boolean);
+                    const itemTokens = itemLower.split(/[\s,./()-]+/).filter(Boolean);
                     return qTokens.every(rawQTok => {
                         const qTok = stripAccents(rawQTok);
                         if (qTok.length < 3) return itemTokens.some(iTok => iTok.startsWith(qTok));
@@ -1631,7 +1634,9 @@ async function loadProviderConfiguration(environment = process.env) {
         repo.getSetting('public_config'),
         repo.getSetting('system_settings'),
     ]);
-    const providerSecrets = secrets || {};
+    // F-19: platform keys are envelope-encrypted at rest; decrypt into the
+    // in-memory configuration only (plaintext never returns to the store).
+    const providerSecrets = require('./aiSecretStore').decryptProviderSecrets(secrets || {});
     const publicAi = publicConfig?.ai || {};
     const legacyAi = systemSettings?.ai || {};
     const effectiveAi = { ...legacyAi, ...publicAi };
@@ -1649,7 +1654,15 @@ async function loadProviderConfiguration(environment = process.env) {
             key,
             model: isAuto ? 'auto' : safeModel(rawConfiguredModel, PROVIDER_DEFAULTS[provider].model),
             baseUrl: /^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(baseUrl) ? baseUrl : '',
-            enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
+            // F-23: ai_providers[p].enabled/disabled is the enabled source of
+            // truth; the legacy effectiveAi boolean stays as a compatibility
+            // input. A provider disabled in EITHER store is disabled in BOTH
+            // engines — previously this gate read only public_config while the
+            // /v1 mesh read only ai_providers, split-braining admin toggles.
+            enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false
+                && providerSecrets[provider]?.enabled !== false
+                && providerSecrets[provider]?.disabled !== true
+                && Boolean(key),
         };
     }
     const mesh = require('./freellmConfig').buildFreeLlmPlatformConfig({ environment, secrets, publicConfig, systemSettings });
@@ -1660,8 +1673,8 @@ async function loadProviderConfiguration(environment = process.env) {
         primary: providers[effectiveAi.provider]?.enabled ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : providers.gemini?.enabled ? 'gemini' : providers[mesh.primary]?.enabled ? mesh.primary : 'gemini'),
         ...(effectiveAi.selectionMode ? { selectionMode: effectiveAi.selectionMode } : {}),
         enableFallback: effectiveAi.enableFallback !== false,
-        temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
-        maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),
+        temperature: clampNumber(effectiveAi.temperature, 0, 1, DEFAULT_GENERATION_TEMPERATURE),
+        maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, DEFAULT_GENERATION_MAX_TOKENS)),
         providers,
         // Platform scope; applyTenantAiPolicy stamps the tenant context for
         // tenant-scoped routing state (health, telemetry, model access).
@@ -1694,8 +1707,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         providerConfig,
         model: safeModel(providerConfig?.model, adapter.defaultModel),
         prompt,
-        temperature: generation?.temperature ?? 0.7,
-        maxTokens: generation?.maxTokens ?? 2048,
+        temperature: generation?.temperature ?? DEFAULT_GENERATION_TEMPERATURE,
+        maxTokens: generation?.maxTokens ?? DEFAULT_GENERATION_MAX_TOKENS,
     });
     const response = await fetchWithDeadline(fetchImpl, request.url, {
         method: request.method,
@@ -1729,6 +1742,47 @@ function resetSharedAiRouterForTests() {
     engine.resetCooldowns();
     engine.modelDiscovery.clear();
     engine.resetMetricsForTests();
+    clearAiEngineShadowLogForTests();
+}
+
+// ─── F-05: explicit, observable engine choice ───────────────────────────────
+// Before this, the aiRouting selector ran ONLY when the live engine threw an
+// unexpected error code — its capability gates, tenant-scoped health and
+// explainable routing were effectively dead code in production while its
+// tests passed by calling it directly. The choice is now an explicit env:
+//   AI_ENGINE=freellm   (default) live engine authoritative, aiRouting only
+//                       on the legacy unexpected-error fallback path.
+//   AI_ENGINE=shadow    aiRouting.route runs FIRST, the divergence between
+//                       its decision and the authoritative freellm response
+//                       is recorded in a bounded in-process log, and the
+//                       RESPONSE IS UNCHANGED. Flip only after a clean
+//                       shadow period (zero unexpected divergences).
+//   AI_ENGINE=aiRouting the dynamic selector serves the request end-to-end.
+const AI_ENGINE_SHADOW_LOG_MAX = 100;
+const aiEngineShadowLog = [];
+
+function resolveAiEngineChoice(environment = process.env) {
+    const raw = String(environment?.AI_ENGINE || '').trim().toLowerCase();
+    if (raw === 'airouting' || raw === 'ai-routing' || raw === 'airouter') return 'aiRouting';
+    if (raw === 'shadow') return 'shadow';
+    return 'freellm';
+}
+
+function recordAiEngineShadowEntry(entry) {
+    aiEngineShadowLog.push({ ts: Date.now(), ...entry });
+    if (aiEngineShadowLog.length > AI_ENGINE_SHADOW_LOG_MAX) {
+        aiEngineShadowLog.splice(0, aiEngineShadowLog.length - AI_ENGINE_SHADOW_LOG_MAX);
+    }
+    return entry;
+}
+
+/** Bounded, secret-free shadow divergence log (newest last). */
+function getAiEngineShadowLog() {
+    return aiEngineShadowLog.map(entry => ({ ...entry }));
+}
+
+function clearAiEngineShadowLogForTests() {
+    aiEngineShadowLog.length = 0;
 }
 
 /**
@@ -1741,7 +1795,7 @@ function resetSharedAiRouterForTests() {
  *  - the result carries { raw, provider, model, usage } plus a `routing`
  *    explainability summary (selection latency, fallbacks, rationale).
  */
-async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
+async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs, principalId = null }) {
     const order = providerOrder(configuration);
     if (!order.length && !configuration?.tenantContext?.customProviderKeys) {
         throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
@@ -1769,6 +1823,25 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
         }
     }
 
+    // F-05: explicit engine choice (see resolveAiEngineChoice above).
+    const engineChoice = resolveAiEngineChoice();
+    if (engineChoice === 'aiRouting') {
+        // F-17: stamp the engine onto the selector's routing summary so the
+        // tenant audit can tell which engine produced the decision.
+        const routed = await router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+        return { ...routed, routing: { ...(routed?.routing || {}), engine: 'aiRouting' } };
+    }
+    let shadowOutcome = null;
+    if (engineChoice === 'shadow') {
+        const shadowStartedAt = Date.now();
+        try {
+            const shadow = await router.route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
+            shadowOutcome = { provider: shadow?.provider || null, model: shadow?.model || null, latencyMs: Date.now() - shadowStartedAt };
+        } catch (shadowError) {
+            shadowOutcome = { error: shadowError?.code || 'SHADOW_ROUTE_FAILED', detail: String(shadowError?.message || '').slice(0, 160), latencyMs: Date.now() - shadowStartedAt };
+        }
+    }
+
     try {
         const freellm = require('./aiGateway');
         const isJson = CONTENT_OPERATIONS.has(operation) || operation === 'parse-resume';
@@ -1777,9 +1850,17 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             platformConfig: configuration,
             tenantContext: configuration?.tenantContext || (configuration?.tenantId ? {
                 tenantId: configuration.tenantId,
+                // F-09: only GENUINE tenant-owned BYOK keys (enterprise_tenant_
+                // credentials via F-08, stamped as tenantByokProviders by
+                // applyTenantAiPolicy) become customProviderKeys. Platform keys
+                // must not force the dedicated-BYOK sanctuary tier — that tier
+                // disables metrics, cooldowns and health for the tenant, so
+                // mislabelling platform-key enterprise traffic hides the
+                // largest traffic class from routing intelligence.
                 customProviderKeys: Object.fromEntries(
                     Object.entries(configuration.providers || {})
-                        .filter(([_, p]) => p.key && p.enabled)
+                        .filter(([pId, p]) => p.key && p.enabled
+                            && (configuration.tenantByokProviders || []).includes(pId))
                         .map(([pId, p]) => [pId, p.key])
                 ),
                 allowedProviders: configuration.tenantPolicy?.allowedProviders,
@@ -1787,12 +1868,19 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                 restrictedModels: configuration.tenantPolicy?.restrictedModels,
                 primaryModel: configuration.tenantPolicy?.primaryModel || configuration.providers?.[configuration.primary]?.model,
             } : null),
-            temperature: configuration?.temperature !== undefined ? configuration.temperature : 0.3,
-            maxTokens: configuration?.maxTokens !== undefined ? configuration.maxTokens : 4096,
+            temperature: configuration?.temperature !== undefined ? configuration.temperature : DEFAULT_GENERATION_TEMPERATURE,
+            maxTokens: configuration?.maxTokens !== undefined ? configuration.maxTokens : DEFAULT_GENERATION_MAX_TOKENS,
             jsonMode: isJson,
             timeoutMs: timeoutMs || 45000,
             fetchImpl: fetchImpl || globalThis.fetch,
             signal,
+            // F-02: principal-bound cache scope. Explicit argument wins; otherwise
+            // fall back to the stamped configuration (tenant policy resolution
+            // already carries principalId for tenant-scoped requests). Null means
+            // the caller has no principal (in-process/cron) — not HTTP user traffic.
+            cacheScope: principalId != null && principalId !== ''
+                ? `user:${principalId}`
+                : (configuration?.principalId ? `user:${configuration.principalId}` : null),
         });
 
         for (const attempt of result.fallbacksAttempted || []) {
@@ -1815,18 +1903,65 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
             latencyMs: result.latencyMs,
         });
 
+        // F-05 shadow: record the divergence between the aiRouting decision
+        // and the authoritative freellm response. The response is unchanged.
+        if (engineChoice === 'shadow') {
+            recordAiEngineShadowEntry({
+                operation,
+                authoritative: { provider: result.provider, model: result.model },
+                shadow: shadowOutcome,
+                diverged: Boolean(shadowOutcome?.error)
+                    || shadowOutcome?.provider !== result.provider
+                    || shadowOutcome?.model !== result.model,
+            });
+        }
+
+        // F-17: audit-visible routing summary for the live engine. routes/ai.js
+        // persists decisionId/executedModel/selectionLatencyMs/fallbackCount/
+        // attempts/candidatesConsidered/candidatesRejected/lastResort from
+        // this object — previously only {latencyMs, cached, fallbacksAttempted}
+        // existed, so tenant audit metadata serialised to
+        // aiRouting:{executedModel:null} (undefined fields dropped by JSON).
+        // Fields the live engine does not measure stay honest nulls — never
+        // fabricated, never undefined. routingDecision is the live engine's
+        // rationale object (mode, evidence, observation counts, lastResort).
+        const fallbacks = result.fallbacksAttempted || [];
         return {
             raw: result.content,
             provider: result.provider,
             model: result.model,
             usage: result.usage,
             routing: {
+                engine: 'freellmapi',
+                decisionId: result.routingDecision?.decisionId || null,
+                selectedProvider: result.provider || null,
+                selectedModel: result.model || null,
+                executedProvider: result.provider || null,
+                executedModel: result.model || null,
+                fallbackCount: fallbacks.length,
+                attempts: result.cached ? 0 : fallbacks.length + 1,
+                selectionLatencyMs: result.routingDecision?.selectionLatencyMs ?? null,
+                executionLatencyMs: result.latencyMs ?? null,
+                candidatesConsidered: result.routingDecision?.candidatesConsidered ?? null,
+                candidatesRejected: result.routingDecision?.candidatesRejected ?? null,
+                lastResort: result.routingDecision?.lastResort === true,
+                rationale: result.routingDecision || null,
                 latencyMs: result.latencyMs,
                 cached: result.cached,
                 fallbacksAttempted: result.fallbacksAttempted,
             },
         };
     } catch (freellmErr) {
+        // F-05 shadow: the authoritative engine failed — record whether the
+        // shadow selector would have served (divergence) or also failed.
+        if (engineChoice === 'shadow') {
+            recordAiEngineShadowEntry({
+                operation,
+                authoritative: { error: freellmErr?.code || 'ENGINE_FAILURE', status: Number(freellmErr?.status) || null },
+                shadow: shadowOutcome,
+                diverged: !shadowOutcome?.error,
+            });
+        }
         router.telemetry?.record?.({
             tenantId,
             operation,
@@ -1901,7 +2036,7 @@ function getContentOperationFallback(operation, rawPayload = {}) {
             }
             // Split the candidate's own notes into reviewable bullets — source-preserving.
             const bullets = notes
-                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•\-])/)
+                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•-])/)
                 .map(item => sanitizeSourceText(item, 1000).replace(/^[•\-*\d.\s]+/, '').trim())
                 .filter(item => item.length >= 12)
                 .slice(0, 5);
@@ -1915,7 +2050,7 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         const hasCustomNotes = userNotes.length >= 10 && !/^(?:Completed\s|Degree in\s|Institution:\s|Relevant academic coursework, research, and capstone project$)/i.test(userNotes.trim());
         if (hasCustomNotes) {
             const highlights = userNotes
-                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•\-])/)
+                .split(/\n|(?<=[.!?])\s+(?=[A-Z"“'•-])/)
                 .map(item => sanitizeSourceText(item, 1000).replace(/^[•\-*\d.\s]+/, '').trim())
                 .filter(item => item.length >= 8)
                 .map(item => `• ${item}`)
@@ -2023,7 +2158,7 @@ function needsClarification(operation, payload) {
     return false;
 }
 
-async function executeContentOperation({ operation, payload, environment, fetchImpl, signal, requestId, configuration: providedConfiguration }) {
+async function executeContentOperation({ operation, payload, environment, fetchImpl, signal, requestId, configuration: providedConfiguration, principalId = null }) {
     const isClarificationNeeded = needsClarification(operation, payload);
     const promptBuilder = isClarificationNeeded ? buildClarificationPrompt : buildGroundedPrompt;
     const { prompt, payload: validatedPayload } = promptBuilder(operation, payload, { sessionId: requestId });
@@ -2040,6 +2175,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
                 fetchImpl,
                 signal,
                 timeoutMs: 4500, // Fast 4.5s timeout for questions so UI never hangs
+                principalId,
             });
             const data = parseAiResponse(operation, generated.raw, {
                 payload: validatedPayload,
@@ -2054,7 +2190,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
                     grounding: 'ask',
                 };
             }
-        } catch (err) {
+        } catch (_err) {
             // Graceful fallback to deterministic section questions when provider is unavailable/offline/errors
             return ask;
         }
@@ -2069,6 +2205,7 @@ async function executeContentOperation({ operation, payload, environment, fetchI
             fetchImpl,
             signal,
             timeoutMs: operation === 'autocomplete' ? 10000 : undefined,
+            principalId,
         });
         const data = parseAiResponse(operation, generated.raw, {
             payload: validatedPayload,
@@ -2244,12 +2381,12 @@ function groundResumeExtraction(rawData, rawText) {
     };
 }
 
-async function executeResumeParsing({ rawText, environment, fetchImpl, signal, configuration: providedConfiguration }) {
+async function executeResumeParsing({ rawText, environment, fetchImpl, signal, configuration: providedConfiguration, principalId = null }) {
     const prompt = buildResumeParsingPrompt(rawText);
     // Clone: tenant-applied configurations are frozen; generation overrides
     // must not mutate (or fail on) the shared object.
     const configuration = { ...(providedConfiguration || await loadProviderConfiguration(environment)), temperature: 0.15, maxTokens: 4096 };
-    const generated = await generateWithProviders({ prompt, configuration, operation: 'parse-resume', fetchImpl, signal, timeoutMs: 45000 });
+    const generated = await generateWithProviders({ prompt, configuration, operation: 'parse-resume', fetchImpl, signal, timeoutMs: 45000, principalId });
     const extracted = extractJson(generated.raw);
     if (!extracted || typeof extracted !== 'object' || Array.isArray(extracted)) {
         throw Object.assign(new Error('AI resume response did not match the product contract'), { code: 'INVALID_AI_RESPONSE', status: 502 });
@@ -2278,6 +2415,9 @@ module.exports = {
     extractJson,
     fetchWithDeadline,
     generateWithProviders,
+    resolveAiEngineChoice,
+    getAiEngineShadowLog,
+    clearAiEngineShadowLogForTests,
     getContentOperationFallback,
     getSharedAiRouter,
     groundResumeExtraction,

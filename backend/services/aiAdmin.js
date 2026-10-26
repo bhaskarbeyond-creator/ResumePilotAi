@@ -1,6 +1,9 @@
 'use strict';
 
-const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider } = require('./aiRuntime');
+const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider, resolveAiEngineChoice, getAiEngineShadowLog } = require('./aiRuntime');
+const { getModelQualityTier } = require('../freellmapi/providers/registry');
+// F-19: envelope boundary for platform AI provider secrets at rest.
+const { decryptProviderSecrets, encryptProviderSecrets, getSecretEncryptionStatus } = require('./aiSecretStore');
 
 const SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -64,7 +67,7 @@ function resolveExplicitEnableToggle(input = {}, pId) {
   return undefined;
 }
 
-function publicAiSettings(input = {}) {
+function publicAiSettings(input = {}, existing = {}) {
   if (input.provider && !['openai-compat', 'google', 'horde'].includes(require('../freellmapi/providers/registry').getProviderMeta(input.provider)?.type)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported primary AI provider.', 400);
   const provider = input.provider || 'gemini';
   if (input.selectionMode !== undefined) require('../freellmapi/services/selectionPolicy').validateMode(input.selectionMode);
@@ -76,11 +79,24 @@ function publicAiSettings(input = {}) {
     temperature: Number.isFinite(temperatureValue) ? Math.max(0, Math.min(2, temperatureValue)) : 0.7,
     maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(8192, Math.floor(maxTokensValue))) : 2048,
     enableFallback: input.enableFallback !== false,
+    // F-03: opt-in "pin with fallback" for selectionMode=manual. Default false
+    // keeps strict manual semantics unchanged unless an admin explicitly
+    // enables graceful failover away from a down pinned provider.
+    manualAllowFallback: input.manualAllowFallback === true,
     enableImportModule: input.enableImportModule === true,
   };
   for (const item of PROVIDERS) {
     const explicitToggle = resolveExplicitEnableToggle(input, item);
-    result[ENABLE_FIELDS[item]] = explicitToggle !== undefined ? explicitToggle : (input[ENABLE_FIELDS[item]] !== false);
+    // F-15: a partial save must never fabricate toggles the operator did not
+    // send. Present fields normalize as before (`!== false`); ABSENT fields
+    // preserve the previously stored value — including its absence, so a
+    // fresh deployment's partial save no longer writes enableNvidia:true for
+    // providers nobody mentioned. Consumers treat a missing field exactly
+    // like an enabled one (`=== false` checks), so omission is inert.
+    const legacyField = ENABLE_FIELDS[item];
+    result[legacyField] = explicitToggle !== undefined
+      ? explicitToggle
+      : (input[legacyField] !== undefined ? input[legacyField] !== false : existing[legacyField]);
     const model = String(input[MODEL_FIELDS[item]] || '').trim();
     if (model && !modelPattern.test(model)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${item} model.`, 400);
     if (model) result[MODEL_FIELDS[item]] = model;
@@ -237,7 +253,9 @@ async function loadAiAdminSettings(environment = process.env) {
     repo.getSetting('system_settings'),
   ]);
   const publicConfig = stored || {};
-  const providerSecrets = secrets || {};
+  // F-19: platform keys are envelope-encrypted at rest; plaintext lives only
+  // in memory (masking below still shows the true last-4 of the real key).
+  const providerSecrets = decryptProviderSecrets(secrets || {});
   const legacyAi = systemSettings?.ai || {};
   const publicAi = publicConfig.ai || {};
   const credentialSources = Object.fromEntries(PROVIDERS.map(provider => [provider,
@@ -302,6 +320,7 @@ async function loadAiAdminSettings(environment = process.env) {
     const maskSourcePool = storedSecretPool.length > 0
       ? storedSecretPool
       : (envPool.length > 0 ? envPool : legacyKey);
+    const effectiveDefaultModel = providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '';
     if (maskSourcePool.length > 0) {
       maskedKeys[meta.id] = maskKeyPool(maskSourcePool);
     } else if (!PROVIDERS.includes(meta.id)) {
@@ -332,25 +351,34 @@ async function loadAiAdminSettings(environment = process.env) {
       docUrl: meta.docUrl || '',
       baseUrl: stored.baseUrl || environment[`${meta.id.toUpperCase()}_BASE_URL`] || meta.baseUrl || '',
       customBaseUrl: stored.baseUrl || '',
-      defaultModel: providerSecrets[meta.id]?.model || publicAi[MODEL_FIELDS[meta.id]] || legacyAi[MODEL_FIELDS[meta.id]] || meta.defaultModel || '',
+      defaultModel: effectiveDefaultModel,
       recommendedModels: meta.recommendedModels || [meta.defaultModel || 'default'],
-      intelligenceScore: null,
+      // F-06: curated quality tier of the effective default model, replacing
+      // the bare null placeholder. Tier label or null (uncurated) — never a
+      // fabricated numeric score.
+      intelligenceScore: getModelQualityTier(effectiveDefaultModel),
       speedScore: null,
       reliabilityScore: null,
       latencyMs: null,
     };
   });
 
+  // F-16: `configuredProviders` used to mean "has a credential" at the top of
+  // this function but was then overwritten with the catalog's
+  // `configuredOnServer`, which for non-opt-in providers ignores `enabled` —
+  // a disabled groq with a stored key still reported configured:true and the
+  // flat map gave consumers no way to see the disable. The two facts are now
+  // reported separately: configuredProviders = hasCredential (credential
+  // source known, or keyless), enabledProviders = the catalog's effective
+  // enabled state (toggles, opt-in gates and credentials combined).
+  const enabledProviders = {};
   for (const item of catalog) {
-    configuredProviders[item.id] = item.configuredOnServer;
+    configuredProviders[item.id] = item.credentialSource !== 'none';
+    enabledProviders[item.id] = item.enabled;
   }
 
-  let aiSettingsV2Enabled = true;
-  try {
-    const { getFlagValue } = require('./featureFlagService');
-    const flagVal = await getFlagValue('ai_settings_v2_enabled');
-    if (typeof flagVal === 'boolean') aiSettingsV2Enabled = flagVal;
-  } catch { /* fallback to default true */ }
+  // F-24: the ai_settings_v2_enabled flag was removed — no engine code ever
+  // consulted it, so it gated nothing but a cosmetic admin banner view.
 
   const platform = await require('./freellmConfig').loadFreeLlmPlatformConfig({ environment, repository: repo, bypassCache: true });
   const { modelDiscovery } = require('../freellmapi/services/modelDiscovery');
@@ -361,14 +389,24 @@ async function loadAiAdminSettings(environment = process.env) {
     isDefault: true, isActive: true, modelsCount: discoveredModels.length }];
 
   return {
-    settings, configuredProviders, credentialSources, maskedKeys,
+    settings, configuredProviders, enabledProviders, credentialSources, maskedKeys,
     catalog,
     cooldowns,
-    featureFlags: { ai_settings_v2_enabled: aiSettingsV2Enabled },
+    // F-19: honest at-rest encryption state for the platform key store —
+    // 'active' (envelopes sealed), 'unavailable' (no key configured; legacy
+    // plaintext), 'misconfigured' (encryption env present but invalid).
+    // Reflects the DEPLOYMENT environment (process.env), not the caller's
+    // env snapshot: it describes how this process seals/opens the store.
+    secretEncryption: getSecretEncryptionStatus(),
     engine: {
       version: freellmEngine.ENGINE_VERSION,
       capabilities: freellmEngine.getEngineStatus().capabilities,
       persistence: freellmEngine.getEngineStatus().persistence,
+      // F-05: the engine choice is explicit and observable — the active
+      // AI_ENGINE mode plus the bounded shadow-divergence log (decision
+      // metadata only: operation/provider/model; never prompts or secrets).
+      aiEngine: resolveAiEngineChoice(environment),
+      shadowDivergences: getAiEngineShadowLog().slice(-20),
     },
     fallbackChains,
     curatedModels: [], // Legacy field kept empty; no hard-coded quality/latency/RPM claims.
@@ -393,9 +431,14 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
       data: typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
       revision: Number(row.revision || 0),
     }]));
-    const currentSecrets = byCategory.ai_providers?.data || {};
+    // F-19: secretPatch operates on the DECRYPTED in-memory view so mask
+    // detection, preservation and length validation keep working exactly as
+    // designed; the merged store is re-sealed into envelopes before the INSERT.
+    const currentSecrets = decryptProviderSecrets(byCategory.ai_providers?.data || {});
     const currentPublic = byCategory.public_config?.data || {};
-    const safePublic = publicAiSettings({ ...(currentPublic.ai || {}), ...input });
+    // F-15: `existing` lets absent toggles preserve the prior stored value
+    // (including its absence) instead of being fabricated as true.
+    const safePublic = publicAiSettings({ ...(currentPublic.ai || {}), ...input }, currentPublic.ai || {});
     const legacyAi = byCategory.system_settings?.data?.ai || {};
     const currentRevision = Math.max(
       Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
@@ -403,12 +446,30 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
     if ((resolvedExpectedRevision === undefined || resolvedExpectedRevision === null) && input?.force !== true) {
       throw errorWith('EXPECTED_REVISION_REQUIRED', 'expectedRevision is required for administrative writes.', 400);
     }
-    const isBypass = resolvedExpectedRevision === -1 || input?.force === true;
+    // F-29: ONE force mechanism — the explicit `force: true`, the only
+    // spelling the frozen design docs recognise (security-review.md DEF-11:
+    // "unless explicit force: true overwrite is confirmed"). The undocumented
+    // `expectedRevision === -1` backdoor is removed: -1 is now simply a stale
+    // revision and 409s like any other mismatch.
+    const isBypass = input?.force === true;
     if (!isBypass && Number(resolvedExpectedRevision) !== currentRevision) {
-      const conflictErr = errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+      // F-29: platform-wide CAS conflict spelling — the frozen docs, the
+      // enterprise CAS and the pre-existing wire translation in index.js all
+      // say REVISION_CONFLICT; the service now throws the same code.
+      const conflictErr = errorWith('REVISION_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
       conflictErr.currentRevision = currentRevision;
       throw conflictErr;
     }
+    // F-29: a forced overwrite is visible and attributable in the audit
+    // trail — the actor's justification (when given) is sanitized of control
+    // characters, bounded, and stored alongside forced:true.
+    const forceReason = isBypass
+      ? (String(input?.forceReason ?? '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 500) || null)
+      : null;
     const targetPrimary = safePublic.provider || currentPublic.ai?.provider || 'gemini';
     const primaryExplicitToggle = resolveExplicitEnableToggle(input, targetPrimary);
     if (primaryExplicitToggle === false) {
@@ -430,10 +491,39 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
       }
       if (clearSecrets[provider] === true) delete providerPatch[provider].apiKey;
     }
+    // F-04: `selectionMode=manual` without an explicit model for the pinned
+    // provider used to resolve at routing time to the literal model "auto",
+    // which matches no catalog id — every request died with an opaque 503.
+    // Reject at save time instead. Legacy six providers keep their pin in the
+    // public MODEL_FIELDS; registry providers (e.g. llamacpp) keep it in the
+    // ai_providers store, so both sources count as an explicit pin. The
+    // routing layer treats an empty pin as "provider default" for
+    // already-saved configurations (defence in depth).
+    if (safePublic.selectionMode === 'manual') {
+      const pinnedModelField = MODEL_FIELDS[targetPrimary];
+      const pinnedModel = String(
+        (pinnedModelField && safePublic[pinnedModelField]) ||
+        providerPatch[targetPrimary]?.model ||
+        currentSecrets[targetPrimary]?.model ||
+        ''
+      ).trim();
+      if (!pinnedModel || pinnedModel === 'auto') {
+        throw errorWith(
+          'AI_SETTINGS_VALIDATION_ERROR',
+          `selectionMode "manual" requires an explicit model for the pinned provider "${targetPrimary}"${pinnedModelField ? ` (set ${pinnedModelField})` : ''} — or choose another selection mode and the engine will use the provider's default model.`,
+          400
+        );
+      }
+    }
     nextRevision = currentRevision + 1;
     const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
+    // F-19: seal at rest. With ENTERPRISE_ENCRYPTION_KEY(S) configured every
+    // plaintext apiKey/apiKeys becomes an AES-256-GCM envelope (legacy rows
+    // migrate on this authorized save); keyless deployments keep the legacy
+    // plaintext contract, surfaced via `secretEncryption` on the load path.
+    const storedSecrets = encryptProviderSecrets(mergedSecrets);
     const mergedPublic = { ...currentPublic, ai: { ...safePublic, ...(safePublic.selectionMode || currentPublic.ai?.selectionMode ? { selectionMode: safePublic.selectionMode || currentPublic.ai.selectionMode } : {}) }, aiRevision: nextRevision };
-    for (const [category, data] of [['ai_providers', mergedSecrets], ['public_config', mergedPublic]]) {
+    for (const [category, data] of [['ai_providers', storedSecrets], ['public_config', mergedPublic]]) {
       await connection.query(
         `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
@@ -447,7 +537,14 @@ async function saveAiAdminSettings({ input, expectedRevision, actorUid, requestI
        VALUES (?, ?, 'SUPER_ADMIN', 'AI_PROVIDER_SETTINGS_UPDATED', 'ai.governance', 'HIGH',
                'SUCCESS', 'POST', '/api/admin/ai-settings', 200, 'system_settings',
                'ai_providers', ?, ?, NOW())`,
-      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({ revision: nextRevision, changedFields: Object.keys(safePublic) }), requestId || null]
+      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({
+        revision: nextRevision,
+        changedFields: Object.keys(safePublic),
+        // F-29: forced saves are recorded as such, with the actor
+        // justification when supplied (null when not) — no silent CAS
+        // bypasses in the trail.
+        ...(isBypass ? { forced: true, forceReason } : {}),
+      }), requestId || null]
     );
     await connection.commit();
   } catch (error) {

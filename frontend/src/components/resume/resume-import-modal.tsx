@@ -28,8 +28,6 @@ import {
   Loader2,
   ClipboardPaste,
   ArrowRight,
-  RefreshCw,
-  X,
 } from 'lucide-react';
 import { extractFileText, parseResumeDocument, type ParsedResumeData } from '@/lib/ai-content';
 import { cn } from '@/lib/utils';

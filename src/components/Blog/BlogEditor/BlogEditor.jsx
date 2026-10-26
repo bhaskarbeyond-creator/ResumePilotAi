@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -20,7 +20,6 @@ import {
   getBlogPostById, 
   listBlogCategories, 
   listBlogPosts, 
-  getUserBlogPosts 
 } from '../../../services/api/platform';
 import { AuthContext } from '../../../context/AuthContext';
 import Spinner from '../../Spinner/Spinner';
@@ -100,7 +99,6 @@ export default function BlogEditor({ user: propUser }) {
   const [linkText, setLinkText] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [notification, setNotification] = useState(null);
-  const [activeTab, setActiveTab] = useState('editor'); // 'editor' | 'settings' | 'seo'
 
   // Is navigated from Admin panel
   const isFromAdmin = location.state?.fromAdmin || document.referrer?.includes('/adm') || location.search.includes('admin=1');
@@ -295,6 +293,7 @@ export default function BlogEditor({ user: propUser }) {
     loadInitialData();
 
     return () => { mounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'editor'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
   }, [postId, user]);
 
   // Sync editor content when post content changes initially
@@ -303,6 +302,7 @@ export default function BlogEditor({ user: propUser }) {
     if (post.content && editor.getHTML() !== post.content) {
       editor.commands.setContent(post.content, { emitUpdate: false });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'post.content'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
   }, [editor, post.id]);
 
   // Handle Save (Draft vs Publish)

@@ -21,7 +21,7 @@ const VERIFICATION_LABEL = {
  * is invented: an account with no company profile is sent to register one
  * instead of showing placeholder preferences.
  */
-const EmployerHiringPreferences = ({ showToast }) => {
+const EmployerHiringPreferences = () => {
     const user = useContext(AuthContext);
     const { status, error, companies, reload } = useEmployerWorkspace(user?.uid);
     const [notice, setNotice] = useState(null);

@@ -13,7 +13,6 @@ const {
   normalizeCurrencyCode,
   formatCurrencyAmount,
 } = require('../services/platformCurrency');
-const { createEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
 const { resolveAssignableWorkspace } = require('../enterprise/workspaceResolution');
@@ -563,7 +562,9 @@ router.get('/platform/status', requirePermission('system.config.read'), requireR
 
 /* ------------------------------------------------------------------
  * Runtime Feature Flag Operations (/api/admin/operations/feature-flags)
- * Supports instant runtime rollback of ai_settings_v2_enabled without redeploy.
+ * Generic read/write for flags registered in featureFlagService.
+ * (F-24: the former ai_settings_v2_enabled flag was removed — it was a
+ * dead switch that gated no engine behaviour.)
  * ------------------------------------------------------------------ */
 const {
   FLAG_DEFINITIONS,

@@ -29,7 +29,6 @@ import {
   describeShareError,
   buildShareUrl,
   type ApiClientLike,
-  type PublicationState,
 } from '@/lib/share-publication';
 import {
   Share2,

@@ -78,7 +78,7 @@ class CooldownManager {
     return { onCooldown: false, remainingMs: 0, reason: null };
   }
 
-  setCooldown(provider, model, reason = 'Rate limit or temporary provider degradation') {
+  setCooldown(provider, model, reason = 'Rate limit or temporary provider degradation', retryAfterMs = null) {
     const key = this._makeKey(provider, model);
     const existing = this.cooldowns.get(key);
 
@@ -89,6 +89,14 @@ class CooldownManager {
     if (existing && (now - existing.lastFailureAt) < (this.MAX_COOLDOWN_MS * 2)) {
       strikeCount = (existing.strikeCount || 1) + 1;
       durationMs = Math.min(this.MAX_COOLDOWN_MS, this.DEFAULT_COOLDOWN_MS * Math.pow(2, strikeCount - 1));
+    }
+
+    // F-12: never wait LESS than the provider's Retry-After request; clamp to
+    // MAX_COOLDOWN_MS so a pathological 24h header cannot bench a provider
+    // for a day.
+    const requested = Number(retryAfterMs);
+    if (Number.isFinite(requested) && requested > durationMs) {
+      durationMs = Math.min(this.MAX_COOLDOWN_MS, requested);
     }
 
     const expiresAt = now + durationMs;

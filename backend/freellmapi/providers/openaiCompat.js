@@ -83,7 +83,28 @@ class ThinkTagFilter {
   }
 }
 
-function classifyError(status, message, body) {
+/**
+ * F-12: parse a `Retry-After` header value (delta-seconds OR HTTP-date) into
+ * milliseconds. Returns null when absent/unparseable/already past. The live
+ * engine used to drop this header entirely: a provider asking for 3600s was
+ * retried after the fixed 60s cooldown base — guaranteeing repeated 429s.
+ */
+function parseRetryAfterMs(value) {
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null;
+  }
+  const dateMs = Date.parse(raw);
+  if (Number.isFinite(dateMs)) {
+    const deltaMs = dateMs - Date.now();
+    return deltaMs > 0 ? deltaMs : null;
+  }
+  return null;
+}
+
+function classifyError(status, message, body, headers = null) {
   const msg = String(message || '').toLowerCase();
   const rawBody = typeof body === 'string' ? body.toLowerCase() : JSON.stringify(body || {}).toLowerCase();
 
@@ -91,7 +112,9 @@ function classifyError(status, message, body) {
     return { code: 'INVALID_API_KEY', status: 401, retryable: false };
   }
   if (status === 429 || msg.includes('rate limit') || msg.includes('quota') || rawBody.includes('rate_limit') || rawBody.includes('insufficient_quota')) {
-    return { code: 'RATE_LIMIT_EXCEEDED', status: 429, retryable: true };
+    // F-12: carry the provider's own backoff request to the cooldown manager.
+    const retryAfterMs = parseRetryAfterMs(headers?.get?.('retry-after') ?? headers?.get?.('Retry-After'));
+    return { code: 'RATE_LIMIT_EXCEEDED', status: 429, retryable: true, retryAfterMs };
   }
   if (status === 404 || msg.includes('model not found') || rawBody.includes('model_not_found')) {
     return { code: 'MODEL_NOT_FOUND', status: 404, retryable: true };
@@ -281,11 +304,12 @@ async function callOpenAiCompat({
 
     if (!res.ok) {
       const errorMsg = data?.error?.message || data?.message || String(rawText).slice(0, 300);
-      const classified = classifyError(res.status, errorMsg, data || rawText);
+      const classified = classifyError(res.status, errorMsg, data || rawText, res.headers);
       const err = new Error(`[${providerId}] ${errorMsg} (HTTP ${res.status})`);
       err.code = classified.code;
       err.status = classified.status;
       err.retryable = classified.retryable;
+      err.retryAfterMs = classified.retryAfterMs ?? null;
       err.provider = providerId;
       err.model = model;
       err.latencyMs = latencyMs;
@@ -404,11 +428,12 @@ async function* streamOpenAiCompat({
       let data = null;
       try { data = JSON.parse(rawText); } catch { data = null; }
       const errorMsg = data?.error?.message || data?.message || String(rawText).slice(0, 300);
-      const classified = classifyError(res.status, errorMsg, data || rawText);
+      const classified = classifyError(res.status, errorMsg, data || rawText, res.headers);
       const err = new Error(`[${providerId}] ${errorMsg} (HTTP ${res.status})`);
       err.code = classified.code;
       err.status = classified.status;
       err.retryable = classified.retryable;
+      err.retryAfterMs = classified.retryAfterMs ?? null;
       err.provider = providerId;
       err.model = model;
       throw err;
@@ -539,6 +564,7 @@ module.exports = {
   callOpenAiCompat,
   streamOpenAiCompat,
   classifyError,
+  parseRetryAfterMs,
   stripThinkTags,
   ThinkTagFilter,
   iterateSseData,

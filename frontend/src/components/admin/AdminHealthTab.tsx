@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
@@ -18,18 +18,10 @@ import {
   Activity,
   CheckCircle2,
   AlertCircle,
-  XCircle,
   RefreshCw,
-  Server,
-  Database,
-  Cpu,
-  Zap,
-  Shield,
   Play,
   X,
-  ExternalLink,
   Info,
-  Clock,
   Layers,
   Gauge,
   Sliders,

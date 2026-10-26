@@ -56,7 +56,7 @@ test('content prompts are built only from verified candidate evidence (no profes
     workHistory: 'Engineer at Acme', education: 'M.Tech', skills: ['React', 'Node.js'],
     certifications: ['AWS'], projects: 'Payments modernization', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
-  for (const context of ['Asha Rao', '6+ years', 'Engineer at Acme', 'M.Tech', 'React', 'Node.js', 'AWS', 'Payments modernization']) assert.match(summary, new RegExp(context.replace(/[.+\[\]{}()\*?$^|/]/g, '\\$&')));
+  for (const context of ['Asha Rao', '6+ years', 'Engineer at Acme', 'M.Tech', 'React', 'Node.js', 'AWS', 'Payments modernization']) assert.match(summary, new RegExp(context.replace(/[.+[\]{}()*?$^|/]/g, '\\$&')));
   assert.match(summary, /ONLY from the candidate's verified facts/);
   assert.match(summary, /"sourceExcerpts"/);
   assert.doesNotMatch(summary, /executive resume writer/i);

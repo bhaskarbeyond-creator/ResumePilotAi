@@ -10,12 +10,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { get, del } from '@/lib/api-client';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   Plus,
@@ -24,13 +23,10 @@ import {
   Edit3,
   Trash2,
   ExternalLink,
-  Tag,
   Calendar,
-  Globe,
   Eye,
   X,
   Clock,
-  User,
   AlertTriangle,
 } from 'lucide-react';
 
@@ -90,7 +86,7 @@ export function AdminBlogManagementTab() {
   const [articles, setArticles] = useState<ArticleSummary[]>(DEFAULT_ARTICLES);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'DRAFT'>('ALL');
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [previewArticle, setPreviewArticle] = useState<ArticleSummary | null>(null);
   const [deleteConfirmArticle, setDeleteConfirmArticle] = useState<ArticleSummary | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);

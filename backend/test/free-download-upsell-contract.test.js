@@ -348,6 +348,7 @@ test('12. Payment Amount Integrity: Client manipulation of discount or price is 
     ['SAVE20', { code: 'SAVE20', discount: 20, active: true }],
   ]);
 
+  // eslint-disable-next-line no-unused-vars -- clientSuppliedPrice is destructured to document that the server-side calculation receives and deliberately IGNORES it; that indifference is the contract under test.
   function calculateServerPayableAmount({ planId, couponCode, clientSuppliedPrice, clientSuppliedDiscount }) {
     const plan = serverPlans[planId];
     if (!plan) throw new Error('INVALID_PLAN');

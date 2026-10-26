@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Sparkles, Zap, ArrowUpRight, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Sparkles, Zap, ArrowUpRight, Clock } from 'lucide-react';
 import { fetchAiUsage, type AiUsageData } from '@/lib/ai-content';
 import { cn } from '@/lib/utils';
 

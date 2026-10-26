@@ -23,7 +23,7 @@ import { resolvePublicResumeEndpoint } from '@/lib/share-publication';
 import { normalizeResumeToDocument, type ResumeDocumentModel } from '@/lib/resume-view-model';
 import { getTemplateMeta, type TemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
-import { ChevronLeft, Copy, Check, Printer, Download, Share2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Check, Printer, Download, Share2, AlertTriangle } from 'lucide-react';
 
 interface WatermarkConfig {
   enableFreeWatermark?: boolean;

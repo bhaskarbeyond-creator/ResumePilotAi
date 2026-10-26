@@ -23,9 +23,6 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
-  Sparkles,
-  FileText,
-  Mail,
   MapPin,
   DollarSign,
   Building2,
@@ -40,7 +37,6 @@ import {
   Send,
   Settings,
   ArrowRight,
-  Sliders,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

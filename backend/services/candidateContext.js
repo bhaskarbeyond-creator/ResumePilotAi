@@ -386,7 +386,9 @@ function buildEvidencePayload(operation, rawPayload = {}) {
                 ? payload.workExperiences
                 : (Array.isArray(payload.workExperience) && payload.workExperience.length
                     ? payload.workExperience
-                    : (payload.workHistory ? [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }] : []))));
+                    : (Array.isArray(payload.recentRoles) && payload.recentRoles.length
+                        ? payload.recentRoles.map((role, i) => ({ title: String(role || '').trim(), employer: String((Array.isArray(payload.companies) ? payload.companies[i] : '') || '').trim(), begin: '', end: '', description: '' }))
+                        : (payload.workHistory ? [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }] : [])))));
 
     // Extract education polymorphically
     const candidateEdus = (Array.isArray(facts.education) && facts.education.length)
@@ -395,7 +397,9 @@ function buildEvidencePayload(operation, rawPayload = {}) {
             ? payload.educations
             : (Array.isArray(payload.education) && payload.education.length
                 ? payload.education
-                : (payload.education ? [{ degree: typeof payload.education === 'string' ? payload.education : '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }] : [])));
+                : (Array.isArray(payload.educationFields) && payload.educationFields.length
+                    ? payload.educationFields.map((field) => ({ degree: '', school: '', fieldOfStudy: String(field || '').trim(), started: '', finished: '', description: '' }))
+                    : (payload.education ? [{ degree: typeof payload.education === 'string' ? payload.education : '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }] : []))));
 
     // Calculate accurate, non-overlapping calendar experience
     const detailedTenure = calculateDetailedExperience(candidateRoles);
@@ -420,7 +424,8 @@ function buildEvidencePayload(operation, rawPayload = {}) {
         ? facts.certifications
         : (Array.isArray(payload.certifications) ? payload.certifications
             : (Array.isArray(payload.certificates) ? payload.certificates
-                : (payload.certifications ? [payload.certifications] : [])));
+                : (Array.isArray(payload.existingCertifications) ? payload.existingCertifications
+                    : (payload.certifications ? [payload.certifications] : []))));
 
     const candidateProjects = (Array.isArray(facts.projects) && facts.projects.length)
         ? facts.projects

@@ -14,7 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
-const { generateWithProviders, loadProviderConfiguration } = require('./services/aiRuntime');
+const { generateWithProviders, getSharedAiRouter } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
@@ -2695,9 +2695,13 @@ function safeTokenEquals(expected, received) {
  * Authenticate a `/v1/*` caller.
  *
  * Accepts either a platform API key (FREELMAPI_API_KEYS, comma-separated) or a
- * Firebase ID token (already verified by `optionalAuth`). When NO platform keys
- * are configured and the process is not production, anonymous access is allowed
- * so a local XAMPP checkout works out of the box.
+ * Firebase ID token (already verified by `optionalAuth`).
+ *
+ * F-01 (P0): anonymous access is NEVER allowed in production, and in
+ * non-production ONLY when the operator sets the explicit dev flag
+ * `ALLOW_ANON_V1=true` AND no platform keys are configured. A deployed
+ * non-production instance with a public IP is therefore closed by default;
+ * the flag exists for a local XAMPP/sandbox checkout with no keys at all.
  */
 function resolveV1Principal(req) {
     const header = String(req.get('authorization') || '');
@@ -2707,16 +2711,22 @@ function resolveV1Principal(req) {
 
     if (token) {
         if (configuredKeys.some(key => safeTokenEquals(key, token)) || (token === 'free-ime365-unified-key' && process.env.NODE_ENV !== 'production')) {
-            return { ok: true, kind: 'platform-key' };
+            // F-02: fingerprint (never the raw key) identifies the platform-key
+            // principal for cache isolation — distinct keys never share entries.
+            return {
+                ok: true,
+                kind: 'platform-key',
+                principalId: `pk:${crypto.createHash('sha256').update(token).digest('hex').slice(0, 16)}`,
+            };
         }
         if (req.user?.uid) {
-            return { ok: true, kind: 'user', uid: req.user.uid };
+            return { ok: true, kind: 'user', uid: req.user.uid, principalId: `user:${req.user.uid}` };
         }
         return { ok: false, status: 401, code: 'invalid_api_key', message: 'Invalid API key or Firebase token.' };
     }
 
-    if (configuredKeys.length === 0 && process.env.NODE_ENV !== 'production') {
-        return { ok: true, kind: 'anonymous-local' };
+    if (configuredKeys.length === 0 && process.env.NODE_ENV !== 'production' && process.env.ALLOW_ANON_V1 === 'true') {
+        return { ok: true, kind: 'anonymous-local', principalId: 'anonymous-local' };
     }
     return { ok: false, status: 401, code: 'missing_api_key', message: 'Provide a Bearer token (platform API key or Firebase ID token).' };
 }
@@ -2725,6 +2735,36 @@ function sendV1AuthError(res, principal) {
     return res.status(principal.status).json({
         error: { message: principal.message, type: 'invalid_request_error', code: principal.code, param: null },
     });
+}
+
+// F-20: public error text for the OpenAI/Anthropic-compatible wires. Engine
+// error messages embed internal detail — provider ids in bracket prefixes,
+// upstream response text ("[openai] server error from alpha (HTTP 500)"),
+// pin diagnostics ("Pinned AI provider ... unavailable") — which audit probe
+// A.5 showed verbatim in client responses. Clients get a stable public
+// message; the machine-readable code, status and Retry-After stay, and the
+// detailed string survives only in server logs and the in-process engine
+// result (fallbacksAttempted) that admin surfaces consume.
+const INTERNAL_DETAIL_PATTERN = /^\[[^\]]+\]|server error from|rate limited by|HTTP \d{3}|All pooled keys|Pinned AI provider|ECONNREFUSED|ENOTFOUND|fetch failed|socket hang up|timed? ?out/i;
+function publicUpstreamMessage(err) {
+    const status = Number(err?.status) || 502;
+    const message = String(err?.message || '');
+    if (status >= 500 || INTERNAL_DETAIL_PATTERN.test(message)) return 'Upstream provider error';
+    return message;
+}
+function logUpstreamErrorDetail(scope, err) {
+    // The detailed message is for operators: log it where it does not ride
+    // back to the client.
+    console.warn(`[v1:${scope}] upstream error detail: code=${err?.code || 'n/a'} status=${err?.status || 'n/a'} message=${err?.message || 'n/a'}`);
+}
+
+// F-20: fallback entries keep their machine-readable fields
+// (provider/model/code/status) but the free-text upstream error stays
+// admin-only — clients get the public message.
+function publicFallbackEntries(fallbacksAttempted) {
+    return (fallbacksAttempted || []).map(entry => (entry && entry.error
+        ? { ...entry, error: 'Upstream provider error' }
+        : entry));
 }
 
 function openAiErrorBody(err) {
@@ -2737,7 +2777,7 @@ function openAiErrorBody(err) {
         status,
         body: {
             error: {
-                message: err?.message || 'FreeLLMAPI provider error',
+                message: publicUpstreamMessage(err) || 'Upstream provider error',
                 type,
                 code: err?.code || 'ALL_PROVIDERS_FAILED',
                 param: null,
@@ -2756,7 +2796,8 @@ function anthropicErrorBody(err) {
         status,
         body: {
             type: 'error',
-            error: { type, message: err?.message || 'FreeLLMAPI provider error' },
+            // F-20: same public-message boundary as the OpenAI wire.
+            error: { type, message: publicUpstreamMessage(err) || 'Upstream provider error' },
         },
     };
 }
@@ -2782,9 +2823,49 @@ function openAiUsage(usage, messages, content) {
     };
 }
 
+// ─── F-01 (P0): /v1/* admission control ──────────────────────────────────────
+// `/v1/*` is the SAME paid inference surface as `/api/ai*`. Before this fix it
+// sat outside every admission control: no burst limiter, no governance
+// resolver, no daily quota, and no usage metering — any signed-in user (or, in
+// non-production, any anonymous caller) could drive unmetered inference.
+//
+// The mount below puts every `/v1` and `/api/v1` request through:
+//   1. `optionalAuth`            — resolve a Firebase identity when present.
+//   2. `resolveV1Principal`      — 401 unless platform key, verified user, or
+//                                  the explicitly-flagged local dev anonymous.
+//   3. Inference routes (chat/completions, messages, search) additionally run
+//      the EXACT chain used by `/api/ai*`:
+//        user principal     → aiAccountLimiter → aiGovernanceMiddleware →
+//                             enforceDailyAiQuota (durable `ai_usage` ledger;
+//                             requests are charged before provider invocation,
+//                             exactly like `/api/ai*`)
+//        platform key       → aiAccountLimiter (burst budget keyed by caller
+//                             IP; governance/quota are entitlement concepts
+//                             that require a user principal — the platform key
+//                             IS the operator credential). Every completion is
+//                             additionally recorded in the durable engine
+//                             request log by the router's metrics layer.
+//   4. Catalog routes (/v1/models, /v1/status) run the burst limiter only;
+//      charging a daily AI quota for a catalog read would be a false claim
+//      (same reasoning as the GET carve-out on /api/live-interview).
+const V1_INFERENCE_SUBPATHS = new Set(['/chat/completions', '/messages', '/search']);
+
+async function v1AdmissionControl(req, res, next) {
+    const principal = req.v1Principal || resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+    req.v1Principal = principal;
+    const isInference = V1_INFERENCE_SUBPATHS.has(req.path);
+    if (isInference && principal.kind === 'user') {
+        return aiAccountLimiter(req, res, () => aiGovernanceMiddleware()(req, res, () => enforceDailyAiQuota(req, res, next)));
+    }
+    return aiAccountLimiter(req, res, next);
+}
+
+app.use(['/v1', '/api/v1'], optionalAuth, v1AdmissionControl);
+
 // ─── POST /v1/chat/completions — OpenAI SDK / Cursor / Cline / Roo / Aider ───
-app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/chat/completions', '/api/v1/chat/completions'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};
@@ -2808,6 +2889,9 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
         model: requestedModel,
         messages: body.messages,
         platformConfig: configuration,
+        // F-02: bind the engine prompt cache to the calling principal so one
+        // key's cached completion can never be replayed to another principal.
+        cacheScope: principal.principalId || null,
         temperature: typeof body.temperature === 'number' ? body.temperature : configuration.temperature,
         maxTokens: Number(body.max_tokens || body.max_completion_tokens || configuration.maxTokens) || 2048,
         jsonMode: body.response_format?.type === 'json_object',
@@ -2923,11 +3007,14 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
             return res.end();
         } catch (error) {
             if (!res.headersSent) {
+                logUpstreamErrorDetail('openai-stream', error);
                 const { status, body: errorBody } = openAiErrorBody(error);
                 return res.status(status).json(errorBody);
             }
+            logUpstreamErrorDetail('openai-stream', error);
             res.write(`data: ${JSON.stringify({
-                error: { message: error.message || 'Stream failure', type: 'api_error', code: error.code || 'STREAM_ERROR' },
+                // F-20: the SSE wire gets the public message too.
+                error: { message: publicUpstreamMessage(error) || 'Stream failure', type: 'api_error', code: error.code || 'STREAM_ERROR' },
             })}\n\n`);
             res.write('data: [DONE]\n\n');
             return res.end();
@@ -2961,18 +3048,24 @@ app.post(['/v1/chat/completions', '/api/v1/chat/completions'], optionalAuth, asy
                 latency_ms: result.latencyMs,
                 cached: Boolean(result.cached),
                 compression: result.compression || null,
-                fallbacks: result.fallbacksAttempted || [],
+                fallbacks: publicFallbackEntries(result.fallbacksAttempted),
             },
         });
     } catch (error) {
+        logUpstreamErrorDetail('openai-chat', error);
         const { status, body: errorBody } = openAiErrorBody(error);
+        // F-03: a strict-pin outage is reported as 503 provider_unavailable;
+        // surface the engine's backoff hint on the OpenAI wire too.
+        if (Number(error?.retryAfterSeconds) > 0 && !res.headersSent) {
+            res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfterSeconds))));
+        }
         return res.status(status).json(errorBody);
     }
 });
 
 // ─── POST /v1/messages — Anthropic SDK / Claude Code CLI ───
-app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/messages', '/api/v1/messages'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};
@@ -2999,7 +3092,7 @@ app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) =>
         if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
         try {
-            const stream = freellm.streamAnthropicMessages(body, { platformConfig: configuration });
+            const stream = freellm.streamAnthropicMessages(body, { platformConfig: configuration, cacheScope: principal.principalId || null });
             for await (const event of stream) {
                 // `_meta` carries provider/latency telemetry for logs; the
                 // Anthropic wire only receives real protocol events.
@@ -3009,30 +3102,39 @@ app.post(['/v1/messages', '/api/v1/messages'], optionalAuth, async (req, res) =>
             return res.end();
         } catch (error) {
             if (!res.headersSent) {
+                logUpstreamErrorDetail('anthropic-stream', error);
                 const { status, body: errorBody } = anthropicErrorBody(error);
                 return res.status(status).json(errorBody);
             }
+            logUpstreamErrorDetail('anthropic-stream', error);
             res.write(`event: error\ndata: ${JSON.stringify({
                 type: 'error',
-                error: { type: 'api_error', message: error.message || 'Stream failure' },
+                // F-20: the SSE wire gets the public message too.
+                error: { type: 'api_error', message: publicUpstreamMessage(error) || 'Stream failure' },
             })}\n\n`);
             return res.end();
         }
     }
 
     try {
-        const result = await freellm.handleAnthropicMessages(body, { platformConfig: configuration });
+        // F-02: principal-bound cache scope (see resolveV1Principal).
+        const result = await freellm.handleAnthropicMessages(body, { platformConfig: configuration, cacheScope: principal.principalId || null });
         res.setHeader('Cache-Control', 'no-store');
         return res.json(result);
     } catch (error) {
+        logUpstreamErrorDetail('anthropic-messages', error);
         const { status, body: errorBody } = anthropicErrorBody(error);
+        // F-03: pinned-provider outage backoff hint (see /v1/chat/completions).
+        if (Number(error?.retryAfterSeconds) > 0 && !res.headersSent) {
+            res.setHeader('Retry-After', String(Math.ceil(Number(error.retryAfterSeconds))));
+        }
         return res.status(status).json(errorBody);
     }
 });
 
 // ─── POST /v1/search — agent web search / extraction tools ───
-app.post(['/v1/search', '/api/v1/search'], optionalAuth, async (req, res) => {
-    const principal = resolveV1Principal(req);
+app.post(['/v1/search', '/api/v1/search'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
     if (!principal.ok) return sendV1AuthError(res, principal);
 
     const body = req.body || {};
@@ -3114,7 +3216,49 @@ app.get('/v1/models', async (_req, res) => {
     }
 });
 
-app.get(['/v1/status', '/api/freellmapi/status'], async (_req, res) => {
+// F-10: /v1/status was an unauthenticated internals dump (engine version,
+// request/failure counts, cache size, active cooldowns, SQLite path). It is
+// now an OPERATOR surface: platform API key or super-admin session only, and
+// it answers with a reduced payload ({status, version, providers:
+// {configured, enabled}}). The full engine view stays on the authenticated
+// super-admin surfaces (/api/freellmapi/status below and
+// /api/freellmapi/metrics), which the admin console consumes.
+app.get(['/v1/status', '/api/v1/status'], async (req, res) => {
+    const principal = req.v1Principal || resolveV1Principal(req);
+    if (!principal.ok) return sendV1AuthError(res, principal);
+    const isOperator = principal.kind === 'platform-key'
+        || (principal.kind === 'user' && isSuperAdmin(req.user));
+    if (!isOperator) {
+        return res.status(403).json({
+            error: {
+                message: 'Engine status is an operator surface: use a platform API key or a super-admin session.',
+                type: 'invalid_request_error',
+                code: 'status_forbidden',
+                param: null,
+            },
+        });
+    }
+    const version = freellm.getEngineStatus().version;
+    let providers = { configured: 0, enabled: 0 };
+    let status = 'ok';
+    try {
+        const configuration = await loadFreeLlmPlatformConfig({ environment: process.env });
+        const entries = Object.values(configuration?.providers || {});
+        const hasCredential = entry => Boolean(String(entry?.key || '').trim()) || entry?.keyless === true;
+        providers = {
+            configured: entries.filter(hasCredential).length,
+            enabled: entries.filter(entry => entry?.enabled === true && hasCredential(entry)).length,
+        };
+    } catch {
+        // Honest degradation: never report fabricated provider counts.
+        status = 'degraded';
+    }
+    return res.json({ success: true, status, version, providers });
+});
+
+// Full engine status for the authenticated super-admin console (F-10: split
+// out of the public /v1/status mount; payload unchanged for admin consumers).
+app.get('/api/freellmapi/status', requireSuperAdmin, async (_req, res) => {
     return res.json({ success: true, ...freellm.getEngineStatus() });
 });
 
@@ -3846,6 +3990,9 @@ app.post('/api/admin/ai-settings', requireSuperAdmin, async (req, res) => {
         });
         return res.json({ success: true, ...result, message: 'AI settings saved securely.' });
     } catch (error) {
+        // F-29: the service now throws REVISION_CONFLICT (single spelling,
+        // aligned with the frozen design docs); the legacy AI_SETTINGS_CONFLICT
+        // spelling stays accepted here through the transition.
         const isRevisionConflict = error.code === 'AI_SETTINGS_CONFLICT' || error.code === 'REVISION_CONFLICT';
         return res.status(error.status || 400).json({
             success: false,
@@ -3972,6 +4119,98 @@ app.post('/api/admin/ai/reset-quota', requireRecentQuotaAdminAuth, async (req, r
             success: false,
             code: error.code || 'AI_QUOTA_STORAGE_UNAVAILABLE',
             error: error.status && error.status < 500 ? error.message : 'Unable to reset AI quota.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
+// F-13: operator reset path for the live engine's in-memory state.
+// resetCooldowns()/clearCache() existed since day one but NO route called
+// them: during an incident an operator had to wait out cooldowns (up to
+// 300s) or restart the process to flush a poisoned cached answer. Mounted
+// under /api/admin so the admin-audit middleware records the mutation
+// automatically (actor, body, outcome) — the audit event the fix mandates.
+// Durable metrics are deliberately NOT resettable here: they are routing
+// evidence, not incident state.
+app.post('/api/admin/ai/reset-state', requireSuperAdmin, async (req, res) => {
+    try {
+        const body = req.body || {};
+        const isFlag = value => value === undefined || typeof value === 'boolean';
+        if (!isFlag(body.cooldowns) || !isFlag(body.cache)) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_RESET_STATE_FLAGS',
+                error: 'cooldowns and cache must be booleans when provided.',
+                requestId: res.locals.requestId,
+            });
+        }
+        const doCooldowns = body.cooldowns !== false;
+        const doCache = body.cache !== false;
+        if (!doCooldowns && !doCache) {
+            return res.status(400).json({
+                success: false,
+                code: 'RESET_STATE_NOTHING_TO_DO',
+                error: 'At least one of cooldowns or cache must be reset.',
+                requestId: res.locals.requestId,
+            });
+        }
+        const result = { success: true, cooldowns: null, cache: null };
+        if (doCooldowns) {
+            result.cooldowns = freellm.resetCooldowns();
+        }
+        if (doCache) {
+            const entriesBefore = freellm.getEngineStatus().cacheEntries ?? 0;
+            const cleared = freellm.clearCache();
+            result.cache = { ...cleared, entriesCleared: entriesBefore };
+        }
+        result.message = `Engine state reset completed (cooldowns=${doCooldowns}, cache=${doCache}).`;
+        return res.json(result);
+    } catch (error) {
+        return res.status(error.status && error.status < 500 ? error.status : 503).json({
+            success: false,
+            code: error.code || 'ENGINE_RESET_FAILED',
+            error: error.status && error.status < 500 ? error.message : 'Unable to reset engine state.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
+// F-22: routing state is observable. RoutingTelemetry (a 500-entry,
+// tenant-keyed ring redacted at record time — prompts and credentials never
+// enter it) and HealthStore.tenantSnapshot previously had no HTTP surface;
+// the live engine could only be inspected through SQLite aggregates. This
+// super-admin read exposes the last N routing decisions plus per-provider/
+// model health for ONE scope: ?tenantId=… for a tenant, omitted for the
+// platform scope. Tenant scoping is enforced by the ring itself — a query
+// never returns another scope's entries.
+app.get('/api/admin/ai/routing-telemetry', requireSuperAdmin, (req, res) => {
+    try {
+        const router = getSharedAiRouter();
+        const rawTenantId = req.query.tenantId;
+        const tenantId = typeof rawTenantId === 'string' && rawTenantId.trim()
+            ? rawTenantId.trim().slice(0, 128)
+            : null;
+        const limit = Math.min(Math.max(1, Number.parseInt(req.query.limit, 10) || 100), 500);
+        const sinceMs = Math.max(0, Number.parseInt(req.query.sinceMs, 10) || 0);
+        const telemetry = router.telemetry
+            ? {
+                entries: router.telemetry.query({ tenantId, limit, sinceMs }),
+                stats: router.telemetry.stats({ tenantId }),
+            }
+            : null;
+        const health = router.health ? router.health.tenantSnapshot(tenantId) : null;
+        return res.json({
+            success: true,
+            scope: tenantId || 'platform',
+            telemetry,
+            health,
+            requestId: res.locals.requestId,
+        });
+    } catch (error) {
+        return res.status(error.status && error.status < 500 ? error.status : 500).json({
+            success: false,
+            code: error.code || 'ROUTING_TELEMETRY_READ_FAILED',
+            error: 'Unable to read routing telemetry.',
             requestId: res.locals.requestId,
         });
     }
@@ -7325,5 +7564,10 @@ app.use((error, req, res, _next) => {
 
 module.exports = app;
 module.exports.publishDueBlogPosts = publishDueBlogPosts;
+// F-20: exported for the wire-sanitisation spec (test surface only).
+module.exports.publicUpstreamMessage = publicUpstreamMessage;
+module.exports.openAiErrorBody = openAiErrorBody;
+module.exports.anthropicErrorBody = anthropicErrorBody;
+module.exports.publicFallbackEntries = publicFallbackEntries;
 
 

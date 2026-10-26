@@ -3,6 +3,12 @@
 // Keep the suite hermetic: the durable metrics store must not write inside the
 // repository during tests. Production uses data/freellm_metrics.db.
 process.env.FREELMAPI_METRICS_DB = process.env.FREELMAPI_METRICS_DB || ':memory:';
+// F-01: anonymous /v1 access is closed by default and requires this explicit
+// dev flag. The wire-parity tests below exercise engine behaviour (SSE, tool
+// rescue, failover), not authentication posture; they opt into the documented
+// local-dev anonymous principal. The closed default is pinned separately in
+// test/v1-admission-control.test.js.
+process.env.ALLOW_ANON_V1 = 'true';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -64,7 +70,7 @@ test('FreeLLMAPI: Fallback cascade switches to second provider when first fails 
   freellm.clearCache();
 
   // Mock fetch implementation: Groq returns 429, Cerebras succeeds
-  const mockFetch = async (url, options) => {
+  const mockFetch = async (url, _options) => {
     if (url.includes('groq.com')) {
       return {
         ok: false,
@@ -257,7 +263,7 @@ test('FreeLLMAPI: Autonomous self-healing maintenance starts and stops cleanly',
   assert.ok(true);
 });
 
-test('FreeLLMAPI: Express app mounts /v1/models and /api/freellmapi/status', async () => {
+test('FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status', async () => {
   const request = require('supertest');
   const app = require('../index');
   const resModels = await request(app).get('/v1/models');
@@ -265,10 +271,27 @@ test('FreeLLMAPI: Express app mounts /v1/models and /api/freellmapi/status', asy
   assert.equal(resModels.body.object, 'list');
   assert.ok(resModels.body.data.length >= 8);
 
-  const resStatus = await request(app).get('/v1/status');
-  assert.equal(resStatus.status, 200);
-  assert.equal(resStatus.body.success, true);
-  assert.ok(resStatus.body.totalProvidersCount >= 50);
+  // F-10: /v1/status was an unauthenticated internals dump (the previous
+  // assertion `totalProvidersCount >= 50` pinned exactly the vulnerability the
+  // audit flagged). It is now an operator surface (platform key / super admin)
+  // with a reduced payload; the anonymous-local dev principal is rejected.
+  const anonStatus = await request(app).get('/v1/status');
+  assert.equal(anonStatus.status, 403);
+  assert.equal(anonStatus.body.error.code, 'status_forbidden');
+
+  process.env.FREELMAPI_API_KEYS = 'ime365-platform-key';
+  try {
+    const resStatus = await request(app).get('/v1/status').set('Authorization', 'Bearer ime365-platform-key');
+    assert.equal(resStatus.status, 200);
+    assert.equal(resStatus.body.success, true);
+    assert.equal(typeof resStatus.body.version, 'string');
+    assert.equal(typeof resStatus.body.providers?.configured, 'number');
+    assert.ok(!('totalProvidersCount' in resStatus.body), 'reduced payload carries no engine internals');
+    assert.ok(!('activeCooldowns' in resStatus.body));
+    assert.ok(!('persistence' in resStatus.body));
+  } finally {
+    delete process.env.FREELMAPI_API_KEYS;
+  }
 });
 
 

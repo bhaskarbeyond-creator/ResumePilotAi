@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   FaMagic, FaCheckCircle, FaRobot, FaSearch, FaShieldAlt, FaBolt, 
   FaArrowRight, FaFileAlt, FaCheck, FaLayerGroup, FaFilePdf, FaFileWord, FaLightbulb, FaBriefcase

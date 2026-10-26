@@ -483,7 +483,6 @@ export default function LiveInterviewSession({ session, media, onSessionChange, 
     const retryCountRef = useRef(0);
     const sentRef = useRef(null);
     const abortRef = useRef(null);
-    const promptRef = useRef(null);
     const latestAnswerRef = useRef(answer);
 
     useEffect(() => {
@@ -853,8 +852,6 @@ export default function LiveInterviewSession({ session, media, onSessionChange, 
     }, [cancelSpeech, media, onDiscard, session?.sessionId]);
 
     if (!session) return null;
-
-    const fullQuestionText = [interviewer.message, interviewer.question].filter(Boolean).join(' ');
 
     return (
         <main className="w-full h-full max-h-screen flex flex-col overflow-hidden px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 bg-slate-50">

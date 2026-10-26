@@ -2,6 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const { answerGuideInput, buildAnswerGuidePrompt, validateAnswerGuide } = require('../services/answerGuideAi');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
+// F-18: static list-price table for honest usage-cost accounting.
+const { computeCostMicros } = require('../freellmapi/providers/pricing');
 const {
     SENIORITY_BANDS,
     DIFFICULTY_SEMANTICS,
@@ -15,7 +17,7 @@ const {
 } = require('../services/interviewCalibration');
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
-const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
+const { applyTenantAiPolicy, consumeTenantAiQuota, loadTenantByokKeys } = require('../enterprise/tenantAi');
 const router = express.Router();
 
 /**
@@ -154,8 +156,16 @@ async function resolveEffectiveAiConfiguration(req, res) {
         || (req?.aiGovernance && !req?.aiGovernance?.tenant);
 
     if (!requestedTenantId || isPersonalScope) {
+        const configuration = await baseConfigPromise;
+        // F-02: stamp the authenticated principal on the personal-scope
+        // configuration so the engine prompt cache is bound per user
+        // (tenant-scoped configurations get principalId from
+        // applyTenantAiPolicy). `loadProviderConfiguration()` returns a fresh
+        // clone per call, so mutating here is request-local. Null means the
+        // route ran unauthenticated — no cross-user cache binding possible.
+        configuration.principalId = req?.user?.uid || null;
         return {
-            configuration: await baseConfigPromise,
+            configuration,
             tenantContext: null,
             tenant: null,
             tenantService: null,
@@ -208,28 +218,30 @@ async function resolveEffectiveAiConfiguration(req, res) {
         throw error;
     }
 
-    // Check tenant quota if configured and quota guard is available
-    const quota = resolved.tenant?.configuration?.quotaPolicy || {};
-    if (typeof tenantService.consumeTenantQuota === 'function' && tenantService.quotaGuard) {
-        await tenantService.consumeTenantQuota({
-            context: resolved.context,
-            metric: 'ai-minute',
-            limit: Number(quota.aiRequestsPerMinute || 60),
-            windowMs: 60_000,
-        });
-        await tenantService.consumeTenantQuota({
-            context: resolved.context,
-            metric: 'ai-day',
-            limit: Number(quota.aiRequestsPerDay || 1000),
-            windowMs: 24 * 60 * 60_000,
-        });
-    }
+    // F-27: unconditional tenant AI quota through the shared resolver — one
+    // documented default set (60/min, 1000/day), explicit 0 blocks (429), and
+    // a service without quota coordination fails closed (503) instead of the
+    // former `if (quotaGuard)` silent skip.
+    await consumeTenantAiQuota({
+        service: tenantService,
+        context: resolved.context,
+        quotaPolicy: resolved.tenant?.configuration?.quotaPolicy,
+    });
 
     const baseConfig = await baseConfigPromise; // resolved during tenant checks above
+    const tenantAiPolicy = resolved.tenant?.aiPolicy || {};
+    // F-08: read tenant BYOK keys from the encrypted credential store and merge
+    // them into the policy before applying it — resolution order is
+    // tenant BYOK -> platform admin config -> environment default.
+    const storedByokKeys = await loadTenantByokKeys({
+        registry: tenantService.registry,
+        tenantId: resolved.context?.tenantId,
+        allowedProviders: tenantAiPolicy.allowedProviders,
+    });
     const effectiveConfig = applyTenantAiPolicy(
         baseConfig,
         resolved.context,
-        resolved.tenant?.aiPolicy || {}
+        { ...tenantAiPolicy, customProviderKeys: { ...storedByokKeys, ...(tenantAiPolicy.customProviderKeys || {}) } }
     );
 
     return {
@@ -252,15 +264,23 @@ async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, ge
     if (!tenantResolution?.tenantContext || !tenantResolution?.tenantService) return;
     try {
         if (typeof tenantResolution.tenantService.recordAiUsage === 'function') {
+            const inputTokens = Number(generated?.usage?.promptTokens ?? generated?.usage?.inputTokens) || 0;
+            const outputTokens = Number(generated?.usage?.completionTokens ?? generated?.usage?.outputTokens) || 0;
+            // F-18: real cost from the static list-price table (USD micros per
+            // 1K tokens). Unknown-priced models compute to null — never a
+            // fabricated price; the enterprise ledger's NOT NULL costMicros
+            // column coerces that null to 0 at persist time (pre-existing
+            // schema contract, no migration in this finding's scope).
+            const estimatedCostMicros = computeCostMicros(generated.model, inputTokens, outputTokens);
             await tenantResolution.tenantService.recordAiUsage({
                 context: tenantResolution.tenantContext,
                 input: {
                     provider: generated.provider,
                     model: generated.model,
                     operation,
-                    inputTokens: Number(generated?.usage?.promptTokens ?? generated?.usage?.inputTokens) || 0,
-                    outputTokens: Number(generated?.usage?.completionTokens ?? generated?.usage?.outputTokens) || 0,
-                    estimatedCostMicros: 0,
+                    inputTokens,
+                    outputTokens,
+                    estimatedCostMicros,
                 },
             });
         }

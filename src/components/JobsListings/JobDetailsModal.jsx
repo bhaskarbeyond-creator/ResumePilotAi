@@ -406,4 +406,6 @@ const JobDetailsModal = ({
     );
 };
 
-export default withTranslation('common')(JobDetailsModal);
+const TranslatedJobDetailsModal = withTranslation('common')(JobDetailsModal);
+
+export default TranslatedJobDetailsModal;

@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
     MdCheckCircle,
     MdWarning,
@@ -29,7 +28,6 @@ function hasText(value) {
 export default function ReviewStep({
     resumeData = {},
     templateName = '',
-    saveState,
     updateResumeData,
     onNavigate,
     onChooseTemplate,
@@ -37,7 +35,6 @@ export default function ReviewStep({
     onDownload,
     isDownloading = false
 }) {
-    const { t } = useTranslation('common');
     const [targetJd, setTargetJd] = useState(resumeData.targetJobDescription || '');
     const [isJdInputOpen, setIsJdInputOpen] = useState(false);
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
@@ -137,7 +134,6 @@ export default function ReviewStep({
 
     const missingPersonalFields = personalFields.filter((field) => !hasText(resumeData?.[field]));
     const requiredReady = missingPersonalFields.length === 0;
-    const saved = saveState?.status === 'saved';
 
     const getScoreTheme = (score) => {
         if (score >= 80) return { text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-800', solid: 'bg-emerald-600' };

@@ -86,7 +86,7 @@ const CopilotHeroHud = ({ insight = '', onNavigate, displayName = 'Candidate', c
                 {/* DIR-092b: the primary Create Resume CTA is a SINGLE button on user request —
                     the chevron dropdown was removed. It still routes to the real builder entry
                     point and keeps its cuba-copilot-cta-<id> testid. */}
-                {QUICK_ACTIONS.map(({ id, label, to, icon: Icon, variant }) => (
+                {QUICK_ACTIONS.map(({ id, label, to, variant }) => (
                     <a
                         key={id}
                         href={to}

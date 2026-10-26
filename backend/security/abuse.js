@@ -3,17 +3,26 @@ const crypto = require('crypto');
 const { resolveAiGovernance, QUOTA_SOURCE } = require('./aiGovernance');
 
 let injectedCounterStore = null;
+// F-01a: the lazily-created PRODUCTION store must not share the test-injection
+// slot. `enforceDailyAiQuota` branches on `injectedCounterStore` to select its
+// test fast-path; when the lazy limiter store assigned to the same variable,
+// the durable MariaDB governance ledger (`ai_usage`) was silently dead in every
+// process that had served a single rate-limited request — quotas degraded to a
+// flat `AI_BASIC_DAILY_LIMIT` bucket and the admin-managed `ai_quota` settings
+// were ignored. Two slots restore the documented contract.
+let sharedCounterStore = null;
 
 function counterStore() {
   if (injectedCounterStore) return injectedCounterStore;
+  if (sharedCounterStore) return sharedCounterStore;
   if (process.env.DEGRADED_MODE_REPOSITORY === 'inmemory' && process.env.NODE_ENV !== 'production') {
     const { InMemoryCounterStore } = require('./inMemoryCounterStore');
-    injectedCounterStore = new InMemoryCounterStore();
-    return injectedCounterStore;
+    sharedCounterStore = new InMemoryCounterStore();
+    return sharedCounterStore;
   }
   const { MySqlAtomicCounterStore } = require('../enterprise/mysqlAtomicCounterStore');
-  injectedCounterStore = new MySqlAtomicCounterStore({ pool: require('../database/mysql').getPool() });
-  return injectedCounterStore;
+  sharedCounterStore = new MySqlAtomicCounterStore({ pool: require('../database/mysql').getPool() });
+  return sharedCounterStore;
 }
 
 function configureAbuseCounterStoreForTests(store = null) {
@@ -21,6 +30,7 @@ function configureAbuseCounterStoreForTests(store = null) {
     throw new Error('Rate-limit store injection is forbidden in production');
   }
   injectedCounterStore = store;
+  sharedCounterStore = null;
 }
 
 function identityKey(req) {

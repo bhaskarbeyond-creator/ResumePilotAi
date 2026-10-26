@@ -342,6 +342,41 @@ test.describe('Resume Builder (account A)', () => {
     for (const skill of ['Playwright', 'Cypress', 'TypeScript']) expect(text, `the Word file lists ${skill}`).toContain(skill);
   });
 
+  test('skills suggestion uses generate-content; unavailable response displays truthful notice without claiming all recommended skills are present', async ({ page, apiAs, guard }) => {
+    guard.expectApiStatuses(502, 503);
+    const row = await seedResume(apiAs('a'), withHistory);
+    const aiRequests = recordRequests(page, '/api/generate-content');
+    await page.goto(`/build-resume/${row.id}/skills`);
+    await expect(page.getByRole('heading', { name: 'Skills', exact: true })).toBeVisible();
+    await expect(saveState(page)).toHaveText('Saved');
+
+    const pending = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/generate-content');
+    await page.getByRole('button', { name: 'Suggest with AI' }).first().click();
+    const response = await pending;
+
+    expect(aiRequests.length).toBeGreaterThan(0);
+    expect(aiRequests[0].postDataJSON()).toMatchObject({
+      operation: 'generate-skills',
+    });
+
+    const body = (await response.json().catch(() => ({}))) as { aiUnavailable?: boolean; skills?: Array<{ name: string }> };
+    const notice = page.getByTestId('skills-ai-notice');
+
+    if (response.status() >= 500 || body.aiUnavailable) {
+      test.info().annotations.push({
+        type: 'environment',
+        description: `No AI provider: HTTP ${response.status()}${body.aiUnavailable ? ', aiUnavailable=true' : ''}. Unavailable path exercised.`,
+      });
+      await expect(notice).toBeVisible();
+      await expect(notice).not.toHaveText('You already have all recommended skills in your resume!');
+    } else {
+      expect(response.status()).toBe(200);
+      if (body.skills && body.skills.length > 0) {
+        await expect(page.getByText(/Recommended Skills for/)).toBeVisible();
+      }
+    }
+  });
+
   test('entries without ids (older or imported rows) are edited and deleted one at a time; legacy field names load', async ({ page, apiAs }) => {
     const row = await seedResume(apiAs('a'), {
       ...withHistory,

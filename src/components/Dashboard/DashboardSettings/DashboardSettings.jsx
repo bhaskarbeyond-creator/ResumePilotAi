@@ -400,6 +400,7 @@ function DashboardSettings(_props) {
                 setProfileSubTab(matched);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'SUB_TAB_ORDER'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
     }, [location.search]);
 
     // DIR-074: honour a pending deep-link scroll once the Account pane has
@@ -453,7 +454,7 @@ function DashboardSettings(_props) {
     const [achievementTypeFilter, setAchievementTypeFilter] = useState('all');
     const [isPolishingAchIndex, setIsPolishingAchIndex] = useState(null);
 
-    const [accountSettings, setAccountSettings] = useState({
+    const [accountSettings] = useState({
         email: '',
         password: '',
     });

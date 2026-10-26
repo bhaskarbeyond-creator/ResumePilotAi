@@ -270,6 +270,46 @@ class InMemoryTenantRegistry {
     this.configurations = new Map();
     this.invitations = new Map();
     this.notificationOutbox = new Map();
+    // F-08: in-memory mirror of the encrypted enterprise_tenant_credentials
+    // store (same method contract as MysqlTenantRegistry, no encryption).
+    this.tenantCredentials = new Map();
+  }
+
+  async setTenantCredentials({ tenantId, providerId, credentials }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+    if (!providerId || !/^[a-z0-9_-]{2,40}$/.test(providerId)) {
+      throw Object.assign(new Error('Provider identifier is invalid'), { code: 'INVALID_PROVIDER_ID', status: 400 });
+    }
+    if (!credentials || typeof credentials !== 'object') {
+      throw Object.assign(new Error('Credentials must be an object'), { code: 'INVALID_CREDENTIALS', status: 400 });
+    }
+    this.tenantCredentials.set(`${tenantId}:${providerId}`, { credentials: { ...credentials }, keyVersion: 1, algorithm: 'in-memory' });
+    return { success: true, providerId, keyVersion: 1 };
+  }
+
+  async getTenantCredentials({ tenantId, providerId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+    const row = this.tenantCredentials.get(`${tenantId}:${providerId}`);
+    return row ? { ...row.credentials } : null;
+  }
+
+  async deleteTenantCredentials({ tenantId, providerId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    providerId = String(providerId || '').toLowerCase().trim();
+    const deleted = this.tenantCredentials.delete(`${tenantId}:${providerId}`);
+    return { success: true, providerId, deleted };
+  }
+
+  async listTenantCredentialProviders({ tenantId }) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const rows = [];
+    for (const [compositeKey, row] of this.tenantCredentials.entries()) {
+      if (!compositeKey.startsWith(`${tenantId}:`)) continue;
+      rows.push({ providerId: compositeKey.slice(tenantId.length + 1), keyVersion: row.keyVersion, algorithm: row.algorithm });
+    }
+    return rows.sort((a, b) => a.providerId.localeCompare(b.providerId));
   }
 
   async ensurePersonalTenant(principalId, profile = {}) {

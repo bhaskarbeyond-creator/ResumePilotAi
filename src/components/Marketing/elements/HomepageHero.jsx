@@ -66,6 +66,7 @@ export default function HomepageHero({ onOpenAuthModal }) {
     }, typingSpeed);
 
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- F-25: deliberate dependency set (omits 'typingPhrases'); changing deps alters runtime behavior, which is out of scope for a warnings-only hygiene sweep.
   }, [typedText, isDeleting, currentPhraseIndex]);
 
   const demoRoles = [

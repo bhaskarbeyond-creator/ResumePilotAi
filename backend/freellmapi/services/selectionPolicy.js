@@ -1,6 +1,12 @@
 'use strict';
-// No benchmark/name/parameter-count quality assumptions. Unknown capability evidence fails closed.
+// No benchmark/name/parameter-count quality assumptions. Unknown capability
+// evidence fails closed. F-06: the ONE quality signal is the curated static
+// tier table in providers/registry.js (documented human judgement about model
+// classes — never inferred from names, sizes or marketing). Uncurated models
+// keep qualityEvidence 'unknown' and receive no tier bonus.
+const { getModelQualityTier } = require('../providers/registry');
 const MODES = Object.freeze(['auto', 'quality', 'speed', 'balanced', 'manual']);
+const QUALITY_TIER_SCORES = Object.freeze({ premium: 1, standard: 0.55, economy: 0.2 });
 function validateMode(mode) {
   if (!MODES.includes(mode)) throw Object.assign(new Error('Unsupported AI selection mode'), { code: 'AI_SELECTION_MODE_INVALID', status: 400 });
   return mode;
@@ -18,29 +24,136 @@ function eligible(model, requirements = {}) {
   if (requirements.contextTokens > 8192 && !model.contextWindow) return false;
   return true;
 }
-function rankCandidates(candidates, { mode, primary, observationFor = () => null, now = Date.now() }) {
+// F-07: recency-weighted median (p50) over success samples. Weights decay
+// exponentially (half-life 10 min) so the aggregate tracks the CURRENT
+// behaviour of a destination without letting one lucky/blip sample dominate.
+function weightedP50LatencyMs(samples, { now = Date.now(), halfLifeMs = 10 * 60_000 } = {}) {
+  const entries = (Array.isArray(samples) ? samples : [])
+    .filter(sample => Number.isFinite(Number(sample?.latencyMs)) && Number(sample.latencyMs) >= 0)
+    .map(sample => ({
+      latencyMs: Number(sample.latencyMs),
+      weight: Math.pow(0.5, Math.max(0, now - Number(sample?.createdAt || now)) / Math.max(1000, halfLifeMs)),
+    }))
+    .sort((a, b) => a.latencyMs - b.latencyMs);
+  if (entries.length === 0) return null;
+  const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  if (!(total > 0)) return null;
+  let accumulated = 0;
+  for (const entry of entries) {
+    accumulated += entry.weight;
+    if (accumulated >= total / 2) return Math.round(entry.latencyMs);
+  }
+  return Math.round(entries[entries.length - 1].latencyMs);
+}
+
+function rankCandidates(candidates, { mode, primary, observationFor = () => null, qualityTierFor = candidate => getModelQualityTier(candidate.model), now = Date.now() }) {
   validateMode(mode);
   const weights = mode === 'speed' ? { reliability: 20, speed: 60, fit: 0 }
     : mode === 'quality' ? { reliability: 30, speed: 0, fit: 30 }
-      : { reliability: 40, speed: 20, fit: 10 };
+    : { reliability: 40, speed: 20, fit: 10 };
   return candidates.map((candidate, index) => {
     const metadata = candidate.metadata || {};
     const observation = observationFor(candidate);
-    const age = now - Number(observation?.createdAt);
-    const fresh = observation && age >= 0 && age < 30 * 60_000;
-    const decay = fresh ? 1 - age / (30 * 60_000) : 0;
-    const success = observation?.ok && observation.status === 200;
-    const latency = Number(observation?.latencyMs);
+    // F-07: `observationFor` may return a WINDOWED AGGREGATE (has numeric `n`,
+    // from persistence.getRollingAggregates) or a legacy single row. With an
+    // aggregate, latency influences the score only at n >= 3 windowed
+    // observations (recency-weighted p50) and reliability uses the windowed
+    // success rate; the single LAST observation is used only as a
+    // circuit-breaker input (one fresh failure still demotes immediately).
+    const isAggregate = Boolean(observation) && Number.isFinite(Number(observation.n));
     const evidenceFit = Object.values(metadata.capabilities || {}).filter(value => value === true).length;
-    const speed = success && latency > 0 ? Math.max(0, 1 - latency / 10_000) : 0;
+    let decay = 0;
+    let reliabilityFactor = 0;
+    let speed = 0;
+    let observedLatencyMs = null;
+    let observationCount = 0;
+    if (isAggregate) {
+      const n = Math.max(0, Number(observation.n) || 0);
+      observationCount = n;
+      const age = now - Number(observation.lastAt);
+      const fresh = n > 0 && age >= 0 && age < 30 * 60_000;
+      decay = fresh ? 1 - age / (30 * 60_000) : 0;
+      if (n >= 3) {
+        reliabilityFactor = 2 * (Math.max(0, Number(observation.successes) || 0) / n) - 1;
+        const p50 = weightedP50LatencyMs(observation.successSamples || [], { now });
+        if (p50 !== null && p50 > 0) {
+          speed = Math.max(0, 1 - p50 / 10_000);
+          observedLatencyMs = p50;
+        }
+      } else if (fresh && observation.lastOk === false) {
+        reliabilityFactor = -1; // circuit breaker: a fresh failure demotes now
+      }
+    } else if (observation) {
+      // Legacy single-observation behaviour, preserved exactly.
+      const age = now - Number(observation.createdAt);
+      const fresh = age >= 0 && age < 30 * 60_000;
+      decay = fresh ? 1 - age / (30 * 60_000) : 0;
+      const success = observation.ok && observation.status === 200;
+      const latency = Number(observation.latencyMs);
+      reliabilityFactor = success ? 1 : -1;
+      speed = success && latency > 0 ? Math.max(0, 1 - latency / 10_000) : 0;
+      observationCount = fresh ? 1 : 0;
+      observedLatencyMs = fresh && success && latency > 0 ? latency : null;
+    }
+    // F-06: quality mode finally ranks on a real quality signal — the curated
+    // tier (premium > standard > economy). Uncurated models get NO bonus and
+    // stay 'unknown', so quality mode for them is exactly as conservative as
+    // before (primary preference + capability fit, no fabricated quality).
+    const qualityTier = mode === 'quality' ? qualityTierFor(candidate) : null;
+    const tierBonus = qualityTier && QUALITY_TIER_SCORES[qualityTier] !== undefined
+      ? QUALITY_TIER_SCORES[qualityTier] * 40
+      : 0;
     const score = (candidate.provider === primary ? 5 : 0) + Math.min(4, evidenceFit) * weights.fit / 4
-      + decay * ((success ? 1 : -1) * weights.reliability + speed * weights.speed);
+      + decay * (reliabilityFactor * weights.reliability + speed * weights.speed)
+      + tierBonus;
     return { ...candidate, routingDecision: {
-      mode, qualityEvidence: 'unknown', capabilityEvidence: metadata.catalogSource || 'unknown',
-      observedLatencyMs: fresh && success && latency > 0 ? latency : null,
+      mode, qualityEvidence: qualityTier ? `curated-tier:${qualityTier}` : 'unknown', capabilityEvidence: metadata.catalogSource || 'unknown',
+      observedLatencyMs,
+      observationCount,
       lastSuccessfulCatalogRefresh: metadata.lastSuccessfulRefresh || null,
     }, _score: score, _index: index };
   }).sort((a, b) => b._score - a._score || a._index - b._index || a.model.localeCompare(b.model))
     .map(({ _score, _index, ...candidate }) => candidate);
 }
-module.exports = { MODES, validateMode, eligible, rankCandidates };
+// PH4-ENGINE-030 (closes precondition A.9): bounded cold-start exploration.
+// The F-07 maturity gate (latency influences selection only at n >= 3 windowed
+// observations) is preserved UNCHANGED — but an under-evidenced destination
+// that is never served never gathers evidence (primary-preference during
+// warm-up means a newly added, long-idle or post-cooldown candidate can stay
+// at n < 3 indefinitely while the primary keeps succeeding: the chicken-and-egg
+// miss documented in probe legs A.9r1/A.9r2). At most one call in
+// COLD_START_EXPLORE_INTERVAL intelligent-mode calls is diverted to the
+// eligible under-evidenced candidate with the fewest observations, so windows
+// mature on live traffic within a bounded budget (<= 5% of calls, only while
+// some candidate is under-evidenced). Circuit-breaker-demoted candidates
+// (fresh failure at n < 3) are never exploration targets, and the diversion is
+// marked on the wire as routingDecision.exploration = 'cold-start'.
+const COLD_START_MIN_OBSERVATIONS = 3; // the F-07 maturity gate (unchanged)
+const COLD_START_EXPLORE_INTERVAL = 20; // divert at most 1 call in 20
+function pickColdStartExploration(ordered, { callCount, interval = COLD_START_EXPLORE_INTERVAL, observationFor = () => null, now = Date.now() } = {}) {
+  if (!Array.isArray(ordered) || ordered.length < 2) return null;
+  if (!Number.isFinite(Number(callCount)) || Number(callCount) < 1) return null;
+  if (Number(callCount) % Math.max(1, Number(interval) || COLD_START_EXPLORE_INTERVAL) !== 0) return null;
+  const breakerTripped = observation => {
+    if (!observation || !Number.isFinite(Number(observation.n))) return false;
+    const n = Math.max(0, Number(observation.n) || 0);
+    const age = now - Number(observation.lastAt);
+    return n > 0 && n < COLD_START_MIN_OBSERVATIONS && observation.lastOk === false && age >= 0 && age < 30 * 60_000;
+  };
+  const underEvidenced = ordered.filter(candidate =>
+    Number(candidate?.routingDecision?.observationCount || 0) < COLD_START_MIN_OBSERVATIONS
+    && !breakerTripped(observationFor(candidate)));
+  if (underEvidenced.length === 0) return null;
+  // Fewest observations first; ties keep the current rank order (stable sort).
+  const target = underEvidenced.slice().sort((a, b) =>
+    Number(a.routingDecision?.observationCount || 0) - Number(b.routingDecision?.observationCount || 0))[0];
+  // The rank winner already gathers evidence on every call — diverting to it
+  // would be a no-op mislabelled as exploration.
+  if (target === ordered[0]) return null;
+  return target;
+}
+
+module.exports = {
+  MODES, validateMode, eligible, rankCandidates, weightedP50LatencyMs,
+  COLD_START_MIN_OBSERVATIONS, COLD_START_EXPLORE_INTERVAL, pickColdStartExploration,
+};

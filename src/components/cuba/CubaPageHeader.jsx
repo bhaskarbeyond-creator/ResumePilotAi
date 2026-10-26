@@ -15,7 +15,6 @@ const CubaPageHeader = ({
     eyebrow,
     actions,
     breadcrumb = null,
-    headingLevel: Heading = 'h1',
     className = '',
     children,
 }) => (

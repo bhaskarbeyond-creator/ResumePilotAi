@@ -11,14 +11,12 @@ import {
   Sliders,
   Zap,
   Shield,
-  Layers,
   Database,
   Activity,
   ArrowRight,
   UserPlus,
   Plus,
   FileText,
-  AlertTriangle,
   CheckCircle2,
   Lock,
 } from 'lucide-react';
@@ -83,7 +81,7 @@ export function EnterpriseOverviewTab({ onNavigate }: EnterpriseOverviewTabProps
   const [members, setMembers] = useState<EnterpriseMembership[]>([]);
   const [teams, setTeams] = useState<EnterpriseTeam[]>([]);
   const [auditEvents, setAuditEvents] = useState<EnterpriseAuditEvent[]>([]);
-  const [metrics, setMetrics] = useState<EnterpriseObservabilityMetrics | null>(null);
+  const [, setMetrics] = useState<EnterpriseObservabilityMetrics | null>(null);
   const [dataPlane, setDataPlane] = useState<EnterpriseDataPlaneStatus | null>(null);
   const [queue, setQueue] = useState<EnterpriseQueueStatus | null>(null);
   const [usage, setUsage] = useState<EnterpriseAiUsage | null>(null);

@@ -22,10 +22,20 @@
  */
 
 const { PROVIDER_REGISTRY } = require('../freellmapi/providers/registry');
+// F-28: one source of generation defaults shared with the product engine.
+const { DEFAULT_GENERATION_TEMPERATURE, DEFAULT_GENERATION_MAX_TOKENS } = require('./aiGenerationDefaults');
 
 const LEGACY_SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
   groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey',
+});
+
+// F-23: the legacy public_config booleans (enableGroq, …). ai_providers[p].
+// enabled/disabled is the source of truth; these remain a compatibility input
+// so an explicit legacy `false` (old saves, direct writes) still disables.
+const LEGACY_ENABLE_FIELDS = Object.freeze({
+  gemini: 'enableGemini', nvidia: 'enableNvidia', openai: 'enableOpenai',
+  groq: 'enableGroq', openrouter: 'enableOpenrouter', deepseek: 'enableDeepseek',
 });
 
 const CONFIG_CACHE_MS = 10_000;
@@ -77,7 +87,10 @@ async function loadFreeLlmPlatformConfig({ environment = process.env, repository
 // Pure builder shared with product content/parse operations. No second cache,
 // repository read or provider-normalization implementation is introduced.
 function buildFreeLlmPlatformConfig({ environment = process.env, secrets, publicConfig, systemSettings } = {}) {
-  const providerSecrets = secrets || {};
+  // F-19: platform keys are envelope-encrypted at rest; the engine consumes
+  // the decrypted in-memory view only. A stored envelope without a configured
+  // ENTERPRISE_ENCRYPTION_KEY(S) fails closed inside decryptProviderSecrets.
+  const providerSecrets = require('./aiSecretStore').decryptProviderSecrets(secrets || {});
   const publicAi = publicConfig?.ai || {};
   const legacyAi = systemSettings?.ai || {};
   const providers = {};
@@ -95,7 +108,12 @@ function buildFreeLlmPlatformConfig({ environment = process.env, secrets, public
 
     const model = String(stored.model || '').trim();
     const baseUrl = String(environment[`${id.toUpperCase()}_BASE_URL`] || stored.baseUrl || '').trim();
-    const enabled = stored.disabled !== true && stored.enabled !== false;
+    // F-23: single enabled source of truth = ai_providers[p].enabled/disabled.
+    // The legacy boolean is AND-ed as a compatibility input: a provider is
+    // disabled if EITHER store disables it, so both engines (this mesh and the
+    // aiRuntime product configuration) now agree on the same admin intent.
+    const legacyEnabled = LEGACY_ENABLE_FIELDS[id] ? publicAi[LEGACY_ENABLE_FIELDS[id]] !== false : true;
+    const enabled = stored.disabled !== true && stored.enabled !== false && legacyEnabled;
     if (!enabled) continue;
 
     providers[id] = {
@@ -115,8 +133,13 @@ function buildFreeLlmPlatformConfig({ environment = process.env, secrets, public
     primary,
     ...(publicAi.selectionMode ? { selectionMode: publicAi.selectionMode } : {}),
     enableFallback: publicAi.enableFallback !== false,
-    temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : 0.3,
-    maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : 4096,
+    // F-03: opt-in graceful manual pin ("pin with fallback"). Strict by
+    // default; an admin save (publicAi.manualAllowFallback) or the deployment
+    // env (MANUAL_ALLOW_FALLBACK=true) widens a down manual pin to the ranked
+    // alternatives, and the deviation is marked routingDecision.fallbackFrom.
+    manualAllowFallback: publicAi.manualAllowFallback === true || environment.MANUAL_ALLOW_FALLBACK === 'true',
+    temperature: Number.isFinite(Number(publicAi.temperature)) ? Number(publicAi.temperature) : DEFAULT_GENERATION_TEMPERATURE,
+    maxTokens: Number.isFinite(Number(publicAi.maxTokens)) ? Number(publicAi.maxTokens) : DEFAULT_GENERATION_MAX_TOKENS,
     promptTokenBudget: Number(environment.FREELMAPI_PROMPT_TOKEN_BUDGET || publicAi.promptTokenBudget || 0) || null,
     providers,
     source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',

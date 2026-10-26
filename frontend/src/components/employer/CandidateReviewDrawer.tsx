@@ -31,7 +31,6 @@ import {
   ZoomOut,
   RotateCcw,
   Printer,
-  Download,
   Send,
   MessageCircle,
 } from 'lucide-react';

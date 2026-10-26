@@ -28,7 +28,7 @@ import { generateUserAiContent } from '../../../services/aiService';
  * - Quick starter idea chips and Undo capability
  * - Synchronous unmount flush and persistence
  */
-const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
+const EducationStep = ({ resumeData, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [educations, setEducations] = useState(resumeData.educations || []);
     const [activeEducationId, setActiveEducationId] = useState(null);
@@ -122,7 +122,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     .map(s => String(s || '').trim())
                     .filter(Boolean)
                     .map(s => {
-                        const clean = s.replace(/^[•*–—\-]\s*/, '').trim();
+                        const clean = s.replace(/^[•*–—-]\s*/, '').trim();
                         return `• ${clean}`;
                     })
                     .join('\n');
@@ -158,15 +158,15 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
             return;
         }
         const lines = text.split('\n');
-        const allBulleted = lines.filter(l => l.trim()).every(l => /^[•*–—\-]\s+/.test(l.trim()));
+        const allBulleted = lines.filter(l => l.trim()).every(l => /^[•*–—-]\s+/.test(l.trim()));
         let updated;
         if (allBulleted) {
-            updated = lines.map(l => l.replace(/^[•*–—\-]\s*/, '').trim()).join('\n');
+            updated = lines.map(l => l.replace(/^[•*–—-]\s*/, '').trim()).join('\n');
         } else {
             updated = lines.map(l => {
                 const trimmed = l.trim();
                 if (!trimmed) return '';
-                return /^[•*–—\-]\s+/.test(trimmed) ? trimmed : `• ${trimmed.replace(/^[•*–—\-]\s*/, '')}`;
+                return /^[•*–—-]\s+/.test(trimmed) ? trimmed : `• ${trimmed.replace(/^[•*–—-]\s*/, '')}`;
             }).join('\n');
         }
         updateEducation(education.id, 'description', updated);
@@ -180,7 +180,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
             const currentLine = value.substring(lineStart, selectionStart);
 
             // If user pressed Enter on an empty bullet line (just "• "), exit bullet list
-            if (/^[•*–—\-]\s*$/.test(currentLine)) {
+            if (/^[•*–—-]\s*$/.test(currentLine)) {
                 e.preventDefault();
                 const before = value.substring(0, lineStart);
                 const after = value.substring(selectionEnd);
@@ -193,7 +193,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
             }
 
             // If current line starts with a bullet point, automatically add bullet to next line
-            if (/^[•*–—\-]\s+/.test(currentLine)) {
+            if (/^[•*–—-]\s+/.test(currentLine)) {
                 e.preventDefault();
                 const before = value.substring(0, selectionStart);
                 const after = value.substring(selectionEnd);
