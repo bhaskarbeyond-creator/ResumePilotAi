@@ -102,11 +102,12 @@ function readSqlite(query, params = []) {
   }
 }
 
-async function routed(freellm, { prompt, tenantContext = null, platformConfig }) {
+async function routed(freellm, { prompt, tenantContext = null, platformConfig, model = null }) {
   const started = Date.now();
   try {
     const result = await freellm.completeChat({
       prompt,
+      ...(model ? { model } : {}),
       platformConfig,
       tenantContext,
       fetchImpl: rewritingFetch,
@@ -277,9 +278,12 @@ async function main() {
     const ctx3 = { tenantId: T3.tenantId, principalId: T3.ownerPrincipalId, correlationId: `${LEG}-t3-${randomUUID()}`, policyVersion: 2, dataPlane: {}, actorType: 'USER', customProviderKeys: {} };
     emit({ type: 'tenant', who: 't3-no-byok', tenantId: T3.tenantId });
     await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: '429' }) });
-    const platform429 = await routed(freellm, { prompt: `A.15r2 platform 429 bench ${randomUUID()}`, platformConfig: config });
+    // Pin the model so the platform call MUST attempt groq (an unpinned policy
+    // call would simply rank around it on openai's p50 and never see the 429).
+    const platform429 = await routed(freellm, { prompt: `A.15r2 platform 429 bench ${randomUUID()}`, platformConfig: config, model: 'llama-3.1-8b-instant' });
     emit({ type: 'call', who: 'platform-429', ...platform429 });
-    const cooldowns429 = readSqlite("SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns WHERE scope_key = 'platform'");
+    // Platform-scope rows persist with scope_key NULL (A.1 scoped-column default).
+    const cooldowns429 = readSqlite("SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns WHERE scope_key IS NULL OR scope_key = 'platform'");
     emit({ type: 'sqlite-cooldowns', phase: 'after-platform-429', rows: cooldowns429 });
     // Stub healthy again, but the platform bench (Retry-After 60s) is ACTIVE:
     await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'ok' }) });
@@ -289,7 +293,7 @@ async function main() {
     emit({ type: 'call', who: 't2-byok-under-platform-bench', ...t2Sanctuary });
 
     const outageHitBothTenants = !t1Outage.ok && !t2Outage.ok;
-    const platform429Benched = cooldowns429.some(r => r.provider === 'groq');
+    const platform429Benched = cooldowns429.some(r => r.provider === 'groq' && (r.scope_key === null || r.scope_key === 'platform'));
     const t3PlatformTrafficCooled = t3Blocked.ok && t3Blocked.provider === 'openai'; // groq benched platform-wide -> T3's platform-credential traffic falls to openai
     const sanctuaryIgnoredPlatformBench = t2Sanctuary.ok && t2Sanctuary.provider === 'groq' && t2Sanctuary.isDedicatedByok;
     const tenantScopedRowsExisted = afterOutage.metrics.some(r => r.scope_key === t1Scope) && afterOutage.metrics.some(r => r.scope_key === t2Scope);
@@ -313,7 +317,7 @@ async function main() {
       platformOutageServedViaFallbackOrFailed: platformOutage.ok || platformOutage.code === 'ALL_PROVIDERS_FAILED',
       outageHitBothTenants, tenantScopedRowsExisted, platformReleaseKeptTenantScopes, platformRowsClearedByPlatformRelease,
       t1ReleaseClearedExactlyT1, t2BenchPersistedUntilOwnRelease, platformRecoveryServed: platformRecovery.ok,
-      platform429BenchedGroq, platform429Benched, t3PlatformTrafficCooled, sanctuaryIgnoredPlatformBench,
+      platform429Benched, t3PlatformTrafficCooled, sanctuaryIgnoredPlatformBench,
       crossTenantCooldownProven: outageHitBothTenants && tenantScopedRowsExisted && platformReleaseKeptTenantScopes && t1ReleaseClearedExactlyT1 && t2BenchPersistedUntilOwnRelease,
       physicsHonestyProven: platform429Benched && t3PlatformTrafficCooled && sanctuaryIgnoredPlatformBench,
     });

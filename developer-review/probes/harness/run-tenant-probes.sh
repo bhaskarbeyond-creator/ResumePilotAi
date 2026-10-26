@@ -80,10 +80,13 @@ run_tenant_leg() { # LEG BETA_AUTHFAILS
   return $leg_exit
 }
 
+# ONLY_LEGS="a15r2 a16" runs a subset (iteration aid; the committed archive is
+# produced by full runs with ALL legs).
 FAILURES=0
-run_tenant_leg a15r1 "key-t1-byok" || FAILURES=$((FAILURES+1))
-run_tenant_leg a15r2 "" || FAILURES=$((FAILURES+1))
-run_tenant_leg a16 "" || FAILURES=$((FAILURES+1))
+want() { [ -z "${ONLY_LEGS:-}" ] && return 0; case " ${ONLY_LEGS} " in *" $1 "*) return 0;; *) return 1;; esac; }
+want a15r1 && { run_tenant_leg a15r1 "key-t1-byok" || FAILURES=$((FAILURES+1)); }
+want a15r2 && { run_tenant_leg a15r2 "" || FAILURES=$((FAILURES+1)); }
+want a16 && { run_tenant_leg a16 "" || FAILURES=$((FAILURES+1)); }
 
 echo "=============================="
 echo "TENANT_PROBE_LEG_EXIT_CODES=$FAILURES (0 = all legs completed; see verdict lines in transcripts)"
