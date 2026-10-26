@@ -9,7 +9,10 @@
     "lint": "oxlint",
     "test": "playwright test",
     "test:candidate": "playwright test -c playwright.candidate.config.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ux:audit": "node scripts/ux-audit.mjs",
+    "a11y:contrast": "node scripts/contrast-audit.mjs",
+    "verify:ux": "node scripts/ux-audit.mjs && node scripts/contrast-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

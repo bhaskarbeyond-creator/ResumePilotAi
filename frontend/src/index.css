@@ -82,12 +82,18 @@
   --color-border: #e2e4ea;
   --color-border-subtle: #f0f1f5;
   --color-border-strong: #cacdd6;
+  /* Boundary colour for interactive controls. WCAG 1.4.11 requires 3:1 against the
+     adjacent colour for a control's only visible boundary; the decorative card border
+     (#e2e4ea, 1.27:1) is not usable for it. #7c8293 is 3.84:1 on white. */
+  --color-border-control: #7c8293;
 
   /* ─── Text Roles ─── */
   --color-ink: #1a1b21;
   --color-ink-secondary: #515562;
   --color-ink-muted: #636878;
-  --color-ink-subtle: #8e95aa;
+  /* Was #8e95aa — 2.99:1 on white, below the 4.5:1 AA floor for the metadata lines it
+     is used for (measured by scripts/contrast-audit.mjs). #6b7280 is 4.83:1. */
+  --color-ink-subtle: #6b7280;
   --color-ink-on-brand: #ffffff;
 
   /* ─── Typography ─── */
@@ -181,6 +187,21 @@
     color: var(--color-ink);
     background-color: var(--color-canvas);
     line-height: 1.6;
+  }
+
+  /*
+   * Interactive controls carry their own boundary colour.
+   *
+   * WCAG 2.2 SC 1.4.11 requires 3:1 between a control's boundary and the adjacent
+   * colour when that boundary is the only thing identifying the control. The decorative
+   * card border is 1.27:1 on white and must not be reused here — hence a dedicated
+   * `--color-border-control` token (3.84:1) rather than a one-off hex value in each
+   * component. Applied here so a new panel inherits it without remembering to.
+   */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    border-color: var(--color-border-control);
   }
 
   /* Accessible focus rings */
@@ -304,7 +325,9 @@
   --color-ink: #f3f4f8;
   --color-ink-secondary: #c0c6d6;
   --color-ink-muted: #a3abbf;
-  --color-ink-subtle: #8e95aa;
+  /* Was #8e95aa — 2.99:1 on white, below the 4.5:1 AA floor for the metadata lines it
+     is used for (measured by scripts/contrast-audit.mjs). #6b7280 is 4.83:1. */
+  --color-ink-subtle: #6b7280;
 
   --color-neutral-25: #0e1017;
   --color-neutral-50: #141722;
@@ -420,3 +443,60 @@
   scrollbar-width: none !important;
 }
 
+/* ─── Enhanced-contrast and forced-colour support for the admin plane ───
+   WCAG 2.2 AA is the floor, not the target: a user who has asked their OS for more
+   contrast gets stronger borders and text, and a user in forced-colours mode (Windows
+   High Contrast) keeps every control visible instead of losing a border that was the
+   only thing distinguishing a button from its background. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border: #1f2937;
+    --color-ink-secondary: #111827;
+    --color-ink-subtle: #1f2937;
+  }
+}
+
+@media (forced-colors: active) {
+  /* System colours replace the palette; what must survive is the *shape* of a control. */
+  button, a, input, select, textarea {
+    border: 1px solid ButtonBorder;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  [aria-disabled="true"], :disabled {
+    color: GrayText;
+  }
+}
+
+/* ─── Print: the admin plane is a reporting surface too ───
+   An auditor prints the audit trail and the configuration census; the tab strip, action
+   buttons and filters are noise on paper and would otherwise push the table columns off
+   the page. */
+@media print {
+  .admin-no-print,
+  [role="tablist"],
+  .admin-actions {
+    display: none !important;
+  }
+  .admin-print-surface {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  .admin-print-surface table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 9pt;
+  }
+  .admin-print-surface thead {
+    display: table-header-group;
+  }
+  .admin-print-surface tr {
+    break-inside: avoid;
+  }
+  .admin-print-surface a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+  }
+}

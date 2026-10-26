@@ -263,7 +263,7 @@ export function AdminModerationTab() {
                     </td>
                     <td className="px-4 py-3 text-ink-secondary">{app.contactEmail}</td>
                     <td className="px-4 py-3">
-                      <a href={app.website} target="_blank" rel="noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1">
+                      <a href={app.website} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-brand-400">
                         {app.website.replace('https://', '')}
                         <ExternalLink className="size-3" />
                       </a>
@@ -271,7 +271,7 @@ export function AdminModerationTab() {
                     <td className="px-4 py-3">
                       <span
                         className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                          'rounded-full px-2 py-0.5 text-2xs font-bold uppercase',
                           app.status === 'APPROVED'
                             ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                             : app.status === 'REJECTED'
@@ -353,17 +353,17 @@ export function AdminModerationTab() {
                     <td className="px-4 py-3 text-ink-secondary">{job.location}</td>
                     <td className="px-4 py-3">
                       {job.isSpam ? (
-                        <span className="rounded bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 px-2 py-0.5 text-[10px] font-bold">
+                        <span className="rounded bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 px-2 py-0.5 text-2xs font-bold">
                           SPAM FLAGGED
                         </span>
                       ) : (
-                        <span className="rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 text-[10px] font-bold">
+                        <span className="rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 text-2xs font-bold">
                           CLEAN
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50')}>
+                      <span className={cn('rounded-full px-2 py-0.5 text-2xs font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50')}>
                         {job.status}
                       </span>
                     </td>
@@ -442,15 +442,15 @@ export function AdminModerationTab() {
             <div className="p-6 overflow-y-auto space-y-4 text-xs">
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Verification Status</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Verification Status</span>
                   <p className="font-extrabold text-ink mt-0.5">{inspectApplication.status}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Tax ID / VAT</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Tax ID / VAT</span>
                   <p className="font-extrabold text-ink mt-0.5 font-mono">{inspectApplication.taxId}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Company Size</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Company Size</span>
                   <p className="font-extrabold text-ink mt-0.5">{inspectApplication.companySize || 'N/A'}</p>
                 </div>
               </div>
@@ -496,12 +496,12 @@ export function AdminModerationTab() {
                   <div>
                     <span className="text-ink-muted block font-semibold">Representative Name</span>
                     <span className="text-ink font-semibold mt-0.5 block">{inspectApplication.contactPerson || 'Official Representative'}</span>
-                    <span className="text-ink-muted text-[10px]">{inspectApplication.contactPersonTitle || 'Authorized Signatory'}</span>
+                    <span className="text-ink-muted text-2xs">{inspectApplication.contactPersonTitle || 'Authorized Signatory'}</span>
                   </div>
                   <div>
                     <span className="text-ink-muted block font-semibold">Contact Channels</span>
                     <span className="text-ink font-mono text-[11px] block mt-0.5">{inspectApplication.contactEmail}</span>
-                    <span className="text-ink-muted font-mono text-[10px]">{inspectApplication.contactPhone || '—'}</span>
+                    <span className="text-ink-muted font-mono text-2xs">{inspectApplication.contactPhone || '—'}</span>
                   </div>
                 </div>
               </div>

@@ -676,15 +676,15 @@ export function AdminSecurityTab() {
             <div className="p-6 overflow-y-auto space-y-4 text-xs">
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Severity</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Severity</span>
                   <p className="font-extrabold text-ink mt-0.5">{selectedEvent.severity}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Category</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Category</span>
                   <p className="font-extrabold text-ink mt-0.5 truncate">{selectedEvent.category || 'GATEWAY'}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Outcome</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Outcome</span>
                   <p className={cn('font-extrabold mt-0.5', selectedEvent.outcome === 'FAILED' ? 'text-rose-600' : 'text-emerald-600')}>
                     {selectedEvent.outcome || 'BLOCKED'}
                   </p>
@@ -893,7 +893,7 @@ export function AdminSecurityTab() {
               {/* Live Preview Card */}
               {newAnnTitle && (
                 <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5 space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-brand-700 tracking-wider">
+                  <span className="text-2xs font-bold uppercase text-brand-700 tracking-wider">
                     Live Broadcast Preview
                   </span>
                   <p className="font-bold text-xs text-brand-950">{newAnnTitle}</p>

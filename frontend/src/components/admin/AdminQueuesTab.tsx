@@ -322,7 +322,7 @@ export function AdminQueuesTab() {
                 </div>
                 <span
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                    'rounded-full px-2 py-0.5 text-2xs font-black uppercase tracking-wider',
                     q.failed > 0
                       ? 'bg-rose-100 text-rose-800 border border-rose-300'
                       : q.status === 'PROCESSING'
@@ -337,19 +337,19 @@ export function AdminQueuesTab() {
             <CardContent>
               <div className="grid grid-cols-4 gap-2 text-center border-y border-border/50 py-3 my-2 text-xs">
                 <div>
-                  <span className="text-[10px] text-ink-muted block">Active</span>
+                  <span className="text-2xs text-ink-muted block">Active</span>
                   <span className="font-bold text-ink text-sm">{q.active}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-ink-muted block">Waiting</span>
+                  <span className="text-2xs text-ink-muted block">Waiting</span>
                   <span className="font-bold text-ink text-sm">{q.waiting}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-ink-muted block">Completed</span>
+                  <span className="text-2xs text-ink-muted block">Completed</span>
                   <span className="font-bold text-emerald-600 text-sm">{q.completed}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-ink-muted block">Failed</span>
+                  <span className="text-2xs text-ink-muted block">Failed</span>
                   <span className={cn('font-bold text-sm', q.failed > 0 ? 'text-rose-600' : 'text-ink-muted')}>
                     {q.failed}
                   </span>
@@ -410,7 +410,7 @@ export function AdminQueuesTab() {
                       {job.id}
                     </td>
                     <td className="py-2.5 px-4 font-semibold text-ink">
-                      <span className="text-[10px] font-mono text-ink-muted block uppercase">{job.queue}</span>
+                      <span className="text-2xs font-mono text-ink-muted block uppercase">{job.queue}</span>
                       <span>{job.channel}</span>
                     </td>
                     <td className="py-2.5 px-4 font-mono text-ink">
@@ -422,7 +422,7 @@ export function AdminQueuesTab() {
                     <td className="py-2.5 px-4">
                       <span
                         className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                          'rounded-full px-2 py-0.5 text-2xs font-bold uppercase',
                           job.state === 'DEAD_LETTER' && 'bg-rose-100 text-rose-800 border border-rose-300',
                           job.state === 'PROCESSING' && 'bg-brand-100 text-brand-800 border border-brand-300',
                           job.state === 'DELIVERY_ATTEMPTED' && 'bg-emerald-100 text-emerald-800 border border-emerald-300',
@@ -518,21 +518,21 @@ export function AdminQueuesTab() {
             <div className="p-6 overflow-y-auto space-y-4 text-xs">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">State</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">State</span>
                   <p className="font-extrabold text-ink mt-0.5">{selectedJob.state}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Attempts</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Attempts</span>
                   <p className="font-extrabold text-ink mt-0.5">
                     {selectedJob.attemptCount} / {selectedJob.maxAttempts}
                   </p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Template</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Template</span>
                   <p className="font-extrabold text-ink mt-0.5 truncate">{selectedJob.templateType}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Created</span>
+                  <span className="text-2xs font-bold uppercase text-ink-muted">Created</span>
                   <p className="font-extrabold text-ink mt-0.5">
                     {new Date(selectedJob.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -565,7 +565,7 @@ export function AdminQueuesTab() {
                     {selectedJob.error.name}: {selectedJob.error.message}
                   </p>
                   {selectedJob.error.stack && (
-                    <pre className="text-[10px] bg-neutral-950 text-rose-300 rounded-lg p-3 overflow-x-auto font-mono max-h-40 leading-relaxed border border-neutral-800">
+                    <pre className="text-2xs bg-neutral-950 text-rose-300 rounded-lg p-3 overflow-x-auto font-mono max-h-40 leading-relaxed border border-neutral-800">
                       {selectedJob.error.stack}
                     </pre>
                   )}

@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-10-26T04:49:48.322Z",
+  "rules": {
+    "targetSize": "interactive elements carry a >=44px minimum (min-h-11 / h-11 / size-11 or larger)",
+    "textSize": "no text below 12px (text-[9px] / text-[10px] are refused)",
+    "focus": "buttons and links carry focus-visible styling",
+    "width": "no fixed pixel width above 320px inside the admin plane"
+  },
+  "findings": {
+    "targetSize": [],
+    "textSize": [],
+    "focus": [],
+    "width": [],
+    "totals": {
+      "targetSize": 0,
+      "textSize": 0,
+      "focus": 0,
+      "width": 0
+    }
+  }
+}

@@ -270,13 +270,13 @@ export function AdminHelpDeskTab() {
                   <span className="font-bold text-ink truncate max-w-[200px]">
                     {t.userEmail || t.email}
                   </span>
-                  <span className="text-[10px] text-ink-muted">{t.createdAt}</span>
+                  <span className="text-2xs text-ink-muted">{t.createdAt}</span>
                 </div>
                 <div className="text-xs font-semibold text-ink line-clamp-1 mb-1.5">{t.subject}</div>
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      'rounded px-1.5 py-0.5 text-[10px] font-bold',
+                      'rounded px-1.5 py-0.5 text-2xs font-bold',
                       t.status === 'OPEN'
                         ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
                         : t.status === 'RESOLVED'
@@ -286,7 +286,7 @@ export function AdminHelpDeskTab() {
                   >
                     {t.status}
                   </span>
-                  <span className="text-[10px] uppercase font-bold text-ink-muted">
+                  <span className="text-2xs uppercase font-bold text-ink-muted">
                     {t.priority}
                   </span>
                 </div>
@@ -346,7 +346,7 @@ export function AdminHelpDeskTab() {
                           : 'bg-neutral-100 dark:bg-neutral-800 text-ink'
                       )}
                     >
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-ink-muted mb-1">
+                      <div className="flex items-center justify-between text-2xs font-semibold text-ink-muted mb-1">
                         <span>{msg.role === 'STAFF' ? 'Support Specialist (Staff)' : 'User / Candidate'}</span>
                         <span>{msg.createdAt}</span>
                       </div>

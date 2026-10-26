@@ -1,0 +1,183 @@
+{
+  "generatedAt": "2026-10-26T04:49:48.353Z",
+  "standard": "WCAG 2.2 AA (4.5:1 text, 3:1 non-text)",
+  "results": [
+    {
+      "fg": "ink",
+      "bg": "surface",
+      "use": "body text on a card",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#1a1b21",
+      "bgHex": "#ffffff",
+      "ratio": 17.18,
+      "pass": true
+    },
+    {
+      "fg": "ink",
+      "bg": "canvas",
+      "use": "body text on the page canvas",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#1a1b21",
+      "bgHex": "#f8f9fb",
+      "ratio": 16.3,
+      "pass": true
+    },
+    {
+      "fg": "ink-secondary",
+      "bg": "surface",
+      "use": "supporting text on a card",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#515562",
+      "bgHex": "#ffffff",
+      "ratio": 7.43,
+      "pass": true
+    },
+    {
+      "fg": "ink-secondary",
+      "bg": "canvas",
+      "use": "supporting text on the canvas",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#515562",
+      "bgHex": "#f8f9fb",
+      "ratio": 7.05,
+      "pass": true
+    },
+    {
+      "fg": "ink-subtle",
+      "bg": "surface",
+      "use": "metadata, provenance lines",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#6b7280",
+      "bgHex": "#ffffff",
+      "ratio": 4.83,
+      "pass": true
+    },
+    {
+      "fg": "ink-subtle",
+      "bg": "canvas",
+      "use": "metadata on the page canvas",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#6b7280",
+      "bgHex": "#f8f9fb",
+      "ratio": 4.59,
+      "pass": true
+    },
+    {
+      "fg": "ink-muted",
+      "bg": "surface",
+      "use": "muted labels",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#636878",
+      "bgHex": "#ffffff",
+      "ratio": 5.55,
+      "pass": true
+    },
+    {
+      "fg": "ink-on-brand",
+      "bg": "brand-600",
+      "use": "primary button label",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#ffffff",
+      "bgHex": "#2540ed",
+      "ratio": 6.92,
+      "pass": true
+    },
+    {
+      "fg": "brand-600",
+      "bg": "surface",
+      "use": "link text on a card",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#2540ed",
+      "bgHex": "#ffffff",
+      "ratio": 6.92,
+      "pass": true
+    },
+    {
+      "fg": "success-700",
+      "bg": "success-50",
+      "use": "LIVE provenance chip",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#047857",
+      "bgHex": "#ecfdf5",
+      "ratio": 5.21,
+      "pass": true
+    },
+    {
+      "fg": "warning-700",
+      "bg": "warning-50",
+      "use": "PARTIAL / degraded banner",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#b45309",
+      "bgHex": "#fffbeb",
+      "ratio": 4.84,
+      "pass": true
+    },
+    {
+      "fg": "error-700",
+      "bg": "error-50",
+      "use": "unavailable state",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#b91c1c",
+      "bgHex": "#fef2f2",
+      "ratio": 5.91,
+      "pass": true
+    },
+    {
+      "fg": "info-700",
+      "bg": "info-50",
+      "use": "loading state",
+      "kind": "text",
+      "min": 4.5,
+      "fgHex": "#1d4ed8",
+      "bgHex": "#eff6ff",
+      "ratio": 6.16,
+      "pass": true
+    },
+    {
+      "fg": "border-control",
+      "bg": "surface",
+      "use": "input / select boundary",
+      "kind": "ui",
+      "min": 3,
+      "fgHex": "#7c8293",
+      "bgHex": "#ffffff",
+      "ratio": 3.84,
+      "pass": true
+    },
+    {
+      "fg": "border-control",
+      "bg": "canvas",
+      "use": "input boundary on the canvas",
+      "kind": "ui",
+      "min": 3,
+      "fgHex": "#7c8293",
+      "bgHex": "#f8f9fb",
+      "ratio": 3.64,
+      "pass": true
+    },
+    {
+      "fg": "brand-500",
+      "bg": "surface",
+      "use": "focus ring (non-text)",
+      "kind": "ui",
+      "min": 3,
+      "fgHex": "#3b5cf8",
+      "bgHex": "#ffffff",
+      "ratio": 5.16,
+      "pass": true
+    }
+  ],
+  "failures": []
+}

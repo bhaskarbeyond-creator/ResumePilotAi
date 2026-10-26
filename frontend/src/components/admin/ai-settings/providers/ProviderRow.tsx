@@ -62,12 +62,12 @@ export function ProviderRow({ provider: p }: { provider: ProviderCatalogEntry })
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-bold text-ink">{p.name}</span>
               {isPrimary && (
-                <span className="rounded-md bg-brand-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                <span className="rounded-md bg-brand-600 px-1.5 py-0.5 text-2xs font-extrabold uppercase text-white">
                   Primary
                 </span>
               )}
               {p.group === 'search' && (
-                <span className="rounded-md bg-canvas-soft border border-border px-1.5 py-0.5 text-[10px] font-semibold text-ink-secondary">
+                <span className="rounded-md bg-canvas-soft border border-border px-1.5 py-0.5 text-2xs font-semibold text-ink-secondary">
                   web search
                 </span>
               )}

@@ -230,7 +230,7 @@ export function AdminBlogManagementTab() {
                   <div className="text-[11px] text-ink-muted font-mono">/blog/{article.slug}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="rounded bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-ink-secondary">
+                  <span className="rounded bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-2xs font-medium text-ink-secondary">
                     {article.category}
                   </span>
                 </td>
@@ -238,7 +238,7 @@ export function AdminBlogManagementTab() {
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                      'rounded-full px-2 py-0.5 text-2xs font-bold uppercase',
                       article.status === 'published'
                         ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                         : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
@@ -356,7 +356,7 @@ export function AdminBlogManagementTab() {
                   </div>
                   <div>
                     <span className="text-xs font-bold text-ink block">{previewArticle.author}</span>
-                    <span className="text-[10px] text-ink-muted">Verified Technical Contributor</span>
+                    <span className="text-2xs text-ink-muted">Verified Technical Contributor</span>
                   </div>
                 </div>
               </div>

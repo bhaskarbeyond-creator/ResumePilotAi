@@ -497,7 +497,7 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
                 <CatIcon className="size-4 text-brand-600 dark:text-brand-400" />
                 <h3 className="text-sm font-black text-ink">{cat.label}</h3>
               </div>
-              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-bold text-ink-muted">
+              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-2xs font-bold text-ink-muted">
                 {cat.badge}
               </span>
             </div>
@@ -521,7 +521,7 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
                     <div>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                          <span className="text-2xs font-extrabold uppercase tracking-wider text-ink-muted">
                             {item.subtitle}
                           </span>
                           <h4 className="text-sm font-black text-ink leading-snug mt-0.5">
@@ -530,7 +530,7 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
                         </div>
                         <span
                           className={cn(
-                            'shrink-0 px-2 py-0.5 text-[10px] font-extrabold rounded-full uppercase tracking-wider',
+                            'shrink-0 px-2 py-0.5 text-2xs font-extrabold rounded-full uppercase tracking-wider',
                             isEnabled
                               ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                               : 'bg-neutral-100 dark:bg-neutral-800 text-ink-muted border border-border'
@@ -1228,7 +1228,7 @@ function TemplatesLegalPanel({ onToast }: { onToast: (type: 'success' | 'error' 
                 )}
               >
                 <span className="text-xs font-black">{tpl.id}</span>
-                <span className="text-[9px] font-bold text-ink-muted">
+                <span className="text-2xs font-bold text-ink-muted">
                   {tpl.isPro ? 'PRO' : 'FREE'}
                 </span>
               </button>

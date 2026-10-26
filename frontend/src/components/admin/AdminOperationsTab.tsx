@@ -172,7 +172,7 @@ export function AdminOperationsTab() {
             )}
             <span>{statusFeedback.text}</span>
           </div>
-          <button onClick={() => setStatusFeedback(null)} className="font-bold opacity-70 hover:opacity-100">
+          <button type="button" onClick={() => setStatusFeedback(null)} className="inline-flex min-h-11 items-center rounded-lg px-2 font-bold opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             Dismiss
           </button>
         </div>

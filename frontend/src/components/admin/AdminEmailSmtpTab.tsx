@@ -175,14 +175,14 @@ export function AdminEmailSmtpTab() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-emerald-900">{check.type} Record</span>
-                  <span className="rounded bg-emerald-200/80 px-2 py-0.5 text-[10px] font-black text-emerald-900">
+                  <span className="rounded bg-emerald-200/80 px-2 py-0.5 text-2xs font-black text-emerald-900">
                     {check.status}
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-emerald-800 truncate" title={check.record}>
                   {check.record}
                 </div>
-                <div className="text-[10px] text-emerald-700">{check.detail}</div>
+                <div className="text-2xs text-emerald-700">{check.detail}</div>
               </div>
             ))}
           </div>

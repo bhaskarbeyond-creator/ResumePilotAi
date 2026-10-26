@@ -481,7 +481,7 @@ export function AdminUsersTab() {
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                      'rounded-full px-2 py-0.5 text-2xs font-black uppercase tracking-wider',
                       user.role === 'SUPER_ADMIN'
                         ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50'
                         : user.role === 'ADMIN'
@@ -505,7 +505,7 @@ export function AdminUsersTab() {
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                      'rounded-full px-2 py-0.5 text-2xs font-semibold',
                       user.status === 'active'
                         ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                         : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
@@ -711,7 +711,7 @@ export function AdminUsersTab() {
                     <h3 className="text-base font-extrabold text-ink">{selectedUser.displayName}</h3>
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.2 text-[10px] font-black uppercase',
+                        'rounded-full px-2 py-0.2 text-2xs font-black uppercase',
                         selectedUser.status === 'active'
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-rose-100 text-rose-800'
@@ -794,7 +794,7 @@ export function AdminUsersTab() {
                           Update
                         </Button>
                       </div>
-                      <p className="text-[10px] text-ink-muted">
+                      <p className="text-2xs text-ink-muted">
                         Controls global platform capability matrix and route guards.
                       </p>
                     </div>
@@ -823,7 +823,7 @@ export function AdminUsersTab() {
                           Apply
                         </Button>
                       </div>
-                      <p className="text-[10px] text-ink-muted">Entitlement level for DOCX export & AI models.</p>
+                      <p className="text-2xs text-ink-muted">Entitlement level for DOCX export & AI models.</p>
                     </div>
                   </div>
 
@@ -975,11 +975,11 @@ export function AdminUsersTab() {
                           <Building2 className="size-4 text-brand-600" />
                           <div>
                             <p className="font-bold text-ink">Northwind Careers</p>
-                            <p className="text-[10px] text-ink-muted">Slug: northwind-careers • Workspace: Engineering</p>
+                            <p className="text-2xs text-ink-muted">Slug: northwind-careers • Workspace: Engineering</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-brand-50 text-brand-700 font-bold text-[10px]">
+                          <span className="rounded-full px-2 py-0.5 bg-brand-50 text-brand-700 font-bold text-2xs">
                             ENTERPRISE_ADMIN
                           </span>
                           <Button
@@ -1025,7 +1025,7 @@ export function AdminUsersTab() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-purple-800">
+                    <p className="text-2xs text-purple-800">
                       Resets automatically at midnight UTC. Rate-limits resume tailoring and AI coach simulations.
                     </p>
                   </div>
@@ -1089,11 +1089,11 @@ export function AdminUsersTab() {
                                 ? 'Cloud DevOps Lead Resume'
                                 : `Tailored Resume Document #${idx + 1}`}
                             </p>
-                            <p className="text-[10px] text-ink-muted">Template: Zurich Executive • Last modified 2 days ago</p>
+                            <p className="text-2xs text-ink-muted">Template: Zurich Executive • Last modified 2 days ago</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] border border-emerald-200">
+                          <span className="rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-2xs border border-emerald-200">
                             ATS 94%
                           </span>
                           <Button

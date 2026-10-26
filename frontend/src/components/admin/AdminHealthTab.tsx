@@ -624,7 +624,7 @@ export function AdminHealthTab() {
               <strong>{testResult.id}:</strong> {testResult.message}
             </span>
           </div>
-          <button onClick={() => setTestResult(null)} className="font-bold text-xs opacity-70 hover:opacity-100">
+          <button type="button" onClick={() => setTestResult(null)} className="inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-bold opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             Dismiss
           </button>
         </div>
@@ -648,7 +648,7 @@ export function AdminHealthTab() {
               <CardContent className="p-3.5 flex flex-col justify-between h-full space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    <span className="text-2xs font-mono uppercase tracking-wider text-ink-muted">
                       {s.category}
                     </span>
                     <h4 className="text-xs font-bold text-ink truncate mt-0.5 group-hover:text-accent transition-colors">
@@ -671,7 +671,7 @@ export function AdminHealthTab() {
                 <div className="space-y-1 text-[11px]">
                   <div className="text-ink-secondary truncate">{s.detail}</div>
                   {s.engine && (
-                    <div className="text-ink-muted font-mono text-[10px] truncate" title={s.engine}>
+                    <div className="text-ink-muted font-mono text-2xs truncate" title={s.engine}>
                       {s.engine}
                     </div>
                   )}
@@ -682,7 +682,7 @@ export function AdminHealthTab() {
                     {s.latencyMs !== undefined ? `${s.latencyMs}ms` : 'Active'}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-accent font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-2xs text-accent font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                       Inspect &rarr;
                     </span>
                     <Button
@@ -690,7 +690,7 @@ export function AdminHealthTab() {
                       size="xs"
                       onClick={(e) => handleTestService(s.id, e)}
                       loading={testingServiceId === s.id}
-                      className="h-6 px-2 text-[10px]"
+                      className="h-6 px-2 text-2xs"
                     >
                       <Play className="size-2.5 mr-1" />
                       Probe
@@ -720,12 +720,12 @@ export function AdminHealthTab() {
             <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-start justify-between gap-4 shrink-0">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-slate-300 px-2 py-0.5 rounded bg-white/10">
+                  <span className="text-2xs font-mono uppercase tracking-widest text-slate-300 px-2 py-0.5 rounded bg-white/10">
                     {selectedService.category} SUBSYSTEM
                   </span>
                   <span
                     className={cn(
-                      'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1',
+                      'text-2xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1',
                       selectedService.status === 'OPERATIONAL'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                         : selectedService.status === 'DEGRADED'
@@ -793,19 +793,19 @@ export function AdminHealthTab() {
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div className="p-3 rounded-xl border border-edge bg-canvas-soft">
-                    <span className="text-[10px] text-ink-muted uppercase font-semibold">Response Latency</span>
+                    <span className="text-2xs text-ink-muted uppercase font-semibold">Response Latency</span>
                     <p className="text-xs font-bold text-ink mt-0.5 font-mono">
                       {selectedService.latencyMs !== undefined ? `${selectedService.latencyMs} ms` : 'Active'}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl border border-edge bg-canvas-soft">
-                    <span className="text-[10px] text-ink-muted uppercase font-semibold">Platform Criticality</span>
+                    <span className="text-2xs text-ink-muted uppercase font-semibold">Platform Criticality</span>
                     <p className="text-xs font-bold text-ink mt-0.5">
                       {selectedService.critical ? 'Core Critical Path' : 'Non-blocking Auxiliary'}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl border border-edge bg-canvas-soft">
-                    <span className="text-[10px] text-ink-muted uppercase font-semibold">Auto-Retryable</span>
+                    <span className="text-2xs text-ink-muted uppercase font-semibold">Auto-Retryable</span>
                     <p className="text-xs font-bold text-ink mt-0.5">
                       {selectedService.retryable !== false ? 'Yes (Backoff Policy)' : 'Manual Intervention'}
                     </p>
@@ -853,7 +853,7 @@ export function AdminHealthTab() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {Object.entries(selectedService.metrics).map(([key, val]) => (
                       <div key={key} className="p-2.5 rounded-xl border border-edge bg-canvas-soft">
-                        <span className="text-[10px] text-ink-muted truncate block">{key}</span>
+                        <span className="text-2xs text-ink-muted truncate block">{key}</span>
                         <span className="text-xs font-bold text-ink font-mono mt-0.5 block truncate">{String(val)}</span>
                       </div>
                     ))}
@@ -864,7 +864,7 @@ export function AdminHealthTab() {
               {/* Remediation Guidance */}
               {selectedService.remediation && (
                 <div className="p-3.5 rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-900 dark:text-indigo-200 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
+                  <span className="text-2xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
                     <Sliders className="size-3" /> Recommended Remediation Protocol
                   </span>
                   <p className="text-xs leading-relaxed">{selectedService.remediation}</p>
