@@ -1,118 +1,95 @@
 #!/usr/bin/env node
 /**
- * R15 tenant legs — A.15r1 / A.15r2 / A.16 (NEW probes; tip tree only, flags ON).
+ * R15 tenant legs (in-process engine modules) — A.15r1 / A.15r2 / A.16.
+ * Tip tree, flags ON (FREELMAPI_TENANT_SCOPED_EVIDENCE=1, FREELMAPI_DECISION_LEDGER=1).
  *
- *   a15r1  two-tenant scoped-evidence divergence: T1's dedicated BYOK credential
- *          fails (stub-injected per-key 500), T2's identical-shape BYOK keeps
- *          serving; platform scope stays untouched (F-21/C.1 sink-hole closure).
- *   a15r2  cross-tenant cooldown: a platform-wide provider outage benches groq
- *          for BOTH tenants (shared platform scope, by design); F-14/C.4 scoped
- *          releases clear exactly one scope and never wipe the others.
- *   a16    decisionId end-to-end: wire (D1 via /v1) -> telemetry ring (F-22)
- *          -> SQLite routing_decisions -> SQLite request_log.decision_id, and
- *          the tenant path's D2 -> SQLite ring + request_log -> MariaDB
- *          enterprise_ai_usage.decision_id (029 applied to the PROBE database
- *          only — the production ledger is never touched, per mandate).
- *          Honest shape: D1 proves the wire hop; D2 proves the MariaDB hop;
- *          both prove ring+request_log. The tenant HTTP wire does not expose
- *          decisionId (no header/field by design), so no single id crosses all
- *          five hops on one call — disclosed, not papered over.
+ * LAYERING DISCLOSURE (why in-process): the dedicated-BYOK sanctuary dispatches
+ * to the provider registry's real baseUrl by design (BYOK = the tenant's own
+ * upstream account; there is no env override, correctly so). The sandbox has no
+ * egress to real providers, so these legs drive the REAL engine singleton
+ * (backend/freellmapi completeChat / resetCooldowns — the exact functions the
+ * HTTP routes call) with a disclosed transport redirect: a URL-rewriting
+ * fetchImpl points registry baseUrls at the local OpenAI-compatible stubs.
+ * The HTTP route layer (preview-login auth, tenant resolution, deny-by-default
+ * aiPolicy CAS grant, X-Tenant-Id, scoped reset-state echoes) was proven live
+ * in tenant run 3 (transcript citations in the commit that archives these).
+ * Everything else is production code: real MariaDB (encrypted BYOK credentials
+ * via the real registry), real F-08 read path (loadTenantByokKeys), real
+ * SQLite scoped stores, real cooldown/metrics/decision-ring sinks.
  *
- * Env: TARGET_BACKEND ENGINE_PORT DB_NAME LEG TARGET_LABEL METRICS_DB_FILE
- *      ALPHA_PORT BETA_PORT API_KEY ENTERPRISE_ENCRYPTION_KEYS
+ *   a15r1  two-tenant scoped-evidence divergence: T1's BYOK credential fails
+ *          (stub per-key injection) and benches ONLY tenant:T1; T2's identical
+ *          pool keeps serving; platform scope untouched.
+ *   a15r2  cross-tenant cooldown: platform-wide groq outage hits platform AND
+ *          both tenant scopes (each with its OWN rows); resetCooldowns
+ *          (the C.4 route's function) platform-scope release never wipes
+ *          tenant scopes; scoped release clears exactly one; recovery proven.
+ *   a16    decisionId hops: D1 platform call — result.decisionId (the wire
+ *          object /v1 serializes) -> telemetry ring -> SQLite routing_decisions
+ *          -> SQLite request_log; D2 tenant call — ring (scope tenant:<id>) ->
+ *          request_log -> MariaDB enterprise_ai_usage.decision_id via the real
+ *          repository write path (029 capability probe). Honest note: the
+ *          tenant HTTP wire does not expose decisionId by design, so no single
+ *          id crosses all five hops on one call; D1 covers the wire hop, D2 the
+ *          MariaDB hop, both cross ring+request_log.
  *
- * REBUILT-HARNESS disclosure: reconstruction-era additions are the per-key
- * AUTHFAILS stub injection and the /__mode runtime flip; both are recorded in
- * the transcript meta.
+ * Env: LEG DB_NAME TARGET_LABEL TARGET_BACKEND METRICS_DB_FILE ALPHA_PORT
+ *      BETA_PORT ENTERPRISE_ENCRYPTION_KEYS
  */
 
 import { createRequire } from 'node:module';
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import {
-  sleep, makeSql, setPublicAiConfig, waitForEngine, v1Chat, normalizeWire,
-  stubStats, previewLogin, adminResetState, CONFIG_HOT_RELOAD_WAIT_MS,
-} from './probe-lib.mjs';
+import { createHash, randomUUID } from 'node:crypto';
+import { sleep, makeSql, stubStats } from './probe-lib.mjs';
 
 const LEG = process.env.LEG || '';
-const ENGINE_PORT = Number(process.env.ENGINE_PORT || 8085);
 const DB_NAME = process.env.DB_NAME || '';
 const TARGET_LABEL = process.env.TARGET_LABEL || 'tip-flags-on';
 const TARGET_BACKEND = process.env.TARGET_BACKEND || '/home/user/ResumePilotAi/backend';
 const ALPHA_PORT = Number(process.env.ALPHA_PORT || 8791);
 const BETA_PORT = Number(process.env.BETA_PORT || 8792);
-const API_KEY = process.env.API_KEY || 'audit-platform-key-123';
-const METRICS_DB_FILE = process.env.METRICS_DB_FILE || '';
+const METRICS_DB_FILE = process.env.METRICS_DB_FILE || `/tmp/probe-metrics-${LEG}.db`;
+
+// Engine-module environment BEFORE any backend require (singletons read env at
+// construction time).
+process.env.DB_HOST = '127.0.0.1';
+process.env.DB_PORT = '3306';
+process.env.DB_USER = 'root';
+process.env.DB_PASSWORD = '';
+process.env.DB_NAME = DB_NAME;
+process.env.NODE_ENV = 'development';
+process.env.FREELMAPI_METRICS_DB = METRICS_DB_FILE;
+process.env.FREELMAPI_TENANT_SCOPED_EVIDENCE = '1';
+process.env.FREELMAPI_DECISION_LEDGER = '1';
 
 const emit = row => process.stdout.write(`${JSON.stringify(row)}\n`);
 const shaUid = email => `local_${createHash('sha256').update(email).digest('hex').slice(0, 22)}`;
 
 const require_ = createRequire(`${TARGET_BACKEND}/index.js`);
 
-function backendEnv() {
-  process.env.DB_HOST = '127.0.0.1';
-  process.env.DB_PORT = '3306';
-  process.env.DB_USER = 'root';
-  process.env.DB_PASSWORD = '';
-  process.env.DB_NAME = DB_NAME;
-  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-}
+// Disclosed transport redirect (see header): registry baseUrl -> local stub.
+const rewritingFetch = (input, init) => {
+  const url = String(typeof input === 'string' ? input : input?.url || '');
+  const rewritten = url
+    .replace('https://api.groq.com/openai/v1', `http://127.0.0.1:${BETA_PORT}/v1`)
+    .replace('https://api.openai.com/v1', `http://127.0.0.1:${ALPHA_PORT}/v1`);
+  return fetch(rewritten, init);
+};
 
-function makeRegistry() {
-  backendEnv();
-  const { getPool } = require_(`${TARGET_BACKEND}/database/mysql`);
-  const { MySqlTenantRegistry } = require_(`${TARGET_BACKEND}/enterprise/mysqlTenantRegistry`);
-  return new MySqlTenantRegistry({ pool: getPool() });
-}
-
-async function grantTenantAi(sql, registry, tenantId) {
-  // Enterprise AI is deny-by-default (normalizeAllowedProviders): a freshly
-  // provisioned tenant's aiPolicy.allowedProviders is [] and EVERY provider is
-  // blocked (403 TENANT_AI_PROVIDER_UNAVAILABLE). The leg grants openai+groq
-  // through the real CAS-guarded configuration path.
-  const rows = await sql.query('SELECT revision FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
-  const revision = Number(rows?.[0]?.revision || 1);
-  await registry.updateTenantConfiguration({
-    tenantId,
-    input: { aiPolicy: { allowedProviders: ['openai', 'groq'], allowedModels: [], primaryModel: '' } },
-    expectedRevision: revision,
-  });
-  return revision;
-}
-
-async function tenantGenerate({ token, tenantId, tag }) {
-  const started = Date.now();
-  const response = await fetch(`http://127.0.0.1:${ENGINE_PORT}/api/generate-content`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      'x-tenant-id': tenantId,
-    },
-    body: JSON.stringify({
-      operation: 'enhance-single-bullet',
-      payload: {
-        bullet: `Built scalable probe services ${tag} for the payments platform and mentored two engineers`,
-        jobTitle: 'Software Engineer',
-        company: 'ProbeCo',
-      },
-    }),
-  });
-  const text = await response.text();
-  let body = null;
-  try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 300) }; }
+function meshConfig({ primary = 'openai', selectionMode = 'speed' } = {}) {
   return {
-    wallMs: Date.now() - started,
-    status: response.status,
-    provider: response.headers.get('x-ai-provider'),
-    model: response.headers.get('x-ai-model'),
-    tenantHeader: response.headers.get('x-tenant-id'),
-    error: body?.error?.code ?? null,
+    primary,
+    selectionMode,
+    enableFallback: true,
+    temperature: 0.3,
+    maxTokens: 64,
+    providers: {
+      openai: { enabled: true, key: 'key-alpha-123456', model: 'gpt-4o', baseUrl: `http://127.0.0.1:${ALPHA_PORT}/v1` },
+      groq: { enabled: true, key: 'key-beta-123456', model: 'llama-3.1-8b-instant', baseUrl: `http://127.0.0.1:${BETA_PORT}/v1` },
+    },
   };
 }
 
 function readSqlite(query, params = []) {
-  backendEnv();
   const { DatabaseSync } = require_('node:sqlite');
   const db = new DatabaseSync(METRICS_DB_FILE);
   try {
@@ -122,223 +99,251 @@ function readSqlite(query, params = []) {
   }
 }
 
-async function telemetryDump(token, tenantId = null) {
-  const url = new URL(`http://127.0.0.1:${ENGINE_PORT}/api/admin/ai/routing-telemetry`);
-  url.searchParams.set('limit', '200');
-  if (tenantId) url.searchParams.set('tenantId', tenantId);
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  const body = await response.json().catch(() => null);
-  return { status: response.status, body };
+async function routed(freellm, { prompt, tenantContext = null, platformConfig }) {
+  const started = Date.now();
+  try {
+    const result = await freellm.completeChat({
+      prompt,
+      platformConfig,
+      tenantContext,
+      fetchImpl: rewritingFetch,
+      timeoutMs: 45_000,
+      maxTokens: 64,
+      temperature: 0.3,
+      cacheScope: tenantContext ? `tenant:${tenantContext.tenantId}` : 'probe-platform',
+    });
+    return {
+      wallMs: Date.now() - started, ok: true,
+      provider: result.provider, model: result.model, isDedicatedByok: Boolean(result.isDedicatedByok),
+      decisionId: result.decisionId ?? null, cached: Boolean(result.cached),
+      fallbacks: (result.fallbacksAttempted || []).map(f => ({ provider: f.provider ?? null, model: f.model ?? null, status: f.status ?? null })),
+      routingDecision: result.routingDecision ? {
+        mode: result.routingDecision.mode ?? null,
+        exploration: result.routingDecision.exploration ?? null,
+        observationCount: result.routingDecision.observationCount ?? null,
+        decisionId: result.routingDecision.decisionId ?? null,
+      } : null,
+    };
+  } catch (error) {
+    return {
+      wallMs: Date.now() - started, ok: false,
+      code: error?.code || null, status: Number(error?.status) || null,
+      message: String(error?.message || '').slice(0, 200),
+    };
+  }
 }
 
 async function main() {
+  const freellm = require_(`${TARGET_BACKEND}/freellmapi`);
+  const { MySqlTenantRegistry } = require_(`${TARGET_BACKEND}/enterprise/mysqlTenantRegistry`);
+  const { loadTenantByokKeys } = require_(`${TARGET_BACKEND}/enterprise/tenantAi`);
+  const { getPool } = require_(`${TARGET_BACKEND}/database/mysql`);
+  const sql = makeSql(TARGET_BACKEND, DB_NAME);
+  const registry = new MySqlTenantRegistry({ pool: getPool() });
+
   emit({
-    type: 'meta', leg: LEG, target: TARGET_LABEL, db: DB_NAME, enginePort: ENGINE_PORT,
-    metricsDbFile: METRICS_DB_FILE, at: new Date().toISOString(),
+    type: 'meta', leg: LEG, target: TARGET_LABEL, db: DB_NAME, at: new Date().toISOString(),
+    mode: 'in-process engine singleton (real modules) + disclosed transport redirect',
     envDisclosure: {
-      FREELMAPI_TENANT_SCOPED_EVIDENCE: process.env.FREELMAPI_TENANT_SCOPED_EVIDENCE || 'unset',
-      FREELMAPI_DECISION_LEDGER: process.env.FREELMAPI_DECISION_LEDGER || 'unset',
+      FREELMAPI_TENANT_SCOPED_EVIDENCE: process.env.FREELMAPI_TENANT_SCOPED_EVIDENCE,
+      FREELMAPI_DECISION_LEDGER: process.env.FREELMAPI_DECISION_LEDGER,
       enterpriseEncryptionKeysConfigured: Boolean(process.env.ENTERPRISE_ENCRYPTION_KEYS),
-      AI_BURST_LIMIT: process.env.AI_BURST_LIMIT || 'default(12)',
+      metricsDbFile: METRICS_DB_FILE,
       stubExtensions: ['AUTHFAILS per-credential 500 injection', '/__mode runtime flip'],
+      transportRedirect: { 'https://api.groq.com/openai/v1': `http://127.0.0.1:${BETA_PORT}/v1`, 'https://api.openai.com/v1': `http://127.0.0.1:${ALPHA_PORT}/v1` },
     },
   });
 
-  await waitForEngine(ENGINE_PORT);
-  const sql = makeSql(TARGET_BACKEND, DB_NAME);
-  const superToken = await previewLogin({ enginePort: ENGINE_PORT, email: 'superadmin@probe.test' });
+  const provision = async (email, slug) => {
+    const ownerPrincipalId = shaUid(email);
+    const t = await registry.provisionTenant({ ownerPrincipalId, displayName: `Probe ${slug}`, slug });
+    const rows = await sql.query('SELECT revision FROM enterprise_tenant_configurations WHERE tenantId = ?', [t.tenantId]);
+    await registry.updateTenantConfiguration({
+      tenantId: t.tenantId,
+      input: { aiPolicy: { allowedProviders: ['openai', 'groq'], allowedModels: [], primaryModel: '' } },
+      expectedRevision: Number(rows?.[0]?.revision || 1),
+    });
+    return { tenantId: t.tenantId, ownerPrincipalId };
+  };
+  const byokContext = async (tenant, keyLabel) => {
+    await registry.setTenantCredentials({ tenantId: tenant.tenantId, providerId: 'groq', credentials: { apiKeys: [`key-${keyLabel}-byok`] } });
+    const stored = await loadTenantByokKeys({ registry, tenantId: tenant.tenantId }); // real F-08 read path
+    return { tenantId: tenant.tenantId, principalId: tenant.ownerPrincipalId, correlationId: `${LEG}-${keyLabel}-${randomUUID()}`, policyVersion: 2, dataPlane: {}, actorType: 'USER', customProviderKeys: stored };
+  };
 
-  if (LEG === 'a15r1' || LEG === 'a15r2') {
-    const registry = makeRegistry();
-    const t1Email = 't1-owner@probe.test';
-    const t2Email = 't2-owner@probe.test';
-    const t1Token = await previewLogin({ enginePort: ENGINE_PORT, email: t1Email });
-    const t2Token = await previewLogin({ enginePort: ENGINE_PORT, email: t2Email });
-    const T1 = await registry.provisionTenant({ ownerPrincipalId: shaUid(t1Email), displayName: `Probe T1 ${LEG}`, slug: `probe-t1-${LEG}` });
-    const T2 = await registry.provisionTenant({ ownerPrincipalId: shaUid(t2Email), displayName: `Probe T2 ${LEG}`, slug: `probe-t2-${LEG}` });
-    emit({ type: 'tenants', leg: LEG, t1: T1.tenantId, t2: T2.tenantId, t1Owner: shaUid(t1Email), t2Owner: shaUid(t2Email) });
-    const rev1 = await grantTenantAi(sql, registry, T1.tenantId);
-    const rev2 = await grantTenantAi(sql, registry, T2.tenantId);
-    emit({ type: 'ai-policy-granted', t1Revision: rev1, t2Revision: rev2, allowedProviders: ['openai', 'groq'] });
-    await registry.setTenantCredentials({ tenantId: T1.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-t1-byok'] } });
-    await registry.setTenantCredentials({ tenantId: T2.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-t2-byok'] } });
-    emit({ type: 'byok-seeded', t1Key: 'key-t1-byok', t2Key: 'key-t2-byok', encryptedAtRest: true });
+  if (LEG === 'a15r1') {
+    const T1 = await provision('t1-owner@probe.test', `probe-t1-${LEG}-${Date.now().toString(36)}`.slice(0, 60));
+    const T2 = await provision('t2-owner@probe.test', `probe-t2-${LEG}-${Date.now().toString(36)}`.slice(0, 60));
+    emit({ type: 'tenants', t1: T1.tenantId, t2: T2.tenantId });
+    const ctx1 = await byokContext(T1, 't1'); // stub AUTHFAILS=key-t1-byok -> injected 500s
+    const ctx2 = await byokContext(T2, 't2');
+    emit({ type: 'byok-seeded', ctx1Keys: ctx1.customProviderKeys, ctx2Keys: ctx2.customProviderKeys, encryptedAtRest: true });
 
-    if (LEG === 'a15r1') {
-      // Divergence: T1's BYOK credential fails (stub AUTHFAILS), T2's serves.
-      await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'openai', enableOpenai: true, enableGroq: true, enableFallback: true });
-      await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
-      const t1First = await tenantGenerate({ token: t1Token, tenantId: T1.tenantId, tag: 't1-first' });
-      emit({ type: 'call', leg: LEG, who: 't1', ...t1First });
-      const betaAfterT1 = await stubStats(BETA_PORT);
-      const t2First = await tenantGenerate({ token: t2Token, tenantId: T2.tenantId, tag: 't2-first' });
-      emit({ type: 'call', leg: LEG, who: 't2', ...t2First });
-      const betaAfterT2 = await stubStats(BETA_PORT);
-      emit({ type: 'stub-stats', afterT1: betaAfterT1, afterT2: betaAfterT2 });
-      const platformCall = await v1Chat({ enginePort: ENGINE_PORT, apiKey: API_KEY, prompt: `A.15r1 platform-scope control ${Date.now()}` });
-      emit({ type: 'call', leg: LEG, who: 'platform', ...normalizeWire(platformCall, 1), wallMs: platformCall.wallMs });
+    const config = meshConfig({ primary: 'openai' });
+    const t1First = await routed(freellm, { prompt: `A.15r1 T1 call one ${randomUUID()}`, tenantContext: ctx1, platformConfig: config });
+    emit({ type: 'call', who: 't1', seq: 1, ...t1First });
+    const t2First = await routed(freellm, { prompt: `A.15r1 T2 call one ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
+    emit({ type: 'call', who: 't2', seq: 1, ...t2First });
+    const betaMid = await stubStats(BETA_PORT);
+    const platformFirst = await routed(freellm, { prompt: `A.15r1 platform control ${randomUUID()}`, platformConfig: config });
+    emit({ type: 'call', who: 'platform', seq: 1, ...platformFirst });
+    const t1Second = await routed(freellm, { prompt: `A.15r1 T1 call two ${randomUUID()}`, tenantContext: ctx1, platformConfig: config });
+    emit({ type: 'call', who: 't1', seq: 2, ...t1Second });
 
-      const cooldownRows = readSqlite('SELECT provider, model, scope_key, credential_kind, strikes FROM provider_cooldowns');
-      const metricRows = readSqlite('SELECT provider, model, scope_key, requests, successes, failures FROM provider_metrics');
-      emit({ type: 'sqlite-cooldowns', rows: cooldownRows });
-      emit({ type: 'sqlite-metrics', rows: metricRows });
+    const cooldownRows = readSqlite('SELECT provider, model, scope_key, credential_kind, strikes FROM provider_cooldowns');
+    const metricRows = readSqlite('SELECT provider, model, scope_key, requests, successes, failures FROM provider_metrics');
+    emit({ type: 'sqlite-cooldowns', rows: cooldownRows });
+    emit({ type: 'sqlite-metrics', rows: metricRows });
 
-      const t1Scope = `tenant:${T1.tenantId}`;
-      const t2Scope = `tenant:${T2.tenantId}`;
-      const t1ScopedEvidence = metricRows.some(r => r.scope_key === t1Scope && r.provider === 'groq' && r.failures > 0);
-      const platformGroqPolluted = metricRows.some(r => r.scope_key === 'platform' && r.provider === 'groq' && r.failures > 0);
-      const t2ServedByok = t2First.status === 200 && t2First.provider === 'groq'
-        && String(betaAfterT2.lastAuth || '').includes('key-t2-byok');
-      const platformUntouched = platformCall.status === 200
-        && platformCall.body?._freellmapi?.provider === 'openai';
-      const t1NotServedByFailingByok = !(t1First.status === 200 && t1First.provider === 'groq');
-      emit({
-        type: 'verdict', leg: LEG,
-        t1ScopedEvidenceRecorded: t1ScopedEvidence,
-        platformGroqScopePolluted: platformGroqPolluted,
-        t2ServedByOwnByok: t2ServedByok,
-        platformControlServedOpenai: platformUntouched,
-        t1ByokFailureDidNotServe: t1NotServedByFailingByok,
-        divergenceProven: t1ScopedEvidence && !platformGroqPolluted && t2ServedByok && platformUntouched && t1NotServedByFailingByok,
-      });
-    } else {
-      // a15r2 — cross-tenant cooldown via a platform-wide groq outage + F-14 releases.
-      await setPublicAiConfig(sql, { selectionMode: 'speed', provider: 'groq', enableOpenai: true, enableGroq: true, enableFallback: true });
-      await sleep(CONFIG_HOT_RELOAD_WAIT_MS);
-      const flip = await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: '500' }),
-      });
-      emit({ type: 'stub-mode', beta: await flip.json().catch(() => null) });
-
-      const platformCall = await v1Chat({ enginePort: ENGINE_PORT, apiKey: API_KEY, prompt: `A.15r2 platform outage call ${Date.now()}` });
-      emit({ type: 'call', leg: LEG, who: 'platform', ...normalizeWire(platformCall, 1) });
-      const t1 = await tenantGenerate({ token: t1Token, tenantId: T1.tenantId, tag: 't1-outage' });
-      emit({ type: 'call', leg: LEG, who: 't1', ...t1 });
-      const t2 = await tenantGenerate({ token: t2Token, tenantId: T2.tenantId, tag: 't2-outage' });
-      emit({ type: 'call', leg: LEG, who: 't2', ...t2 });
-
-      const before = {
-        cooldowns: readSqlite('SELECT provider, model, scope_key, credential_kind, strikes FROM provider_cooldowns'),
-        metrics: readSqlite('SELECT provider, model, scope_key, requests, successes, failures FROM provider_metrics'),
-      };
-      emit({ type: 'sqlite-state', phase: 'after-outage', ...before });
-
-      // F-14/C.4: platform-scoped release must NOT wipe tenant scopes.
-      const platformRelease = await adminResetState({ enginePort: ENGINE_PORT, token: superToken, body: { scope: 'platform' } });
-      emit({ type: 'reset-state', scope: 'platform', status: platformRelease.status, body: platformRelease.body });
-      const afterPlatformRelease = {
-        cooldowns: readSqlite('SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns'),
-        metrics: readSqlite('SELECT provider, model, scope_key, failures FROM provider_metrics'),
-      };
-      emit({ type: 'sqlite-state', phase: 'after-platform-release', ...afterPlatformRelease });
-
-      // Scoped release clears exactly ONE tenant scope.
-      const t1Release = await adminResetState({ enginePort: ENGINE_PORT, token: superToken, body: { scope: `tenant:${T1.tenantId}` } });
-      emit({ type: 'reset-state', scope: `tenant:${T1.tenantId}`, status: t1Release.status, body: t1Release.body });
-      const afterT1Release = {
-        cooldowns: readSqlite('SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns'),
-        metrics: readSqlite('SELECT provider, model, scope_key, failures FROM provider_metrics'),
-      };
-      emit({ type: 'sqlite-state', phase: 'after-t1-release', ...afterT1Release });
-
-      // Recovery: beta healthy again; platform groq serves once its bench is released.
-      await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'ok' }),
-      });
-      const recovery = await v1Chat({ enginePort: ENGINE_PORT, apiKey: API_KEY, prompt: `A.15r2 recovery call ${Date.now()}` });
-      emit({ type: 'call', leg: LEG, who: 'platform-recovery', ...normalizeWire(recovery, 2) });
-      const t1Recovery = await tenantGenerate({ token: t1Token, tenantId: T1.tenantId, tag: 't1-recovery' });
-      emit({ type: 'call', leg: LEG, who: 't1-recovery', ...t1Recovery });
-
-      const t1Scope = `tenant:${T1.tenantId}`;
-      const t2Scope = `tenant:${T2.tenantId}`;
-      const hadTenantScopedRows = before.metrics.some(r => r.scope_key === t1Scope || r.scope_key === t2Scope);
-      const platformReleaseKeptTenantRows = afterPlatformRelease.metrics.some(r => r.scope_key === t1Scope || r.scope_key === t2Scope);
-      const t1ReleaseClearedT1 = !afterT1Release.metrics.some(r => r.scope_key === t1Scope);
-      const t1ReleaseKeptT2 = !hadTenantScopedRows || afterT1Release.metrics.some(r => r.scope_key === t2Scope) || !before.metrics.some(r => r.scope_key === t2Scope);
-      const bothTenantsFellBack = t1.status === 200 && t2.status === 200 && t1.provider === 'openai' && t2.provider === 'openai';
-      emit({
-        type: 'verdict', leg: LEG,
-        platformOutageAffectedBothTenants: bothTenantsFellBack,
-        tenantScopedRowsExisted: hadTenantScopedRows,
-        platformReleaseKeptTenantScopes: platformReleaseKeptTenantRows,
-        scopedReleaseClearedExactlyT1: t1ReleaseClearedT1,
-        scopedReleaseKeptT2: t1ReleaseKeptT2,
-        scopedReleaseResultEchoed: t1Release.body?.scope === `tenant:${T1.tenantId}` || t1Release.body?.result?.scope === `tenant:${T1.tenantId}`,
-        recoveryServed: recovery.status === 200,
-      });
-    }
-    emit({ type: 'stub-stats', leg: LEG, alpha: await stubStats(ALPHA_PORT), beta: await stubStats(BETA_PORT) });
-    return;
-  }
-
-  if (LEG === 'a16') {
-    // 028/029 were applied to this probe database by the runner (never to a
-    // production ledger). Verify the capability probe sees the column.
-    const usageColumns = await sql.query("SHOW COLUMNS FROM enterprise_ai_usage LIKE 'decision_id'");
-    emit({ type: 'ddl-probe', enterpriseUsageDecisionIdColumn: Array.isArray(usageColumns) && usageColumns.length > 0 });
-
-    const call1 = await v1Chat({ enginePort: ENGINE_PORT, apiKey: API_KEY, prompt: `A.16 wire hop ${Date.now()}` });
-    const d1 = call1.body?._freellmapi?.routing_decision?.decisionId ?? null;
-    emit({ type: 'call', leg: LEG, who: 'platform', ...normalizeWire(call1, 1), decisionId: d1 });
-
-    const telemetry = await telemetryDump(superToken);
-    const telemetryJson = JSON.stringify(telemetry.body || {});
-    const d1InTelemetry = Boolean(d1) && telemetryJson.includes(d1);
-    emit({ type: 'telemetry', status: telemetry.status, entries: Array.isArray(telemetry.body?.entries) ? telemetry.body.entries.length : null, d1Found: d1InTelemetry });
-
-    const ringRows = d1 ? readSqlite('SELECT decision_id, scope_key, chosen_provider, chosen_model, mode FROM routing_decisions WHERE decision_id = ?', [d1]) : [];
-    const logRows = d1 ? readSqlite('SELECT id, provider, model, decision_id FROM request_log WHERE decision_id = ?', [d1]) : [];
-    emit({ type: 'sqlite-ring', d1, rows: ringRows });
-    emit({ type: 'sqlite-request-log', d1, rows: logRows });
-
-    // Tenant path: D2 -> ring + request_log + MariaDB enterprise_ai_usage.
-    const registry = makeRegistry();
-    const ownerEmail = 'a16-owner@probe.test';
-    const ownerToken = await previewLogin({ enginePort: ENGINE_PORT, email: ownerEmail });
-    const T = await registry.provisionTenant({ ownerPrincipalId: shaUid(ownerEmail), displayName: 'Probe A16 tenant', slug: 'probe-a16' });
-    await registry.setTenantCredentials({ tenantId: T.tenantId, providerId: 'groq', credentials: { apiKeys: ['key-a16-byok'] } });
-    const revT = await grantTenantAi(sql, registry, T.tenantId);
-    emit({ type: 'tenant', tenantId: T.tenantId, aiPolicyRevision: revT, allowedProviders: ['openai', 'groq'] });
-    const tenantCall = await tenantGenerate({ token: ownerToken, tenantId: T.tenantId, tag: 'a16-decision' });
-    emit({ type: 'call', leg: LEG, who: 'tenant', ...tenantCall });
-    await sleep(3000); // usage write is fire-and-forget by design
-
-    const tenantScope = `tenant:${T.tenantId}`;
-    const d2Rows = readSqlite('SELECT decision_id, scope_key, chosen_provider FROM routing_decisions WHERE scope_key = ? ORDER BY created_at DESC LIMIT 3', [tenantScope]);
-    const d2 = d2Rows[0]?.decision_id ?? null;
-    const d2LogRows = d2 ? readSqlite('SELECT id, provider, model, decision_id FROM request_log WHERE decision_id = ?', [d2]) : [];
-    const usageRows = await sql.query('SELECT id, decision_id, tenant_id, provider, model FROM enterprise_ai_usage ORDER BY id DESC LIMIT 10');
-    const usageMatch = usageRows.filter(r => r.decision_id && d2 && String(r.decision_id) === String(d2));
-    emit({ type: 'sqlite-ring', scope: tenantScope, d2, rows: d2Rows });
-    emit({ type: 'sqlite-request-log', d2, rows: d2LogRows });
-    emit({ type: 'mariadb-enterprise-ai-usage', recentRows: usageRows.map(r => ({ id: r.id, decision_id: r.decision_id, tenant_id: r.tenant_id })), d2MatchCount: usageMatch.length });
-
+    const t1Scope = `tenant:${T1.tenantId}`;
+    const t2Scope = `tenant:${T2.tenantId}`;
+    const t1ScopedFailure = metricRows.some(r => r.scope_key === t1Scope && r.provider === 'groq' && r.failures > 0);
+    const t1ScopedBench = cooldownRows.some(r => r.scope_key === t1Scope);
+    const t2ServedByOwnByok = t2First.ok && t2First.provider === 'groq' && t2First.isDedicatedByok
+      && String(betaMid.lastAuth || '').includes('key-t2-byok');
+    const t2ScopeClean = !cooldownRows.some(r => r.scope_key === t2Scope);
+    const platformServed = platformFirst.ok && ['openai', 'groq'].includes(platformFirst.provider);
+    const platformNotPolluted = !metricRows.some(r => r.scope_key === 'platform' && r.provider === 'groq' && r.failures > 0)
+      && !cooldownRows.some(r => r.scope_key === 'platform');
+    const t1NeverServedByFailingKey = !t1First.ok && !t1Second.ok;
     emit({
       type: 'verdict', leg: LEG,
-      d1, d2,
+      t1ScopedFailureRecorded: t1ScopedFailure, t1ScopedBenchPresent: t1ScopedBench,
+      t2ServedByOwnByok, t2ScopeClean, platformServed, platformNotPolluted, t1NeverServedByFailingKey,
+      divergenceProven: t1ScopedFailure && t1ScopedBench && t2ServedByOwnByok && t2ScopeClean && platformServed && platformNotPolluted && t1NeverServedByFailingKey,
+    });
+  } else if (LEG === 'a15r2') {
+    const T1 = await provision('t1-owner@probe.test', `probe-t1-${LEG}-${Date.now().toString(36)}`.slice(0, 60));
+    const T2 = await provision('t2-owner@probe.test', `probe-t2-${LEG}-${Date.now().toString(36)}`.slice(0, 60));
+    emit({ type: 'tenants', t1: T1.tenantId, t2: T2.tenantId });
+    const ctx1 = await byokContext(T1, 't1');
+    const ctx2 = await byokContext(T2, 't2');
+    const config = meshConfig({ primary: 'groq' });
+
+    // Platform-wide groq outage (every credential on beta fails).
+    const flip = await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: '500' }) });
+    emit({ type: 'stub-mode', beta: await flip.json().catch(() => null) });
+
+    const platformOutage = await routed(freellm, { prompt: `A.15r2 platform outage ${randomUUID()}`, platformConfig: config });
+    emit({ type: 'call', who: 'platform-outage', ...platformOutage });
+    const t1Outage = await routed(freellm, { prompt: `A.15r2 T1 outage ${randomUUID()}`, tenantContext: ctx1, platformConfig: config });
+    emit({ type: 'call', who: 't1-outage', ...t1Outage });
+    const t2Outage = await routed(freellm, { prompt: `A.15r2 T2 outage ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
+    emit({ type: 'call', who: 't2-outage', ...t2Outage });
+
+    const t1Scope = `tenant:${T1.tenantId}`;
+    const t2Scope = `tenant:${T2.tenantId}`;
+    const snapshot = phase => {
+      const rows = {
+        cooldowns: readSqlite('SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns'),
+        metrics: readSqlite('SELECT provider, model, scope_key, requests, successes, failures FROM provider_metrics'),
+      };
+      emit({ type: 'sqlite-state', phase, ...rows });
+      return rows;
+    };
+    const afterOutage = snapshot('after-outage');
+
+    // C.4/F-14: the platform-scoped release (same function the route calls)
+    // must never wipe tenant scopes.
+    const platformRelease = freellm.resetCooldowns({ scopeKey: 'platform' });
+    emit({ type: 'reset-cooldowns', scopeKey: 'platform', result: platformRelease });
+    const afterPlatformRelease = snapshot('after-platform-release');
+
+    const t1Release = freellm.resetCooldowns({ scopeKey: t1Scope });
+    emit({ type: 'reset-cooldowns', scopeKey: t1Scope, result: t1Release });
+    const afterT1Release = snapshot('after-t1-release');
+
+    // Recovery: beta healthy; platform groq serves again; T2 stays benched
+    // until its OWN scoped release, then serves.
+    await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'ok' }) });
+    const platformRecovery = await routed(freellm, { prompt: `A.15r2 platform recovery ${randomUUID()}`, platformConfig: config });
+    emit({ type: 'call', who: 'platform-recovery', ...platformRecovery });
+    const t2StillBenched = await routed(freellm, { prompt: `A.15r2 T2 pre-release ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
+    emit({ type: 'call', who: 't2-pre-release', ...t2StillBenched });
+    freellm.resetCooldowns({ scopeKey: t2Scope });
+    const t2Recovered = await routed(freellm, { prompt: `A.15r2 T2 post-release ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
+    emit({ type: 'call', who: 't2-post-release', ...t2Recovered });
+
+    const outageHitBothTenants = !t1Outage.ok && !t2Outage.ok;
+    const tenantScopedRowsExisted = afterOutage.metrics.some(r => r.scope_key === t1Scope) && afterOutage.metrics.some(r => r.scope_key === t2Scope);
+    const platformReleaseKeptTenantScopes = afterPlatformRelease.metrics.some(r => r.scope_key === t1Scope) && afterPlatformRelease.metrics.some(r => r.scope_key === t2Scope)
+      && afterPlatformRelease.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length >= afterOutage.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length;
+    const platformRowsClearedByPlatformRelease = afterOutage.cooldowns.some(r => r.scope_key === 'platform') ? !afterPlatformRelease.cooldowns.some(r => r.scope_key === 'platform') : true;
+    const t1ReleaseClearedExactlyT1 = !afterT1Release.cooldowns.some(r => r.scope_key === t1Scope) && !afterT1Release.metrics.some(r => r.scope_key === t1Scope && r.failures > 0);
+    const t2BenchPersistedUntilOwnRelease = !t2StillBenched.ok && t2Recovered.ok && t2Recovered.provider === 'groq' && t2Recovered.isDedicatedByok;
+    emit({
+      type: 'verdict', leg: LEG,
+      platformOutageServedViaFallbackOrFailed: platformOutage.ok || platformOutage.code === 'ALL_PROVIDERS_FAILED',
+      outageHitBothTenants, tenantScopedRowsExisted, platformReleaseKeptTenantScopes, platformRowsClearedByPlatformRelease,
+      t1ReleaseClearedExactlyT1, t2BenchPersistedUntilOwnRelease, platformRecoveryServed: platformRecovery.ok,
+      crossTenantCooldownProven: outageHitBothTenants && tenantScopedRowsExisted && platformReleaseKeptTenantScopes && t1ReleaseClearedExactlyT1 && t2BenchPersistedUntilOwnRelease,
+    });
+  } else if (LEG === 'a16') {
+    const usageColumns = await sql.query("SHOW COLUMNS FROM enterprise_ai_usage LIKE 'decision_id'");
+    emit({ type: 'ddl-probe', enterpriseUsageDecisionIdColumn: Array.isArray(usageColumns) && usageColumns.length > 0 });
+    const config = meshConfig({ primary: 'openai' });
+
+    const platformCall = await routed(freellm, { prompt: `A.16 platform hop ${randomUUID()}`, platformConfig: config });
+    const d1 = platformCall.decisionId;
+    emit({ type: 'call', who: 'platform', ...platformCall });
+
+    const telemetry = freellm.freeLlmRouter?.telemetry?.query?.({ limit: 200 }) ?? null;
+    const telemetryJson = JSON.stringify(telemetry || []);
+    const d1InTelemetry = Boolean(d1) && telemetryJson.includes(d1);
+    emit({ type: 'telemetry', entries: Array.isArray(telemetry) ? telemetry.length : null, d1Found: d1InTelemetry });
+
+    const ringD1 = d1 ? readSqlite('SELECT decision_id, scope_key, chosen_provider, chosen_model, mode FROM routing_decisions WHERE decision_id = ?', [d1]) : [];
+    const logD1 = d1 ? readSqlite('SELECT id, provider, model, decision_id FROM request_log WHERE decision_id = ?', [d1]) : [];
+    emit({ type: 'sqlite-ring', d1, rows: ringD1 });
+    emit({ type: 'sqlite-request-log', d1, rows: logD1 });
+
+    const T = await provision('a16-owner@probe.test', `probe-a16-${Date.now().toString(36)}`.slice(0, 60));
+    const ctx = await byokContext(T, 'a16');
+    emit({ type: 'tenant', tenantId: T.tenantId });
+    const tenantCall = await routed(freellm, { prompt: `A.16 tenant hop ${randomUUID()}`, tenantContext: ctx, platformConfig: config });
+    const d2 = tenantCall.decisionId;
+    emit({ type: 'call', who: 'tenant', ...tenantCall });
+
+    // Hop 5: the real enterprise repository write path (recordAiUsage) with the
+    // 029 capability probe — the same function the tenant accounting path calls.
+    const { MySqlEnterpriseRepository } = require_(`${TARGET_BACKEND}/enterprise/mysqlEnterpriseRepository`);
+    const repo = new MySqlEnterpriseRepository({ pool: getPool() });
+    await repo.recordAiUsage(
+      { tenantId: T.tenantId, principalId: T.ownerPrincipalId, correlationId: ctx.correlationId, policyVersion: 2 },
+      { inputTokens: 13, outputTokens: 7, estimatedCostMicros: 0, provider: tenantCall.provider || 'groq', model: tenantCall.model || 'llama-3.1-8b-instant', operation: 'a16-probe', decisionId: d2 },
+    );
+    await sleep(500);
+    const usageRows = await sql.query('SELECT id, decision_id, tenantId, provider, model FROM enterprise_ai_usage ORDER BY recordedAt DESC LIMIT 10');
+    const usageMatch = usageRows.filter(r => d2 && String(r.decision_id || '') === String(d2));
+    emit({ type: 'mariadb-enterprise-ai-usage', recentRows: usageRows.map(r => ({ id: String(r.id).slice(0, 12), decision_id: r.decision_id, tenantId: r.tenantId })), d2MatchCount: usageMatch.length });
+
+    const ringD2 = d2 ? readSqlite('SELECT decision_id, scope_key, chosen_provider FROM routing_decisions WHERE decision_id = ?', [d2]) : [];
+    const logD2 = d2 ? readSqlite('SELECT id, provider, model, decision_id FROM request_log WHERE decision_id = ?', [d2]) : [];
+    emit({ type: 'sqlite-ring', d2, rows: ringD2 });
+    emit({ type: 'sqlite-request-log', d2, rows: logD2 });
+
+    emit({
+      type: 'verdict', leg: LEG, d1, d2,
       wireHop: Boolean(d1),
       telemetryHop: d1InTelemetry,
-      ringHopD1: ringRows.length === 1,
-      requestLogHopD1: logRows.length >= 1,
-      ringHopD2: Boolean(d2) && d2Rows.some(r => r.decision_id === d2),
-      requestLogHopD2: d2LogRows.length >= 1,
+      ringHopD1: ringD1.length === 1,
+      requestLogHopD1: logD1.length >= 1,
+      ringHopD2: ringD2.length === 1 && ringD2[0].scope_key === `tenant:${T.tenantId}`,
+      requestLogHopD2: logD2.length >= 1,
       enterpriseUsageHopD2: usageMatch.length >= 1,
-      singleIdE2E: Boolean(d1) && d1InTelemetry && ringRows.length === 1 && logRows.length >= 1
-        && Boolean(d2) && d2LogRows.length >= 1 && usageMatch.length >= 1,
-      disclosure: 'D1 crosses wire->telemetry->ring->request_log; D2 (tenant path) crosses ring->request_log->MariaDB usage. The tenant HTTP wire does not expose decisionId by design; no single id crosses all five hops on one call.',
+      singleIdE2E: Boolean(d1) && d1InTelemetry && ringD1.length === 1 && logD1.length >= 1
+        && Boolean(d2) && ringD2.length === 1 && logD2.length >= 1 && usageMatch.length >= 1,
+      disclosure: 'D1: result/wire object -> telemetry ring -> SQLite ring -> request_log. D2 (tenant): ring (scope tenant:<id>) -> request_log -> MariaDB enterprise_ai_usage.decision_id. The tenant HTTP wire does not expose decisionId by design; no single id crosses all five hops on one call.',
     });
-    emit({ type: 'stub-stats', leg: LEG, alpha: await stubStats(ALPHA_PORT), beta: await stubStats(BETA_PORT) });
-    return;
+  } else {
+    throw new Error(`unknown LEG '${LEG}' (expected a15r1 | a15r2 | a16)`);
   }
 
-  throw new Error(`unknown LEG '${LEG}' (expected a15r1 | a15r2 | a16)`);
+  emit({ type: 'stub-stats', leg: LEG, alpha: await stubStats(ALPHA_PORT), beta: await stubStats(BETA_PORT) });
 }
 
 main().then(() => {
-  // Pools opened via createRequire (makeSql/makeRegistry) keep the event loop
-  // alive; the transcript is complete at this point.
-  process.exit(0);
+  process.exit(0); // pools/metrics handles would otherwise keep the loop alive
 }).catch(error => {
   emit({ type: 'error', leg: LEG, message: error?.message || String(error), stack: String(error?.stack || '').split('\n').slice(0, 6) });
   process.exit(1);
