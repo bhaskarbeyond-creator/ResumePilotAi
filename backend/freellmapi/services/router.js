@@ -874,7 +874,10 @@ class FreeLlmRouter {
 
     // 3. Failover Execution Loop: provider → key pool
     for (const candidate of candidates) {
-      const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      // C.5: a tenant pool tries its OWN keys sequentially (isolated per
+      // candidate — never the shared platform round-robin state). Single-key
+      // BYOK stays [0], byte-identical to the frozen behaviour.
+      const keyOrder = candidate.isDedicatedByok ? candidate.keys.map((_key, index) => index) : this._nextKeyOrder(candidate.provider, candidate.keys.length);
       // C.1: the candidate's evidence scope (null with the flag off / platform candidates).
       const scopeKey = this._scopeKeyForCandidate(candidate, tenantContext);
       let keyFailures = 0;
@@ -1124,7 +1127,8 @@ class FreeLlmRouter {
     const decisionId = this._newDecisionId();
 
     for (const candidate of candidates) {
-      const keyOrder = candidate.isDedicatedByok ? [0] : this._nextKeyOrder(candidate.provider, candidate.keys.length);
+      // C.5: a tenant pool tries its OWN keys sequentially (stream path).
+      const keyOrder = candidate.isDedicatedByok ? candidate.keys.map((_key, index) => index) : this._nextKeyOrder(candidate.provider, candidate.keys.length);
       // C.1: the candidate's evidence scope (null with the flag off / platform candidates).
       const scopeKey = this._scopeKeyForCandidate(candidate, tenantContext);
       let keyFailures = 0;
