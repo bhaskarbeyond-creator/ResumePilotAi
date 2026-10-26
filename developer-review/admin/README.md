@@ -4,7 +4,9 @@
 **Branch analysed:** `arena/55faaf92-resumepilotai` (head `35180d8`, branched from `dev`)
 **Analysis date:** 2026-10-26
 **Analysis type:** Read-only architectural, coverage, RBAC and defect review of the **admin control plane** (platform staff + super-admin) across the new frontend and the new backend, compared against the legacy production reference.
-**Deliverable type:** Analysis and recommendation only. **No application code was modified, no branch was created, no pull request was opened.**
+**Deliverable type:** Analysis **plus remediation**. The analysis below (documents 01–12) was the first phase and is preserved unchanged except where the code proved it wrong (corrections are catalogued in `OPEN-ITEMS.md §6`). The second phase executed the remediation on this branch and is documented in documents 13–19.
+
+**Execution commits:** `b106012` (Phase 0: escalation ceiling, secret classification), `1d47922` (RBAC resolver), `b2803e1` (route manifest), `5ace3e6` (RBAC administration API).
 
 ---
 
@@ -25,6 +27,17 @@
 | 10 | [10-recommendations.md](10-recommendations.md) | 26 prioritised, actionable recommendations with exact required modification, impact, risk, effort, acceptance criteria | Engineering lead, product owner |
 | 11 | [11-residual-risk-and-open-decisions.md](11-residual-risk-and-open-decisions.md) | Ambiguities with provisional analysis, exact question for a human owner, trade-offs | Product owner |
 | 12 | [12-appendices.md](12-appendices.md) | Raw traceability logs, permission-vocabulary census, API contract diff, empirical probe harness + results, test-coverage analysis | Engineering lead |
+
+| 13 | [COMPLETION-REPORT.md](COMPLETION-REPORT.md) | What shipped, what did not, and the 10/10 bar scored honestly | Release authority |
+| 14 | [DECISION-LOG.md](DECISION-LOG.md) | Ten RR decisions resolved + twelve execution decisions + four analysis corrections | Release authority, architect |
+| 15 | [TEST-EVIDENCE.md](TEST-EVIDENCE.md) | Exact commands, exact counts, per-suite proof, tier coverage | QA lead, CI owner |
+| 16 | [SECURITY-AND-RBAC-PROOF.md](SECURITY-AND-RBAC-PROOF.md) | The six invariants with verdicts and the visibility-vs-enforcement matrix | Security lead |
+| 17 | [UX-DEVICE-MATRIX.md](UX-DEVICE-MATRIX.md) | Five viewport classes: measured state, acceptance criteria, nine work items | Frontend lead |
+| 18 | [DEPLOYMENT-RUNBOOK.md](DEPLOYMENT-RUNBOOK.md) | Pre-flight, apply, verify, three rollback levels, break-glass | Ops / on-call |
+| 19 | [OPEN-ITEMS.md](OPEN-ITEMS.md) | Every remaining gap with file, acceptance criterion and dependency | Everyone |
+| 20 | [decisions/](decisions/) | ADR-001…005: the five architectural decisions behind the remediation | Architect |
+
+**Start here if you are deploying:** document 18. **Start here if you are reviewing the work:** document 13, then 15. **Start here if you are continuing it:** document 19.
 
 Document order is also the recommended reading order for remediation planning.
 
