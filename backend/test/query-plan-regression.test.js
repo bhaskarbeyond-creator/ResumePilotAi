@@ -321,10 +321,22 @@ test('identity lookup is indexable: the email predicate is not wrapped in a func
 
 /* ── EXPLAIN layer (needs a disposable MariaDB) ─────────────────────── */
 
-const ENABLED = process.env.RUN_MARIADB_INTEGRATION === 'true';
+const integrationGate = require('../test-support/integrationGate');
+
+/**
+ * This tier runs against a real MariaDB and is opt-in **locally only**. `integrationGate`
+ * decides: with the flag it runs, without it a developer gets a skip that states the command,
+ * and in CI a missing flag is a failure rather than a green skip (`integration-gate.test.js`
+ * pins that decision).
+ */
+const GATE = {
+  flag: 'RUN_MARIADB_INTEGRATION',
+  tier: 'EXPLAIN layer',
+  hint: 'RUN_MARIADB_INTEGRATION=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test npm run test:query-plan',
+};
 
 test('query-plan EXPLAIN: no hot query resolves to a full table scan', {
-  skip: ENABLED ? false : 'set RUN_MARIADB_INTEGRATION=true against a disposable MariaDB 11.4 database',
+  skip: integrationGate.gate(GATE),
 }, async (t) => {
   assert.ok(process.env.DB_HOST, 'DB_HOST is required');
   const mysql = require('mysql2/promise');

@@ -16,8 +16,21 @@ const crypto = require('node:crypto');
 const mysql = require('mysql2/promise');
 const { loadDisposableMariaDb } = require('./helpers/disposableMariaDb');
 
-const ENABLED = process.env.RUN_MARIADB_INTEGRATION === 'true';
-const DB = ENABLED ? loadDisposableMariaDb(process.env, { destructive: true }) : null;
+const integrationGate = require('../test-support/integrationGate');
+
+/**
+ * This tier runs against a real MariaDB and is opt-in **locally only**. `integrationGate`
+ * decides: with the flag it runs, without it a developer gets a skip that states the command,
+ * and in CI a missing flag is a failure rather than a green skip (`integration-gate.test.js`
+ * pins that decision).
+ */
+const GATE = {
+  flag: 'RUN_MARIADB_INTEGRATION',
+  tier: 'migration gate',
+  hint: 'RUN_MARIADB_INTEGRATION=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test node --test test/mariadb-migration-gate.test.js',
+};
+// `gate()` is evaluated before this line, so `DB` is only null on a legitimate local skip.
+const DB = integrationGate.isEnabled(GATE.flag) ? loadDisposableMariaDb(process.env, { destructive: true }) : null;
 const DB_HOST = DB?.host;
 const DB_PORT = DB?.port;
 const DB_USER = DB?.user;
@@ -55,7 +68,7 @@ function assertMariaDb114(version) {
 }
 
 test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration', {
-  skip: ENABLED ? false : 'set RUN_MARIADB_INTEGRATION=true against a disposable MariaDB 11.4 database',
+  skip: integrationGate.gate(GATE),
   timeout: 120_000,
 }, async (t) => {
   assertDestructiveTestTarget();

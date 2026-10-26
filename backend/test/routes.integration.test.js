@@ -8,13 +8,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
-const RUN_MARIADB_INTEGRATION = process.env.RUN_MARIADB_INTEGRATION === 'true';
+const integrationGate = require('../test-support/integrationGate');
+
+/** Opt-in locally, mandatory in CI, loud when CI is missing the flag (Decision 2). */
+const GATE = {
+  flag: 'RUN_MARIADB_INTEGRATION',
+  tier: 'route integration',
+  hint: 'RUN_MARIADB_INTEGRATION=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test node --test test/routes.integration.test.js',
+};
+const RUN_MARIADB_INTEGRATION = integrationGate.isEnabled(GATE.flag);
 if (RUN_MARIADB_INTEGRATION) {
   require('./helpers/disposableMariaDb').loadDisposableMariaDb();
 }
-const mariaTest = (name, fn) => test(name, {
-  skip: RUN_MARIADB_INTEGRATION ? false : 'NOT VERIFIED: requires a disposable migrated MariaDB database',
-}, fn);
+const mariaTest = (name, fn) => test(name, integrationGate.gate(GATE), fn);
 
 if (!RUN_MARIADB_INTEGRATION) {
   require('./helpers/routesIntegrationContract').installRoutesIntegrationContract();

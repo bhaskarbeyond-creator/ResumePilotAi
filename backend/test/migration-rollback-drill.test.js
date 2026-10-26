@@ -34,8 +34,21 @@ const path = require('node:path');
 const mysql = require('mysql2/promise');
 const { loadDisposableMariaDb } = require('./helpers/disposableMariaDb');
 
-const ENABLED = process.env.RUN_MARIADB_INTEGRATION === 'true';
-const DB = ENABLED ? loadDisposableMariaDb(process.env, { destructive: true }) : null;
+const integrationGate = require('../test-support/integrationGate');
+
+/**
+ * This tier runs against a real MariaDB and is opt-in **locally only**. `integrationGate`
+ * decides: with the flag it runs, without it a developer gets a skip that states the command,
+ * and in CI a missing flag is a failure rather than a green skip (`integration-gate.test.js`
+ * pins that decision).
+ */
+const GATE = {
+  flag: 'RUN_MARIADB_INTEGRATION',
+  tier: 'migration rollback drill',
+  hint: 'RUN_MARIADB_INTEGRATION=true MARIADB_TEST_ALLOW_RESET=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test npm run migration:drill',
+};
+// `gate()` is evaluated before this line, so `DB` is only null on a legitimate local skip.
+const DB = integrationGate.isEnabled(GATE.flag) ? loadDisposableMariaDb(process.env, { destructive: true }) : null;
 const MIGRATIONS = path.join(__dirname, '..', 'database', 'migrations');
 
 /** Forward migrations in order; `001_baseline` is excluded from the drill's
@@ -80,7 +93,7 @@ async function listTables(connection) {
 }
 
 test('migration rollback drill: forward → rollback → forward keeps data and returns to documented residue', {
-  skip: ENABLED ? false : 'set RUN_MARIADB_INTEGRATION=true against a disposable MariaDB 11.4 database',
+  skip: integrationGate.gate(GATE),
   timeout: 180_000,
 }, async () => {
   const connection = await mysql.createConnection({

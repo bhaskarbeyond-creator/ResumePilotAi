@@ -23,11 +23,17 @@ process.env.SMTP_PASS = 'fixture-mail-password';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const ENABLED = process.env.RUN_MARIADB_INTEGRATION === 'true';
+const integrationGate = require('../test-support/integrationGate');
+
+/** Opt-in locally, mandatory in CI, loud when CI is missing the flag (Decision 2). */
+const GATE = {
+    flag: 'RUN_MARIADB_INTEGRATION',
+    tier: 'MariaDB-only integration',
+    hint: 'RUN_MARIADB_INTEGRATION=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test node --test test/mariadb-only-integration.test.js',
+};
+const ENABLED = integrationGate.isEnabled(GATE.flag);
 if (ENABLED) require('./helpers/disposableMariaDb').loadDisposableMariaDb();
-const mariaTest = (name, fn) => test(name, {
-    skip: ENABLED ? false : 'NOT VERIFIED: set RUN_MARIADB_INTEGRATION=true against a disposable migrated MariaDB database',
-}, fn);
+const mariaTest = (name, fn) => test(name, integrationGate.gate(GATE), fn);
 const request = require('supertest');
 const crypto = require('crypto');
 process.env.ENTERPRISE_ENCRYPTION_KEY ||= crypto.randomBytes(32).toString('base64');
