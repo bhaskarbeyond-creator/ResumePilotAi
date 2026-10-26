@@ -1,0 +1,28 @@
+{
+  "byteEqual": true,
+  "baselineFile": "/home/user/ResumePilotAi/developer-review/probes/2026-10-26/a10r3-baseline-bb2b82b.jsonl",
+  "tipFile": "/home/user/ResumePilotAi/developer-review/probes/2026-10-26/a10r3-tip-flags-off.jsonl",
+  "callsCompared": 6,
+  "comparisonFields": [
+    "call",
+    "status",
+    "provider",
+    "model",
+    "cached",
+    "mode",
+    "exploration",
+    "qualityEvidence",
+    "observationCount",
+    "lastResort",
+    "fallbacks",
+    "decisionIdPresent",
+    "content"
+  ],
+  "excludedFields": [
+    "wallMs",
+    "latencyMs",
+    "observedLatencyMs",
+    "timestamps"
+  ],
+  "divergences": []
+}
