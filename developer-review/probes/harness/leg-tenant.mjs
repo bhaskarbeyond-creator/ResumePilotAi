@@ -268,7 +268,30 @@ async function main() {
     const t2Recovered = await routed(freellm, { prompt: `A.15r2 T2 post-release ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
     emit({ type: 'call', who: 't2-post-release', ...t2Recovered });
 
+    // Physics-honesty leg (test-plan part-2 item 5, exact shape): a PLATFORM
+    // credential 429 cools groq for EVERY tenant's platform-credential traffic
+    // (documented, asserted - not 'fixed' away), while the dedicated-BYOK
+    // sanctuary is NOT blocked by platform benches (C.1: a platform bench is a
+    // fact about the shared platform credentials, not about the tenant's keys).
+    const T3 = await provision('t3-owner@probe.test', `probe-t3-${LEG}-${Date.now().toString(36)}`.slice(0, 60));
+    const ctx3 = { tenantId: T3.tenantId, principalId: T3.ownerPrincipalId, correlationId: `${LEG}-t3-${randomUUID()}`, policyVersion: 2, dataPlane: {}, actorType: 'USER', customProviderKeys: {} };
+    emit({ type: 'tenant', who: 't3-no-byok', tenantId: T3.tenantId });
+    await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: '429' }) });
+    const platform429 = await routed(freellm, { prompt: `A.15r2 platform 429 bench ${randomUUID()}`, platformConfig: config });
+    emit({ type: 'call', who: 'platform-429', ...platform429 });
+    const cooldowns429 = readSqlite("SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns WHERE scope_key = 'platform'");
+    emit({ type: 'sqlite-cooldowns', phase: 'after-platform-429', rows: cooldowns429 });
+    // Stub healthy again, but the platform bench (Retry-After 60s) is ACTIVE:
+    await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'ok' }) });
+    const t3Blocked = await routed(freellm, { prompt: `A.15r2 T3 platform-cred under bench ${randomUUID()}`, tenantContext: ctx3, platformConfig: config });
+    emit({ type: 'call', who: 't3-under-platform-bench', ...t3Blocked });
+    const t2Sanctuary = await routed(freellm, { prompt: `A.15r2 T2 BYOK under platform bench ${randomUUID()}`, tenantContext: ctx2, platformConfig: config });
+    emit({ type: 'call', who: 't2-byok-under-platform-bench', ...t2Sanctuary });
+
     const outageHitBothTenants = !t1Outage.ok && !t2Outage.ok;
+    const platform429Benched = cooldowns429.some(r => r.provider === 'groq');
+    const t3PlatformTrafficCooled = t3Blocked.ok && t3Blocked.provider === 'openai'; // groq benched platform-wide -> T3's platform-credential traffic falls to openai
+    const sanctuaryIgnoredPlatformBench = t2Sanctuary.ok && t2Sanctuary.provider === 'groq' && t2Sanctuary.isDedicatedByok;
     const tenantScopedRowsExisted = afterOutage.metrics.some(r => r.scope_key === t1Scope) && afterOutage.metrics.some(r => r.scope_key === t2Scope);
     const platformReleaseKeptTenantScopes = afterPlatformRelease.metrics.some(r => r.scope_key === t1Scope) && afterPlatformRelease.metrics.some(r => r.scope_key === t2Scope)
       && afterPlatformRelease.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length >= afterOutage.cooldowns.filter(r => r.scope_key === t1Scope || r.scope_key === t2Scope).length;
@@ -290,7 +313,9 @@ async function main() {
       platformOutageServedViaFallbackOrFailed: platformOutage.ok || platformOutage.code === 'ALL_PROVIDERS_FAILED',
       outageHitBothTenants, tenantScopedRowsExisted, platformReleaseKeptTenantScopes, platformRowsClearedByPlatformRelease,
       t1ReleaseClearedExactlyT1, t2BenchPersistedUntilOwnRelease, platformRecoveryServed: platformRecovery.ok,
+      platform429BenchedGroq, platform429Benched, t3PlatformTrafficCooled, sanctuaryIgnoredPlatformBench,
       crossTenantCooldownProven: outageHitBothTenants && tenantScopedRowsExisted && platformReleaseKeptTenantScopes && t1ReleaseClearedExactlyT1 && t2BenchPersistedUntilOwnRelease,
+      physicsHonestyProven: platform429Benched && t3PlatformTrafficCooled && sanctuaryIgnoredPlatformBench,
     });
   } else if (LEG === 'a16') {
     const usageColumns = await sql.query("SHOW COLUMNS FROM enterprise_ai_usage LIKE 'decision_id'");
