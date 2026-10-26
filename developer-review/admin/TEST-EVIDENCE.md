@@ -5,10 +5,16 @@ reproduce every number. Anything that could not be executed here is labelled **N
 with the reason and the command to run it elsewhere. A number in this file is a transcript
 of a command, never a target.
 
-**Environment for every run below.** Node v22.22.3 · Linux sandbox · `backend/node_modules`
-and `frontend/node_modules` installed locally · **no MySQL/MariaDB** · Firebase Admin in
-"limited local mode" (no credentials) · **no browser binary** (Playwright browsers cannot be
-downloaded here, so the browser tier is NOT RUN — §5).
+**Environment.** Node v22.22.3 · Linux sandbox · `backend/node_modules` and
+`frontend/node_modules` installed locally · **no MySQL/MariaDB** · Firebase Admin in "limited
+local mode" (no credentials) · **a Chromium obtained from the npm registry** (`@sparticuz/chromium`,
+`ADR-010`) — Playwright's own CDN is blocked here, but this build drives Playwright and ran the
+auth spec green. It cannot capture screenshots, which is why Lighthouse performance stays
+indicative rather than measured.
+
+**Currency.** The tables in §1–§4 were re-produced from a **fresh clone** of this branch
+(`D-037-1`); where a figure differs from an earlier round, the earlier one was stale and has been
+replaced, not annotated.
 
 **Consequence to keep in mind.** A route that touches the database answers `503`/`500`, and a
 suite that asserts on persisted state fails for an environmental reason. Those failures are
@@ -22,9 +28,9 @@ either direction.
 
 | Run | Command | Result |
 |---|---|---|
-| Backend gate (18 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **241 / 241 pass**, `c8 check-coverage` exit 0 |
-| Backend coverage | same command | **statements 98.82 %**, **branches 87.23 %**, **functions 97.95 %**, lines 98.82 % — **the 10/10 bar's coverage floor is met** (§3) |
-| Tier pack as one command | `cd backend && NODE_ENV=test npm run test:tiers` | **101 tests, 99 pass, 2 conditional skips (database-gated), 0 fail** |
+| Backend gate (18 files, the coverage set) | `cd backend && npm run test:coverage` | **260 / 260 pass**, `c8 check-coverage` exit 0 |
+| Backend coverage | same command | **statements 99.02 %**, **branches 87.76 %**, **functions 97.95 %**, **lines 99.02 %** against a 95/85/90/95 gate — §3, `ADR-008` |
+| Tier pack as one command | `cd backend && npm run test:tiers` | **113 pass, 2 skips (database-gated, §2.1), 0 fail** |
 | Coverage closers (3 files) | §2 | **38 / 38 pass** (`config-edge-coverage` 16, `config-registry-guards` 14, `admin-rbac-edge-coverage` 8) |
 | Observability counters (REC-025) | `NODE_ENV=test node --test test/observability-metrics.test.js` | **17 / 17 pass** — deltas, an injected audit failure in one scrape, the cardinality ceiling, no PII in labels, admin-only boundary |
 | Root attestation (REC-026) | `NODE_ENV=test node --test test/root-account-reconciliation.test.js` | **13 / 13 pass** — five mismatch kinds, refusal when either half is blind, SUPER_ADMIN-only |
@@ -41,8 +47,8 @@ either direction.
 | Authority suites (spot re-run after the user-route change) | `admin-target-authority` + `admin-rbac-api` + `config-api` | **61 / 61 pass** |
 | Frontend types | `cd frontend && npx tsc -b` | **0 errors** |
 | Frontend types, strict, admin plane | `npm run typecheck:strict` | **0 errors** (strict + `noUnusedLocals` + `noImplicitOverride` + `noImplicitReturns`) |
-| Frontend lint | `npm run lint` | **0 warnings, 0 errors** (267 files, 96 rules) |
-| Frontend component tests | `npm run test:unit` | **122 / 122 pass** (16 files) |
+| Frontend lint | `npm run lint` | **0 warnings, 0 errors** (273 files, 96 rules) |
+| Frontend component tests | `npm run test:unit:coverage` | **198 / 198 pass**; coverage 95.45 / 86.02 / 95.16 / 96.11 against 90/85/90/95 |
 | Frontend component coverage | `npm run test:unit:coverage` | **statements 83.90 %**, **branches 77.83 %**, **functions 82.77 %**, lines 84.47 % on the 14 admin-plane modules (thresholds 80/75/75/80, enforced by the command) |
 | UX gate | `npm run verify:ux` | **0 violations**, contrast **16 / 16 pass** |
 | Browser tier (E2E, a11y, visual) | `npm test` | **NOT RUN** — no browser binary; see §5 |
@@ -84,6 +90,27 @@ properties, not product properties.
 
 `scripts/smoke.mjs` (10 checks against a *running* deployment, `--base`, `--json`,
 `npm run smoke:deployed`) is written but **NOT RUN** here: it requires a deployed base URL.
+
+---
+
+## 2.1 The EXPLAIN tier: opt-in locally, mandatory in CI, loud when broken
+
+The only skipped tests in the backend are the two database tiers, and a skip is the one result that
+can be *wrong in the safe direction*: it reads as "not applicable" while the thing it would have
+caught ships. So the gate that decides is itself a tested module, `backend/test-support/integrationGate.js`,
+and the EXPLAIN layer consumes it (`test/query-plan-regression.test.js:328`).
+
+| The mandate's clause | How it is satisfied | Where a reviewer checks it |
+|---|---|---|
+| (a) opt-in **on developer machines only** | `decide()` returns `{run:false, failLoud:false}` only when no CI signal is present. The skip message names the flag, the tier and the exact command: `RUN_MARIADB_INTEGRATION=true DB_HOST=127.0.0.1 DB_NAME=resumepilot_test npm run test:query-plan` | `test-support/integrationGate.js` `decide()`; asserted by `integration-gate.test.js` "locally, without the flag, the tier skips and says exactly what to run" |
+| (b) **never skipped in CI**, with a test proving CI-fail when the flag is unset | In CI the same call **throws** `IntegrationGateError` (code `INTEGRATION_GATE_CLOSED`) instead of returning `{skip}`, because `node:test` honours a returned skip. CI is detected by any of `CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `BUILDKITE`, `TF_BUILD`, `CIRCLECI`, `JENKINS_URL` | `integration-gate.test.js` — the decision table, the `assert.throws` case, and a **child process** running a fixture suite with `CI=true` and no flag whose assertion is a **non-zero exit code** |
+| (c) **fails loud if the path is unavailable in CI** | Reachability is deliberately *not* conflated with configuration: the gate only decides whether the tier is allowed to run; once it is, a dead database or a missing driver raises the driver's own error, which fails the job. A configured-but-broken CI job can therefore never turn green | docblock in `integrationGate.js` "What is deliberately not here"; the EXPLAIN body asserts `DB_HOST` and lets `mysql2` throw |
+
+**Verified this round:** `cd backend && npm run test:tiers` → the two skips print the full command,
+not a bare `# SKIP`; `node --test test/integration-gate.test.js` → **14/14 pass**, including the two sub-process
+cases (CI-without-flag → non-zero exit; local-without-flag → exit 0 with a skip). The `migration-drill` CI job sets `RUN_MARIADB_INTEGRATION: 'true'` in its `env` block
+(`.github/workflows/quality-gate.yml:198`), so in CI the gate opens rather than throwing — the two behaviours are complementary, not
+contradictory.
 
 ---
 
