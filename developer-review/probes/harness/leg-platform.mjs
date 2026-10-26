@@ -49,7 +49,14 @@ const sql = makeSql(process.env.TARGET_BACKEND, DB_NAME);
 
 try {
   await waitForEngine(ENGINE_PORT);
-  emit({ type: 'meta', leg: LEG, target: TARGET_LABEL, db: DB_NAME, enginePort: ENGINE_PORT, at: new Date().toISOString() });
+  emit({
+    type: 'meta', leg: LEG, target: TARGET_LABEL, db: DB_NAME, enginePort: ENGINE_PORT, at: new Date().toISOString(),
+    // Disclosure: the 61-call sequence needs the /v1 admission limiter raised
+    // from its 12/60s default (env-tunable by design in security/abuse.js);
+    // identical on both targets, limiter stays active. Timing fields are
+    // excluded from the byte-equality comparison surface by design.
+    envDisclosure: { AI_BURST_LIMIT: process.env.AI_BURST_LIMIT || 'default(12)', FREELMAPI_METRICS_DB: ':memory:' },
+  });
 
   if (LEG === 'a9r3') {
     // Mature alpha (openai stub) to n>=3 under a manual pin, then flip to

@@ -73,8 +73,14 @@ start_engine() { # TREE_BACKEND DB_NAME ENGINE_LOG
     exit 1
   fi
   # exec-in-subshell: $! IS the node pid (no cd-chain backgrounding trap).
+  # AI_BURST_LIMIT: the /v1 admission limiter defaults to 12 req/60 s
+  # (security/abuse.js, env-tunable by design). The 61-call A.9r4 sequence
+  # needs the sequence to run uninterrupted; both targets get the identical
+  # value and it is disclosed in every transcript header. The limiter stays
+  # ACTIVE (200/60s), not disabled.
   ( cd "$1" && exec env NODE_ENV=development PORT=$ENGINE_PORT DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_PASSWORD= DB_NAME="$2" \
     TEST_AUTH_HMAC_SECRET=sandbox-hmac-secret-resumepilot-2026 FREELMAPI_API_KEYS=audit-platform-key-123 \
+    AI_BURST_LIMIT=200 AI_BURST_WINDOW_MS=60000 \
     FREELMAPI_METRICS_DB=:memory: \
     OPENAI_API_KEY=key-alpha-123456 OPENAI_BASE_URL="http://127.0.0.1:${ALPHA_PORT}/v1" \
     GROQ_API_KEY=key-beta-123456 GROQ_BASE_URL="http://127.0.0.1:${BETA_PORT}/v1" \
