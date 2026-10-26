@@ -67,7 +67,7 @@ function makeRegistry() {
 
 async function tenantGenerate({ token, tenantId, tag }) {
   const started = Date.now();
-  const response = await fetch(`http://127.0.0.1:${ENGINE_PORT}/api/ai/generate-content`, {
+  const response = await fetch(`http://127.0.0.1:${ENGINE_PORT}/api/generate-content`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -316,7 +316,11 @@ async function main() {
   throw new Error(`unknown LEG '${LEG}' (expected a15r1 | a15r2 | a16)`);
 }
 
-main().catch(error => {
+main().then(() => {
+  // Pools opened via createRequire (makeSql/makeRegistry) keep the event loop
+  // alive; the transcript is complete at this point.
+  process.exit(0);
+}).catch(error => {
   emit({ type: 'error', leg: LEG, message: error?.message || String(error), stack: String(error?.stack || '').split('\n').slice(0, 6) });
   process.exit(1);
 });
