@@ -15,6 +15,9 @@ const {
   TESTABLE_SERVICES,
   STATE: HEALTH_STATE,
 } = require('../services/platformHealth');
+const metrics = require('../services/operationalMetrics');
+const rootAccountReconciliation = require('../services/rootAccountReconciliation');
+const adminRbac = require('../services/adminRbac');
 const { getPool } = require('../database/mysql');
 const { getRepository } = require('../repositories');
 const { getPlatformCurrencyConfig } = require('../services/platformCurrency');
@@ -284,12 +287,34 @@ function projectSnapshotForRole(snapshot, elevated) {
   return { ...snapshot, services, elevated: false };
 }
 
+/**
+ * Process counters in the Prometheus text exposition format (REC-025).
+ *
+ * Deliberately no database read: the scrape must answer during the outage it is meant to
+ * report. `Accept: application/json` returns the same data as structure, which is what the
+ * health snapshot embeds and what a test can assert against.
+ *
+ * Authorisation is `security.read` from the route manifest (`platform-health` rule), i.e. the
+ * same permission as the rest of the operational surface — the counters describe
+ * infrastructure, not people.
+ */
+router.get('/metrics', async (req, res) => {
+  const wantsJson = String(req.get('accept') || '').includes('application/json');
+  const payload = metrics.snapshot();
+  if (wantsJson) return res.json({ success: true, ...payload });
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  return res.send(metrics.render());
+});
+
 router.get('/operational-status', async (req, res) => {
   try {
     const elevated = isSuperAdmin(req.user);
     const force = String(req.query.force || '') === 'true';
     const snapshot = await getHealthSnapshot(req.app, { force });
-    return res.json({ ...projectSnapshotForRole(snapshot, elevated), elevated });
+    // Attached at response time, not inside the cached snapshot: a counter read from a 30 s
+    // cache would make the scrape's own freshness invisible.
+    return res.json({ ...projectSnapshotForRole(snapshot, elevated), elevated, metrics: metrics.snapshot() });
   } catch (error) {
     console.error('[PlatformHealth] snapshot failed:', error?.message || error);
     return res.status(503).json({
@@ -1308,6 +1333,78 @@ router.get('/enterprise-queue', async (_req, res) => {
 });
 
 const PLATFORM_OPERATOR_ROLES = new Set(['ADMIN', 'SUPPORT', 'USER']);
+
+/**
+ * Root-account attestation (REC-026).
+ *
+ * Compares the identity provider's SUPER_ADMIN claims against `admin_user_roles` and returns
+ * every disagreement with the operator action each one implies. SUPER_ADMIN-only: the manifest
+ * rule `platform-operators` covers this prefix with permission `*`, because an attestation that
+ * lists root accounts is itself a map of the highest-value targets.
+ *
+ * Read-only. It writes nothing, revokes nothing, and grants nothing — a reconciliation that
+ * repaired what it found would be a second, unaudited path to authority. The remediation text
+ * points at the audited API instead.
+ */
+router.get('/operators/attestation', async (req, res) => {
+  const identityAdmin = req.app?.get('firebaseAdmin');
+  const unavailable = (code, message) => res.status(503).json({
+    error: { code, message, requestId: res.locals?.requestId },
+  });
+  if (!identityAdmin?.auth) {
+    // No fallback data, in test or otherwise: an attestation built from fixtures would report
+    // a root population that does not exist, which is worse than reporting nothing.
+    return unavailable('IDENTITY_UNAVAILABLE', 'The operator directory is unavailable, so root accounts cannot be attested.');
+  }
+
+  // The identity half, gathered first and separately: a credential failure here is "the
+  // directory did not answer", not "the attestation failed", and the two produce different
+  // operator actions.
+  const claims = [];
+  try {
+    let pageToken;
+    do {
+      const page = await identityAdmin.auth().listUsers(1000, pageToken);
+      for (const identity of page.users || []) {
+        const role = String(identity.customClaims?.role || '').toUpperCase();
+        // Only role-holding accounts matter here; an account with no claim cannot disagree
+        // with the grant store, and listing every user would make the report noise.
+        if (!role) continue;
+        claims.push({
+          uid: identity.uid,
+          email: identity.email || null,
+          role,
+          mfaEnrolled: Array.isArray(identity.multiFactor?.enrolledFactors) && identity.multiFactor.enrolledFactors.length > 0,
+          emailVerified: identity.emailVerified === true,
+          suspended: identity.disabled === true,
+        });
+      }
+      pageToken = page.pageToken;
+    } while (pageToken && claims.length < 5000);
+  } catch (error) {
+    console.error('[Platform] root attestation: identity listing failed:', error?.message || error);
+    return unavailable('IDENTITY_UNAVAILABLE', 'The operator directory could not be listed, so root accounts cannot be attested.');
+  }
+
+  // The platform half. Reporting "no grants" when the store is unreachable would turn every
+  // root into CLAIM_WITHOUT_GRANT — a false incident, which is worse than a refusal.
+  let grants;
+  try {
+    grants = await adminRbac.__storeForAdministration().listGrants();
+  } catch (error) {
+    console.error('[Platform] root attestation: grant store failed:', error?.message || error);
+    return unavailable('GRANT_STORE_UNAVAILABLE', 'The platform grant store is unavailable, so claims cannot be reconciled.');
+  }
+
+  try {
+    const report = rootAccountReconciliation.attest({ claims, grants });
+    metrics.recordRootMismatches(report.summary.byKind);
+    return res.json({ success: true, ...report });
+  } catch (error) {
+    console.error('[Platform] root attestation failed:', error?.message || error);
+    return unavailable('ATTESTATION_UNAVAILABLE', 'The root-account attestation could not be completed.');
+  }
+});
 
 router.get('/operators', async (req, res) => {
   const identityAdmin = req.app?.get('firebaseAdmin');
