@@ -18,7 +18,7 @@ import {
 } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { get, post } from '@/lib/api-client';
 import { PreviewLoginError, requestPreviewLogin } from '@/lib/preview-session';
 import {
