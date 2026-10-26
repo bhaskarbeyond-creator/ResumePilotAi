@@ -248,3 +248,73 @@ test('audit: every authority mutation writes exactly one semantic row', async ()
   assert.equal(written.length, 1, `expected one authority row, wrote ${written.length}: ${written.map(row => row.action)}`);
   assert.ok(Array.isArray(store.roles.get('ADMIN')));
 });
+
+/* ── the elevated-permission arms of `enforceApiPolicy` ────────────────────────────────
+ * Three paths carry a permission that is stricter than the manifest row for the same
+ * route: `/admin/firebase-service-account` (secrets.manage, both verbs),
+ * `/admin/payments/*` (payments.manage) and `/admin/employer-applications/*`
+ * (users.update). They are the one place the engine does not read the manifest, so each
+ * arm is driven directly here — a role that holds the manifest's `payments.read` but not
+ * `payments.manage` must still be refused, and the wildcard holder must not be.
+ */
+const { enforceApiPolicy } = require('../security/policy');
+
+function callPolicy({ path, method = 'GET', role = 'SUPPORT', emailVerified = true, authTime } = {}) {
+  const req = {
+    path,
+    method,
+    user: { uid: `policy-${role}`, role, emailVerified, claims: authTime === undefined ? {} : { auth_time: authTime } },
+  };
+  const res = {
+    locals: { requestId: 'rq-policy' },
+    statusCode: null,
+    body: null,
+    status(code) { this.statusCode = code; return this; },
+    json(value) { this.body = value; return this; },
+  };
+  let nexted = false;
+  enforceApiPolicy(req, res, () => { nexted = true; });
+  return { nexted, status: res.statusCode, code: res.body?.error?.code, requestId: res.body?.error?.requestId };
+}
+
+test('INV-1/INV-2: the elevated payment arm refuses a role holding only payments.read', () => {
+  const auditor = callPolicy({ path: '/admin/payments/settings', method: 'POST', role: 'AUDITOR' });
+  assert.equal(auditor.nexted, false);
+  assert.equal(auditor.status, 403);
+  assert.equal(auditor.code, 'FORBIDDEN');
+  assert.equal(auditor.requestId, 'rq-policy');
+  // The wildcard holder passes the same request, so the arm refuses on permission rather
+  // than on the path (this file installs a reduced store fixture, so ADMIN's stored bundle
+  // is deliberately not used as the positive case here).
+  assert.equal(callPolicy({ path: '/admin/payments/settings', method: 'POST', role: 'SUPER_ADMIN' }).nexted, true);
+});
+
+test('INV-1/INV-2: the employer-application mutation arm demands users.update', () => {
+  const support = callPolicy({ path: '/admin/employer-applications/app-1/approve', method: 'POST', role: 'SUPPORT' });
+  assert.equal(support.status, 403);
+  assert.equal(callPolicy({ path: '/admin/employer-applications/app-1/approve', method: 'POST', role: 'SUPER_ADMIN' }).nexted, true);
+});
+
+test('INV-2: the secrets arm guards the read verb as well as the write verb', () => {
+  assert.equal(callPolicy({ path: '/admin/firebase-service-account', method: 'GET', role: 'ADMIN' }).status, 403);
+  assert.equal(callPolicy({ path: '/admin/firebase-service-account', method: 'PUT', role: 'ADMIN' }).status, 403);
+  // The wildcard holder is the only role the arm lets through — no hard-coded account check.
+  assert.equal(callPolicy({ path: '/admin/firebase-service-account', method: 'GET', role: 'SUPER_ADMIN' }).nexted, true);
+});
+
+test('a sensitive self-service route refuses a stale and a missing auth_time alike', () => {
+  const stale = callPolicy({ path: '/account/delete', method: 'POST', role: 'USER', authTime: Math.floor(Date.now() / 1000) - 3600 });
+  assert.equal(stale.status, 403);
+  assert.equal(stale.code, 'RECENT_AUTH_REQUIRED');
+  const missing = callPolicy({ path: '/account/delete', method: 'POST', role: 'USER' });
+  assert.equal(missing.code, 'RECENT_AUTH_REQUIRED');
+  const fresh = callPolicy({ path: '/account/delete', method: 'POST', role: 'USER', authTime: Math.floor(Date.now() / 1000) - 5 });
+  assert.equal(fresh.nexted, true);
+});
+
+test('an unverified email is refused on admin paths before any permission is consulted', () => {
+  const response = callPolicy({ path: '/admin/users', method: 'GET', role: 'ADMIN', emailVerified: false });
+  assert.equal(response.status, 403);
+  assert.equal(response.code, 'EMAIL_VERIFICATION_REQUIRED');
+  assert.equal(callPolicy({ path: '/admin/users', method: 'GET', role: 'ADMIN', emailVerified: true }).nexted, true);
+});
