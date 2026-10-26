@@ -312,8 +312,19 @@ async function writeConfigValue({ key, value, expectedRevision = null, actor, re
       ? (typeof existing.value === 'string' ? JSON.parse(existing.value) : existing.value)
       : entry.defaultValue;
 
-    if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== Number(currentRevision ?? 0)) {
-      throw Object.assign(new Error(`${entry.label} was changed by someone else; reload before saving`), {
+    // `null` is not "skip the check" — it is the statement "I believe no value is stored".
+    // Accepting it unconditionally made the write last-write-wins for any client that loaded a
+    // page before the row existed, which is precisely the failure REC-015 was written to stop.
+    // So it is compared like any other expectation: null matches only an absent row.
+    const expectedMatches = expectedRevision === null || expectedRevision === undefined
+      ? currentRevision === null
+      : Number(expectedRevision) === Number(currentRevision ?? 0);
+    if (!expectedMatches) {
+      throw Object.assign(new Error(
+        expectedRevision === null || expectedRevision === undefined
+          ? `${entry.label} already has a stored value; reload before saving`
+          : `${entry.label} was changed by someone else; reload before saving`
+      ), {
         code: 'CONFIG_REVISION_CONFLICT',
         status: 409,
         currentRevision,

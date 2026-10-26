@@ -57,7 +57,7 @@ jobs:
         working-directory: backend
         run: npm run smoke
 
-      - name: Tiers (contract, characterisation, chaos, performance, migration, integration)
+      - name: Tiers (contract, characterisation, chaos, performance, load, query-plan, migration, integration)
         working-directory: backend
         run: |
           NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
@@ -69,12 +69,15 @@ jobs:
             test/runtime-limits.test.js \
             test/config-api.test.js \
             test/config-registry.test.js \
+            test/config-registry-guards.test.js \
             test/config-validators.test.js \
+            test/config-edge-coverage.test.js \
             test/authz-visibility-matrix.test.js \
             test/route-manifest.test.js \
             test/admin-rbac-api.test.js \
             test/admin-rbac-store.test.js \
             test/admin-rbac-administration.test.js \
+            test/admin-rbac-edge-coverage.test.js \
             test/admin-rbac-resolver.test.js \
             test/admin-rbac-contract.test.js \
             test/admin-target-authority.test.js \
@@ -84,9 +87,16 @@ jobs:
             test/mariadb-query-budget.test.js \
             test/query-plan-regression.test.js \
             test/load-concurrency.test.js \
+            test/load-sustained.test.js \
+            test/migration-drill-contract.test.js \
+            test/degraded-endpoint-semantics.test.js \
             test/characterisation-divergences.test.js
 
-      - name: Coverage gate (90 statements / 90 lines / 85 functions / 80 branches)
+      # The thresholds here and in backend/.c8rc.json are the same numbers; both are
+      # deliberately above the 10/10 bar's floor (90 statements / 85 branches) so a small
+      # regression fails the gate instead of eroding it. Proven to fail, not just to pass:
+      # raising them to 99 exits 1 on the same data.
+      - name: Coverage gate (95 statements / 95 lines / 90 functions / 85 branches)
         working-directory: backend
         run: npm run test:coverage
 
@@ -204,6 +214,16 @@ jobs:
       - name: Query-plan EXPLAIN layer (no hot query may full-scan)
         working-directory: backend
         run: node --test --test-concurrency=1 --test-force-exit test/query-plan-regression.test.js
+      - name: Query-plan drill (per-query row budgets, refuses anything but SELECT)
+        working-directory: backend
+        run: npm run query-plan:drill
+      # The dynamic drill is the long form of the rollback test above: every migration
+      # forward twice (idempotency), backwards twice (reversibility), then a schema
+      # checksum comparison. test/migration-drill-contract.test.js (no database needed)
+      # proves the drill refuses a production-looking database name before it runs here.
+      - name: Migration drill (forward ×2, backward ×2, checksum)
+        working-directory: backend
+        run: npm run migration:drill
 
   lighthouse:
     name: performance · Lighthouse budgets per page class (opt-in, needs a browser)

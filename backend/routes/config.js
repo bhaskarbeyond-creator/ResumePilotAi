@@ -44,8 +44,14 @@ const router = express.Router();
  * @param {unknown} error
  */
 function respondWithError(res, error) {
+  // Store-level faults are 503, never 500. A 500 on a write reads as "it may have saved",
+  // which invites a second, conflicting attempt; 503 says "nothing took effect, try later".
+  // `AUDIT_WRITE_FAILED` belongs here: the value write and the audit row are two effects of
+  // one request, and a trail that could not be written leaves the request in the same
+  // retryable, no-false-success state as an unreachable database.
+  const STORE_FAILURE_CODES = new Set(['ECONNREFUSED', 'ER_NO_SUCH_TABLE', 'POOL_CLOSED', 'AUDIT_WRITE_FAILED']);
   const status = Number(error?.status)
-    || (error?.code === 'ECONNREFUSED' || error?.code === 'ER_NO_SUCH_TABLE' ? 503 : 500);
+    || (STORE_FAILURE_CODES.has(String(error?.code || '')) ? 503 : 500);
   // Only this module's own codes reach the client. A driver code (`ECONNREFUSED`,
   // `ER_LOCK_DEADLOCK`) describes the store, not the request, and is not in the
   // documented error table — a caller cannot act on it and should not have to learn it.
@@ -231,4 +237,4 @@ publicRouter.get('/runtime', requireAuth, async (_req, res) => {
 
 module.exports = router;
 module.exports.publicRouter = publicRouter;
-module.exports.__test = { RUNTIME_KEYS, canReadConfig };
+module.exports.__test = { RUNTIME_KEYS, canReadConfig, respondWithError };

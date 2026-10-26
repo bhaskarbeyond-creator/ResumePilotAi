@@ -22,11 +22,15 @@ either direction.
 
 | Run | Command | Result |
 |---|---|---|
-| Backend gate (13 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **167 / 167 pass**, `c8 check-coverage` exit 0 |
-| Backend coverage | same command | **statements 98.42 %**, **branches 82.52 %**, **functions 97.53 %**, lines 98.42 % |
+| Backend gate (16 files, the coverage set) | `cd backend && NODE_ENV=test npm run test:coverage` | **211 / 211 pass**, `c8 check-coverage` exit 0 |
+| Backend coverage | same command | **statements 98.60 %**, **branches 86.68 %**, **functions 97.53 %**, lines 98.60 % — **the 10/10 bar's coverage floor is met** (§3) |
+| Tier pack as one command | `cd backend && NODE_ENV=test npm run test:tiers` | **71 tests, 69 pass, 2 conditional skips (database-gated), 0 fail** |
+| Coverage closers (3 files) | §2 | **38 / 38 pass** (`config-edge-coverage` 16, `config-registry-guards` 14, `admin-rbac-edge-coverage` 8) |
 | New tier files (10) | §2 | **50 / 50 pass** (51 with the opt-in EXPLAIN layer) |
 | Contract + registry + ownership | §2 | `api-contract` 4/4, `config-registry` 26/26, `config-api` 17/17, `config-validators` 14/14, `database-ownership-completeness` 3/3 |
 | Query budget | `test/mariadb-query-budget.test.js` | **15 / 15 pass** (admin page: 1 round trip cold, 1 batched read warm, max 1 concurrent acquisition) |
+| Sustained load | `test/load-sustained.test.js` | **4 / 4 pass** — 200 requests at 20 concurrent: the capability census answers every request with p95 inside 750 ms and the configuration census inside 1 000 ms; the heap after the first window and after the second are equal within noise (a per-request leak would compound), and sustained traffic produces zero 5xx — the limiter sheds, it does not fail open |
+| Migration-drill contract | `test/migration-drill-contract.test.js` | **6 / 6 pass**, no database: `scripts/migration-drill.mjs` refuses a database named `resumes`/`production`/empty, its statement splitter handles comments and `DELIMITER` blocks (a trigger body is not six statements), every forward migration is either reversible or carries a declared exemption, and no file splits to zero statements |
 | Query-plan regression | `test/query-plan-regression.test.js` | **6 / 6 static pass** + EXPLAIN layer gated on `RUN_MARIADB_INTEGRATION` (CI `migration-drill` job). Registry of 13 hot queries; every filter path index-covered, unbounded recency scans index-ordered. Two uncovered outbox plans found and fixed by `030_outbox_created_at_indexes`; one hidden index (`LOWER(email)`) found and fixed in `MySQLRepository.js:706` |
 | Load at agreed concurrency | `test/load-concurrency.test.js` | **4 / 4 pass** — 50 concurrent operators, p95 < 750 ms per control-plane read, zero 5xx, and 50 parallel reads of one config key cost 0 store round trips |
 | Migration rollback drill | `test/migration-rollback-drill.test.js` | **gated on `RUN_MARIADB_INTEGRATION`** (CI `migration-drill` job): empty → forward chain → marker rows → every `.down.sql` in reverse → documented residue only (`config_change_log`, `001_baseline`) → re-apply → idempotent, markers survive |
@@ -63,6 +67,9 @@ properties, not product properties.
 | `test/mariadb-query-budget.test.js` | 15 | The admin directory page costs one round trip on a cold cache and one batched read on a warm cache; at most one pool acquisition is concurrent; a cached configuration read does not touch the pool |
 | `test/config-registry.test.js` | 26 | 35 configuration keys, typed, bounded, defaulted; `security.rateLimit.authHourly` 1–100 000 and `authBurst` 1–10 000 as declared |
 | `test/config-api.test.js` | 17 | `GET` census shape and `PUT` contract including every error code: `CONFIG_KEY_UNKNOWN` 404, `CONFIG_READ_ONLY` 403, `CONFIG_INVALID` 400, `CONFIG_REASON_REQUIRED` 400, `CONFIG_REVISION_CONFLICT` 409, store failure 503 |
+| `test/config-registry-guards.test.js` | 14 | The registry's own guards, executed rather than trusted: every validator refuses null/empty/whitespace instead of coercing (`Number('') === 0` was a real defect), `assertRegistryIntegrity` rejects each malformed shape it exists to catch (duplicate id, duplicate key, bad default, non-editable without a reason), and `findEntry`/`describeEntry` resolve by key, by case-insensitive id, and report default-origin with no revision for an unresolved key |
+| `test/config-edge-coverage.test.js` | 16 | The configuration route's edges: the read gate's three ways in, history with/without a limit, the write rejection ladder (value, revision sentinel, unknown key, invalid value, read-only, reason absent/empty/whitespace/short/long), the audit-row metadata, an armed audit outage, and the error mapper's driver-code whitelist — all pinned to the ELEVATED key `security.rateLimit.global` because only it requires a reason |
+| `test/admin-rbac-edge-coverage.test.js` | 8 | The authority route's edges: role-listing editability against `PLATFORM_MANAGED_ROLES` and rank ordering, an empty bundle answering `[]`, an unknown role, `DELETE …?reason=` recorded with `reasonSource: 'query'`, the 500/503 mapper split with its field passthrough, an armed store outage, and exactly one semantic audit row per mutation |
 | `test/config-validators.test.js` | 14 | Every validator, including the arithmetic/geo bounds that used to be `Number('') === 0` |
 | `test/database-ownership-completeness.test.js` | 3 | Five RBAC/config entities resolve to an owning table and the alias map is closed |
 | `test/authz-visibility-matrix.test.js` | — | The frontend-visibility × backend-enforcement matrix (INV-5) as executable data |
@@ -80,24 +87,52 @@ properties, not product properties.
 
 ```
 =============================== Coverage summary ===============================
-Statements   : 98.42% ( 3365/3419 )
-Branches     : 82.52% ( 595/721 )
+Statements   : 98.60% ( 3388/3436 )
+Branches     : 86.68% ( 651/751 )
 Functions    : 97.53% ( 79/81 )
-Lines        : 98.42% ( 3365/3419 )
+Lines        : 98.60% ( 3388/3436 )
 ================================================================================
 ```
 
-Enforced by `c8 check-coverage --branches=80 --lines=95 --functions=90 --per-file=false` at
-the end of `npm run test:coverage`, so the thresholds cannot drift from the command in this
-document. `backend/.c8rc.json` scopes `include` to the modules the remediation touched; a new
-module added to the surface must be added there, which is a deliberate speed bump.
+Enforced by `c8 check-coverage --statements=95 --lines=95 --functions=90 --branches=85
+--per-file=false` at the end of `npm run test:coverage`, and the same four numbers are in
+`backend/.c8rc.json`, so the threshold cannot drift from the command in this document.
+`include` is scoped to the modules the remediation touched; a new module added to that surface
+must be added there, which is a deliberate speed bump.
 
-**Honest gap.** The 10/10 bar asks for ≥ 85 % branches; the gate is at 80 % and the measured
-value is 82.52 %. The shortfall is concentrated in three files — `routes/config.js` 63.15 %,
-`routes/adminRbac.js` 66 %, `services/adminRbacAdministration.js` 68.96 % — and the next
-action is *more tests*, not exclusions: `OI-COV-1` and `OI-COV-2` in `OPEN-ITEMS.md`. The gate
-was never lowered from a higher value; it was set at 80 % when introduced and is raised when
-the gap closes.
+**The gate was raised, not waived.** The previous revision of this document reported
+82.52 % branches against a 80 % gate and recorded the 10/10 bar's 85 % as an honest gap. The
+gap is now closed by tests:
+
+| File | Branches before | After | What closed it |
+|---|---|---|---|
+| `routes/config.js` | 63.15 % | **70.76 %** | `test/config-edge-coverage.test.js` — the rejection ladder and the mapper whitelist; the remainder is I/O-callback arms that only a live pool reaches |
+| `routes/adminRbac.js` | 66.00 % | **81.03 %** | `test/admin-rbac-edge-coverage.test.js` — mapper split, armed outage, audit invariants |
+| `config/registry.js` | 90.41 % | **93.33 %** | `test/config-registry-guards.test.js` — the integrity check run against deliberately invalid entries |
+| `services/adminRbacAdministration.js` | 80.58 % | **93.69 %** | six cases appended to `test/admin-rbac-administration.test.js` — wildcard smuggling, missing actor, uid bounds, revocation races |
+
+**The gate is proven to fail.** Raising the thresholds to 99 on the same coverage data exits 1:
+
+```
+$ npx c8 check-coverage --statements=99 --lines=99 --functions=99 --branches=99 --per-file=false
+ERROR: Coverage for lines (98.6%) does not meet global threshold (99%)
+ERROR: Coverage for functions (97.53%) does not meet global threshold (99%)
+ERROR: Coverage for branches (86.68%) does not meet global threshold (99%)
+exit code 1
+```
+
+**Two product defects were found by writing these tests, and fixed at the root:**
+
+1. **`expectedRevision: null` bypassed the revision guard** (`services/configService.js`).
+   `writeConfigValue` skipped the comparison whenever the caller sent `null`, so a client that
+   loaded the census before a row existed could overwrite a value written since — the
+   last-write-wins hole REC-015 exists to close. `null` now means exactly "I believe no value
+   is stored" and is compared like any other expectation: against a stored row it is a
+   `409 CONFIG_REVISION_CONFLICT` naming `currentRevision`. The console already sends the
+   revision it rendered (`AdminConfigTab.tsx:200`), so no client change was needed.
+2. **An audit-write failure answered 500** (`routes/config.js`). A 500 on a write reads as "it
+   may have saved"; store-level codes — `ECONNREFUSED`, `ER_NO_SUCH_TABLE`, `POOL_CLOSED`,
+   `AUDIT_WRITE_FAILED` — now map to 503.
 
 ---
 
@@ -172,8 +207,12 @@ DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
 
 - **"The E2E suite passes."** It was not executed. The specs exist and are listed by
   Playwright; none ran.
-- **"Coverage meets the 10/10 bar."** Statements, functions and lines do; branches do not
-  (82.52 % measured against 85 % required). See §3.
+- **"Per-file coverage meets the bar."** The *global* numbers do (98.60 / 86.68 / 97.53 /
+  98.60 against 90 / 85 / 95 / 90), and that is what `--per-file=false` gates. Per file,
+  `routes/config.js` (70.76 % branches), `security/policy.js` (81.08 %),
+  `services/configService.js` (82.20 %) and `routes/adminRbac.js` (81.03 %) are still under 85 %
+  branches; each remainder is I/O-callback arms or an unreachable-in-jsdom branch, and closing
+  them means a live pool, not a looser threshold. `OI-T-7`, decided in `D-028-1` / `ADR-006`.
 - **"The deployed smoke suite passes."** `scripts/smoke.mjs` needs a live base URL.
 - **"Migration apply and rollback were exercised against MariaDB."** Only static analysis of
   the migration files ran (`migrations-integrity`). Applying `001_baseline.sql` upward has no
@@ -189,7 +228,8 @@ DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
 
 | Job | Steps |
 |---|---|
-| `backend` | `npm ci` → `node --check` on every source file → `npm run smoke` → 21 tier files → `npm run test:coverage` (thresholds enforced) → upload coverage |
+| `backend` | `npm ci` → `node --check` on every source file → `npm run smoke` → `npm run test:tiers` (25 tier files in one command) → `npm run test:coverage` (95/95/90/85 enforced) → upload coverage |
+| `migration-drill` (on `dev` only) | MariaDB service → rollback drill → migration gate → query-plan EXPLAIN layer → `npm run query-plan:drill` (per-query row budgets) → `npm run migration:drill` (forward ×2, backward ×2, checksum) |
 | `frontend` | `npm ci` → `tsc -b` → `typecheck:strict` → `lint` → `test:unit:coverage` → `ux:audit` → `a11y:contrast` → `build` → upload UX evidence |
 | `e2e` (on `dev` only) | MariaDB service → migrations applied → `playwright install chromium` → `admin-console-ux.spec.ts` + `accessibility.spec.ts` → upload report |
 
@@ -204,11 +244,17 @@ A step that can be ignored is a comment: there is no `continue-on-error` and no
 # Backend gate + coverage thresholds
 cd backend && NODE_ENV=test npm run test:coverage
 
-# The seven new tiers, individually
+# Every tier in one command (contract, characterisation, chaos, performance, load,
+# query-plan, migrations, degraded semantics, smoke)
+cd backend && NODE_ENV=test npm run test:tiers
+
+# The coverage closers on their own
 cd backend && NODE_ENV=test node --test --test-concurrency=1 --test-force-exit \
-  test/smoke.test.js test/api-contract.test.js test/characterisation.test.js \
-  test/chaos-resilience.test.js test/performance-budget.test.js \
-  test/migrations-integrity.test.js test/runtime-limits.test.js
+  test/config-edge-coverage.test.js test/admin-rbac-edge-coverage.test.js \
+  test/config-registry-guards.test.js
+
+# Prove the coverage gate still fails when it should
+cd backend && npx c8 check-coverage --branches=99 --per-file=false   # exit 1
 
 # Re-establish that the six red files are red on the base commit too
 git stash -u && for f in freellmapi-engine enterprise-role-view-simulation \

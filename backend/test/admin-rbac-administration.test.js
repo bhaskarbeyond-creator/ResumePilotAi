@@ -138,3 +138,121 @@ test('grantRole reports the before/after bundle a second administrator can revie
   assert.strictEqual(result.changed, true);
   assert.ok(result.expiresAt, 'a time-boxed grant must report its expiry back to the caller');
 });
+
+/* ── wildcard smuggling and identity guards ───────────────────────────── */
+
+test('a wildcard cannot be smuggled through a bundle in either direction', async () => {
+  install({ ADMIN: [['users', 'read']] });
+  await assert.rejects(
+    () => administration.replaceRolePermissions({
+      role: 'ADMIN',
+      permissions: [{ resource: '*', action: 'read' }],
+      reason: 'smuggle a wildcard resource',
+      actor: ACTOR,
+    }),
+    /wildcard resource only accepts the wildcard action/,
+  );
+  await assert.rejects(
+    () => administration.replaceRolePermissions({
+      role: 'ADMIN',
+      permissions: [{ resource: 'users', action: '*' }],
+      reason: 'smuggle a wildcard action',
+      actor: ACTOR,
+    }),
+    /wildcard action only applies to the wildcard resource/,
+  );
+  await assert.rejects(
+    () => administration.replaceRolePermissions({
+      role: 'ADMIN',
+      permissions: [{ resource: '', action: 'read' }],
+      reason: 'an empty resource is not a resource',
+      actor: ACTOR,
+    }),
+    /invalid resource/,
+  );
+  await assert.rejects(
+    () => administration.replaceRolePermissions({
+      role: 'ADMIN',
+      permissions: [{ resource: 'users', action: '' }],
+      reason: 'an empty action is not an action',
+      actor: ACTOR,
+    }),
+    /unknown action/,
+  );
+});
+
+test('an identified actor is required for every authority change', async () => {
+  install({ ADMIN: [['users', 'read']] });
+  await assert.rejects(
+    () => administration.replaceRolePermissions({
+      role: 'ADMIN',
+      permissions: [{ resource: 'users', action: 'read' }],
+      reason: 'a valid reason',
+      actor: {},
+    }),
+    /authenticated actor is required/,
+  );
+  await assert.rejects(
+    () => administration.grantRole({ uid: 'u-3', role: 'ADMIN', reason: 'a valid reason', actor: {} }),
+    /authenticated actor is required/,
+  );
+  await assert.rejects(
+    () => administration.revokeRole({ uid: 'u-3', role: 'ADMIN', reason: 'a valid reason', actor: null }),
+    /authenticated actor is required/,
+  );
+});
+
+test('grantRole bounds the target identifier and refuses an empty one', async () => {
+  install({ ADMIN: [['users', 'read']] });
+  await assert.rejects(
+    () => administration.grantRole({ uid: '', role: 'ADMIN', reason: 'a valid reason', actor: ACTOR }),
+    /uid is required/,
+  );
+  await assert.rejects(
+    () => administration.grantRole({ uid: 'u'.repeat(129), role: 'ADMIN', reason: 'a valid reason', actor: ACTOR }),
+    /uid is required/,
+  );
+});
+
+/* ── revocation ───────────────────────────────────────────────────────── */
+
+test('revokeRole refuses an empty uid and a role the account does not hold', async () => {
+  install({ ADMIN: [['users', 'read']], AUDITOR: [['audit', 'read']] });
+  await assert.rejects(
+    () => administration.revokeRole({ uid: '  ', role: 'ADMIN', reason: 'a valid reason', actor: ACTOR }),
+    /uid is required/,
+  );
+  await assert.rejects(
+    () => administration.revokeRole({ uid: 'u-9', role: 'ADMIN', reason: 'a valid reason', actor: ACTOR }),
+    error => error.status === 404 && error.code === 'GRANT_NOT_FOUND',
+  );
+});
+
+test('revokeRole reports the bundle before and after, de-duplicated by role', async () => {
+  const { grants } = install({ ADMIN: [['users', 'read'], ['users', 'write'], ['system.config', 'read']], AUDITOR: [['audit', 'read']] });
+  grants.set('u-7', ['ADMIN', 'AUDITOR']);
+  const result = await administration.revokeRole({ uid: 'u-7', role: 'ADMIN', reason: 'role no longer needed', actor: ACTOR });
+  assert.deepStrictEqual(result.before, ['ADMIN', 'AUDITOR'], 'a role appears once even though it owns three permissions');
+  assert.deepStrictEqual(result.after, ['AUDITOR']);
+  assert.strictEqual(result.changed, true);
+  assert.strictEqual(result.reason, 'role no longer needed');
+});
+
+test('revokeRole is a 404 when the store deletes nothing, even if the listing said it was held', async () => {
+  const { grants } = install({ ADMIN: [['users', 'read']] });
+  grants.set('u-8', ['ADMIN']);
+  rbac.setRbacStoreForTests({
+    async listRoles() { return [{ name: 'ADMIN', rank: 80, isSystem: true }]; },
+    async listRolePermissions() { return [{ role: 'ADMIN', resource: 'users', action: 'read' }]; },
+    async listUserGrants() { return [{ role: 'ADMIN', resource: 'users', action: 'read' }]; },
+    async replaceRolePermissions() {},
+    async upsertGrant() {},
+    async listGrants() { return []; },
+    async deleteGrant() { return 0; },
+  });
+  await assert.rejects(
+    () => administration.revokeRole({ uid: 'u-8', role: 'ADMIN', reason: 'race with another operator', actor: ACTOR }),
+    error => error.status === 404 && error.code === 'GRANT_NOT_FOUND',
+    'a concurrent revocation must be reported as not found, not as a success',
+  );
+});

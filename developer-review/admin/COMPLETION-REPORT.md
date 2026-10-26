@@ -7,6 +7,25 @@
 
 ---
 
+## 0. Status banner — read before §1
+
+§1 below is the **phase-1 snapshot**, written at commit `5ace3e6` when the backend authority
+model had just landed. Four of the ❌ rows in that scorecard have since been closed on this
+branch, and the scorecard is *not* rewritten in place, because a report that edits its own past
+is not evidence. Current state, with the file that proves it:
+
+| Row in §1 | Then | Now | Proof |
+|---|---|---|---|
+| Typed config keys | ❌ registry not implemented | ✅ 35 typed keys, one write path, one trail | `DECISION-LOG.md D-015-1`, `test/config-registry.test.js` (26), `test/config-registry-guards.test.js` (14) |
+| Coverage ≥ 90 stmts / 85 branches | ❌ not measured | ✅ **98.60 / 86.68 / 97.53 / 98.60** on 211 tests, gate at 95/95/90/85 and proven to fail | `TEST-EVIDENCE.md §3`, `D-028-1`, `ADR-006` |
+| UX: 5 device classes, 44 px, contrast, motion, print | ❌ measured gaps | ✅ 71 defects fixed, 16/16 contrast pairs pass, 0 UX violations | `UX-DEVICE-MATRIX.md`, `test/unit/admin-*.test.tsx` (16 files), `npm run verify:ux` |
+| Test tiers | ⚠️ 5 of 12 | ⚠️ 10 of 12 executed; E2E/visual and browser vitals remain CI-only (`OI-T-4`) | `TEST-EVIDENCE.md §2` |
+
+The final consolidated report — all 18 requirements scored met-with-evidence or
+deferred-with-ADR — is produced in the completion step; §1 stays as the phase-1 record it was.
+
+---
+
 ## 1. Read this first
 
 This engagement was asked to take the admin control plane to a production-ready

@@ -531,3 +531,65 @@ the code (rejected: that is how query-plan drift becomes an outage).
 
 **Rollback.** `git revert` the migration and the one-line predicate change; the
 registry entry for `email` then fails loudly, which is the intended signal.
+
+### D-028-1 — The coverage gate is raised to the bar, and proven to fail
+
+- **Status:** ACCEPTED · **Invariants:** INV-1…INV-6 (the gate is how every other claim stays
+  true) · **ADR:** `decisions/ADR-006-coverage-gate-proven-to-fail.md` ·
+  **Evidence:** `backend/.c8rc.json`, `backend/package.json` (`test:coverage`),
+  `developer-review/admin/TEST-EVIDENCE.md §3`
+
+**Decision.** The gate moved from `--branches=70 … --per-file=true` (which reported 82.52 %
+branches against a 80 % floor) to `--statements=95 --lines=95 --functions=90 --branches=85
+--per-file=false`, matching `.c8rc.json`. The 85 % branch floor is the 10/10 bar's number, not a
+rounded-down version of the measured value, and the two configurations now agree so the
+`check-coverage` line cannot contradict the rc file.
+
+**Why not per-file.** `--per-file=true` with a 85 % floor fails on four modules whose remaining
+branches are `pool.query` error arms. Raising the floor *and* keeping per-file would have failed
+the build on code that is correct, which teaches the next maintainer to raise the exemption
+rather than write the test. The honest arrangement is a global floor at the bar plus a named
+open item (`OI-T-7`) that says exactly which files are under it and why.
+
+**Proof it enforces.** With the floor raised to 99 on the same coverage data, `c8
+check-coverage` exits 1 (`TEST-EVIDENCE.md §3`). A gate nobody has seen fail is a gate nobody
+knows is wired.
+
+**Alternatives.** (1) Leave 80 % and keep the "honest gap" paragraph — rejected: a
+self-documented gap in a document whose purpose is proof is just a quieter failure. (2) Exclude
+the four modules from `include` — rejected: that is falsifying the denominator.
+
+**Rollback.** Lower the four numbers in `.c8rc.json` and the `check-coverage` flags together.
+The tests stay; only the floor moves, so the measured percentages do not change.
+
+### D-029-1 — `null` revision means "no stored row", and an audit failure is a 503
+
+- **Status:** ACCEPTED · **Invariants:** INV-4, INV-6 · **RCA:** RCA-011 ·
+  **Evidence:** `services/configService.js` (`expectedMatches`), `routes/config.js`
+  (`STORE_FAILURE_CODES`), `test/config-edge-coverage.test.js` (16)
+
+**Decision.** Two behaviours were wrong and are now the reverse, both found by the edge-coverage
+suite rather than by review:
+
+1. `writeConfigValue` treated `expectedRevision === null` as "skip the comparison". Any client
+   that rendered a page before a row existed therefore sent `null` and overwrote whatever
+   another operator had written in between — last-write-wins, the exact failure REC-015 exists
+   to prevent. `null` now asserts "no value is stored" and is compared like any other
+   expectation: against a stored row it is a `409 CONFIG_REVISION_CONFLICT` carrying
+   `currentRevision`.
+2. An audit-write failure answered 500. A 500 on a write tells the operator "it may have
+   saved", which invites a second attempt that duplicates or contradicts the first. Store-level
+   codes — `ECONNREFUSED`, `ER_NO_SUCH_TABLE`, `POOL_CLOSED`, `AUDIT_WRITE_FAILED` — are now
+   503: nothing took effect, retry later.
+
+**Client impact.** None. `AdminConfigTab.tsx:200` already sends the revision it rendered, so a
+`null` only ever comes from a client that has seen no row — which is now the case where the
+write is safe.
+
+**Alternatives.** (1) Treat `null` as `0` — same hole one revision later, and it would make
+"create" impossible to distinguish from "overwrite revision 0". (2) Keep 500 for audit
+failures and document it — rejected: the documented error table is what clients code against,
+and this one is indistinguishable from "unknown server error".
+
+**Rollback.** Revert the `expectedMatches` block and `STORE_FAILURE_CODES`; the tests that pin
+both will fail, which is the intended signal.
