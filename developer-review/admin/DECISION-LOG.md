@@ -840,3 +840,150 @@ is the second time a stale claim on this branch has been caught by re-running ra
 
 **Rollback.** Not applicable: verification is not a code change. The `CardTitle` import removal is
 its own commit.
+
+### D-038-1 — The console's browser gates were blocked by an environment limit, not by a product gap
+
+**Decision.** The admin-console spec's dependence on a live capability census was removed by
+generating fixtures from the backend's own resolver (`scripts/gen-capabilities-fixture.mjs` →
+`routes/capabilities.js.__test.resolveCapabilities`, `services/configService.describeConfig`) and
+serving them with a stub that answers every other API call with a structured 503.
+
+**Why.** The suite had been failing on `getByRole('tablist')` and was recorded as "needs backend +
+MariaDB". Re-reading the console showed it makes exactly two requests before it can render: the
+session check and `/api/me/capabilities`. Neither needs a database to *answer*, and hand-writing the
+answer would rot. Generating it from the resolver means a fixture cannot claim a capability the
+running system would not grant, and `npm run verify:fixtures` fails CI when the committed file no
+longer matches the capability map.
+
+**Alternatives.** (a) Keep the suite CI-only — rejected: it had already produced zero browser evidence
+and would keep doing so. (b) Hand-write the JSON — rejected: silently rots, and the failure mode is the
+console rendering fewer tabs while every assertion still passes. (c) Add a dev-only fake API server —
+rejected: a second implementation of the census, which is exactly the duplication this engagement
+removed.
+
+**Consequence.** The console suite runs on a laptop: 27 tests, 5 baselines, no backend, no MariaDB.
+The stub's 503 answers are deliberate — the tabs render their real failure state, because asserting a
+layout against invented rows would prove nothing about the layout an operator sees when the store is
+down.
+
+**Rollback.** Delete `tests/support/admin-console-backend.ts` and the two scripts; the spec returns to
+requiring the backend. Recorded in `ADR-009` revision 2.
+
+### D-039-1 — `Home`/`End` on the tab strip selected nothing; fixed at the root and pinned
+
+**Decision.** Replace the `move(±length)` spelling of `Home`/`End` with a `jump('first' | 'last')`
+function, extract the strip into `components/admin/AdminTabBar.tsx`, and add
+`tests/unit/admin-tabbar.test.tsx` (10 tests) plus browser assertions at all five classes.
+
+**Why.** `move` computes `(index ± length) % length`, which is `index`: both keys re-selected the tab
+that was already open, so the end of an 18-item strip was reachable only by fourteen arrow presses.
+The browser script found it the first time it pressed `End`; the fast tier never had, because the strip
+lived inside the page component and nothing in `tests/unit` rendered it.
+
+This is the class of defect the mandate's "Home/End and arrow-key behaviour on any roving-tabindex
+surface" line exists for, and it had been shipping behind a passing static audit.
+
+**Alternatives.** (a) Change the test to press `ArrowRight` fourteen times — rejected: that converts a
+product defect into a test that documents it. (b) Leave the strip in the page and test the page —
+rejected: rendering the whole console in jsdom needs the capability hook, the router and fifteen
+tabs' worth of data, which is why it was never covered.
+
+**Verification.** `npx vitest run tests/unit/admin-tabbar.test.tsx` → 10 pass, including the
+"End selects the last allowed tab — the defect this file exists for" case; `jest`-style negative check
+by reverting `jump` to `move(±length)` makes that test fail.
+
+**Rollback.** Revert the file split; the defect returns with it.
+
+### D-040-1 — Session expiry had no recovery path; it now raises a dialog, and sign-out asks first
+
+**Decision.** Add `lib/session-events.ts` (a one-signal bus), `SessionExpiredDialog` mounted once in
+`router.tsx`, and `LogoutConfirmDialog` around both sign-out entry points. The expiry dialog ends the
+session through `useAuth().signOut()`, not through storage.
+
+**Why.** A 401 after the client's single retry left every panel on screen showing its own "could not
+load" state, with no path back to sign-in except hunting the account menu — the product read as
+broken when the session had simply ended. Sign-out, conversely, fired on one menu activation and
+destroyed the preview session and any unsaved draft, which is one mistimed arrow key from lost work.
+
+**The defect the tests found.** The first implementation cleared `localStorage` only. `/login` then
+saw an authenticated preview identity and redirected straight back to the dead screen — a loop. The
+fix routes through the provider, which clears the React state and the stored token together; the
+browser test that caught it is committed.
+
+**Alternatives.** (a) Force sign-out on any 401 — rejected: a flapping network produces one 401, and
+throwing the person out of unsaved work is worse than a dismissible dialog. (b) A toast — rejected: a
+toast cannot hold a focus trap or be reached by `Escape` deterministically, and this is a modal
+decision. (c) `localStorage` clearing alone — rejected by the failure above.
+
+**Rollback.** Remove the `<SessionExpiredDialog />` mount and the two `LogoutConfirmDialog` wrappers;
+the API client's `reportSessionExpired` call becomes a no-op because nothing subscribes to it.
+
+### D-041-1 — Second-factor enrolment existed as a dead end; the screen ships, the flow stays named
+
+**Decision.** Implement `MfaEnrollmentPanel` and extract the challenge into `MfaChallengePanel`, wired
+into `components/settings/security-panel.tsx` and `pages/auth/login.tsx`. Both are exercised at five
+device classes plus dark, forced-colours, RTL and 200 % text through a test-only harness
+(`tests/harness/mfa.html`), and by 16 unit tests.
+
+**Why.** The settings card could remove an enrolled factor and said, in a sentence, "Setting up an
+authenticator app is not available on this page." A security control you can turn off but not on is a
+one-way door: the only path back was to ask someone with console access.
+
+**What is deliberately not claimed.** The *flow* — Firebase raising
+`auth/multi-factor-auth-required`, and a real `enroll()` round-trip — needs a configured project and an
+MFA-enrolled account. It is not simulated; `OI-UX-11` carries the exact commands. Everything the
+person sees and every key they press is measured.
+
+**Alternatives.** (a) Leave the dead end and record it — rejected: the mandate names MFA enrolment as
+an auth screen, and "not available on this page" is a capability gap, not a UX choice. (b) Add a
+dev-only route that fake-resolves a challenge — rejected: product code reading a test flag. (c) Render
+the panels in jsdom only — rejected: jsdom has no layout, so none of the gates in the mandate apply.
+
+**Rollback.** Delete the two panels and restore the paragraph in `security-panel.tsx`; the login page
+falls back to its previous inline form.
+
+### D-042-1 — Density modes: the deferral is final, the checklist is executable
+
+**Decision.** Density modes are **not shipped**. `ADR-009` §Density carries a six-item acceptance
+checklist (each item a named command or file), three reversal triggers, and a named owner;
+`OI-UX-8` is `PARTIAL` with both conditions recorded.
+
+**Why, as a cost argument rather than a preference.** Steps 1–3 of a density feature in this codebase
+(registry entry, audited write path, capability) are well understood; step 4 — "every spacing token
+resolves through it" — touches all fifteen tabs of a console stabilised this week, and step 5 is
+meaningless without step 4. A `data-density` attribute honoured by half the tabs would give operators
+a control that lies, which is worse than no control. The trigger is concrete: the entry ships with the
+next registry change for any other key.
+
+**Alternatives.** (a) Ship a `localStorage` toggle — rejected: two operators see different layouts
+with no record of who changed what (INV-6). (b) Ship it CSS-only and skip the registry — rejected:
+INV-4 requires a business-affecting value to be dashboard-configurable and audited. (c) Leave
+`OI-UX-8` as an unqualified PARTIAL — rejected as exactly the silent acceptance the brief forbids.
+
+**Rollback.** None needed: nothing shipped. If the deferral is reversed, the checklist is the plan.
+
+**Accepted by:** this engagement's author. **Owner of the follow-up:** the developer who next touches
+`backend/config/registry.js`.
+
+### D-043-1 — Fresh-clone re-verification, second pass: the numbers now match the docs
+
+**Decision.** Re-ran the whole gate from a clean `git clone` of the pushed branch at `1012b89`, on a
+dev server started from that clone, and replaced the figures in `TEST-EVIDENCE.md` with what it
+produced.
+
+**Result — backend (fresh clone, `npm ci`):** `test:coverage` **260/260** with **99.02 / 87.76 / 97.95
+/ 99.02** and `c8 check-coverage` exit 0; `test:tiers` **113 pass, 2 skipped, 0 fail**; `smoke` **5/5**.
+
+**Result — frontend (fresh clone, `npm ci --include=optional`):** `tsc -b` 0, `typecheck:strict` 0,
+`oxlint` **0/0 over 288 files**, `test:unit:coverage` **232/232** with **95.47 / 86.30 / 95.16 /
+96.26**, `verify:ux` PASS (0 violations, 17/17 contrast pairs), `verify:fixtures` exit 0, and the four
+browser suites against the clone's own dev server — **21 pass + 2 skip, 16 pass, 21 pass, 27 pass**,
+with 38 committed baselines.
+
+**Why it mattered.** The first pass of this check found a stale `CardTitle` import that the working
+tree's incremental build had been hiding. This pass was run for the same reason and found **no drift**:
+every figure in the pack is reproducible from a clean checkout. The one difference that is *not* drift
+— the lint file count — is explained by a file deleted in the same commit as the run
+(`tests/_scratch2.spec.ts`), which is why the count is recorded rather than quoted as a constant.
+
+**Rollback.** Not applicable: this is a verification, not a change.

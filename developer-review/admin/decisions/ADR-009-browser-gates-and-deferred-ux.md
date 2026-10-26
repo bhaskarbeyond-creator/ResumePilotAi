@@ -1,9 +1,10 @@
-# ADR-009 — Browser-observable UX gates run in CI; two mandate items are deferred with criteria
+# ADR-009 — Browser-observable UX gates run in CI and on a laptop; density modes are deferred with criteria
 
 **Status:** Accepted, **revised 2026-10-27 (final round)** · **Commit:** `[REC-019|UX-001..004]`
-**Revision:** the auth-screen block is resolved (a Chromium *is* installable from npm — see
-`ADR-010`), so the auth gates are measured, not deferred. The density deferral is now final, with a
-testable acceptance checklist, a named owner and a dated trigger.
+**Revision history.** v1 (earlier this round) recorded the browser gates as CI-only because no
+Chromium could be installed. That premise turned out to be **wrong** and is corrected here: a
+Chromium *is* obtainable from the npm registry, the specs execute locally, and the baselines are
+committed. The correction and its evidence are in `ADR-010` and `DECISION-LOG.md` `D-034-1`.
 **Invariants:** INV-1 (every Must/Should capability reachable) · the 10/10 UX bar.
 
 ## Context
@@ -11,60 +12,66 @@ testable acceptance checklist, a named owner and a dated trigger.
 Step 4 asks for per-screen evidence across five device classes: visual regression at every
 breakpoint in light, dark, RTL and high-contrast; axe with zero serious/critical findings; keyboard
 scripts; Lighthouse LCP/INP/CLS on throttled 4G; committed screenshots; state coverage; 200 % zoom
-and text. Almost all of that needs a **rendered page**.
+and text.
 
-This environment cannot render one. Chromium is not installed, and Playwright downloads browsers
-from `cdn.playwright.dev`, which is not reachable from the sandbox (egress is limited to the
-package registries and GitHub). Every "run the browser" instruction in the mandate therefore has
-one of two honest outcomes: assert it in a spec that CI executes, or record it as not produced.
+The first half of this engagement could not run any of it: `npx playwright install chromium`
+downloads from `cdn.playwright.dev`, which the sandbox cannot reach. Every "run the browser"
+instruction therefore had two honest outcomes — assert it in a spec CI executes, or record it as not
+produced. Pretending a spec passed is the failure mode this ADR exists to prevent.
 
-Pretending a spec passed is the failure mode this ADR exists to prevent. A green table written from
-memory is worse than a red one: it removes the reason to run the job.
+## What changed, and why the decision below is the one that survived
+
+`@sparticuz/chromium` is published to the npm registry as a compressed Chromium build. Extracting it
+and pointing Playwright at the binary produces a working engine (`ADR-010` records the recipe; the
+three commands are in `UX-DEVICE-MATRIX.md` §7). So the browser tier runs here, and the position
+moved from "assert in CI, produce nothing" to "**run it locally, commit the artefacts, and keep CI as
+the enforcement point**".
 
 ## Decision
 
-1. **The browser assertions are code, and they are in the spec.** `tests/admin-console-ux.spec.ts`
-   now covers, per device class (320, 480, 768, 1024, 1441): document-level horizontal overflow,
-   roving tab-strip focus (`ArrowRight`/`Home`/`End`), axe (WCAG 2.0/2.1/2.2 A+AA), and a visual
-   baseline. It adds: dark and `forced-colors` runs at 320 px, an RTL run with mirrored arrow-key
-   semantics, a 200 % text run, rendered 44 px target measurement at 320 and 480, a drawer focus
-   trap with Escape and focus-return, and the four data states driven at the network layer.
-   `npx playwright test tests/admin-console-ux.spec.ts --list` reports **290 tests** across the
-   configured projects; the file is type-clean under `tsc --strict` and 0/0 under `oxlint`.
-2. **The CI `e2e` job is the executor and therefore the gate.** It already exists in
-   `.github/workflows/quality-gate.yml`: MariaDB service, migrations, `playwright install
-   chromium`, `admin-console-ux.spec.ts` + `accessibility.spec.ts`, report upload. There is no
-   `continue-on-error` and no `|| true` anywhere in it.
-3. **`UX-DEVICE-MATRIX.md` marks every cell with the evidence class it actually has** — `S`
-   (static audit, measured here), `C` (spec assertion, executed in CI), `?` (neither). No cell is a
-   tick on the strength of prose.
+1. **Every browser-assertable gate is a committed spec, and it has been executed here.** Four suites,
+   all green in this environment against the dev server:
 
-## The items that remain unproduced here, and why that is recorded rather than hidden
+   | Suite | Tests | Baselines | What it proves |
+   |---|---|---|---|
+   | `tests/auth-screens-ux.spec.ts` | 21 pass, 2 skip | 10 PNGs | sign-in / register / reset at five classes; dark, forced-colours, RTL, 200 % text; tab order and focus ring; 44 px boxes at 320/480; credential-error and offline states |
+   | `tests/session-lifecycle.spec.ts` | 16 pass | 11 PNGs | an expired session raises a recoverable dialog (focus inside, Tab trapped, Escape dismisses without navigating, axe clean); "sign in again" ends the session through the provider and lands on `/login?reason=session_expired`; sign-out asks first, keeps focus off the destructive action, and returns focus to its trigger on cancel |
+   | `tests/mfa-panel.spec.ts` | 21 pass | 12 PNGs | the second-factor challenge and the enrolment flow at five classes, in dark, forced-colours, RTL and 200 % text; digits-only input; Enter submits only at six digits; Escape cancels and returns focus |
+   | `tests/admin-console-ux.spec.ts` | 27 pass | 5 PNGs | all 15 tabs at five classes: no document overflow, roving tab strip with `ArrowRight`/`Home`/`End`, axe, rendered 44 px boxes, drawer focus trap, four data states, Core Web Vitals in-page |
 
-**Visual baselines are not committed.** `toHaveScreenshot` compares against a PNG. A baseline can
-only be produced by a browser run, so committing one from this environment would mean committing a
-file nobody rendered. The policy is therefore:
+2. **The console suite no longer needs a backend.** Its dependence on a live capability census is
+   what produced the earlier "blocked on auth" dead end. `tests/support/admin-console-backend.ts`
+   answers the two requests the console makes with fixtures **generated by the backend's own
+   resolver** (`scripts/gen-capabilities-fixture.mjs` → `routes/capabilities.js.__test.resolveCapabilities`
+   and `services/configService.describeConfig`), and answers everything else with a structured 503 so
+   the tabs render the failure state an operator actually sees. `npm run verify:fixtures` fails CI when
+   a fixture no longer matches the capability map.
+3. **Baselines are committed and reviewed.** A baseline nobody looked at is not a regression check, so
+   every PNG in this branch was produced by a deliberate `--update-snapshots` run whose diff was
+   inspected: the auth refresh (0.02–0.03 of pixels, all sub-pixel glyph antialiasing, layout
+   identical) is noted in `TEST-EVIDENCE.md` §4.1. After that, any change beyond the 1 % tolerance
+   fails the run.
+4. **`UX-DEVICE-MATRIX.md` marks every cell with the evidence class it actually has** — `S` (static
+   audit, measured here), `C` (spec assertion, executed here and in CI), `?` (neither, always with a
+   named command in `OPEN-ITEMS.md`). No cell is a tick on the strength of prose.
 
-- The first CI run of the `e2e` job on a branch fails with "snapshot does not exist" — by design,
-  because an unbaselined screenshot is not a regression check.
-- The baseline is produced by one deliberate run with `--update-snapshots` on a branch whose diff
-  is reviewed by a human before merge. That is the "zero unreviewed diffs" requirement read
-  literally: a diff that nobody looked at is what the requirement forbids, and a machine-generated
-  baseline on the first run is exactly such a diff.
-- After that, any pixel change beyond the 1 % tolerance fails the job.
+## What is still not produced here, and why
 
-**Lighthouse.** Not run here, and the mandate asks for an attached report. The budgets are declared
-(`lighthouserc.*`: perf ≥ 0.90, a11y 1.0, best-practices ≥ 0.95, LCP ≤ 2500 ms, CLS ≤ 0.1, TBT
-≤ 200 ms, ≤ 700 KB, 4G + 4× CPU) and the in-page Core Web Vitals assertion covers LCP and CLS on
-the real console at `admin-console-ux.spec.ts:349`. The Lighthouse artefact itself is outstanding:
-`npx lhci autorun --collect.url=http://localhost:4173/admin` on a machine with Chrome. Recorded in
-`OPEN-ITEMS.md` as `OI-UX-3`, not in the matrix as a pass.
+**Lighthouse paint metrics are not a measurement in this environment.** The suite ran against a
+production build on a 4G mobile profile and returned LCP **2708.765 / 2708.791 / 2708.755 ms** for
+three different payloads, with `NO_SCREENSHOTS` in the report — identical to the millisecond, which is
+a Lantern estimate over an incomplete graph, not an observation. `ADR-010` records the proof and the
+consequence: the artefact (`developer-review-artefacts/lighthouse-login-mobile-4g.json`) is committed
+as **indicative**, the DOM-derived scores are real (a11y 1.00, SEO 1.00, CLS 0, TBT 0), and the budget
+is enforced by the `lighthouse` CI job via `frontend/lighthouserc.cjs` (LCP ≤ 2500, CLS ≤ 0.1,
+TBT ≤ 200, perf ≥ 0.9, no `continue-on-error`) plus an in-page `PerformanceObserver` assertion on the
+console. `OI-UX-3` carries the local command for a machine with a screenshot-capable Chrome.
 
-**Reduced motion has no browser assertion.** `index.css:215` honours
-`prefers-reduced-motion: reduce`, and the console's only transition is a token colour change that
-is not load-bearing. A spec assertion would have to prove the *absence* of a transition, which
-Playwright cannot do reliably across engines without pinning timing; the CSS rule is the guarantee.
-This is the one presentation with an `S` and no `C`, and it is named as such.
+**Reduced motion has no browser assertion.** `index.css:215` honours `prefers-reduced-motion: reduce`,
+and the console's only transition is a token colour change that is not load-bearing. A spec assertion
+would have to prove the *absence* of a transition, which Playwright cannot do reliably across engines
+without pinning timing; the CSS rule is the guarantee. This is the one presentation with an `S` and no
+`C`, and it is named as such rather than implied.
 
 ### Density modes — final decision: deferred for this release, with a testable checklist
 
@@ -126,18 +133,24 @@ violates INV-6 for a value that changes what an operator sees.
 
 ## Alternatives considered
 
-1. **Write the matrix as if the browser runs had happened.** Rejected: it is the one thing this
-   engagement has consistently refused to do, and it would remove the pressure to run the CI job.
-2. **Install a browser from the package registry** (e.g. `puppeteer` with a bundled Chromium, or a
-   Debian `chromium` package). Rejected: `puppeteer` downloads its browser from
-   `storage.googleapis.com`, which is also unreachable; there is no `apt` egress. Attempting it
-   would burn the session on a download that cannot complete.
-3. **Run axe in jsdom** (`jest-axe`). Rejected: jsdom has no layout, so axe's target-size,
-   colour-contrast and overflow rules cannot run — it would produce a green report that means less
-   than the static audit already committed.
-4. **Drop the browser gates from the matrix.** Rejected: they are the gates that catch the defects
+1. **Write the matrix as if the browser runs had happened.** Rejected, then and now: it is the one
+   thing this engagement consistently refuses to do, and it would remove the pressure to run the job.
+2. **`npx playwright install chromium`.** Tried; the download host is unreachable. Rejected as the
+   path, not as the goal.
+3. **`puppeteer`.** Its browser download comes from `storage.googleapis.com`, also unreachable.
+   Rejected for the same reason.
+4. **`@sparticuz/chromium` from npm.** **Chosen.** The registry is reachable, the package is a
+   compressed AL2023 Chromium plus its shared objects, and Playwright drives it once
+   `LD_LIBRARY_PATH` and the executable path are set. It cannot capture screenshots for Lighthouse,
+   which is why paint metrics stay indicative (`ADR-010`) while every other browser gate is measured.
+5. **Run axe in jsdom** (`jest-axe`). Rejected: jsdom has no layout, so target-size, contrast and
+   overflow rules cannot run — a green report that means less than the static audit.
+6. **Drop the browser gates from the matrix.** Rejected: they are the gates that catch the defects
    this console actually had (a 36 px dismiss button, a table that pushed the page sideways at
-   320 px). Keeping them as `C` preserves the obligation.
+   320 px, an `End` key that selected nothing).
+7. **Ship density modes as a `localStorage` toggle.** Rejected: two operators would see different
+   layouts with no record of who changed what, which is INV-6 for a value that changes what an
+   operator sees.
 
 ## Rollback
 

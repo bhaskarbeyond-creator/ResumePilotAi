@@ -57,13 +57,18 @@ Spec: `frontend/tests/auth-screens-ux.spec.ts` · baselines:
 
 | Screen | Keyboard | Visual baseline | axe (serious/critical) | States | Evidence |
 |---|---|---|---|---|---|
-| **Sign in** `/login` | **S** + **C** — skip link → brand link → email → password → reveal → forgot → submit; skip link measured ≥44 px once focused; focus ring present | **S** — 5 classes: `auth-login-{320,480,768,1024,1441}` | **S** — 0 at all five classes | error, offline — both committed as `auth-login-error-480`, `auth-login-offline-480` | `auth-screens-ux.spec.ts:103-160` |
-| **Create account** (mode of the same route) | **C** — same form, heading changes to `h2` "Create your IME365 account" | **C** — covered by the mode switch test | **C** — same DOM | — | `:164` |
-| **Reset password** (mode) | **C** — reached by "Forgot password?", submit is "Send reset link" | **C** | **C** | — | `:164` |
-| **MFA challenge** | **?** — `OI-UX-11`. The Firebase SDK needs a project to raise `MFA_REQUIRED`; with no `VITE_FIREBASE_API_KEY` the SDK rejects locally and no request is made, so the mocked REST payload is never consumed | **?** — `OI-UX-11` | **?** | not reached | skip recorded in the spec with the reason |
-| **MFA enrolment** (settings panel behind auth) | **?** — `OI-UX-10` (authenticated low-traffic screens) | **?** | **?** | — | `src/components/settings/security-panel.tsx` |
-| **Session-expired** | **?** — `OI-UX-10`. There is no dedicated screen: a 401 redirects to `/login`, so the *screen* is sign-in, which is covered | n/a | n/a | — | `src/lib/` 401 handling |
-| **Logout confirmation** | **C** — `account-panel.tsx:277` renders it; the surface is behind auth | **?** — `OI-UX-10` | **?** | — | — |
+| **Sign in** `/login` | **S + C** — skip link → brand → email → password → reveal → forgot → submit; skip link measured ≥44 px once focused; focus ring present | **C** — 5 classes: `auth-login-{320,480,768,1024,1441}` | **C** — 0 at all five classes | error, offline — committed as `auth-login-error-480`, `auth-login-offline-480`; session-expired notice asserted in `session-lifecycle.spec.ts` | `auth-screens-ux.spec.ts:103-160` |
+| **Create account** (mode of the same route) | **C** — same form, heading `h2` "Create your IME365 account", tab order unchanged | **C** — mode-switch test | **C** — same DOM, axe run per mode | — | `auth-screens-ux.spec.ts:164` |
+| **Reset password** (mode) | **C** — reached by "Forgot password?"; submit becomes "Send reset link"; focus moves to the email field | **C** | **C** | — | `auth-screens-ux.spec.ts:164` |
+| **Session expired** | **C** — focus lands inside the dialog; `Tab` ×4 stays inside; `Escape` dismisses without navigating; "Sign in again" ends the session through the provider and lands on `/login?reason=session_expired` | **C** — 5 classes `session-expired-{320,480,768,1024,1441}` + `session-expired-dark-320` | **C** — 0 on the dialog and the page behind it | the state itself is the screen; dismissing returns to the page, confirming returns to sign-in | `tests/session-lifecycle.spec.ts`, `OI`-free by design |
+| **Logout confirmation** | **C** — destructive action is *not* the initial focus; `Tab` ×3 trapped; `Escape` returns focus to the trigger; confirming signs out | **C** — 5 classes `logout-confirm-{320,480,768,1024,1441}` | **C** — 0 | cancel and confirm both asserted | `tests/session-lifecycle.spec.ts` |
+| **MFA challenge** | **C** — focus starts in the code field; non-digits dropped; never more than six; ring ≥2 px; `Enter` submits only at six; `Shift+Tab` reaches "Back to sign-in" | **C** — 5 classes `mfa-challenge-{320,480,768,1024,1441}` + `-dark-320` + `-high-contrast-320` | **C** — 0 including dark and forced-colours | invalid-code `role="alert"` with the field retained; RTL and 200 % text asserted | `tests/mfa-panel.spec.ts` (harness: `tests/harness/mfa.html`) |
+| **MFA enrolment** | **C** — start → `scan` focuses the code field; `Escape` cancels and returns focus to the action; confirm disabled below six digits | **C** — 5 classes `mfa-enroll-{320,480,768,1024,1441}` | **C** — 0 | **all six**: unavailable (no identity provider), idle, starting, scan, verifying, done, error — each asserted | `tests/mfa-panel.spec.ts`, `tests/unit/mfa-panels.test.tsx` |
+
+**What the two new suites changed about this table.** Three rows were `?` and one row (session
+expired) described a screen that did not exist. Two real gaps were behind them: a 401 had no recovery
+path, and enrolment was a dead end in settings. Both are now implemented and measured; what remains
+unproven is the Firebase *flow* for MFA (`OI-UX-11`: exact commands) — the screens are `C`.
 
 ## 2. Admin console — 15 tabs
 
@@ -74,7 +79,7 @@ Spec: `frontend/tests/admin-console-ux.spec.ts` · runner: `npm run test:ux:admi
 | No horizontal page scroll | C | C | C | C | C | `:69` |
 | Tab strip roving focus (`ArrowRight`/`Home`/`End`) | C | C | C | C | C | `:69` |
 | axe zero serious/critical | C | C | C | C | C | `:98` |
-| Visual baseline | ? | ? | ? | ? | ? | `OI-UX-9` — the spec calls `toHaveScreenshot`; **no admin baselines are committed** because the console needs the backend + MariaDB to render its tab list, which this sandbox does not have (the auth baselines do not need it). Command to close: `npm run test:ux:admin -- --update-snapshots` against a running backend |
+| Visual baseline | C | C | C | C | C | 5 committed PNGs `admin-console-{320,480,768,1024,1441}`. The console no longer needs a backend: `tests/support/admin-console-backend.ts` serves the session check and a capability census generated by the backend's own resolver, and a structured 503 for every other call (so the tabs render their real failure state). `npm run verify:fixtures` fails CI on a stale fixture |
 | Rendered 44 px boxes at 320/480 | C | C | n/a | n/a | n/a | `:214` |
 | Drawer focus trap, Escape, focus return | C | — | — | C | — | `:247` |
 | Four data states (loading/empty/error/partial) | C | — | — | — | — | `:279` |

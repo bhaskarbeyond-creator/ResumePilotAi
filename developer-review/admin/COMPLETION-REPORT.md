@@ -9,8 +9,9 @@
 ## 0. Status banner
 
 > **Release readiness: merge-ready for `dev`; four items need a human sign-off before `main`.**
-> **Tracked items still open: 17** (12 classified follow-ups, 5 environmental — each with a
-> provisional decision, reversal trigger and owner in `OPEN-ITEMS.md`).
+> **Tracked items: 49 rows — 11 closed, 14 partial/deferred with a decision record, 20 open with a
+> next action, 4 errata.** Each open row carries a provisional decision, a reversal trigger and an
+> owner in `OPEN-ITEMS.md`.
 > **All 18 requirements of the 10/10 bar: 14 met, 2 formally deferred, 2 met with a tracked deferral
 > inside the row (locale formatting, density modes)** — no row is "not met" without a decision record. The SHA this report describes is printed by
 > `git log --oneline -1` on the branch; the coverage, lint and test numbers below were re-produced
@@ -20,7 +21,7 @@
 
 | # | Decision required | Where the evidence is |
 |---|---|---|
-| 1 | **Accept the visual-baseline gap for the admin console.** Ten auth baselines are committed; the console's cannot be generated without the backend + MariaDB. Merge means the `e2e` job's screenshot assertions stay outstanding until someone runs one reviewed `--update-snapshots`. Accept, or hold the merge until that run happens. | `OI-UX-9`, `UX-DEVICE-MATRIX.md` §2 |
+| 1 | **Accept that the MFA *flow* is unproven while the screens are measured.** A challenge raised by Firebase and a real `enroll()` round-trip need a configured project; both screens are asserted at five classes with baselines, and the exact commands are recorded. Accept for `dev`, or require the Firebase project before `main`. | `OI-UX-11`, `UX-DEVICE-MATRIX.md` §1 |
 | 2 | **Accept the density-modes deferral.** Six-item acceptance checklist, three reversal triggers, named owner. Accept for `dev`, or require it in this release. | `ADR-009` §Density, `OI-UX-8` |
 | 3 | **Accept that the performance budget is enforced only in CI.** The local Lighthouse run cannot measure paint with the available Chromium; the gate is the `lighthouse` job. Accept, or require a local measurement on real Chrome before merge. | `ADR-010`, `OI-UX-3` |
 | 4 | **Accept that three auth states are asserted-but-skipped** (held request, offline with a live network, MFA challenge) because no Firebase project is configured here. Each has the exact command to turn it on. | `OI-UX-11` |
@@ -68,13 +69,13 @@ and the reversal trigger). Nothing is left unscored.
 | 8 | Typed config keys | **Met** | `backend/config/registry.js` — 35 typed entries, 10 non-editable, scopes PLAN/PLATFORM/DEPLOYMENT |
 | 9 | Doc comments and ADRs | **Met** | Ten ADRs (`decisions/ADR-001…010`), module docblocks on every new file and every new test file |
 | 10 | Coverage ≥ 90 % statements / ≥ 85 % branches / ≥ 95 % critical paths | **Met** | Frontend **95.45 / 86.02 / 95.16 / 96.11** against 90/85/90/95; backend **99.02 / 87.76 / 97.95 / 99.02** against 95/85/90/95; per-module critical-path table in `ADR-008` |
-| 11 | Five device classes, no horizontal scroll | **Met** | Auth `S` at five classes with committed baselines; console `C` at five classes (`admin-console-ux.spec.ts:69`). 320×568 is the narrowest phone case and is asserted |
-| 12 | Touch targets ≥ 44 px, safe-area, WCAG 2.2 AA | **Met** | Global mobile rule in `index.css` with 0 static opt-outs; rendered boxes measured at 320/480; `console.tsx:210` safe-area; axe 0 serious/critical per class and presentation |
-| 13 | Dark, high-contrast, reduced-motion, RTL, 200 % zoom/text, locale | **Met for five; locale deferred** | Dark / forced-colours / RTL / 200 % asserted for auth (`S`) and console (`C`); reduced motion `index.css:215`. Locale formatting `OI-UX-12` — provisional deferral with trigger |
+| 11 | Five device classes, no horizontal scroll | **Met** | Four browser suites green from a fresh clone — auth 21+2, session lifecycle 16, MFA 21, console 27 — with 38 committed baselines across 320/480/768/1024/1441 |
+| 12 | Touch targets ≥ 44 px, safe-area, WCAG 2.2 AA | **Met** | Global mobile rule in `index.css` (buttons, tabs, fields, and nav/header links) with 0 static opt-outs; rendered boxes measured at 320/480 for the console and every auth surface; `console.tsx:210` safe-area; axe 0 serious/critical per class and presentation, including `forced-colors` |
+| 13 | Dark, high-contrast, reduced-motion, RTL, 200 % zoom/text, locale | **Met for five; locale deferred** | Dark, forced-colours, RTL and 200 % text asserted with baselines for auth, both session dialogs, both MFA panels and the console; reduced motion `index.css:215` (`S` only — proving the *absence* of a transition is not stably assertable); locale `OI-UX-12` |
 | 14 | Design tokens, density modes, print stylesheet | **Met for tokens and print; density deferred** | 0 unscoped fixed widths in the audited planes; print `index.css:429/:502`; density `OI-UX-8` + `ADR-009` (six-item checklist, owner, three triggers) |
 | 15 | LCP < 2.5 s / INP < 200 ms / CLS < 0.1 | **Deferred to CI measurement** | Assertions in `lighthouserc.cjs` (LCP ≤ 2500, CLS ≤ 0.1, TBT ≤ 200, perf ≥ 0.9) run by the `lighthouse` job; console vitals asserted in-page at `admin-console-ux.spec.ts:349`. Local CLS 0 and TBT 0 measured; local LCP is an estimate, not evidence (`ADR-010`, `D-036-1`) |
 | 16 | Twelve test tiers exist and run | **Met** | `TEST-EVIDENCE.md` §2 — unit, integration, contract, E2E, visual, accessibility, security/authZ, performance, characterisation, chaos, migration, smoke. Nine execute here; E2E / visual / LHCI execute in named CI jobs |
-| 17 | Auth screens: keyboard scripts, baselines, states | **Met, two named skips** | 21 pass / 2 skip; ten committed baselines; tab order asserted by position; `OI-UX-11` carries the exact command for the two skipped states |
+| 17 | Auth screens: keyboard scripts, baselines, states | **Met, two named skips** | All six screens evidenced: sign-in / register / reset (21 pass, 2 skip, 10 baselines), session-expired and logout confirmation (16 pass, 11 baselines), MFA challenge and enrolment (21 pass, 12 baselines). The two skips need a Firebase project — the *screens* are `C`; only the provider *flow* is named in `OI-UX-11` |
 | 18 | Completion pack consistent and mergeable | **Met** | This file + `TEST-EVIDENCE.md` + `UX-DEVICE-MATRIX.md` + `OPEN-ITEMS.md` + `DECISION-LOG.md` (37 entries) + ten ADRs + `SECURITY-AND-RBAC-PROOF.md` + `DEPLOYMENT-RUNBOOK.md`; numbers re-produced from a fresh clone |
 
 **Score: 14 met · 2 deferred (#4 complexity budget, #15 where the performance number is measured) ·
