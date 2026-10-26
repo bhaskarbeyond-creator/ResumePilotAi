@@ -654,3 +654,52 @@ is the same query with a human in the loop. (2) Repair-in-place — rejected abo
 **Rollback.** Delete the route and the service; nothing is persisted. The metric
 (`admin_root_account_mismatches_total`) stops being emitted, which is visible as a flat line
 rather than as silence only if the alert is on `increase()`.
+
+### D-032-1 — Decision 1 resolved by Path A: the enforced coverage floor is raised, not justified
+
+**Decision.** The frontend gate moves from 80/75/75/80 to **90/85/90/95**
+(`frontend/vitest.config.ts`), backed by tests added this turn, and the backend stays at
+95/85/90/95 with its measured numbers unchanged. Full reasoning, per-module critical-path table,
+trend and the trigger that would move the floor again: `decisions/ADR-008-coverage-floor.md`.
+
+**Measured after the change** — the two commands that enforce it:
+
+| Command | Tests | Statements | Branches | Functions | Lines |
+|---|---|---|---|---|---|
+| `cd frontend && npm run test:unit:coverage` | 198 pass, 0 fail | 95.45 | 86.02 | 95.16 | 96.11 |
+| `cd backend && npm run test:coverage` | 260 pass, 0 fail | 99.02 | 87.76 | 97.95 | 99.02 |
+
+**Why Path A and not Path B.** Path B (an ADR stating the lower numbers) was available and is what
+the mandate's second branch allowed. It was rejected because the 6–10 point gap was *mutation
+handlers and failure classification*, not unreachable code — 18 uncovered functions across 331, all
+of them on paths an operator reaches during an incident. An ADR would have documented the gap
+without closing it.
+
+**What the new tests found** (repaired in source, not in the assertion): `AdminHealthTab`'s detail
+drawer crashed on a payload without `affectedFeatures`/`relatedEndpoints`/`auditEvents`;
+`AdminHelpDeskTab`'s search threw on a ticket with no subject; five strict-mode fixture errors and
+three lint warnings were removed. Zero ignores, zero `any`, zero skipped assertions.
+
+**The qualification, stated rather than buried.** The frontend `include` list is the 14 admin
+modules, so no repository-wide frontend figure exists and none is claimed; and the aggregate gate is
+`per-file=false`, so `AdminUsersTab.tsx` (90.57/75.29/88.61) and `AdminModerationTab.tsx`
+(96.94/77.55) sit below the per-file statement target while passing the aggregate. Both facts are in
+the ADR with the two lowest branch figures in the repository named (`routes/config.js` 74.02,
+`routes/adminRbac.js` 79.66) and their reason.
+
+**Backend script repair.** `test:coverage`, `test:tiers`, `test:load`, `test:query-plan` and `smoke`
+never set `NODE_ENV=test`, so run locally they failed 23 tests with
+`RBAC store injection is disabled outside tests` — the guard in `services/adminRbac.js:78` and
+`security/auth.js:198` doing its job. CI sets `NODE_ENV: test` at the job level, so CI was green
+while the local command was red: a gate you cannot reproduce locally. The five scripts now prefix
+`NODE_ENV=test`, which makes the local command the same command CI runs.
+
+**Alternatives.** (1) Path B — rejected above. (2) Set the floor to the measured value
+(95/86/95/96) — rejected: a gate at the current measurement fails on the next honest refactor.
+(3) Raise the branch floor to 90 everywhere — fails today and the failing branches are duplicated
+route-layer fault arms already covered at the service layer; recorded as the next target instead.
+(4) Exclude the low files — rejected by the standing constraint.
+
+**Rollback.** Revert the threshold block in `frontend/vitest.config.ts`; tests stay, only
+enforcement weakens, so the revert commit must cite this entry. The `NODE_ENV=test` prefixes are
+independent and should not be reverted — without them the local command does not reproduce CI.

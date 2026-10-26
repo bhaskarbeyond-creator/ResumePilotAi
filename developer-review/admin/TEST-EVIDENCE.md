@@ -91,12 +91,20 @@ properties, not product properties.
 
 ```
 =============================== Coverage summary ===============================
-Statements   : 98.82% ( 3947/3994 )
-Branches     : 87.23% ( 779/893 )
+Statements   : 99.02% ( 3955/3994 )
+Branches     : 87.76% ( 789/899 )
 Functions    : 97.95% ( 96/98 )
-Lines        : 98.82% ( 3947/3994 )
+Lines        : 99.02% ( 3955/3994 )
 ================================================================================
+
+# frontend (14 admin modules), `npm run test:unit:coverage` — 198 tests
+All files          |   95.45 |   86.02 |   95.16 |   96.11 |
 ```
+
+Frontend thresholds were **raised this turn** from 80/75/75/80 to 90/85/90/95 in
+`frontend/vitest.config.ts`; the per-module critical-path table, the trend and the qualification
+(no repository-wide frontend figure exists; `per-file=false`) are in
+`decisions/ADR-008-coverage-floor.md` and `DECISION-LOG.md` `D-032-1`.
 
 Enforced by `c8 check-coverage --statements=95 --lines=95 --functions=90 --branches=85
 --per-file=false` at the end of `npm run test:coverage`, and the same four numbers are in
@@ -223,6 +231,26 @@ DB_HOST=127.0.0.1 DB_NAME=airesume_test npm --prefix backend test
   rollback by design, and the drill needs a disposable database.
 - **"Every admin tab shows live data."** Seven tabs still contain sample-data fallbacks;
   the inventory and the per-file next action are in `OPEN-ITEMS.md` `OI-001-1`.
+
+### 6.1 Decision 2 — the EXPLAIN skip is opt-in locally, impossible in CI, and loud when unavailable
+
+The MariaDB EXPLAIN layer (`test/query-plan-regression.test.js`, the rollback drill and the five
+integration suites) skips when it cannot reach a database. A skip that is silent is a gate that
+was never run, so the decision was made explicit in `backend/test-support/integrationGate.js` and
+proven in `backend/test/integration-gate.test.js` (**14 / 14 pass**):
+
+| Requirement | Mechanism | Test that proves it |
+|---|---|---|
+| (a) Opt-in, developer machines only | `decide()` returns `skip` **only** when `RUN_MARIADB_INTEGRATION` is unset *and* `CI` is unset; the skip string names the exact command to run (`RUN_MARIADB_INTEGRATION=1 npm run test:query-plan`) | "local run without the flag skips with the command in the message" |
+| (b) Never skipped in CI | With `CI=true` (or `CI` set to any truthy spelling) an unset flag **throws** `INTEGRATION_GATE_CLOSED` instead of skipping | three sub-process tests that spawn `node` with the flag combinations and assert exit code 1 / 0 |
+| (c) Fails loud if EXPLAIN is unavailable in CI | The fail path is a `throw`, never a returned `{ skip: true }`, because `node:test` honours a returned skip and would print a green tick | "a closed gate throws rather than returning a skip" — asserts `assert.throws` and that no skip object is produced |
+
+Why a throw rather than a skip: `node:test` treats a returned `{ skip }` as a pass with a note, so
+a CI job with no database would report 0 failures and the caller would believe the plans were
+checked. The suite-conformity test asserts every gated file imports the same gate (no suite may
+re-introduce its own `process.env.CI ? skip : run`), and the workflow assertion pins
+`RUN_MARIADB_INTEGRATION: '1'` in the `migration-drill` job so the flag cannot be dropped from CI
+without failing that test.
 
 ---
 
