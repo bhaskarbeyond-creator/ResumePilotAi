@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T21:30:19.414Z",
+  "generatedAt": "2026-10-26T22:01:05.905Z",
   "rules": {
     "targetSize": "no interactive element pins a height below 44px; the 44px floor itself is the global @media (max-width: 767px) rule in index.css, and the rendered box is measured in Playwright at 320/480",
     "textSize": "no text below 12px (text-[9px] / text-[10px] / text-[11px] are refused)",

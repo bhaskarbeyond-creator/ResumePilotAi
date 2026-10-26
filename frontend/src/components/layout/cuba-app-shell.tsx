@@ -16,6 +16,7 @@ import { useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
+import { LogoutConfirmDialog } from '@/components/auth/logout-confirm-dialog';
 import {
   LayoutDashboard,
   FileText,
@@ -826,14 +827,16 @@ export function CubaAppShell({
               )}
             </Link>
             {!sidebarCollapsed && (
-              <button
-                onClick={handleSignOut}
-                className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-rose-600 transition-colors"
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut className="size-4" />
-              </button>
+              <LogoutConfirmDialog onConfirm={handleSignOut}>
+                <button
+                  type="button"
+                  className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-rose-600 transition-colors"
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </LogoutConfirmDialog>
             )}
           </div>
         </div>
@@ -1315,13 +1318,19 @@ export function CubaAppShell({
                     <span>{resolvedTheme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={handleSignOut}
-                    className="gap-2.5 py-2 font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
-                  >
-                    <LogOut className="size-4" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
+                  {/* Sign-out is confirmed, not immediate: it destroys the preview session and
+                   * any unsaved draft, and an operator with MFA has to complete a second factor
+                   * to get back in. `onSelect` is prevented so the menu does not close before the
+                   * dialog can take focus. */}
+                  <LogoutConfirmDialog onConfirm={handleSignOut}>
+                    <DropdownMenuItem
+                      onSelect={(event) => event.preventDefault()}
+                      className="gap-2.5 py-2 font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                    >
+                      <LogOut className="size-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </LogoutConfirmDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

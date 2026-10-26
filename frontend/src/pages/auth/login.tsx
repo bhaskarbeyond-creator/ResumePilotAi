@@ -30,9 +30,10 @@ import {
   EyeOff,
   AlertCircle,
   CheckCircle2,
-  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { getMfaResolver, completeMfaSignIn, type MfaResolverState } from '@/lib/mfa';
+import { MfaChallengePanel } from '@/components/auth/mfa-challenge-panel';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
@@ -83,6 +84,8 @@ export function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [mfaResolverState, setMfaResolverState] = useState<MfaResolverState | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  /** Verification failure, shown inside the challenge panel rather than replacing the page. */
+  const [mfaError, setMfaError] = useState<string | null>(null);
 
   const clearMessages = () => {
     setError(null);
@@ -238,10 +241,10 @@ export function LoginPage() {
     }
   };
 
-  const handleMfaSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleMfaSubmit = async () => {
     if (!mfaResolverState || mfaCode.length !== 6) return;
     clearMessages();
+    setMfaError(null);
     setLoading(true);
 
     try {
@@ -253,12 +256,14 @@ export function LoginPage() {
         }, 300);
       }
     } catch (err: unknown) {
+      // Reported inside the challenge panel, which stays on screen: replacing the whole page
+      // with an error would take the code field away at the moment it needs to be retried.
       console.error('[MFA Verification Error]:', err);
       const firebaseError = err as { code?: string; message?: string };
-      setError(
+      setMfaError(
         firebaseError.code === 'auth/invalid-verification-code'
-          ? 'Invalid 6-digit verification code. Please check your authenticator app and try again.'
-          : firebaseError.message ?? 'MFA verification failed. Please check your authenticator code and try again.'
+          ? 'That code is not valid. Check your authenticator app and try again.'
+          : firebaseError.message ?? 'Verification failed. Check your authenticator code and try again.'
       );
       setMfaCode('');
     } finally {
@@ -357,6 +362,18 @@ export function LoginPage() {
                 </div>
               )}
 
+              {/* Why this screen appeared, when the router sent the person here. */}
+              {searchParams.get('reason') === 'session_expired' && (
+                <div
+                  className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                  role="status"
+                  data-testid="session-expired-notice"
+                >
+                  <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                  <span>Your session ended. Sign in again to pick up where you left off.</span>
+                </div>
+              )}
+
               {/* Success message */}
               {success && (
                 <div className="mb-4 flex items-start gap-3 rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-700" role="status">
@@ -366,61 +383,18 @@ export function LoginPage() {
               )}
 
               {mfaResolverState ? (
-                /* Two-Factor Authentication (TOTP 2FA) Form */
-                <form onSubmit={handleMfaSubmit} className="space-y-4" autoComplete="one-time-code">
-                  <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 text-center">
-                    <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
-                      <ShieldCheck className="size-6" />
-                    </div>
-                    <h3 className="text-base font-bold text-ink">Two-Factor Authentication 🛡️</h3>
-                    <p className="mt-1 text-xs text-ink-muted leading-relaxed">
-                      Enter the 6-digit verification code from your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.) to complete sign-in.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="mfa-code" className="mb-1.5 block text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                      Authenticator Code
-                    </label>
-                    <Input
-                      id="mfa-code"
-                      type="text"
-                      inputMode="numeric"
-                      autoFocus
-                      maxLength={6}
-                      placeholder="123456"
-                      value={mfaCode}
-                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="text-center font-mono text-2xl tracking-[0.4em] h-14 bg-surface"
-                      autoComplete="one-time-code"
-                      required
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    loading={loading}
-                    disabled={mfaCode.length !== 6 || loading}
-                    id="btn-verify-mfa"
-                  >
-                    Verify &amp; Sign In ✓
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full text-xs text-ink-muted hover:text-ink"
-                    onClick={() => {
-                      setMfaResolverState(null);
-                      setMfaCode('');
-                      clearMessages();
-                    }}
-                  >
-                    ← Back to Login
-                  </Button>
-                </form>
+                <MfaChallengePanel
+                  code={mfaCode}
+                  onCodeChange={setMfaCode}
+                  onSubmit={() => void handleMfaSubmit()}
+                  onCancel={() => {
+                    setMfaResolverState(null);
+                    setMfaCode('');
+                    clearMessages();
+                  }}
+                  loading={loading}
+                  error={mfaError}
+                />
               ) : (
                 <>
                   {/* OAuth buttons */}

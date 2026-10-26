@@ -32,6 +32,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
+import { LogoutConfirmDialog } from '@/components/auth/logout-confirm-dialog';
 
 interface NavItem {
   label: string;
@@ -259,14 +260,16 @@ export function AppShell({ children }: AppShellProps) {
               </div>
             )}
             {!sidebarCollapsed && (
-              <button
-                onClick={handleSignOut}
-                className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-error-600 transition-colors"
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut className="size-4" />
-              </button>
+              <LogoutConfirmDialog onConfirm={handleSignOut}>
+                <button
+                  type="button"
+                  className="rounded-md p-1 text-ink-muted hover:bg-neutral-100 hover:text-error-600 transition-colors"
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </LogoutConfirmDialog>
             )}
           </div>
         </div>

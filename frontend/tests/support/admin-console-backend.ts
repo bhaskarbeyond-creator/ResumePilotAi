@@ -76,14 +76,22 @@ export const CAPABILITY_FIXTURES = {
   AUDITOR: fixture('AUDITOR'),
 } as const;
 
+/** Roles the capability fixtures cover. */
 export type FixtureRole = keyof typeof CAPABILITY_FIXTURES;
+
+/**
+ * Any role a preview session may carry, including ones with no admin capability at all.
+ * `previewToken` only encodes the claim; the *authority* decision is the backend's, and a
+ * `USER` session is a legitimate thing for a lifecycle test to hold.
+ */
+export type PreviewRole = FixtureRole | 'USER';
 
 /** The identity a console test runs as. */
 export interface ConsoleIdentity {
   uid: string;
   email: string;
   displayName: string;
-  role: FixtureRole;
+  role: PreviewRole;
 }
 
 /**
@@ -129,15 +137,18 @@ const UNAVAILABLE = JSON.stringify({
  * @param page the page under test
  * @param role which capability fixture to answer with
  */
-export async function installConsoleBackend(page: Page, role: FixtureRole): Promise<void> {
+export async function installConsoleBackend(page: Page, role: PreviewRole): Promise<void> {
   await page.route('**/api/**', (route) =>
     route.fulfill({ status: 503, contentType: 'application/json', body: UNAVAILABLE }),
   );
   await page.route('**/api/users-data/profile', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {} }) }),
   );
+  // A role with no fixture (e.g. `USER`) gets the empty answer: no tabs, which is what the
+  // backend returns for a caller with no admin capability at all.
+  const capabilities = role in CAPABILITY_FIXTURES ? CAPABILITY_FIXTURES[role as FixtureRole] : { ...CAPABILITY_FIXTURES.AUDITOR, role, tabs: CAPABILITY_FIXTURES.AUDITOR.tabs.map((tab) => ({ ...tab, allowed: false, reason: 'missing-permission' })), defaultTab: null };
   await page.route('**/api/me/capabilities', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(CAPABILITY_FIXTURES[role]) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(capabilities) }),
   );
   // The configuration census is a real registered payload, not an invented row: it is produced
   // by the backend's own `describeConfig` (see the generator), so the provenance labels the
@@ -159,7 +170,7 @@ export async function authenticateConsole(page: Page, identity?: Partial<Console
     uid: 'fixture-super-admin',
     email: 'admin@ime365.com',
     displayName: 'Sarah Administrator',
-    role: 'SUPER_ADMIN',
+    role: 'SUPER_ADMIN' as PreviewRole,
     ...identity,
   };
   const token = previewToken(resolved);

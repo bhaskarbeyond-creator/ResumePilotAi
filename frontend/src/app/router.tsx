@@ -11,6 +11,7 @@ import { PageSpinner } from '@/components/ui/loading';
 import { RouteErrorBoundary } from '@/components/guards/route-error-boundary';
 import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/require-auth';
 import { RequireExportAccess } from '@/components/guards/require-export-access';
+import { SessionExpiredDialog } from '@/components/auth/session-expired-dialog';
 import { AppShell } from '@/components/layout/app-shell';
 import { CubaAppShell } from '@/components/layout/cuba-app-shell';
 
@@ -56,6 +57,9 @@ const CVRendererPage = lazy(() => import('@/pages/export/cv-renderer').then((m) 
 export function AppRouter() {
   return (
     <BrowserRouter>
+      {/* Mounted once, outside the routes: an expired session is not a property of one screen,
+       * and a surface added later gets the recovery path without remembering to wire it. */}
+      <SessionExpiredDialog />
       <RouteErrorBoundary>
         <Suspense fallback={<PageSpinner />}>
           <Routes>

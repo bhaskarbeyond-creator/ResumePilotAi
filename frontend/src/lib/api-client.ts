@@ -13,6 +13,7 @@ import axios, {
 import { auth } from '@/lib/firebase';
 import { readPreviewSession } from '@/lib/preview-session';
 import { resolveActiveTenantId, setActiveTenantId, autoResolveTenantFromError } from '@/lib/tenant-context';
+import { reportSessionExpired } from '@/lib/session-events';
 
 /** Standardized API error shape */
 export interface ApiError {
@@ -210,6 +211,21 @@ function createApiClient(): AxiosInstance {
           delete originalRequest.headers['X-Tenant-Id'];
           return client(originalRequest);
         }
+      }
+
+      // The session is over.
+      //
+      // Reaching here means the request was rejected as unauthenticated and the one refresh
+      // attempt produced nothing — there is no Firebase user and no usable preview token. The
+      // screen the person is looking at will render its own failure states, which is correct,
+      // but on its own it reads as a broken product. The dialog mounted by the router listens
+      // for this and offers the only useful action: sign in again.
+      //
+      // A 401 on a *public* endpoint is not a session problem (some handlers answer 401 when a
+      // share link is revoked), so the report is skipped when the request carried no credential
+      // in the first place.
+      if (error.response?.status === 401 && Boolean(originalRequest.headers?.Authorization)) {
+        reportSessionExpired(originalRequest.url ?? 'unknown');
       }
 
       return Promise.reject(error);

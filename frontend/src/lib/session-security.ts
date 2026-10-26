@@ -32,7 +32,14 @@ export interface SecondFactor {
 
 export type SessionSecurity =
   | { kind: 'preview' }
-  | { kind: 'firebase'; signInMethods: SignInMethod[]; hasPassword: boolean; factors: SecondFactor[] };
+  | {
+      kind: 'firebase';
+      signInMethods: SignInMethod[];
+      hasPassword: boolean;
+      factors: SecondFactor[];
+      /** Email (or uid) shown inside an authenticator app when a new factor is enrolled. */
+      accountName: string;
+    };
 
 export const PASSWORD_MIN_LENGTH = 6;
 
@@ -63,7 +70,13 @@ export function readSessionSecurity(): SessionSecurity {
   } catch {
     factors = [];
   }
-  return { kind: 'firebase', signInMethods, hasPassword: signInMethods.includes('password'), factors };
+  return {
+    kind: 'firebase',
+    signInMethods,
+    hasPassword: signInMethods.includes('password'),
+    factors,
+    accountName: user.email || user.uid,
+  };
 }
 
 export class PasswordChangeError extends Error {

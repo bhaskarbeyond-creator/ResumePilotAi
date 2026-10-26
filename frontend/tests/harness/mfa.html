@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>MFA panel harness</title>
+  </head>
+  <!-- The app shell always provides the canvas; the harness must too, or axe measures the
+       panel against the browser's default white and reports contrast failures that cannot occur
+       in the product. -->
+  <body class="min-h-screen bg-canvas text-ink">
+    <!--
+      Test-only mount point for the two second-factor panels.
+
+      These panels are unreachable in a browser without a configured Firebase project: the
+      challenge only appears after a password sign-in that returns `auth/multi-factor-auth-required`,
+      and enrolment needs a real identity provider. Rendering the component directly is the only
+      way to assert their layout, keyboard behaviour and axe cleanliness — which is the part the
+      user actually experiences — while leaving the *flow* named as the one thing still unproven
+      (`OI-UX-11`).
+
+      The page is test infrastructure, not product: `vite build` uses `index.html` as its only
+      entry, so this file is never bundled into the app.
+
+      Served by the dev server that Playwright starts: /tests/harness/mfa.html
+    -->
+    <main id="root" class="mx-auto max-w-md p-4"></main>
+    <script type="module" src="./mfa-entry.tsx"></script>
+  </body>
+</html>

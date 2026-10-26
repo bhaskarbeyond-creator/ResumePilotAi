@@ -21,7 +21,9 @@
     "test:ux:admin": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/admin-console-ux.spec.ts",
     "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit",
     "gen:fixtures": "node scripts/gen-capabilities-fixture.mjs",
-    "verify:fixtures": "node scripts/gen-capabilities-fixture.mjs --check"
+    "verify:fixtures": "node scripts/gen-capabilities-fixture.mjs --check",
+    "test:ux:session": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/session-lifecycle.spec.ts",
+    "test:ux:mfa": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/mfa-panel.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

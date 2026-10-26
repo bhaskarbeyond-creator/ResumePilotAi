@@ -11,6 +11,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { KeyRound, LogIn, ShieldCheck, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MfaEnrollmentPanel } from '@/components/auth/mfa-enrollment-panel';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -179,10 +181,10 @@ function TwoFactorCard({ security }: { security: SessionSecurity }) {
             identity, so there are no second factors to manage.
           </p>
         ) : security.factors.length === 0 ? (
-          <p className="text-sm text-ink-secondary">
-            Two-factor authentication is off for your account. Setting up an authenticator app is not available on this
-            page.
-          </p>
+          // Enrolment used to be a dead end here: the panel could remove a factor and had no way
+          // to add one. It is now the real flow, with the "no identity provider" case stated
+          // rather than hidden (`MfaEnrollmentPanel`, `tests/mfa-panel.spec.ts`).
+          <MfaEnrollmentPanel available={isFirebaseConfigured()} accountName={security.accountName ?? 'your account'} />
         ) : (
           <>
             <p className="text-sm text-ink-secondary">

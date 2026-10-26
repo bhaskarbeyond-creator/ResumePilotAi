@@ -30,6 +30,15 @@ export default defineConfig({
         'src/components/admin/use-admin-resource.ts',
         'src/components/admin/admin-users-model.ts',
         'src/components/admin/AdminDataState.tsx',
+        // Session lifecycle: the expiry signal and the two dialogs a person reaches when a
+        // session ends (`session-lifecycle.test.tsx`).
+        'src/lib/session-events.ts',
+        // The two second-factor surfaces. The *flow* needs a Firebase project (OI-UX-11); the
+        // screens are exercised here and in `tests/mfa-panel.spec.ts`.
+        'src/components/auth/mfa-challenge-panel.tsx',
+        'src/components/auth/mfa-enrollment-panel.tsx',
+        'src/components/auth/session-expired-dialog.tsx',
+        'src/components/auth/logout-confirm-dialog.tsx',
         // The tab strip, extracted from `pages/admin/console.tsx` so the Home/End and
         // roving-focus rules are covered by the fast tier (see `admin-tabbar.test.tsx`).
         'src/components/admin/AdminTabBar.tsx',
