@@ -282,8 +282,11 @@ async function main() {
     // call would simply rank around it on openai's p50 and never see the 429).
     const platform429 = await routed(freellm, { prompt: `A.15r2 platform 429 bench ${randomUUID()}`, platformConfig: config, model: 'llama-3.1-8b-instant' });
     emit({ type: 'call', who: 'platform-429', ...platform429 });
-    // Platform-scope rows persist with scope_key NULL (A.1 scoped-column default).
-    const cooldowns429 = readSqlite("SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns WHERE scope_key IS NULL OR scope_key = 'platform'");
+    // Design invariant (schema-proposal 3.1, verified live by
+    // verify-scope-key-sentinel.cjs): platform rows persist with the LITERAL
+    // scope_key 'platform' (NOT NULL DEFAULT 'platform') — never NULL. The
+    // assertion below accepts nothing else.
+    const cooldowns429 = readSqlite("SELECT provider, model, scope_key, credential_kind FROM provider_cooldowns WHERE scope_key = 'platform'");
     emit({ type: 'sqlite-cooldowns', phase: 'after-platform-429', rows: cooldowns429 });
     // Stub healthy again, but the platform bench (Retry-After 60s) is ACTIVE:
     await fetch(`http://127.0.0.1:${BETA_PORT}/__mode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'ok' }) });
@@ -293,7 +296,7 @@ async function main() {
     emit({ type: 'call', who: 't2-byok-under-platform-bench', ...t2Sanctuary });
 
     const outageHitBothTenants = !t1Outage.ok && !t2Outage.ok;
-    const platform429Benched = cooldowns429.some(r => r.provider === 'groq' && (r.scope_key === null || r.scope_key === 'platform'));
+    const platform429Benched = cooldowns429.some(r => r.provider === 'groq' && r.scope_key === 'platform' && r.credential_kind === 'platform');
     const t3PlatformTrafficCooled = t3Blocked.ok && t3Blocked.provider === 'openai'; // groq benched platform-wide -> T3's platform-credential traffic falls to openai
     const sanctuaryIgnoredPlatformBench = t2Sanctuary.ok && t2Sanctuary.provider === 'groq' && t2Sanctuary.isDedicatedByok;
     const tenantScopedRowsExisted = afterOutage.metrics.some(r => r.scope_key === t1Scope) && afterOutage.metrics.some(r => r.scope_key === t2Scope);
