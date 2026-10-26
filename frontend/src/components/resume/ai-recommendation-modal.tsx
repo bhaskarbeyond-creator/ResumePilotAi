@@ -202,10 +202,10 @@ export function AiRecommendationModal({
               {mandatoryItems.length > 0 && (
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-extrabold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-extrabold uppercase tracking-wider">
                       <Flame className="size-3 text-rose-600" /> Core / High-Priority
                     </span>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-ink-muted">
                       Essential keywords standard for this domain
                     </span>
                   </div>
@@ -237,7 +237,7 @@ export function AiRecommendationModal({
                           <div className="min-w-0 flex-1">
                             <span className="leading-tight block truncate">{item.name}</span>
                             {item.issuer && (
-                              <span className="text-[10px] text-ink-muted block truncate">{item.issuer}</span>
+                              <span className="text-xs text-ink-muted block truncate">{item.issuer}</span>
                             )}
                           </div>
                         </div>
@@ -251,10 +251,10 @@ export function AiRecommendationModal({
               {recommendedItems.length > 0 && (
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-extrabold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold uppercase tracking-wider">
                       <Sparkles className="size-3 text-indigo-600" /> Recommended Additions
                     </span>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-ink-muted">
                       Complementary skills to boost ATS score
                     </span>
                   </div>
@@ -286,7 +286,7 @@ export function AiRecommendationModal({
                           <div className="min-w-0 flex-1">
                             <span className="leading-tight block truncate">{item.name}</span>
                             {item.issuer && (
-                              <span className="text-[10px] text-ink-muted block truncate">{item.issuer}</span>
+                              <span className="text-xs text-ink-muted block truncate">{item.issuer}</span>
                             )}
                           </div>
                         </div>

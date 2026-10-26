@@ -248,7 +248,7 @@ function IdentityText({
       {showTitle && heading?.title && (
         <p
           className={cn(
-            'mt-1 break-words text-[11px] font-semibold uppercase tracking-[0.16em]',
+            'mt-1 break-words text-xs font-semibold uppercase tracking-[0.16em]',
             tone === 'dark' ? 'text-white/80' : 'text-neutral-600'
           )}
           style={tone === 'dark' ? undefined : { color: layout.accentBar ? undefined : undefined }}
@@ -318,7 +318,7 @@ function IdentityBlock({
             <IdentityText heading={heading} fullName={fullName} layout={layout} />
           </div>
           <div
-            className="flex flex-col justify-center gap-1 px-6 py-4 text-[10px]"
+            className="flex flex-col justify-center gap-1 px-6 py-4 text-xs"
             style={{ backgroundColor: palette.soft || `${palette.primary}12` }}
           >
             <span className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-neutral-500">Contact</span>
@@ -388,7 +388,7 @@ function IdentityBlock({
           {photo || <div className="size-[74px]" />}
           <div className="grid grid-cols-[1fr_auto] items-start gap-4">
             <IdentityText heading={heading} fullName={fullName} layout={layout} />
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px]">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <ContactRow heading={heading} layout={{ ...layout, contactLayout: 'stack' }} />
             </div>
           </div>
@@ -481,7 +481,7 @@ function RailSection({
   const muted = isDark ? 'text-white/60' : 'text-neutral-500';
   const border = isDark ? 'border-white/15' : 'border-neutral-200';
   const heading = (
-    <div className={cn('mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em]', muted)}>{label}</div>
+    <div className={cn('mb-1.5 text-xs font-bold uppercase tracking-[0.18em]', muted)}>{label}</div>
   );
 
   let body: React.ReactNode = null;
@@ -509,7 +509,7 @@ function RailSection({
   } else if (section === 'certifications') {
     if (!Array.isArray(resume.certifications) || resume.certifications.length === 0) return null;
     body = (
-      <ul className="space-y-1.5 text-[10px] leading-snug">
+      <ul className="space-y-1.5 text-xs leading-snug">
         {resume.certifications.map((cert: any) => (
           <li key={cert.id || cert.name || cert.title}>
             <div className="font-semibold">{cert.name || cert.title}</div>
@@ -523,12 +523,12 @@ function RailSection({
   } else if (section === 'education') {
     if (!Array.isArray(resume.education) || resume.education.length === 0) return null;
     body = (
-      <ul className="space-y-2 text-[10px] leading-snug">
+      <ul className="space-y-2 text-xs leading-snug">
         {resume.education.map((edu: any, index: number) => (
           <li key={edu.id || index}>
             <div className="font-semibold">{edu.degree}{edu.field ? `, ${edu.field}` : ''}</div>
             <div className={muted}>{edu.institution}</div>
-            <div className={cn('text-[9px] whitespace-nowrap', muted)}>{formatDateRange(edu.startDate, edu.endDate)}</div>
+            <div className={cn('text-xs whitespace-nowrap', muted)}>{formatDateRange(edu.startDate, edu.endDate)}</div>
           </li>
         ))}
       </ul>
@@ -536,7 +536,7 @@ function RailSection({
   } else if (section === 'projects') {
     if (!Array.isArray(resume.projects) || resume.projects.length === 0) return null;
     body = (
-      <ul className="space-y-1.5 text-[10px] leading-snug">
+      <ul className="space-y-1.5 text-xs leading-snug">
         {resume.projects.map((project: any, index: number) => (
           <li key={project.id || index}>
             <div className="font-semibold">{project.title}</div>
@@ -548,7 +548,7 @@ function RailSection({
   } else if (section === 'achievements') {
     if (!Array.isArray(resume.achievements) || resume.achievements.length === 0) return null;
     body = (
-      <ul className="space-y-1.5 text-[10px] leading-snug">
+      <ul className="space-y-1.5 text-xs leading-snug">
         {resume.achievements.map((achievement: any, index: number) => (
           <li key={achievement.id || index} className="font-medium">{achievement.title}</li>
         ))}
@@ -556,11 +556,11 @@ function RailSection({
     );
   } else if (section === 'summary') {
     if (!resume.summary) return null;
-    body = <RichTextContent content={resume.summary} className="text-[10px] leading-relaxed" />;
+    body = <RichTextContent content={resume.summary} className="text-xs leading-relaxed" />;
   } else if (section === 'experience') {
     if (!Array.isArray(resume.experience) || resume.experience.length === 0) return null;
     body = (
-      <ul className="space-y-1.5 text-[10px] leading-snug">
+      <ul className="space-y-1.5 text-xs leading-snug">
         {resume.experience.slice(0, 4).map((role: any, index: number) => (
           <li key={role.id || index}>
             <div className="font-semibold">{role.position}</div>
@@ -636,7 +636,7 @@ function AsideRail({
           </div>
         )}
         <div className={cn('mb-3', showName && 'border-t pt-3', isDark ? 'border-white/20' : 'border-neutral-200')}>
-          <div className={cn('mb-1.5 text-[9px] font-bold uppercase tracking-[0.18em]', isDark ? 'text-white/65' : 'text-neutral-500')}>
+          <div className={cn('mb-1.5 text-xs font-bold uppercase tracking-[0.18em]', isDark ? 'text-white/65' : 'text-neutral-500')}>
             Contact
           </div>
           <div className="space-y-1">
@@ -788,7 +788,7 @@ function BannerFamily(props: FamilyPageProps) {
       <IdentityBlock heading={resume.heading} fullName={fullName} meta={meta} palette={palette} layout={layout} />
       <main className="flex min-h-0 flex-1 flex-col px-8 py-5">
         <div className="mb-4 flex items-center justify-between border-b border-neutral-200 pb-2">
-          <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-neutral-400">
+          <span className="text-xs font-bold uppercase tracking-[0.24em] text-neutral-400">
             {resume.heading?.title || 'Professional Profile'}
           </span>
         </div>
@@ -844,7 +844,7 @@ function AcademicFamily(props: FamilyPageProps) {
       <IdentityBlock heading={resume.heading} fullName={fullName} meta={meta} palette={palette} layout={layout} />
       <main className="mx-auto flex w-full max-w-[620px] min-h-0 flex-1 flex-col py-4">
         {resume.heading?.location ? (
-          <div className="mb-3 text-[9px] uppercase tracking-[0.2em] text-neutral-500">
+          <div className="mb-3 text-xs uppercase tracking-[0.2em] text-neutral-500">
             <span>{resume.heading.location}</span>
           </div>
         ) : null}
@@ -910,14 +910,14 @@ function EditorialFamily(props: FamilyPageProps) {
       <header className="shrink-0 border-t-[6px] px-9 pb-3 pt-5" style={{ borderColor: palette.primary }}>
         <div className="flex items-end justify-between gap-6">
           <div className="min-w-0">
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.32em] text-neutral-500">The Profile</div>
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.32em] text-neutral-500">The Profile</div>
             <IdentityText heading={resume.heading} fullName={fullName} layout={layout} />
           </div>
           <Photo heading={resume.heading} fullName={fullName} layout={layout} size="size-[80px]" />
         </div>
         <div className="mt-2 flex items-end justify-between gap-4 border-b border-neutral-300 pb-1.5">
           <ContactRow heading={resume.heading} layout={layout} />
-          <span className="text-[9px] italic text-neutral-400">Est. professional record</span>
+          <span className="text-xs italic text-neutral-400">Est. professional record</span>
         </div>
       </header>
       <main className="flex min-h-0 flex-1 flex-col px-9 py-4">
@@ -971,10 +971,10 @@ function TimelineFamily(props: FamilyPageProps) {
               <span className="mt-1 text-[8.5px] font-bold uppercase tracking-wider text-neutral-500">
                 {formatDateRange(role.startDate || role.begin, role.endDate || role.end, role.current)}
               </span>
-              <span className="max-w-[92px] truncate text-[9px] font-medium text-neutral-700">{role.company}</span>
+              <span className="max-w-[92px] truncate text-xs font-medium text-neutral-700">{role.company}</span>
             </div>
           ))}
-          {roles.length === 0 && <span className="text-[9px] text-neutral-400">Career timeline</span>}
+          {roles.length === 0 && <span className="text-xs text-neutral-400">Career timeline</span>}
         </div>
       </div>
       <main className="flex min-h-0 flex-1 flex-col px-8 pb-4">
@@ -1001,7 +1001,7 @@ function EuropassFamily(props: FamilyPageProps) {
         <div className="flex items-center justify-between border-b-[3px] pb-3" style={{ borderColor: palette.primary }}>
           <div className="min-w-0">
             <IdentityText heading={heading} fullName={fullName} layout={layout} />
-            <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em]" style={{ color: palette.primary }}>
+            <div className="mt-1 text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: palette.primary }}>
               Curriculum Vitae
             </div>
           </div>
@@ -1058,7 +1058,7 @@ function TechnicalFamily(props: FamilyPageProps) {
           <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.2em] text-neutral-500">~/sections</div>
           <ul className="space-y-1.5">
             {sectionTitles.map((title) => (
-              <li key={title} className="font-mono text-[9px] leading-tight text-emerald-300">
+              <li key={title} className="font-mono text-xs leading-tight text-emerald-300">
                 <span className="text-neutral-500">›</span> {title}
               </li>
             ))}
@@ -1119,7 +1119,7 @@ function InfographicFamily(props: FamilyPageProps) {
         {categories.length > 0 && (
           <section className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50/60 px-4 py-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[9px] font-extrabold uppercase tracking-[0.2em]" style={{ color: palette.primary }}>
+              <span className="text-xs font-extrabold uppercase tracking-[0.2em]" style={{ color: palette.primary }}>
                 Capability matrix
               </span>
               <span className="text-[8px] uppercase tracking-wider text-neutral-400">self-assessed</span>
@@ -1186,7 +1186,7 @@ function MagazineFamily(props: FamilyPageProps) {
           </div>
           <Photo heading={resume.heading} fullName={fullName} layout={layout} size="size-[70px]" />
         </div>
-        <div className="flex items-center justify-between gap-4 py-1.5 text-[9px] uppercase tracking-wider text-neutral-500">
+        <div className="flex items-center justify-between gap-4 py-1.5 text-xs uppercase tracking-wider text-neutral-500">
           <ContactRow heading={resume.heading} layout={{ ...layout, contactLayout: 'minimal' }} />
         </div>
       </header>
@@ -1213,7 +1213,7 @@ function CompactFamily(props: FamilyPageProps) {
       >
         <div className="min-w-0">
           <h1 className={cn('truncate font-bold tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>{fullName}</h1>
-          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: palette.primary }}>
+          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: palette.primary }}>
             {resume.heading?.title}
           </div>
         </div>
@@ -1290,7 +1290,7 @@ function MinimalFamily(props: FamilyPageProps) {
     <div className="flex min-h-0 flex-1 flex-col px-10">
       <header className="flex shrink-0 items-baseline justify-between gap-5 pb-2 pt-7">
         <h1 className={cn('font-semibold leading-none tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>{fullName}</h1>
-        <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+        <span className="shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
           {resume.heading?.title}
         </span>
       </header>
@@ -1365,7 +1365,7 @@ function Cv1Family(props: FamilyPageProps) {
           {infoRows.length > 0 && (
             <section>
               <h2
-                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                className="mb-2 border-b-2 pb-1 text-xs font-bold uppercase tracking-[0.2em]"
                 style={{ color: palette.primary, borderColor: palette.primary }}
               >
                 Information
@@ -1382,7 +1382,7 @@ function Cv1Family(props: FamilyPageProps) {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-[7.5px] font-semibold uppercase tracking-[0.14em] text-neutral-400">{label}</span>
-                      <span className="block break-words [overflow-wrap:anywhere] text-[10px] font-medium text-neutral-700">{value}</span>
+                      <span className="block break-words [overflow-wrap:anywhere] text-xs font-medium text-neutral-700">{value}</span>
                     </span>
                   </li>
                 ))}
@@ -1392,7 +1392,7 @@ function Cv1Family(props: FamilyPageProps) {
           {categories.length > 0 && (
             <section>
               <h2
-                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                className="mb-2 border-b-2 pb-1 text-xs font-bold uppercase tracking-[0.2em]"
                 style={{ color: palette.primary, borderColor: palette.primary }}
               >
                 Skills
@@ -1419,7 +1419,7 @@ function Cv1Family(props: FamilyPageProps) {
           {languages.length > 0 && (
             <section>
               <h2
-                className="mb-2 border-b-2 pb-1 text-[9px] font-bold uppercase tracking-[0.2em]"
+                className="mb-2 border-b-2 pb-1 text-xs font-bold uppercase tracking-[0.2em]"
                 style={{ color: palette.primary, borderColor: palette.primary }}
               >
                 Languages
@@ -1429,10 +1429,10 @@ function Cv1Family(props: FamilyPageProps) {
                   const name = language?.language || language?.name || '';
                   if (!name) return null;
                   return (
-                    <li key={language?.id || index} className="flex items-baseline justify-between gap-2 text-[10px]">
+                    <li key={language?.id || index} className="flex items-baseline justify-between gap-2 text-xs">
                       <span className="break-words font-medium text-neutral-700">{name}</span>
                       {language?.proficiency && (
-                        <span className="shrink-0 text-[9px] font-semibold uppercase text-neutral-500">{language.proficiency}</span>
+                        <span className="shrink-0 text-xs font-semibold uppercase text-neutral-500">{language.proficiency}</span>
                       )}
                     </li>
                   );
@@ -1455,7 +1455,7 @@ function Cv4Family(props: FamilyPageProps) {
     <div className="flex min-h-0 flex-1 flex-col px-12">
       <header className="shrink-0 pb-3 pt-7 text-center">
         <h1 className={cn('font-serif font-semibold tracking-tight text-neutral-900', NAME_SCALE[layout.nameScale])}>{fullName}</h1>
-        <div className="mx-auto mt-1.5 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.28em] text-neutral-500">
+        <div className="mx-auto mt-1.5 flex items-center justify-center gap-2 text-xs uppercase tracking-[0.28em] text-neutral-500">
           <span className="h-px w-8 bg-neutral-300" />
           {resume.heading?.title}
           <span className="h-px w-8 bg-neutral-300" />
@@ -1543,7 +1543,7 @@ function Cv25Family(props: FamilyPageProps) {
           {categories.length > 0 && (
             <section>
               <h2
-                className="mb-2 border-b-2 pb-1 text-[10px] font-bold"
+                className="mb-2 border-b-2 pb-1 text-xs font-bold"
                 style={{ color: palette.primary, borderColor: palette.secondary }}
               >
                 Skills
@@ -1556,7 +1556,7 @@ function Cv25Family(props: FamilyPageProps) {
                     if (!name) return null;
                     const filled = Number.isFinite(rating) ? Math.round(Math.min(100, Math.max(0, rating)) / 20) : 0;
                     return (
-                      <div key={`${categoryIndex}-${skillIndex}`} className="flex items-center justify-between gap-2 text-[10px]">
+                      <div key={`${categoryIndex}-${skillIndex}`} className="flex items-center justify-between gap-2 text-xs">
                         <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
                         {Number.isFinite(rating) && (
                           <LevelScale filled={filled} color={palette.secondary} shape="box" label={`${name}: ${filled} of 5`} />
@@ -1571,7 +1571,7 @@ function Cv25Family(props: FamilyPageProps) {
           {languages.length > 0 && (
             <section>
               <h2
-                className="mb-2 border-b-2 pb-1 text-[10px] font-bold"
+                className="mb-2 border-b-2 pb-1 text-xs font-bold"
                 style={{ color: palette.primary, borderColor: palette.secondary }}
               >
                 Languages
@@ -1583,11 +1583,11 @@ function Cv25Family(props: FamilyPageProps) {
                   const filled = CEFR_DOTS[code] ?? 0;
                   if (!name) return null;
                   return (
-                    <div key={language?.id || index} className="flex items-center justify-between gap-2 text-[10px]">
+                    <div key={language?.id || index} className="flex items-center justify-between gap-2 text-xs">
                       <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
                       {filled > 0 && (
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="text-[9px] font-semibold uppercase text-neutral-500">{code}</span>
+                          <span className="text-xs font-semibold uppercase text-neutral-500">{code}</span>
                           <LevelScale filled={filled} color={palette.secondary} shape="dot" label={`${name}: ${code}`} />
                         </span>
                       )}
@@ -1628,7 +1628,7 @@ function Cv34Family(props: FamilyPageProps) {
               {fullName}
             </h1>
             {resume.heading?.title && (
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-500">{resume.heading.title}</p>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">{resume.heading.title}</p>
             )}
           </div>
           <Photo
@@ -1663,7 +1663,7 @@ function Cv34Family(props: FamilyPageProps) {
           <div className="space-y-4">
             {categories.length > 0 && (
               <section data-cv34-skills="percent-bars">
-                <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-500">Skills</div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">Skills</div>
                 <div className="space-y-2">
                   {categories.flatMap((category: any, categoryIndex: number) =>
                     (Array.isArray(category?.skills) ? category.skills : []).map((skill: any, skillIndex: number) => {
@@ -1672,7 +1672,7 @@ function Cv34Family(props: FamilyPageProps) {
                       const rating = Number.isFinite(rawRating) ? Math.min(100, Math.max(0, Math.round(rawRating))) : null;
                       if (!name) return null;
                       return (
-                        <div key={`${categoryIndex}-${skillIndex}`} className="text-[10px]">
+                        <div key={`${categoryIndex}-${skillIndex}`} className="text-xs">
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="min-w-0 break-words font-medium text-neutral-700">{name}</span>
                             {rating !== null && <span className="shrink-0 font-semibold text-neutral-500">{rating}%</span>}

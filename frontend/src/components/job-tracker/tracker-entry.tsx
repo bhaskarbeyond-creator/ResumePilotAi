@@ -122,7 +122,7 @@ export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportIn
           <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-medium">
             <CalendarClock className="size-3.5 shrink-0" aria-hidden="true" />
             <span>Interview</span>
-            {interview.upcoming && <span className="rounded-full bg-warning-100 px-1.5 py-0.5 text-[11px] font-semibold">Upcoming</span>}
+            {interview.upcoming && <span className="rounded-full bg-warning-100 px-1.5 py-0.5 text-xs font-semibold">Upcoming</span>}
           </p>
           <p className="mt-1 break-words">
             {interviewKind && <span>{interviewKind} · </span>}

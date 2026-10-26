@@ -78,7 +78,7 @@ export function ProviderRow({ provider: p }: { provider: ProviderCatalogEntry })
               {serverMask && (
                 <span
                   data-testid={`masked-key-${p.id}`}
-                  className="rounded-md bg-canvas px-2 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary border border-border"
+                  className="rounded-md bg-canvas px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary border border-border"
                 >
                   {serverMask}
                 </span>

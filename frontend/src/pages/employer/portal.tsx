@@ -344,7 +344,7 @@ export function EmployerPortalPage() {
           <Layers className="size-3.5" />
           ATS Candidate Pipeline
           {applications.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-accent/15 text-accent font-bold">
+            <span className="text-xs px-1.5 py-0.2 rounded-full bg-accent/15 text-accent font-bold">
               {applications.length}
             </span>
           )}
@@ -362,7 +362,7 @@ export function EmployerPortalPage() {
         >
           <MessageSquare className="size-3.5" />
           Candidate Messages
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-700 font-bold">
+          <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-700 font-bold">
             Live
           </span>
         </button>
@@ -421,7 +421,7 @@ export function EmployerPortalPage() {
                   <Briefcase className="size-4 sm:size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate" title="Active Requisitions">Active Jobs</p>
+                  <p className="text-xs sm:text-xs font-semibold text-ink-muted uppercase tracking-wider truncate" title="Active Requisitions">Active Jobs</p>
                   <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : jobs.length}</p>
                 </div>
               </CardContent>
@@ -433,7 +433,7 @@ export function EmployerPortalPage() {
                   <Users className="size-4 sm:size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">Total Applicants</p>
+                  <p className="text-xs sm:text-xs font-semibold text-ink-muted uppercase tracking-wider truncate">Total Applicants</p>
                   <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : totalApplicants}</p>
                 </div>
               </CardContent>
@@ -445,7 +445,7 @@ export function EmployerPortalPage() {
                   <Clock className="size-4 sm:size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">In Interview Loops</p>
+                  <p className="text-xs sm:text-xs font-semibold text-ink-muted uppercase tracking-wider truncate">In Interview Loops</p>
                   <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : inInterviewCount}</p>
                 </div>
               </CardContent>
@@ -457,7 +457,7 @@ export function EmployerPortalPage() {
                   <UserCheck className="size-4 sm:size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-ink-muted uppercase tracking-wider truncate">Offers Extended</p>
+                  <p className="text-xs sm:text-xs font-semibold text-ink-muted uppercase tracking-wider truncate">Offers Extended</p>
                   <p className="text-lg sm:text-xl font-extrabold text-ink">{jobsLoading ? '—' : offersExtendedCount}</p>
                 </div>
               </CardContent>
@@ -475,7 +475,7 @@ export function EmployerPortalPage() {
                 <Plus className="size-4" />
               </div>
               <h3 className="text-xs font-bold text-ink">Post Requisition</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">Publish a new engineering, design, or leadership role.</p>
+              <p className="text-xs text-ink-muted mt-0.5">Publish a new engineering, design, or leadership role.</p>
             </button>
 
             <button
@@ -487,7 +487,7 @@ export function EmployerPortalPage() {
                 <Layers className="size-4" />
               </div>
               <h3 className="text-xs font-bold text-ink">Review Pipeline</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">Kanban review & ATS scores for applicants.</p>
+              <p className="text-xs text-ink-muted mt-0.5">Kanban review & ATS scores for applicants.</p>
             </button>
 
             <button
@@ -499,7 +499,7 @@ export function EmployerPortalPage() {
                 <MessageSquare className="size-4" />
               </div>
               <h3 className="text-xs font-bold text-ink">Candidate Messages</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">Direct candidate correspondence & interview prep.</p>
+              <p className="text-xs text-ink-muted mt-0.5">Direct candidate correspondence & interview prep.</p>
             </button>
 
             <button
@@ -511,7 +511,7 @@ export function EmployerPortalPage() {
                 <Building2 className="size-4" />
               </div>
               <h3 className="text-xs font-bold text-ink">Company Profile</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">Manage employer branding, culture tags, and logos.</p>
+              <p className="text-xs text-ink-muted mt-0.5">Manage employer branding, culture tags, and logos.</p>
             </button>
           </div>
 
@@ -548,7 +548,7 @@ export function EmployerPortalPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-edge text-ink-muted uppercase font-bold text-[10px]">
+                      <tr className="border-b border-edge text-ink-muted uppercase font-bold text-xs">
                         <th className="py-2.5 px-3">Role Title</th>
                         <th className="py-2.5 px-3">Department</th>
                         <th className="py-2.5 px-3">Location</th>
@@ -567,7 +567,7 @@ export function EmployerPortalPage() {
                           <td className="py-3 px-3">
                             <span
                               className={cn(
-                                'text-[10px] font-bold px-2 py-0.5 rounded border capitalize',
+                                'text-xs font-bold px-2 py-0.5 rounded border capitalize',
                                 job.status === 'active'
                                   ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                                   : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
@@ -702,7 +702,7 @@ export function EmployerPortalPage() {
                     <div className="p-3 border-b border-edge bg-surface/70 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-ink">{col.label}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-canvas-soft border border-edge text-ink-muted">
+                        <span className="text-xs font-bold px-1.5 py-0.2 rounded-full bg-canvas-soft border border-edge text-ink-muted">
                           {stageApplications.length}
                         </span>
                       </div>
@@ -710,7 +710,7 @@ export function EmployerPortalPage() {
 
                     <div className="p-2 space-y-2.5 flex-1 min-h-[300px]">
                       {stageApplications.length === 0 ? (
-                        <div className="h-28 border border-dashed border-edge/60 rounded-lg flex items-center justify-center text-[11px] text-ink-muted">
+                        <div className="h-28 border border-dashed border-edge/60 rounded-lg flex items-center justify-center text-xs text-ink-muted">
                           Empty stage
                         </div>
                       ) : (
@@ -724,22 +724,22 @@ export function EmployerPortalPage() {
                               <h4 className="text-xs font-bold text-ink hover:text-accent transition-colors">
                                 {app.applicantName}
                               </h4>
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                              <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                                 88%
                               </span>
                             </div>
 
-                            <p className="text-[11px] text-ink-muted truncate">
+                            <p className="text-xs text-ink-muted truncate">
                               {app.applicantEmail}
                             </p>
 
                             {app.coverLetter && (
-                              <p className="text-[11px] text-ink-muted line-clamp-2 italic bg-canvas-soft/60 p-1.5 rounded">
+                              <p className="text-xs text-ink-muted line-clamp-2 italic bg-canvas-soft/60 p-1.5 rounded">
                                 "{app.coverLetter}"
                               </p>
                             )}
 
-                            <div className="flex items-center justify-between pt-1 border-t border-edge text-[10px] text-ink-muted">
+                            <div className="flex items-center justify-between pt-1 border-t border-edge text-xs text-ink-muted">
                               <span>
                                 {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recent'}
                               </span>
@@ -791,12 +791,12 @@ export function EmployerPortalPage() {
                         {app.applicantEmail}
                       </td>
                       <td className="p-3.5 text-center">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                           88%
                         </span>
                       </td>
                       <td className="p-3.5">
-                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-canvas-soft border border-edge text-ink">
+                        <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-canvas-soft border border-edge text-ink">
                           {app.status || 'pending'}
                         </span>
                       </td>
@@ -869,12 +869,12 @@ export function EmployerPortalPage() {
                 <Card key={job.id} className="border-edge shadow-xs bg-surface flex flex-col justify-between">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded">
+                      <span className="text-xs font-bold uppercase tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded">
                         {job.department || 'General'}
                       </span>
                       <span
                         className={cn(
-                          'text-[10px] font-bold px-2 py-0.5 rounded border capitalize flex items-center gap-1',
+                          'text-xs font-bold px-2 py-0.5 rounded border capitalize flex items-center gap-1',
                           job.status === 'active'
                             ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                             : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
@@ -995,10 +995,10 @@ export function EmployerPortalPage() {
                       <span className="size-2 rounded-full bg-accent-soft border border-white" />
                     )}
                   </div>
-                  <span className={cn('text-[11px] truncate', activeChatCandidate === name ? 'text-white/80' : 'text-ink-muted')}>
+                  <span className={cn('text-xs truncate', activeChatCandidate === name ? 'text-white/80' : 'text-ink-muted')}>
                     {data.role}
                   </span>
-                  <p className={cn('text-[10px] truncate', activeChatCandidate === name ? 'text-white/70' : 'text-ink-muted')}>
+                  <p className={cn('text-xs truncate', activeChatCandidate === name ? 'text-white/70' : 'text-ink-muted')}>
                     {data.preview}
                   </p>
                 </button>
@@ -1018,7 +1018,7 @@ export function EmployerPortalPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-ink">{activeChatCandidate}</p>
-                          <p className="text-[10px] text-ink-muted">Applicant • {activeThread?.role}</p>
+                          <p className="text-xs text-ink-muted">Applicant • {activeThread?.role}</p>
                         </div>
                       </div>
                       <Button
@@ -1051,7 +1051,7 @@ export function EmployerPortalPage() {
                           >
                             {msg.text}
                           </div>
-                          <span className="text-[10px] text-ink-muted mt-1 px-1">{msg.time}</span>
+                          <span className="text-xs text-ink-muted mt-1 px-1">{msg.time}</span>
                         </div>
                       ))}
                     </div>
@@ -1100,7 +1100,7 @@ export function EmployerPortalPage() {
                   <option value="daily">Daily Digest — Summary at 9:00 AM</option>
                   <option value="off">Off — Review directly inside the ATS pipeline</option>
                 </select>
-                <p className="text-[11px] text-ink-muted">Sent to verified recruiter team seat addresses.</p>
+                <p className="text-xs text-ink-muted">Sent to verified recruiter team seat addresses.</p>
               </div>
 
               <div className="space-y-1.5">
@@ -1113,7 +1113,7 @@ export function EmployerPortalPage() {
                   onChange={(e) => setAtsThreshold(e.target.value)}
                   className="text-xs h-9 max-w-xs"
                 />
-                <p className="text-[11px] text-ink-muted">Candidates with ATS scores equal or above this value will be tagged "High Match".</p>
+                <p className="text-xs text-ink-muted">Candidates with ATS scores equal or above this value will be tagged "High Match".</p>
               </div>
 
               <div className="space-y-1.5">
@@ -1125,7 +1125,7 @@ export function EmployerPortalPage() {
                   placeholder="https://calendly.com/your-team/30min"
                   className="text-xs h-9"
                 />
-                <p className="text-[11px] text-ink-muted">Included in candidate interview invitation emails.</p>
+                <p className="text-xs text-ink-muted">Included in candidate interview invitation emails.</p>
               </div>
 
               <div className="pt-3 border-t border-edge flex items-center gap-3">

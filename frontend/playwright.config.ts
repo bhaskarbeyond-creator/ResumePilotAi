@@ -102,13 +102,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], viewport: { width: 3840, height: 2160 } },
     },
   ],
+  // The AI engine serves the resume/generation features. The auth and admin-console UX
+  // specs never call it, and it refuses to start without a disposable MariaDB, so
+  // `PLAYWRIGHT_SKIP_ENGINE=1` drops it for those runs only — `npm run test:ux:auth`.
+  // Nothing that exercises engine behaviour can use that switch: its own specs fail
+  // loudly on a refused connection rather than passing.
   webServer: [
-    {
+    ...(process.env.PLAYWRIGHT_SKIP_ENGINE === '1' ? [] : [{
       command: 'node ../scripts/start-ai-engine-e2e.cjs',
       url: 'http://127.0.0.1:8080/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
-    },
+    }]),
     {
       command: 'npm run dev -- --host 0.0.0.0 --port 4000 --strictPort',
       url: 'http://127.0.0.1:4000',

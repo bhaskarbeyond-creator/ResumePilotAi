@@ -165,7 +165,7 @@ export function GrammarCheckModal({
                 )}
                 <div>
                   <p className="font-bold">{corrections.length === 0 ? 'Everything looks great!' : `${corrections.length} correction${corrections.length > 1 ? 's' : ''} suggested`}</p>
-                  <p className="mt-0.5 leading-relaxed text-[11px] opacity-90">{overallSuggestion}</p>
+                  <p className="mt-0.5 leading-relaxed text-xs opacity-90">{overallSuggestion}</p>
                 </div>
               </div>
 
@@ -179,24 +179,24 @@ export function GrammarCheckModal({
                         className="rounded-xl border border-border bg-surface p-3 text-xs space-y-1.5 shadow-2xs"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="uppercase text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
+                          <span className="uppercase text-xs font-extrabold px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
                             {item.type}
                           </span>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => applySingleCorrection(item)}
-                            className="h-6 text-[10px] gap-1 px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                            className="h-6 text-xs gap-1 px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                           >
                             <Check className="size-3" /> Apply
                           </Button>
                         </div>
                         <div className="flex items-center gap-2 text-ink">
-                          <span className="line-through text-rose-600 font-mono bg-rose-50 px-1.5 py-0.5 rounded text-[11px]">{item.original}</span>
+                          <span className="line-through text-rose-600 font-mono bg-rose-50 px-1.5 py-0.5 rounded text-xs">{item.original}</span>
                           <ArrowRight className="size-3 text-ink-muted" />
-                          <span className="text-emerald-700 font-bold font-mono bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">{item.suggestion}</span>
+                          <span className="text-emerald-700 font-bold font-mono bg-emerald-50 px-1.5 py-0.5 rounded text-xs">{item.suggestion}</span>
                         </div>
-                        <p className="text-[11px] text-ink-muted">{item.explanation}</p>
+                        <p className="text-xs text-ink-muted">{item.explanation}</p>
                       </div>
                     ))}
                   </div>

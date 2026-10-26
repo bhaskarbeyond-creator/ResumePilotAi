@@ -242,12 +242,12 @@ export function EnterpriseWorkspacesTab() {
                         <h4 className="text-sm font-bold text-ink truncate">{ws.name}</h4>
                       </div>
                       {ws.isDefault && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent text-white">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-accent text-white">
                           Default
                         </span>
                       )}
                     </div>
-                    <div className="mt-2 text-[11px] font-mono text-ink-muted">
+                    <div className="mt-2 text-xs font-mono text-ink-muted">
                       ID: {ws.id.slice(0, 14)}…
                     </div>
                     <div
@@ -259,7 +259,7 @@ export function EnterpriseWorkspacesTab() {
                         <Users className="size-3.5 text-accent" />
                         {ws.memberCount || 0} assigned member(s)
                       </span>
-                      <span className="text-[10px] text-accent font-bold">Manage &rarr;</span>
+                      <span className="text-xs text-accent font-bold">Manage &rarr;</span>
                     </div>
                   </div>
 
@@ -398,7 +398,7 @@ export function EnterpriseWorkspacesTab() {
                             <h5 className="font-bold text-xs text-ink truncate">
                               {m.displayName || m.invitationEmail || m.email || m.principalId}
                             </h5>
-                            <p className="text-[11px] text-ink-muted truncate font-mono">
+                            <p className="text-xs text-ink-muted truncate font-mono">
                               {(m.roles || []).join(', ') || 'MEMBER'} • Current: {m.workspaceName || 'Default'}
                             </p>
                           </div>
@@ -422,7 +422,7 @@ export function EnterpriseWorkspacesTab() {
 
             {/* Modal Footer */}
             <div className="p-4 border-t border-edge bg-surface-raised/40 flex items-center justify-between shrink-0">
-              <span className="text-[11px] text-ink-muted">
+              <span className="text-xs text-ink-muted">
                 {tenantMembers.filter((m) => m.workspaceId === membersModalWs.id).length} member(s) assigned
               </span>
               <Button size="sm" onClick={() => setMembersModalWs(null)}>

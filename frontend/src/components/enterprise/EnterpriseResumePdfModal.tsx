@@ -212,7 +212,7 @@ export function EnterpriseResumePdfModal({
                 <h2 id="resume-pdf-title" className="text-base font-bold text-ink truncate">
                   {data.fullName}
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                   <Star className="size-3 fill-emerald-600" />
                   ATS {data.atsScore}%
                 </span>
@@ -368,7 +368,7 @@ export function EnterpriseResumePdfModal({
                   {data.skills.map((skill, idx) => (
                     <span
                       key={idx}
-                      className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-medium"
+                      className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-xs font-medium"
                     >
                       {skill}
                     </span>

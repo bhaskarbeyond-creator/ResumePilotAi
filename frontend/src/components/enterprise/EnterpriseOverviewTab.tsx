@@ -62,7 +62,7 @@ function TrendSparkline({ points = [], width = 560, height = 96 }: { points?: Tr
         <path d={area} fill="url(#sparkline-grad)" />
         <path d={line} fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent" strokeLinejoin="round" strokeLinecap="round" />
       </svg>
-      <div className="flex justify-between items-center text-[11px] font-mono text-ink-muted mt-2 border-t border-edge/60 pt-1.5">
+      <div className="flex justify-between items-center text-xs font-mono text-ink-muted mt-2 border-t border-edge/60 pt-1.5">
         <span>{points[0]?.day}</span>
         <span className="font-semibold text-accent">Peak: {peak.requests.toLocaleString()} req ({peak.day})</span>
         <span>{points[points.length - 1]?.day}</span>
@@ -394,7 +394,7 @@ export function EnterpriseOverviewTab({ onNavigate }: EnterpriseOverviewTabProps
                     <span>{rec.title}</span>
                     <ArrowRight className="size-3 shrink-0 opacity-70" />
                   </div>
-                  <p className="mt-1 text-[11px] opacity-80 leading-relaxed">{rec.hint}</p>
+                  <p className="mt-1 text-xs opacity-80 leading-relaxed">{rec.hint}</p>
                 </div>
               ))
             )}
@@ -490,11 +490,11 @@ export function EnterpriseOverviewTab({ onNavigate }: EnterpriseOverviewTabProps
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         Actor: {evt.actorEmail || evt.actor} {evt.ip ? `· IP: ${evt.ip}` : ''}
                       </div>
                     </div>
-                    <span className="text-[11px] font-mono text-ink-muted shrink-0">
+                    <span className="text-xs font-mono text-ink-muted shrink-0">
                       {new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>

@@ -351,8 +351,8 @@ export function AiProcessingModal({
         {/* Footer Actions */}
         {onCancel && (
           <div className="mt-6 flex items-center justify-between pt-2 border-t border-border/50">
-            <span className="text-[11px] text-ink-muted">
-              Press <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface text-[10px] font-mono shadow-2xs">Esc</kbd> to cancel
+            <span className="text-xs text-ink-muted">
+              Press <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface text-xs font-mono shadow-2xs">Esc</kbd> to cancel
             </span>
             <Button
               type="button"

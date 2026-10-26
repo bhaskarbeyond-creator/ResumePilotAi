@@ -311,7 +311,7 @@ export function AdminUsersTab() {
                       </div>
                       <div className="min-w-0">
                         <div className="truncate font-bold text-ink">{user.displayName}</div>
-                        <div className="truncate text-[11px] text-ink-muted">{user.email}</div>
+                        <div className="truncate text-xs text-ink-muted">{user.email}</div>
                       </div>
                     </div>
                   </td>
@@ -996,7 +996,7 @@ function UserDrawer({
         </div>
 
         <div className="flex items-center justify-between border-t border-border bg-neutral-50/50 p-4">
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             Revision {profile.revision} · {profile.email}
           </span>
           <Button variant="outline" size="sm" onClick={onClose}>Close</Button>

@@ -685,7 +685,7 @@ export function ResumesPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-brand-50 border border-brand-200 text-brand-600">
               <FileText className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">TOTAL</span>
+            <span className="text-xs font-bold text-ink-muted uppercase tracking-wider">TOTAL</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-ink sm:text-3xl" data-testid="metric-total">{stats.total}</div>
           <span className="mt-0.5 text-xs text-ink-muted">Resumes in your workspace</span>
@@ -696,7 +696,7 @@ export function ResumesPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600">
               <TrendingUp className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">READY TO APPLY</span>
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">READY TO APPLY</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-emerald-800 sm:text-3xl" data-testid="metric-ready">{stats.ready}</div>
           <span className="mt-0.5 text-xs text-success-700">ATS score {ATS_READY_THRESHOLD}–100</span>
@@ -707,7 +707,7 @@ export function ResumesPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 border border-amber-200 text-amber-600">
               <Gauge className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">DEVELOPING</span>
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">DEVELOPING</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-amber-800 sm:text-3xl" data-testid="metric-developing">{stats.developing}</div>
           <span className="mt-0.5 text-xs text-warning-700">ATS score {ATS_DEVELOPING_THRESHOLD}–{ATS_READY_THRESHOLD - 1}</span>
@@ -718,7 +718,7 @@ export function ResumesPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
               <Clock className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">STARTING</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">STARTING</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-slate-700 sm:text-3xl" data-testid="metric-starting">{stats.starting}</div>
           <span className="mt-0.5 text-xs text-slate-500">ATS score below {ATS_DEVELOPING_THRESHOLD}{stats.unscored > 0 ? ` · ${stats.unscored} unscored` : ''}</span>
@@ -729,7 +729,7 @@ export function ResumesPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600">
               <Layers className="size-4.5" />
             </div>
-            <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">UNIQUE TEMPLATES</span>
+            <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">UNIQUE TEMPLATES</span>
           </div>
           <div className="mt-3 text-2xl font-bold tracking-tight text-indigo-800 sm:text-3xl" data-testid="metric-templates">{stats.uniqueTemplates}</div>
           <span className="mt-0.5 text-xs text-indigo-700/80">Distinct designs in use</span>
@@ -747,7 +747,7 @@ export function ResumesPage() {
               Master CV — Master Profile Data
               {masterCv && (
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                  className={`rounded-full border px-2 py-0.5 text-xs font-bold ${
                     masterCv.percent === 100
                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                       : 'border-amber-200 bg-amber-50 text-amber-800'
@@ -766,13 +766,13 @@ export function ResumesPage() {
                   : <>Your Master Profile Data seeds every new resume. Add your details once and each new resume starts complete.</>}
             </p>
             {masterCv?.updatedAt && (
-              <p className="mt-0.5 text-[11px] text-ink-muted">
+              <p className="mt-0.5 text-xs text-ink-muted">
                 Last updated {formatDate(masterCv.updatedAt)}
                 {masterCv.revision !== null ? ` · revision ${masterCv.revision}` : ''}
               </p>
             )}
             {masterCv && !masterCv.empty && masterCv.missing.length > 0 && (
-              <p className="mt-0.5 text-[11px] text-amber-700">
+              <p className="mt-0.5 text-xs text-amber-700">
                 Missing: {masterCv.missing.slice(0, 4).join(', ')}{masterCv.missing.length > 4 ? ` +${masterCv.missing.length - 4} more` : ''}
               </p>
             )}
@@ -1138,7 +1138,7 @@ export function ResumesPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <span>{dateStr}</span>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold border ${
                       bucketTone(bucketForScore(score)).border
                     } ${bucketTone(bucketForScore(score)).bg} ${bucketTone(bucketForScore(score)).text}`}
                     title={`ATS readiness score — ${bucketTone(bucketForScore(score)).label}`}
@@ -1162,7 +1162,7 @@ export function ResumesPage() {
 
                   {/* Template chip on top-left of thumbnail */}
                   <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-neutral-800 shadow-xs backdrop-blur-md">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-xs backdrop-blur-md">
                       <span
                         className="size-2 rounded-full"
                         style={{ backgroundColor: meta.primary }}
@@ -1255,7 +1255,7 @@ export function ResumesPage() {
           <div className="overflow-x-auto min-w-0">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-border bg-canvas-soft text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
+                <tr className="border-b border-border bg-canvas-soft text-xs font-semibold text-ink-muted uppercase tracking-wider">
                   <th className="py-3.5 px-4">Document Title</th>
                   <th className="py-3.5 px-4">Template</th>
                   <th className="py-3.5 px-4">ATS Readiness</th>
@@ -1296,14 +1296,14 @@ export function ResumesPage() {
                             >
                               {title}
                             </button>
-                            {role && <p className="text-[11px] text-ink-muted truncate max-w-xs">{role}</p>}
+                            {role && <p className="text-xs text-ink-muted truncate max-w-xs">{role}</p>}
                           </div>
                         </div>
                       </td>
 
                       {/* Template */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-canvas-soft px-2.5 py-1 text-[11px] font-medium text-ink border border-border">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-canvas-soft px-2.5 py-1 text-xs font-medium text-ink border border-border">
                           <span
                             className="size-2 rounded-full"
                             style={{ backgroundColor: meta.primary }}
@@ -1315,7 +1315,7 @@ export function ResumesPage() {
                       {/* ATS Score */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold border ${
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold border ${
                             bucketTone(bucketForScore(score)).bg
                           } ${bucketTone(bucketForScore(score)).text} ${bucketTone(bucketForScore(score)).border}`}
                           data-ats-bucket={bucketForScore(score)}
@@ -1326,7 +1326,7 @@ export function ResumesPage() {
                       </td>
 
                       {/* Updated Date */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-ink-muted text-[11px]">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-ink-muted text-xs">
                         {formatDate(resume.updatedAt || resume.updated_at || resume.createdAt || resume.created_at || '')}
                       </td>
 
@@ -1644,12 +1644,12 @@ export function ResumesPage() {
                 >
                   <div className="flex items-center justify-between w-full">
                     <User className="size-4 text-brand-600" />
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800">
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800">
                       Recommended
                     </span>
                   </div>
                   <div className="text-xs font-bold text-ink">Master Profile</div>
-                  <p className="text-[10px] text-ink-subtle leading-tight">Pre-fill contact info, work history & skills</p>
+                  <p className="text-xs text-ink-subtle leading-tight">Pre-fill contact info, work history & skills</p>
                 </button>
 
                 <button
@@ -1665,12 +1665,12 @@ export function ResumesPage() {
                 >
                   <div className="flex items-center justify-between w-full">
                     <Layers className="size-4 text-indigo-600" />
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
                       51 Styles
                     </span>
                   </div>
                   <div className="text-xs font-bold text-ink">Template First</div>
-                  <p className="text-[10px] text-ink-subtle leading-tight">Pick from 51 A4 executive designs</p>
+                  <p className="text-xs text-ink-subtle leading-tight">Pick from 51 A4 executive designs</p>
                 </button>
 
                 <button
@@ -1686,12 +1686,12 @@ export function ResumesPage() {
                 >
                   <div className="flex items-center justify-between w-full">
                     <FileText className="size-4 text-neutral-600" />
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
                       Clean
                     </span>
                   </div>
                   <div className="text-xs font-bold text-ink">Blank Draft</div>
-                  <p className="text-[10px] text-ink-subtle leading-tight">Start fresh with empty canvas</p>
+                  <p className="text-xs text-ink-subtle leading-tight">Start fresh with empty canvas</p>
                 </button>
               </div>
             </div>

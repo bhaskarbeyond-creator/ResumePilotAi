@@ -271,7 +271,7 @@ export function PreviewModal({
                   <ZoomOut className="size-3.5" aria-hidden="true" />
                 </Button>
                 <span
-                  className="w-10 text-center text-[11px] font-mono text-ink-secondary"
+                  className="w-10 text-center text-xs font-mono text-ink-secondary"
                   aria-live="polite"
                   aria-label={`Preview zoom ${zoom} percent`}
                 >

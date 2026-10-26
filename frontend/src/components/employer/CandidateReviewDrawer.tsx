@@ -315,7 +315,7 @@ export function CandidateReviewDrawer({
                 </h3>
                 <span
                   className={cn(
-                    'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
+                    'text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
                     currentStatus === 'accepted'
                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                       : currentStatus === 'interview'
@@ -398,7 +398,7 @@ export function CandidateReviewDrawer({
                 <Sparkles className="size-4 text-accent" />
                 <span>AI ATS Semantic Match Score</span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Evaluated against job requirements & target keywords
               </p>
             </div>
@@ -406,7 +406,7 @@ export function CandidateReviewDrawer({
               <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                 88%
               </span>
-              <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+              <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 Strong Match
               </span>
             </div>
@@ -467,7 +467,7 @@ export function CandidateReviewDrawer({
                 <button
                   type="button"
                   onClick={() => setDocumentOpen(true)}
-                  className="text-[11px] text-accent hover:underline flex items-center gap-1 font-semibold"
+                  className="text-xs text-accent hover:underline flex items-center gap-1 font-semibold"
                 >
                   View Full Document <ExternalLink className="size-3" />
                 </button>
@@ -485,7 +485,7 @@ export function CandidateReviewDrawer({
                   <span className="text-xs font-bold text-ink">
                     {resumeData.resume.title || resumeData.resume.targetRole || 'Master Curriculum Vitae'}
                   </span>
-                  <span className="text-[10px] text-ink-muted">
+                  <span className="text-xs text-ink-muted">
                     Updated {resumeData.resume.updatedAt ? new Date(resumeData.resume.updatedAt).toLocaleDateString() : 'Recently'}
                   </span>
                 </div>
@@ -495,7 +495,7 @@ export function CandidateReviewDrawer({
                   </p>
                 )}
                 <div className="flex items-center justify-between pt-1 text-xs">
-                  <span className="text-[11px] text-ink-muted">
+                  <span className="text-xs text-ink-muted">
                     {resumeData.resume.skills?.length || 0} skills verified
                   </span>
                   {application.resumeId && (
@@ -540,7 +540,7 @@ export function CandidateReviewDrawer({
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
                 <span>Hiring Team Notes</span>
-                <span className="text-[10px] text-ink-muted font-normal">
+                <span className="text-xs text-ink-muted font-normal">
                   (Internal only)
                 </span>
               </label>
@@ -549,7 +549,7 @@ export function CandidateReviewDrawer({
                 size="sm"
                 onClick={() => executeTransition(currentStatus)}
                 disabled={updateStatusMutation.isPending}
-                className="h-6 text-[11px] px-2 text-accent"
+                className="h-6 text-xs px-2 text-accent"
               >
                 <Save className="size-3 mr-1" /> Save Notes
               </Button>
@@ -566,7 +566,7 @@ export function CandidateReviewDrawer({
 
         {/* Stage Transition Footer Actions */}
         <div className="p-4 border-t border-edge bg-canvas-soft/90 space-y-2 shrink-0">
-          <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
             Advance Candidate Stage
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -616,7 +616,7 @@ export function CandidateReviewDrawer({
                 >
                   <ZoomOut className="size-3.5" />
                 </button>
-                <span className="px-1.5 font-mono text-[11px] font-bold text-ink min-w-[42px] text-center">
+                <span className="px-1.5 font-mono text-xs font-bold text-ink min-w-[42px] text-center">
                   {zoomLevel}%
                 </span>
                 <button
@@ -678,7 +678,7 @@ export function CandidateReviewDrawer({
                   <h4 id="direct-message-title" className="text-sm font-bold text-ink">
                     Direct Message Candidate
                   </h4>
-                  <p className="text-[11px] text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     To: {application.applicantName} ({application.applicantEmail})
                   </p>
                 </div>
@@ -813,7 +813,7 @@ export function CandidateReviewDrawer({
             {/* Optional Rejection Feedback Field */}
             {confirmModal.targetStatus === 'rejected' && (
               <div className="space-y-1.5 pt-1">
-                <label className="text-[11px] font-bold text-ink block">
+                <label className="text-xs font-bold text-ink block">
                   Constructive Feedback Note (Optional)
                 </label>
                 <Textarea

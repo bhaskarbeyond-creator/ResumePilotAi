@@ -73,7 +73,7 @@ export function RuntimeModelStrip() {
               <h2 className="text-base font-extrabold text-ink tracking-tight">
                 Runtime model selection
               </h2>
-              <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-[11px] font-bold text-brand-700">
+              <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-xs font-bold text-brand-700">
                 Primary: {primaryProvider}
               </span>
               <span className="text-xs text-ink-muted">Rev #{revision}</span>
@@ -236,7 +236,7 @@ export function RuntimeModelStrip() {
                 onChange={(e) => setTemperature(Number(e.target.value))}
                 className="w-full accent-brand-600"
               />
-              <div className="flex justify-between text-[11px] text-ink-muted">
+              <div className="flex justify-between text-xs text-ink-muted">
                 <span>0.0 Deterministic</span>
                 <span>1.0 Balanced</span>
                 <span>2.0 High Variance</span>
@@ -260,7 +260,7 @@ export function RuntimeModelStrip() {
                 onChange={(e) => setMaxTokens(Number(e.target.value))}
                 className="w-full accent-brand-600"
               />
-              <div className="flex justify-between text-[11px] text-ink-muted">
+              <div className="flex justify-between text-xs text-ink-muted">
                 <span>256</span>
                 <span>4096</span>
                 <span>8192</span>

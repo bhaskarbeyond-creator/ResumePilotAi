@@ -203,7 +203,7 @@ export function SharedResumePage() {
         )}
       </div>
 
-      <p className="mx-auto mt-4 max-w-[900px] px-4 text-center text-[11px] text-neutral-500 print:hidden">
+      <p className="mx-auto mt-4 max-w-[900px] px-4 text-center text-xs text-neutral-500 print:hidden">
         This is a read-only shared resume. The owner can revoke this link at any time.
       </p>
     </main>

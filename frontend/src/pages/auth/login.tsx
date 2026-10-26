@@ -312,11 +312,11 @@ export function LoginPage() {
       </div>
 
       {/* Right panel — form */}
-      <div className="flex flex-1 items-center justify-center bg-canvas p-6">
+      <div className="flex flex-1 items-center justify-center bg-canvas p-4 sm:p-6">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center justify-center lg:hidden">
-            <Link to="/" className="flex items-center gap-2 no-underline">
+          <div className="mb-6 flex items-center justify-center lg:hidden">
+            <Link to="/" className="flex min-h-11 items-center gap-2 no-underline">
               <div className="flex size-9 items-center justify-center rounded-xl bg-brand-600 font-bold text-white text-sm">
                 IM
               </div>
@@ -327,16 +327,16 @@ export function LoginPage() {
           <main id="main-content" className="w-full" role="main">
             <h1 className="sr-only">{mode === 'login' ? 'Sign in to IME365' : mode === 'register' ? 'Create your IME365 account' : 'Reset your password'}</h1>
             <Card className="border-0 shadow-xl lg:border">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-2xl">
-                  {mfaResolverState
+              <CardHeader className="space-y-1 px-4 pb-4 sm:px-5">
+                {/* h2, not CardTitle: the page heading is the sr-only h1 above, and jumping
+                      from h1 to h3 is an axe `heading-order` violation. */}
+                  <h2 className="text-xl font-semibold leading-tight tracking-tight text-ink sm:text-2xl">{mfaResolverState
                     ? 'Two-Factor Authentication'
                     : mode === 'login'
                     ? 'Welcome back'
                     : mode === 'register'
                     ? 'Create your account'
-                    : 'Reset password'}
-                </CardTitle>
+                    : 'Reset password'}</h2>
                 <CardDescription>
                   {mfaResolverState
                     ? 'Enter the 6-digit code from your authenticator app to complete sign-in'
@@ -348,7 +348,7 @@ export function LoginPage() {
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="pt-0">
+              <CardContent className="px-4 pt-0 sm:px-5">
               {/* Error message */}
               {error && (
                 <div className="mb-4 flex items-start gap-3 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700" role="alert">
@@ -453,7 +453,7 @@ export function LoginPage() {
                   {/* Email/Password form */}
                   <form onSubmit={handleEmailAuth} className="space-y-4">
                     {mode === 'register' && (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-ink">
                             First name
@@ -497,7 +497,7 @@ export function LoginPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="you@example.com"
-                          className="pl-9"
+                          className="min-h-11 min-w-0 pl-9"
                           required
                           autoComplete="email"
                         />
@@ -506,7 +506,7 @@ export function LoginPage() {
 
                     {mode !== 'reset' && (
                       <div>
-                        <div className="mb-1.5 flex items-center justify-between">
+                        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2">
                           <label htmlFor="password" className="text-sm font-medium text-ink">
                             Password
                           </label>
@@ -514,7 +514,7 @@ export function LoginPage() {
                             <button
                               type="button"
                               onClick={() => { setMode('reset'); clearMessages(); }}
-                              className="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                              className="inline-flex min-h-11 items-center text-xs font-medium text-brand-600 transition-colors hover:text-brand-700"
                             >
                               Forgot password?
                             </button>
@@ -528,7 +528,7 @@ export function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="pl-9 pr-10"
+                            className="min-h-11 min-w-0 pl-9 pr-10"
                             required
                             minLength={6}
                             autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
@@ -536,7 +536,10 @@ export function LoginPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors"
+                            // 44x44 minimum: axe flags this control as `target-size` at 320px
+                            // otherwise, and it is the one control a person with a motor
+                            // impairment must hit to check what they typed.
+                            className="absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                           >
                             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -545,7 +548,7 @@ export function LoginPage() {
                       </div>
                     )}
 
-                    <Button type="submit" className="w-full" loading={loading} size="lg">
+                    <Button type="submit" className="w-full min-h-11" loading={loading} size="lg">
                       {mode === 'login' && 'Sign in'}
                       {mode === 'register' && 'Create account'}
                       {mode === 'reset' && 'Send reset link'}
@@ -554,13 +557,13 @@ export function LoginPage() {
                   </form>
 
                   {/* Mode switch */}
-                  <div className="mt-6 text-center text-sm text-ink-muted">
+                  <div className="mt-4 text-center text-sm text-ink-muted">
                     {mode === 'login' && (
                       <>
                         Don't have an account?{' '}
                         <button
                           onClick={() => { setMode('register'); clearMessages(); }}
-                          className="font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                          className="inline-flex min-h-11 items-center font-medium text-brand-600 transition-colors hover:text-brand-700"
                         >
                           Sign up free
                         </button>
@@ -571,7 +574,7 @@ export function LoginPage() {
                         Already have an account?{' '}
                         <button
                           onClick={() => { setMode('login'); clearMessages(); }}
-                          className="font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                          className="inline-flex min-h-11 items-center font-medium text-brand-600 transition-colors hover:text-brand-700"
                         >
                           Sign in
                         </button>
@@ -580,7 +583,7 @@ export function LoginPage() {
                     {mode === 'reset' && (
                       <button
                         onClick={() => { setMode('login'); clearMessages(); }}
-                        className="font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                        className="inline-flex min-h-11 items-center font-medium text-brand-600 transition-colors hover:text-brand-700"
                       >
                         Back to sign in
                       </button>
@@ -595,15 +598,15 @@ export function LoginPage() {
                       server allowlist (PREVIEW_*_EMAILS). */}
                   {!import.meta.env.PROD && (
                   <div className="mt-6 pt-5 border-t border-border">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted text-center mb-2.5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted text-center mb-2.5">
                       Instant Demo Access (Local / QA)
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-xs"
+                        className="min-h-11 text-xs"
                         disabled={loading}
                         onClick={() => handleDemoAccess('candidate@ime365.com')}
                       >
@@ -613,7 +616,7 @@ export function LoginPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-xs"
+                        className="min-h-11 text-xs"
                         disabled={loading}
                         onClick={() => handleDemoAccess('admin@ime365.com')}
                       >

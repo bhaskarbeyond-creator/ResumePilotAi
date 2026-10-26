@@ -307,11 +307,11 @@ export function EnterpriseResumesTab() {
                             <h4 className="text-sm font-bold text-ink truncate">
                               {group.candidateName}
                             </h4>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                               <Star className="size-3 fill-emerald-600" />
                               Best ATS: {group.bestAts}%
                             </span>
-                            <span className="text-[11px] font-mono text-ink-muted">
+                            <span className="text-xs font-mono text-ink-muted">
                               ({group.resumes.length} document{group.resumes.length === 1 ? '' : 's'})
                             </span>
                           </div>
@@ -352,14 +352,14 @@ export function EnterpriseResumesTab() {
                               <div className="min-w-0">
                                 <div className="font-semibold text-ink flex items-center gap-2">
                                   <span>{getJobTitle(r)}</span>
-                                  <span className="font-mono text-[11px] text-ink-muted">
+                                  <span className="font-mono text-xs text-ink-muted">
                                     #{r.id.slice(0, 8)}
                                   </span>
                                   <span className="text-emerald-600 font-bold">
                                     ATS {ats}%
                                   </span>
                                 </div>
-                                <div className="text-[11px] text-ink-muted mt-0.5">
+                                <div className="text-xs text-ink-muted mt-0.5">
                                   Template: {r.template || 'Cv1'} · Updated {new Date(r.updatedAt || r.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
@@ -400,7 +400,7 @@ export function EnterpriseResumesTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Candidate</th>
                     <th className="py-3 px-3">Target Role</th>
                     <th className="py-3 px-3">ATS Score</th>
@@ -419,13 +419,13 @@ export function EnterpriseResumesTab() {
                         <td className="py-3 px-3 font-semibold text-ink">
                           {name}
                           {r.ownerEmail && (
-                            <div className="text-[11px] font-normal text-ink-muted">{r.ownerEmail}</div>
+                            <div className="text-xs font-normal text-ink-muted">{r.ownerEmail}</div>
                           )}
                         </td>
                         <td className="py-3 px-3 text-ink-muted">{role}</td>
                         <td className="py-3 px-3">
                           <span className={cn(
-                            'font-bold inline-flex items-center px-2 py-0.5 rounded text-[11px]',
+                            'font-bold inline-flex items-center px-2 py-0.5 rounded text-xs',
                             ats >= 80 ? 'bg-emerald-500/10 text-emerald-600' : ats >= 60 ? 'bg-amber-500/10 text-amber-600' : 'bg-rose-500/10 text-rose-600',
                           )}>
                             {ats}%

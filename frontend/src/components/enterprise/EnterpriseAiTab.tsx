@@ -223,12 +223,12 @@ export function EnterpriseAiTab() {
               ? '✓ Dedicated Enterprise Gateway Active'
               : 'Platform High-Availability Shared Gateway'}
             {platformStatus?.hasDedicatedBYOK && platformStatus.credentialCount > 0 && (
-              <span className="font-mono text-[10px] opacity-70">
+              <span className="font-mono text-xs opacity-70">
                 ({platformStatus.credentialCount} provider{platformStatus.credentialCount === 1 ? '' : 's'})
               </span>
             )}
           </div>
-          <span className="text-[11px] text-ink-muted">
+          <span className="text-xs text-ink-muted">
             AI routing governance is enforced server-side with tenant isolation.
           </span>
         </div>
@@ -342,8 +342,8 @@ export function EnterpriseAiTab() {
                         {isApproved && <Check className="size-3.5 stroke-[3]" />}
                       </div>
                     </div>
-                    <p className="text-[11px] text-ink-muted mt-1 leading-snug">{provider.blurb}</p>
-                    <div className="mt-2 text-[10px] font-mono text-ink-muted truncate">
+                    <p className="text-xs text-ink-muted mt-1 leading-snug">{provider.blurb}</p>
+                    <div className="mt-2 text-xs font-mono text-ink-muted truncate">
                       {provider.model}
                     </div>
                   </div>
@@ -357,11 +357,11 @@ export function EnterpriseAiTab() {
                 <label className="text-xs font-bold text-ink block" id="enterprise-model-allowlist-label">
                   Per-Model Governance Allowlist
                 </label>
-                <span className="text-[11px] text-ink-muted font-mono">
+                <span className="text-xs text-ink-muted font-mono">
                   {allowedModels.size} / {MODEL_CATALOG.length} models authorized
                 </span>
               </div>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Model governance is enforced server-side. A provider is only reachable when its effective model is
                 allowlisted here, so an approved provider can never reach an unapproved model.
               </p>
@@ -398,8 +398,8 @@ export function EnterpriseAiTab() {
                         {isAllowed && <Check className="size-3 stroke-[3]" />}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[11px] font-bold text-ink truncate">{model.id}</span>
-                        <span className="block text-[10px] text-ink-muted truncate">{model.providerLabel}</span>
+                        <span className="block text-xs font-bold text-ink truncate">{model.id}</span>
+                        <span className="block text-xs text-ink-muted truncate">{model.providerLabel}</span>
                       </span>
                     </button>
                   );
@@ -425,7 +425,7 @@ export function EnterpriseAiTab() {
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Default model dispatched for resume executive bios, interview coach queries, and cover letters.
               </p>
             </div>
@@ -447,7 +447,7 @@ export function EnterpriseAiTab() {
                   disabled={!canManageAi}
                   className="w-full accent-accent cursor-pointer"
                 />
-                <p className="text-[11px] text-ink-muted">
+                <p className="text-xs text-ink-muted">
                   Maximum simultaneous inference executions permitted per minute across all active seats.
                 </p>
               </div>
@@ -467,7 +467,7 @@ export function EnterpriseAiTab() {
                   disabled={!canManageAi}
                   className="w-full accent-accent cursor-pointer"
                 />
-                <p className="text-[11px] text-ink-muted">
+                <p className="text-xs text-ink-muted">
                   Hard daily ceiling tracked by MariaDB outbox ledger before graceful throttling.
                 </p>
               </div>

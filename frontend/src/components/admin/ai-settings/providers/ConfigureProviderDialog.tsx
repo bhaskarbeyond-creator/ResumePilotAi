@@ -148,7 +148,7 @@ export function ConfigureProviderDialog() {
                       )}
                     >
                       <span className="truncate">{p.name}</span>
-                      <span className="text-[11px] text-ink-muted shrink-0">
+                      <span className="text-xs text-ink-muted shrink-0">
                         {p.keyless ? 'keyless' : p.hasKey ? 'configured' : p.id}
                       </span>
                     </button>
@@ -205,7 +205,7 @@ export function ConfigureProviderDialog() {
                 onChange={(e) => setModalPoolText(e.target.value)}
                 className="w-full rounded-xl border border-border bg-canvas p-2.5 text-xs font-mono text-ink"
               />
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 {splitKeys(modalPoolText).length} key(s) ready for server vault.
               </p>
             </div>

@@ -68,7 +68,7 @@ export function AiQuotaBadge() {
         >
           <Sparkles className={cn('size-3.5', isExhausted ? 'text-rose-600' : 'text-brand-600')} />
           <span className="tabular-nums font-bold">{remaining}</span>
-          <span className="text-[10px] text-ink-muted">/{limit} AI</span>
+          <span className="text-xs text-ink-muted">/{limit} AI</span>
         </button>
       </DropdownMenuTrigger>
 
@@ -80,11 +80,11 @@ export function AiQuotaBadge() {
             </div>
             <div>
               <p className="text-xs font-bold text-ink">Daily AI Quota</p>
-              <p className="text-[10px] text-brand-700 font-semibold">{usage.plan} Plan</p>
+              <p className="text-xs text-brand-700 font-semibold">{usage.plan} Plan</p>
             </div>
           </div>
           <span className={cn(
-            'px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border',
+            'px-2 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wide border',
             isExhausted ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           )}>
             {isExhausted ? 'Depleted' : 'Active'}
@@ -93,7 +93,7 @@ export function AiQuotaBadge() {
 
         {/* Progress bar */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-ink-muted">Generations today</span>
             <span className="font-bold text-ink tabular-nums">{used} / {limit} used</span>
           </div>
@@ -108,12 +108,12 @@ export function AiQuotaBadge() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/80 bg-neutral-50/50 p-2.5 space-y-1 text-[11px] text-ink-muted">
+        <div className="rounded-xl border border-border/80 bg-neutral-50/50 p-2.5 space-y-1 text-xs text-ink-muted">
           <div className="flex items-center gap-1.5 text-ink font-semibold">
             <Clock className="size-3 text-ink-subtle" />
             <span>Resets daily at midnight UTC</span>
           </div>
-          <p className="leading-relaxed text-[10px]">
+          <p className="leading-relaxed text-xs">
             Grounded summaries, role bullets, and ATS tailoring consume 1 token per request.
           </p>
         </div>

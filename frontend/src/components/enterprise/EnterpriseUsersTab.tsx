@@ -400,7 +400,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Identity</th>
                     <th className="py-3 px-3">Roles</th>
                     <th className="py-3 px-3">Status</th>
@@ -430,18 +430,18 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                           <div className="font-semibold text-ink group-hover:text-accent transition-colors">
                             {m.displayName || m.invitationEmail || m.email || m.principalId}
                           </div>
-                          <div className="text-[11px] font-mono text-ink-muted">
+                          <div className="text-xs font-mono text-ink-muted">
                             {m.principalId}
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border', roleColor)}>
+                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border', roleColor)}>
                             {roleTitle}
                           </span>
                         </td>
                         <td className="py-3 px-3">
                           <span className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold',
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                             m.status === 'ACTIVE' && 'bg-emerald-500/10 text-emerald-600',
                             m.status === 'INVITED' && 'bg-amber-500/10 text-amber-600',
                             m.status === 'SUSPENDED' && 'bg-rose-500/10 text-rose-600',
@@ -542,7 +542,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     </h3>
                     <span
                       className={cn(
-                        'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
+                        'text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
                         member360Target.status === 'ACTIVE'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                           : member360Target.status === 'INVITED'
@@ -580,7 +580,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
 
               {/* Role Delegation & Permissions */}
               <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
-                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <label className="font-bold text-ink block uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Shield className="size-3.5 text-accent" />
                   Enterprise Role Delegation
                 </label>
@@ -606,14 +606,14 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     </optgroup>
                   )}
                 </select>
-                <p className="text-[11px] text-ink-muted leading-relaxed">
+                <p className="text-xs text-ink-muted leading-relaxed">
                   {ROLE_HIERARCHY[edit360Role]?.desc}
                 </p>
               </div>
 
               {/* Departmental Workspace Assignment */}
               <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
-                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <label className="font-bold text-ink block uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Building className="size-3.5 text-accent" />
                   Assigned Departmental Workspace
                 </label>
@@ -629,14 +629,14 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-ink-muted">
+                <p className="text-xs text-ink-muted">
                   Restricts member to candidate dossiers and job openings within this department partition.
                 </p>
               </div>
 
               {/* Account Status Switcher */}
               <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
-                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <label className="font-bold text-ink block uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <UserCheck className="size-3.5 text-accent" />
                   Account Lifecycle Status
                 </label>
@@ -671,7 +671,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                 <div className="w-full h-2 rounded-full bg-canvas-soft overflow-hidden">
                   <div className="h-full bg-accent rounded-full" style={{ width: '28.4%' }} />
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-ink-muted">
+                <div className="flex items-center justify-between text-xs text-ink-muted">
                   <span>Usage this billing cycle: 28.4%</span>
                   <span>Monthly reset in 12 days</span>
                 </div>
@@ -679,7 +679,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
 
               {/* Security & Access Controls */}
               <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
-                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <label className="font-bold text-ink block uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Key className="size-3.5 text-accent" />
                   Security & Session Safeguards
                 </label>
@@ -800,7 +800,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     placeholder="teammate@company.com"
                     className="h-9 text-xs"
                   />
-                  <p className="text-[11px] text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     An email invitation will be dispatched with sign-in instructions.
                   </p>
                 </div>
@@ -814,7 +814,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                     placeholder="e.g. fire-uid-12345"
                     className="h-9 text-xs font-mono"
                   />
-                  <p className="text-[11px] text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     Directly binds access to an existing Firebase identity.
                   </p>
                 </div>

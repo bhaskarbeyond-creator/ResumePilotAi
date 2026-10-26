@@ -370,7 +370,7 @@ export function CVRendererPage() {
                 key={d}
                 onClick={() => setDensity(d)}
                 className={cn(
-                  'px-2 py-0.5 rounded text-[11px] capitalize transition-colors',
+                  'px-2 py-0.5 rounded text-xs capitalize transition-colors',
                   density === d
                     ? 'bg-neutral-900 text-white font-medium'
                     : 'text-neutral-600 hover:bg-neutral-100',
@@ -407,7 +407,7 @@ export function CVRendererPage() {
             <button
               type="button"
               onClick={() => setZoomLevel(100)}
-              className="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500 hover:bg-neutral-100"
+              className="ml-1 rounded px-1.5 py-0.5 text-xs font-semibold text-neutral-500 hover:bg-neutral-100"
               title="Reset zoom to 100%"
             >
               100%

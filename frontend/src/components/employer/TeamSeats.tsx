@@ -196,7 +196,7 @@ export function TeamSeats() {
                       <h4 className="text-xs font-bold text-ink">{member.name}</h4>
                       <span
                         className={cn(
-                          'text-[10px] font-semibold px-2 py-0.5 rounded border',
+                          'text-xs font-semibold px-2 py-0.5 rounded border',
                           member.role === 'Admin'
                             ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
                             : member.role === 'Recruiter'
@@ -207,7 +207,7 @@ export function TeamSeats() {
                         {member.role}
                       </span>
                       {member.status === 'invited' && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                           Pending Invite
                         </span>
                       )}

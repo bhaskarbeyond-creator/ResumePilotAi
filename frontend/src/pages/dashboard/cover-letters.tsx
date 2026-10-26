@@ -246,7 +246,7 @@ export function CoverLettersPage() {
                         <Link to={`/cover-letter/${encodeURIComponent(letter.id)}`} className="truncate text-sm font-semibold text-ink hover:text-brand-700 hover:underline">
                           {letter.title}
                         </Link>
-                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                           {COVER_TEMPLATES.find((t) => t.id === letter.templateId)?.name || 'Executive Classic'}
                         </span>
                       </div>

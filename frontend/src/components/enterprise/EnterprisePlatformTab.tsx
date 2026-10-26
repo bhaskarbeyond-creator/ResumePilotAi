@@ -150,7 +150,7 @@ export function EnterprisePlatformTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Organization</th>
                     <th className="py-3 px-3">Tenant ID</th>
                     <th className="py-3 px-3">Tier</th>
@@ -166,17 +166,17 @@ export function EnterprisePlatformTab() {
                       <tr key={t.id} className="hover:bg-surface-raised/40 transition-colors">
                         <td className="py-3 px-3 font-semibold text-ink">
                           {t.name}
-                          {t.slug && <span className="ml-1 text-[11px] font-mono text-ink-muted">({t.slug})</span>}
+                          {t.slug && <span className="ml-1 text-xs font-mono text-ink-muted">({t.slug})</span>}
                         </td>
                         <td className="py-3 px-3 font-mono text-ink-muted">{t.id}</td>
                         <td className="py-3 px-3">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-accent-soft text-accent">
                             {t.tier || 'Enterprise'}
                           </span>
                         </td>
                         <td className="py-3 px-3">
                           <span className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold',
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                             isSuspended ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600',
                           )}>
                             {t.status || 'ACTIVE'}

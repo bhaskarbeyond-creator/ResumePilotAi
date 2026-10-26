@@ -238,7 +238,7 @@ export function AdminBlogManagementTab() {
                   >
                     {article.title}
                   </button>
-                  <div className="text-[11px] text-ink-muted font-mono">/blog/{article.slug}</div>
+                  <div className="text-xs text-ink-muted font-mono">/blog/{article.slug}</div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="rounded bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-2xs font-medium text-ink-secondary">

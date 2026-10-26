@@ -184,7 +184,7 @@ export function ShareModal({
               </div>
               <div>
                 <p className="text-xs font-semibold text-ink">Public Web Link</p>
-                <p className="text-[11px] text-ink-muted">
+                <p className="text-xs text-ink-muted">
                   {loading
                     ? 'Checking the current share status…'
                     : isPublic
@@ -224,7 +224,7 @@ export function ShareModal({
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-[11px] text-red-700"
+              className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700"
               data-testid="share-error"
             >
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -267,7 +267,7 @@ export function ShareModal({
                 )}
               </Button>
             </div>
-            <p id="share-url-state" className="text-[11px] text-ink-muted" data-testid="share-state">
+            <p id="share-url-state" className="text-xs text-ink-muted" data-testid="share-state">
               {isPublic
                 ? 'Published · the link stays valid until you turn sharing off.'
                 : 'Not published · no public link exists.'}
@@ -316,7 +316,7 @@ export function ShareModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-canvas-soft p-2.5 text-[11px] text-ink-muted">
+          <div className="flex items-center justify-between rounded-lg bg-canvas-soft p-2.5 text-xs text-ink-muted">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5 text-success-600" />
               Private token · revocable at any time

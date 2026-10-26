@@ -179,7 +179,7 @@ export function AdminEmailSmtpTab() {
                     {check.status}
                   </span>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-800 truncate" title={check.record}>
+                <div className="text-xs font-mono text-emerald-800 truncate" title={check.record}>
                   {check.record}
                 </div>
                 <div className="text-2xs text-emerald-700">{check.detail}</div>

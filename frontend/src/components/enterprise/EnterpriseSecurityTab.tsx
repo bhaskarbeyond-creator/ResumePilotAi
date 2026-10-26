@@ -293,7 +293,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Service Name</th>
                     <th className="py-3 px-3">Key Prefix</th>
                     <th className="py-3 px-3">Granted Scopes</th>
@@ -310,7 +310,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
                       <td className="py-3 px-3">
                         <div className="flex flex-wrap gap-1">
                           {(sa.scopes || []).map((s) => (
-                            <span key={s} className="px-1.5 py-0.5 rounded bg-surface border border-edge text-[10px] font-mono text-ink-muted">
+                            <span key={s} className="px-1.5 py-0.5 rounded bg-surface border border-edge text-xs font-mono text-ink-muted">
                               {s}
                             </span>
                           ))}
@@ -318,7 +318,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
                       </td>
                       <td className="py-3 px-3">
                         <span className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold',
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                           sa.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600',
                         )}>
                           {sa.status}
@@ -404,7 +404,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                    <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                       <th className="py-3 px-3">Job ID</th>
                       <th className="py-3 px-3">Type</th>
                       <th className="py-3 px-3">Status</th>
@@ -420,7 +420,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
                         <td className="py-3 px-3 font-semibold text-ink">{job.jobType}</td>
                         <td className="py-3 px-3">
                           <span className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold',
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                             job.status === 'COMPLETED' && 'bg-emerald-500/10 text-emerald-600',
                             job.status === 'DEAD_LETTER' && 'bg-rose-500/10 text-rose-600',
                             (job.status === 'QUEUED' || job.status === 'RETRYING') && 'bg-amber-500/10 text-amber-600',
@@ -506,7 +506,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
                         />
                         <div>
                           <div className="font-semibold text-ink">{scope.label}</div>
-                          <div className="text-[10px] font-mono text-ink-muted">{scope.id}</div>
+                          <div className="text-xs font-mono text-ink-muted">{scope.id}</div>
                         </div>
                       </label>
                     );
@@ -529,7 +529,7 @@ export function EnterpriseSecurityTab({ initialFocus }: EnterpriseSecurityTabPro
                         />
                         <div>
                           <div className="font-semibold text-ink">{scope.label}</div>
-                          <div className="text-[10px] font-mono text-ink-muted">{scope.id}</div>
+                          <div className="text-xs font-mono text-ink-muted">{scope.id}</div>
                         </div>
                       </label>
                     );

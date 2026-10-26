@@ -154,26 +154,26 @@ export function FormattingToolbar({
       </div>
 
       {/* Action Verbs Quick Helpers & AI Copilot Trigger */}
-      <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+      <div className="flex items-center gap-1.5 text-xs text-ink-muted">
         {onOpenAiCopilot && (
           <button
             type="button"
             onClick={onOpenAiCopilot}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[10px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/90 transition-all shadow-2xs cursor-pointer active:scale-95"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/90 transition-all shadow-2xs cursor-pointer active:scale-95"
             title="Open AI Role Copilot to suggest bullet points"
           >
             <Sparkles className="size-2.5 text-purple-600" />
             <span>Suggest with AI</span>
           </button>
         )}
-        <span className="hidden md:inline font-medium text-[10px] uppercase tracking-wider text-ink-muted">Verbs:</span>
+        <span className="hidden md:inline font-medium text-xs uppercase tracking-wider text-ink-muted">Verbs:</span>
         <div className="flex items-center gap-1 overflow-x-auto max-w-[260px] sm:max-w-none">
           {POWER_ACTION_VERBS.slice(0, 4).map((verb) => (
             <button
               key={verb}
               type="button"
               onClick={() => handleInsertVerb(verb)}
-              className="rounded bg-surface px-1.5 py-0.5 font-medium text-[10px] text-ink-secondary hover:bg-brand-50 hover:text-brand-700 border border-border/70 transition-colors"
+              className="rounded bg-surface px-1.5 py-0.5 font-medium text-xs text-ink-secondary hover:bg-brand-50 hover:text-brand-700 border border-border/70 transition-colors"
             >
               +{verb}
             </button>

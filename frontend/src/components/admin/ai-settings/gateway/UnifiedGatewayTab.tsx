@@ -45,7 +45,7 @@ export function UnifiedGatewayTab() {
           ].map((ep) => (
             <div key={ep.path} className="rounded-xl border border-border bg-canvas p-3.5">
               <div className="text-xs font-bold text-ink">{ep.title}</div>
-              <div className="text-[11px] font-mono text-ink-secondary mt-1 break-all">
+              <div className="text-xs font-mono text-ink-secondary mt-1 break-all">
                 {ep.path}
               </div>
             </div>

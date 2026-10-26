@@ -233,7 +233,7 @@ export function ResumeImportModal({ isOpen, onClose, onImportComplete }: ResumeI
             <div className="space-y-2">
               <label className="text-xs font-semibold text-ink flex items-center justify-between">
                 <span>Paste Full Resume Text</span>
-                <span className="text-[11px] text-ink-muted">{pastedText.length} characters</span>
+                <span className="text-xs text-ink-muted">{pastedText.length} characters</span>
               </label>
               <Textarea
                 rows={8}
@@ -254,7 +254,7 @@ export function ResumeImportModal({ isOpen, onClose, onImportComplete }: ResumeI
                   {status === 'extracting' ? 'Extracting document text…' : 'AI parsing contact info, experience & skills…'}
                 </span>
               </div>
-              <p className="text-[11px] text-brand-600/90">
+              <p className="text-xs text-brand-600/90">
                 Grounding extraction strictly in your document facts. No fabricated claims.
               </p>
             </div>
@@ -280,23 +280,23 @@ export function ResumeImportModal({ isOpen, onClose, onImportComplete }: ResumeI
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs text-emerald-950">
                   <div className="bg-white/80 rounded-lg p-2 border border-emerald-100">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 block">Candidate</span>
+                    <span className="text-xs uppercase font-bold text-emerald-700 block">Candidate</span>
                     <span className="font-semibold">{parsedData.firstname} {parsedData.lastname || '—'}</span>
                   </div>
                   <div className="bg-white/80 rounded-lg p-2 border border-emerald-100">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 block">Role</span>
+                    <span className="text-xs uppercase font-bold text-emerald-700 block">Role</span>
                     <span className="font-semibold truncate block">{parsedData.occupation || '—'}</span>
                   </div>
                   <div className="bg-white/80 rounded-lg p-2 border border-emerald-100">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 block">Experience</span>
+                    <span className="text-xs uppercase font-bold text-emerald-700 block">Experience</span>
                     <span className="font-semibold">{parsedData.employments?.length || 0} positions</span>
                   </div>
                   <div className="bg-white/80 rounded-lg p-2 border border-emerald-100">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 block">Education</span>
+                    <span className="text-xs uppercase font-bold text-emerald-700 block">Education</span>
                     <span className="font-semibold">{parsedData.educations?.length || 0} entries</span>
                   </div>
                   <div className="bg-white/80 rounded-lg p-2 border border-emerald-100 sm:col-span-2">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 block">Skills Detected</span>
+                    <span className="text-xs uppercase font-bold text-emerald-700 block">Skills Detected</span>
                     <span className="font-semibold">{parsedData.skills?.length || 0} technical skills</span>
                   </div>
                 </div>

@@ -263,7 +263,7 @@ export function CompanyProfile() {
                 variant="ghost"
                 size="xs"
                 onClick={openCreateModal}
-                className="h-6 px-2 text-[11px] text-accent font-semibold"
+                className="h-6 px-2 text-xs text-accent font-semibold"
               >
                 + Add Entity
               </Button>
@@ -295,7 +295,7 @@ export function CompanyProfile() {
                           {comp.name}
                           {comp.featured && <Star className="size-3 text-amber-500 fill-amber-500 shrink-0" />}
                         </h4>
-                        <p className="text-[10px] text-ink-muted capitalize">
+                        <p className="text-xs text-ink-muted capitalize">
                           {comp.industry || comp.status || 'Active Entity'}
                         </p>
                       </div>
@@ -325,7 +325,7 @@ export function CompanyProfile() {
                         <CardTitle className="text-base font-bold text-ink">
                           {activeCompany.name}
                         </CardTitle>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                           <ShieldCheck className="size-3" /> Verified Employer
                         </span>
                       </div>
@@ -365,19 +365,19 @@ export function CompanyProfile() {
                 {/* Brand Highlights */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
-                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Industry</p>
+                    <p className="text-xs text-ink-muted uppercase font-semibold">Industry</p>
                     <p className="text-xs font-bold text-ink mt-0.5">{activeCompany.industry || 'Technology'}</p>
                   </div>
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
-                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Company Size</p>
+                    <p className="text-xs text-ink-muted uppercase font-semibold">Company Size</p>
                     <p className="text-xs font-bold text-ink mt-0.5">{activeCompany.size || '11-50 employees'}</p>
                   </div>
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
-                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Entity Status</p>
+                    <p className="text-xs text-ink-muted uppercase font-semibold">Entity Status</p>
                     <p className="text-xs font-bold text-ink mt-0.5 capitalize">{activeCompany.status || 'Approved'}</p>
                   </div>
                   <div className="p-3 rounded-lg border border-edge bg-canvas-soft">
-                    <p className="text-[10px] text-ink-muted uppercase font-semibold">Verified On</p>
+                    <p className="text-xs text-ink-muted uppercase font-semibold">Verified On</p>
                     <p className="text-xs font-bold text-ink mt-0.5">
                       {activeCompany.createdAt ? new Date(activeCompany.createdAt).toLocaleDateString() : 'Active'}
                     </p>
@@ -481,9 +481,9 @@ export function CompanyProfile() {
                     className="h-8 text-xs font-mono"
                   />
                   {formErrors.companyImage && (
-                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.companyImage}</p>
+                    <p className="text-xs text-rose-500 font-semibold">{formErrors.companyImage}</p>
                   )}
-                  <p className="text-[10px] text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     Direct public image link (PNG, SVG, or WEBP). Must start with https://
                   </p>
                 </div>
@@ -503,7 +503,7 @@ export function CompanyProfile() {
                     placeholder="e.g. Acme Innovations Corp"
                     className="h-9 text-xs"
                   />
-                  {formErrors.name && <p className="text-[11px] text-rose-500 font-semibold">{formErrors.name}</p>}
+                  {formErrors.name && <p className="text-xs text-rose-500 font-semibold">{formErrors.name}</p>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -515,7 +515,7 @@ export function CompanyProfile() {
                     className="h-9 text-xs font-mono"
                   />
                   {formErrors.website && (
-                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.website}</p>
+                    <p className="text-xs text-rose-500 font-semibold">{formErrors.website}</p>
                   )}
                 </div>
               </div>
@@ -574,7 +574,7 @@ export function CompanyProfile() {
                     className="h-9 text-xs"
                   />
                   {formErrors.location && (
-                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.location}</p>
+                    <p className="text-xs text-rose-500 font-semibold">{formErrors.location}</p>
                   )}
                 </div>
 
@@ -601,7 +601,7 @@ export function CompanyProfile() {
                     className="h-9 text-xs"
                   />
                   {formErrors.email && (
-                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.email}</p>
+                    <p className="text-xs text-rose-500 font-semibold">{formErrors.email}</p>
                   )}
                 </div>
 
@@ -614,7 +614,7 @@ export function CompanyProfile() {
                     className="h-9 text-xs font-mono"
                   />
                   {formErrors.phone && (
-                    <p className="text-[11px] text-rose-500 font-semibold">{formErrors.phone}</p>
+                    <p className="text-xs text-rose-500 font-semibold">{formErrors.phone}</p>
                   )}
                 </div>
               </div>

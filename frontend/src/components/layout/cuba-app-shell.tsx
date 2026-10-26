@@ -673,7 +673,7 @@ export function CubaAppShell({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56 p-1">
-                <div className="px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                <div className="px-2 py-1.5 text-xs font-extrabold uppercase tracking-wider text-ink-muted">
                   Platform Workspaces
                 </div>
                 <DropdownMenuItem
@@ -732,7 +732,7 @@ export function CubaAppShell({
           {currentNavGroups.map((group) => (
             <div key={group.id} className="space-y-1">
               {!sidebarCollapsed && (
-                <h2 className="px-3 text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">
+                <h2 className="px-3 text-xs font-bold uppercase tracking-wider text-ink-muted mb-1">
                   {group.label}
                 </h2>
               )}
@@ -760,12 +760,12 @@ export function CubaAppShell({
                           <>
                             <span className="truncate">{item.label}</span>
                             {item.id === 'notifications' && unreadNotifCount > 0 && (
-                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
                                 {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
                               </span>
                             )}
                             {item.badge !== undefined && (
-                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
                                 {item.badge}
                               </span>
                             )}
@@ -955,7 +955,7 @@ export function CubaAppShell({
               {activePortal === 'candidate' && savedStatus && (
                 <div className="hidden sm:flex">
                   <span className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors',
                     savedStatus === 'saved'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : savedStatus === 'saving'
@@ -1075,7 +1075,7 @@ export function CubaAppShell({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 p-1">
-                    <div className="px-2 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                    <div className="px-2 py-1.5 text-xs font-extrabold uppercase tracking-wider text-ink-muted">
                       Simulate Role View
                     </div>
                     {[
@@ -1095,7 +1095,7 @@ export function CubaAppShell({
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold text-ink">{opt.label}</span>
-                          <span className="text-[10px] text-ink-muted">{opt.desc}</span>
+                          <span className="text-xs text-ink-muted">{opt.desc}</span>
                         </div>
                         {(simulatedRole === opt.id || (!simulatedRole && opt.id === 'SUPER_ADMIN')) && (
                           <Check className="size-3.5 text-brand-600 shrink-0" />
@@ -1116,7 +1116,7 @@ export function CubaAppShell({
                   >
                     <Bell className="size-5" />
                     {unreadNotifCount > 0 && (
-                      <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white shadow-xs">
+                      <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-xs font-bold text-white shadow-xs">
                         {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
                       </span>
                     )}
@@ -1163,7 +1163,7 @@ export function CubaAppShell({
                             </span>
                           </div>
                           {notif.message && (
-                            <p className="text-[11px] text-ink-muted line-clamp-1 pl-3">
+                            <p className="text-xs text-ink-muted line-clamp-1 pl-3">
                               {notif.message}
                             </p>
                           )}
@@ -1219,7 +1219,7 @@ export function CubaAppShell({
                       <span className="max-w-[120px] truncate text-xs font-semibold text-ink">
                         {displayName}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                      <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
                         {roleLabel}
                       </span>
                     </div>
@@ -1234,7 +1234,7 @@ export function CubaAppShell({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-ink">{displayName}</p>
                       <p className="truncate text-xs text-ink-muted">{user?.email}</p>
-                      <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">
+                      <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-brand-700">
                         {roleLabel}
                       </span>
                     </div>
@@ -1269,7 +1269,7 @@ export function CubaAppShell({
                     <span>Help Desk & Support</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ink-muted">
+                  <div className="px-2 py-1 text-xs font-extrabold uppercase tracking-wider text-ink-muted">
                     Switch Workspace
                   </div>
                   <DropdownMenuItem

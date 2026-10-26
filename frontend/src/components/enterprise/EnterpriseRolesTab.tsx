@@ -326,11 +326,11 @@ export function EnterpriseRolesTab() {
             >
               <div className="flex items-center justify-between font-bold text-ink">
                 <span>{theme.label}</span>
-                <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold border', theme.badgeClass)}>
+                <span className={cn('px-2 py-0.5 rounded text-xs font-bold border', theme.badgeClass)}>
                   {theme.scope}
                 </span>
               </div>
-              <p className="text-[11px] text-ink-muted mt-2 leading-relaxed">{theme.summary}</p>
+              <p className="text-xs text-ink-muted mt-2 leading-relaxed">{theme.summary}</p>
             </div>
           );
         })}
@@ -353,7 +353,7 @@ export function EnterpriseRolesTab() {
               <div className="flex items-center justify-between font-bold text-ink">
                 <span className="truncate pr-2">{def?.label || cRoleKey}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-purple-500/10 text-purple-600 border-purple-500/20">
+                  <span className="px-2 py-0.5 rounded text-xs font-bold border bg-purple-500/10 text-purple-600 border-purple-500/20">
                     Custom Role
                   </span>
                   <button
@@ -369,7 +369,7 @@ export function EnterpriseRolesTab() {
                   </button>
                 </div>
               </div>
-              <p className="text-[11px] text-ink-muted mt-2 leading-relaxed line-clamp-2">
+              <p className="text-xs text-ink-muted mt-2 leading-relaxed line-clamp-2">
                 {def?.description || 'Custom organizational role'} ({def?.permissions?.length || 0} permissions)
               </p>
             </div>
@@ -423,7 +423,7 @@ export function EnterpriseRolesTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3 min-w-[260px]">Capability / Scope</th>
                     {allRoleKeys.map((r) => {
                       const isCustom = customRoleKeys.includes(r);
@@ -442,7 +442,7 @@ export function EnterpriseRolesTab() {
                           <div className="flex flex-col items-center">
                             <span>{label}</span>
                             {isCustom && (
-                              <span className="text-[9px] font-normal text-purple-600 dark:text-purple-400">custom</span>
+                              <span className="text-xs font-normal text-purple-600 dark:text-purple-400">custom</span>
                             )}
                           </div>
                         </th>
@@ -457,7 +457,7 @@ export function EnterpriseRolesTab() {
                         <div className="font-bold text-ink text-xs uppercase tracking-wider">
                           {domain.name}
                         </div>
-                        <div className="text-[11px] text-ink-muted">{domain.description}</div>
+                        <div className="text-xs text-ink-muted">{domain.description}</div>
                       </td>
                     </tr>
                   ))}
@@ -466,7 +466,7 @@ export function EnterpriseRolesTab() {
                       <tr key={perm.id} className="hover:bg-surface-raised/40 transition-colors">
                         <td className="py-2.5 px-3">
                           <div className="font-semibold text-ink">{perm.label}</div>
-                          <div className="text-[10px] font-mono text-ink-muted">{perm.id}</div>
+                          <div className="text-xs font-mono text-ink-muted">{perm.id}</div>
                         </td>
                         {allRoleKeys.map((roleId) => {
                           const hasGrant = checkHasPermission(roleId, perm.id);
@@ -591,7 +591,7 @@ export function EnterpriseRolesTab() {
                         const allP = DOMAINS.flatMap((d) => d.permissions.map((p) => p.id));
                         setSelectedPerms(new Set(allP));
                       }}
-                      className="text-[11px] font-bold text-accent hover:underline"
+                      className="text-xs font-bold text-accent hover:underline"
                     >
                       Select All
                     </button>
@@ -599,7 +599,7 @@ export function EnterpriseRolesTab() {
                     <button
                       type="button"
                       onClick={() => setSelectedPerms(new Set())}
-                      className="text-[11px] font-bold text-ink-muted hover:underline"
+                      className="text-xs font-bold text-ink-muted hover:underline"
                     >
                       Clear All
                     </button>
@@ -611,7 +611,7 @@ export function EnterpriseRolesTab() {
                     <div key={domain.id} className="p-3 rounded-xl border border-edge bg-canvas/40 space-y-2">
                       <div className="font-bold text-ink text-xs flex items-center justify-between">
                         <span>{domain.name}</span>
-                        <span className="text-[10px] text-ink-muted">{domain.permissions.length} perms</span>
+                        <span className="text-xs text-ink-muted">{domain.permissions.length} perms</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {domain.permissions.map((perm) => {
@@ -634,8 +634,8 @@ export function EnterpriseRolesTab() {
                                 className="mt-0.5 rounded border-edge text-accent focus:ring-accent"
                               />
                               <div className="min-w-0">
-                                <div className="font-semibold text-[11px] leading-tight text-ink">{perm.label}</div>
-                                <div className="text-[9px] font-mono text-ink-muted">{perm.id}</div>
+                                <div className="font-semibold text-xs leading-tight text-ink">{perm.label}</div>
+                                <div className="text-xs font-mono text-ink-muted">{perm.id}</div>
                               </div>
                             </label>
                           );

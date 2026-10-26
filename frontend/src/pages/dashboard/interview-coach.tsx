@@ -818,7 +818,7 @@ export function InterviewCoachPage() {
               <span className="mb-3 text-xs leading-relaxed text-ink-muted">{config.description}</span>
               <span className="flex flex-wrap gap-1.5">
                 {config.features.map((feature) => (
-                  <span key={feature} className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">{feature}</span>
+                  <span key={feature} className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{feature}</span>
                 ))}
               </span>
             </button>
@@ -1206,12 +1206,12 @@ function ExamView({ state, timeRemaining, onSelect, onToggleFlag, onNavigate, on
         <aside className="hidden w-56 flex-col overflow-y-auto border-r border-border bg-canvas-soft p-3 md:flex">
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-ink-muted">Question palette</h2>
           {palette('grid grid-cols-5 gap-1.5')}
-          <ul className="mt-4 space-y-1.5 text-[11px] text-ink-muted">
+          <ul className="mt-4 space-y-1.5 text-xs text-ink-muted">
             <li className="flex items-center gap-1.5"><span className="size-3 rounded border border-success-300 bg-success-50" aria-hidden="true" /> Answered</li>
             <li className="flex items-center gap-1.5"><span className="size-3 rounded border border-warning-300 bg-warning-100" aria-hidden="true" /> Flagged</li>
             <li className="flex items-center gap-1.5"><span className="size-3 rounded border border-border bg-surface" aria-hidden="true" /> Unanswered</li>
           </ul>
-          <p className="mt-auto pt-4 text-[11px] text-ink-muted">Shortcuts while the exam has focus: A–D or 1–4 answer, ← → move, F flag.</p>
+          <p className="mt-auto pt-4 text-xs text-ink-muted">Shortcuts while the exam has focus: A–D or 1–4 answer, ← → move, F flag.</p>
         </aside>
 
         <div className="flex flex-1 flex-col overflow-y-auto p-4 lg:p-6">

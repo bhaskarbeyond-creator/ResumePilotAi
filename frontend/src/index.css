@@ -211,6 +211,35 @@
     border-radius: var(--radius-sm);
   }
 
+  /* WCAG 2.2 AA 2.5.8 target size, at the two phone classes only.
+   *
+   * Declared once, here, instead of as a `min-h-11` sprinkle on every control: the console
+   * has 114 interactive elements and the class approach had already drifted (the static
+   * audit was passing them because its regex could not see a multi-line opening tag).
+   * A rule that applies to the element type cannot be forgotten on the next `<button>`.
+   *
+   * Inline links inside a sentence are deliberately excluded — WCAG 2.2 exempts them, and
+   * forcing 44px on body links would break paragraph rhythm. `role="button"` links are
+   * included, because they behave like buttons.
+   */
+  @media (max-width: 767px) {
+    button,
+    [role='button'],
+    [role='tab'],
+    summary,
+    select,
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+    textarea {
+      min-height: 44px;
+    }
+
+    button,
+    [role='button'],
+    [role='tab'] {
+      min-width: 44px;
+    }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *,

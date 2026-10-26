@@ -1223,12 +1223,12 @@ export function ResumeBuilderPage() {
               title="Click to edit resume title (press Ctrl+S to save anytime)"
             />
             {saving ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 border border-brand-200/60" data-testid="builder-save-state">
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 border border-brand-200/60" data-testid="builder-save-state">
                 <RefreshCw className="size-3 animate-spin" /> Saving…
               </span>
             ) : saveMessage ? (
               <span className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold border',
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold border',
                 saveMessage.includes('failed')
                   ? 'bg-rose-50 text-rose-700 border-rose-200'
                   : 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -1236,15 +1236,15 @@ export function ResumeBuilderPage() {
                 {saveMessage}
               </span>
             ) : !savedSnapshot ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-ink-muted border border-border" data-testid="builder-save-state">
+              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-ink-muted border border-border" data-testid="builder-save-state">
                 Not saved yet
               </span>
             ) : isDirty ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-[11px] font-semibold text-warning-700 border border-warning-200" data-testid="builder-save-state">
+              <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-xs font-semibold text-warning-700 border border-warning-200" data-testid="builder-save-state">
                 Unsaved changes
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60" data-testid="builder-save-state">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60" data-testid="builder-save-state">
                 <Check className="size-3 stroke-3" aria-hidden="true" /> Saved
               </span>
             )}
@@ -1325,14 +1325,14 @@ export function ResumeBuilderPage() {
                 <FileDown className="size-4 text-emerald-600" />
                 <div className="flex flex-col">
                   <span className="font-semibold text-xs">Download PDF</span>
-                  <span className="text-[10px] text-ink-muted">Print-ready PDF layout</span>
+                  <span className="text-xs text-ink-muted">Print-ready PDF layout</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadDocx} disabled={exportingDocx} className="gap-2 cursor-pointer">
                 <FileText className="size-4 text-blue-600" />
                 <div className="flex flex-col">
                   <span className="font-semibold text-xs">Download Word (DOCX)</span>
-                  <span className="text-[10px] text-ink-muted">Fully editable Microsoft Word</span>
+                  <span className="text-xs text-ink-muted">Fully editable Microsoft Word</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -1402,7 +1402,7 @@ export function ResumeBuilderPage() {
                 )}
               >
                 <div className={cn(
-                  'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-transform group-hover:scale-105',
+                  'flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-transform group-hover:scale-105',
                   isCurrent
                     ? 'bg-white text-brand-700 shadow-2xs'
                     : isDone
@@ -1438,7 +1438,7 @@ export function ResumeBuilderPage() {
           <LayoutGrid className="size-3.5 text-brand-600" aria-hidden="true" />
           {/* The visible count stays part of the accessible name (WCAG 2.5.3 label in name). */}
           <span className="sr-only">View all sections, </span>
-          <span className="text-[11px] font-bold">{completedCount}/{COMPLETABLE_STEP_COUNT}</span>
+          <span className="text-xs font-bold">{completedCount}/{COMPLETABLE_STEP_COUNT}</span>
           <span className="sr-only"> complete</span>
         </button>
 
@@ -1453,7 +1453,7 @@ export function ResumeBuilderPage() {
           <div className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-emerald-500 shadow-xs group-hover:scale-125 transition-transform" />
             <span className="font-semibold text-ink">{completedCount} of {COMPLETABLE_STEP_COUNT}</span>
-            <span className="text-[11px] text-ink-muted">complete</span>
+            <span className="text-xs text-ink-muted">complete</span>
           </div>
           <div className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-200">
             <div
@@ -1461,7 +1461,7 @@ export function ResumeBuilderPage() {
               style={{ width: `${completionPercent}%` }}
             />
           </div>
-          <span className="text-[11px] font-bold text-brand-700">{completionPercent}%</span>
+          <span className="text-xs font-bold text-brand-700">{completionPercent}%</span>
           <ChevronDown className="size-3.5 text-ink-subtle group-hover:text-ink transition-transform group-hover:translate-y-0.5" />
         </button>
       </div>
@@ -1491,7 +1491,7 @@ export function ResumeBuilderPage() {
                        activeStepMeta.label}
                     </h1>
                     <span className={cn(
-                      'rounded-full px-2.5 py-0.5 text-[11px] font-bold border',
+                      'rounded-full px-2.5 py-0.5 text-xs font-bold border',
                       isCurrentStepComplete
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                         : 'bg-amber-100 text-amber-800 border-amber-300'
@@ -1804,7 +1804,7 @@ export function ResumeBuilderPage() {
                     </div>
                     <span
                       className={cn(
-                        'text-[10px] font-extrabold px-2 py-0.5 rounded-full',
+                        'text-xs font-extrabold px-2 py-0.5 rounded-full',
                         isActive
                           ? 'bg-white text-brand-700'
                           : isDone
@@ -1816,7 +1816,7 @@ export function ResumeBuilderPage() {
                     </span>
                   </div>
 
-                  <p className={cn('text-[11px] line-clamp-2 leading-relaxed', isActive ? 'text-brand-100' : 'text-ink-muted')}>
+                  <p className={cn('text-xs line-clamp-2 leading-relaxed', isActive ? 'text-brand-100' : 'text-ink-muted')}>
                     {step.description}
                   </p>
                 </button>
@@ -2037,7 +2037,7 @@ export function ResumeGuidancePanel({
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex flex-col sm:flex-row items-center justify-center gap-1 py-1.5 px-0.5 rounded-lg text-[11px] font-semibold transition-all duration-150',
+                'flex flex-col sm:flex-row items-center justify-center gap-1 py-1.5 px-0.5 rounded-lg text-xs font-semibold transition-all duration-150',
                 isActive
                   ? 'bg-white text-indigo-700 shadow-2xs font-bold border border-border/40'
                   : 'text-ink-muted hover:text-ink hover:bg-white/60'
@@ -2074,7 +2074,7 @@ export function ResumeGuidancePanel({
               )}
               <span>{isCurrentStepComplete ? 'Optimized for ATS screening' : 'Needs attention'}</span>
             </div>
-            <p className="mt-1 text-[11px] leading-relaxed opacity-90">
+            <p className="mt-1 text-xs leading-relaxed opacity-90">
               {isCurrentStepComplete
                 ? 'All essential fields and formatting checks for this section are satisfied.'
                 : 'Complete the required fields in this step to maximize recruiter search matches.'}
@@ -2087,7 +2087,7 @@ export function ResumeGuidancePanel({
               <Lightbulb className="size-3.5 text-amber-500 shrink-0" />
               <span>Recruiter screening tip</span>
             </div>
-            <p className="text-[11px] text-ink-muted leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               {currentStep === 'heading' && 'Keep contact info professional. Include LinkedIn and GitHub for technical verification.'}
               {currentStep === 'experience' && 'Lead bullet points with active verbs like Delivered, Implemented, Led and anchor results to tangible metrics.'}
               {currentStep === 'education' && 'List degrees in reverse chronological order. Include relevant honors, thesis or GPA if above 3.5.'}
@@ -2100,7 +2100,7 @@ export function ResumeGuidancePanel({
 
           {/* Live ATS Checks */}
           <div className="space-y-1.5 border-t border-border pt-3">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted mb-1 flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-1 flex items-center justify-between">
               <span>Live ATS Checks</span>
               <span className="font-semibold text-brand-700">{atsAnalysis?.checks.filter(c => c.passed).length || 0} / {atsAnalysis?.checks.length || 4} passing</span>
             </div>
@@ -2112,7 +2112,7 @@ export function ResumeGuidancePanel({
                   ) : (
                     <AlertCircle className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
                   )}
-                  <span className={cn('text-[11px]', chk.passed ? 'text-ink-secondary' : 'text-amber-800 font-medium')}>
+                  <span className={cn('text-xs', chk.passed ? 'text-ink-secondary' : 'text-amber-800 font-medium')}>
                     {chk.label}
                   </span>
                 </div>
@@ -2135,7 +2135,7 @@ export function ResumeGuidancePanel({
           {/* Contextual Active Step Box */}
           <div className="rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/40 p-3 shadow-2xs">
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-indigo-700">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-indigo-700">
                 Active Step Guidance: {currentStep}
               </span>
               <span className="flex size-2 rounded-full bg-indigo-500 animate-pulse" />
@@ -2151,7 +2151,7 @@ export function ResumeGuidancePanel({
             </p>
           </div>
 
-          <div className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Quick Section Accelerators</div>
+          <div className="text-xs font-bold text-ink-muted uppercase tracking-wider">Quick Section Accelerators</div>
 
           <div className="space-y-2">
             {[
@@ -2180,7 +2180,7 @@ export function ResumeGuidancePanel({
                   </div>
                   <div className="min-w-0">
                     <div className="font-semibold text-ink truncate">{item.label}</div>
-                    <div className="text-[10px] text-ink-muted truncate">{item.tip}</div>
+                    <div className="text-xs text-ink-muted truncate">{item.tip}</div>
                   </div>
                 </div>
 
@@ -2189,7 +2189,7 @@ export function ResumeGuidancePanel({
                     <button
                       type="button"
                       onClick={() => onNavigateStep(item.section)}
-                      className="px-2 py-1 rounded-md text-[10px] font-bold text-indigo-700 hover:bg-indigo-100/70 transition-colors"
+                      className="px-2 py-1 rounded-md text-xs font-bold text-indigo-700 hover:bg-indigo-100/70 transition-colors"
                       title={`Jump to ${item.label}`}
                     >
                       Jump
@@ -2248,7 +2248,7 @@ export function ResumeGuidancePanel({
         <div role="tabpanel" className="space-y-3">
           {/* Wrapping label: this tab also renders inside the mobile dialog, so it cannot rely on a fixed id. */}
           <label className="block space-y-1.5">
-            <span className="block text-[11px] font-bold uppercase tracking-wider text-ink">Job description</span>
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink">Job description</span>
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
@@ -2277,7 +2277,7 @@ export function ResumeGuidancePanel({
                     <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${jdMatch.score}%` }} />
                   </div>
                 )}
-                <p className="mt-2 text-[11px] text-indigo-950" data-testid="builder-jd-summary">
+                <p className="mt-2 text-xs text-indigo-950" data-testid="builder-jd-summary">
                   {jdMatch.total === 0
                     ? 'No skill or tool keywords were recognised in this job description.'
                     : `${jdMatch.matched.length} of ${jdMatch.total} keywords from the job description appear in this resume${
@@ -2288,13 +2288,13 @@ export function ResumeGuidancePanel({
 
               {jdMatch.matched.length > 0 && (
                 <div>
-                  <h4 className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                  <h4 className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
                     <Check className="size-3 text-emerald-700" aria-hidden="true" />
                     <span>Found in this resume ({jdMatch.matched.length})</span>
                   </h4>
                   <ul className="flex flex-wrap gap-1.5" aria-label="Keywords found in this resume">
                     {jdMatch.matched.map((kw) => (
-                      <li key={kw} className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                      <li key={kw} className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
                         {kw}
                       </li>
                     ))}
@@ -2304,11 +2304,11 @@ export function ResumeGuidancePanel({
 
               {jdMatch.missing.length > 0 && (
                 <div>
-                  <h4 className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                  <h4 className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-amber-800">
                     <Plus className="size-3 text-amber-700" aria-hidden="true" />
                     <span>Not in this resume yet ({jdMatch.missing.length})</span>
                   </h4>
-                  <p className="mb-1.5 text-[10px] text-ink-muted">Add only the skills you really have.</p>
+                  <p className="mb-1.5 text-xs text-ink-muted">Add only the skills you really have.</p>
                   <ul className="flex flex-wrap gap-1.5" aria-label="Keywords not in this resume yet">
                     {jdMatch.missing.map((kw) => (
                       <li key={kw}>
@@ -2317,7 +2317,7 @@ export function ResumeGuidancePanel({
                           onClick={() => handleAddKeyword(kw)}
                           disabled={!onUpdateResume}
                           aria-label={`Add ${kw} to skills`}
-                          className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-xs font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 disabled:opacity-60"
                         >
                           <Plus className="size-2.5 text-amber-700" aria-hidden="true" />
                           <span>{kw}</span>
@@ -2344,15 +2344,15 @@ export function ResumeGuidancePanel({
               <div className="rounded-xl border border-dashed border-border bg-surface p-4 text-center text-xs text-ink-muted">
                 <Briefcase className="size-6 text-ink-subtle mx-auto mb-1.5 opacity-60" />
                 <p className="font-semibold text-ink">No bullet points detected</p>
-                <p className="text-[11px] mt-0.5">Add entries in Work History starting with • or - to analyze bullet strength.</p>
+                <p className="text-xs mt-0.5">Add entries in Work History starting with • or - to analyze bullet strength.</p>
               </div>
             ) : (
               allBullets.slice(0, 5).map((bullet, idx) => (
                 <div key={idx} className="rounded-xl border border-border bg-surface p-2.5 space-y-1.5 text-xs shadow-2xs">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-ink-subtle truncate max-w-[140px]">{bullet.expRole}</span>
+                    <span className="text-xs font-bold text-ink-subtle truncate max-w-[140px]">{bullet.expRole}</span>
                     <span className={cn(
-                      'px-1.5 py-0.2 rounded-md text-[10px] font-bold border',
+                      'px-1.5 py-0.2 rounded-md text-xs font-bold border',
                       bullet.strength >= 70 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                       bullet.strength >= 40 ? 'bg-amber-50 text-amber-800 border-amber-200' :
                       'bg-rose-50 text-rose-800 border-rose-200'
@@ -2361,7 +2361,7 @@ export function ResumeGuidancePanel({
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-ink line-clamp-2 leading-relaxed">{bullet.text}</p>
+                  <p className="text-xs text-ink line-clamp-2 leading-relaxed">{bullet.text}</p>
 
                   <div className="flex items-center gap-2 pt-0.5">
                     <div className="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
@@ -2373,7 +2373,7 @@ export function ResumeGuidancePanel({
                         style={{ width: `${bullet.strength}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-extrabold text-ink-muted w-7 text-right">{bullet.strength}%</span>
+                    <span className="text-xs font-extrabold text-ink-muted w-7 text-right">{bullet.strength}%</span>
                   </div>
                 </div>
               ))
@@ -2381,7 +2381,7 @@ export function ResumeGuidancePanel({
           </div>
 
           {/* Bullet formula callout */}
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 text-[11px] text-indigo-950">
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 text-xs text-indigo-950">
             <span className="font-bold">Winning Bullet Formula:</span> [Action Verb] + [Specific Responsibility] + [Quantifiable Business Impact (%)].
           </div>
         </div>
@@ -2398,14 +2398,14 @@ export function ResumeGuidancePanel({
           <div className="rounded-2xl border border-dashed border-border bg-surface p-3 flex items-center justify-between text-xs transition-all hover:bg-neutral-50/80">
             <div className="flex items-center gap-2 text-ink-muted font-medium">
               <ClipboardCheck className="size-3.5 text-indigo-600" aria-hidden="true" />
-              <span className="text-[11px]">Resume guidance hidden</span>
+              <span className="text-xs">Resume guidance hidden</span>
             </div>
             <Button
               ref={showButtonRef}
               variant="outline"
               size="sm"
               onClick={() => togglePanel({ dismissed: false })}
-              className="h-6 text-[11px] px-2.5 border-border hover:bg-neutral-100"
+              className="h-6 text-xs px-2.5 border-border hover:bg-neutral-100"
             >
               Show
             </Button>
@@ -2425,7 +2425,7 @@ export function ResumeGuidancePanel({
               </span>
               <span className="min-w-0">
                 <span className="block text-xs font-bold text-ink">Resume guidance</span>
-                <span className="block text-[10px] text-ink-muted truncate">Expand for checks, tips and job description match</span>
+                <span className="block text-xs text-ink-muted truncate">Expand for checks, tips and job description match</span>
               </span>
             </span>
             <ChevronDown className="size-4 text-ink-muted shrink-0" aria-hidden="true" />
@@ -2543,13 +2543,13 @@ function InsightMetricCard({
         </div>
         <div className="min-w-0">
           <div className="text-xs font-semibold text-ink truncate">{title}</div>
-          <div className="text-[10px] text-ink-muted truncate">{status}</div>
+          <div className="text-xs text-ink-muted truncate">{status}</div>
         </div>
       </div>
 
       <div className="text-right shrink-0">
         <div className="text-sm font-extrabold text-ink">{value}</div>
-        <div className="text-[10px] text-ink-subtle">{unit}</div>
+        <div className="text-xs text-ink-subtle">{unit}</div>
       </div>
     </div>
   );
@@ -2631,7 +2631,7 @@ function HeadingStep({
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-bold text-ink">Have an existing resume or LinkedIn profile?</h3>
-              <p className="text-[11px] text-ink-muted">Upload DOCX, PDF, or paste text to auto-fill your contact, experience, education &amp; skills in 1 click.</p>
+              <p className="text-xs text-ink-muted">Upload DOCX, PDF, or paste text to auto-fill your contact, experience, education &amp; skills in 1 click.</p>
             </div>
           </div>
           <Button
@@ -2655,7 +2655,7 @@ function HeadingStep({
             ) : (
               <div className="flex flex-col items-center justify-center text-ink-muted">
                 <Camera className="size-7 text-ink-muted" aria-hidden="true" />
-                <span className="text-[10px] mt-1 font-medium">Add Photo</span>
+                <span className="text-xs mt-1 font-medium">Add Photo</span>
               </div>
             )}
           </div>
@@ -2750,7 +2750,7 @@ function HeadingStep({
             <label htmlFor="rb-title" className="block text-xs font-semibold text-ink">
               Professional title / Target Role
             </label>
-            <span className="text-[11px] text-brand-600 flex items-center gap-1">
+            <span className="text-xs text-brand-600 flex items-center gap-1">
               <Sparkles className="size-3" /> Visible prominently on header
             </span>
           </div>
@@ -3035,20 +3035,20 @@ function ExperienceStep({
           {/* 4-Step Visual Roadmap */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto text-left">
             <div className="p-3 rounded-xl bg-white border border-border shadow-2xs space-y-1">
-              <span className="text-[10px] font-bold text-brand-600">01 · Role & Org</span>
-              <p className="text-[11px] text-ink-muted font-medium">Add verified title & employer</p>
+              <span className="text-xs font-bold text-brand-600">01 · Role & Org</span>
+              <p className="text-xs text-ink-muted font-medium">Add verified title & employer</p>
             </div>
             <div className="p-3 rounded-xl bg-white border border-border shadow-2xs space-y-1">
-              <span className="text-[10px] font-bold text-brand-600">02 · Dates</span>
-              <p className="text-[11px] text-ink-muted font-medium">Establish chronological tenure</p>
+              <span className="text-xs font-bold text-brand-600">02 · Dates</span>
+              <p className="text-xs text-ink-muted font-medium">Establish chronological tenure</p>
             </div>
             <div className="p-3 rounded-xl bg-white border border-border shadow-2xs space-y-1">
-              <span className="text-[10px] font-bold text-brand-600">03 · Verbs & Metrics</span>
-              <p className="text-[11px] text-ink-muted font-medium">Lead with action & numbers</p>
+              <span className="text-xs font-bold text-brand-600">03 · Verbs & Metrics</span>
+              <p className="text-xs text-ink-muted font-medium">Lead with action & numbers</p>
             </div>
             <div className="p-3 rounded-xl bg-white border border-border shadow-2xs space-y-1">
-              <span className="text-[10px] font-bold text-brand-600">04 · Target JD</span>
-              <p className="text-[11px] text-ink-muted font-medium">Align domain keywords</p>
+              <span className="text-xs font-bold text-brand-600">04 · Target JD</span>
+              <p className="text-xs text-ink-muted font-medium">Align domain keywords</p>
             </div>
           </div>
 
@@ -3221,7 +3221,7 @@ function ExperienceStep({
                           variant="outline"
                           size="sm"
                           onClick={() => onOpenRoleCopilot(entry)}
-                          className="h-7 px-2.5 gap-1 text-[11px] font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
+                          className="h-7 px-2.5 gap-1 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100 shadow-2xs"
                         >
                           <Sparkles className="size-3 text-purple-600" />
                           <span>Suggest with AI</span>
@@ -3233,7 +3233,7 @@ function ExperienceStep({
                           variant="ghost"
                           size="sm"
                           onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
-                          className="h-7 px-2 gap-1 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                          className="h-7 px-2 gap-1 text-xs text-ink-muted hover:text-ink hover:bg-neutral-100"
                           title="Check grammar and spelling"
                         >
                           <ClipboardCheck className="size-3 text-emerald-600" />
@@ -3409,7 +3409,7 @@ function EducationStep({
                       size="sm"
                       onClick={() => void handleGenerateEduDetails(entry)}
                       loading={generatingEduId === entry.id}
-                      className="h-6 px-2 text-[11px] font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100"
+                      className="h-6 px-2 text-xs font-bold text-purple-700 bg-purple-50/70 border-purple-200 hover:bg-purple-100"
                     >
                       <Sparkles className="size-3 text-purple-600" />
                       <span>AI Coursework &amp; Honors</span>
@@ -3420,7 +3420,7 @@ function EducationStep({
                         variant="ghost"
                         size="sm"
                         onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
-                        className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                        className="h-6 px-2 text-xs text-ink-muted hover:text-ink hover:bg-neutral-100"
                       >
                         <ClipboardCheck className="size-3 text-emerald-600" />
                         <span>Grammar</span>
@@ -3927,7 +3927,7 @@ function SummaryStep({
             <h2 id="resume-summary-heading" className="text-xl font-bold tracking-tight text-ink">
               Executive Bio & Summary Studio
             </h2>
-            <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+            <span className="rounded-full bg-brand-50 border border-brand-200 px-2 py-0.5 text-xs font-semibold text-brand-700">
               ATS 10/10 Calibrated
             </span>
           </div>
@@ -3996,7 +3996,7 @@ function SummaryStep({
           <label className="text-xs font-bold text-ink uppercase tracking-wider">
             Executive Tone & Framing
           </label>
-          <span className="text-[11px] text-ink-muted">Shapes vocabulary, density & cadence</span>
+          <span className="text-xs text-ink-muted">Shapes vocabulary, density & cadence</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {SUMMARY_TONES.map((t) => {
@@ -4018,7 +4018,7 @@ function SummaryStep({
                   <span className={cn('size-1.5 rounded-full', isSelected ? 'bg-brand-600' : 'bg-neutral-300')} />
                   <span className="text-xs font-bold">{t.label}</span>
                 </div>
-                <span className="mt-1 line-clamp-1 text-[10px] text-ink-muted">{t.desc}</span>
+                <span className="mt-1 line-clamp-1 text-xs text-ink-muted">{t.desc}</span>
               </button>
             );
           })}
@@ -4039,7 +4039,7 @@ function SummaryStep({
               <strong className="text-ink font-semibold">{charCount}</strong> / 440 chars ·{' '}
               <strong className="text-ink font-semibold">{wordCount}</strong> words
             </span>
-            <span className={cn('rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', atsStatus.badgeClass)}>
+            <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', atsStatus.badgeClass)}>
               {atsStatus.label}
             </span>
           </div>
@@ -4059,7 +4059,7 @@ function SummaryStep({
             style={{ width: `${Math.min(100, (charCount / 460) * 100)}%` }}
           />
         </div>
-        <div className="flex items-center justify-between text-[11px] text-ink-muted">
+        <div className="flex items-center justify-between text-xs text-ink-muted">
           <span>0 chars</span>
           <span className="text-emerald-700 font-semibold dark:text-emerald-400">
             ★ Sweet Spot: 320–440 chars (45–70 words)
@@ -4108,7 +4108,7 @@ function SummaryStep({
           </p>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-brand-200/50">
-            <span className="text-[11px] text-ink-muted">
+            <span className="text-xs text-ink-muted">
               Grounded in verified facts · Zero pronouns · Recruiter-ready
             </span>
             <div className="flex items-center gap-2">
@@ -4187,7 +4187,7 @@ function SummaryStep({
             ))}
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-border">
-            <span className="text-[11px] text-ink-muted">Even one answer provides enough grounding to draft</span>
+            <span className="text-xs text-ink-muted">Even one answer provides enough grounding to draft</span>
             <Button
               type="button"
               size="sm"
@@ -4366,7 +4366,7 @@ function TemplateStep({
 
                 {/* ID pill */}
                 <div className="absolute top-2 left-2 z-10">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-bold text-neutral-800 shadow-sm backdrop-blur-md">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-0.5 text-xs font-bold text-neutral-800 shadow-sm backdrop-blur-md">
                     <span className="size-2 rounded-full" style={{ backgroundColor: tmpl.primary }} />
                     {tmpl.id}
                   </span>
@@ -4383,10 +4383,10 @@ function TemplateStep({
               <div className="border-t border-border p-3 bg-surface">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold text-xs text-ink truncate">{tmpl.name}</div>
-                  <span className="text-[10px] uppercase font-bold text-ink-muted">{tmpl.archetype.replace('-', ' ')}</span>
+                  <span className="text-xs uppercase font-bold text-ink-muted">{tmpl.archetype.replace('-', ' ')}</span>
                 </div>
                 {tmpl.description && (
-                  <p className="mt-1 text-[11px] text-ink-muted line-clamp-1">{tmpl.description}</p>
+                  <p className="mt-1 text-xs text-ink-muted line-clamp-1">{tmpl.description}</p>
                 )}
               </div>
             </button>
@@ -4593,7 +4593,7 @@ function CertificationsStep({
               >
                 <Plus className="size-3.5 group-hover:scale-110" />
                 <span>{cert.name}</span>
-                {cert.issuer && <span className="opacity-70 text-[10px]">({cert.issuer})</span>}
+                {cert.issuer && <span className="opacity-70 text-xs">({cert.issuer})</span>}
               </button>
             ))}
           </div>
@@ -4758,7 +4758,7 @@ function AchievementsStep({
                       variant="ghost"
                       size="sm"
                       onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
-                      className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                      className="h-6 px-2 text-xs text-ink-muted hover:text-ink hover:bg-neutral-100"
                     >
                       <ClipboardCheck className="size-3 text-emerald-600" />
                       <span>Grammar</span>
@@ -4951,7 +4951,7 @@ function ProjectsStep({
                       variant="ghost"
                       size="sm"
                       onClick={() => onOpenGrammarCheck(entry.description, (fixed) => updateEntry(entry.id, 'description', fixed))}
-                      className="h-6 px-2 text-[11px] text-ink-muted hover:text-ink hover:bg-neutral-100"
+                      className="h-6 px-2 text-xs text-ink-muted hover:text-ink hover:bg-neutral-100"
                     >
                       <ClipboardCheck className="size-3 text-emerald-600" />
                       <span>Grammar</span>
@@ -5271,7 +5271,7 @@ function CustomSectionsStep({ entries, onChange }: { entries: CustomSectionEntry
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium text-ink-muted">Title</label>
+                        <label className="mb-1 block text-xs font-medium text-ink-muted">Title</label>
                         <Input
                           value={item.title}
                           onChange={(e) => updateItem(section.id, item.id, 'title', e.target.value)}
@@ -5280,7 +5280,7 @@ function CustomSectionsStep({ entries, onChange }: { entries: CustomSectionEntry
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium text-ink-muted">Description</label>
+                        <label className="mb-1 block text-xs font-medium text-ink-muted">Description</label>
                         <Input
                           value={item.description}
                           onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}

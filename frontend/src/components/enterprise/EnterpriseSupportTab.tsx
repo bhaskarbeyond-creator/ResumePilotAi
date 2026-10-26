@@ -150,7 +150,7 @@ export function EnterpriseSupportTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Grant ID</th>
                     <th className="py-3 px-3">Business Justification</th>
                     <th className="py-3 px-3">Duration</th>
@@ -167,7 +167,7 @@ export function EnterpriseSupportTab() {
                       <td className="py-3 px-3 text-ink-muted">{g.durationHours} hours</td>
                       <td className="py-3 px-3">
                         <span className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold',
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                           g.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600',
                         )}>
                           {g.status}

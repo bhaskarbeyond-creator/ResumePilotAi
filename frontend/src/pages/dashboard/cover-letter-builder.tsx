@@ -287,7 +287,7 @@ function CoverLetterA4Paper({
             <div className="md:col-span-1 space-y-4 rounded-xl bg-slate-50 border border-slate-200/90 p-4 text-xs text-slate-600">
               {parts.recipient.length > 0 && (
                 <div className="space-y-1">
-                  <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">To</p>
+                  <p className="font-bold uppercase tracking-wider text-xs text-slate-400">To</p>
                   <p className="font-semibold text-slate-900">{record.recipientName || 'Hiring Team'}</p>
                   {record.companyName && <p>{record.companyName}</p>}
                   {record.companyAddress && <p>{record.companyAddress}</p>}
@@ -298,7 +298,7 @@ function CoverLetterA4Paper({
               )}
               {parts.sender.length > 0 && (
                 <div className="space-y-1 pt-3 border-t border-slate-200">
-                  <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">From</p>
+                  <p className="font-bold uppercase tracking-wider text-xs text-slate-400">From</p>
                   <p className="font-semibold text-slate-900">{fullName}</p>
                   {record.candidateEmail && <p className="break-all">{record.candidateEmail}</p>}
                   {record.candidatePhone && <p>{record.candidatePhone}</p>}
@@ -326,7 +326,7 @@ function CoverLetterA4Paper({
             {parts.sender.slice(1).length > 0 && (
               <div className="flex flex-wrap gap-1.5 text-xs text-slate-600">
                 {parts.sender.slice(1).map((line, idx) => (
-                  <span key={idx} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                  <span key={idx} className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                     {line}
                   </span>
                 ))}
@@ -868,14 +868,14 @@ export function CoverLetterBuilderPage() {
                     <div className="flex w-full items-center justify-between">
                       <span className="font-semibold text-sm text-ink">{tpl.name}</span>
                       <span className={cn(
-                        'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                        'rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider',
                         isSelected ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600',
                       )}>
                         {tpl.badge}
                       </span>
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed">{tpl.description}</p>
-                    <span className="text-[11px] font-medium text-brand-700 mt-1">
+                    <span className="text-xs font-medium text-brand-700 mt-1">
                       {isSelected ? '✓ Active Template' : 'Click to select'}
                     </span>
                   </button>

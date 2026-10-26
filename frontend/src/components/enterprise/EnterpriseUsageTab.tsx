@@ -93,33 +93,33 @@ export function EnterpriseUsageTab() {
           <CardContent className="p-5 pt-0">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div className="p-4 rounded-xl border border-edge bg-surface/40">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                   Total Inferences
                 </span>
                 <div className="mt-2 text-2xl font-black text-ink">
                   {totalRequests.toLocaleString()}
                 </div>
-                <div className="text-[11px] text-ink-muted mt-1">Across all workspace seats</div>
+                <div className="text-xs text-ink-muted mt-1">Across all workspace seats</div>
               </div>
 
               <div className="p-4 rounded-xl border border-edge bg-surface/40">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                   Tokens Consumed
                 </span>
                 <div className="mt-2 text-2xl font-black text-ink">
                   {totalTokens.toLocaleString()}
                 </div>
-                <div className="text-[11px] text-ink-muted mt-1">Prompt & synthesis tokens</div>
+                <div className="text-xs text-ink-muted mt-1">Prompt & synthesis tokens</div>
               </div>
 
               <div className="p-4 rounded-xl border border-edge bg-surface/40">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                   Active Operators
                 </span>
                 <div className="mt-2 text-2xl font-black text-ink">
                   {byUser.length || 1}
                 </div>
-                <div className="text-[11px] text-ink-muted mt-1">Distinct user principals</div>
+                <div className="text-xs text-ink-muted mt-1">Distinct user principals</div>
               </div>
             </div>
           </CardContent>
@@ -151,7 +151,7 @@ export function EnterpriseUsageTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Principal Identity</th>
                     <th className="py-3 px-3">Email Address</th>
                     <th className="py-3 px-3 text-right">Inference Executions</th>

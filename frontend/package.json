@@ -16,7 +16,9 @@
     "ux:audit": "node scripts/ux-audit.mjs",
     "a11y:contrast": "node scripts/contrast-audit.mjs",
     "verify:ux": "node scripts/ux-audit.mjs && node scripts/contrast-audit.mjs",
-    "perf:budgets": "lhci autorun"
+    "perf:budgets": "lhci autorun",
+    "test:ux:auth": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/auth-screens-ux.spec.ts",
+    "test:ux:admin": "PLAYWRIGHT_SKIP_ENGINE=1 playwright test tests/admin-console-ux.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

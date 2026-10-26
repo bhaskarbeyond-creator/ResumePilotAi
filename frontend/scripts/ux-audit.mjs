@@ -34,7 +34,10 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const TARGETS = ['src/components/admin', 'src/pages/admin'];
+// The auth surface was added after the console: the login page is the first screen an
+// operator meets, and the axe sweep found a 32px password-reveal control there that this
+// script would have caught if it had been in scope.
+const TARGETS = ['src/components/admin', 'src/pages/admin', 'src/pages/auth', 'src/components/auth'];
 const AS_JSON = process.argv.includes('--json');
 
 /** Element names that accept user interaction. */
@@ -53,6 +56,16 @@ const TARGET_CLASS = /\b(min-h-1[1-9]|h-1[1-9]|min-w-1[1-9]|size-1[1-9]|py-3|py-
  * viewport sideways.
  */
 const FIXED_WIDTH = /(?<!min-)\bw-\[(\d{3,4})px\]/g;
+
+/** Fixed heights below the 44px bar that are not raised at mobile widths. */
+const FIXED_SHORT = /(?<!min-)\b(?:h|size)-(?:[0-9]|10)\b(?!\s*sm:)/;
+
+/**
+ * Elements whose own box is legitimately smaller than 44px because a larger target wraps
+ * them: a checkbox/radio inside a label, and a hidden input. The wrapping label is what a
+ * pointer hits, and `index.css` gives it the 44px floor at mobile widths.
+ */
+const SMALL_TARGET_OK = /type="(?:checkbox|radio|hidden|range)"/;
 const MIN_WIDTH = /\bmin-w-\[(\d{3,4})px\]/g;
 
 /** @returns {string[]} every .tsx file under the targets */
@@ -87,7 +100,10 @@ function interactiveTags(source) {
   const found = [];
   lines.forEach((text, index) => {
     for (const element of INTERACTIVE) {
-      const pattern = new RegExp(`<${element}(\\s|>|/)`, 'g');
+      // `$` matters: a multi-line opening tag ends its first line with the element name
+      // and nothing else (`<button` then newline). Without it the scanner silently skipped
+      // most real controls — the failure mode a regex audit has to be tested for.
+      const pattern = new RegExp(`<${element}(\\s|>|/|$)`, 'g');
       if (!pattern.test(text)) continue;
       // Only tags that open and close on one line can be judged this way; a multi-line
       // opening tag is attributed to its first line and its attributes are read from the
@@ -115,18 +131,27 @@ for (const target of TARGETS) {
 
     for (const tag of interactiveTags(source)) {
       const multiline = tag.tag;
-      if (!TARGET_CLASS.test(multiline)) {
-        findings.targetSize.push({ file: name, line: tag.line, element: tag.element });
+
+      // Target size: the project-level `@media (max-width: 767px)` rule in index.css sets a
+      // 44px minimum on every control type, so a control only fails when it *opts out* —
+      // an explicit height class below 44 that is not raised at mobile widths. The rendered
+      // box is measured for real at 320/480 in `admin-console-ux.spec.ts` and
+      // `auth-screens-ux.spec.ts`; this rule catches the opt-out before it ships.
+      const tooShort = FIXED_SHORT.test(multiline) && !SMALL_TARGET_OK.test(multiline);
+      if (tooShort && !TARGET_CLASS.test(multiline)) {
+        findings.targetSize.push({ file: name, line: tag.line, element: tag.element, rule: 'explicit height below 44px without a min-h-11 override' });
       }
-      if (!/focus-visible:/.test(multiline) && tag.element !== 'input') {
-        // `input` is excluded only when it is a custom class list; native inputs get the
-        // global `:focus-visible` outline from index.css. Buttons do not.
-        findings.focus.push({ file: name, line: tag.line, element: tag.element });
+
+      // Focus: `:focus-visible` is a global rule (`index.css:208`), so a class per element
+      // is unnecessary. What must never happen is an element that removes the ring — the
+      // `outline-none`/`outline-0` utility without a replacement ring nearby.
+      if (/outline-(none|0)\b/.test(multiline) && !/focus(-visible)?:(ring|outline|shadow)/.test(multiline)) {
+        findings.focus.push({ file: name, line: tag.line, element: tag.element, rule: 'focus ring removed without a replacement' });
       }
     }
 
     lines.forEach((text, index) => {
-      if (/text-\[(9|10)px\]/.test(text)) findings.textSize.push({ file: name, line: index + 1, text: text.trim().slice(0, 120) });
+      if (/text-\[(9|10|11)px\]/.test(text)) findings.textSize.push({ file: name, line: index + 1, text: text.trim().slice(0, 120) });
       for (const match of text.matchAll(FIXED_WIDTH)) {
         if (Number(match[1]) > 320) findings.width.push({ file: name, line: index + 1, width: Number(match[1]) });
       }
@@ -152,10 +177,10 @@ findings.totals = {
 const report = {
   generatedAt: new Date().toISOString(),
   rules: {
-    targetSize: 'interactive elements carry a >=44px minimum (min-h-11 / h-11 / size-11 or larger)',
-    textSize: 'no text below 12px (text-[9px] / text-[10px] are refused)',
-    focus: 'buttons and links carry focus-visible styling',
-    width: 'no fixed pixel width above 320px inside the admin plane',
+    targetSize: 'no interactive element pins a height below 44px; the 44px floor itself is the global @media (max-width: 767px) rule in index.css, and the rendered box is measured in Playwright at 320/480',
+    textSize: 'no text below 12px (text-[9px] / text-[10px] / text-[11px] are refused)',
+    focus: 'no element removes the focus ring without a replacement; the ring itself is the global :focus-visible rule in index.css',
+    width: 'no fixed pixel width above 320px inside the admin/console/auth plane',
   },
   findings,
 };

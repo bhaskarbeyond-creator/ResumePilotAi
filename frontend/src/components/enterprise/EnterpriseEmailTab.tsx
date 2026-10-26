@@ -194,7 +194,7 @@ export function EnterpriseEmailTab() {
               </div>
             </div>
 
-            <div className="border-t border-edge/60 pt-3 text-[11px] text-ink-muted">
+            <div className="border-t border-edge/60 pt-3 text-xs text-ink-muted">
               <div>Sender: {senderName}</div>
               <div className="opacity-70 mt-0.5">{footerText}</div>
             </div>

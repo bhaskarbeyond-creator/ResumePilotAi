@@ -56,7 +56,7 @@ export function KeyPoolTab() {
                 >
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-ink">{p.name}</div>
-                    <div className="text-[11px] font-mono text-ink-secondary mt-0.5">
+                    <div className="text-xs font-mono text-ink-secondary mt-0.5">
                       {maskedKeys[p.id] || '••••••••'} ({p.keysCount} key
                       {p.keysCount === 1 ? '' : 's'})
                     </div>

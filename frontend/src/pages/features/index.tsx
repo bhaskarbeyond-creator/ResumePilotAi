@@ -169,7 +169,7 @@ export function FeaturesPage() {
                     <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
                       <Icon className="size-5" />
                     </div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-0.5 rounded">
+                    <span className="text-xs font-bold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-0.5 rounded">
                       {feat.tag}
                     </span>
                   </div>

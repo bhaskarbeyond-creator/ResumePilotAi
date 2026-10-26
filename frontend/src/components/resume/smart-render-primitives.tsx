@@ -117,7 +117,7 @@ export function SectionTitle({
     return (
       <h2 className="mb-2.5 flex items-center gap-2">
         <span
-          className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white"
+          className="rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.14em] text-white"
           style={{ backgroundColor: palette.primary }}
         >
           {title}
@@ -131,7 +131,7 @@ export function SectionTitle({
     // characters: text extraction (ATS/copy) must yield the plain heading.
     return (
       <h2
-        className="mb-2.5 flex items-center gap-2 border-x-2 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.18em]"
+        className="mb-2.5 flex items-center gap-2 border-x-2 px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.18em]"
         style={{ color: palette.primary, borderColor: palette.primary }}
       >
         <span className="whitespace-nowrap">{title}</span>
@@ -143,7 +143,7 @@ export function SectionTitle({
   if (divider === 'plain') {
     return (
       <h2
-        className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em]"
+        className="mb-2 text-xs font-bold uppercase tracking-[0.16em]"
         style={{ color: palette.primary }}
       >
         {title}
@@ -230,7 +230,7 @@ export function FlowItemRenderer({
         <SectionTitle title={item.title} meta={meta} palette={palette} titleStyle={layout?.titleStyle} />
       )}
       {!item.title && item.continued && item.sectionLabel && (
-        <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
+        <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
           {item.sectionLabel} (continued)
         </div>
       )}
@@ -262,7 +262,7 @@ export function FlowItemRenderer({
             {item.data.gpa && <span className="text-neutral-400"> (GPA: {item.data.gpa})</span>}
           </div>
           {formatDateRange(item.data.startDate, item.data.endDate) && (
-            <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">
+            <span className="text-xs text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">
               {formatDateRange(item.data.startDate, item.data.endDate)}
             </span>
           )}
@@ -275,11 +275,11 @@ export function FlowItemRenderer({
           <div className="flex justify-between items-baseline">
             <span className="font-bold text-neutral-900">{item.data.title}</span>
             {item.data.liveUrl && (
-              <span className="text-[10px] text-neutral-400 font-mono">{item.data.liveUrl}</span>
+              <span className="text-xs text-neutral-400 font-mono">{item.data.liveUrl}</span>
             )}
           </div>
           {item.data.technologies && (
-            <div className="text-[11px] font-semibold mt-0.5" style={{ color: palette.primary }}>
+            <div className="text-xs font-semibold mt-0.5" style={{ color: palette.primary }}>
               {item.data.technologies}
             </div>
           )}
@@ -334,7 +334,7 @@ export function FlowItemRenderer({
                 <span className="font-bold text-neutral-900">{c.name || c.title}</span>
                 {c.issuer && <span className="text-neutral-500"> · {c.issuer}</span>}
               </div>
-              {c.date && <span className="text-[11px] text-neutral-500">{c.date}</span>}
+              {c.date && <span className="text-xs text-neutral-500">{c.date}</span>}
             </div>
           ))}
         </div>
@@ -367,13 +367,13 @@ export function FlowItemRenderer({
         <div className="text-xs mb-2.5 p-3 rounded-lg border border-neutral-200/70 bg-neutral-50/60">
           <div className="font-bold text-neutral-900">{item.data.name || item.data.referenceName || 'Reference'}</div>
           {(item.data.position || item.data.title) && (
-            <div className="text-neutral-600 text-[11px] mt-0.5">
+            <div className="text-neutral-600 text-xs mt-0.5">
               {item.data.position || item.data.title}
               {item.data.company && ` · ${item.data.company}`}
             </div>
           )}
           {(item.data.email || item.data.phone) && (
-            <div className="text-neutral-500 text-[10px] mt-0.5">
+            <div className="text-neutral-500 text-xs mt-0.5">
               {item.data.email}{item.data.email && item.data.phone ? ' · ' : ''}{item.data.phone}
             </div>
           )}
@@ -404,7 +404,7 @@ export function ExperienceItemRenderer({
   if (timeline === 'date-rail') {
     return (
       <div className="grid grid-cols-4 gap-4 text-xs mb-3">
-        <div className="col-span-1 text-right font-mono text-[11px] font-semibold text-neutral-500 pt-0.5">
+        <div className="col-span-1 text-right font-mono text-xs font-semibold text-neutral-500 pt-0.5">
           {dateRange}
         </div>
         <div className="col-span-3">
@@ -425,12 +425,12 @@ export function ExperienceItemRenderer({
         <div className="flex justify-between items-baseline mb-1">
           <span className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</span>
           {dateRange && (
-            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-neutral-200/80 text-neutral-700 shrink-0 ml-auto whitespace-nowrap pl-2">
+            <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-neutral-200/80 text-neutral-700 shrink-0 ml-auto whitespace-nowrap pl-2">
               {dateRange}
             </span>
           )}
         </div>
-        <div className="text-[11px] font-medium text-neutral-500 mb-1.5 font-mono">
+        <div className="text-xs font-medium text-neutral-500 mb-1.5 font-mono">
           @{exp.company} {exp.location ? `// ${exp.location}` : ''}
         </div>
         <RichTextContent content={exp.description} className="text-neutral-700 leading-normal" />
@@ -448,7 +448,7 @@ export function ExperienceItemRenderer({
         />
         <div className="flex justify-between items-baseline mb-0.5">
           <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
-          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
+          {dateRange && <span className="text-xs text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -468,7 +468,7 @@ export function ExperienceItemRenderer({
         />
         <div className="flex justify-between items-baseline mb-0.5">
           <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
-          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
+          {dateRange && <span className="text-xs text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -484,7 +484,7 @@ export function ExperienceItemRenderer({
       <div className="pl-3 border-l-2 mb-3 text-xs" style={{ borderColor: palette.secondary }}>
         <div className="flex justify-between items-baseline mb-0.5">
           <h3 className="min-w-0 break-words font-bold text-neutral-900">{exp.position}</h3>
-          {dateRange && <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
+          {dateRange && <span className="text-xs text-neutral-500 font-medium shrink-0 ml-auto whitespace-nowrap pl-2">{dateRange}</span>}
         </div>
         <div className="text-neutral-600 font-medium mb-1">
           {exp.company} {exp.location ? `· ${exp.location}` : ''}
@@ -498,7 +498,7 @@ export function ExperienceItemRenderer({
   if (timeline === 'bare') {
     return (
       <div className="mb-3 text-xs grid grid-cols-[92px_1fr] gap-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 pt-0.5">
+        <div className="text-xs font-semibold uppercase tracking-wider text-neutral-500 pt-0.5">
           {dateRange}
         </div>
         <div>
@@ -506,7 +506,7 @@ export function ExperienceItemRenderer({
             <span className="font-semibold text-neutral-900">{exp.position}</span>
             <span className="text-neutral-500"> · {exp.company}</span>
           </div>
-          {exp.location && <div className="text-[10px] italic text-neutral-500">{exp.location}</div>}
+          {exp.location && <div className="text-xs italic text-neutral-500">{exp.location}</div>}
           <RichTextContent content={exp.description} className="text-neutral-700 leading-snug mt-0.5" />
         </div>
       </div>
@@ -520,9 +520,9 @@ export function ExperienceItemRenderer({
         <h3 className="min-w-0 break-words font-bold text-neutral-900">
           {exp.position} — <span className="font-semibold text-neutral-700">{exp.company}</span>
         </h3>
-        <span className="text-[11px] text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
+        <span className="text-xs text-neutral-500 font-medium shrink-0 ml-2">{dateRange}</span>
       </div>
-      {exp.location && <div className="text-[11px] text-neutral-500 mb-1">{exp.location}</div>}
+      {exp.location && <div className="text-xs text-neutral-500 mb-1">{exp.location}</div>}
       <RichTextContent content={exp.description} className="text-neutral-700 leading-normal" />
     </div>
   );
@@ -551,7 +551,7 @@ export function SidebarSkillsRenderer({
           <span
             key={idx}
             className={cn(
-              "rounded-md px-2 py-0.5 text-[10px] font-semibold border",
+              "rounded-md px-2 py-0.5 text-xs font-semibold border",
               isDark
                 ? "bg-white/10 text-white border-white/20"
                 : "bg-neutral-100 text-neutral-800 border-neutral-300"
@@ -572,7 +572,7 @@ export function SidebarSkillsRenderer({
           const pct = typeof s === 'object' && s.rating ? s.rating * 20 : 85 + (idx % 3) * 5;
           return (
             <div key={idx} className="space-y-0.5">
-              <div className="flex justify-between text-[10px] font-medium">
+              <div className="flex justify-between text-xs font-medium">
                 <span>{name}</span>
                 <span className={isDark ? "text-white/60" : "text-neutral-400"}>{pct}%</span>
               </div>
@@ -599,7 +599,7 @@ export function SidebarSkillsRenderer({
           const name = typeof s === 'string' ? s : (s.name || s.skillName || '');
           const rating = typeof s === 'object' && s.rating ? s.rating : (idx % 3 === 0 ? 5 : 4);
           return (
-            <div key={idx} className="flex items-center justify-between text-[10px]">
+            <div key={idx} className="flex items-center justify-between text-xs">
               <span className="font-medium truncate pr-2">{name}</span>
               <div className="flex gap-1 shrink-0">
                 {[1, 2, 3, 4, 5].map((d) => (
@@ -639,7 +639,7 @@ export function SidebarSkillsRenderer({
         <span
           key={idx}
           className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-medium",
+            "rounded-full px-2 py-0.5 text-xs font-medium",
             isDark ? "bg-white/15 text-white" : "bg-neutral-100 text-neutral-800 border border-neutral-200"
           )}
         >
@@ -686,7 +686,7 @@ export function SidebarLanguagesRenderer({
           const langName = l.name || l.language || (typeof l === 'string' ? l : '');
           const dotsCount = getLanguageRating(l);
           return (
-            <div key={l.id || idx} className="flex items-center justify-between text-[10px]">
+            <div key={l.id || idx} className="flex items-center justify-between text-xs">
               <span className="font-medium truncate pr-2">{langName}</span>
               <div className="flex gap-1 shrink-0">
                 {[1, 2, 3, 4, 5].map((d) => (
@@ -711,7 +711,7 @@ export function SidebarLanguagesRenderer({
       {languages.map((l: any, idx: number) => (
         <div key={l.id || idx} className="flex justify-between items-baseline">
           <span className="font-medium">{l.name || l.language || (typeof l === 'string' ? l : '')}</span>
-          <span className={cn("text-[10px]", isDark ? "text-white/70" : "text-neutral-500")}>
+          <span className={cn("text-xs", isDark ? "text-white/70" : "text-neutral-500")}>
             {l.proficiency || l.level || ''}
           </span>
         </div>

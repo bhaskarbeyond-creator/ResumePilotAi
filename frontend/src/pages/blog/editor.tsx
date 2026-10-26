@@ -264,7 +264,7 @@ export function BlogEditorPage() {
               </button>
             </div>
 
-            <span className="text-[11px] text-ink-muted hidden sm:inline">
+            <span className="text-xs text-ink-muted hidden sm:inline">
               Markdown syntax supported
             </span>
           </div>
@@ -360,7 +360,7 @@ export function BlogEditorPage() {
 
                   {/* Google Preview Snippet */}
                   <div className="rounded-xl border border-border bg-canvas/50 p-4">
-                    <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block mb-2">
+                    <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block mb-2">
                       Google Search Preview
                     </span>
                     <div className="text-blue-600 dark:text-blue-400 text-base font-medium truncate">
@@ -444,7 +444,7 @@ export function BlogEditorPage() {
                     <span
                       key={tag}
                       onClick={() => handleRemoveTag(tag)}
-                      className="cursor-pointer rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] text-ink-muted hover:bg-error-50 hover:text-error-600 transition-colors"
+                      className="cursor-pointer rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-xs text-ink-muted hover:bg-error-50 hover:text-error-600 transition-colors"
                       title="Click to remove"
                     >
                       #{tag} ×

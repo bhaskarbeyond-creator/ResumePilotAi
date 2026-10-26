@@ -186,7 +186,7 @@ export function AppShell({ children }: AppShellProps) {
                       <>
                         <span>{item.label}</span>
                         {item.badge !== undefined && item.badge > 0 && (
-                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
                             {item.badge > 99 ? '99+' : item.badge}
                           </span>
                         )}

@@ -190,10 +190,10 @@ export function AutocompleteInput({
       </div>
 
       {helperText && !error && (
-        <p className="text-[11px] text-ink-muted">{helperText}</p>
+        <p className="text-xs text-ink-muted">{helperText}</p>
       )}
       {error && (
-        <p className="text-[11px] font-medium text-error-600">{error}</p>
+        <p className="text-xs font-medium text-error-600">{error}</p>
       )}
 
       {/* Autocomplete Dropdown List */}
@@ -217,7 +217,7 @@ export function AutocompleteInput({
                 }`}
               >
                 <span className="truncate pr-2">{item.text}</span>
-                <span className="shrink-0 flex items-center gap-1 text-[10px] opacity-70">
+                <span className="shrink-0 flex items-center gap-1 text-xs opacity-70">
                   {item.source === 'ai' && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
                       <Sparkles className="size-2.5 text-purple-600" />

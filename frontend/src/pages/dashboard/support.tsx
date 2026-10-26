@@ -156,7 +156,7 @@ export function SupportPage() {
               >
                 <Icon className="size-3.5" />
                 <span className="capitalize">{filter.replace('_', ' ')}</span>
-                <span className="inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold bg-black/10">
+                <span className="inline-flex items-center justify-center size-5 rounded-full text-xs font-bold bg-black/10">
                   {count}
                 </span>
               </button>
@@ -191,7 +191,7 @@ export function SupportPage() {
               <p className="font-medium text-sm mb-1">
                 {searchQuery ? 'No tickets match your search.' : 'No support tickets yet.'}
               </p>
-              <p className="text-[11px]">
+              <p className="text-xs">
                 {searchQuery ? 'Try adjusting your search or filter.' : 'Create a ticket to get help from our support team.'}
               </p>
             </div>
@@ -217,11 +217,11 @@ export function SupportPage() {
                   </div>
                   <div className="text-xs font-medium text-ink line-clamp-1 mb-1.5">{ticket.subject}</div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', statusColor)}>
+                    <span className={cn('rounded px-1.5 py-0.5 text-xs font-semibold', statusColor)}>
                       <StatusIcon className="size-3 mr-0.5" />
                       {statusLabel}
                     </span>
-                    <span className="text-[10px] uppercase font-bold text-ink-muted">{ticket.priority}</span>
+                    <span className="text-xs uppercase font-bold text-ink-muted">{ticket.priority}</span>
                   </div>
                 </div>
               );
@@ -242,13 +242,13 @@ export function SupportPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {selectedTicket.status !== 'RESOLVED' && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border-amber-500/20">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 border-amber-500/20">
                         <Clock className="size-3 mr-0.5" />
                         Awaiting Response
                       </span>
                     )}
                     {selectedTicket.status === 'RESOLVED' && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
                         <CheckCircle2 className="size-3 mr-0.5" />
                         Resolved
                       </span>
@@ -262,7 +262,7 @@ export function SupportPage() {
                     const priorityCfg = getPriorityConfig(selectedTicket.priority);
                     const PriorityIcon = priorityCfg.icon;
                     return (
-                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border', priorityCfg.color)}>
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border', priorityCfg.color)}>
                         <PriorityIcon className="size-3" />
                         {priorityCfg.label}
                       </span>
@@ -272,7 +272,7 @@ export function SupportPage() {
                     const statusCfg = getStatusConfig(selectedTicket.status);
                     const StatusIcon = statusCfg.icon;
                     return (
-                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border', statusCfg.color)}>
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border', statusCfg.color)}>
                         <StatusIcon className="size-3" />
                         {statusCfg.label}
                       </span>
@@ -299,7 +299,7 @@ export function SupportPage() {
                           : 'bg-neutral-100 text-neutral-800 rounded-tl-sm'
                       )}
                     >
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-ink-muted mb-1">
+                      <div className="flex items-center justify-between text-xs font-semibold text-ink-muted mb-1">
                         <span>{msg.role === 'STAFF' ? 'Support Specialist' : 'You'}</span>
                         <span>{msg.createdAt}</span>
                       </div>

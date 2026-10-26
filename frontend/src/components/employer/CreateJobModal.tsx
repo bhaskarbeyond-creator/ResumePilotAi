@@ -276,7 +276,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
             <div>
               <h2 id="create-job-modal-title" className="text-base font-bold text-ink flex items-center gap-2">
                 Post Job Requisition
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
+                <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
                   Full ATS Parity
                 </span>
               </h2>
@@ -590,7 +590,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                       type="button"
                       onClick={() => toggleBenefit(item)}
                       className={cn(
-                        'text-[11px] px-2.5 py-1 rounded-full border transition-all flex items-center gap-1 font-medium',
+                        'text-xs px-2.5 py-1 rounded-full border transition-all flex items-center gap-1 font-medium',
                         active
                           ? 'bg-accent text-white border-accent shadow-xs'
                           : 'bg-canvas-soft border-edge text-ink-muted hover:text-ink hover:border-edge-strong'
@@ -636,7 +636,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                     <HelpCircle className="size-3.5 text-accent" />
                     <span>7. Custom Candidate Screening Questions</span>
                   </div>
-                  <p className="text-[11px] text-ink-muted mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     Applicants will answer these during job application submission
                   </p>
                 </div>
@@ -682,7 +682,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
 
                       <div className="flex items-center justify-between gap-4 pt-1">
                         <div className="flex items-center gap-2">
-                          <label className="text-[11px] text-ink-muted">Type:</label>
+                          <label className="text-xs text-ink-muted">Type:</label>
                           <select
                             value={q.type}
                             onChange={(e) => updateQuestion(q.id, { type: e.target.value as any })}
@@ -714,7 +714,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-edge bg-canvas-soft/80 flex items-center justify-between shrink-0">
-          <p className="text-[11px] text-ink-muted">
+          <p className="text-xs text-ink-muted">
             Posts to MariaDB jobs table with active status
           </p>
           <div className="flex items-center gap-2">

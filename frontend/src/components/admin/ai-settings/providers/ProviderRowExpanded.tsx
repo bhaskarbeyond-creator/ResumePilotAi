@@ -147,7 +147,7 @@ export function ProviderRowExpanded({ provider: p }: { provider: ProviderCatalog
                 className="w-full rounded-xl border border-border bg-surface p-2.5 text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-ink-muted">
+                <span className="text-xs text-ink-muted">
                   {poolDraftCount > 0
                     ? `${poolDraftCount} key(s) staged for server vault`
                     : 'Keys are never echoed in plaintext after save.'}

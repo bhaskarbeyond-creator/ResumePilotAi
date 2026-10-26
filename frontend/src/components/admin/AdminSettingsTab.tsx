@@ -100,7 +100,7 @@ export function AdminSettingsTab({ initialSection = 'modules' }: AdminSettingsTa
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-black text-ink tracking-tight">Platform Settings & Control Center</h2>
-            <span className="rounded-full bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2.5 py-0.5 text-[11px] font-black text-brand-700 dark:text-brand-300">
+            <span className="rounded-full bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 px-2.5 py-0.5 text-xs font-black text-brand-700 dark:text-brand-300">
               Live MariaDB Engine
             </span>
           </div>
@@ -545,7 +545,7 @@ function ModulesConfigPanel({ onToast }: { onToast: (type: 'success' | 'error' |
                     </div>
 
                     <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                      <span className="text-[11px] font-medium text-ink-muted">
+                      <span className="text-xs font-medium text-ink-muted">
                         State: <strong className={isEnabled ? 'text-emerald-600' : 'text-neutral-500'}>{isEnabled ? 'Active' : 'Deactivated'}</strong>
                       </span>
                       <button
@@ -1252,7 +1252,7 @@ function TemplatesLegalPanel({ onToast }: { onToast: (type: 'success' | 'error' 
           <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-border/60">
             <div>
               <span className="text-xs font-bold text-ink block">Cookie Consent Banner</span>
-              <span className="text-[11px] text-ink-muted">Prompts visitors to accept cookies and privacy terms before analytics tracking starts.</span>
+              <span className="text-xs text-ink-muted">Prompts visitors to accept cookies and privacy terms before analytics tracking starts.</span>
             </div>
             <button
               type="button"

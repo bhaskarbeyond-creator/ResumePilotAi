@@ -320,16 +320,16 @@ export function AdminConfigTab() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h4 className="text-sm font-semibold text-ink">{entry.label}</h4>
-                            <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-ink-secondary">
+                            <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-ink-secondary">
                               {entry.key}
                             </code>
                             {entry.restartRequired && (
-                              <span className="rounded bg-warning-50 px-1.5 py-0.5 text-[11px] font-semibold text-warning-700">
+                              <span className="rounded bg-warning-50 px-1.5 py-0.5 text-xs font-semibold text-warning-700">
                                 restart required
                               </span>
                             )}
                             {entry.audit === 'elevated' && (
-                              <span className="rounded bg-info-50 px-1.5 py-0.5 text-[11px] font-semibold text-info-700">
+                              <span className="rounded bg-info-50 px-1.5 py-0.5 text-xs font-semibold text-info-700">
                                 reason required
                               </span>
                             )}

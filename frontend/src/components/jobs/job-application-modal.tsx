@@ -339,7 +339,7 @@ export function JobApplicationModal({ isOpen, onClose, job, onApplied }: JobAppl
                         <div className="font-semibold text-xs text-ink truncate">
                           {r.title || r.name || 'Master Resume'}
                         </div>
-                        <div className="text-[11px] text-ink-muted truncate">
+                        <div className="text-xs text-ink-muted truncate">
                           {r.occupation || 'Candidate CV'}
                         </div>
                       </div>
@@ -453,7 +453,7 @@ export function JobApplicationModal({ isOpen, onClose, job, onApplied }: JobAppl
                 placeholder="Briefly describe why your experience makes you an exceptional match for this requisition…"
                 className="w-full rounded-xl border border-border bg-surface p-3 text-xs text-ink placeholder:text-ink-muted focus-visible:outline-brand-500"
               />
-              <div className="mt-1 flex justify-end text-[11px] text-ink-muted">
+              <div className="mt-1 flex justify-end text-xs text-ink-muted">
                 <span
                   className={
                     coverLetter.trim().length >= 50 && coverLetter.trim().length <= 1000

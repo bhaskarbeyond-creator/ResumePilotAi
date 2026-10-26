@@ -282,7 +282,7 @@ export function PricingPage() {
             <span className={cn('text-sm font-medium', annualBilling ? 'text-ink font-semibold' : 'text-ink-muted')}>
               Annual Billing
             </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Save 25%
             </span>
           </div>
@@ -305,7 +305,7 @@ export function PricingPage() {
                 )}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-accent text-white shadow-sm flex items-center gap-1">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-accent text-white shadow-sm flex items-center gap-1">
                     <Zap className="size-3 fill-current" /> Most Popular
                   </div>
                 )}
@@ -395,7 +395,7 @@ export function PricingPage() {
             {COMPARISON.map((category) => (
               <tbody key={category.category}>
                 <tr className="bg-canvas-soft/40 border-b border-edge">
-                  <td colSpan={5} className="p-3 font-bold text-ink uppercase tracking-wider text-[10px]">
+                  <td colSpan={5} className="p-3 font-bold text-ink uppercase tracking-wider text-xs">
                     {category.category}
                   </td>
                 </tr>

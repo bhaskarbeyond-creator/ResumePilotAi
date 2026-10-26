@@ -208,7 +208,7 @@ export function EnterpriseTeamsTab() {
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-ink">{t.name}</h4>
                         <span className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-bold',
+                          'px-2 py-0.5 rounded text-xs font-bold',
                           isArchived ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600',
                         )}>
                           {t.status || 'ACTIVE'}

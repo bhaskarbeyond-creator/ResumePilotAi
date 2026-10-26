@@ -112,7 +112,7 @@ export function DiscoveryTab() {
                       <td className="py-2 pl-3">
                         <span
                           className={cn(
-                            'rounded-md px-2 py-0.5 text-[11px] font-semibold',
+                            'rounded-md px-2 py-0.5 text-xs font-semibold',
                             m.catalogStatus === 'fresh'
                               ? 'bg-success-50 text-success-700'
                               : 'bg-warning-50 text-warning-700'
@@ -200,9 +200,9 @@ export function DiscoveryTab() {
                       <div className="text-xs font-mono font-bold text-ink truncate">
                         {m.id}
                       </div>
-                      <div className="text-[11px] text-ink-muted">{m.providerId}</div>
+                      <div className="text-xs text-ink-muted">{m.providerId}</div>
                     </div>
-                    <span className="text-[11px] font-semibold text-ink-secondary shrink-0">
+                    <span className="text-xs font-semibold text-ink-secondary shrink-0">
                       {m.catalogStatus || 'cached'}
                     </span>
                   </div>

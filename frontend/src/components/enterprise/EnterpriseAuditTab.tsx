@@ -180,7 +180,7 @@ export function EnterpriseAuditTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-edge text-ink-muted font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-3">Timestamp</th>
                     <th className="py-3 px-3">Action</th>
                     <th className="py-3 px-3">Target Entity</th>
@@ -216,7 +216,7 @@ export function EnterpriseAuditTab() {
                         <td className="py-3 px-3 text-ink">
                           <div className="font-semibold">{evt.actorEmail || evt.actor}</div>
                           {evt.actorEmail && (
-                            <div className="text-[10px] font-mono text-ink-muted">{evt.actor}</div>
+                            <div className="text-xs font-mono text-ink-muted">{evt.actor}</div>
                           )}
                         </td>
                         <td className="py-3 px-3 font-mono text-ink-muted">
@@ -225,7 +225,7 @@ export function EnterpriseAuditTab() {
                         <td className="py-3 px-3">
                           <span
                             className={cn(
-                              'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold',
+                              'inline-flex items-center px-2 py-0.5 rounded text-xs font-bold',
                               sev === 'INFO' && 'bg-accent-soft text-accent',
                               sev === 'WARN' && 'bg-amber-500/10 text-amber-600',
                               (sev === 'CRITICAL' || sev === 'SECURITY') && 'bg-rose-500/10 text-rose-600',
@@ -296,7 +296,7 @@ export function EnterpriseAuditTab() {
             {selectedEvent.details && (
               <div className="space-y-1.5 pt-2 border-t border-edge">
                 <span className="font-bold text-ink block">Payload Metadata</span>
-                <pre className="p-3 rounded-lg bg-surface border border-edge font-mono text-[11px] text-ink overflow-x-auto">
+                <pre className="p-3 rounded-lg bg-surface border border-edge font-mono text-xs text-ink overflow-x-auto">
                   {JSON.stringify(selectedEvent.details, null, 2)}
                 </pre>
               </div>

@@ -143,7 +143,7 @@ export function SmartResumeDocument({
           </div>
 
           {/* Master Page Footer */}
-          <footer className="page-footer border-t border-neutral-200/60 pt-2 px-8 pb-3 text-[10px] text-neutral-400 flex justify-between items-center shrink-0">
+          <footer className="page-footer border-t border-neutral-200/60 pt-2 px-8 pb-3 text-xs text-neutral-400 flex justify-between items-center shrink-0">
             <span>
               {fullName}
             </span>
@@ -216,7 +216,7 @@ function ContinuationPageContent({
           <span className="font-extrabold text-sm text-neutral-900 tracking-tight">{fullName}</span>
           <span className="text-xs text-neutral-500 font-medium">· {resume.heading?.title}</span>
         </div>
-        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
           Page {page.pageNumber} of {totalPages}
         </span>
       </header>
@@ -393,7 +393,7 @@ function Cover3Layout({ resume, palette }: { resume: any; palette: any }) {
 
         <div className="w-60 shrink-0 border-l border-neutral-200 pl-6 space-y-6 text-xs">
           <div className="p-3.5 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1">
-            <h2 className="font-bold text-[11px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
+            <h2 className="font-bold text-xs uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
               Recipient
             </h2>
             <p className="font-bold text-neutral-900">Hiring Committee</p>
@@ -403,7 +403,7 @@ function Cover3Layout({ resume, palette }: { resume: any; palette: any }) {
           </div>
 
           <div className="p-3.5 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1">
-            <h2 className="font-bold text-[11px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
+            <h2 className="font-bold text-xs uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
               Sender Details
             </h2>
             <p className="font-bold text-neutral-900">{heading.firstName} {heading.lastName}</p>

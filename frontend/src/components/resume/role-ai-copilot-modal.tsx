@@ -246,7 +246,7 @@ export function RoleAiCopilotModal({
             <div>
               <DialogTitle className="text-base sm:text-lg font-bold text-ink flex items-center gap-2">
                 <span>AI Role Copilot</span>
-                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                <span className="text-xs uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
                   ATS Calibrated
                 </span>
               </DialogTitle>
@@ -353,7 +353,7 @@ export function RoleAiCopilotModal({
                 placeholder="Paste or write your experience notes here. AI will upgrade verbs, flow, and professional tone..."
                 className="text-xs leading-relaxed bg-white"
               />
-              <p className="text-[11px] text-ink-muted mt-1">
+              <p className="text-xs text-ink-muted mt-1">
                 AI will transform these rough facts into professional, active-voice resume bullets.
               </p>
             </div>
@@ -366,12 +366,12 @@ export function RoleAiCopilotModal({
                 <TrendingUp className="size-4 text-emerald-600" />
                 <span>Inject Measurable Facts (Metrics & Scale)</span>
               </div>
-              <p className="text-[11px] text-emerald-800">
+              <p className="text-xs text-emerald-800">
                 Resumes with numbers score 40% higher on ATS screens. Provide approximate figures below:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold text-emerald-950 block mb-0.5">Team / User Scale</label>
+                  <label className="text-xs font-bold text-emerald-950 block mb-0.5">Team / User Scale</label>
                   <Input
                     value={metricFacts.teamOrScale}
                     onChange={(e) => setMetricFacts({ ...metricFacts, teamOrScale: e.target.value })}
@@ -380,7 +380,7 @@ export function RoleAiCopilotModal({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-emerald-950 block mb-0.5">% Improvement / Gain</label>
+                  <label className="text-xs font-bold text-emerald-950 block mb-0.5">% Improvement / Gain</label>
                   <Input
                     value={metricFacts.percentageGain}
                     onChange={(e) => setMetricFacts({ ...metricFacts, percentageGain: e.target.value })}
@@ -389,7 +389,7 @@ export function RoleAiCopilotModal({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-emerald-950 block mb-0.5">Budget / Volume</label>
+                  <label className="text-xs font-bold text-emerald-950 block mb-0.5">Budget / Volume</label>
                   <Input
                     value={metricFacts.budgetOrRevenue}
                     onChange={(e) => setMetricFacts({ ...metricFacts, budgetOrRevenue: e.target.value })}
@@ -409,14 +409,14 @@ export function RoleAiCopilotModal({
                 <span>Target Job Description Alignment</span>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-blue-950 block mb-0.5">Target Job Title</label>
+                <label className="text-xs font-bold text-blue-950 block mb-0.5">Target Job Title</label>
                 <Input
                   value={targetJobRole}
                   onChange={(e) => setTargetJobRole(e.target.value)}
                   placeholder="e.g. Staff Distributed Systems Engineer"
                   className="text-xs bg-white mb-2"
                 />
-                <label className="text-[10px] font-bold text-blue-950 block mb-0.5">Paste Key Job Requirements (Optional)</label>
+                <label className="text-xs font-bold text-blue-950 block mb-0.5">Paste Key Job Requirements (Optional)</label>
                 <Textarea
                   rows={2}
                   value={jobDescription}
@@ -435,13 +435,13 @@ export function RoleAiCopilotModal({
                 <HelpCircle className="size-4 text-amber-600" />
                 <span>3 Guided Questions for {roleTitle || 'Your Position'}</span>
               </div>
-              <p className="text-[11px] text-amber-800">
+              <p className="text-xs text-amber-800">
                 Answer briefly in your own words. AI will turn these answers into verified resume bullets.
               </p>
               <div className="space-y-2.5">
                 {questions.map((q) => (
                   <div key={q.id}>
-                    <label className="text-[11px] font-semibold text-amber-950 block mb-1">{q.label}</label>
+                    <label className="text-xs font-semibold text-amber-950 block mb-1">{q.label}</label>
                     <Input
                       value={answers[q.id] || ''}
                       onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
@@ -470,8 +470,8 @@ export function RoleAiCopilotModal({
                       : 'border-border/80 bg-neutral-50/40 text-ink-secondary hover:bg-neutral-50'
                   )}
                 >
-                  <div className="font-bold text-[11px] text-ink">{tone.label}</div>
-                  <div className="text-[10px] text-ink-muted truncate">{tone.hint}</div>
+                  <div className="font-bold text-xs text-ink">{tone.label}</div>
+                  <div className="text-xs text-ink-muted truncate">{tone.hint}</div>
                 </button>
               ))}
             </div>

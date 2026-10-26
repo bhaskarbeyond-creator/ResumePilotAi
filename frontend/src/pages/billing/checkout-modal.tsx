@@ -469,17 +469,17 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
           {checkoutStep !== 3 && (
             <div className="flex items-center gap-2 mt-6 pt-4 border-t border-white/10 text-xs">
               <div className={cn('flex items-center gap-1.5 font-bold', checkoutStep === 1 ? 'text-white' : 'text-white/60')}>
-                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">1</span>
+                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
                 Plan & Details
               </div>
               <span className="text-white/30">→</span>
               <div className={cn('flex items-center gap-1.5 font-bold', checkoutStep === 2 ? 'text-white' : 'text-white/60')}>
-                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">2</span>
+                <span className="size-5 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
                 Payment Method
               </div>
               <span className="text-white/30">→</span>
               <div className="flex items-center gap-1.5 font-medium text-white/40">
-                <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-[11px]">3</span>
+                <span className="size-5 rounded-full bg-white/10 flex items-center justify-center text-xs">3</span>
                 Confirmation
               </div>
             </div>
@@ -525,7 +525,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                         )}
                       >
                         {p.popular && (
-                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-brand-600 text-white">
+                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full text-xs font-black uppercase bg-brand-600 text-white">
                             Popular
                           </span>
                         )}
@@ -533,7 +533,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                           <span className="block text-xs font-bold text-ink">{p.name}</span>
                           <span className="text-base font-extrabold text-brand-600 mt-1 block">
                             {formatMoney(convertedPrice)}
-                            <span className="text-[10px] font-medium text-ink-muted">/mo</span>
+                            <span className="text-xs font-medium text-ink-muted">/mo</span>
                           </span>
                         </div>
                       </button>
@@ -548,7 +548,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                   <Clock className="size-4 text-brand-600" />
                   <div>
                     <span className="text-xs font-bold text-ink block">Billing Duration</span>
-                    <span className="text-[11px] text-ink-muted">Annual plans include a 25% duration discount</span>
+                    <span className="text-xs text-ink-muted">Annual plans include a 25% duration discount</span>
                   </div>
                 </div>
 
@@ -572,7 +572,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                     )}
                   >
                     <span>Annual</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-700">
+                    <span className="px-1.5 py-0.2 rounded text-xs font-black bg-emerald-500/20 text-emerald-700">
                       -25%
                     </span>
                   </button>
@@ -689,7 +689,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                 {isIndia && (
                   <div>
                     <label htmlFor={`${formId}-taxId`} className="block text-xs font-medium text-ink mb-1">
-                      GSTIN / Business Tax ID <span className="text-ink-muted text-[11px]">(Optional for B2B input credit)</span>
+                      GSTIN / Business Tax ID <span className="text-ink-muted text-xs">(Optional for B2B input credit)</span>
                     </label>
                     <Input
                       id={`${formId}-taxId`}
@@ -753,13 +753,13 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                   {/* Quick Pills */}
                   {!appliedCoupon && (
                     <div className="flex items-center gap-2 flex-wrap pt-1">
-                      <span className="text-[11px] text-ink-muted">Quick Codes:</span>
+                      <span className="text-xs text-ink-muted">Quick Codes:</span>
                       {['SAVE20', 'WELCOME50', 'PROMO10'].map((chip) => (
                         <button
                           key={chip}
                           type="button"
                           onClick={() => handleApplyCoupon(chip)}
-                          className="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors cursor-pointer"
+                          className="px-2 py-0.5 rounded text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors cursor-pointer"
                         >
                           {chip}
                         </button>
@@ -928,7 +928,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                   <div className="p-4 rounded-xl border border-edge bg-canvas-soft/30 text-center space-y-2">
                     <Zap className="size-8 text-amber-500 mx-auto" />
                     <h5 className="text-xs font-bold text-ink">Fast Checkout via Razorpay</h5>
-                    <p className="text-[11px] text-ink-muted">
+                    <p className="text-xs text-ink-muted">
                       Supports instant Google Pay, PhonePe, Paytm UPI, Net Banking, and all major Indian cards.
                     </p>
                   </div>
@@ -938,7 +938,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                   <div className="p-4 rounded-xl border border-edge bg-canvas-soft/30 text-center space-y-2">
                     <Globe className="size-8 text-sky-600 mx-auto" />
                     <h5 className="text-xs font-bold text-ink">Secure PayPal Gateway</h5>
-                    <p className="text-[11px] text-ink-muted">
+                    <p className="text-xs text-ink-muted">
                       You will be prompted to authorize payment via your PayPal account or linked cards.
                     </p>
                   </div>
@@ -946,7 +946,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
               </div>
 
               {/* Security Badges */}
-              <div className="flex items-center justify-center gap-6 text-[11px] text-ink-muted pt-2 border-t border-edge">
+              <div className="flex items-center justify-center gap-6 text-xs text-ink-muted pt-2 border-t border-edge">
                 <span className="flex items-center gap-1">
                   <Lock className="size-3 text-emerald-600" /> 256-Bit SSL Encrypted
                 </span>

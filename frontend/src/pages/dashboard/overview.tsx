@@ -447,7 +447,7 @@ export function DashboardOverview() {
       {statsError && (
         <div role="alert" className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
           <span>Failed to load candidate metrics: {statsError}</span>
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => void loadData()}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void loadData()}>
             Retry
           </Button>
         </div>
@@ -476,7 +476,7 @@ export function DashboardOverview() {
               {membership && (
                 <Link
                   to="/pricing"
-                  className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50/80 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 hover:bg-brand-100 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50/80 px-2.5 py-0.5 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-colors"
                 >
                   <Shield className="size-3 text-brand-600" aria-hidden="true" />
                   <span>{membership} plan</span>
@@ -560,7 +560,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Total Resumes
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -593,7 +593,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Recent Activity
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -622,7 +622,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Avg. ATS Score
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -652,7 +652,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Cover Letters
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -678,7 +678,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Portfolios & Web CV
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -704,7 +704,7 @@ export function DashboardOverview() {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                  <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
                     Profile Status
                   </span>
                   <span className="block text-2xl font-extrabold text-ink leading-tight mt-1">
@@ -746,7 +746,7 @@ export function DashboardOverview() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-bold text-accent">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-accent">
                 <Sparkles className="size-3" />
                 Live Career Intelligence
               </span>
@@ -823,7 +823,7 @@ export function DashboardOverview() {
                     type="button"
                     onClick={() => setActivityFilter(tab.id)}
                     className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all whitespace-nowrap shrink-0 leading-none select-none',
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap shrink-0 leading-none select-none',
                       activityFilter === tab.id
                         ? 'bg-surface text-ink shadow-xs border border-edge font-extrabold'
                         : 'text-ink-muted hover:text-ink hover:bg-surface/50'
@@ -833,7 +833,7 @@ export function DashboardOverview() {
                     {tab.count > 0 && (
                       <span
                         className={cn(
-                          'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none',
+                          'rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none',
                           activityFilter === tab.id
                             ? 'bg-ink/10 text-ink dark:bg-white/10 dark:text-white'
                             : 'bg-surface/80 text-ink-muted border border-edge/40'
@@ -860,7 +860,7 @@ export function DashboardOverview() {
                       <span className="text-sm font-bold text-ink truncate">
                         {primaryResume.title || 'Untitled Master Resume'}
                       </span>
-                      <span className="rounded-full bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 px-2 py-0.5 text-[10px] font-bold shrink-0">
+                      <span className="rounded-full bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 px-2 py-0.5 text-xs font-bold shrink-0">
                         Active Draft
                       </span>
                     </div>
@@ -943,16 +943,16 @@ export function DashboardOverview() {
                           <span className="truncate text-xs font-bold text-ink group-hover:text-brand-600 transition-colors">
                             {act.title}
                           </span>
-                          <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0', act.badgeColor)}>
+                          <span className={cn('rounded-full border px-2 py-0.5 text-xs font-bold shrink-0', act.badgeColor)}>
                             {act.badge}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[11px] text-ink-muted truncate">{act.action}</p>
+                        <p className="mt-0.5 text-xs text-ink-muted truncate">{act.action}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-semibold text-ink-muted">
+                      <span className="text-xs font-semibold text-ink-muted">
                         {postedLabel(act.timestamp)}
                       </span>
                       <ChevronRight className="size-3.5 text-ink-subtle opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -1022,7 +1022,7 @@ export function DashboardOverview() {
                             {job.title}
                           </Link>
                           {job.work_mode && (
-                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-ink-muted">
+                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-ink-muted">
                               {job.work_mode}
                             </span>
                           )}
@@ -1139,7 +1139,7 @@ export function DashboardOverview() {
                       <div className={cn('text-xs font-bold', done ? 'text-ink-muted line-through' : 'text-ink group-hover:text-accent transition-colors')}>
                         {step.title}
                       </div>
-                      <div className="text-[11px] text-ink-muted line-clamp-1 mt-0.5">{step.description}</div>
+                      <div className="text-xs text-ink-muted line-clamp-1 mt-0.5">{step.description}</div>
                     </div>
 
                     <ChevronRight className="mt-0.5 size-4 text-ink-subtle opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -1167,7 +1167,7 @@ export function DashboardOverview() {
               >
                 <Target className="size-4 text-brand-600" />
                 <span className="text-xs font-bold text-ink">ATS Scanner</span>
-                <span className="text-[10px] text-ink-muted">Keyword gap audit</span>
+                <span className="text-xs text-ink-muted">Keyword gap audit</span>
               </Link>
 
               <Link
@@ -1176,7 +1176,7 @@ export function DashboardOverview() {
               >
                 <GraduationCap className="size-4 text-info-600" />
                 <span className="text-xs font-bold text-ink">Mock Interview</span>
-                <span className="text-[10px] text-ink-muted">Real-time simulator</span>
+                <span className="text-xs text-ink-muted">Real-time simulator</span>
               </Link>
 
               <Link
@@ -1185,7 +1185,7 @@ export function DashboardOverview() {
               >
                 <PenLine className="size-4 text-purple-600" />
                 <span className="text-xs font-bold text-ink">Cover Studio</span>
-                <span className="text-[10px] text-ink-muted">Role-tailored letters</span>
+                <span className="text-xs text-ink-muted">Role-tailored letters</span>
               </Link>
 
               <Link
@@ -1194,7 +1194,7 @@ export function DashboardOverview() {
               >
                 <Award className="size-4 text-amber-600" />
                 <span className="text-xs font-bold text-ink">Public Web CV</span>
-                <span className="text-[10px] text-ink-muted">Shareable web link</span>
+                <span className="text-xs text-ink-muted">Shareable web link</span>
               </Link>
             </div>
           </section>
@@ -1245,7 +1245,7 @@ function AtsDonut({ score }: { score: number | null }) {
           />
         )}
       </svg>
-      <span className="absolute text-[11px] font-bold text-ink">
+      <span className="absolute text-xs font-bold text-ink">
         {hasScore ? `${clamped}%` : '—'}
       </span>
     </div>

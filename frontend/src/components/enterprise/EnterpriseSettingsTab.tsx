@@ -187,7 +187,7 @@ export function EnterpriseSettingsTab() {
                 value={tenant?.id || '—'}
                 className="h-9 text-xs font-mono bg-surface/50 text-ink-muted cursor-not-allowed"
               />
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 System identifier enforced across MariaDB row-level security boundaries.
               </p>
             </div>
@@ -221,7 +221,7 @@ export function EnterpriseSettingsTab() {
               <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
                 <div>
                   <span className="font-bold text-ink block">Enforce Single Sign-On (SAML 2.0 / OIDC)</span>
-                  <span className="text-ink-muted text-[11px]">Require all members to authenticate via your identity provider.</span>
+                  <span className="text-ink-muted text-xs">Require all members to authenticate via your identity provider.</span>
                 </div>
                 <input
                   type="checkbox"
@@ -235,7 +235,7 @@ export function EnterpriseSettingsTab() {
               <label className="flex items-center justify-between p-3 rounded-xl border border-edge bg-surface/50 cursor-pointer">
                 <div>
                   <span className="font-bold text-ink block">Enforce Multi-Factor Authentication (2FA)</span>
-                  <span className="text-ink-muted text-[11px]">Mandatory TOTP authenticator app verification on all sessions.</span>
+                  <span className="text-ink-muted text-xs">Mandatory TOTP authenticator app verification on all sessions.</span>
                 </div>
                 <input
                   type="checkbox"
@@ -256,7 +256,7 @@ export function EnterpriseSettingsTab() {
                 disabled={!canManageSettings}
                 className="h-9 text-xs"
               />
-              <p className="text-[11px] text-ink-muted">
+              <p className="text-xs text-ink-muted">
                 Comma-separated email domains allowed to receive invitations.
               </p>
             </div>

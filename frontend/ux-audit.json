@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-26T08:37:48.203Z",
+  "generatedAt": "2026-10-26T20:51:24.994Z",
   "rules": {
-    "targetSize": "interactive elements carry a >=44px minimum (min-h-11 / h-11 / size-11 or larger)",
-    "textSize": "no text below 12px (text-[9px] / text-[10px] are refused)",
-    "focus": "buttons and links carry focus-visible styling",
-    "width": "no fixed pixel width above 320px inside the admin plane"
+    "targetSize": "no interactive element pins a height below 44px; the 44px floor itself is the global @media (max-width: 767px) rule in index.css, and the rendered box is measured in Playwright at 320/480",
+    "textSize": "no text below 12px (text-[9px] / text-[10px] / text-[11px] are refused)",
+    "focus": "no element removes the focus ring without a replacement; the ring itself is the global :focus-visible rule in index.css",
+    "width": "no fixed pixel width above 320px inside the admin/console/auth plane"
   },
   "findings": {
     "targetSize": [],
