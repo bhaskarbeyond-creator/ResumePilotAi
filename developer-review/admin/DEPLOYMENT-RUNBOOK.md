@@ -272,3 +272,57 @@ audited, which is the defect REC-005 removed.
 > instance A is observed by instance B after at most `ADMIN_RBAC_CACHE_TTL_MS`. If
 > your fleet is large or the TTL must be long, the correct fix is a pub/sub
 > invalidation, recorded as `OI-005-7`.
+
+## 9. Backup, restore, and the drill that proves the rollback
+
+§4 says *how* to roll back. This section is how you know the rollback works **before** you need it,
+and what to do with the data first.
+
+### 9.1 Take a backup that can actually be restored
+
+```bash
+# Schema + data for the two stores this work writes to.
+mysqldump --single-transaction --routines --triggers \
+  --databases resumepilot > /var/backups/resumepilot-$(date +%F-%H%M).sql
+
+# Prove the dump is readable, not just present. An empty file passes `ls`.
+gzip -t /var/backups/resumepilot-*.sql.gz 2>/dev/null || true
+grep -c "CREATE TABLE" /var/backups/resumepilot-$(date +%F).sql
+```
+
+The second command matters: this engagement has already been bitten once by an artefact that
+existed and meant nothing (a coverage report from a test scope that excluded the code). A dump whose
+table count is 0 is not a backup.
+
+### 9.2 Restore into a scratch schema and diff the authority tables
+
+```bash
+CREATE DATABASE resumepilot_restore_check;
+mysql resumepilot_restore_check < /var/backups/resumepilot-<stamp>.sql
+SELECT COUNT(*) FROM resumepilot_restore_check.admin_user_roles;
+SELECT COUNT(*) FROM resumepilot_restore_check.config_change_log;
+-- Compare against the live counts. A restore that loses the authority table is the one failure
+-- mode that cannot be repaired by rolling forward.
+```
+
+### 9.3 The rollback drill, as a command anyone can run
+
+```bash
+cd backend
+npm run migration:drill     # forward ×2, backward ×2, checksum, residue check
+npm run query-plan:drill    # EXPLAIN per registered hot query inside its row budget
+```
+
+Both are wired into CI (`.github/workflows/quality-gate.yml`, `migration-drill` job on `dev`) with a
+disposable MariaDB service container, and both set `NODE_ENV=test` themselves so the local command
+is the CI command. **They cannot run in the remediation sandbox** (no `mysqld`, no service
+container), which is stated in `TEST-EVIDENCE.md` §6 rather than implied here.
+
+### 9.4 What "proven" means for this release
+
+| Claim | Status |
+|---|---|
+| The migration chain applies upward and rolls back downward | Asserted by `test/migration-rollback-drill.test.js` in the CI `migration-drill` job; residue limited to `config_change_log` and `001_baseline` by design |
+| The rollback restores the previous authority literal | `test/admin-rbac-resolver.test.js` "an unavailable store degrades to the literal, never to a superset" (14/14 in the gate suite) |
+| A backup can be restored | Procedure above; **not executed in this environment** (no MariaDB). The reviewer sign-off list in `COMPLETION-REPORT.md` does not include it because it is an operational step, not a code property — but it must be executed once on staging before `main` |
+| Alerts link to this runbook | `OBSERVABILITY-AND-ROLLBACK.md` §2 maps each alert to a section of this file; the rules themselves are `OI-T-9` (they live in the operations repository) |
