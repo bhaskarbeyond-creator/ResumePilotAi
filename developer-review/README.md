@@ -83,6 +83,16 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 > stat-verified** by `scripts/verify-v4-reconciliation.py` (9 checks, separate from — and stricter than —
 > the original 61-check script, which is unchanged).
 
+> **Added 2026-10-29 (Mandate 5 — independent verification of V4, revision `cccd35a5`):**
+> `INDEPENDENT-VERIFICATION-REGISTER.md` (20 checks classified by what they prove — 13 PASS, 3
+> FAIL-found, 1 blocked, 1 inconclusive), `FINAL-AUDIT-HANDOVER.md` (verdict + ordered next steps),
+> `REGRESSION-TEST-SPEC-DISC-020.md` + `specs/disc-020-application-feedback.test.js` (safe, MariaDB-gated,
+> outside the runner glob). Three new tools: `tools/reachability-crosscheck.cjs` (385/385 agreement),
+> `tools/client-call-existence.cjs` (the missing direction: **23 client paths served by no operation**),
+> `tools/parity-endpoint-audit.cjs` (19/19 surviving `FULL PARITY` rows supported, and all 112 rows
+> endpoint-resolved). New findings **DISC-024/025/026**. Verifier is now **16 checks**; the original
+> 61-check script is still unchanged.
+
 > **Added 2026-10-29 (forensic re-audit of the legacy→modern transition):**
 > `LEGACY-MODERN-FEATURE-INVENTORY.md` (domain inventory, 34 allegation adjudications, backend-without-UI
 > analysis, verdict) and `FEATURE-PARITY-MATRIX.md` (**109 capability verdicts** with backend

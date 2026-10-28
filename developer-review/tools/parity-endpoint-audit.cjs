@@ -82,8 +82,8 @@ function main() {
   };
 
   const rows = [];
+  const allRows = [];
   for (const cap of parity.capabilities) {
-    if (cap.classification !== 'FULL PARITY') continue;
     const endpoints = (cap.endpoints || []).map((raw) => {
       const r = resolve(raw);
       const entry = r.path ? byPath.get(r.path) : null;
@@ -107,14 +107,16 @@ function main() {
     else if (unreachable.length) grade = ok.length ? 'MIXED' : 'UNSUPPORTED-REACHABILITY';
     else grade = prefixed ? 'SUPPORTED-AFTER-PREFIX' : 'SUPPORTED';
 
-    rows.push({
+    const record = {
       id: cap.id,
       capability: cap.capability,
       declaredInvoke: cap.invoke,
       grade,
       endpoints,
       counts: { ok: ok.length, unreachable: unreachable.length, absent: absent.length, ambiguous: ambiguous.length },
-    });
+    };
+    allRows.push(record);
+    if (cap.classification === 'FULL PARITY') rows.push(record);
   }
 
   const tally = {};
@@ -131,6 +133,17 @@ function main() {
     fullParityRows: rows.length,
     tally,
     rows,
+    // V5: the same endpoint resolution applied to EVERY capability row, so requirement (d) can state
+    // how many of the 112 rows cite an endpoint that no registered operation serves — not just the
+    // FULL rows that were downgraded.
+    allRowsChecked: allRows.length,
+    allRows: allRows.map((r) => ({ ...r, classification: parity.capabilities.find((c) => c.id === r.id).classification })),
+    allRowsSummary: {
+      withUnsupportedEndpoint: allRows.filter((r) => r.counts.absent || r.counts.ambiguous).length,
+      withUnreachableEndpoint: allRows.filter((r) => r.counts.unreachable).length,
+      fullySupported: allRows.filter((r) => !r.counts.absent && !r.counts.ambiguous && !r.counts.unreachable).length,
+      rowsWithNoDeclaredEndpoint: allRows.filter((r) => r.endpoints.length === 0).length,
+    },
   };
   fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
 

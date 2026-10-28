@@ -145,6 +145,28 @@ Three things a reader should take from this table, none of them flattering:
 3. **`MISSING` grew from 30 to 32 not because code disappeared** but because a UI whose every call 404s
    (blog, support) is not a working capability. A route definition plus a React page is not parity.
 
+### 4.1 Endpoint resolution applied to all 112 rows (requirement d)
+
+The endpoint audit was run against **every** capability row, not only the `FULL PARITY` ones, so the
+re-classification can state its own residue instead of implying it covered everything:
+
+| Measure | Rows |
+|---|---:|
+| Capability rows audited | 112 |
+| Rows where every declared endpoint resolves **and** every resolved operation is reachable | **67** |
+| Rows citing ≥1 endpoint that resolves to no registered operation (or is ambiguous) | **31** |
+| Rows citing ≥1 endpoint that resolves but is `UNREACHABLE`/`UNVERIFIED` | **15** |
+| Rows that declare no endpoint at all (mostly `MISSING`/`MOCK`) | **38** |
+
+**Scope statement, so this is not read as 112 individual re-classifications:** all 19 `FULL PARITY` rows
+were adjudicated individually and are what the downgrades were based on. The other 93 were *checked*
+against the register — every row's endpoint list resolved — but a non-resolving endpoint in a `PARTIAL`
+or `MISSING` row was **not** used to re-classify that row; several are shorthand (`/notifications` for
+`/notifications-data`, `/messages` for `/messages/conversations`, `/enterprise/roles` for
+`/enterprise/roles-matrix`), and re-labelling them would be a documentation exercise, not a new finding.
+The 31 rows are listed in `Evidence/artifacts/parity-endpoint-audit.json` (`allRows`) for whoever wants to
+tidy the citations.
+
 ## 5. Requirement-level dispositions (mandate requirement f)
 
 65 requirements, each with numerator/denominator/formula in `REQUIREMENT-REGISTER.md` §P: 48 `PASS`,

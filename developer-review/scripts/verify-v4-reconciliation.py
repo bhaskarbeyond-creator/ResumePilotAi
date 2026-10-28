@@ -241,6 +241,14 @@ def c_full_parity_supported():
     bad = {k: v for k, v in art["tally"].items() if k != "SUPPORTED" and v}
     assert not bad, f"FULL PARITY rows still unsupported: {bad}"
     assert full == 19, f"expected 19 FULL PARITY rows, found {full}"
+    assert art["allRowsChecked"] == 112, f"endpoint audit covered {art['allRowsChecked']} rows, not 112"
+    summary = art["allRowsSummary"]
+    assert summary["fullySupported"] == 67, f"fully supported rows: {summary['fullySupported']}"
+    assert summary["withUnsupportedEndpoint"] == 31, f"unsupported-endpoint rows: {summary['withUnsupportedEndpoint']}"
+    assert summary["withUnreachableEndpoint"] == 15, f"unreachable-endpoint rows: {summary['withUnreachableEndpoint']}"
+    assert summary["rowsWithNoDeclaredEndpoint"] == 38, f"rows with no endpoint: {summary['rowsWithNoDeclaredEndpoint']}"
+    doc = read("V4-COVERAGE-RECONCILIATION.md")
+    assert "Endpoint resolution applied to all 112 rows" in doc, "requirement (d) residue statement missing"
 
 
 def c_reach_doc_matches_register():
