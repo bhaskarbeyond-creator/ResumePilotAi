@@ -285,8 +285,8 @@ const REGISTER = [
     legacy: ['src/components/admin/Admin.jsx', 'src/components/admin/sidebar'],
     modern: ['frontend/src/pages/admin/console.tsx'],
     backend: 'yes', endpoints: ['/admin/settings/modules'], invoke: 'yes', persist: 'yes', errors: 'partial', tests: 'partial',
-    evidence: 'console.tsx drives 15 tabs; legacy Admin.jsx drove 24 sub-areas',
-    note: 'Shell parity high, tab inventory narrower — see FP-A05..FP-A14, FP-A22.',
+    evidence: 'console.tsx VALID_TABS (:50-66) = 15 tabs (dashboard, health, queues, operations, attention, users, support, moderation, blog, content, ai-settings, email, security, settings, modules); legacy src/components/admin/ holds 30 modules. Not one-to-one: several legacy modules fold into one modern tab, and some modern tabs aggregate.',
+    note: 'Shell parity high; the loss is inside the tabs (fabricated panels, missing audit viewer), not in the shell. See FP-A05..FP-A14, FP-A22.',
   },
 
   // ======================= DOMAIN B =======================

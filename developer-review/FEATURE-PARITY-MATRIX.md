@@ -189,7 +189,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-A23` | Admin command palette + entity search | 2 / 382 | 0 / 0 | **MISSING** | AdminCommandPalette.jsx 239 lines + adminEntitySearch.js 141 lines; 0 modern matches for palette/⌘K handlers |
 | `FP-A24` | Public pricing, plan comparison and checkout | 3 / 3,856 | 2 / 1,586 | **FULL PARITY** | modern adds per-gateway checkout (PayPal/Razorpay create-order) absent from legacy |
 | `FP-A25` | AI provider / gateway administration (provider CRUD, key pool, quotas, discovery, playground, unified gateway) | 2 / 1,658 | 44 / 4,980 | **FULL PARITY** | 46 modern files under components/admin/ai-settings (providers, quotas, discovery, gateway, metrics, playground) vs a single legacy AiSettings.jsx + 76-line service |
-| `FP-A26` | Admin console shell and tab routing | 2 / 1,542 | 1 / 230 | **PARTIAL PARITY** | console.tsx drives 15 tabs; legacy Admin.jsx drove 24 sub-areas |
+| `FP-A26` | Admin console shell and tab routing | 2 / 1,542 | 1 / 230 | **PARTIAL PARITY** | console.tsx VALID_TABS (:50-66) = 15 tabs (dashboard, health, queues, operations, attention, users, support, moderation, blog, content, ai-settings, email, security, settings, modules); legacy src/components/admin/ holds 30 modules. Not one-to-one: several legacy modules fold into one modern tab, and some modern tabs aggregate. |
 
 ### B — Enterprise talent cloud
 
@@ -330,7 +330,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-A23`** — One modern heading literally reads "Quick Command Palette" (EnterpriseOverviewTab.tsx:405) with no palette behind it.
 - **`FP-A24`** — Modern exceeds legacy. Note the coupon *redemption* field exists here while coupon *administration* is missing (FP-A14).
 - **`FP-A25`** — Modern exceeds legacy by a wide margin; this area had no capability row in the 2026-10-29 pass, which is why 46 modern files were unattributed.
-- **`FP-A26`** — Shell parity high, tab inventory narrower — see FP-A05..FP-A14, FP-A22.
+- **`FP-A26`** — Shell parity high; the loss is inside the tabs (fabricated panels, missing audit viewer), not in the shell. See FP-A05..FP-A14, FP-A22.
 - **`FP-B02`** — Bulk/partial-failure path lost — tracked as FP-B03.
 - **`FP-B05`** — Modern exceeds legacy.
 - **`FP-B06`** — Modern exceeds legacy.

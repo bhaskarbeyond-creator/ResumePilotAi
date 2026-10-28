@@ -1,6 +1,6 @@
 {
  "revision": "0adad00d0975444f13b98f9cda3ec7e24c2c6a62",
- "generatedAt": "2026-10-28T20:56:15.607Z",
+ "generatedAt": "2026-10-28T20:56:37.485Z",
  "vocabulary": [
   "FULL PARITY",
   "PARTIAL PARITY",
@@ -725,7 +725,7 @@
     "/admin/settings/modules"
    ],
    "invoke": "yes",
-   "evidence": "console.tsx drives 15 tabs; legacy Admin.jsx drove 24 sub-areas"
+   "evidence": "console.tsx VALID_TABS (:50-66) = 15 tabs (dashboard, health, queues, operations, attention, users, support, moderation, blog, content, ai-settings, email, security, settings, modules); legacy src/components/admin/ holds 30 modules. Not one-to-one: several legacy modules fold into one modern tab, and some modern tabs aggregate."
   },
   {
    "id": "FP-B01",
