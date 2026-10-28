@@ -247,9 +247,9 @@ Every metric carries numerator, denominator, exclusions, formula and source. **N
 
 | ID | Metric | Numerator | Denominator | Exclusions | Formula | Source |
 |---|---|---|---|---|---|---|
-| M13 | Subfeatures re-verified at line level in this pass | 74 | 74 adjudicated subfeatures in §3 | subfeatures with no legacy counterpart | 74/74 | this register §3 |
+| M13 | Subfeatures re-verified at line level in this pass | 56 | 56 adjudicated subfeature rows in §3 | subfeatures present in only one tree | 56/56 | this register §3 |
 | M14 | Allegations dispositioned | 8 | 8 | — | 8/8 | §2.1 |
-| M15 | FULL rows challenged | 12 | 12 | rows already PARTIAL/MISSING | 12/12 | `parity-endpoint-audit.json` |
+| M15 | FULL rows challenged | 19 | 19 V5-FULL rows | rows already PARTIAL/MISSING | 19/19 (7 failed) | `parity-endpoint-audit.json` |
 | M16 | FULL rows that survived challenge | 12 | 19 (V5 FULL rows) | 7 downgraded, listed in §2.2 | 12/19 = 63.2 % | `feature-parity.json` |
 | M17 | Rows downgraded on subfeature evidence | 7 | 19 V5 FULL rows | `FP-A11`, `FP-A19` were PARTIAL → MOCK | 7/19 = 36.8 % | §2 |
 | M18 | Client call sites resolving to a registered op | 199 | 229 | 30 dead (19 paths); 2 benign fallbacks | 199/229 = 86.9 % | `client-call-existence.json` |
@@ -263,7 +263,7 @@ M18's exclusion note matters: the 2 benign fallbacks are dead code, not broken f
 ## 8. What is NOT covered (explicit incompleteness)
 
 1. **Browser runtime: 0 %.** No Playwright, no MariaDB in this sandbox. Every "the tab strips the member drawer" claim is static; no screenshot, no HAR, no console capture exists. `dist/` is untracked, so the served bundle cannot be tied to HEAD.
-2. **Deep read coverage.** 112 capability rows were re-read at the row level, but only the 8 alleged + 5 swept rows were read subfeature-by-subfeature (74 subfeatures). The remaining 99 rows have **not** had every button traced; their subfeatures are only as good as V5's evidence.
+2. **Deep read coverage.** 112 capability rows were re-read at the row level, but only 10 rows were read subfeature-by-subfeature (56 subfeature rows in §3). The remaining 99 rows have **not** had every button traced; their subfeatures are only as good as V5's evidence.
 3. **Authorization.** RBAC was read for team/workspace member routes (`enterprise.js:720/729/738`) and audit (`:652`); it was not re-audited for the 17 dead paths (moot — they 404).
 4. **Persistence checks are static.** "Persists" means a repository write was traced in backend source; nothing was written to a database.
 5. **Two allegations rest partly on absence.** `FP-G21` (voice) and `FP-F03` (messaging fixtures) are proven absent/fixture in the modern tree, but a *third-party* embedded widget or a sibling app could provide them outside this repository; none was found by grep.

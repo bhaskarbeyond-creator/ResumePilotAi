@@ -73,7 +73,7 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 ## 3. Deliverables in this package
 
 > **Added 2026-10-29 (Mandate 6 — V6 feature-depth re-audit, base `a5835ff6`):**
-> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` (74 subfeature rows traced legacy → modern UI → backend →
+> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` (56 subfeature rows traced legacy → modern UI → backend →
 > persistence → test, the eight allegation dispositions, the fixture table, the 19 dead client paths,
 > detector false positives and metrics M13–M20); `tools/parity-depth-checks.cjs` (**10** automated checks,
 > 4 PASS / 6 LEAD, artifact `Evidence/artifacts/parity-depth-checks.json`); findings **DISC-027 … DISC-040**;

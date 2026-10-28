@@ -201,9 +201,9 @@ the same failure mode that produced V4's over-claimed `FULL PARITY` rows.
 |---|---|
 | Unit | one user-visible subfeature row in `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §3 |
 | Numerator | subfeatures with a legacy anchor **and** a modern anchor **and** a verdict |
-| Denominator | 74 adjudicated subfeatures |
+| Denominator | 56 adjudicated subfeature rows |
 | Exclusions | subfeatures present in only one tree (recorded as modern-only or removed, not scored) |
-| Formula | 74 / 74 |
+| Formula | 56 / 56 |
 | Source | depth register §3 |
 | What it does **not** prove | that the other 99 capability rows have this depth — they do not |
 
@@ -241,10 +241,13 @@ files. Reported as context only: the denominator is files, the numerator is comp
 
 ## M19 — Detector precision on adjudication
 
-Of the 10 automated checks, 4 returned PASS and 6 returned leads. Leads adjudicated: 4 (check 8) rejected
-as attribution breadth, 10 (check 10) reclassified as domain bleed with 2 real residues, 4 of 17
-(check 2) rejected as correct error paths. Adjudicated false positives: **18 of 57 leads** (31.6 %).
-Formula: 18 / 57. Source: depth register §6.
+Of the 10 automated checks, 4 returned PASS and 6 returned leads (**81 leads** in total). Leads adjudicated
+one by one: 17 (check 2, of which 4 were correct error paths), 4 (check 8, all attribution breadth), 10
+(check 10, 8 domain bleed + 2 open residues). That is **31 adjudicated leads, 16 of them false positives
+(51.6 %)**. The remaining 50 leads (checks 3, 4, 9) were triaged but not individually adjudicated, and check
+9's 30 sites were verified against `backend/` by grep rather than dismissed.
+Formula: 16 / 31 adjudicated. Source: depth register §6. This ratio is the reason the detectors are
+reported as *leads* and never as findings.
 
 ## M20 — Runtime coverage (unchanged, and the reason the verdict is not COMPLETE)
 

@@ -19,8 +19,8 @@ Application source, dependencies, lockfiles, deployment config and database sche
 | Runtime | **blocked** | unchanged from V5: 0 browser tests executed, 0 live provider calls, 0 MariaDB-backed tests; no V6 claim rests on runtime evidence |
 
 `COMPLETE` is refused: three acceptance gates of Mandate 6 cannot pass in this environment — browser
-runtime evidence, provider/MariaDB execution, and complete subfeature coverage of all 112 rows (74
-subfeatures were re-read in depth; the other rows rest on V5 evidence). Nothing was repaired; the
+runtime evidence, provider/MariaDB execution, and complete subfeature coverage of all 112 rows (56
+subfeature rows were re-read in depth; the other 102 rows rest on V5 evidence). Nothing was repaired; the
 application is byte-identical to `a5835ff6` outside `developer-review/`.
 
 ## 2. What changed since V4, and why a reader must not reuse V4 numbers
@@ -33,7 +33,7 @@ application is byte-identical to `a5835ff6` outside `developer-review/`.
 | Reachability classes (UI / indirect / external / server-only / unexposed / unreachable / unverified) | 126 / 6 / 27 / 11 / 9 / 201 / 4 | 152 / 7 / 27 / 11 / 2 / 176 / 10 | **152 / 7 / 27 / 11 / 2 / 176 / 10** | V5 fixed the scanner (`enterpriseRequest`, `dynamicParent`); V6 re-ran it and found no new disagreements (385/385 crosscheck) |
 | Parity mix (full / partial / missing / mock / replaced / unverified) | 28 / 36 / 30 / 9 / 6 / 3 | 19 / 43 / 32 / 9 / 6 / 3 | **12 / 47 / 32 / 12 / 6 / 3** | 7 `FULL PARITY` rows failed subfeature examination; 2 `PARTIAL` rows were fixtures (DISC-029, DISC-030) |
 | Client call sites with no registered operation | not measured | 30 sites / 23 paths | **30 sites / 19 distinct paths (17 defective)** | V6 normalised `{X}` and separated benign fallbacks from defects (§5 of the depth register, DISC-027) |
-| Legacy subfeatures re-read in depth | 0 | 0 | **74** | only the 8 alleged rows + 5 swept rows; the remaining 99 rows are *not* subfeature-audited (stated, not implied) |
+| Legacy subfeatures re-read in depth | 0 | 0 | **56** | 10 rows (8 alleged + `FP-F02` + `FP-F06`); the remaining 102 rows are *not* subfeature-audited (stated, not implied) |
 | Detector checks | 6 | 7 | **10** | `tools/parity-depth-checks.cjs`; result 4 PASS / 6 LEAD, every lead adjudicated |
 | Findings | 23 | 26 | **40** | DISC-027 … DISC-040 |
 | Allegations adjudicated | 35 | 35 | **48** | RA-36 … RA-48 |

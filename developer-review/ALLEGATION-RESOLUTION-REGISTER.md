@@ -261,7 +261,7 @@ cover letters survive as four inline letter templates. Those equivalences are wh
 and the cover-letter part of `FP-E09` were **not** downgraded.
 
 **Additional sweep result (not alleged):** `FP-F06`, `FP-G01`, `FP-F02` moved FULL → PARTIAL and
-`FP-A11`, `FP-A19` moved PARTIAL → MOCK; 13 further components were found rendering seeded data
+`FP-A11`, `FP-A19` moved PARTIAL → MOCK; 10 further components were found rendering seeded data
 (`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §4); 17 client paths (27 call sites) resolve to no registered
 operation (§5, DISC-027).
 
