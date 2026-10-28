@@ -1,0 +1,42 @@
+=== Audit Package Verification ===
+Repo root: /home/user/ResumePilotAi
+DR: /home/user/ResumePilotAi/developer-review
+--- Required artifacts (20) ---
+PASS: exists README.md
+PASS: exists EXECUTIVE-GAP-SUMMARY.md
+PASS: exists DISCREPANCY-LOG.md
+PASS: exists SWOT-ANALYSIS.md
+PASS: exists UI-UX-AUDIT.md
+PASS: exists REPAIR-ACTION-PLAN.md
+PASS: exists PROVENANCE.md
+PASS: exists REQUIREMENT-REGISTER.md
+PASS: exists EVIDENCE-INDEX.md
+PASS: exists SECURITY-ASSESSMENT.md
+PASS: exists INTEGRATIONS-INVENTORY.md
+PASS: exists DATABASE-INVENTORY.md
+PASS: exists PARITY-MATRIX-V2.md
+PASS: exists HANDOVER.md
+PASS: exists appendix/PARITY-MATRIX.md
+PASS: exists appendix/REFUTED-CANDIDATES.md
+PASS: exists appendix/UNVERIFIED-SUSPICIONS.md
+PASS: exists appendix/ENVIRONMENT-GAPS.md
+PASS: exists appendix/INVENTORIES/routes.md
+PASS: exists appendix/INVENTORIES/database.md
+PASS: exists appendix/INVENTORIES/environment-config.md
+PASS: exists appendix/INVENTORIES/external-integrations.md
+PASS: exists appendix/INVENTORIES/frontend.md
+PASS: exists appendix/INVENTORIES/security-tenant-isolation.md
+PASS: exists appendix/INVENTORIES/tests.md
+PASS: exists appendix/UI-STATE-MATRIX.md
+PASS: exists scripts/verify-audit-package.sh
+--- Content checks ---
+PASS: README mentions PROVENANCE
+PASS: REQUIREMENT-REGISTER has PASS counts
+PASS: EVIDENCE-INDEX has E-010 tenant isolation
+PASS: DISCREPANCY-LOG has 7 findings
+PASS: No application source modified (git diff excludes DR)
+PASS: Secret scan: no non-empty DB_PASSWORD value in DR
+PASS: Refuted candidates updated (RC-002 High)
+--- Summary ---
+PASS: 34  FAIL: 0
+VERIFICATION PASSED

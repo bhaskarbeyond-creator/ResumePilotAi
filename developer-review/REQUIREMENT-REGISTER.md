@@ -11,15 +11,29 @@
 
 ## 1. Mandate Coverage Summary
 
-| Status | Count |
-|---|---:|
-| PASS | 27 |
-| PARTIAL | 8 |
-| FAIL | 0 |
-| BLOCKED | 6 |
-| NOT VERIFIED | 5 |
-| AUTHORIZED EXCEPTION | 1 |
-| **Total reconciled** | **47** |
+| Status | Count (recomputed, after runtime pass) | Previous published figure |
+|---|---:|---:|
+| PASS | 38 (incl. R-081: executed, claim refuted) | 27 |
+| PARTIAL | 12 | 8 |
+| FAIL | 0 | 0 |
+| BLOCKED | 4 | 6 |
+| NOT VERIFIED | 1 | 5 |
+| AUTHORIZED EXCEPTION | 0 (R-081 no longer needs it) | 1 |
+| **Total R-xxx requirements** | **55** | *(published tally said 47)* |
+
+**Tally reconciliation (disclosed rather than smoothed):** the previously published
+summary claimed 47 total, but the register contained **45** `R-xxx` rows at that time —
+the published tally was internally inconsistent by 2. This pass recomputes the numbers
+directly from the table (55 rows now, after adding the 10 new `R-110 … R-119`
+requirements) instead of carrying the arithmetic error forward. The 20 deliverable rows
+`D-01 … D-20` are tracked separately in §L and are unaffected. Logged as part of DISC-009's
+theme (reporting-accuracy drift) rather than as a new finding.
+
+> **Status changes were made only where a runtime artifact demonstrates the criterion.**
+> Section **M** (R-110 … R-119) is new in this pass. Installing a tool changed nothing:
+> e.g. R-034/R-035 moved because 45 browser executions across the five mandated
+> viewports exist, not because Chromium was installed. The overall verdict stays
+> **PARTIAL — BLOCKED** (`HANDOVER.md` §1).
 
 Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is listed; irrecoverable wording gaps are documented in §3 with closure actions.
 
@@ -67,8 +81,8 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 | **R-031** | Active (`frontend/` TS) vs legacy (`src/` JSX) implementation boundaries documented | **PASS** | DISC-001 + `appendix/INVENTORIES/frontend.md` §1-2 |
 | **R-032** | User workflows / component structure traced for major journeys | **PARTIAL** | `UI-UX-AUDIT.md` lists 11 screens; state-completeness matrix DEFERRED → see R-033 |
 | **R-033** | State-completeness (loading/empty/error/disabled/success) per-screen matrix | **NOT VERIFIED** | UVS-004 — not started in prior audit; this completion sampled 6 page files for pattern evidence and created `appendix/UI-STATE-MATRIX.md` as scaffold (6/34 pages sampled, 11 screens enumerated). Full 34-page matrix remains DEFERRED/BLOCKED (EG-002) |
-| **R-034** | Accessibility (WCAG), responsiveness, forms/modals inspected | **BLOCKED** | Requires runtime (EG-002). `UI-UX-AUDIT.md` explicitly marks RUNTIME VERIFICATION DEFERRED; this completion inspected static evidence (Radix Dialog, Playwright snapshot dir) but cannot run axe-core/Lighthouse without live instance |
-| **R-035** | Viewport testing at mandated widths (375/390/768/1440/1920) | **BLOCKED** | EG-002; existing baseline `frontend/tests/engine-responsive.spec.ts-snapshots/` noted as positive signal |
+| **R-034** | Accessibility (WCAG), responsiveness, forms/modals inspected | **PARTIAL** *(was BLOCKED)* | **Runtime pass:** axe-core 4.14.0 executed against the live app at 375×667 and 1440×900 → 5 WCAG 2.1 AA violations found and reproduced with selectors + contrast ratios (`BROWSER-VERIFICATION-REPORT.md` §4, `E-315`, DISC-008). Repository accessibility suite executed: 59/59 pass (`E-316`). Modal reflow exercised in `engine-responsive.spec.ts`. **Still partial:** screen-reader/AT verification, keyboard traversal beyond axe rules, and authenticated data surfaces (DISC-012) remain unverified |
+| **R-035** | Viewport testing at mandated widths (375/390/768/1440/1920) | **PARTIAL** *(was BLOCKED)* | **Runtime pass:** 45 executions (5 mandated widths × 9 routes) all 200, **0 px horizontal overflow**, 0 uncaught page errors, 45 full-page screenshots (`E-313`, `Evidence/screenshots/`). Repository engine matrix additionally exercised at 360/768/1280/1920/3840. **Partial because** the authenticated data surfaces among those routes resolve to the login page (DISC-012), so their layout at those widths is not demonstrated |
 
 ### E. Database & Migrations (directive §5 bullet 4)
 
@@ -77,7 +91,7 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 | **R-040** | Database models, schema relationships, migrations inventoried | **PASS** | `appendix/INVENTORIES/database.md` §1 (57 files, naming convention, runner integrity design) + expanded `DATABASE-INVENTORY.md` |
 | **R-041** | Migration ordering, idempotency, rollback assumptions checked | **PASS** | `appendix/REFUTED-CANDIDATES.md` RC-001 (all `CREATE TABLE` have `IF NOT EXISTS`), `DATABASE-INVENTORY.md` §2-3 (ordering via localeCompare, duplicate-version guard, rollback pairs observed) |
 | **R-042** | Down-migration content correctness per pair verified | **PARTIAL** | `appendix/INVENTORIES/database.md` §1 notes presence confirmed for 10 sampled pairs; full 29-pair content diff DEFERRED |
-| **R-043** | Data integrity: schema-to-query consistency (tables referenced by `backend/repositories/` have migrations) | **NOT VERIFIED** | EG-006; this completion sampled 3 repositories vs 29 migrations and found no missing-table signal but did not exhaust all repositories |
+| **R-043** | Data integrity: schema-to-query consistency (tables referenced by `backend/repositories/` have migrations) | **BLOCKED** *(was NOT VERIFIED)* | Now blocked on a demonstrated fact rather than not attempted: migrations `002`–`029` cannot be applied without MariaDB (`E-312`), so a schema-to-query consistency run is impossible. Partial signal: `001_baseline.sql` alone creates 57 tables and the executed backend suite raised **no** missing-table error outside the 14 known DB-gated failures |
 
 ### F. Configuration & Secrets (directive §5 bullet 5)
 
@@ -107,8 +121,8 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
-| **R-080** | Test architecture, discovery, file counts inventoried | **PASS** | `appendix/INVENTORIES/tests.md` (164 backend + 25 enterprise + 21 frontend = 210 files) |
-| **R-081** | Test execution to obtain pass/fail counts (claimed 1,356/1,356) | **BLOCKED** | EG-001 — no runtime; this completion reports `BLOCKED` (not `NOT VERIFIED`) because the barrier is explicit tooling boundary, not omission. Reconciliation of competing claims (1,356 vs 1,334) documented in `appendix/INVENTORIES/tests.md` + `VERIFICATION-RESULTS.md` |
+| **R-080** | Test architecture, discovery, file counts inventoried | **PASS** | `appendix/INVENTORIES/tests.md` (164 backend + 25 enterprise + 21 frontend = 210 files) — **rediscovered and confirmed** this pass: 164 / 25 / 21 (`E-301`). Test *count* claim did not confirm → DISC-009 |
+| **R-081** | Test execution to obtain pass/fail counts (claimed 1,356/1,356) | **PASS for execution / claim REFUTED** *(was BLOCKED)* | **Executed:** backend 1,315 discovered → 1,271 pass / 14 fail / 30 skip; enterprise 187/187; payments 43/43; frontend Playwright 252 executions → 197 pass / 25 fail / 30 did-not-run (`E-301`…`E-322`, `TEST-EXECUTION-REPORT.md`). The **1,356/1,356 claim is not reproducible** (rediscovered 1,315 discovered / 1,271 passing) → DISC-009. The 14 failures are all DB-substitution, none are logic defects |
 | **R-082** | Coverage evidence / missing verification paths enumerated | **PASS** | `EXECUTIVE-GAP-SUMMARY.md` §8 coverage matrix (448 inventory items, 61 audited, 387 deferred) + this completion adds route-level coverage expansion |
 
 ### J. Dependencies & Ops (directive §5 bullets 10-11)
@@ -152,6 +166,21 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 | D-19 | Automated package verification script | **PASS** | `scripts/verify-audit-package.sh` (new) |
 | D-20 | Final acceptance & handover report | **PASS** | `HANDOVER.md` (new) |
 
+### M. Runtime verification (temporary environment pass — new, §9 of the directive)
+
+| ID | Requirement | Status | Evidence |
+|---|---|---|---|
+| **R-110** | Backend test suites executed with real Node, results recorded with exit codes | **PASS** | `E-301`, `E-302`, `E-304`, `E-305` — 1,501 tests executed; logs under `Evidence/logs/` |
+| **R-111** | Frontend build chain executed (typecheck, bundle, lint) | **PASS** | `E-307` `tsc -b` exit 0 · `E-308` `vite build` exit 0 · `E-309` oxlint 0/0 on 238 files |
+| **R-112** | Backend HTTP runtime verified live (health/readiness/security headers/rate-limit policy) | **PASS** | `E-310` — 200 `/api/health`, 503 `/api/readyz` (correct fail-closed), CSP+nonce, HSTS, XFO DENY, nosniff, Referrer-Policy, Permissions-Policy, `RateLimit-*` |
+| **R-113** | Authentication & RBAC verified at runtime (not just read) | **PASS** | `E-310` — unauth 401, forged token 401, CANDIDATE→admin route **403**, weak password 400, signed non-production identity issued (323-char token). Real Firebase auth still unverified (see R-118 note) |
+| **R-114** | Real browser screenshots captured per mandated viewport | **PASS** | `E-313` — 45 full-page PNGs in `Evidence/screenshots/` (5 widths × 9 routes) |
+| **R-115** | Accessibility checks executed with a real rule engine | **PASS** | `E-315` — axe-core 4.14.0; 5 violations found (1 critical). Performing the check is the requirement; the violations are DISC-008 |
+| **R-116** | Visual-regression fidelity against committed baselines | **PARTIAL** | `E-319` — 20/20 screenshot comparisons differ by 3–7 % while `fonts.googleapis.com` is blocked; comparability not established, so this is neither a pass nor a defect (GAP-B2) |
+| **R-117** | Tenant isolation / IDOR verified at runtime over HTTP | **BLOCKED** | Needs migrations 002+ (`E-312`). Repository-level tenant contracts pass in memory (187/187, `E-304`) but HTTP-level isolation is unverified |
+| **R-118** | Live external-integration verification (AI providers, payment gateways, storage, Firebase) | **BLOCKED** | No credentials present; fabricating them is prohibited. Mock/contract coverage only (`E-304`, `E-305`) |
+| **R-119** | MariaDB 11.4 migration + upgrade/rollback execution | **BLOCKED** | No MariaDB artifact obtainable in this sandbox (manifest §5.1, `E-311` gate refusal, `E-312` probe) |
+
 ---
 
 ## 3. Irrecoverable Wording Gaps
@@ -161,7 +190,7 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 | Exact original mandate clause numbers (e.g., "Mandate §6.7") not all recoverable verbatim — some numbers appear only via audit's citations, not from a mandate source file | Coverage claim relies on reconstructed numbers; risk of 1-2 clauses missed | Operator provides original mandate PDF/MD if stricter traceability required; current register is conservative (47 requirements vs prior audit's 448-item mechanical count) and no directive §9 deliverable is missing |
 | `HANDOVER-CLOSURE-2026-10-28.md` / `ceiling-table-r17.md` referenced as evidence for DISC-003/004 but purged at `9d4b1c59` before `ff841d5` | Cannot re-read verbatim text from current `main`; content reconstructed from commit history (`git show 9d4b1c59^:developer-review/HANDOVER-CLOSURE-2026-10-28.md` available via `git cat-file`) | Cited history blob still retrievable; this register notes it as prior-commit evidence, not current-tree evidence |
 
-**Authorization exception:** R-081 (live test execution) is correctly `BLOCKED` under read-only boundary — not a failure of audit completeness. See `HANDOVER.md` verdict `PARTIAL — BLOCKED`.
+**Authorization exception (superseded):** R-081 was previously `BLOCKED` under the read-only boundary. It is now **executed** under the temporary-environment directive; the register keeps the history in the row rather than deleting it. The verdict is still `PARTIAL — BLOCKED` because R-117/R-118/R-119 and the MariaDB-dependent half of R-034/R-035/R-043 remain unverifiable here. See `HANDOVER.md` §1 and `FINAL-ACCEPTANCE-REPORT.md`.
 
 ---
 

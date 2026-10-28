@@ -1,0 +1,1187 @@
+{
+  "generatedAt": "2026-10-28T19:36:28.866Z",
+  "observations": [
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "landing",
+      "route": "/",
+      "finalUrl": "http://127.0.0.1:4000/",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 2328,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "nodes": 3,
+          "help": "Elements must only use permitted ARIA attributes"
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 2,
+          "help": "Elements must have their visible text as part of their accessible name"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__landing.png",
+      "durationMs": 2010
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "login",
+      "route": "/login",
+      "finalUrl": "http://127.0.0.1:4000/login",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__login.png",
+      "durationMs": 1597
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "pricing",
+      "route": "/pricing",
+      "finalUrl": "http://127.0.0.1:4000/pricing",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 3798,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "nodes": 1,
+          "help": "Buttons must have discernible text"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 4,
+          "help": "Elements must meet minimum color contrast ratio thresholds"
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "nodes": 1,
+          "help": "Scrollable region must have keyboard access"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__pricing.png",
+      "durationMs": 1930
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "candidate-dashboard",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__candidate-dashboard.png",
+      "durationMs": 1599
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "admin-console",
+      "route": "/admin",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__admin-console.png",
+      "durationMs": 1583
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "ai-settings-providers",
+      "route": "/admin/ai-settings?subtab=providers",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dproviders",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__ai-settings-providers.png",
+      "durationMs": 1547
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "resume-builder",
+      "route": "/build-resume",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fbuild-resume",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__resume-builder.png",
+      "durationMs": 1558
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "portfolios",
+      "route": "/portfolios",
+      "finalUrl": "http://127.0.0.1:4000/portfolios",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 232,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__portfolios.png",
+      "durationMs": 1792
+    },
+    {
+      "viewport": "375x667-mobile",
+      "viewportSize": "375x667",
+      "workflow": "settings-support",
+      "route": "/dashboard/settings?tab=support",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dsupport",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/375x667-mobile__settings-support.png",
+      "durationMs": 1585
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "landing",
+      "route": "/",
+      "finalUrl": "http://127.0.0.1:4000/",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 2328,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "nodes": 3,
+          "help": "Elements must only use permitted ARIA attributes"
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 2,
+          "help": "Elements must have their visible text as part of their accessible name"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__landing.png",
+      "durationMs": 1855
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "login",
+      "route": "/login",
+      "finalUrl": "http://127.0.0.1:4000/login",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__login.png",
+      "durationMs": 1563
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "pricing",
+      "route": "/pricing",
+      "finalUrl": "http://127.0.0.1:4000/pricing",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 3798,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "nodes": 1,
+          "help": "Buttons must have discernible text"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 4,
+          "help": "Elements must meet minimum color contrast ratio thresholds"
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "nodes": 1,
+          "help": "Scrollable region must have keyboard access"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__pricing.png",
+      "durationMs": 1928
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "candidate-dashboard",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__candidate-dashboard.png",
+      "durationMs": 1523
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "admin-console",
+      "route": "/admin",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__admin-console.png",
+      "durationMs": 1497
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "ai-settings-providers",
+      "route": "/admin/ai-settings?subtab=providers",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dproviders",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__ai-settings-providers.png",
+      "durationMs": 1487
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "resume-builder",
+      "route": "/build-resume",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fbuild-resume",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__resume-builder.png",
+      "durationMs": 1516
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "portfolios",
+      "route": "/portfolios",
+      "finalUrl": "http://127.0.0.1:4000/portfolios",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 232,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__portfolios.png",
+      "durationMs": 1794
+    },
+    {
+      "viewport": "390x844-mobile",
+      "viewportSize": "390x844",
+      "workflow": "settings-support",
+      "route": "/dashboard/settings?tab=support",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dsupport",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/390x844-mobile__settings-support.png",
+      "durationMs": 1535
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "landing",
+      "route": "/",
+      "finalUrl": "http://127.0.0.1:4000/",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 2371,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "nodes": 3,
+          "help": "Elements must only use permitted ARIA attributes"
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 2,
+          "help": "Elements must have their visible text as part of their accessible name"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__landing.png",
+      "durationMs": 1819
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "login",
+      "route": "/login",
+      "finalUrl": "http://127.0.0.1:4000/login",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__login.png",
+      "durationMs": 1472
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "pricing",
+      "route": "/pricing",
+      "finalUrl": "http://127.0.0.1:4000/pricing",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 3798,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "nodes": 1,
+          "help": "Buttons must have discernible text"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 4,
+          "help": "Elements must meet minimum color contrast ratio thresholds"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__pricing.png",
+      "durationMs": 1931
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "candidate-dashboard",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__candidate-dashboard.png",
+      "durationMs": 1502
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "admin-console",
+      "route": "/admin",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__admin-console.png",
+      "durationMs": 1559
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "ai-settings-providers",
+      "route": "/admin/ai-settings?subtab=providers",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dproviders",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__ai-settings-providers.png",
+      "durationMs": 1455
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "resume-builder",
+      "route": "/build-resume",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fbuild-resume",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__resume-builder.png",
+      "durationMs": 1506
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "portfolios",
+      "route": "/portfolios",
+      "finalUrl": "http://127.0.0.1:4000/portfolios",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 232,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__portfolios.png",
+      "durationMs": 1735
+    },
+    {
+      "viewport": "768x1024-tablet",
+      "viewportSize": "768x1024",
+      "workflow": "settings-support",
+      "route": "/dashboard/settings?tab=support",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dsupport",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 239,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/768x1024-tablet__settings-support.png",
+      "durationMs": 1452
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "landing",
+      "route": "/",
+      "finalUrl": "http://127.0.0.1:4000/",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 2371,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "nodes": 3,
+          "help": "Elements must only use permitted ARIA attributes"
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 2,
+          "help": "Elements must have their visible text as part of their accessible name"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__landing.png",
+      "durationMs": 1976
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "login",
+      "route": "/login",
+      "finalUrl": "http://127.0.0.1:4000/login",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__login.png",
+      "durationMs": 1646
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "pricing",
+      "route": "/pricing",
+      "finalUrl": "http://127.0.0.1:4000/pricing",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 3798,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "nodes": 1,
+          "help": "Buttons must have discernible text"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 4,
+          "help": "Elements must meet minimum color contrast ratio thresholds"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__pricing.png",
+      "durationMs": 1991
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "candidate-dashboard",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__candidate-dashboard.png",
+      "durationMs": 1631
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "admin-console",
+      "route": "/admin",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__admin-console.png",
+      "durationMs": 1703
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "ai-settings-providers",
+      "route": "/admin/ai-settings?subtab=providers",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dproviders",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__ai-settings-providers.png",
+      "durationMs": 1669
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "resume-builder",
+      "route": "/build-resume",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fbuild-resume",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__resume-builder.png",
+      "durationMs": 1667
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "portfolios",
+      "route": "/portfolios",
+      "finalUrl": "http://127.0.0.1:4000/portfolios",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 232,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__portfolios.png",
+      "durationMs": 1770
+    },
+    {
+      "viewport": "1440x900-desktop",
+      "viewportSize": "1440x900",
+      "workflow": "settings-support",
+      "route": "/dashboard/settings?tab=support",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dsupport",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1440x900-desktop__settings-support.png",
+      "durationMs": 1663
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "landing",
+      "route": "/",
+      "finalUrl": "http://127.0.0.1:4000/",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 2371,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "nodes": 3,
+          "help": "Elements must only use permitted ARIA attributes"
+        },
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 2,
+          "help": "Elements must have their visible text as part of their accessible name"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__landing.png",
+      "durationMs": 2052
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "login",
+      "route": "/login",
+      "finalUrl": "http://127.0.0.1:4000/login",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__login.png",
+      "durationMs": 1755
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "pricing",
+      "route": "/pricing",
+      "finalUrl": "http://127.0.0.1:4000/pricing",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 3798,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "nodes": 1,
+          "help": "Buttons must have discernible text"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 4,
+          "help": "Elements must meet minimum color contrast ratio thresholds"
+        }
+      ],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__pricing.png",
+      "durationMs": 1985
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "candidate-dashboard",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__candidate-dashboard.png",
+      "durationMs": 1745
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "admin-console",
+      "route": "/admin",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__admin-console.png",
+      "durationMs": 1727
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "ai-settings-providers",
+      "route": "/admin/ai-settings?subtab=providers",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fadmin%2Fai-settings%3Fsubtab%3Dproviders",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__ai-settings-providers.png",
+      "durationMs": 1751
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "resume-builder",
+      "route": "/build-resume",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fbuild-resume",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__resume-builder.png",
+      "durationMs": 1717
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "portfolios",
+      "route": "/portfolios",
+      "finalUrl": "http://127.0.0.1:4000/portfolios",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 232,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__portfolios.png",
+      "durationMs": 1734
+    },
+    {
+      "viewport": "1920x1080-ultrawide",
+      "viewportSize": "1920x1080",
+      "workflow": "settings-support",
+      "route": "/dashboard/settings?tab=support",
+      "finalUrl": "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dsupport",
+      "httpStatus": 200,
+      "title": "IME365 — Interview Made Easy",
+      "mainTextLength": 514,
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED"
+      ],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED",
+        "GET https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@ — net::ERR_CONNECTION_CLOSED"
+      ],
+      "axeViolations": [],
+      "horizontalOverflowPx": 0,
+      "screenshot": "Evidence/screenshots/1920x1080-ultrawide__settings-support.png",
+      "durationMs": 1739
+    }
+  ]
+}

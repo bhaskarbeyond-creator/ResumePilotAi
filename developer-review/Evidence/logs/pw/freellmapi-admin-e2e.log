@@ -1,0 +1,1502 @@
+
+Running 47 tests using 1 worker
+
+  ✘   1 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog (248ms)
+  ✘   2 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view (249ms)
+  ✘   3 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view (301ms)
+  ✘   4 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view (265ms)
+  ✘   5 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view (242ms)
+  ✘   6 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider (254ms)
+  ✘   7 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers (255ms)
+  ✘   8 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload (257ms)
+  ✘   9 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring (228ms)
+  ✘  10 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses (259ms)
+  ✘  11 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses (243ms)
+  ✘  12 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses (242ms)
+  ✘  13 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses (244ms)
+  ✘  14 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry (240ms)
+  ✘  15 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) (270ms)
+  ✘  16 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data (252ms)
+  ✘  17 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints (268ms)
+  ✘  18 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data (221ms)
+  ✘  19 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab (307ms)
+  ✘  20 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab (240ms)
+  ✘  21 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab (233ms)
+  ✘  22 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab (253ms)
+  ✘  23 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab (238ms)
+  ✘  24 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab (240ms)
+  ✘  25 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab (244ms)
+  ✘  26 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab (282ms)
+  ✘  27 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab (212ms)
+  ✘  28 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab (247ms)
+  ✘  29 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab (276ms)
+  ✘  30 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab (278ms)
+  ✘  31 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab (236ms)
+  ✘  32 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab (241ms)
+  ✘  33 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab (267ms)
+  ✘  34 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab (251ms)
+  ✘  35 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab (259ms)
+  ✘  36 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab (245ms)
+  ✘  37 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab (282ms)
+  ✘  38 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab (269ms)
+  ✘  39 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab (293ms)
+  ✘  40 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab (301ms)
+  ✘  41 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab (253ms)
+  ✘  42 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab (267ms)
+  ✘  43 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab (257ms)
+  ✘  44 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained (264ms)
+  ✘  45 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained (236ms)
+  ✘  46 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained (259ms)
+  ✘  47 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained (292ms)
+
+
+  1) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings", waiting until "domcontentloaded"
+
+
+      135 |     await authenticate(page, request);
+      136 |     // Navigate to admin AI settings - base URL without subtab to get providers view
+    > 137 |     await page.goto(`${baseUrl}/admin?tab=ai-settings`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      138 |   });
+      139 |
+      140 |   test('Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog', async ({ page }) => {
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:137:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      231 |   test.beforeEach(async ({ page, request }) => {
+      232 |     await authenticate(page, request);
+    > 233 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      234 |     await waitForAiSettings(page);
+      235 |   });
+      236 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:233:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      231 |   test.beforeEach(async ({ page, request }) => {
+      232 |     await authenticate(page, request);
+    > 233 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      234 |     await waitForAiSettings(page);
+      235 |   });
+      236 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:233:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      231 |   test.beforeEach(async ({ page, request }) => {
+      232 |     await authenticate(page, request);
+    > 233 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      234 |     await waitForAiSettings(page);
+      235 |   });
+      236 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:233:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      231 |   test.beforeEach(async ({ page, request }) => {
+      232 |     await authenticate(page, request);
+    > 233 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      234 |     await waitForAiSettings(page);
+      235 |   });
+      236 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:233:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      231 |   test.beforeEach(async ({ page, request }) => {
+      232 |     await authenticate(page, request);
+    > 233 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      234 |     await waitForAiSettings(page);
+      235 |   });
+      236 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:233:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      358 |   test.beforeEach(async ({ page, request }) => {
+      359 |     await authenticate(page, request);
+    > 360 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      361 |     await waitForAiSettings(page);
+      362 |   });
+      363 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:360:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      358 |   test.beforeEach(async ({ page, request }) => {
+      359 |     await authenticate(page, request);
+    > 360 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      361 |     await waitForAiSettings(page);
+      362 |   });
+      363 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:360:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      358 |   test.beforeEach(async ({ page, request }) => {
+      359 |     await authenticate(page, request);
+    > 360 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      361 |     await waitForAiSettings(page);
+      362 |   });
+      363 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:360:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      358 |   test.beforeEach(async ({ page, request }) => {
+      359 |     await authenticate(page, request);
+    > 360 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      361 |     await waitForAiSettings(page);
+      362 |   });
+      363 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:360:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      358 |   test.beforeEach(async ({ page, request }) => {
+      359 |     await authenticate(page, request);
+    > 360 |     await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                ^
+      361 |     await waitForAiSettings(page);
+      362 |   });
+      363 |
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:360:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      434 |       await authenticate(page, request);
+      435 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 436 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      437 |       await waitForAiSettings(page);
+      438 |       await checkNoHorizontalOverflow(page);
+      439 |       await takeViewportScreenshot(page, vp.name);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:436:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=key-pool
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=key-pool", waiting until "domcontentloaded"
+
+
+      443 |       await authenticate(page, request);
+      444 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 445 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=key-pool`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      446 |       await waitForKeyPoolTab(page);
+      447 |       await checkNoHorizontalOverflow(page);
+      448 |       await takeViewportScreenshot(page, `${vp.name}-key-pool`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:445:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=metrics
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=metrics", waiting until "domcontentloaded"
+
+
+      452 |       await authenticate(page, request);
+      453 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 454 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=metrics`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      455 |       await waitForMetricsTab(page);
+      456 |       await checkNoHorizontalOverflow(page);
+      457 |       await takeViewportScreenshot(page, `${vp.name}-metrics`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:454:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway", waiting until "domcontentloaded"
+
+
+      461 |       await authenticate(page, request);
+      462 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 463 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=unified-gateway`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      464 |       await waitForUnifiedGatewayTab(page);
+      465 |       await checkNoHorizontalOverflow(page);
+      466 |       await takeViewportScreenshot(page, `${vp.name}-unified-gateway`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:463:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=discovery
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=discovery", waiting until "domcontentloaded"
+
+
+      470 |       await authenticate(page, request);
+      471 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 472 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=discovery`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      473 |       await waitForDiscoveryTab(page);
+      474 |       await checkNoHorizontalOverflow(page);
+      475 |       await takeViewportScreenshot(page, `${vp.name}-discovery`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:472:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      434 |       await authenticate(page, request);
+      435 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 436 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      437 |       await waitForAiSettings(page);
+      438 |       await checkNoHorizontalOverflow(page);
+      439 |       await takeViewportScreenshot(page, vp.name);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:436:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=key-pool
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=key-pool", waiting until "domcontentloaded"
+
+
+      443 |       await authenticate(page, request);
+      444 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 445 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=key-pool`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      446 |       await waitForKeyPoolTab(page);
+      447 |       await checkNoHorizontalOverflow(page);
+      448 |       await takeViewportScreenshot(page, `${vp.name}-key-pool`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:445:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=metrics
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=metrics", waiting until "domcontentloaded"
+
+
+      452 |       await authenticate(page, request);
+      453 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 454 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=metrics`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      455 |       await waitForMetricsTab(page);
+      456 |       await checkNoHorizontalOverflow(page);
+      457 |       await takeViewportScreenshot(page, `${vp.name}-metrics`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:454:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway", waiting until "domcontentloaded"
+
+
+      461 |       await authenticate(page, request);
+      462 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 463 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=unified-gateway`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      464 |       await waitForUnifiedGatewayTab(page);
+      465 |       await checkNoHorizontalOverflow(page);
+      466 |       await takeViewportScreenshot(page, `${vp.name}-unified-gateway`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:463:18
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=discovery
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=discovery", waiting until "domcontentloaded"
+
+
+      470 |       await authenticate(page, request);
+      471 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 472 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=discovery`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      473 |       await waitForDiscoveryTab(page);
+      474 |       await checkNoHorizontalOverflow(page);
+      475 |       await takeViewportScreenshot(page, `${vp.name}-discovery`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:472:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      434 |       await authenticate(page, request);
+      435 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 436 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      437 |       await waitForAiSettings(page);
+      438 |       await checkNoHorizontalOverflow(page);
+      439 |       await takeViewportScreenshot(page, vp.name);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:436:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  30) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=key-pool
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=key-pool", waiting until "domcontentloaded"
+
+
+      443 |       await authenticate(page, request);
+      444 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 445 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=key-pool`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      446 |       await waitForKeyPoolTab(page);
+      447 |       await checkNoHorizontalOverflow(page);
+      448 |       await takeViewportScreenshot(page, `${vp.name}-key-pool`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:445:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  31) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=metrics
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=metrics", waiting until "domcontentloaded"
+
+
+      452 |       await authenticate(page, request);
+      453 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 454 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=metrics`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      455 |       await waitForMetricsTab(page);
+      456 |       await checkNoHorizontalOverflow(page);
+      457 |       await takeViewportScreenshot(page, `${vp.name}-metrics`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:454:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  32) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway", waiting until "domcontentloaded"
+
+
+      461 |       await authenticate(page, request);
+      462 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 463 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=unified-gateway`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      464 |       await waitForUnifiedGatewayTab(page);
+      465 |       await checkNoHorizontalOverflow(page);
+      466 |       await takeViewportScreenshot(page, `${vp.name}-unified-gateway`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:463:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  33) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=discovery
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=discovery", waiting until "domcontentloaded"
+
+
+      470 |       await authenticate(page, request);
+      471 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 472 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=discovery`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      473 |       await waitForDiscoveryTab(page);
+      474 |       await checkNoHorizontalOverflow(page);
+      475 |       await takeViewportScreenshot(page, `${vp.name}-discovery`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:472:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  34) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      434 |       await authenticate(page, request);
+      435 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 436 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      437 |       await waitForAiSettings(page);
+      438 |       await checkNoHorizontalOverflow(page);
+      439 |       await takeViewportScreenshot(page, vp.name);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:436:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  35) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=key-pool
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=key-pool", waiting until "domcontentloaded"
+
+
+      443 |       await authenticate(page, request);
+      444 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 445 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=key-pool`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      446 |       await waitForKeyPoolTab(page);
+      447 |       await checkNoHorizontalOverflow(page);
+      448 |       await takeViewportScreenshot(page, `${vp.name}-key-pool`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:445:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  36) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=metrics
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=metrics", waiting until "domcontentloaded"
+
+
+      452 |       await authenticate(page, request);
+      453 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 454 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=metrics`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      455 |       await waitForMetricsTab(page);
+      456 |       await checkNoHorizontalOverflow(page);
+      457 |       await takeViewportScreenshot(page, `${vp.name}-metrics`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:454:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  37) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway", waiting until "domcontentloaded"
+
+
+      461 |       await authenticate(page, request);
+      462 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 463 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=unified-gateway`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      464 |       await waitForUnifiedGatewayTab(page);
+      465 |       await checkNoHorizontalOverflow(page);
+      466 |       await takeViewportScreenshot(page, `${vp.name}-unified-gateway`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:463:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  38) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=discovery
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=discovery", waiting until "domcontentloaded"
+
+
+      470 |       await authenticate(page, request);
+      471 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 472 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=discovery`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      473 |       await waitForDiscoveryTab(page);
+      474 |       await checkNoHorizontalOverflow(page);
+      475 |       await takeViewportScreenshot(page, `${vp.name}-discovery`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:472:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  39) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      434 |       await authenticate(page, request);
+      435 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 436 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      437 |       await waitForAiSettings(page);
+      438 |       await checkNoHorizontalOverflow(page);
+      439 |       await takeViewportScreenshot(page, vp.name);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:436:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  40) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=key-pool
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=key-pool", waiting until "domcontentloaded"
+
+
+      443 |       await authenticate(page, request);
+      444 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 445 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=key-pool`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      446 |       await waitForKeyPoolTab(page);
+      447 |       await checkNoHorizontalOverflow(page);
+      448 |       await takeViewportScreenshot(page, `${vp.name}-key-pool`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:445:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  41) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=metrics
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=metrics", waiting until "domcontentloaded"
+
+
+      452 |       await authenticate(page, request);
+      453 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 454 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=metrics`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      455 |       await waitForMetricsTab(page);
+      456 |       await checkNoHorizontalOverflow(page);
+      457 |       await takeViewportScreenshot(page, `${vp.name}-metrics`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:454:18
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  42) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=unified-gateway", waiting until "domcontentloaded"
+
+
+      461 |       await authenticate(page, request);
+      462 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 463 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=unified-gateway`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      464 |       await waitForUnifiedGatewayTab(page);
+      465 |       await checkNoHorizontalOverflow(page);
+      466 |       await takeViewportScreenshot(page, `${vp.name}-unified-gateway`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:463:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  43) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=discovery
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=discovery", waiting until "domcontentloaded"
+
+
+      470 |       await authenticate(page, request);
+      471 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 472 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=discovery`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      473 |       await waitForDiscoveryTab(page);
+      474 |       await checkNoHorizontalOverflow(page);
+      475 |       await takeViewportScreenshot(page, `${vp.name}-discovery`);
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:472:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  44) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      490 |       await authenticate(page, request);
+      491 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 492 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      493 |       await waitForAiSettings(page);
+      494 |
+      495 |       const addKeyBtn = page.locator('button:has-text("Add key")').first();
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:492:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  45) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      515 |       await authenticate(page, request);
+      516 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 517 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      518 |       await waitForAiSettings(page);
+      519 |
+      520 |       // Real trigger: subnav "Manage key pools" (no per-card Key Pool
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:517:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  46) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      490 |       await authenticate(page, request);
+      491 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 492 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      493 |       await waitForAiSettings(page);
+      494 |
+      495 |       const addKeyBtn = page.locator('button:has-text("Add key")').first();
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:492:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  47) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/admin?tab=ai-settings&subtab=providers
+    Call log:
+      - navigating to "http://localhost:5173/admin?tab=ai-settings&subtab=providers", waiting until "domcontentloaded"
+
+
+      515 |       await authenticate(page, request);
+      516 |       await page.setViewportSize({ width: vp.width, height: vp.height });
+    > 517 |       await page.goto(`${baseUrl}/admin?tab=ai-settings&subtab=providers`, { waitUntil: 'domcontentloaded' });
+          |                  ^
+      518 |       await waitForAiSettings(page);
+      519 |
+      520 |       // Real trigger: subnav "Manage key pools" (no per-card Key Pool
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:517:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  47 failed
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained 

@@ -1,0 +1,1892 @@
+
+Running 54 tests using 1 worker
+
+  ✘   1 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog (16.2s)
+  ✘   2 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:83:3 › Candidate Dashboard — Job Tracker Surface › applied-jobs and job-matching route aliases resolve correctly (16.3s)
+  ✘   3 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:104:3 › Candidate Dashboard — Settings & Security Surface › navigates the sections, guards the deletion dialog, and sends moved sections to their pages (16.2s)
+  ✘   4 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:156:3 › Candidate Dashboard — Settings & Security Surface › legacy settings route aliases redirect to their sections (16.1s)
+  ✘   5 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:173:3 › Candidate Dashboard — Support & Favourites Surfaces › support desk renders tickets and opens accessible creation dialog (16.2s)
+  ✘   6 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:189:3 › Candidate Dashboard — Support & Favourites Surfaces › support route aliases redirect to /dashboard/support (16.1s)
+  ✘   7 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:201:3 › Candidate Dashboard — Support & Favourites Surfaces › saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it (16.2s)
+  ✘   8 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog (197ms)
+  ✘   9 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view (183ms)
+  ✘  10 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view (193ms)
+  ✘  11 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view (181ms)
+  ✘  12 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view (182ms)
+  ✘  13 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider (193ms)
+  ✘  14 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers (191ms)
+  ✘  15 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload (178ms)
+  ✘  16 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring (191ms)
+  ✘  17 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses (190ms)
+  ✘  18 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses (185ms)
+  ✘  19 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses (175ms)
+  ✘  20 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses (172ms)
+  ✘  21 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry (185ms)
+  ✘  22 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) (175ms)
+  ✘  23 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data (181ms)
+  ✘  24 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints (184ms)
+  ✘  25 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data (189ms)
+  ✘  26 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab (171ms)
+  ✘  27 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab (180ms)
+  ✘  28 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab (174ms)
+  ✘  29 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab (173ms)
+  ✘  30 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab (187ms)
+  ✘  31 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab (198ms)
+  ✘  32 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab (191ms)
+  ✘  33 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab (233ms)
+  ✘  34 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab (175ms)
+  ✘  35 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab (179ms)
+  ✘  36 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab (191ms)
+  ✘  37 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab (188ms)
+  ✘  38 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab (184ms)
+  ✘  39 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab (174ms)
+  ✘  40 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab (184ms)
+  ✘  41 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab (185ms)
+  ✘  42 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab (198ms)
+  ✘  43 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab (221ms)
+  ✘  44 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab (184ms)
+  ✘  45 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab (166ms)
+  ✘  46 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab (179ms)
+  ✘  47 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab (197ms)
+  ✘  48 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab (215ms)
+  ✘  49 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab (185ms)
+  ✘  50 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab (184ms)
+  ✘  51 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained (184ms)
+  ✘  52 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained (177ms)
+  ✘  53 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained (177ms)
+  ✘  54 [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained (188ms)
+
+
+  1) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Job Tracker', level: 1 })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Job Tracker', level: 1 }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Job Tracker', level: 1 })
+
+
+      30 |
+      31 |     await page.goto('/dashboard/job-tracker');
+    > 32 |     await expect(page.getByRole('heading', { level: 1, name: 'Job Tracker' })).toBeVisible();
+         |                                                                                ^
+      33 |     await expectNoHorizontalOverflow(page);
+      34 |
+      35 |     // 1. Open the add dialog
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:32:80
+
+    Error: ENOENT: no such file or directory, open 'test-results/.auth/candidate-a.json'
+
+       at candidate/fixtures.ts:27
+
+      25 | /** Read the server-issued preview token saved by auth.setup.ts for an account. */
+      26 | export function tokenFor(account: AccountKey): string {
+    > 27 |   const state = JSON.parse(fs.readFileSync(storageStatePath(account), 'utf8')) as {
+         |                               ^
+      28 |     origins: Array<{ localStorage: Array<{ name: string; value: string }> }>;
+      29 |   };
+      30 |   for (const origin of state.origins) {
+        at tokenFor (/home/user/ResumePilotAi/frontend/tests/candidate/fixtures.ts:27:31)
+        at apiAs (/home/user/ResumePilotAi/frontend/tests/candidate/fixtures.ts:93:50)
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:19:17
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-1b287-d-deletes-with-Radix-Dialog-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-1b287-d-deletes-with-Radix-Dialog-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-1b287-d-deletes-with-Radix-Dialog-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-1b287-d-deletes-with-Radix-Dialog-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:83:3 › Candidate Dashboard — Job Tracker Surface › applied-jobs and job-matching route aliases resolve correctly 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Applied Jobs', level: 1 })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Applied Jobs', level: 1 }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Applied Jobs', level: 1 })
+
+
+      85 |     // as in legacy (P002 C14; tests/candidate/applied-jobs.spec.ts covers the page).
+      86 |     await page.goto('/dashboard/applied-jobs');
+    > 87 |     await expect(page.getByRole('heading', { level: 1, name: 'Applied Jobs' })).toBeVisible();
+         |                                                                                 ^
+      88 |     await expect(page).toHaveURL(/\/dashboard\/applied-jobs$/);
+      89 |
+      90 |     // /dashboard/job-matching redirects to /dashboard/job-tracker
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:87:81
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-bda3a-e-aliases-resolve-correctly-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-bda3a-e-aliases-resolve-correctly-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-bda3a-e-aliases-resolve-correctly-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-bda3a-e-aliases-resolve-correctly-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:104:3 › Candidate Dashboard — Settings & Security Surface › navigates the sections, guards the deletion dialog, and sends moved sections to their pages 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Settings', level: 1 })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Settings', level: 1 }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Settings', level: 1 })
+
+
+      111 |
+      112 |     await page.goto('/dashboard/settings');
+    > 113 |     await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+          |                                                                             ^
+      114 |     await expectNoHorizontalOverflow(page);
+      115 |     const sections = page.getByRole('navigation', { name: 'Settings sections' });
+      116 |
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:113:77
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-b55c2-ved-sections-to-their-pages-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-b55c2-ved-sections-to-their-pages-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-b55c2-ved-sections-to-their-pages-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-b55c2-ved-sections-to-their-pages-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:156:3 › Candidate Dashboard — Settings & Security Surface › legacy settings route aliases redirect to their sections 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/dashboard\/settings\?tab=profile$/
+    Received string:  "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dprofile"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 15000ms
+        34 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsettings%3Ftab%3Dprofile"
+
+
+      156 |   test('legacy settings route aliases redirect to their sections', async ({ page }) => {
+      157 |     await page.goto('/dashboard/profile');
+    > 158 |     await expect(page).toHaveURL(/\/dashboard\/settings\?tab=profile$/);
+          |                        ^
+      159 |     await expect(page.getByRole('form', { name: 'Master Profile' }).getByLabel('First name')).toBeVisible();
+      160 |
+      161 |     await page.goto('/dashboard/security');
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:158:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-dd43f--redirect-to-their-sections-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-dd43f--redirect-to-their-sections-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-dd43f--redirect-to-their-sections-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-dd43f--redirect-to-their-sections-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:173:3 › Candidate Dashboard — Support & Favourites Surfaces › support desk renders tickets and opens accessible creation dialog 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Support Center' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Support Center' }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Support Center' })
+
+
+      173 |   test('support desk renders tickets and opens accessible creation dialog', async ({ page }) => {
+      174 |     await page.goto('/dashboard/support');
+    > 175 |     await expect(page.getByRole('heading', { name: 'Support Center' })).toBeVisible();
+          |                                                                         ^
+      176 |     await expectNoHorizontalOverflow(page);
+      177 |
+      178 |     // Open ticket dialog
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:175:73
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-d68ae--accessible-creation-dialog-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-d68ae--accessible-creation-dialog-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-d68ae--accessible-creation-dialog-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-d68ae--accessible-creation-dialog-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:189:3 › Candidate Dashboard — Support & Favourites Surfaces › support route aliases redirect to /dashboard/support 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/dashboard\/support/
+    Received string:  "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsupport"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 15000ms
+        34 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://127.0.0.1:4000/login?next=%2Fdashboard%2Fsupport"
+
+
+      189 |   test('support route aliases redirect to /dashboard/support', async ({ page }) => {
+      190 |     await page.goto('/dashboard/tickets');
+    > 191 |     await expect(page).toHaveURL(/\/dashboard\/support/);
+          |                        ^
+      192 |     await expect(page.getByRole('heading', { name: 'Support Center' })).toBeVisible();
+      193 |
+      194 |     await page.goto('/dashboard/help');
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:191:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-7ec2e-direct-to-dashboard-support-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-7ec2e-direct-to-dashboard-support-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-7ec2e-direct-to-dashboard-support-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-7ec2e-direct-to-dashboard-support-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:201:3 › Candidate Dashboard — Support & Favourites Surfaces › saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Saved Favorites', exact: true, level: 1 })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Saved Favorites', exact: true, level: 1 }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Saved Favorites', exact: true, level: 1 })
+
+
+      201 |   test('saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it', async ({ page }) => {
+      202 |     await page.goto('/dashboard/favourites');
+    > 203 |     await expect(page.getByRole('heading', { level: 1, name: 'Saved Favorites', exact: true })).toBeVisible();
+          |                                                                                                 ^
+      204 |     await expectNoHorizontalOverflow(page);
+      205 |
+      206 |     // /dashboard/favorites alias redirects to /dashboard/favourites
+        at /home/user/ResumePilotAi/frontend/tests/candidate/candidate-dashboard.spec.ts:203:97
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-a4f80-rd-favorites-alias-opens-it-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-a4f80-rd-favorites-alias-opens-it-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-a4f80-rd-favorites-alias-opens-it-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-candidate-dashbo-a4f80-rd-favorites-alias-opens-it-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f76f-ders-loads-provider-catalog-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-11334-ey-pool-loads-key-pool-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8689f--metrics-loads-metrics-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8ff31--gateway-loads-gateway-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-89b91-covery-loads-discovery-view-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-8cc1f-oq-filters-to-Groq-provider-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-4863c-st-community-mesh-providers-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a98c5-dates-subtab-without-reload-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:232:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-7f404-cape-has-visible-focus-ring-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:232:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b88ec-raps-focus-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:232:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-126c9-the-ledger-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:232:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0df72-error-path-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:232:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-94995-tton-works-Escape-dismisses-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:359:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-25cd7-reellmapi-provider-registry-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:359:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-388ee-igured-on-a-fresh-database--audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:359:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0af7e-b-binds-to-real-engine-data-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:359:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68bed--OpenAI-Anthropic-endpoints-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:359:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b689e--key-actions-not-dummy-data-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:434:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9e5f1-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:443:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-b065d-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:452:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5b550--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:461:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-0a32e-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  30) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:470:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-647a5-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  31) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:434:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fce8b-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  32) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:443:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6c2ed-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  33) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:452:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a00ab--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  34) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:461:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f8071-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  35) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:470:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-30184-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  36) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:434:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa757-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  37) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:443:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-81e8f-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  38) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:452:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-aa69f--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  39) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:461:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-fe696-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  40) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:470:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6e7f8-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  41) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:434:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a2ae3-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  42) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:443:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-9d876-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  43) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:452:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-a1098--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  44) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:461:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-408c9-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  45) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:470:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0ebb-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  46) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:434:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-91b11-verflow-on-providers-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  47) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:443:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-68518-overflow-on-key-pool-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  48) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:452:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-5628a--overflow-on-metrics-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  49) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:461:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2d846-w-on-unified-gateway-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  50) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:470:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f0012-verflow-on-discovery-subtab-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  51) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:490:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-2e43c-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  52) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:515:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-f6b24--Pool-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  53) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:490:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-6f0f6-d-Key-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  54) [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      55 | async function identity(request: APIRequestContext, email = 'superadmin@resumepilot.test') {
+      56 |   const res = await request.post('/api/auth/preview-login', { data: { email, password: 'ephemeral-e2e-only' } });
+    > 57 |   expect(res.status()).toBe(200);
+         |                        ^
+      58 |   const body = await res.json();
+      59 |   expect(body.token).toMatch(/^rptest\./);
+      60 |   const profile = await request.get('/api/users-data/profile', { headers: { Authorization: `Bearer ${body.token}` } });
+        at identity (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:57:24)
+        at authenticate (/home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:65:16)
+        at /home/user/ResumePilotAi/frontend/tests/freellmapi-admin-e2e.spec.ts:515:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/freellmapi-admin-e2e-AI-Mu-bad73--Pool-Modal-fully-contained-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  54 failed
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:83:3 › Candidate Dashboard — Job Tracker Surface › applied-jobs and job-matching route aliases resolve correctly 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:104:3 › Candidate Dashboard — Settings & Security Surface › navigates the sections, guards the deletion dialog, and sends moved sections to their pages 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:156:3 › Candidate Dashboard — Settings & Security Surface › legacy settings route aliases redirect to their sections 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:173:3 › Candidate Dashboard — Support & Favourites Surfaces › support desk renders tickets and opens accessible creation dialog 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:189:3 › Candidate Dashboard — Support & Favourites Surfaces › support route aliases redirect to /dashboard/support 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:201:3 › Candidate Dashboard — Support & Favourites Surfaces › saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:140:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=providers loads provider catalog 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:154:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=key-pool loads key pool view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:163:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=metrics loads metrics view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:172:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=unified-gateway loads gateway view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:181:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Deep link: /admin?tab=ai-settings&subtab=discovery loads discovery view 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:191:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?provider=groq filters to Groq provider 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:199:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Filter deep link: ?category=mesh filters to fast community mesh providers 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:211:3 › AI Multi-Provider Engine - Deep Links & Subtab Navigation › Browser back/forward navigation updates subtab without reload 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:237:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Add Key Modal: opens, traps focus, dismisses on Escape, has visible focus ring 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:258:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Key Pool Manager Modal: opens from the engine subnav, traps focus, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:277:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Cooldowns Ledger Modal: opens from the engine subnav, shows the ledger, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:299:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Model Discovery Modal: opens, real fetch attempt surfaces the honest error path, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:326:3 › AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA › Integration Snippets Modal: opens, displays real language tabs, copy button works, Escape dismisses 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:364:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Provider catalog displays the real backend/freellmapi provider registry 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:372:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Status pills show real states (Not Configured on a fresh database) 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:382:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Metrics subtab binds to real engine data 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:394:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Unified Gateway subtab shows real OpenAI/Anthropic endpoints 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:407:3 › AI Multi-Provider Engine - Real Data Integration (No Fabrication) › Empty states show actionable "Add key" actions, not dummy data 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport mobile-iphone-se (375x667): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport tablet-ipad-portrait (768x1024): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport small-laptop (1024x768): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport standard-desktop (1440x900): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:433:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on providers subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:442:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on key-pool subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:451:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on metrics subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:460:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on unified-gateway subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:469:5 › AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow › Viewport ultrawide-desktop (1920x1080): No horizontal overflow on discovery subtab 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Add Key Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport mobile-iphone-se (375x667): Key Pool Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:489:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Add Key Modal fully contained 
+    [audit-chromium] › tests/freellmapi-admin-e2e.spec.ts:514:5 › AI Multi-Provider Engine - Modal Responsive Containment › Viewport tablet-ipad-portrait (768x1024): Key Pool Modal fully contained 

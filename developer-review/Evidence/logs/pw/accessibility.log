@@ -1,0 +1,285 @@
+
+Running 59 tests using 1 worker
+
+  ✓   1 [audit-chromium] › tests/accessibility.spec.ts:54:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Public Landing - axe-core accessibility scan (2.0s)
+
+Mobile (375px) - Public Landing Interactive Elements: 17
+  By role: { native: 17 }
+  ✓   2 [audit-chromium] › tests/accessibility.spec.ts:85:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Public Landing - DOM structure & interactive elements crawl (2.1s)
+⚠️ Mobile (375px) - Public Landing potentially clipped elements: [
+  'a',  'main',
+  'h2', 'div',
+  'h2', 'h2',
+  'h2'
+]
+  ✓   3 [audit-chromium] › tests/accessibility.spec.ts:117:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Public Landing - Responsive layout integrity (1.4s)
+
+Mobile (375px) - Candidate Dashboard Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓   4 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Candidate Dashboard - axe-core accessibility scan (2.4s)
+
+Mobile (375px) - Candidate Dashboard Interactive Elements: 10
+  By role: { native: 10 }
+  ✓   5 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Candidate Dashboard - DOM structure & interactive elements crawl (2.0s)
+⚠️ Mobile (375px) - Candidate Dashboard potentially clipped elements: [ 'a', 'h1' ]
+  ✓   6 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Candidate Dashboard - Responsive layout integrity (1.6s)
+
+Mobile (375px) - Employer Portal Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓   7 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Employer Portal - axe-core accessibility scan (2.3s)
+
+Mobile (375px) - Employer Portal Interactive Elements: 10
+  By role: { native: 10 }
+  ✓   8 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Employer Portal - DOM structure & interactive elements crawl (1.9s)
+⚠️ Mobile (375px) - Employer Portal potentially clipped elements: [ 'a', 'h1' ]
+  ✓   9 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Employer Portal - Responsive layout integrity (1.6s)
+
+Mobile (375px) - Admin Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  10 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Admin Console - axe-core accessibility scan (2.4s)
+
+Mobile (375px) - Admin Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  11 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Admin Console - DOM structure & interactive elements crawl (1.9s)
+⚠️ Mobile (375px) - Admin Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  12 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Admin Console - Responsive layout integrity (1.5s)
+
+Mobile (375px) - Enterprise Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  13 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Enterprise Console - axe-core accessibility scan (2.4s)
+
+Mobile (375px) - Enterprise Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  14 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Enterprise Console - DOM structure & interactive elements crawl (1.9s)
+⚠️ Mobile (375px) - Enterprise Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  15 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Mobile (375px) Viewport › Enterprise Console - Responsive layout integrity (1.6s)
+  ✓  16 [audit-chromium] › tests/accessibility.spec.ts:54:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Public Landing - axe-core accessibility scan (2.0s)
+
+Tablet (768px) - Public Landing Interactive Elements: 23
+  By role: { native: 23 }
+  ✓  17 [audit-chromium] › tests/accessibility.spec.ts:85:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Public Landing - DOM structure & interactive elements crawl (2.0s)
+⚠️ Tablet (768px) - Public Landing potentially clipped elements: [
+  'a',  'main',
+  'h2', 'div',
+  'h2', 'h2',
+  'h2'
+]
+  ✓  18 [audit-chromium] › tests/accessibility.spec.ts:117:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Public Landing - Responsive layout integrity (1.5s)
+
+Tablet (768px) - Candidate Dashboard Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  19 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Candidate Dashboard - axe-core accessibility scan (2.5s)
+
+Tablet (768px) - Candidate Dashboard Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  20 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Candidate Dashboard - DOM structure & interactive elements crawl (2.0s)
+⚠️ Tablet (768px) - Candidate Dashboard potentially clipped elements: [ 'a', 'h1' ]
+  ✓  21 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Candidate Dashboard - Responsive layout integrity (1.6s)
+
+Tablet (768px) - Employer Portal Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  22 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Employer Portal - axe-core accessibility scan (2.5s)
+
+Tablet (768px) - Employer Portal Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  23 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Employer Portal - DOM structure & interactive elements crawl (2.0s)
+⚠️ Tablet (768px) - Employer Portal potentially clipped elements: [ 'a', 'h1' ]
+  ✓  24 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Employer Portal - Responsive layout integrity (1.5s)
+
+Tablet (768px) - Admin Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  25 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Admin Console - axe-core accessibility scan (2.5s)
+
+Tablet (768px) - Admin Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  26 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Admin Console - DOM structure & interactive elements crawl (2.0s)
+⚠️ Tablet (768px) - Admin Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  27 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Admin Console - Responsive layout integrity (1.5s)
+
+Tablet (768px) - Enterprise Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-8
+  ✓  28 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Enterprise Console - axe-core accessibility scan (2.4s)
+
+Tablet (768px) - Enterprise Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  29 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Enterprise Console - DOM structure & interactive elements crawl (2.0s)
+⚠️ Tablet (768px) - Enterprise Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  30 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Tablet (768px) Viewport › Enterprise Console - Responsive layout integrity (1.6s)
+  ✓  31 [audit-chromium] › tests/accessibility.spec.ts:54:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Public Landing - axe-core accessibility scan (2.0s)
+
+Desktop (1440px) - Public Landing Interactive Elements: 23
+  By role: { native: 23 }
+  ✓  32 [audit-chromium] › tests/accessibility.spec.ts:85:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Public Landing - DOM structure & interactive elements crawl (2.0s)
+⚠️ Desktop (1440px) - Public Landing potentially clipped elements: [
+  'a',  'main',
+  'h2', 'div',
+  'h2', 'h2',
+  'h2'
+]
+  ✓  33 [audit-chromium] › tests/accessibility.spec.ts:117:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Public Landing - Responsive layout integrity (1.6s)
+
+Desktop (1440px) - Candidate Dashboard Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-12
+    Target: h2
+    Target: .mt-4
+    Target: .text-white\/90.gap-3.items-center:nth-child(1) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(2) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(3) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(4) > span
+  ✓  34 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Candidate Dashboard - axe-core accessibility scan (2.6s)
+
+Desktop (1440px) - Candidate Dashboard Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  35 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Candidate Dashboard - DOM structure & interactive elements crawl (2.1s)
+⚠️ Desktop (1440px) - Candidate Dashboard potentially clipped elements: [ 'a', 'h1' ]
+  ✓  36 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Candidate Dashboard - Responsive layout integrity (1.7s)
+
+Desktop (1440px) - Employer Portal Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-12
+    Target: h2
+    Target: .mt-4
+    Target: .text-white\/90.gap-3.items-center:nth-child(1) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(2) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(3) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(4) > span
+  ✓  37 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Employer Portal - axe-core accessibility scan (2.6s)
+
+Desktop (1440px) - Employer Portal Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  38 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Employer Portal - DOM structure & interactive elements crawl (2.1s)
+⚠️ Desktop (1440px) - Employer Portal potentially clipped elements: [ 'a', 'h1' ]
+  ✓  39 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Employer Portal - Responsive layout integrity (1.6s)
+
+Desktop (1440px) - Admin Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-12
+    Target: h2
+    Target: .mt-4
+    Target: .text-white\/90.gap-3.items-center:nth-child(1) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(2) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(3) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(4) > span
+  ✓  40 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Admin Console - axe-core accessibility scan (2.7s)
+
+Desktop (1440px) - Admin Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  41 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Admin Console - DOM structure & interactive elements crawl (2.2s)
+⚠️ Desktop (1440px) - Admin Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  42 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Admin Console - Responsive layout integrity (1.7s)
+
+Desktop (1440px) - Enterprise Console Accessibility Violations:
+  - heading-order (moderate): Ensure the order of headings is semantically correct
+    Target: h3
+  - region (moderate): Ensure all page content is contained by landmarks
+    Target: .mb-12
+    Target: h2
+    Target: .mt-4
+    Target: .text-white\/90.gap-3.items-center:nth-child(1) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(2) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(3) > span
+    Target: .text-white\/90.gap-3.items-center:nth-child(4) > span
+  ✓  43 [audit-chromium] › tests/accessibility.spec.ts:156:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Enterprise Console - axe-core accessibility scan (2.6s)
+
+Desktop (1440px) - Enterprise Console Interactive Elements: 10
+  By role: { native: 10 }
+  ✓  44 [audit-chromium] › tests/accessibility.spec.ts:189:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Enterprise Console - DOM structure & interactive elements crawl (2.2s)
+⚠️ Desktop (1440px) - Enterprise Console potentially clipped elements: [ 'a', 'h1' ]
+  ✓  45 [audit-chromium] › tests/accessibility.spec.ts:226:9 › WCAG 2.1 AA Accessibility & Responsive Crawl › Desktop (1440px) Viewport › Enterprise Console - Responsive layout integrity (1.7s)
+✓ Public Landing has functional skip link
+✓ Candidate Dashboard has functional skip link
+✓ Employer Portal has functional skip link
+✓ Admin Console has functional skip link
+✓ Enterprise Console has functional skip link
+  ✓  46 [audit-chromium] › tests/accessibility.spec.ts:270:3 › Navigation & Focus Management › Skip link exists and functions on all public pages (6.7s)
+✓ Candidate Dashboard has functional skip link
+✓ Employer Portal has functional skip link
+✓ Admin Console has functional skip link
+✓ Enterprise Console has functional skip link
+  ✓  47 [audit-chromium] › tests/accessibility.spec.ts:287:3 › Navigation & Focus Management › Skip link exists and functions on authenticated pages (7.5s)
+Tab 1: focused a
+Tab 2: focused a
+Tab 3: focused input
+Tab 4: focused button
+Tab 5: focused input
+Tab 6: focused button
+Tab 7: focused button
+Tab 8: focused button
+Tab 9: focused button
+Tab 10: focused button
+  ✓  48 [audit-chromium] › tests/accessibility.spec.ts:305:3 › Navigation & Focus Management › Keyboard navigation works through interactive elements on authenticated pages (3.4s)
+Focus styles: 23/23 elements
+  ✓  49 [audit-chromium] › tests/accessibility.spec.ts:319:3 › Navigation & Focus Management › Focus indicators visible on all interactive elements on public pages (2.2s)
+  ✓  50 [audit-chromium] › tests/accessibility.spec.ts:346:5 › Color Contrast Verification (WCAG 2.1 AA) › Public Landing - color contrast scan (AA) (2.2s)
+  ✓  51 [audit-chromium] › tests/accessibility.spec.ts:346:5 › Color Contrast Verification (WCAG 2.1 AA) › Candidate Dashboard - color contrast scan (AA) (2.2s)
+  ✓  52 [audit-chromium] › tests/accessibility.spec.ts:346:5 › Color Contrast Verification (WCAG 2.1 AA) › Employer Portal - color contrast scan (AA) (2.2s)
+  ✓  53 [audit-chromium] › tests/accessibility.spec.ts:346:5 › Color Contrast Verification (WCAG 2.1 AA) › Admin Console - color contrast scan (AA) (2.0s)
+  ✓  54 [audit-chromium] › tests/accessibility.spec.ts:346:5 › Color Contrast Verification (WCAG 2.1 AA) › Enterprise Console - color contrast scan (AA) (2.1s)
+
+Public Landing Structure:
+  Landmarks: 7
+  Headings: 14
+  Images: 0
+  Images without alt: 0
+  ✓  55 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Public Landing - ARIA landmarks and semantic structure (1.5s)
+
+Candidate Dashboard Structure:
+  Landmarks: 1
+  Headings: 3
+  Images: 0
+  Images without alt: 0
+  ✓  56 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Candidate Dashboard - ARIA landmarks and semantic structure (1.9s)
+
+Employer Portal Structure:
+  Landmarks: 1
+  Headings: 3
+  Images: 0
+  Images without alt: 0
+  ✓  57 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Employer Portal - ARIA landmarks and semantic structure (1.7s)
+
+Admin Console Structure:
+  Landmarks: 1
+  Headings: 3
+  Images: 0
+  Images without alt: 0
+  ✓  58 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Admin Console - ARIA landmarks and semantic structure (1.6s)
+
+Enterprise Console Structure:
+  Landmarks: 1
+  Headings: 3
+  Images: 0
+  Images without alt: 0
+  ✓  59 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Enterprise Console - ARIA landmarks and semantic structure (1.6s)
+
+  59 passed (2.2m)

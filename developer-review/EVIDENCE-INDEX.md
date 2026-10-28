@@ -194,3 +194,44 @@
 | `git diff --stat HEAD` (excluding `developer-review/`) | empty — verified clean |
 | `git status` | `nothing to commit, working tree clean` for non-`developer-review/` |
 
+
+---
+
+# Part R — Runtime verification evidence (temporary environment pass, 2026-10-28)
+
+**Revision:** `a7d08a2fa67b44aefe4692405b470fa6b174d29f` (branch `arena/393531fe-resumepilotai`)
+**Environment:** `TEMP-ENVIRONMENT-MANIFEST.md`
+**Rule unchanged:** a PASS still needs the acceptance criterion demonstrated; installing
+a tool earned nothing. Every entry below is a command that ran, with its log.
+
+> **Substitution warning carried on every runtime E-ID:** the SQL engine was
+> **MySQL 5.7.29**, not MariaDB 11.4. Results are `SUBSTITUTE-ENGINE` and are never
+> counted as target-database acceptance evidence.
+
+| E-ID | Evidence | Command / artifact | Result |
+|---|---|---|---|
+| **E-300** | Temporary environment capture (OS, versions, browser, ports) | `Evidence/env/environment.json` | Debian 12, Node 22.22.3, Chromium 149.0.7827.0, Playwright 1.64.1, axe 4.14.0 |
+| **E-301** | Backend suite (repository runner, unmodified) | `cd backend && RUN_MARIADB_INTEGRATION=false node scripts/run-tests-with-annotations.js` → `Evidence/logs/backend-suite-mock-pass.log` | **executed**: 1,315 tests / 1,271 pass / 14 fail / 30 skip, exit 1, 72.0 s |
+| **E-302** | The 14 failures are DB-dependency, not logic | same log + `Evidence/logs/backend-db-recheck.log` | `ECONNREFUSED` without DB → `ER_NO_SUCH_TABLE` (`enterprise_membership_invitations`) with DB; 6 files re-run: 71 tests / 57 pass / 14 fail |
+| **E-303** | 30 skips are all MariaDB gates with self-describing reasons | `grep '# SKIP' Evidence/logs/backend-suite-mock-pass.log` | 6 + 23 + 1 as quoted in `TEST-EXECUTION-REPORT.md` §2 |
+| **E-304** | Enterprise suite | `npm --prefix backend run test:enterprise` → `Evidence/logs/enterprise-suite.log` | 187 / 187 pass, exit 0, 11.3 s |
+| **E-305** | Payments suite | `npm --prefix backend run test:payments` → `Evidence/logs/payments-suite.log` | 43 / 43 pass, exit 0 |
+| **E-306** | Security header & discovery policy checks | `npm run test:security` → `Evidence/logs/security-checks.log` | exit 0; `.htaccess` + `public/.htaccess` match canonical policy; `dist/.htaccess` SKIPped (absent) |
+| **E-307** | Frontend typecheck | `npx tsc -b` → `Evidence/logs/frontend-tsc.log` | exit 0 |
+| **E-308** | Frontend production build | `npx vite build` → `Evidence/logs/frontend-vite-build.log` | exit 0, `✓ built in 1.95s` |
+| **E-309** | Frontend lint | `npm run lint` (oxlint) → `Evidence/logs/frontend-lint.log` | 0 warnings / 0 errors, 238 files |
+| **E-310** | Express runtime + auth/RBAC/headers probes | `Evidence/logs/backend-http-probe.log` (10 probes) | 200 health; 503 readyz; 401 unauth; 401 forged; **403** candidate→admin; 400 weak password; CSP/HSTS/XFO/nosniff/Referrer/Permissions + RateLimit headers present |
+| **E-311** | MariaDB gate refuses the substitute engine | `node --test test/mariadb-migration-gate.test.js` with `RUN_MARIADB_INTEGRATION=true` → `Evidence/logs/mariadb-gate-refusal.log` | `not ok` — `target engine must be MariaDB, received 5.7.29` |
+| **E-312** | Migration fidelity probe (per-file) | `node developer-review/tools/migration-fidelity-probe.cjs` → `Evidence/artifacts/migration-fidelity.json` | 29 discovered, **1 applied**, 57 tables, first failure `002` `ER_PARSE_ERROR` (`ADD COLUMN IF NOT EXISTS`) |
+| **E-313** | Audit viewport matrix (5 mandated widths × 9 workflows) | `npx playwright test -c developer-review/tools/playwright.audit-own.config.ts` → `Evidence/logs/playwright-audit-verification.log` + 45 PNGs | **45 / 45 pass**; 0 px horizontal overflow everywhere; 0 uncaught page errors |
+| **E-314** | Browser console/network observations | `Evidence/artifacts/browser-observations.json` | 90 × `fonts.googleapis.com … ERR_CONNECTION_CLOSED` (sandbox-blocked fonts), 5 × 502 before the API was started, 0 page errors |
+| **E-315** | axe-core WCAG 2.1 AA findings with selectors + contrast | `Evidence/artifacts/axe-violation-details.json` | 5 violations: `aria-prohibited-attr`(3 nodes), `label-content-name-mismatch`(2), `button-name`(**critical**,1), `color-contrast`(4; 3.16:1 / 2.45:1), `scrollable-region-focusable`(1) |
+| **E-316** | Repository accessibility suite | `npx playwright test … tests/accessibility.spec.ts` → `Evidence/logs/pw/accessibility.log` | 59 / 59 pass (see DISC-012 for what that does *not* prove) |
+| **E-317** | Repository engine-integrity suite | → `Evidence/logs/pw/engine-integrity-db.log` | 53 / 53 pass (Zod contracts against the live `:8080`) |
+| **E-318** | Repository engine-security suite (secret non-disclosure, DOM masking, storage) | → `Evidence/logs/pw/engine-security-db.log` | 8 / 8 pass with a DB-backed API (1 failed + 7 skipped without one) |
+| **E-319** | Repository responsive/visual suite against **committed baselines** | → `Evidence/logs/pw/engine-responsive-baselines.log` | 35 executions: **13 pass / 22 fail** = 20 visual (3–7 % delta, font-substitution attributable) + 2 trace-write artifacts; non-visual responsive/axe assertions pass |
+| **E-320** | Repository freellmapi admin E2E | → `Evidence/logs/pw/freellmapi-admin-e2e-db.log` (47 fail, wrong port) and `…-5173.log` (**15 pass / 2 fail / 30 not-run**) | DISC-011 established: failures are the spec's hardcoded `:5173` |
+| **E-321** | Billing/checkout parity suite | → `Evidence/logs/pw/billing-checkout-db.log` | 4 pass / 1 fail (fails only on `consoleErrors == []` because Google Fonts is blocked) |
+| **E-322** | Candidate dashboard suite (175 tests) | → `Evidence/logs/pw/candidate-db.log` | sampled 3/175 then stopped: needs MariaDB + live AI; `BLOCKED`, not assessed |
+| **E-323** | Audit-package verification (kept separate from app tests) | `bash developer-review/scripts/verify-audit-package.sh` → `Evidence/logs/audit-package-verification.log` | **34 PASS / 0 FAIL** |
+| **E-324** | Scope integrity (no application file touched) | `git status --porcelain | grep -v '^.. developer-review/'` | empty (see `FINAL-ACCEPTANCE-REPORT.md` §8) |

@@ -1,0 +1,31 @@
+TAP version 13
+# Subtest: clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+not ok 1 - clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+  ---
+  duration_ms: 21.656009
+  type: 'test'
+  location: '/home/user/ResumePilotAi/backend/test/mariadb-migration-gate.test.js:57:1'
+  failureType: 'testCodeFailure'
+  error: 'target engine must be MariaDB, received 5.7.29'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '5.7.29'
+  operator: 'match'
+  stack: |-
+    assertMariaDb114 (/home/user/ResumePilotAi/backend/test/mariadb-migration-gate.test.js:49:10)
+    TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/mariadb-migration-gate.test.js:72:3)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 184.80422
+EXIT=1

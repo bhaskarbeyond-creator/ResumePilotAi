@@ -1,0 +1,6 @@
+engine            : 5.7.29 (MySQL Community Server (GPL))
+migrations found  : 29
+migrations applied: 1
+tables created    : 57
+first failure     : 002_single_owner_enterprise.sql -> ER_PARSE_ERROR You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS revision INT NOT NULL DEFAULT 1' at line 1
+  offending SQL   : ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1

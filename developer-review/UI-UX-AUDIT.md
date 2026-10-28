@@ -118,3 +118,30 @@ its capture tool, date, commit SHA, and viewport, per mandate §1.1/§9.4.
    already exist and are proven to work for one surface.
 3. Resolve the `dangerouslySetInnerHTML` sanitization question (§1/§4) before any other
    UI/UX work, given its dual security+accessibility relevance.
+
+---
+
+## 7. Runtime accessibility findings (added by the temporary-environment pass)
+
+The sections above were scoped to source inspection and explicitly marked
+`RUNTIME VERIFICATION DEFERRED`. That deferral is now partially lifted: Chromium
+149.0.7827.0 + axe-core 4.14.0 ran against the live application at 375×667 and
+1440×900. Full method and reproduction in `BROWSER-VERIFICATION-REPORT.md` §4;
+machine evidence in `Evidence/artifacts/axe-violation-details.json`.
+
+| ID | Rule (impact) | Nodes | Element / anchor | Measured detail |
+|---|---|---:|---|---|
+| A11Y-001 | `aria-prohibited-attr` (serious) | 3 | `pages/landing.tsx:239` `<div aria-label="5 star rating">` | `aria-label` on a role-less `div` → star ratings unannounced |
+| A11Y-002 | `label-content-name-mismatch` (serious) | 2 | `pages/landing.tsx:79`, `:296` logo `<a aria-label="IME365 Home">` | visible text not contained in accessible name → voice-control failure |
+| A11Y-003 | `button-name` (**critical**) | 1 | `pages/billing/pricing.tsx:264-272` `role="switch"` | no accessible name on the billing-period toggle |
+| A11Y-004 | `color-contrast` (serious) | 4 | `pricing.tsx:285` and `:335` | **3.16:1** (`#009966` on `emerald-500/10`) and **2.45:1** (`text-ink-muted/60`) vs AA 4.5:1 |
+| A11Y-005 | `scrollable-region-focusable` (serious) | 1 | `pricing.tsx:384` `overflow-x-auto` | comparison matrix not keyboard-scrollable |
+
+**Conformance statement (narrow, evidence-bounded):** WCAG 2.1 AA cannot be claimed for
+the public landing page and pricing page as served at this revision. Candidate
+dashboard, employer portal, admin console and enterprise console were **not** audited at
+payload level because their authenticated surfaces could not be reached (DISC-012).
+
+**Methodological caveat carried forward:** a green `frontend/tests/accessibility.spec.ts`
+(59/59 in this same session) does not contradict these findings — see DISC-012 for why a
+portion of that suite scans the login page rather than the surface it names.

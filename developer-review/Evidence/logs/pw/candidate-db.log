@@ -1,0 +1,414 @@
+
+Running 175 tests using 1 worker
+
+  ✘    1 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:36:3 › AI Writing Assistant › offers only backend-supported tools; ?tool= survives refresh; arrow keys switch tools (16.2s)
+  ✘    2 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:64:3 › AI Writing Assistant › bullet: empty input is blocked locally; an unavailable answer is never shown as a result (1.5m)
+  ✘    3 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:110:3 › AI Writing Assistant › summary: thin input gets the server’s clarifying questions instead of invented text (1.5m)
+  ✘    4 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:138:3 › AI Writing Assistant › skills: a target role is required; an unavailable answer shows no suggestions (1.5m)
+  ✘    5 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:168:3 › AI Writing Assistant › network failure (FAULT INJECTION: request aborted) reports that nothing was generated (1.5m)
+  ✘    6 [audit-chromium] › tests/candidate/ai-assistant.spec.ts:181:3 › AI Writing Assistant › accessibility: no axe WCAG 2.1 A/AA violations for each tool and the validation state (0ms)
+  ✘    7 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:107:1 › lists candidate A’s own applications with the job, status and date, and nothing of candidate B’s (0ms)
+  -    8 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:141:1 › search, status filter and sort live in the URL: reload, direct links and Back/Forward keep them
+  -    9 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:202:1 › details show exactly what was sent, including the resume by name, and say so once that resume is deleted
+  -   10 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:250:1 › withdrawing asks first; Escape and Keep application change nothing and return focus
+  -   11 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:296:1 › a withdrawal that fails keeps the application and says so; the retry withdraws it for good
+  -   12 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:344:1 › withdrawing an application already removed in another tab reports that and removes it here
+  -   13 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:361:1 › adds an application’s job to the Job Tracker at its stage with the date it was sent, once, and links to it
+  -   14 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:396:1 › a Job Tracker that cannot be reached adds nothing and says so; the job can be added afterwards
+  -   15 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:418:1 › loading, a failed load with a working Try again, and a failed refresh that keeps the list
+  -   16 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:455:1 › with no applications, says so and points to the job portal
+  -   17 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:473:1 › the navigation and breadcrumb lead to Applied Jobs, and notifications about an application open it
+  -   18 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:499:1 › rows that the current workflows cannot produce are shown as stored, never guessed (labelled mock)
+  -   19 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:538:1 › works with the keyboard and has no axe violations on the list, the details and the dialog
+  -   20 [audit-chromium] › tests/candidate/applied-jobs.spec.ts:577:3 › as candidate B › candidate B sees only their own application and cannot withdraw, take over or edit candidate A’s
+  ✘   21 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:86:3 › ATS scoring (account A) › overview: average and best scores come from the stored resumes; profile status and plan are real (0ms)
+  -   22 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:121:3 › ATS scoring (account A) › ATS Score: scores the selected stored resume, keeps ?resume= on refresh, and checks job description terms
+  -   23 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:160:3 › ATS scoring (account A) › ATS Score: a failed resume load (FAULT INJECTION: request aborted) shows an error and never scores
+  -   24 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:177:3 › ATS scoring (account A) › Resumes page: each card shows the stored resume’s real score instead of "unscored"
+  -   25 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:186:3 › ATS scoring (account A) › accessibility: no axe WCAG 2.1 A/AA violations on the ATS Score page, before and after results
+  -   26 [audit-chromium] › tests/candidate/ats-scoring.spec.ts:201:3 › ATS scoring (account B, no resumes) › overview and ATS Score never invent a score; another account’s resume id is not loaded
+  ✘   27 [audit-chromium] › tests/candidate/auth-session.spec.ts:13:3 › stored sessions are never trusted without the backend › a forged session without a token does not authenticate (0ms)
+  -   28 [audit-chromium] › tests/candidate/auth-session.spec.ts:22:3 › stored sessions are never trusted without the backend › a well-formed but unsigned token is rejected by the backend and cleared
+  -   29 [audit-chromium] › tests/candidate/auth-session.spec.ts:39:3 › stored sessions are never trusted without the backend › an absolute ?next= URL cannot redirect off-site after sign-in
+  -   30 [audit-chromium] › tests/candidate/auth-session.spec.ts:51:1 › a real session renders the dashboard and sign-out clears every session key
+  ✘   31 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog (0ms)
+  -   32 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:83:3 › Candidate Dashboard — Job Tracker Surface › applied-jobs and job-matching route aliases resolve correctly
+  -   33 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:104:3 › Candidate Dashboard — Settings & Security Surface › navigates the sections, guards the deletion dialog, and sends moved sections to their pages
+  -   34 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:156:3 › Candidate Dashboard — Settings & Security Surface › legacy settings route aliases redirect to their sections
+  -   35 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:173:3 › Candidate Dashboard — Support & Favourites Surfaces › support desk renders tickets and opens accessible creation dialog
+  -   36 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:189:3 › Candidate Dashboard — Support & Favourites Surfaces › support route aliases redirect to /dashboard/support
+  -   37 [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:201:3 › Candidate Dashboard — Support & Favourites Surfaces › saved favourites renders its heading without overflow, and the /dashboard/favorites alias opens it
+  ✘   38 [audit-chromium] › tests/candidate/cover-letters.spec.ts:84:3 › Cover letters (account A) › list: real letters with search, sort, URL state, refresh and back/forward (0ms)
+  -   39 [audit-chromium] › tests/candidate/cover-letters.spec.ts:138:3 › Cover letters (account A) › create: validation blocks empty and invalid input, then the letter saves and persists after reload
+  -   40 [audit-chromium] › tests/candidate/cover-letters.spec.ts:195:3 › Cover letters (account A) › edit: direct link and legacy alias load the letter; keyboard edits save with Ctrl+S and persist
+  -   41 [audit-chromium] › tests/candidate/cover-letters.spec.ts:241:3 › Cover letters (account A) › duplicate: creates an independent saved copy
+  -   42 [audit-chromium] › tests/candidate/cover-letters.spec.ts:265:3 › Cover letters (account A) › delete dialog: confirmation, Escape, focus entry/return/containment, scroll lock, cancel, confirm, fresh reopen
+  -   43 [audit-chromium] › tests/candidate/cover-letters.spec.ts:330:3 › Cover letters (account A) › delete failure (FAULT INJECTION: request aborted) keeps the letter and never reports success
+  -   44 [audit-chromium] › tests/candidate/cover-letters.spec.ts:354:3 › Cover letters (account A) › deep links: ?role=&company= opens a prefilled unsaved letter; /dashboard/cv redirects to the list
+  -   45 [audit-chromium] › tests/candidate/cover-letters.spec.ts:372:3 › Cover letters (account A) › a missing letter id shows a not-found state (HTTP 404), never a blank or invented letter
+  -   46 [audit-chromium] › tests/candidate/cover-letters.spec.ts:385:3 › Cover letters (account A) › AI draft: input check, replace confirmation, and the unavailable path never changes the letter
+  -   47 [audit-chromium] › tests/candidate/cover-letters.spec.ts:433:3 › Cover letters (account A) › list load failure (FAULT INJECTION: request aborted) shows an error with a working retry
+  -   48 [audit-chromium] › tests/candidate/cover-letters.spec.ts:446:3 › Cover letters (account A) › save failure (FAULT INJECTION: request aborted) keeps the edits and does not report success
+  -   49 [audit-chromium] › tests/candidate/cover-letters.spec.ts:468:3 › Cover letters (account A) › export: download, clipboard and print layout carry the real letter as plain text
+  -   50 [audit-chromium] › tests/candidate/cover-letters.spec.ts:512:3 › Cover letters (account A) › accessibility: no axe WCAG 2.1 A/AA violations on the list, delete dialog and builder
+  -   51 [audit-chromium] › tests/candidate/cover-letters.spec.ts:545:3 › Cover letters (account A) › templates & live A4 letterhead: selecting templates switches layout, updates badge, and persists
+  -   52 [audit-chromium] › tests/candidate/cover-letters.spec.ts:616:3 › Cover letters (account A) › zoom ladder & fullscreen modal: preview zoom ladder and fullscreen modal preview
+  -   53 [audit-chromium] › tests/candidate/cover-letters.spec.ts:660:3 › Cover letters (account A) › ATS match score & missing keyword chips: visual gauge and interactive copy chips
+  -   54 [audit-chromium] › tests/candidate/cover-letters.spec.ts:692:3 › Cover letters (account A) › Job Tracker sync: 1-click tracking from builder and from cover letters list
+  -   55 [audit-chromium] › tests/candidate/cover-letters.spec.ts:755:3 › Cover letters (account B) › empty state: guidance and a working create action, with B’s own profile details
+  -   56 [audit-chromium] › tests/candidate/cover-letters.spec.ts:774:3 › Cover letters (account B) › isolation: account A’s letter is not listed and cannot be opened, overwritten or deleted by B
+  ✘   57 [audit-chromium] › tests/candidate/favourites.spec.ts:125:1 › lists candidate A’s saved items newest first, each with its current details or the ones saved with it (0ms)
+  -   58 [audit-chromium] › tests/candidate/favourites.spec.ts:174:1 › the type filter and the search live in the URL: reload, direct links and Back/Forward keep them
+  -   59 [audit-chromium] › tests/candidate/favourites.spec.ts:229:1 › removing takes effect at once and Undo saves the item again with what it had; both survive a reload
+  -   60 [audit-chromium] › tests/candidate/favourites.spec.ts:272:1 › a removal that fails keeps the item and says so; trying again removes it
+  -   61 [audit-chromium] › tests/candidate/favourites.spec.ts:296:1 › an Undo that fails says so and stays available; trying again saves the item with its details
+  -   62 [audit-chromium] › tests/candidate/favourites.spec.ts:321:1 › removing an item already removed elsewhere says so, offers no Undo and moves focus to the next item
+  -   63 [audit-chromium] › tests/candidate/favourites.spec.ts:335:1 › loading, a failed load with a working Try again, and a failed refresh that keeps the list
+  -   64 [audit-chromium] › tests/candidate/favourites.spec.ts:375:1 › with nothing saved, says so and points to the bookmark on the Dashboard
+  -   65 [audit-chromium] › tests/candidate/favourites.spec.ts:389:1 › rows that the current workflows cannot produce are shown as stored, never guessed (labelled mock)
+  -   66 [audit-chromium] › tests/candidate/favourites.spec.ts:421:1 › a job saved with the Dashboard bookmark is listed with its live details; removing it here clears the bookmark
+  -   67 [audit-chromium] › tests/candidate/favourites.spec.ts:451:1 › a saved resume opens in the Resume Builder, and Back returns to the filtered list
+  -   68 [audit-chromium] › tests/candidate/favourites.spec.ts:464:1 › a job the candidate posted themself shows its details while closed, as the job route does for its owner
+  -   69 [audit-chromium] › tests/candidate/favourites.spec.ts:481:1 › the navigation, the breadcrumb and the /dashboard/favorites alias lead to Saved Favorites
+  -   70 [audit-chromium] › tests/candidate/favourites.spec.ts:499:1 › works with the keyboard and has no axe violations, with and without a removal notice
+  -   71 [audit-chromium] › tests/candidate/favourites.spec.ts:542:3 › as candidate B › candidate B sees only their own saved items, learns nothing of candidate A’s, and cannot remove them
+  ✘   72 [audit-chromium] › tests/candidate/interview-coach.spec.ts:62:3 › Interview Coach — real stack › mode selection is truthful and every mode opens its configuration (0ms)
+  -   73 [audit-chromium] › tests/candidate/interview-coach.spec.ts:78:3 › Interview Coach — real stack › practice: free navigation keeps answers and the summary is factual (no score, no old AI calls)
+  -   74 [audit-chromium] › tests/candidate/interview-coach.spec.ts:123:3 › Interview Coach — real stack › practice guidance: the real unavailable answer is shown honestly, never invented guidance
+  -   75 [audit-chromium] › tests/candidate/interview-coach.spec.ts:143:3 › Interview Coach — real stack › mock: pausing stops the clock and hides the question; a timeout ends with the answers given
+  -   76 [audit-chromium] › tests/candidate/interview-coach.spec.ts:172:3 › Interview Coach — real stack › CBT without a role: labelled built-in set, no repeats, scoped shortcuts, confirm dialog, real score
+  -   77 [audit-chromium] › tests/candidate/interview-coach.spec.ts:226:3 › Interview Coach — real stack › CBT timeout auto-submits the answers actually given (regression: stale snapshot scored 0)
+  -   78 [audit-chromium] › tests/candidate/interview-coach.spec.ts:246:3 › Interview Coach — real stack › CBT with a role: the real unavailable answer is explained and the labelled built-in set is offered
+  -   79 [audit-chromium] › tests/candidate/interview-coach.spec.ts:267:3 › Interview Coach — real stack › CBT leave: the exam asks before discarding answers and returns focus on cancel
+  -   80 [audit-chromium] › tests/candidate/interview-coach.spec.ts:285:3 › Interview Coach — real stack › practice leave: asks only when answers would be lost; Stay and Escape keep the session and return focus
+  -   81 [audit-chromium] › tests/candidate/interview-coach.spec.ts:322:3 › Interview Coach — real stack › live: topic and role are required, and the real unavailable answer starts nothing
+  -   82 [audit-chromium] › tests/candidate/interview-coach.spec.ts:350:3 › Interview Coach — real stack › deep links: legacy paths redirect, nested paths render, refresh and history work
+  -   83 [audit-chromium] › tests/candidate/interview-coach.spec.ts:417:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › CBT with a role renders the AI-generated set and scores it against the server answer key
+  -   84 [audit-chromium] › tests/candidate/interview-coach.spec.ts:447:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › live interview: evaluated answers, reload and resume, server-side completion and report
+  -   85 [audit-chromium] › tests/candidate/interview-coach.spec.ts:511:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › live interview: ending asks first and deletes the session; another account can never read it
+  -   86 [audit-chromium] › tests/candidate/interview-coach.spec.ts:545:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › live interview: an answer recorded in another tab wins; this tab adopts the latest question and says so
+  -   87 [audit-chromium] › tests/candidate/interview-coach.spec.ts:593:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › live interview: a session removed elsewhere is reported as gone, and ending it still returns to the modes
+  -   88 [audit-chromium] › tests/candidate/interview-coach.spec.ts:628:3 › Interview Coach — acceptance stack (stub AI provider, real backend + MariaDB) › practice guidance renders the guidance the server returned
+  ✘   89 [audit-chromium] › tests/candidate/job-tracker.spec.ts:104:1 › adds a job with every detail, checks the form first, and keeps it after a reload (0ms)
+  -   90 [audit-chromium] › tests/candidate/job-tracker.spec.ts:192:1 › edits a job, clears optional details, and skips a save with no changes
+  -   91 [audit-chromium] › tests/candidate/job-tracker.spec.ts:246:1 › moves a job between stages on the board and in the list, and keeps it after a reload
+  -   92 [audit-chromium] › tests/candidate/job-tracker.spec.ts:270:1 › moves a job to the next stage in one click and keeps focus on that control
+  -   93 [audit-chromium] › tests/candidate/job-tracker.spec.ts:294:1 › drags a job to another stage on the board with a pointer
+  -   94 [audit-chromium] › tests/candidate/job-tracker.spec.ts:308:1 › a failed move leaves the job where it was and says so (FAULT INJECTION: request aborted)
+  -   95 [audit-chromium] › tests/candidate/job-tracker.spec.ts:323:1 › a move after the job changed in another tab reloads it instead of overwriting
+  -   96 [audit-chromium] › tests/candidate/job-tracker.spec.ts:343:1 › an edit saved after another tab changed the job keeps the edits and merges them
+  -   97 [audit-chromium] › tests/candidate/job-tracker.spec.ts:366:1 › removes a job only after confirming; Cancel and Escape keep it, and focus moves to the next job
+  -   98 [audit-chromium] › tests/candidate/job-tracker.spec.ts:404:1 › a failed removal keeps the job and says so (FAULT INJECTION: HTTP 503); a job removed elsewhere is reported
+  -   99 [audit-chromium] › tests/candidate/job-tracker.spec.ts:442:1 › removing a job that changed in another tab shows its latest details before removing it
+  -  100 [audit-chromium] › tests/candidate/job-tracker.spec.ts:463:1 › search, sort and view live in the URL and survive a reload and Back/Forward; no results can be cleared
+  -  101 [audit-chromium] › tests/candidate/job-tracker.spec.ts:516:3 › an account with no tracked jobs (candidate B) › shows an honest empty state and adds the first job from it
+  -  102 [audit-chromium] › tests/candidate/job-tracker.spec.ts:540:1 › when the tracker can’t be loaded it says so, never shows an empty tracker, and Try again recovers (FAULT INJECTION: HTTP 503)
+  -  103 [audit-chromium] › tests/candidate/job-tracker.spec.ts:561:1 › adds an interview to a calendar as an .ics file at the time the candidate entered
+  -  104 [audit-chromium] › tests/candidate/job-tracker.spec.ts:592:1 › Write a cover letter opens a new letter with the job’s title and company, without saving anything
+  -  105 [audit-chromium] › tests/candidate/job-tracker.spec.ts:608:1 › another candidate cannot see, change or remove these jobs, and nothing works without signing in
+  -  106 [audit-chromium] › tests/candidate/job-tracker.spec.ts:627:1 › works with the keyboard and has no axe violations on the page, the form and the remove dialog
+  -  107 [audit-chromium] › tests/candidate/job-tracker.spec.ts:664:1 › the board, the list, the menu and the form fit the screen without sideways scrolling
+  ✘  108 [audit-chromium] › tests/candidate/messages.spec.ts:167:3 › Messages — module turned off (the shipped default) › says messaging is off instead of showing an inbox, for the page and for a conversation link (0ms)
+  -  109 [audit-chromium] › tests/candidate/messages.spec.ts:191:3 › Messages — module turned off (the shipped default) › "Check again" asks the server again and shows the inbox once messaging is turned on
+  -  110 [audit-chromium] › tests/candidate/messages.spec.ts:220:3 › Messages — module turned on › lists the conversation with the participant, newest message and unread count from the server
+  -  111 [audit-chromium] › tests/candidate/messages.spec.ts:238:3 › Messages — module turned on › opening a conversation shows the thread and clears its unread count on the server, which a reload keeps
+  -  112 [audit-chromium] › tests/candidate/messages.spec.ts:265:3 › Messages — module turned on › a reply is stored first and shown from the server, survives a reload, and reaches the job owner
+  -  113 [audit-chromium] › tests/candidate/messages.spec.ts:297:3 › Messages — module turned on › Enter sends and Shift+Enter adds a line; an empty or blank draft cannot be sent
+  -  114 [audit-chromium] › tests/candidate/messages.spec.ts:324:3 › Messages — module turned on › a failed send keeps the draft and says so; trying again stores it once
+  -  115 [audit-chromium] › tests/candidate/messages.spec.ts:355:3 › Messages — module turned on › pressing Send twice quickly stores the message once
+  -  116 [audit-chromium] › tests/candidate/messages.spec.ts:372:3 › Messages — module turned on › the composer enforces the 10 000-character limit the server applies, and long words wrap
+  -  117 [audit-chromium] › tests/candidate/messages.spec.ts:395:3 › Messages — module turned on › deep link: direct load, refresh, Back and Forward, and the in-app back button
+  -  118 [audit-chromium] › tests/candidate/messages.spec.ts:428:3 › Messages — module turned on › an unknown or malformed conversation link says it is not available without asking the API
+  -  119 [audit-chromium] › tests/candidate/messages.spec.ts:447:3 › Messages — module turned on › search narrows the list by name or newest message, and says when nothing matches
+  -  120 [audit-chromium] › tests/candidate/messages.spec.ts:474:3 › Messages — module turned on › a message that arrives while the thread is open appears without a reload, is announced and marked read
+  -  121 [audit-chromium] › tests/candidate/messages.spec.ts:488:3 › Messages — module turned on › loading shows a placeholder; a failed list load explains and Try again recovers
+  -  122 [audit-chromium] › tests/candidate/messages.spec.ts:513:3 › Messages — module turned on › if an administrator turns messaging off mid-conversation, the page says so and nothing is sent
+  -  123 [audit-chromium] › tests/candidate/messages.spec.ts:532:3 › Messages — module turned on › keyboard: open a conversation from the list, reply, and return to the same row
+  -  124 [audit-chromium] › tests/candidate/messages.spec.ts:567:3 › Messages — another candidate › candidate B sees no conversations and cannot open, read or write in A's
+  ✘  125 [audit-chromium] › tests/candidate/notifications.spec.ts:69:3 › Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything (0ms)
+  -  126 [audit-chromium] › tests/candidate/notifications.spec.ts:86:3 › Notifications — candidate A’s real feed › lists the real rows newest first, with kind, time and the unread count in the page and the bell
+  -  127 [audit-chromium] › tests/candidate/notifications.spec.ts:116:3 › Notifications — candidate A’s real feed › marking one read persists after reload, and marking it unread restores it
+  -  128 [audit-chromium] › tests/candidate/notifications.spec.ts:143:3 › Notifications — candidate A’s real feed › mark all as read persists after reload, then has nothing left to do
+  -  129 [audit-chromium] › tests/candidate/notifications.spec.ts:169:3 › Notifications — candidate A’s real feed › a rejected read change rolls back and says why, even when the refresh fails too; the server keeps the row unread
+  -  130 [audit-chromium] › tests/candidate/notifications.spec.ts:198:3 › Notifications — candidate A’s real feed › a rejected mark all rolls every row back and says why
+  -  131 [audit-chromium] › tests/candidate/notifications.spec.ts:215:3 › Notifications — candidate A’s real feed › a failed load says why, the bell does not claim there is nothing, and Try again recovers
+  -  132 [audit-chromium] › tests/candidate/notifications.spec.ts:248:3 › Notifications — candidate A’s real feed › the Unread filter lives in the URL, survives reload, and keeps a row in place while you work
+  -  133 [audit-chromium] › tests/candidate/notifications.spec.ts:287:3 › Notifications — candidate A’s real feed › search matches title, message and kind; no match offers Clear search, which returns focus to the field
+  -  134 [audit-chromium] › tests/candidate/notifications.spec.ts:313:3 › Notifications — candidate A’s real feed › the interview invitation opens Interview Coach, counts as read, and Back returns to the same view
+  -  135 [audit-chromium] › tests/candidate/notifications.spec.ts:336:3 › Notifications — candidate A’s real feed › rows link only where there is an honest destination, and a broken response is reported (labelled mocks)
+  -  136 [audit-chromium] › tests/candidate/notifications.spec.ts:376:3 › Notifications — candidate A’s real feed › shows 20 at a time; Show more reveals the rest and moves focus to the first new row
+  -  137 [audit-chromium] › tests/candidate/notifications.spec.ts:400:3 › Notifications — candidate A’s real feed › every control works from the keyboard, and focus stays on a toggle after it changes
+  -  138 [audit-chromium] › tests/candidate/notifications.spec.ts:435:3 › Notifications — candidate A’s real feed › the header bell shows the live unread count, lists the real rows, and closes with Escape
+  -  139 [audit-chromium] › tests/candidate/notifications.spec.ts:453:3 › Notifications — candidate A’s real feed › another account can neither see nor change these notifications
+  ✘  140 [audit-chromium] › tests/candidate/portfolio.spec.ts:93:3 › Portfolios — module turned off (the shipped default) › the builder explains the module is off and offers no editing; legacy paths redirect (0ms)
+  -  141 [audit-chromium] › tests/candidate/portfolio.spec.ts:114:3 › Portfolios — module turned off (the shipped default) › public pages keep working while the module is off
+  -  142 [audit-chromium] › tests/candidate/portfolio.spec.ts:143:3 › Portfolios — module turned on › create a draft with validation, edit, save; the stored document persists across reload
+  -  143 [audit-chromium] › tests/candidate/portfolio.spec.ts:226:3 › Portfolios — module turned on › publish through the exact server address; public page, gallery search, unpublish and publish again
+  -  144 [audit-chromium] › tests/candidate/portfolio.spec.ts:322:3 › Portfolios — module turned on › a save from another tab is never overwritten: the conflict is explained and the latest version reloads
+  -  145 [audit-chromium] › tests/candidate/portfolio.spec.ts:347:3 › Portfolios — module turned on › delete asks first and removes the record; another account can never read or change it
+  -  146 [audit-chromium] › tests/candidate/portfolio.spec.ts:381:3 › Portfolios — module turned on › start from a saved resume: its details are copied into the new draft
+  -  147 [audit-chromium] › tests/candidate/portfolio.spec.ts:412:3 › Portfolios — module turned on › sections the builder does not edit survive a save and still render
+  -  148 [audit-chromium] › tests/candidate/portfolio.spec.ts:442:3 › Portfolios — module turned on › an earlier-editor portfolio is read-only here, publishes at the chosen address, and keeps its blocks
+  ✘  149 [audit-chromium] › tests/candidate/resume-builder.spec.ts:90:3 › Resume Builder (account A) › summary suggestion uses generate-content; an unavailable answer never changes the summary (0ms)
+  -  150 [audit-chromium] › tests/candidate/resume-builder.spec.ts:128:3 › Resume Builder (account A) › summary suggestion with thin content shows the server’s questions instead of text
+  -  151 [audit-chromium] › tests/candidate/resume-builder.spec.ts:145:3 › Resume Builder (account A) › save state is truthful; saving persists; the live ATS score matches the stored row
+  -  152 [audit-chromium] › tests/candidate/resume-builder.spec.ts:172:3 › Resume Builder (account A) › a new resume is "Not saved yet"; share and export ask for a save instead of using a placeholder id
+  -  153 [audit-chromium] › tests/candidate/resume-builder.spec.ts:189:3 › Resume Builder (account A) › DOCX export sends the session token and downloads the saved resume
+  -  154 [audit-chromium] › tests/candidate/resume-builder.spec.ts:217:3 › Resume Builder (account A) › job description match compares real keywords; adding one is an explicit, unsaved edit
+  -  155 [audit-chromium] › tests/candidate/resume-builder.spec.ts:253:3 › Resume Builder (account A) › guidance panel: collapse, expand, hide and show work from the keyboard and keep focus; no fixed status badges
+  -  156 [audit-chromium] › tests/candidate/resume-builder.spec.ts:282:3 › Resume Builder (account A) › progress counts the 12 completable sections; no invented content or dead AI controls
+  -  157 [audit-chromium] › tests/candidate/resume-builder.spec.ts:307:3 › Resume Builder (account A) › skills: an earlier grouped row loads, saves in the shared flat shape, keeps its categories and reaches the Word export
+  -  158 [audit-chromium] › tests/candidate/resume-builder.spec.ts:345:3 › Resume Builder (account A) › skills suggestion uses generate-content; unavailable response displays truthful notice without claiming all recommended skills are present
+  -  159 [audit-chromium] › tests/candidate/resume-builder.spec.ts:380:3 › Resume Builder (account A) › entries without ids (older or imported rows) are edited and deleted one at a time; legacy field names load
+  -  160 [audit-chromium] › tests/candidate/resume-builder.spec.ts:400:3 › Resume Builder (account A) › accessibility: every builder step has no axe WCAG 2.1 A/AA violations
+  ✘  161 [audit-chromium] › tests/candidate/settings.spec.ts:127:3 › Master Profile › loads the real profile, saves edits through the API and keeps them after reload (0ms)
+  -  162 [audit-chromium] › tests/candidate/settings.spec.ts:174:3 › Master Profile › validates before sending, focuses the first problem, and discards or skips unchanged saves
+  -  163 [audit-chromium] › tests/candidate/settings.spec.ts:206:3 › Master Profile › keeps the edits on a save conflict, merges them onto the newer version, or shows that version
+  -  164 [audit-chromium] › tests/candidate/settings.spec.ts:252:3 › Master Profile › shows a loading state, then a retryable error instead of an empty form
+  -  165 [audit-chromium] › tests/candidate/settings.spec.ts:282:3 › Master Profile › reports a failed save without claiming success and keeps the typed values
+  -  166 [audit-chromium] › tests/candidate/settings.spec.ts:299:3 › Master Profile › keeps unsaved edits across sections and warns before a reload drops them
+  -  167 [audit-chromium] › tests/candidate/settings.spec.ts:328:3 › Sections and addresses › section links keep history and refresh, and every supported address opens its section
+  -  168 [audit-chromium] › tests/candidate/settings.spec.ts:373:3 › Sections and addresses › the account menu and the sidebar open the matching sections
+  -  169 [audit-chromium] › tests/candidate/settings.spec.ts:395:1 › a preview session is told plainly that it has no password or second factor to manage
+  -  170 [audit-chromium] › tests/candidate/settings.spec.ts:412:1 › downloads the real data export, holding this account’s data only
+  -  171 [audit-chromium] › tests/candidate/settings.spec.ts:434:1 › reports a failed export and downloads nothing
+  -  172 [audit-chromium] › tests/candidate/settings.spec.ts:450:1 › the deletion dialog needs DELETE typed, closes every way, returns focus and reopens clean
+  -  173 [audit-chromium] › tests/candidate/settings.spec.ts:503:3 › Account deletion with a disposable account › a stale sign-in deletes nothing; the real deletion removes the data, retries, then ends the session
+  -  174 [audit-chromium] › tests/candidate/settings.spec.ts:584:1 › the theme applies at once, survives a reload and works from the keyboard
+  -  175 [audit-chromium] › tests/candidate/settings.spec.ts:610:1 › every section and the open deletion dialog pass axe, without document scroll or horizontal overflow
+
+
+  1) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:36:3 › AI Writing Assistant › offers only backend-supported tools; ?tool= survives refresh; arrow keys switch tools 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'AI Writing Assistant', level: 1 })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'AI Writing Assistant', level: 1 }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'AI Writing Assistant', level: 1 })
+
+
+      36 |   test('offers only backend-supported tools; ?tool= survives refresh; arrow keys switch tools', async ({ page }) => {
+      37 |     await page.goto('/dashboard/ai?tool=summary');
+    > 38 |     await expect(page.getByRole('heading', { level: 1, name: 'AI Writing Assistant' })).toBeVisible();
+         |                                                                                         ^
+      39 |     const tools = page.getByRole('group', { name: 'What do you want to write?' }).getByRole('radio');
+      40 |     await expect(tools).toHaveCount(3);
+      41 |     const summary = page.getByRole('radio', { name: /^Professional summary/ });
+        at /home/user/ResumePilotAi/frontend/tests/candidate/ai-assistant.spec.ts:38:89
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--e5014-esh-arrow-keys-switch-tools-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--e5014-esh-arrow-keys-switch-tools-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--e5014-esh-arrow-keys-switch-tools-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--e5014-esh-arrow-keys-switch-tools-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:64:3 › AI Writing Assistant › bullet: empty input is blocked locally; an unavailable answer is never shown as a result 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Generate', exact: true })
+
+
+      68 |     const bullet = page.getByLabel('Bullet to improve');
+      69 |
+    > 70 |     await generateButton(page).click();
+         |                                ^
+      71 |     await expect(bullet).toHaveAttribute('aria-invalid', 'true');
+      72 |     await expect(bullet).toBeFocused();
+      73 |     await expect(page.getByText('Enter the bullet you want to improve.')).toBeVisible();
+        at /home/user/ResumePilotAi/frontend/tests/candidate/ai-assistant.spec.ts:70:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--21c68--is-never-shown-as-a-result-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--21c68--is-never-shown-as-a-result-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--21c68--is-never-shown-as-a-result-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--21c68--is-never-shown-as-a-result-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:110:3 › AI Writing Assistant › summary: thin input gets the server’s clarifying questions instead of invented text 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Generate', exact: true })
+
+
+      113 |     const notes = page.getByLabel('Your notes or current summary');
+      114 |
+    > 115 |     await generateButton(page).click();
+          |                                ^
+      116 |     await expect(notes).toHaveAttribute('aria-invalid', 'true');
+      117 |     await expect(notes).toBeFocused();
+      118 |     expect(requests).toHaveLength(0);
+        at /home/user/ResumePilotAi/frontend/tests/candidate/ai-assistant.spec.ts:115:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--cec92-ns-instead-of-invented-text-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--cec92-ns-instead-of-invented-text-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--cec92-ns-instead-of-invented-text-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--cec92-ns-instead-of-invented-text-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:138:3 › AI Writing Assistant › skills: a target role is required; an unavailable answer shows no suggestions 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, copyfile '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-3/traces/60cb6dd34b2ea5023af0-e0b24c82381c32b47372-recording1.network' -> '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-3/traces/60cb6dd34b2ea5023af0-e0b24c82381c32b47372-recording1-pwnetcopy-1.network'
+
+    Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-3/traces/60cb6dd34b2ea5023af0-e0b24c82381c32b47372.trace'
+
+    Error: locator.click: Test ended.
+    Call log:
+      - waiting for getByRole('button', { name: 'Generate', exact: true })
+
+
+      142 |     const role = page.getByLabel('Target role', { exact: true });
+      143 |
+    > 144 |     await generateButton(page).click();
+          |                                ^
+      145 |     await expect(role).toHaveAttribute('aria-invalid', 'true');
+      146 |     await expect(role).toBeFocused();
+      147 |     await expect(page.getByText('Enter the target role.')).toBeVisible();
+        at /home/user/ResumePilotAi/frontend/tests/candidate/ai-assistant.spec.ts:144:32
+
+    Error: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-3/8d65c0c309cebbb093b945e54d405620.zip'
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--e63b2-answer-shows-no-suggestions-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:168:3 › AI Writing Assistant › network failure (FAULT INJECTION: request aborted) reports that nothing was generated 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, copyfile '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-4/traces/60cb6dd34b2ea5023af0-c8fa555ff9ea54e986b6-recording1.network' -> '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-4/traces/60cb6dd34b2ea5023af0-c8fa555ff9ea54e986b6-recording1-pwnetcopy-1.network'
+
+    Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-4/traces/60cb6dd34b2ea5023af0-c8fa555ff9ea54e986b6.trace'
+
+    Error: locator.fill: Test ended.
+    Call log:
+      - waiting for getByLabel('Bullet to improve')
+
+
+      170 |     await page.route('**/api/generate-content', (route) => route.abort('failed'));
+      171 |     await page.goto('/dashboard/ai');
+    > 172 |     await page.getByLabel('Bullet to improve').fill('Wrote integration tests for the payments service.');
+          |                                                ^
+      173 |     await generateButton(page).click();
+      174 |     await expect(statusRegion(page)).toContainText('The request did not reach the server');
+      175 |     await expect(statusRegion(page)).toContainText('Nothing was generated.');
+        at /home/user/ResumePilotAi/frontend/tests/candidate/ai-assistant.spec.ts:172:48
+
+    Error: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-4/cb9d682f3900667ab715b052e332298c.zip'
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/candidate-ai-assistant-AI--ebd32--that-nothing-was-generated-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [audit-chromium] › tests/candidate/ai-assistant.spec.ts:181:3 › AI Writing Assistant › accessibility: no axe WCAG 2.1 A/AA violations for each tool and the validation state 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  7) [audit-chromium] › tests/candidate/applied-jobs.spec.ts:107:1 › lists candidate A’s own applications with the job, status and date, and nothing of candidate B’s 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  8) [audit-chromium] › tests/candidate/ats-scoring.spec.ts:86:3 › ATS scoring (account A) › overview: average and best scores come from the stored resumes; profile status and plan are real 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  9) [audit-chromium] › tests/candidate/auth-session.spec.ts:13:3 › stored sessions are never trusted without the backend › a forged session without a token does not authenticate 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  10) [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  11) [audit-chromium] › tests/candidate/cover-letters.spec.ts:84:3 › Cover letters (account A) › list: real letters with search, sort, URL state, refresh and back/forward 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  12) [audit-chromium] › tests/candidate/favourites.spec.ts:125:1 › lists candidate A’s saved items newest first, each with its current details or the ones saved with it 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  13) [audit-chromium] › tests/candidate/interview-coach.spec.ts:62:3 › Interview Coach — real stack › mode selection is truthful and every mode opens its configuration 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  14) [audit-chromium] › tests/candidate/job-tracker.spec.ts:104:1 › adds a job with every detail, checks the form first, and keeps it after a reload 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  15) [audit-chromium] › tests/candidate/messages.spec.ts:167:3 › Messages — module turned off (the shipped default) › says messaging is off instead of showing an inbox, for the page and for a conversation link 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  16) [audit-chromium] › tests/candidate/notifications.spec.ts:69:3 › Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  17) [audit-chromium] › tests/candidate/portfolio.spec.ts:93:3 › Portfolios — module turned off (the shipped default) › the builder explains the module is off and offers no editing; legacy paths redirect 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  18) [audit-chromium] › tests/candidate/resume-builder.spec.ts:90:3 › Resume Builder (account A) › summary suggestion uses generate-content; an unavailable answer never changes the summary 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  19) [audit-chromium] › tests/candidate/settings.spec.ts:127:3 › Master Profile › loads the real profile, saves edits through the API and keeps them after reload 
+
+    Error: Project "audit-chromium" not found in the worker process. Make sure project name does not change.
+
+  19 failed
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:36:3 › AI Writing Assistant › offers only backend-supported tools; ?tool= survives refresh; arrow keys switch tools 
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:64:3 › AI Writing Assistant › bullet: empty input is blocked locally; an unavailable answer is never shown as a result 
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:110:3 › AI Writing Assistant › summary: thin input gets the server’s clarifying questions instead of invented text 
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:138:3 › AI Writing Assistant › skills: a target role is required; an unavailable answer shows no suggestions 
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:168:3 › AI Writing Assistant › network failure (FAULT INJECTION: request aborted) reports that nothing was generated 
+    [audit-chromium] › tests/candidate/ai-assistant.spec.ts:181:3 › AI Writing Assistant › accessibility: no axe WCAG 2.1 A/AA violations for each tool and the validation state 
+    [audit-chromium] › tests/candidate/applied-jobs.spec.ts:107:1 › lists candidate A’s own applications with the job, status and date, and nothing of candidate B’s 
+    [audit-chromium] › tests/candidate/ats-scoring.spec.ts:86:3 › ATS scoring (account A) › overview: average and best scores come from the stored resumes; profile status and plan are real 
+    [audit-chromium] › tests/candidate/auth-session.spec.ts:13:3 › stored sessions are never trusted without the backend › a forged session without a token does not authenticate 
+    [audit-chromium] › tests/candidate/candidate-dashboard.spec.ts:26:3 › Candidate Dashboard — Job Tracker Surface › tracks a job, verifies stage column, tests Cover Letter link, moves stage, and deletes with Radix Dialog 
+    [audit-chromium] › tests/candidate/cover-letters.spec.ts:84:3 › Cover letters (account A) › list: real letters with search, sort, URL state, refresh and back/forward 
+    [audit-chromium] › tests/candidate/favourites.spec.ts:125:1 › lists candidate A’s saved items newest first, each with its current details or the ones saved with it 
+    [audit-chromium] › tests/candidate/interview-coach.spec.ts:62:3 › Interview Coach — real stack › mode selection is truthful and every mode opens its configuration 
+    [audit-chromium] › tests/candidate/job-tracker.spec.ts:104:1 › adds a job with every detail, checks the form first, and keeps it after a reload 
+    [audit-chromium] › tests/candidate/messages.spec.ts:167:3 › Messages — module turned off (the shipped default) › says messaging is off instead of showing an inbox, for the page and for a conversation link 
+    [audit-chromium] › tests/candidate/notifications.spec.ts:69:3 › Notifications — an account with none (candidate B) › shows an honest empty state and no controls that could not do anything 
+    [audit-chromium] › tests/candidate/portfolio.spec.ts:93:3 › Portfolios — module turned off (the shipped default) › the builder explains the module is off and offers no editing; legacy paths redirect 
+    [audit-chromium] › tests/candidate/resume-builder.spec.ts:90:3 › Resume Builder (account A) › summary suggestion uses generate-content; an unavailable answer never changes the summary 
+    [audit-chromium] › tests/candidate/settings.spec.ts:127:3 › Master Profile › loads the real profile, saves edits through the API and keeps them after reload 
+  156 did not run

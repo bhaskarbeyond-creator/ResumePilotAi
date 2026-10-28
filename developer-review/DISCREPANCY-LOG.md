@@ -7,8 +7,13 @@ investigated and **disproved** live in `appendix/REFUTED-CANDIDATES.md`, not her
 Candidates that remain **plausible but unproven** live in
 `appendix/UNVERIFIED-SUSPICIONS.md`, not here.
 
-Total confirmed findings in this log: **7** (DISC-001 … DISC-007). No overflow file is
-required (`<60`).
+Total confirmed findings in this log: **12** (DISC-001 … DISC-012).
+
+> **Update 2026-10-28 (runtime verification pass).** DISC-001 … DISC-007 were
+> established statically in the read-only pass. **DISC-008 … DISC-012 were
+> discovered by executing the application** in the temporary environment described
+> in `TEMP-ENVIRONMENT-MANIFEST.md`; they are labelled
+> `RUNTIME VERIFIED (temp env)` and each cites its log/artifact.
 
 ---
 
@@ -796,3 +801,189 @@ reads `frontend/dist`).
 
 **Evidence limitations:** Did not enumerate every file under `reference-code/public_html`
 (hundreds of asset files); the sample cited is representative, not exhaustive.
+
+
+---
+
+## [DISC-008] Five WCAG 2.1 AA violations on the public landing and pricing pages (one critical)
+
+**Severity:** P2 — High (blocking for accessibility conformance claims; `button-name`
+is axe *critical* impact)
+
+**Severity gate:** "User-facing functional or accessibility defect with a demonstrable
+impact" — each item below was produced by axe-core against the running application and
+reproduced at two viewports.
+
+**Divergence class:** N/A — not a parity finding.
+
+**Verification status:** **RUNTIME VERIFIED (temp env)** — Chromium 149.0.7827.0 +
+axe-core 4.14.0, tags `wcag2a, wcag2aa, wcag21a, wcag21aa`.
+
+**Confidence:** High (rule-engine output with node selectors and computed contrast).
+
+**Disproof outcome:** SURVIVED — the repository's own `frontend/tests/accessibility.spec.ts`
+passes 59/59 in the same session, so the findings were checked against a green
+neighbouring suite; its axe assertions simply do not enumerate these nodes
+(it does not deep-scan the landing testimonials or the pricing comparison matrix).
+
+**Affected files / evidence:**
+- `frontend/src/pages/landing.tsx:239` → `aria-prohibited-attr` (serious, 3 nodes):
+  `<div class="flex gap-1 text-warning-500" aria-label="5 star rating">`
+- `frontend/src/pages/landing.tsx:79`, `:296` → `label-content-name-mismatch`
+  (serious, 2 nodes): logo `<a aria-label="IME365 Home">` whose visible text is not in
+  the accessible name
+- `frontend/src/pages/billing/pricing.tsx:264-272` → `button-name` (**critical**, 1 node):
+  billing-period `role="switch"` button with `aria-checked` but no accessible name
+- `frontend/src/pages/billing/pricing.tsx:285` → `color-contrast` 3.16:1
+  (`#009966` on `emerald-500/10`); `:335` → 2.45:1 (`text-ink-muted/60`)
+- `frontend/src/pages/billing/pricing.tsx:384` → `scrollable-region-focusable`
+  (serious): `overflow-x-auto` comparison table not keyboard-scrollable
+
+**Evidence artifacts:** `Evidence/artifacts/axe-violation-details.json` (targets, HTML,
+failure summaries, contrast ratios), `Evidence/artifacts/browser-observations.json`
+(45 captures), `Evidence/screenshots/375x667-mobile__pricing.png`.
+
+**Stable sub-IDs:** A11Y-001 (aria-prohibited-attr), A11Y-002 (label-content-name-mismatch),
+A11Y-003 (button-name, critical), A11Y-004 (color-contrast), A11Y-005
+(scrollable-region-focusable). See `UI-UX-AUDIT.md` §Runtime accessibility findings.
+
+**Expected:** every interactive control has an accessible name; decorative star ratings
+either use `role="img"`/visually-hidden text or `aria-hidden`; text ≥ 4.5:1; horizontally
+scrollable regions reachable by keyboard.
+**Actual:** five rule violations, one critical. WCAG 2.1 AA conformance **cannot** be
+claimed for these two pages as they stand.
+
+**Remediation (PROPOSED — NOT IMPLEMENTED, application code is out of bounds for this audit):**
+add `role="img"`+`aria-label` (or `aria-hidden` + visible text) to the star rows; give the
+switch `aria-label="Annual billing"`; raise the two contrast pairs; add
+`tabIndex={0}`/`role="region"`+`aria-label` to the scroll wrapper.
+
+---
+
+## [DISC-009] The claimed backend test count (1,356) is not reproducible; the runner discovers 1,315
+
+**Severity:** P3 — Minor (reporting accuracy)
+
+**Verification status:** **RUNTIME VERIFIED (temp env)**
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — 1,356 was not reproduced by any grouping attempted
+(backend alone = 1,315; backend + enterprise = 1,502; backend + payments = 1,315 because
+the payment files are already part of the 164-file glob).
+
+**Affected files:** `developer-review/appendix/INVENTORIES/tests.md` (claim of 1,356),
+`backend/scripts/run-tests-with-annotations.js` (the discovery mechanism).
+
+**Evidence:** `Evidence/logs/backend-suite-mock-pass.log` TAP footer:
+`# tests 1315 / # pass 1271 / # fail 14 / # skipped 30`.
+**Description:** the previously published "1,356 tests passing" figure cannot be
+regenerated from the repository at this revision; the honest rediscovered figure is
+1,315 discovered, 1,271 passing, 14 failing (all DB-substitution), 30 skipped (all
+MariaDB gates).
+**Expected:** documented test totals traceable to a command.
+**Actual:** totals that overstate discovery by 41 and overstate passing by 85.
+
+---
+
+## [DISC-010] Baseline migration header claims MySQL compatibility while later migrations are MariaDB-only
+
+**Severity:** P3 — Minor (documentation/portability claim), escalated to P2 only if the
+team intends to support MySQL
+
+**Verification status:** **RUNTIME VERIFIED (temp env)** — executed against a real
+MySQL 5.7.29 server.
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — the probe applied every migration in order.
+
+**Affected files:** `backend/database/migrations/001_baseline.sql` (header
+"Complete Relational MySQL / MariaDB Schema — Hostinger & Cloud Compatible"),
+`backend/database/migrations/002_single_owner_enterprise.sql` (first incompatible
+statement).
+
+**Evidence:** `Evidence/artifacts/migration-fidelity.json`:
+`002_single_owner_enterprise.sql → ER_PARSE_ERROR` on
+`ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1`;
+29 migrations discovered, **1 applied**, 57 tables created.
+**Description:** `ADD COLUMN IF NOT EXISTS` does not exist in MySQL 5.7/8.0 DDL, so the
+"MySQL compatible" statement in the baseline header is not true for the migration set as
+a whole. The repository's own gate already assumes MariaDB 11.4
+(`mariadb-migration-gate.test.js`), so the *code* is consistent; the *comment* and any
+downstream expectation of MySQL portability are not.
+**Expected:** header states MariaDB-only, or migrations avoid MariaDB-only DDL.
+**Actual:** mixed claims.
+
+---
+
+## [DISC-011] `freellmapi-admin-e2e.spec.ts` hardcodes `localhost:5173`, contradicting the project's own Playwright configuration (:4000 + `webServer`)
+
+**Severity:** P2 — High (a committed, documented E2E suite cannot pass by the documented command)
+
+**Verification status:** **RUNTIME VERIFIED (temp env)**
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — 47/47 tests failed with
+`page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/...` while the app was
+being served on `:4000` exactly as `frontend/playwright.config.ts` prescribes; starting a
+second dev server on `:5173` immediately converted the run to **15 passed / 2 failed /
+30 not-run** (serial-mode abort).
+
+**Affected files:** `frontend/tests/freellmapi-admin-e2e.spec.ts` (its own `baseUrl`
+constant), `frontend/playwright.config.ts` (`baseURL: http://127.0.0.1:4000`, `webServer`
+on 4000).
+
+**Evidence:** `Evidence/logs/pw/freellmapi-admin-e2e-db.log` (47 × ERR_CONNECTION_REFUSED),
+`Evidence/logs/pw/freellmapi-admin-e2e-5173.log` (15 passed).
+**Expected:** specs navigate relative to Playwright's `baseURL`.
+**Actual:** the spec pins a different port than the configuration starts, so the suite
+fails for environmental reasons even in a fully provisioned environment.
+
+---
+
+## [DISC-012] The accessibility suite's `ime_dev_user` shim does not authenticate the router, so "authenticated surface" assertions silently run against the login page
+
+**Severity:** P2 — High (test-efficacy: green results that do not test what they claim)
+
+**Verification status:** **RUNTIME VERIFIED (temp env)** — 5 viewports × 4 protected routes.
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — every navigation to `/dashboard`, `/admin`,
+`/admin/ai-settings?subtab=providers`, `/build-resume` and
+`/dashboard/settings?tab=support` with `localStorage.ime_dev_user` set ended at
+`/login?next=…` (see `Evidence/artifacts/browser-observations.json`,
+`finalUrl` fields).
+
+**Affected files:** `frontend/tests/accessibility.spec.ts` (`setDemoAuth`),
+`frontend/src/lib/preview-session.ts:19` (`PREVIEW_SESSION_KEY='ime_dev_user'`),
+consumers `preview-modal.tsx:157`, `dashboard/resumes.tsx:134,486`,
+`export/cv-renderer.tsx:204`.
+
+**Evidence:** `Evidence/artifacts/browser-observations.json`; the same 59 tests pass in
+`Evidence/logs/pw/accessibility.log`.
+**Description:** `ime_dev_user` is a *preview/export* session hint, not an authentication
+credential recognised by the route guard. The suite still passes because its surface
+selectors (`[data-testid="dashboard"], main, [role="main"]`) match the login page's
+`main`. Result: the Candidate Dashboard / Employer Portal / Admin Console / Enterprise
+Console axe coverage attributed to that suite is, in this environment, axe coverage of
+the login page.
+**Expected:** authenticated surfaces are reached with a real (or preview-login) bearer
+session, or the suite asserts the expected surface identity before scanning.
+**Actual:** silent downgrade to unauthenticated surfaces. Recommend asserting
+`await expect(page).not.toHaveURL(/\/login/)` before each scan.
+
+---
+
+## Summary of status change caused by this pass
+
+| Finding | Status before | Status now |
+|---|---|---|
+| DISC-001 … DISC-007 | static, unchanged | unchanged (no re-verification attempted; out of this pass's scope) |
+| DISC-008 | — | **NEW — RUNTIME VERIFIED** (5 WCAG violations, 1 critical) |
+| DISC-009 | — | **NEW — RUNTIME VERIFIED** (test-count claim drift) |
+| DISC-010 | — | **NEW — RUNTIME VERIFIED** (MariaDB-only DDL vs "MySQL compatible" comment) |
+| DISC-011 | — | **NEW — RUNTIME VERIFIED** (hardcoded :5173 in an E2E spec) |
+| DISC-012 | — | **NEW — RUNTIME VERIFIED** (auth shim gives false assurance) |

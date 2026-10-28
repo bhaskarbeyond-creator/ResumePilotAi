@@ -135,3 +135,82 @@ than claimed exhaustive.
 - Remaining: `frontend/src/components/` full open, `backend/repositories/` exhaustive N+1 scan, 16 remaining route deep reads — time-boxed, not tool-limited.
 
 **Required follow-up:** Remaining exhaustive reads are time-boxed (see `REQUIREMENT-REGISTER.md` PARTIAL items). This package advances coverage from 14% → ~35% audited (see `EXECUTIVE-GAP-SUMMARY.md` update) — still PARTIAL but substantially less DEFERRED.
+
+---
+
+# Part 2 — After the temporary-environment provisioning attempt (2026-10-28)
+
+The original entries above are **preserved verbatim** as the audit trail (they were
+written when the audit was read-only and no runtime was permitted). This part records
+what changed once a temporary environment was actually provisioned, and which blockers
+are *real* rather than *self-imposed*.
+
+| Entry | Original state | New state | Basis |
+|---|---|---|---|
+| **EG-001** — no live runtime | every finding at best `STATICALLY VERIFIED` | **CLOSED for backend + frontend + API + browser; REMAINS for MariaDB, Apache/PHP and live providers** | `E-301`…`E-322`: Node, Express, Vite and Chromium all executed |
+| **EG-002** — no browser/a11y tooling | all contrast/keyboard/responsive claims `DEFERRED` | **CLOSED (superseded)** — axe-core 4.14.0 + Chromium 149 ran; 45 viewport captures + 5 violations found (A11Y-001…005) | `E-313`, `E-315`, `BROWSER-VERIFICATION-REPORT.md` |
+| **EG-003** — shallow clone | introduction-point tracing deferred | **unchanged, and now worse-documented**: this clone has a single commit and `ff841d5`/`537e2985` are not fetchable, so history-based root-causing is impossible here (manifest §2) | `git log --oneline` = 1 commit; `git cat-file -t ff841d5` → *fatal: Not a valid object name* |
+| **EG-004** — no Apache vhost | RC-003 confidence Medium-High | **unchanged** — Apache still absent; no executed test required it, so this remained out of scope | no httpd binary; apt blocked |
+| **EG-005** — no production secrets | DISC-004 production state deferred | **unchanged** — no credential was requested, fabricated or used | manifest §7.1 |
+| **EG-006** — partial exhaustive greps | inventory coverage ~35 % | **unchanged** (this pass was runtime-focused, not inventory-focused) | — |
+
+## New environment gaps (post-provisioning)
+
+### EG-007 — MariaDB 11.4 cannot be provisioned in this sandbox *(was EG-001's core)*
+
+**Attempted, in this order, each executed:** `apt-get update` (deb.debian.org unreachable)
+→ GitHub-hosted MariaDB bintar via `hostdb` registry (archive.mariadb.org unreachable) →
+GitHub **release assets** (`release-assets.githubusercontent.com` blocked; still blocked
+after `github.com` issues the 302) → npm registry search across 250 `mariadb` results
+(connectors, MCP servers, an obsolete downloader, and a WASM *embedded* MariaDB with no
+wire protocol) → PyPI simple-index scan of 47.8 MB (client connectors only) →
+Testcontainers (no container runtime) → source build (needs cmake/boost/ncurses/pcre2
+dev headers that apt cannot supply).
+
+**Impact (measured, not estimated):** the repository's own gate refuses the only SQL
+engine that *is* obtainable — `target engine must be MariaDB, received 5.7.29`
+(`E-311`); migrations `002`–`029` cannot be applied at all (`E-312`); **30 tests stay
+skipped**, **14 tests fail on missing tables**, and tenant-isolation, migration-rollback,
+candidate-dashboard and enterprise-console verification remain **BLOCKED**.
+
+**Exact follow-up:** run the suite against a real MariaDB 11.4 (CI service container or
+`mariadb:11.4`) with `RUN_MARIADB_INTEGRATION=true MARIADB_TEST_ALLOW_RESET=true` and a
+`DB_NAME` matching `/(?:^|[_-])(?:test|tests|ci|cert|sandbox|scratch)(?:[_-]|$)/i`
+(the helper `backend/test/helpers/disposableMariaDb.js` enforces exactly this).
+
+### EG-008 — Apache/PHP layer not provisionable
+
+No `httpd`, no `php`, and apt is unreachable. Consequence: `.htaccess` SPA fallback,
+`mod_headers` behaviour and the `api/index.php` proxy are still **statically verified
+only**. Note: reproducing `.htaccess` security headers on Express was verified to match
+the canonical policy at runtime (`E-310`), which narrows but does not close the gap.
+
+### EG-009 — Google Fonts unreachable → visual-regression comparability lost (GAP-B2)
+
+All 90 font requests failed with `net::ERR_CONNECTION_CLOSED`; consequently **20/20**
+committed screenshot baselines differ by 3–7 %. This is an environment artifact, and it
+must not be reported either as a pass or as a regression.
+
+### EG-010 — Live third-party integration credentials absent (GAP-D2)
+
+AI providers, Stripe/PayPal/Razorpay/Paytm/PhonePe, S3-compatible storage, Firebase
+identity and SMTP remain untested against live endpoints. Mock/contract coverage: 187
+enterprise + 43 payments + the mocked AI routing tests inside the 1,271 passing tests.
+Fabricating credentials is prohibited by the directive and was not attempted.
+
+### EG-011 — Candidate dashboard suite cannot run without MariaDB + live AI
+
+175 Playwright tests; 3 sampled (1 assertion failure, 2 × 90 s timeouts waiting for
+generated content) before the run was stopped. Recorded as `BLOCKED`, not as failures.
+The suite is explicitly written with "no API mocking, no auth bypass"
+(`frontend/playwright.candidate.config.ts`), which is exactly why a database is a hard
+prerequisite.
+
+### EG-012 — Two harness-level artifacts that are NOT application failures
+
+1. Playwright trace retention produced `browserContext.close: ENOENT …-recording*.network`
+   on 2 `freellmapi-admin-e2e` and 2 `engine-responsive` tests (evidence directory I/O).
+2. `billing-checkout.spec.ts` asserts `consoleErrors == []`; the only console errors are
+   the blocked-font requests, so the assertion fails for environment reasons.
+
+Both are recorded so that a future reader does not mistake them for product defects.

@@ -1,0 +1,230 @@
+[
+  {
+    "route": "/",
+    "viewport": "375x667",
+    "id": "aria-prohibited-attr",
+    "impact": "serious",
+    "help": "Elements must only use permitted ARIA attributes",
+    "nodes": [
+      {
+        "target": [
+          "article:nth-child(1) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      },
+      {
+        "target": [
+          "article:nth-child(2) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      },
+      {
+        "target": [
+          "article:nth-child(3) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      }
+    ]
+  },
+  {
+    "route": "/",
+    "viewport": "375x667",
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "help": "Elements must have their visible text as part of their accessible name",
+    "nodes": [
+      {
+        "target": [
+          ".gap-2\\.5"
+        ],
+        "html": "<a class=\"flex items-center gap-2.5 no-underline\" aria-label=\"IME365 Home\" href=\"/\" data-discover=\"true\">",
+        "failure": "Fix any of the following: |   Text inside the element is not included in the accessible name"
+      },
+      {
+        "target": [
+          ".gap-2[aria-label=\"IME365 Home\"][href=\"/\"]"
+        ],
+        "html": "<a class=\"flex items-center gap-2 no-underline\" aria-label=\"IME365 Home\" href=\"/\" data-discover=\"true\"><div class=\"flex size-8 items-center ",
+        "failure": "Fix any of the following: |   Text inside the element is not included in the accessible name"
+      }
+    ]
+  },
+  {
+    "route": "/pricing",
+    "viewport": "375x667",
+    "id": "button-name",
+    "impact": "critical",
+    "help": "Buttons must have discernible text",
+    "nodes": [
+      {
+        "target": [
+          ".h-7"
+        ],
+        "html": "<button type=\"button\" role=\"switch\" aria-checked=\"true\" class=\"relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 b",
+        "failure": "Fix any of the following: |   Element does not have inner text that is visible to screen readers"
+      }
+    ]
+  },
+  {
+    "route": "/pricing",
+    "viewport": "375x667",
+    "id": "color-contrast",
+    "impact": "serious",
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "nodes": [
+      {
+        "target": [
+          ".px-2"
+        ],
+        "html": "<span class=\"inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 bor",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 3.16 (foreground color: #009966, background color: #dff3ee, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(6) > span"
+        ],
+        "html": "<span>No AI-driven bullet point writer</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(7) > span"
+        ],
+        "html": "<span>No Mock Interview Simulator</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(8) > span"
+        ],
+        "html": "<span>No DOCX export</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "/pricing",
+    "viewport": "375x667",
+    "id": "scrollable-region-focusable",
+    "impact": "serious",
+    "help": "Scrollable region must have keyboard access",
+    "nodes": [
+      {
+        "target": [
+          ".overflow-x-auto"
+        ],
+        "html": "<div class=\"overflow-x-auto rounded-xl border border-edge bg-surface shadow-sm\">",
+        "failure": "Fix any of the following: |   Element should have focusable content"
+      }
+    ]
+  },
+  {
+    "route": "/",
+    "viewport": "1440x900",
+    "id": "aria-prohibited-attr",
+    "impact": "serious",
+    "help": "Elements must only use permitted ARIA attributes",
+    "nodes": [
+      {
+        "target": [
+          "article:nth-child(1) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      },
+      {
+        "target": [
+          "article:nth-child(2) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      },
+      {
+        "target": [
+          "article:nth-child(3) > .gap-1.text-warning-500[aria-label=\"5 star rating\"]"
+        ],
+        "html": "<div class=\"flex gap-1 text-warning-500\" aria-label=\"5 star rating\">",
+        "failure": "Fix all of the following: |   aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+      }
+    ]
+  },
+  {
+    "route": "/",
+    "viewport": "1440x900",
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "help": "Elements must have their visible text as part of their accessible name",
+    "nodes": [
+      {
+        "target": [
+          ".gap-2\\.5"
+        ],
+        "html": "<a class=\"flex items-center gap-2.5 no-underline\" aria-label=\"IME365 Home\" href=\"/\" data-discover=\"true\">",
+        "failure": "Fix any of the following: |   Text inside the element is not included in the accessible name"
+      },
+      {
+        "target": [
+          ".gap-2[aria-label=\"IME365 Home\"][href=\"/\"]"
+        ],
+        "html": "<a class=\"flex items-center gap-2 no-underline\" aria-label=\"IME365 Home\" href=\"/\" data-discover=\"true\"><div class=\"flex size-8 items-center ",
+        "failure": "Fix any of the following: |   Text inside the element is not included in the accessible name"
+      }
+    ]
+  },
+  {
+    "route": "/pricing",
+    "viewport": "1440x900",
+    "id": "button-name",
+    "impact": "critical",
+    "help": "Buttons must have discernible text",
+    "nodes": [
+      {
+        "target": [
+          ".h-7"
+        ],
+        "html": "<button type=\"button\" role=\"switch\" aria-checked=\"true\" class=\"relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 b",
+        "failure": "Fix any of the following: |   Element does not have inner text that is visible to screen readers"
+      }
+    ]
+  },
+  {
+    "route": "/pricing",
+    "viewport": "1440x900",
+    "id": "color-contrast",
+    "impact": "serious",
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "nodes": [
+      {
+        "target": [
+          ".px-2"
+        ],
+        "html": "<span class=\"inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 bor",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 3.16 (foreground color: #009966, background color: #dff3ee, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(6) > span"
+        ],
+        "html": "<span>No AI-driven bullet point writer</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(7) > span"
+        ],
+        "html": "<span>No Mock Interview Simulator</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".text-ink-muted\\/60:nth-child(8) > span"
+        ],
+        "html": "<span>No DOCX export</span>",
+        "failure": "Fix any of the following: |   Element has insufficient color contrast of 2.45 (foreground color: #a0a4ad, background color: #fcfdfd, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  }
+]

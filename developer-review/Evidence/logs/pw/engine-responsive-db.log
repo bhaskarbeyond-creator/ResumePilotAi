@@ -1,0 +1,12 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (26.6s)
+  ✓  2 [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.4s)
+  ✓  3 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (2.4s)
+  ✓  4 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (1.9s)
+  ✓  5 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (2.4s)
+  ✓  6 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (2.0s)
+  ✓  7 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (2.3s)
+
+  7 passed (41.0s)

@@ -289,3 +289,34 @@ developer-review/appendix/INVENTORIES/tests.md
 
 No `appendix/DISCREPANCY-LOG-FULL.md` was created (the 60-finding overflow threshold was
 not reached; 7 confirmed findings total).
+
+---
+
+## Addendum — runtime verification pass (2026-10-28)
+
+A temporary environment was provisioned and the application was actually executed.
+Short version, with the current numbers:
+
+* **1,545 Node tests executed** (backend 1,315 + enterprise 187 + payments 43) →
+  **1,501 pass, 14 fail** (all 14 traced to the absent MariaDB schema), **30 skipped**
+  (all MariaDB-gated by the repository itself).
+* **252 Playwright executions** → **197 pass, 25 fail, 30 not-run**. The 25 failures:
+  20 visual-baseline deltas attributable to blocked Google Fonts, 4 Playwright trace-write
+  artifacts (2 in `engine-responsive`, 2 in `freellmapi-admin-e2e`), and 1 console-error
+  assertion that only fires because the blocked fonts log console errors. The separately
+  relevant defect is DISC-011: that suite produced 47 failures purely because it hardcodes
+  `:5173` while the project config serves `:4000`.
+* **45 viewport captures** across 375/390/768/1440/1920 — all 200, zero horizontal
+  overflow, zero uncaught page errors.
+* **5 WCAG 2.1 AA violations** found by axe (one critical) — DISC-008.
+* **Two test-efficacy defects** found in the project's own suites — DISC-011, DISC-012.
+* **Two reporting inaccuracies** confirmed — DISC-009 (test counts), DISC-010
+  (MySQL-compatibility claim in the baseline migration).
+
+The headline conclusion of this executive summary is **unchanged**: the readiness verdict
+stays **PARTIAL — BLOCKED**, because the criteria that matter most for a GO decision
+(MariaDB migrations and rollback, HTTP-level tenant isolation, live provider/payment/
+storage integrations, real authenticated candidate and admin journeys, Apache/PHP served
+layer) remain unverified — now for measured, documented reasons rather than for absence of
+attempt. Details: `TEST-EXECUTION-REPORT.md`, `BROWSER-VERIFICATION-REPORT.md`,
+`FINAL-ACCEPTANCE-REPORT.md`, `appendix/ENVIRONMENT-GAPS.md` Part 2.

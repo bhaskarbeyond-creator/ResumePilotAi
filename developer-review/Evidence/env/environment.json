@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-10-28T19:59:45Z",
+  "os": "Debian GNU/Linux 12 (bookworm)",
+  "kernel": "6.1.158+",
+  "arch": "x86_64",
+  "cpus": 2,
+  "memoryMb": 3939,
+  "node": "v22.22.3",
+  "npm": "10.9.8",
+  "python": "3.11.2",
+  "gcc": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0",
+  "php": "absent",
+  "apache2": "absent",
+  "docker": "absent",
+  "mariadb": "absent",
+  "mysqlSubstitute": "5.7.29 (npm mysql-server-5.7-lin-x64@1.0.0)",
+  "chromium": "",
+  "playwright": "Version 1.64.1",
+  "axeCorePlaywright": "4.14.0",
+  "gitHead": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "gitBranch": "arena/393531fe-resumepilotai",
+  "libaio": "0.3.109 (libaio-bins 0.0.1 wheel, files.pythonhosted.org)"
+}
