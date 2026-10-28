@@ -111,6 +111,9 @@ function classifyError(status, message, body, headers = null) {
   if (status === 401 || status === 403 || msg.includes('invalid api key') || rawBody.includes('invalid_api_key')) {
     return { code: 'INVALID_API_KEY', status: 401, retryable: false };
   }
+  if (status === 402 || msg.includes('insufficient credits') || rawBody.includes('insufficient_credits') || msg.includes('payment required') || rawBody.includes('payment_required')) {
+    return { code: 'PAYMENT_REQUIRED', status: 402, retryable: false };
+  }
   if (status === 429 || msg.includes('rate limit') || msg.includes('quota') || rawBody.includes('rate_limit') || rawBody.includes('insufficient_quota')) {
     // F-12: carry the provider's own backoff request to the cooldown manager.
     const retryAfterMs = parseRetryAfterMs(headers?.get?.('retry-after') ?? headers?.get?.('Retry-After'));

@@ -48,6 +48,8 @@ test('F-12: classifyError carries the header value only for rate limits', () => 
     assert.equal(classifyError(429, 'slow down', '').retryAfterMs, null, 'no headers → null, never NaN');
     assert.equal(classifyError(500, 'boom', '', headers).retryAfterMs, undefined, 'only the 429 branch parses it');
     assert.equal(classifyError(429, 'slow down', '', headers).code, 'RATE_LIMIT_EXCEEDED');
+    assert.equal(classifyError(402, 'Insufficient credits', '', headers).code, 'PAYMENT_REQUIRED');
+    assert.equal(classifyError(402, 'Insufficient credits', '', headers).status, 402);
 });
 
 test('F-12: setCooldown never waits less than Retry-After and clamps to MAX_COOLDOWN_MS', () => {

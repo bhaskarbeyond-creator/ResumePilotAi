@@ -105,6 +105,9 @@ function classifyGeminiError(status, message, rawBody) {
   if (status === 400 && (msg.includes('api key') || body.includes('api_key_invalid'))) {
     return { code: 'INVALID_API_KEY', status: 401, retryable: false };
   }
+  if (status === 402 || msg.includes('insufficient credits') || body.includes('insufficient_credits') || msg.includes('payment required') || body.includes('payment_required')) {
+    return { code: 'PAYMENT_REQUIRED', status: 402, retryable: false };
+  }
   if (status === 403 || msg.includes('permission_denied') || body.includes('permission_denied')) {
     return { code: 'PERMISSION_DENIED', status: 403, retryable: false };
   }
