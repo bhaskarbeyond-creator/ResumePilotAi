@@ -72,6 +72,14 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+> **Added 2026-10-29 (Mandate 6 — V6 feature-depth re-audit, base `a5835ff6`):**
+> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` (74 subfeature rows traced legacy → modern UI → backend →
+> persistence → test, the eight allegation dispositions, the fixture table, the 19 dead client paths,
+> detector false positives and metrics M13–M20); `tools/parity-depth-checks.cjs` (**10** automated checks,
+> 4 PASS / 6 LEAD, artifact `Evidence/artifacts/parity-depth-checks.json`); findings **DISC-027 … DISC-040**;
+> allegations **RA-36 … RA-48**; parity re-measured at **12 FULL / 47 PARTIAL / 32 MISSING / 12 MOCK /
+> 6 REPLACED / 3 UNVERIFIED** of 112. Verdict stays **`PARTIAL — INCOMPLETE`**; application diff = 0.
+
 > **Added 2026-10-29 (V4 coverage reconciliation, revision `0adad00`):** nine reconciliation artifacts —
 > `V4-COVERAGE-RECONCILIATION.md` (1,492/1,492 items dispositioned), `V4-FINAL-ACCEPTANCE-REPORT.md`
 > (verdict `PARTIAL — INCOMPLETE`), `ALLEGATION-RESOLUTION-REGISTER.md` (35 allegations),

@@ -58,13 +58,13 @@ and database operations are **different units** and never share a denominator.
 | Field | Value |
 |---|---|
 | Unit | capability row (a behaviour, decomposed to subfeature level where the mandate requires) |
-| **Value (V5)** | **112 rows** — 19 `FULL PARITY`, 43 `PARTIAL PARITY`, 32 `MISSING`, 9 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 0 `STATIC STUB`, 0 `LOCAL-ONLY PERSISTENCE`, 0 `INTENTIONAL RETIREMENT`, 3 `UNVERIFIED` |
+| **Value (V6)** | **112 rows** — 12 `FULL PARITY`, 47 `PARTIAL PARITY`, 32 `MISSING`, 12 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 0 `STATIC STUB`, 0 `LOCAL-ONLY PERSISTENCE`, 0 `INTENTIONAL RETIREMENT`, 3 `UNVERIFIED` (V5 published 19/43/32/9/6/3; the V5 line is kept in `FINAL-AUDIT-HANDOVER.md` §2) |
 | **Value (V4, superseded)** | 28 / 36 / 30 / 9 / 6 / 3 — eight `FULL` rows rested on endpoints that do not exist (DISC-025) |
 | Denominator | 112 |
 | Formula | `count(classification) / 112`; each row ≥1 legacy anchor and, where it exists, ≥1 modern anchor |
 | Exclusions | none; `INTENTIONAL RETIREMENT` is zero because **no documented retirement decision exists anywhere** in the repository (grep for retirement/deprecation records → none) |
 | Source | `FEATURE-PARITY-MATRIX.md` (rendered), `Evidence/artifacts/feature-parity.json` (machine) |
-| Inclusion rule (V5) | a `FULL PARITY` row must have every declared endpoint resolve to a registered operation **and** that operation must be reachable — checked by `tools/parity-endpoint-audit.cjs`, 19/19 `SUPPORTED`. A route definition, a React page or an API reference count is never sufficient |
+| Inclusion rule (V6) | a `FULL PARITY` row must have every declared endpoint resolve to a registered operation, that operation must be reachable, **and** its subfeatures must be present in the modern source — the first two are checked by `tools/parity-endpoint-audit.cjs` (12/12 `SUPPORTED`), the third was applied by hand to all 19 V5-FULL rows in V6 (7 failed). A route definition, a React page or an API reference count is never sufficient |
 | **Do not report** | a single "% parity" number. 29 % of rows are `MISSING` while 17 % are `FULL`; their average describes nothing real |
 
 ## M5 — Backend operation reachability
@@ -194,3 +194,59 @@ runtime", and an executed test that only exercises a mock is `VERIFIED (executed
 **Why the summary has no total:** M9 is not computable, M12's denominator is a subset, and M4/M5 are
 distributions rather than scores. Summing them would manufacture a number that no measurement supports —
 the same failure mode that produced V4's over-claimed `FULL PARITY` rows.
+
+## M13 — Subfeatures re-verified line-by-line (V6)
+
+| Field | Definition |
+|---|---|
+| Unit | one user-visible subfeature row in `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §3 |
+| Numerator | subfeatures with a legacy anchor **and** a modern anchor **and** a verdict |
+| Denominator | 74 adjudicated subfeatures |
+| Exclusions | subfeatures present in only one tree (recorded as modern-only or removed, not scored) |
+| Formula | 74 / 74 |
+| Source | depth register §3 |
+| What it does **not** prove | that the other 99 capability rows have this depth — they do not |
+
+## M14 — Allegations dispositioned (V6)
+
+8 of 8 mandated allegations carry an explicit disposition (`CONFIRMED` ×7, `CONFIRMED — scoped` ×1 for F03).
+Denominator is the mandate's list, not the register total (48). Source: depth register §2.1.
+
+## M15 — FULL rows challenged (V6)
+
+19 V5-FULL rows re-read → **19/19**. 7 failed (36.8 %). Survivors 12/19 = **63.2 %**. Exclusions: none;
+a row already `PARTIAL`/`MISSING` is not counted. Source: `feature-parity.json`, depth register §2.2.
+
+## M16 — Client call sites resolving to a registered operation (V6)
+
+| Field | Definition |
+|---|---|
+| Numerator | 199 call sites whose normalised path matches a registered operation |
+| Denominator | 229 call sites across 205 files |
+| Exclusions | none in the numerator; the *defect* metric below excludes 2 benign fallbacks |
+| Formula | 199 / 229 = 86.9 % |
+| Source | `client-call-existence.json`, `parity-depth-checks.json` check 9 |
+| Warning | do not read 86.9 % as "86.9 % of features work" — a call site is not a workflow |
+
+## M17 — Defective dead call sites
+
+27 sites / 17 distinct paths (2 further sites are dead fallbacks behind a working primary call).
+Formula 27 / 229 = 11.8 % of call sites. **Not comparable to M16** (different denominator rule).
+
+## M18 — Fabricated-state components
+
+10 components render invented records as live (`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §4) out of 206 modern
+files. Reported as context only: the denominator is files, the numerator is components, so the ratio is
+**not** a percentage of anything meaningful and is not published as one.
+
+## M19 — Detector precision on adjudication
+
+Of the 10 automated checks, 4 returned PASS and 6 returned leads. Leads adjudicated: 4 (check 8) rejected
+as attribution breadth, 10 (check 10) reclassified as domain bleed with 2 real residues, 4 of 17
+(check 2) rejected as correct error paths. Adjudicated false positives: **18 of 57 leads** (31.6 %).
+Formula: 18 / 57. Source: depth register §6.
+
+## M20 — Runtime coverage (unchanged, and the reason the verdict is not COMPLETE)
+
+Browser: 0 of 3,675 enumerated Playwright tests; database: 0 MariaDB-backed tests executed; providers: 0
+live calls. Denominator fixed by the enumerated suites, not by ambition. Source: `RUNTIME-VERIFICATION-V4.md`.

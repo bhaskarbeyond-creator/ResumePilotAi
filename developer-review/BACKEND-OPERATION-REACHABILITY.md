@@ -415,3 +415,30 @@ Consequence for reading §9: an `UNREACHABLE` verdict means *no working call sit
 /admin/queues*, /admin/jobs/{X}/moderate*, /blog-data*, /coupons* and /admin/audit-logs* the modern UI does
 attempt a call, but to a different (non-existent) path — that is a broken integration, not an absent
 feature.
+
+## 11. V6 confirmation and the reverse direction (base `a5835ff6`)
+
+V6 re-ran this register rather than trusting it: `tools/backend-reachability.cjs` +
+`tools/reachability-crosscheck.cjs` still agree on **385/385** operations, class mix
+**152 UI / 7 indirect / 27 external-caller / 11 server-only / 2 intentionally-unexposed / 176 unreachable /
+10 unverified**. No class changed in V6.
+
+What V6 added is the *converse* measurement, now automated as check 9 of `tools/parity-depth-checks.cjs`:
+**27 client call sites over 17 distinct paths invoke operations that do not exist.** That is a different
+failure mode from "operation with no caller" and it is invisible to this register by construction:
+
+| Direction | Question | Instrument | V6 result |
+|---|---|---|---|
+| Backend → UI | does anything call this operation? | this register (7 classes) | 176 UNREACHABLE / 385 (45.7 %) |
+| UI → backend | is this call served by an operation? | `parity-depth-checks.cjs` check 9 | 27 defective sites / 229 (11.8 %) |
+
+Both are needed. An operation can be unreachable while every client call resolves (dead feature), and a
+client call can be broken while the operation it "wants" exists under another prefix (mismatch). The
+second is what DISC-027 records: `/blog/posts*` vs `/admin/blog/posts*`, `/platform/status` vs
+`/admin/platform/status`, `/billing/validate-coupon` vs `/coupons/validate`, plus 13 paths with no
+counterpart at all (support tickets, DLQ purge/retry, operations backup/cache-clear, user status,
+`/notify/email`).
+
+**Limitation carried forward:** the 10 `UNVERIFIED` operations are ambiguous because a *child* path is
+called from modern code. Two of those child paths are themselves dead (`/admin/jobs/{X}/moderate`), so
+"ambiguous parent" must not be read as "reachable parent" (§7).

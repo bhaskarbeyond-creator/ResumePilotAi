@@ -1,5 +1,10 @@
 # V4 Final Acceptance Report
 
+> **Superseded (Mandate 6, base `a5835ff6`).** V4 acceptance record; its parity mix (28 FULL) was already
+> superseded by V5 (19 FULL) and is now **12 FULL / 47 PARTIAL / 32 MISSING / 12 MOCK / 6 REPLACED /
+> 3 UNVERIFIED**. The verdict class (`PARTIAL — INCOMPLETE`) did not change. Kept verbatim.
+
+
 > **V5 supersession:** this report's verdict is retained for the record. The current verdict, with the
 > corrected reachability register and parity mix, is in `FINAL-AUDIT-HANDOVER.md` §1 — still
 > `PARTIAL — INCOMPLETE`, but derived from corrected counts (DISC-024/025/026).

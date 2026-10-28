@@ -76,3 +76,25 @@ all of which exist on disk** — a property no earlier version of this package c
 
 (d) and (e) remain recommendations only, because they would require changing the original verifier's
 semantics.
+
+## 6. V6 checks — provenance and limits
+
+`tools/parity-depth-checks.cjs` writes `Evidence/artifacts/parity-depth-checks.json`. Each of its ten checks
+is a **grammar-level detector over source text**, not a behavioural test:
+
+| Check | Provenance of its input | What would make it wrong |
+|---|---|---|
+| 1 classification contradiction | `feature-parity.json` + all `.md` in the package | a doc that states a class *without* an `FP-` id on the same line (undetected) |
+| 2 swallow-then-success | `frontend/src/**/*.tsx?` | a success handled in a helper the regex cannot see |
+| 3 hardcoded baseline | same | a seeded array with no `INITIAL_/DEFAULT_` prefix |
+| 4 storage beside API | same | a storage write inside a hook not matched |
+| 5 evidence refs | register + docs | a ref to a file outside the repo |
+| 6 runtime claims | `RUNTIME-VERIFICATION-V4.md` | a claim phrased without a log path |
+| 7 backend actually called | register + client call artifact + 2-hop import graph | a call made through a barrel file more than 2 hops away |
+| 8 subfeature signals | legacy vs modern text per row | broad legacy attribution (the 4 hits it produced) |
+| 9 dead client paths | client call artifact + register | a path assembled from variables at runtime |
+| 10 export disposition | legacy text + row evidence text | an export implemented under an unrelated name |
+
+**The honest summary:** these checks are good at finding *inconsistencies between artifacts* and *patterns
+that usually mean hollowing-out*. They cannot demonstrate that a workflow works, and none of them is counted
+as doing so. Zero application changes were made to make any of them pass.

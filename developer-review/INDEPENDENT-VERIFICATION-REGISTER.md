@@ -37,7 +37,7 @@ about production.
 | 7 | Reachability classification | same tool | **cross-validated by #8** | per-op class with rule + reason | that a "no call site" means the feature is unused (DISC-025 shows some calls are simply broken) | PASS after three defect fixes (DISC-024) |
 | 8 | Independent reachability re-derivation | `node tools/reachability-crosscheck.cjs` | cross-validating | a second parser agrees on **385/385** operations, 0 disagreements | that either parser understands dynamic path construction | PASS |
 | 9 | Client call → served operation | `node tools/client-call-existence.cjs` | behavioural (source) | 229 call sites; **23 distinct paths served by no operation** | that a resolved path returns 200 (auth, validation, DB may still fail) | **FAIL (new defect class, DISC-025)** |
-| 10 | FULL PARITY challenge | `node tools/parity-endpoint-audit.cjs` | cross-validating | all 19 remaining FULL rows are endpoint- and reachability-supported (19/19) | that the *capability* behaves like legacy — a wired endpoint is not feature parity | PASS after 8 downgrades |
+| 10 | FULL PARITY challenge | `node tools/parity-endpoint-audit.cjs` | cross-validating | all 19 remaining FULL rows are endpoint- and reachability-supported (19/19) | that the *capability* behaves like legacy — a wired endpoint is not feature parity | PASS after 8 downgrades (**V5 record; see §6 for the V6 re-run: 12/12 after 7 further downgrades**) |
 | 11 | Backend syntax | `node --check` × 364 files | behavioural | every backend file parses | imports resolve, routes mount | PASS (0 failures) |
 | 12 | Frontend type-check | `tsc --noEmit -p tsconfig.app.json` | behavioural | 206-file TS surface type-checks (exit 0) | runtime behaviour, layout, a11y | PASS |
 | 13 | Canonical backend suite | `cd backend && npm test` | **behavioural** | 1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skip, exit 1 | that the 46 would pass with MariaDB present — inferred from cited mechanisms, not measured | FAIL (DB-caused) |
@@ -99,3 +99,24 @@ All tools are read-only with respect to application source. None of them writes 
    says the endpoint is dead in production — only that no caller exists in this tree.
 4. **Mocked providers.** No payment gateway, AI provider, SMTP or Firebase call was made. Any statement
    about those integrations is a statement about the mock.
+
+## 6. V6 additions (base `a5835ff6`)
+
+V6 is not a re-run of V5's checks: the mandate requires checks that V5 did not have. Three instructions were
+added to the audit's own tooling and one was repaired.
+
+| # | Check | What it can prove | Result |
+|---|---|---|---|
+| 31 | `parity-depth-checks.cjs` check 8 — FULL rows whose legacy source shows subfeature signals absent from modern | that a keyword-level *lead* exists; **not** that a feature is missing | 4 leads, all adjudicated as attribution breadth (register §6) |
+| 32 | check 9 — client call sites resolving to a registered operation | that a call cannot succeed as written (path absent from the register **and** from `backend/` by grep) | 30 sites / 19 paths → 17 defective paths |
+| 33 | check 10 — legacy export/edit capability with a recorded disposition | that a removal is *undocumented*; it cannot tell intent from oversight | 10 leads, 2 real residues (DISC-040) |
+| 34 | check 7 (repaired) — declared backend actually called, resolving **two local import hops** | that a row is uncalled *including* via its helpers | 0 uncalled rows (V5's version falsely flagged 25) |
+| 35 | `verify-v4-reconciliation.py` (repaired) — `assert full == 19` replaced by a derived assertion | that the verifier cannot be satisfied by editing the register | 16/16 pass, and the assertion now fails if a FULL row is unsupported |
+
+**What V6 explicitly does not count as proof** (mandate §7): a component existing, a spec being written, a
+mock test passing, or a register row being classified. That is why the verdict stays `PARTIAL — INCOMPLETE`:
+the only evidence that could close it — a browser and a database — is unavailable (§5).
+
+**A note on independence.** The V6 checks share the V5 artifacts as inputs. They are independent of the
+*conclusions* (they re-derive them from source), not of the *inventory*. If the inventory mis-walked a file,
+V6 would not notice; the remedy is a clean-clone re-run, which this environment cannot perform.

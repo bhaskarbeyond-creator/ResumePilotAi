@@ -13,7 +13,16 @@ Candidates that remain **plausible but unproven** live in
 > DISC-026 records admin controls that report success after swallowing a failed write. No V4 entry was
 > deleted; DISC-016 keeps its published numbers and is now annotated as superseded by DISC-024.
 
-Total confirmed findings in this log: **26** (DISC-001 … DISC-026). DISC-019 … DISC-022 were
+> **Update 2026-10-29 (Mandate 6 — V6 feature-depth forensic re-audit, revision `a5835ff6`).** Fourteen entries
+> added (DISC-027 … DISC-040) and five existing rows were **reclassified on new evidence**, never deleted:
+> `FP-B05`, `FP-B08`, `FP-E02`, `FP-F02`, `FP-F06` and `FP-G01` moved `FULL PARITY` → `PARTIAL PARITY`, and
+> `FP-A11`, `FP-A19` moved `PARTIAL PARITY` → `MOCK / FABRICATED STATE`. The dominant new finding is structural:
+> **17 client paths (27 call sites) resolve to no registered backend operation**, so several admin and employer
+> workflows cannot succeed — while showing success messages (DISC-027). The V6 subfeature evidence, the 10-check
+> detector output and its adjudicated false positives are in `FEATURE-DEPTH-EVIDENCE-REGISTER.md`.
+
+Total confirmed findings in this log: **40** (DISC-001 … DISC-040). DISC-027 … DISC-040 were
+raised by V6 at revision `a5835ff6`; earlier entries keep their published numbers and reasoning. DISC-019 … DISC-022 were
 raised by the V4 coverage-reconciliation mandate at revision `0adad00`; DISC-001 … DISC-018 are
 unchanged by that pass.
 
@@ -1516,3 +1525,309 @@ endpoint or remove the buttons.
 Playwright spec asserts the failure path. Not met — and forbidden by the audit's no-app-change rule, so
 this is recorded, not fixed.
 
+## [DISC-027] 17 client-call paths (27 call sites) have no registered backend operation
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-027` |
+| **Feature** | Admin console, employer ATS, blog, billing, enterprise platform |
+| **Severity** | P1 — Critical — entire workflows can never succeed, yet the UI reports success (see DISC-028 … DISC-031) |
+| **Legacy path:line** | backend routes existed for the legacy paths (e.g. `src/services/` called `/api/admin/support/tickets`, which the legacy Express app served) |
+| **Modern path:line** | 30 call sites over 19 paths; full table in `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §5 (detector: `parity-depth-checks.cjs` check 9) |
+| **Backend dependencies** | 2 of 19 have a counterpart under a different prefix (`/admin/blog/posts`, `/admin/platform/status`); 1 renamed (`/coupons/validate`); 17 have none, verified by grep over `backend/` not only by the register |
+| **Persistence / authorization** | persistence: none — the requests 404/405 before reaching a handler; authz: n/a (no handler runs); the *intended* handlers are RBAC-gated |
+| **Reproduction** | `node developer-review/tools/parity-depth-checks.cjs` → check 9 lists 30 sites; `grep -rn "support/tickets" backend/` returns nothing |
+| **Evidence levels** | L1 STATIC + L2 CALLCHAIN (call site → client helper → route inventory → grep). No L4: browser not available |
+| **Affected workflow** | Suspend user, moderate employer application/job, purge DLQ, backup, cache-clear, reply to support ticket, delete blog post, validate coupon, load enterprise platform status, email candidate |
+| **Impact** | Actions that appear to work silently do nothing: a suspended account stays active, a deleted post stays published, a promo code is always rejected, the enterprise BYOK panel never populates |
+| **Remediation spec** | Register the missing routes or repoint the clients at the routes that exist (prefix + verb), then add a 404→error path in `api-client.ts` so a missing route cannot render as success |
+| **Regression acceptance** | A Playwright spec per workflow asserts a non-2xx response surfaces an error state and leaves local state unchanged; `parity-depth-checks.cjs` check 9 returns 0 |
+| **Closure** | Not met — audit is read-only; recorded for the repair backlog |
+| **Confidence** | High — two independent artefacts (client call sites, backend grep) agree |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-028] Recruiter "Message candidate" posts to a non-existent route and displays "Message Dispatched!"
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-028` |
+| **Feature** | FP-F02 applicant pipeline — candidate email from the review drawer |
+| **Severity** | P1 — Critical — a recruiter believes the candidate was emailed; nothing is sent, and no failure is visible |
+| **Legacy path:line** | `SendMessageDialog.jsx` → backend notification endpoint (legacy app served `/api/notify/*`) |
+| **Modern path:line** | `frontend/src/components/employer/CandidateReviewDrawer.tsx:159` `POST /notify/email` inside `.catch(() => {})`; success UI `:160-180`, `:699` |
+| **Backend dependencies** | no `/notify/email` registration anywhere in `backend/`; only `/notify/user-signup` exists and is itself UNREACHABLE (`backend/index.js`, register) |
+| **Persistence / authorization** | persistence: none — the email is never queued; the outbox is untouched; authz: n/a (no handler) |
+| **Reproduction** | open employer portal → pipeline → candidate drawer → send message; watch network: 404, then the success modal |
+| **Evidence levels** | L1 STATIC + L2 CALLCHAIN; the second `catch {` at `:176` sets `messageSuccess` too, so even a thrown error shows success |
+| **Affected workflow** | Recruiter → candidate communication for interview invitations and follow-ups |
+| **Impact** | Silent loss of candidate contact; the failure is indistinguishable from success |
+| **Remediation spec** | Point at the real mail path (the `/email/*` router owns delivery) or the messaging service used by `lib/messages.ts`; remove both success paths on failure |
+| **Regression acceptance** | Failure response → inline error, modal stays open, nothing claims dispatch; a spec covers 404 and network-error cases |
+| **Closure** | Not met — read-only audit |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-029] Support help desk has no backend at all; tickets, replies and status changes are fabricated
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-029` |
+| **Feature** | FP-A19 support / help-desk tickets |
+| **Severity** | P1 — Critical — a support queue that never existed is presented to operators as live data |
+| **Legacy path:line** | `src/components/admin/helpdesk/*` consumed `/api/admin/support/tickets*` served by the legacy app |
+| **Modern path:line** | `AdminHelpDeskTab.tsx:47` `DEFAULT_TICKETS`, `:117` state seed, `:128` GET, `:135` `// Keep baseline`, `:157` reply POST, `:188` status PATCH; user side `use-api-hooks.ts:588/599/612` |
+| **Backend dependencies** | zero registrations: `grep -rn "support/tickets" backend/` → no matches; no support router is mounted |
+| **Persistence / authorization** | persistence: none; authz: n/a |
+| **Reproduction** | open Admin → Support; the list renders with invented customers even offline; `curl /api/admin/support/tickets` → 404 |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Customer support triage, replies, status transitions |
+| **Impact** | Operators triage fabricated tickets and believe replies were sent; the candidate help centre is dead too |
+| **Remediation spec** | Either build/restore the ticket API or retire the tab; until then the tab must show an explicit "unavailable" state |
+| **Regression acceptance** | With the API absent the tab shows an error state and no ticket data; a spec asserts no fixture renders after a failed load |
+| **Closure** | Not met |
+| **Confidence** | High — absence proven by grep, fixtures proven by source |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-030] Moderation queue is a fixture and both decisions target unregistered routes
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-030` |
+| **Feature** | FP-A11 employer application + job moderation |
+| **Severity** | P1 — Critical — abuse moderation decisions are never applied, while the operator is told they were verified |
+| **Legacy path:line** | `src/components/admin/moderation/*` → real moderation endpoints |
+| **Modern path:line** | `AdminModerationTab.tsx:58/108` `DEFAULT_APPLICATIONS`/`DEFAULT_JOBS`, `:152/167` `POST /admin/employer-applications/{id}/verify`, `:184` `POST /admin/jobs/{id}/moderate`, each `.catch(() => {})` then success |
+| **Backend dependencies** | `PATCH /admin/employer-applications/:uid` (`backend/index.js:6440`) and `resilientMutations.moderateJob/moderateCompany` (`:6875/6899`) exist; the called verbs/paths do not |
+| **Persistence / authorization** | persistence: none; authz: intended handlers are permission-gated; the called paths have no handler |
+| **Reproduction** | Admin → Moderation → approve an application: row turns APPROVED, network shows 404 |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Fraudulent-employer and spam-job moderation |
+| **Impact** | Bad actors stay live; the log of "verified" decisions exists only in React state |
+| **Remediation spec** | Repoint to `PATCH /admin/employer-applications/:uid` and the moderation mutation endpoints; fetch the queue from the server instead of seeding it |
+| **Regression acceptance** | Decision endpoints return 2xx and the row state is re-read from the server; failure keeps the row unchanged |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-031] User manager renders fabricated accounts when the API fails, and the status toggle targets a missing route
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-031` |
+| **Feature** | FP-A17 user manager / User360 |
+| **Severity** | P1 — Critical — an outage shows plausible fake accounts (including email addresses) as real users |
+| **Legacy path:line** | `src/components/admin/UserManagement/*` loaded from `/api/admin/users` only (no seeded fallback) |
+| **Modern path:line** | `AdminUsersTab.tsx:68` `DEFAULT_USERS` (fixtures `usr_001 alex.rivera@example.com`), `:142` initial `useState`, `:176` GET, `:179` `catch {` (no state reset), `:206` `POST /admin/users/{id}/status` + `.catch(() => {})` + success |
+| **Backend dependencies** | `GET /admin/users` and `PATCH /admin/users/:id` are registered; `/admin/users/{id}/status` is not |
+| **Persistence / authorization** | persistence: none for the toggle; the fixture list is not persisted anywhere; authz: PATCH is RBAC-gated; the called route has no handler |
+| **Reproduction** | block `/api/admin/users` in devtools → reload Admin → Users: the fake table renders; toggle a user → success, no server call |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | User administration, suspension, verification |
+| **Impact** | Fabricated identities in an admin table; suspension never applied (overlaps DISC-026) |
+| **Remediation spec** | Initialise state to empty + loading, clear on error and render an error panel; call `PATCH /admin/users/:id` for status |
+| **Regression acceptance** | Failed load → error state, zero rows; status change fails visibly; spec covers both |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-032] Employer portal messaging is component state only; the real messaging stack is unused on the employer side
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-032` |
+| **Feature** | FP-F03 employer candidate messaging |
+| **Severity** | P2 — High — recruiter↔candidate conversations are lost on reload and never reach the candidate |
+| **Legacy path:line** | `EmployerCandidateMessages.jsx` + `SendMessageDialog.jsx` (server-backed) |
+| **Modern path:line** | `pages/employer/portal.tsx:145-185` three hardcoded threads; `:233-247` `setCandidateThreads` only |
+| **Backend dependencies** | `/messages/conversations*` and `/messages/send` are registered and used by `lib/messages.ts` → `pages/dashboard/messages.tsx` |
+| **Persistence / authorization** | persistence: none; authz: the real endpoints are auth-scoped; unused here |
+| **Reproduction** | send a message in the employer portal, reload: the message is gone |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Recruiter conversation history |
+| **Impact** | Apparent replies that never existed; auditability of recruiter contact is lost |
+| **Remediation spec** | Wire the portalled tab to `lib/messages.ts` (the candidate implementation already proves the client works) |
+| **Regression acceptance** | Message survives reload and appears for the candidate; spec drives the tab through `messages.ts` |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-033] Employer Team Seats screen is local state: invites "succeed" without a request
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-033` |
+| **Feature** | FP-F06 company profile + team seats |
+| **Severity** | P2 — High — seat provisioning appears to work but grants no access |
+| **Legacy path:line** | `src/components/EmployerPortal/*` seat management against `/api/enterprise/teams` |
+| **Modern path:line** | `TeamSeats.tsx:36` `INITIAL_TEAM`, `:74` state seed, invite modal appends to state and shows `inviteSuccess`; no HTTP call in the file |
+| **Backend dependencies** | `/enterprise/teams` + `/enterprise/memberships` registered and used by the enterprise surface (`EnterpriseTeamsTab`/`WorkspacesTab`) |
+| **Persistence / authorization** | persistence: none; authz: real routes are permission-gated (`workspace.members.manage`) |
+| **Reproduction** | Admin → Employer portal → Team → invite a colleague: the row appears, reload removes it |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Team seat provisioning / RBAC grants |
+| **Impact** | Nobody is invited; the seat list is fiction; overlaps DISC-034 (teams member management removed) |
+| **Remediation spec** | Route seat changes through `enterpriseApi` membership mutations and render server state |
+| **Regression acceptance** | Invite creates a membership row visible after reload; failure surfaces an error |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-034] Team member management (list/add/remove) removed from the enterprise teams tab while its API survives
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-034` |
+| **Feature** | FP-B05 teams + archive/restore |
+| **Severity** | P2 — High — an administrative capability disappeared with no retirement decision and no equivalent |
+| **Legacy path:line** | `src/enterprise/components/EnterpriseTeamsTab.jsx:9-145` `WorkspaceMembersDrawer` equivalent: GET `:13`, add `:36`, remove-with-confirm `:62`, permission `:12` |
+| **Modern path:line** | `EnterpriseTeamsTab.tsx` has no drawer and no member call; only `t.memberCount` `:223` |
+| **Backend dependencies** | `GET/POST/DELETE /enterprise/teams/{id}/members` registered (`backend/routes/enterprise.js:720/729/738`) and **UNREACHABLE** from every modern client |
+| **Persistence / authorization** | persistence: n/a (no client); authz: `workspace.members.manage` / `tenant.members.manage` still enforced server-side |
+| **Reproduction** | open Enterprise → Teams: no way to see or change who is on a team |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Team assignment for RBAC |
+| **Impact** | Teams can be created and archived but not staffed from the UI |
+| **Remediation spec** | Restore the member drawer (or equivalent) against the existing endpoints |
+| **Regression acceptance** | List/add/remove round-trips and survives reload; removing the last member is blocked with the server message |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-035] Audit trail narrowed to the newest 100 events; JSON export and deep links removed
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-035` |
+| **Feature** | FP-B08 enterprise audit |
+| **Severity** | P2 — High — a compliance surface silently truncates and cannot be reproduced or shared |
+| **Legacy path:line** | `EnterpriseAuditTab.jsx:128-142` server filters + cursor, `:140/159/165` Load more, `:174-178` JSON export, `:184-200` deep link |
+| **Modern path:line** | `EnterpriseAuditTab.tsx:42` single `limit:100`, `:55-63` client-side filter, `:85-92` CSV only |
+| **Backend dependencies** | `GET /enterprise/audit` supports `cursor, severity, action, actor, since, until` (`backend/routes/enterprise.js:652-662`) — unused by the client |
+| **Persistence / authorization** | persistence: read-only; authz: `tenant.audit.read` |
+| **Reproduction** | filter for an event older than the newest 100: it never appears; no way to export JSON or link the view |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Security review / SIEM export |
+| **Impact** | Completeness gap invisible to the operator; exported CSV is a subset with no indication |
+| **Remediation spec** | Use server-side filters + cursor pagination; restore JSON export and URL-encoded filter state |
+| **Regression acceptance** | Paging past 100 works; export count equals the matched total; deep link reproduces the filter set |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-036] 100 template ids are generated from 5 structural archetypes; 51 bespoke layouts and 4 cover templates are gone
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-036` |
+| **Feature** | FP-E02 template catalogue |
+| **Severity** | P2 — High — the catalogue claims 100 designs and delivers 5 structures × 19 families |
+| **Legacy path:line** | `src/cv-templates/` 51 `cvN` dirs + `cover1..4`, 55 `.scss`, 13,041 JSX / 19,655 SCSS lines |
+| **Modern path:line** | `template-catalog.ts` 100 entries → 5 archetypes (26/21/20/20/13); `template-layouts.ts:155-161` 19 families; `:233` 6 `SPECIAL_SPECS`; 3,254 template lines total |
+| **Backend dependencies** | n/a (rendering is client-side) |
+| **Persistence / authorization** | persistence: n/a; authz: n/a |
+| **Reproduction** | select "Cv7" and "Cv19": identical structure and family pool membership; `SPECIAL_SPECS` covers 6 ids |
+| **Evidence levels** | L1 (parsed catalogue + `wc -l`) |
+| **Affected workflow** | Resume design variety and ATS-safe alternatives |
+| **Impact** | Visual differentiation between 100 "templates" is largely typographic; users who bought into a 100-template catalogue get 5 layouts; cover letters left the catalogue |
+| **Remediation spec** | Either publish the real count (archetypes × families) or restore bespoke layouts for the ids that had them |
+| **Regression acceptance** | Catalogue metadata distinguishes structure per id, or the UX states the archetype/family pairing honestly |
+| **Closure** | Not met |
+| **Confidence** | High — counts are generated from source, not estimated |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-037] Eight email-administration subfeatures are unexposed in the UI while their endpoints remain server-only
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-037` |
+| **Feature** | FP-A16 SMTP/IMAP + template settings |
+| **Severity** | P2 — High — operators cannot configure inbound mail, toggle transactional emails, preview them, or read bounce logs |
+| **Legacy path:line** | `EmailSmtpSettings.jsx` (1,839 lines) 5 tabs: `smtp, imap, templates, logs, deliverability` (`:29`), IMAP `:52-68`, ~20 template toggles `:69-92`, preview device modes `:100-104` |
+| **Modern path:line** | `AdminEmailSmtpTab.tsx` (348 lines): settings, save-smtp, test-connection, deliverability only (`:75-114`) |
+| **Backend dependencies** | all present but unexposed: `POST /email/admin/test-imap` `email.js:1930`, `GET/POST /email/templates` `:2087-2088`, `POST /email/admin/save-template-customization` `:1515`, `/admin/custom-templates` `:1516`, `GET /email/logs` `:2034`, `/email/resend`, `circuit-breaker-status` `:1420`, `reset-circuit-breaker` `:1433` |
+| **Persistence / authorization** | persistence: server-side settings persist; the UI cannot reach them; authz: admin/superadmin gates on the email router |
+| **Reproduction** | open Admin → Settings → Email: no IMAP block, no template list, no logs |
+| **Evidence levels** | L1 + L2 (register cross-check) |
+| **Affected workflow** | Transactional email operations (deliverability, template changes, inbound sync) |
+| **Impact** | Regression from parity of operation, not of naming: mail configuration can only be changed via the API |
+| **Remediation spec** | Restore the five-tab surface against the existing routes (all are already implemented and permission-gated) |
+| **Regression acceptance** | Each of the 8 operations is invoked by the UI; register classifies them UI-REACHABLE |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-038] Voice interview mode removed entirely: 2,432 lines of speech/audio code, zero replacement
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-038` |
+| **Feature** | FP-G21 AI interview coach |
+| **Severity** | P2 — High — a distinct practice modality disappeared; the capability row was marked FULL |
+| **Legacy path:line** | `LiveVoiceEngine.js` 233 (voice ranking `:118`, chunked `speak` `:148-209`), `LiveAudioWaveform.jsx` 254, `LiveInterviewSession.jsx` 1,691, `hooks/useInterviewMedia.js` 254 |
+| **Modern path:line** | `pages/dashboard/interview-coach.tsx` text-only; `lib/interview-coach.ts` has no audio path; `SpeechRecognition|MediaRecorder|getUserMedia|speechSynthesis|AudioContext` → **0 hits** in `frontend/src` |
+| **Backend dependencies** | unchanged (`/generate-interview`, `/live-interview/sessions*` are text-based) |
+| **Persistence / authorization** | persistence: sessions persist; audio never existed server-side; authz: n/a |
+| **Reproduction** | open Interview Coach: no microphone control, no playback, no waveform |
+| **Evidence levels** | L1 + grep census |
+| **Affected workflow** | Spoken mock interview practice |
+| **Impact** | Users cannot rehearse speaking; text-only practice is not behaviourally equivalent |
+| **Remediation spec** | Re-implement capture/playback (Web Speech API + MediaRecorder) or record the retirement decision explicitly |
+| **Regression acceptance** | Audio mode present with permission handling and a transcript; or `INTENTIONAL RETIREMENT` with a documented rationale |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-039] Blog editor downgraded from TipTap rich text to a Markdown textarea; the entire blog data path is unregistered
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-039` |
+| **Feature** | FP-G09 blog authoring + public blog |
+| **Severity** | P2 — High — authors lose tables, images, colour, alignment and previews, and no blog request can succeed |
+| **Legacy path:line** | `BlogEditor.jsx` 1,631 lines, 12 TipTap extensions (Table, Image, Color, Highlight, Underline, TextAlign…) `:3-15`, cover image, tag picker, sanitisation |
+| **Modern path:line** | `pages/blog/editor.tsx` 461 lines: `<textarea>` "Markdown syntax supported" `:268, :290-293`, second `<textarea>` `:352` |
+| **Backend dependencies** | `/blog-data*` and `/admin/blog/posts*` are registered; every modern call uses `/blog/posts*` (unregistered) → see DISC-027 |
+| **Persistence / authorization** | persistence: none reachable (404); authz: intended routes are gated; called paths have no handler |
+| **Reproduction** | create a post: the editor is plain text; save → 404 |
+| **Evidence levels** | L1 + L2 |
+| **Affected workflow** | Content authoring and publishing |
+| **Impact** | Rich authoring is gone and the feature is non-functional end to end |
+| **Remediation spec** | Restore a rich-text editor and correct the client prefix to `/admin/blog/posts` / `/blog-data` |
+| **Regression acceptance** | Tables/images/colour survive save+reload; publish path returns 2xx |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-040] Legacy download helpers (PDF/DOCX) have no recorded disposition in the share and job-editor rows
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-040` |
+| **Feature** | FP-E08 share surface, FP-F05 job editor |
+| **Severity** | P3 — Medium — possible capability loss hidden by broad legacy attribution, not yet provable either way |
+| **Legacy path:line** | `downloadResumePdf` / `downloadResumeDocx` / `exportDownloader` inside `src/components/BuildResume` and `src/components/EmployerPortal` |
+| **Modern path:line** | share modal has copy-link + publication toggle; resume export lives in `pages/export/*` and `/export-docx` |
+| **Backend dependencies** | `/export-docx`, `/export-pdf` registered and reachable from the export pages |
+| **Persistence / authorization** | persistence: n/a; authz: resume ownership checks on the export endpoints |
+| **Reproduction** | `node developer-review/tools/parity-depth-checks.cjs` → check 10 lists FP-E08/FP-F05 with no disposition text |
+| **Evidence levels** | L1 + detector lead (not adjudicated to a defect) |
+| **Affected workflow** | Share-then-download, job post export |
+| **Impact** | Unknown: the export capability exists, but which surface owned it in legacy is ambiguous in the inventory |
+| **Remediation spec** | Either record the disposition in the rows or drop the helper attribution from those capabilities |
+| **Regression acceptance** | Each row states where download lives or that it was retired |
+| **Closure** | Open — deliberately left as a lead |
+| **Confidence** | Low — attribution ambiguity, not a proven regression |
+| **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |

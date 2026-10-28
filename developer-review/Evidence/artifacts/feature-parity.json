@@ -1,6 +1,7 @@
 {
- "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
- "generatedAt": "2026-10-28T21:16:02.797Z",
+ "revision": "a5835ff6693d",
+ "inventoryRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
+ "generatedAt": "2026-10-28T21:33:43.648Z",
  "vocabulary": [
   "FULL PARITY",
   "PARTIAL PARITY",
@@ -13,11 +14,11 @@
   "UNVERIFIED"
  ],
  "counts": {
-  "FULL PARITY": 19,
-  "PARTIAL PARITY": 43,
+  "FULL PARITY": 12,
+  "PARTIAL PARITY": 47,
   "MISSING": 32,
   "STATIC STUB": 0,
-  "MOCK / FABRICATED STATE": 9,
+  "MOCK / FABRICATED STATE": 12,
   "LOCAL-ONLY PERSISTENCE": 0,
   "INTENTIONAL RETIREMENT": 0,
   "REPLACED BY EQUIVALENT": 6,
@@ -28,10 +29,10 @@
    "total": 26,
    "byClassification": {
     "FULL PARITY": 0,
-    "PARTIAL PARITY": 11,
+    "PARTIAL PARITY": 9,
     "MISSING": 6,
     "STATIC STUB": 0,
-    "MOCK / FABRICATED STATE": 9,
+    "MOCK / FABRICATED STATE": 11,
     "LOCAL-ONLY PERSISTENCE": 0,
     "INTENTIONAL RETIREMENT": 0,
     "REPLACED BY EQUIVALENT": 0,
@@ -41,8 +42,8 @@
   "B": {
    "total": 11,
    "byClassification": {
-    "FULL PARITY": 4,
-    "PARTIAL PARITY": 6,
+    "FULL PARITY": 2,
+    "PARTIAL PARITY": 8,
     "MISSING": 1,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
@@ -83,8 +84,8 @@
   "E": {
    "total": 17,
    "byClassification": {
-    "FULL PARITY": 6,
-    "PARTIAL PARITY": 7,
+    "FULL PARITY": 5,
+    "PARTIAL PARITY": 8,
     "MISSING": 3,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
@@ -97,11 +98,11 @@
   "F": {
    "total": 11,
    "byClassification": {
-    "FULL PARITY": 3,
-    "PARTIAL PARITY": 5,
+    "FULL PARITY": 1,
+    "PARTIAL PARITY": 6,
     "MISSING": 2,
     "STATIC STUB": 0,
-    "MOCK / FABRICATED STATE": 0,
+    "MOCK / FABRICATED STATE": 1,
     "LOCAL-ONLY PERSISTENCE": 0,
     "INTENTIONAL RETIREMENT": 0,
     "REPLACED BY EQUIVALENT": 0,
@@ -111,8 +112,8 @@
   "G": {
    "total": 25,
    "byClassification": {
-    "FULL PARITY": 3,
-    "PARTIAL PARITY": 7,
+    "FULL PARITY": 1,
+    "PARTIAL PARITY": 9,
     "MISSING": 9,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
@@ -361,7 +362,7 @@
    "id": "FP-A11",
    "domain": "A",
    "capability": "Employer application + job posting moderation",
-   "classification": "PARTIAL PARITY",
+   "classification": "MOCK / FABRICATED STATE",
    "legacyPaths": [
     "src/components/admin/employerApplications",
     "src/components/admin/jobsManager"
@@ -378,8 +379,8 @@
     "/admin/employer-applications/{X}/verify",
     "/admin/jobs/{X}/moderate"
    ],
-   "invoke": "yes",
-   "evidence": "AdminModerationTab.tsx:152,167,184 real POSTs but `.catch(() => {})`; list seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS :61-111 and never re-fetched"
+   "invoke": "no",
+   "evidence": "AdminModerationTab.tsx:152/167 POST /admin/employer-applications/{id}/verify and :184 POST /admin/jobs/{id}/moderate - NEITHER path is registered; the backend serves PATCH /admin/employer-applications/{uid} (backend/index.js:6440) and moderation via resilientMutations only (index.js:6875/6899), never these shapes. Each call sits inside .catch(() => {}) and is followed by local state mutation plus a success message (:155-160, :169-176, :187-193). The list is seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS (:58-111) and never re-fetched."
   },
   {
    "id": "FP-A12",
@@ -486,11 +487,13 @@
    "modernLines": 1674,
    "backend": "yes",
    "endpoints": [
-    "/admin/settings/email",
-    "/admin/email-templates"
+    "/email/admin/settings",
+    "/email/admin/save-smtp",
+    "/email/admin/test-connection",
+    "/email/admin/deliverability"
    ],
    "invoke": "partial",
-   "evidence": "AdminEmailSmtpTab.tsx present; 2 api refs; legacy EmailSmtpSettings.jsx + template editor"
+   "evidence": "AdminEmailSmtpTab.tsx (348 lines) covers SMTP host/port/credentials, a test-connection probe and DNS deliverability only. Legacy EmailSmtpSettings.jsx (1,839 lines, 5 tabs) additionally had inbound IMAP configuration and test, ~20 transactional templates with per-template toggles, a desktop/mobile preview modal with category filter and search, outbox logs with resend, and circuit-breaker panels. The backend still serves all of it - /email/templates GET+POST, /email/admin/custom-templates, /email/admin/save-template-customization, /email/admin/test-imap, /email/logs, /email/resend, /email/admin/circuit-breaker-status, /email/admin/reset-circuit-breaker - but only 4 email operations are reachable from the modern UI."
   },
   {
    "id": "FP-A17",
@@ -514,7 +517,7 @@
     "/admin/users/{X}/revoke-sessions"
    ],
    "invoke": "yes",
-   "evidence": "AdminUsersTab.tsx 1131 lines, 7 api refs, :280 revoke-sessions"
+   "evidence": "AdminUsersTab.tsx (1,131 lines, 7 api refs): revoke-sessions (:280) and verify-email are real, but the status toggle POSTs /admin/users/{id}/status (:206) - not registered (the backend exposes PATCH /admin/users/{id} and POST /admin/users/{id}/verify-email) - inside .catch(() => {}) before updating the row and reporting success (:209-215). The table is seeded with DEFAULT_USERS (:68, fixtures usr_001 alex.rivera@example.com) as the initial useState value (:142); the loader catch (:179) leaves those fixtures rendered when GET /admin/users fails, so an API outage shows fake accounts instead of an error."
   },
   {
    "id": "FP-A18",
@@ -538,7 +541,7 @@
    "id": "FP-A19",
    "domain": "A",
    "capability": "Support / help-desk tickets",
-   "classification": "PARTIAL PARITY",
+   "classification": "MOCK / FABRICATED STATE",
    "legacyPaths": [
     "src/components/admin"
    ],
@@ -554,8 +557,8 @@
     "/admin/support/tickets",
     "/admin/support/tickets/{X}/messages"
    ],
-   "invoke": "yes",
-   "evidence": "AdminHelpDeskTab.tsx 380 lines, 3 api refs, 1 seed array"
+   "invoke": "no",
+   "evidence": "AdminHelpDeskTab.tsx (380 lines) renders DEFAULT_TICKETS (:47) - invented customers, subjects and timestamps - into state at :117. The loader GETs /admin/support/tickets (:128), a path with ZERO registrations anywhere in backend/ (grep returns nothing; there is no support/tickets router at all), the catch keeps the fixtures (:135), and the UI never signals the list is fake. Reply and status actions POST/PATCH /admin/support/tickets/{id}/messages and /admin/support/tickets/{id} (:157, :188) inside .catch(() => {}) and then update local state and print success. The user-side hooks in use-api-hooks.ts:588/599/612 call the same nonexistent /support/tickets family, so the candidate help centre cannot load either."
   },
   {
    "id": "FP-A20",
@@ -583,7 +586,7 @@
     "/admin/operations/feature-flags"
    ],
    "invoke": "yes",
-   "evidence": "AdminQueuesTab.tsx:138/173 call /platform/queues and /platform/queues/retry (UI-REACHABLE). The V4-declared /admin/queues and /admin/queues/dlq/replay-all are NOT registered: the same tab reaches them only as .catch() fallbacks (AdminQueuesTab.tsx:138/173/186/204) and those branches 404. AdminOperationsTab.tsx:122/136 POST /admin/operations/backup and /admin/operations/cache-clear, neither registered; /admin/operations/feature-flags is UNREACHABLE."
+   "evidence": "AdminQueuesTab.tsx:138/173 call /platform/queues and /platform/queues/retry (UI-REACHABLE) and the backend returns real outbox rows (routes/platform.js:465-495, masked recipients), so the baseline is not wholly fabricated. But the tab seeds fabricated operations: DEFAULT_QUEUES (:48) and INITIAL_JOBS (:55-105) contain job_dlq_99182 with recipient candidate.lead.991@example.com, a synthetic SES stack trace and job_ai_100293 with an NVIDIA model; the loader keeps them on failure (catch { /* Keep baseline */ }, :158-160). Purge and replay-all POST to unregistered /admin/queues/dead-letter-queue/* paths inside .catch(() => {}) and then remove rows and print success (:204-212, :262-268, :285-290)."
   },
   {
    "id": "FP-A21",
@@ -823,7 +826,7 @@
    "id": "FP-B05",
    "domain": "B",
    "capability": "Teams + archive/restore",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/enterprise/components/EnterpriseTeamsTab.jsx"
    ],
@@ -838,10 +841,12 @@
    "endpoints": [
     "/enterprise/teams",
     "/enterprise/teams/{X}/archive",
-    "/enterprise/teams/{X}/restore"
+    "/enterprise/teams/{X}/restore",
+    "/enterprise/teams/{X}/members",
+    "/enterprise/teams/{X}/members/{X}"
    ],
-   "invoke": "yes",
-   "evidence": "archive/restore are modern-only endpoints"
+   "invoke": "partial",
+   "evidence": "Team CRUD, archive and restore are UI-REACHABLE (enterprise-api.ts:444-470), so team lifecycle is real. Member management is NOT. Legacy TeamMembersDrawer (src/enterprise/components/EnterpriseTeamsTab.jsx:9-145) listed members (GET :13), added them (POST :36) and removed them behind a confirm dialog (DELETE :62), gated on workspace.members.manage / tenant.members.manage (:12). The modern tab has no drawer and no member call, only a static t.memberCount badge (EnterpriseTeamsTab.tsx:223). The three membership routes exist server-side under the same RBAC (backend/routes/enterprise.js:720/729/738) and are UNREACHABLE from any modern client."
   },
   {
    "id": "FP-B06",
@@ -895,7 +900,7 @@
    "id": "FP-B08",
    "domain": "B",
    "capability": "Enterprise audit trail with CSV export",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/enterprise/components/EnterpriseAuditTab.jsx"
    ],
@@ -910,8 +915,8 @@
    "endpoints": [
     "/enterprise/audit"
    ],
-   "invoke": "yes",
-   "evidence": "EnterpriseAuditTab.tsx:85-90 CSV export"
+   "invoke": "partial",
+   "evidence": "Read and CSV export are real (EnterpriseAuditTab.tsx:85-92). Removed relative to legacy: (a) JSON export of the filtered set (legacy EnterpriseAuditTab.jsx:174-178, button :258); (b) shareable deep links (legacy :192 builds a URL carrying filter state); (c) cursor pagination with Load-more (legacy :140/159/165) - the modern tab fetches limit:100 once (:42) and filters that single page CLIENT-SIDE (:60-68), so events older than the newest 100 are unreachable in the UI even though the backend still supports cursor, severity, action, actor, since and until (backend/routes/enterprise.js:652-662)."
   },
   {
    "id": "FP-B09",
@@ -1547,7 +1552,7 @@
    "id": "FP-E02",
    "domain": "E",
    "capability": "Template catalogue volume (51 legacy cv dirs)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/cv-templates"
    ],
@@ -1562,7 +1567,7 @@
    "backend": "n/a",
    "endpoints": [],
    "invoke": "n/a",
-   "evidence": "V4 counted the TEMPLATES array with a bracket/string-aware scan: 100 entries, ids Cv1..Cv100, each carrying archetype/category/palette/font/skillVariant/timelineStyle/dividerStyle/density/thumbnail; 51 legacy cv* dirs under src/cv-templates; router registers per-template export routes"
+   "evidence": "V4 counted the TEMPLATES array with a bracket/string-aware scan: 100 entries, ids Cv1..Cv100, carrying archetype/category/palette/font/skillVariant/timelineStyle/dividerStyle/density/thumbnail. Those 100 entries collapse onto FIVE structural archetypes (template-catalog.ts: modern-split 26, minimal-ats 21, executive-banner 20, tech-grid 20, compact-euro 13) rendered through 19 layout families (template-layouts.ts FAMILY_POOLS:155-161) and 6 bespoke specs (SPECIAL_SPECS:233 = Cv1, Cv4, Cv25, Cv34, Cv40, Cv51). Legacy was 51 hand-authored template directories plus 4 cover-letter templates, 55 SCSS files, 13,041 lines of JSX and 19,655 lines of SCSS (32,696 total) with per-template bespoke classes; the modern template stack is 3,254 lines (smart-layout-families.tsx 1,790 + smart-render-primitives.tsx 721 + template-layouts.ts 507 + catalog). Cover letters are not lost - cover-letter-builder.tsx inlines four letter templates (Cover1..Cover4, :147-370) - but the catalogue has no cover archetype, so letters are authored outside the template system the CVs use."
   },
   {
    "id": "FP-E03",
@@ -1941,7 +1946,7 @@
    "id": "FP-F02",
    "domain": "F",
    "capability": "Applicant pipeline (kanban + list, stage transitions)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/EmployerPortal"
    ],
@@ -1958,13 +1963,13 @@
     "/jobs/{X}/applications"
    ],
    "invoke": "yes",
-   "evidence": "portal.tsx:66 KANBAN_STAGES, :114 kanban/list toggle, optimistic concurrency noted in header"
+   "evidence": "Pipeline reads and stage writes are real: useJobApplications -> GET /jobs/{X}/applications, useJobs -> GET /employer/jobs, kanban/list toggle (portal.tsx:114), search filter (:194-203), counts derived from data (:206-216), CandidateReviewDrawer -> PATCH /job-applications/{id}/status (use-api-hooks.ts:304) with optimistic expectedStatus/expectedRevision. Removed relative to legacy: the drawer message composer POSTs /notify/email (CandidateReviewDrawer.tsx:159) - a path with no registration in backend/ - inside .catch(() => {}), then sets messageSuccess and shows Message Dispatched! (:160-180, :699) even on failure, so candidate email never leaves the app; and the Hiring Preferences form (portal.tsx:1091-1137) saves to local state only (handleSaveSettings :251 toggles a flag)."
   },
   {
    "id": "FP-F03",
    "domain": "F",
    "capability": "Employer candidate messaging / send-message dialog",
-   "classification": "PARTIAL PARITY",
+   "classification": "MOCK / FABRICATED STATE",
    "legacyPaths": [
     "src/components/EmployerPortal/EmployerCandidateMessages.jsx",
     "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx"
@@ -1980,8 +1985,8 @@
    "endpoints": [
     "/messages"
    ],
-   "invoke": "partial",
-   "evidence": "portal.tsx declares a `messages` tab; candidate-side messaging is fully built"
+   "invoke": "no",
+   "evidence": "pages/employer/portal.tsx:145-185 hardcodes three candidate threads (Sarah Jenkins, David Chen, Emily Watson) with fabricated histories; :233 handleSendMessage appends to React state only (:237-247) and issues no HTTP request, so nothing survives a reload. A REAL messaging stack exists and is not used here: lib/messages.ts is a typed client for /messages/conversations and /messages/send and backs pages/dashboard/messages.tsx for candidates, backed by registered backend routes. The declared /messages path in this row is not itself a registered operation."
   },
   {
    "id": "FP-F04",
@@ -2028,7 +2033,7 @@
    "id": "FP-F06",
    "domain": "F",
    "capability": "Company profile + team seats",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/EmployerPortal"
    ],
@@ -2048,7 +2053,7 @@
     "/enterprise/memberships"
    ],
    "invoke": "yes",
-   "evidence": "CompanyProfile.tsx calls GET/POST/PATCH/DELETE /employer/companies[/{id}] (UI-REACHABLE); enterprise team seats use /enterprise/teams and /enterprise/memberships (UI-REACHABLE); the registered /enterprise/teams/{id}/members has no caller. The V4-declared /employer/company (singular) is NOT registered."
+   "evidence": "CompanyProfile.tsx calls GET/POST/PATCH/DELETE /employer/companies[/{id}] (UI-REACHABLE) and enterprise membership administration is real (/enterprise/teams, /enterprise/memberships). The employer portal Team Seats tab is NOT: components/employer/TeamSeats.tsx:36 seeds INITIAL_TEAM with hardcoded people into state at :74, and inviting a seat only appends to that state while showing an invite-success message - the file issues no HTTP call at all. The registered /enterprise/teams routes are therefore not reached from this screen."
   },
   {
    "id": "FP-F07",
@@ -2172,7 +2177,7 @@
    "id": "FP-G01",
    "domain": "G",
    "capability": "Cuba application shell (nav, header, popovers, a11y)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/cuba/CubaAppShell.jsx",
     "src/components/cuba/CubaPortalShell.jsx"
@@ -2188,7 +2193,7 @@
    "backend": "n/a",
    "endpoints": [],
    "invoke": "n/a",
-   "evidence": "792 legacy lines -> 1,342 modern lines"
+   "evidence": "Modern shell (cuba-app-shell.tsx + app-shell.tsx, 1,683 lines) keeps the skip link first in tab order (cuba-app-shell.tsx:561-566), 29 aria-* attributes, breadcrumbs, a live notifications region and a responsive drawer; legacy was 1,141 lines. Removed relative to legacy: the Cmd/Ctrl+K command palette (legacy src/components/cuba/CubaAppShell.jsx:28 imports CubaCommandPalette, 787 lines, hotkey :227) has NO modern counterpart - grepping frontend/src for CommandPalette/cmdk returns zero hits; and the mobile drawer lost the Escape handler, focus trap and focus restore that legacy documented and implemented (:12). The modern drawer opens via mobileMenuOpen and closes only on overlay or link click (cuba-app-shell.tsx:569-590)."
   },
   {
    "id": "FP-G02",
@@ -2580,7 +2585,7 @@
    "id": "FP-G21",
    "domain": "G",
    "capability": "AI interview coach / role-based question generation",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/utils/interviewCoach.js",
     "src/utils/roleInterviewGenerator.js"
@@ -2599,7 +2604,7 @@
     "/live-interview/sessions/{X}/turns"
    ],
    "invoke": "yes",
-   "evidence": "interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE). The V4-declared /ai/generate-interview is a different (enterprise) operation and is UNREACHABLE."
+   "evidence": "interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE) - text question generation, typed answers and session persistence are real and V5-verified; the V4-declared /ai/generate-interview is a different enterprise operation and is UNREACHABLE. Removed relative to legacy: the entire live voice mode. Legacy shipped 2,432 lines of audio code - LiveVoiceEngine.js (233, speechSynthesis voice ranking, chunked speak with word boundaries), LiveAudioWaveform.jsx (254), LiveInterviewSession.jsx (1,691) and hooks/useInterviewMedia.js (254, getUserMedia + MediaRecorder). A grep of frontend/src for SpeechRecognition, MediaRecorder, getUserMedia, speechSynthesis and AudioContext returns ZERO hits, so microphone capture, speech playback and the waveform are all absent; practice is text-only."
   },
   {
    "id": "FP-G22",

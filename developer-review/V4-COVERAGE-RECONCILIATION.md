@@ -154,9 +154,14 @@ re-classification can state its own residue instead of implying it covered every
 |---|---:|
 | Capability rows audited | 112 |
 | Rows where every declared endpoint resolves **and** every resolved operation is reachable | **67** |
-| Rows citing ≥1 endpoint that resolves to no registered operation (or is ambiguous) | **31** |
-| Rows citing ≥1 endpoint that resolves but is `UNREACHABLE`/`UNVERIFIED` | **15** |
+| Rows citing ≥1 endpoint that resolves to no registered operation (or is ambiguous) | **30** |
+| Rows citing ≥1 endpoint that resolves but is `UNREACHABLE`/`UNVERIFIED` | **16** |
 | Rows that declare no endpoint at all (mostly `MISSING`/`MOCK`) | **38** |
+
+> **V6 (base `a5835ff6`) re-ran this audit after nine rows were reclassified:** 67 supported / 30 with an
+> unresolved endpoint / 16 with an unreachable one / 38 declaring none. The four counts **overlap by design**
+> — a row can cite both an unresolved and an unreachable endpoint — so they sum to more than 112 and must
+> not be added. The V5 figures were 67 / 31 / 15 / 38.
 
 **Scope statement, so this is not read as 112 individual re-classifications:** all 19 `FULL PARITY` rows
 were adjudicated individually and are what the downgrades were based on. The other 93 were *checked*
@@ -240,3 +245,33 @@ specific, anchored, and count-limited.
   DISC-025 and DISC-026 and a re-derived parity mix with ≥1 independent reviewer re-running
   `reachability-crosscheck.cjs` and `client-call-existence.cjs`.
 * to `FAILED` — any of the V5 counts failing to reproduce from a clean checkout at `cccd35a5`.
+
+## 9. V6 delta (2026-10-29, base `a5835ff6`) — reconciliation of the classification changes
+
+| Quantity | V5 | **V6** | Δ | Cause |
+|---|---:|---:|---:|---|
+| Capability rows | 112 | **112** | 0 | no row added or removed |
+| `FULL PARITY` | 19 | **12** | −7 | subfeature examination (`FP-B05, B08, E02, F02, F06, G01, G21`) |
+| `PARTIAL PARITY` | 43 | **47** | +4 | +7 demoted from FULL, −2 promoted to MOCK, −1 (A11) → MOCK |
+| `MISSING` | 32 | **32** | 0 | no change |
+| `MOCK / FABRICATED STATE` | 9 | **12** | +3 | `FP-F03`, `FP-A11`, `FP-A19` |
+| `REPLACED BY EQUIVALENT` / `UNVERIFIED` | 6 / 3 | **6 / 3** | 0 | no change |
+| Backend operations | 385 | **385** | 0 | V6 re-ran the register; 385/385 crosscheck agreement |
+| Reachability classes | 152/7/27/11/2/176/10 | **unchanged** | 0 | no new parser change was needed |
+| Client dead call sites | 30 sites / 23 paths | **30 sites / 19 paths (17 defective)** | sharpened | `{X}` normalisation + benign-fallback exclusion |
+| Findings | 26 | **40** | +14 | DISC-027 … DISC-040 |
+| Allegations | 35 | **48** | +13 | RA-36 … RA-48 |
+| Coverage arithmetic total | 1,496 | **1,523** | +27 | +14 findings, +13 allegations. The arithmetic keeps the **65 original requirements**; the 10 V6 requirements (R-130 … R-139) are reported in `REQUIREMENT-REGISTER.md` §Q and are deliberately **not** folded into the same total, because they measure this audit's own conduct rather than the product's capability |
+
+**Does the V6 correction make V5 "FAILED"?** No — and the distinction matters. V5's numbers *reproduce*
+from the V5 tools; what V6 falsified is the **inference** that a row with a matching component name and a
+live backend is at parity. Section 8 of this document defined `FAILED` as "any of the V5 counts failing to
+reproduce"; they reproduce. The lesson is the one already written into this package twice (corrections 12
+and 13): *reproducing a measurement is not the same as the measurement being right.* V6 therefore lowers
+the parity axis again and leaves the verdict at **`PARTIAL — INCOMPLETE`** rather than claiming either a
+pass or a collapse.
+
+**What V6 does not claim:** that the seven demoted rows are worthless. Each retains a real, working subset
+(team lifecycle, audit read + CSV, 100 rendering ids, the pipeline and stage transitions, company profile,
+navigation and a11y affordances, text interview practice). The demotion states that the *capability as
+labelled* is not fully present, which is what the `FULL PARITY` class means.

@@ -1,5 +1,10 @@
 # Final Acceptance Report — Temporary Environment & Runtime Verification
 
+> **Superseded (Mandate 6, base `a5835ff6`).** V1 acceptance record. Current verdict:
+> **`PARTIAL — INCOMPLETE`** (see `FINAL-AUDIT-HANDOVER.md`); current parity mix 12/47/32/12/6/3 of 112.
+> Kept verbatim so earlier claims remain auditable rather than rewritten.
+
+
 
 > **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
 > left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:

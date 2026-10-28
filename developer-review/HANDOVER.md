@@ -1,5 +1,9 @@
 # Final Handover Report — Senior Architectural Mandate v3 Completion
 
+> **Superseded (Mandate 6, base `a5835ff6`).** Earliest handover in the package (V2-era counts: 109 rows,
+> 25 FULL). Current state lives in `FINAL-AUDIT-HANDOVER.md`. Kept verbatim as audit history.
+
+
 
 > **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
 > left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:

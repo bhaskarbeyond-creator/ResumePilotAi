@@ -144,12 +144,12 @@ const REGISTER = [
   },
   {
     id: 'FP-A11', domain: 'A', capability: 'Employer application + job posting moderation',
-    classification: 'PARTIAL PARITY',
+    classification: 'MOCK / FABRICATED STATE',
     legacy: ['src/components/admin/employerApplications', 'src/components/admin/jobsManager'],
     modern: ['frontend/src/components/admin/AdminModerationTab.tsx'],
-    backend: 'yes', endpoints: ['/admin/employer-applications/{X}/verify', '/admin/jobs/{X}/moderate'], invoke: 'yes', persist: 'no', errors: 'no', tests: 'partial',
-    evidence: 'AdminModerationTab.tsx:152,167,184 real POSTs but `.catch(() => {})`; list seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS :61-111 and never re-fetched',
-    note: 'Writes are real; reads are fabricated and failures are silently swallowed. Operator cannot tell a successful moderation from a failed one.',
+    backend: 'yes', endpoints: ['/admin/employer-applications/{X}/verify', '/admin/jobs/{X}/moderate'], invoke: 'no', persist: 'no', errors: 'no', tests: 'partial',
+    evidence: 'AdminModerationTab.tsx:152/167 POST /admin/employer-applications/{id}/verify and :184 POST /admin/jobs/{id}/moderate - NEITHER path is registered; the backend serves PATCH /admin/employer-applications/{uid} (backend/index.js:6440) and moderation via resilientMutations only (index.js:6875/6899), never these shapes. Each call sits inside .catch(() => {}) and is followed by local state mutation plus a success message (:155-160, :169-176, :187-193). The list is seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS (:58-111) and never re-fetched.',
+    note: 'V6 correction (RA-47): the moderation queue is a fixture and both decisions target unregistered routes, so neither the list nor the actions are real. PARTIAL -> MOCK.',
   },
   {
     id: 'FP-A12', domain: 'A', capability: 'Platform tenant registry (list tenants, quotas, suspend)',
@@ -192,9 +192,9 @@ const REGISTER = [
     classification: 'PARTIAL PARITY',
     legacy: ['src/components/admin/settings'],
     modern: ['frontend/src/components/admin/AdminEmailSmtpTab.tsx', 'frontend/src/components/admin/AdminSettingsTab.tsx'],
-    backend: 'yes', endpoints: ['/admin/settings/email', '/admin/email-templates'], invoke: 'partial', persist: 'partial', errors: 'partial', tests: 'no',
-    evidence: 'AdminEmailSmtpTab.tsx present; 2 api refs; legacy EmailSmtpSettings.jsx + template editor',
-    note: 'Transport settings present; template authoring depth not verified -> see U-items.',
+    backend: 'yes', endpoints: ['/email/admin/settings', '/email/admin/save-smtp', '/email/admin/test-connection', '/email/admin/deliverability'], invoke: 'partial', persist: 'yes', errors: 'yes', tests: 'partial',
+    evidence: 'AdminEmailSmtpTab.tsx (348 lines) covers SMTP host/port/credentials, a test-connection probe and DNS deliverability only. Legacy EmailSmtpSettings.jsx (1,839 lines, 5 tabs) additionally had inbound IMAP configuration and test, ~20 transactional templates with per-template toggles, a desktop/mobile preview modal with category filter and search, outbox logs with resend, and circuit-breaker panels. The backend still serves all of it - /email/templates GET+POST, /email/admin/custom-templates, /email/admin/save-template-customization, /email/admin/test-imap, /email/logs, /email/resend, /email/admin/circuit-breaker-status, /email/admin/reset-circuit-breaker - but only 4 email operations are reachable from the modern UI.',
+    note: 'V6 (RA-40): the tab title and this row both claim SMTP/IMAP plus templates; only SMTP survives in the UI. The previously declared /admin/settings/email and /admin/email-templates were never registered paths, so the V4 endpoint list was wrong in both directions.',
   },
   {
     id: 'FP-A17', domain: 'A', capability: 'User manager, User360 drawer, session revoke',
@@ -202,7 +202,7 @@ const REGISTER = [
     legacy: ['src/components/admin/usersManager', 'src/components/admin/userEdit'],
     modern: ['frontend/src/components/admin/AdminUsersTab.tsx'],
     backend: 'yes', endpoints: ['/admin/users', '/admin/users/{X}/revoke-sessions'], invoke: 'yes', persist: 'yes', errors: 'partial', tests: 'partial',
-    evidence: 'AdminUsersTab.tsx 1131 lines, 7 api refs, :280 revoke-sessions',
+    evidence: 'AdminUsersTab.tsx (1,131 lines, 7 api refs): revoke-sessions (:280) and verify-email are real, but the status toggle POSTs /admin/users/{id}/status (:206) - not registered (the backend exposes PATCH /admin/users/{id} and POST /admin/users/{id}/verify-email) - inside .catch(() => {}) before updating the row and reporting success (:209-215). The table is seeded with DEFAULT_USERS (:68, fixtures usr_001 alex.rivera@example.com) as the initial useState value (:142); the loader catch (:179) leaves those fixtures rendered when GET /admin/users fails, so an API outage shows fake accounts instead of an error.',
     note: 'Single-user operations wired. No bulk selection/actions (see FP-A18).',
   },
   {
@@ -216,12 +216,12 @@ const REGISTER = [
   },
   {
     id: 'FP-A19', domain: 'A', capability: 'Support / help-desk tickets',
-    classification: 'PARTIAL PARITY',
+    classification: 'MOCK / FABRICATED STATE',
     legacy: ['src/components/admin'],
     modern: ['frontend/src/components/admin/AdminHelpDeskTab.tsx'],
-    backend: 'yes', endpoints: ['/admin/support/tickets', '/admin/support/tickets/{X}/messages'], invoke: 'yes', persist: 'partial', errors: 'partial', tests: 'partial',
-    evidence: 'AdminHelpDeskTab.tsx 380 lines, 3 api refs, 1 seed array',
-    note: 'Thread replies exist (modern-only endpoint). Seeded fallback list unverified for fetch-override.',
+    backend: 'yes', endpoints: ['/admin/support/tickets', '/admin/support/tickets/{X}/messages'], invoke: 'no', persist: 'no', errors: 'partial', tests: 'partial',
+    evidence: 'AdminHelpDeskTab.tsx (380 lines) renders DEFAULT_TICKETS (:47) - invented customers, subjects and timestamps - into state at :117. The loader GETs /admin/support/tickets (:128), a path with ZERO registrations anywhere in backend/ (grep returns nothing; there is no support/tickets router at all), the catch keeps the fixtures (:135), and the UI never signals the list is fake. Reply and status actions POST/PATCH /admin/support/tickets/{id}/messages and /admin/support/tickets/{id} (:157, :188) inside .catch(() => {}) and then update local state and print success. The user-side hooks in use-api-hooks.ts:588/599/612 call the same nonexistent /support/tickets family, so the candidate help centre cannot load either.',
+    note: 'V6 correction (RA-45): not a partial implementation - there is no ticket backend in this revision, so every ticket, reply and status change is fabricated. Reclassified PARTIAL -> MOCK.',
   },
   {
     id: 'FP-A20', domain: 'A', capability: 'Job queues, DLQ, outbox, cache, backups (operations console)',
@@ -229,8 +229,8 @@ const REGISTER = [
     legacy: ['src/components/admin/queues', 'src/components/admin/operations', 'src/components/admin/command', 'src/components/admin/sidebar'],
     modern: ['frontend/src/components/admin/AdminQueuesTab.tsx', 'frontend/src/components/admin/AdminOperationsTab.tsx'],
     backend: 'yes', endpoints: ['/platform/queues', '/platform/queues/retry', '/admin/operations/feature-flags'], invoke: 'yes', persist: 'unknown', errors: 'no', tests: 'yes',
-    evidence: 'AdminQueuesTab.tsx:138/173 call /platform/queues and /platform/queues/retry (UI-REACHABLE). The V4-declared /admin/queues and /admin/queues/dlq/replay-all are NOT registered: the same tab reaches them only as .catch() fallbacks (AdminQueuesTab.tsx:138/173/186/204) and those branches 404. AdminOperationsTab.tsx:122/136 POST /admin/operations/backup and /admin/operations/cache-clear, neither registered; /admin/operations/feature-flags is UNREACHABLE.',
-    note: 'V5 correction of an over-claim. Queue listing and retry are wired; DLQ retry/purge, backup, cache-clear and the feature-flag console are not, and the two operations buttons fabricate success after swallowing the failure (DISC-026).',
+    evidence: 'AdminQueuesTab.tsx:138/173 call /platform/queues and /platform/queues/retry (UI-REACHABLE) and the backend returns real outbox rows (routes/platform.js:465-495, masked recipients), so the baseline is not wholly fabricated. But the tab seeds fabricated operations: DEFAULT_QUEUES (:48) and INITIAL_JOBS (:55-105) contain job_dlq_99182 with recipient candidate.lead.991@example.com, a synthetic SES stack trace and job_ai_100293 with an NVIDIA model; the loader keeps them on failure (catch { /* Keep baseline */ }, :158-160). Purge and replay-all POST to unregistered /admin/queues/dead-letter-queue/* paths inside .catch(() => {}) and then remove rows and print success (:204-212, :262-268, :285-290).',
+    note: 'V6 (RA-42): the row was already PARTIAL; the residue is narrower than the allegation (the queue list is real) but the failure path and the DLQ actions are fabricated or fake-success. See DISC-026.',
   },
   {
     id: 'FP-A21', domain: 'A', capability: 'Platform settings, feature flags, maintenance, encryption/backup status',
@@ -327,11 +327,11 @@ const REGISTER = [
   },
   {
     id: 'FP-B05', domain: 'B', capability: 'Teams + archive/restore',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/enterprise/components/EnterpriseTeamsTab.jsx'],
     modern: ['frontend/src/components/enterprise/EnterpriseTeamsTab.tsx'],
-    backend: 'yes', endpoints: ['/enterprise/teams', '/enterprise/teams/{X}/archive', '/enterprise/teams/{X}/restore'], invoke: 'yes', persist: 'yes', errors: 'yes', tests: 'yes',
-    evidence: 'archive/restore are modern-only endpoints', note: 'Modern exceeds legacy.',
+    backend: 'yes', endpoints: ['/enterprise/teams', '/enterprise/teams/{X}/archive', '/enterprise/teams/{X}/restore', '/enterprise/teams/{X}/members', '/enterprise/teams/{X}/members/{X}'], invoke: 'partial', persist: 'yes', errors: 'yes', tests: 'partial',
+    evidence: 'Team CRUD, archive and restore are UI-REACHABLE (enterprise-api.ts:444-470), so team lifecycle is real. Member management is NOT. Legacy TeamMembersDrawer (src/enterprise/components/EnterpriseTeamsTab.jsx:9-145) listed members (GET :13), added them (POST :36) and removed them behind a confirm dialog (DELETE :62), gated on workspace.members.manage / tenant.members.manage (:12). The modern tab has no drawer and no member call, only a static t.memberCount badge (EnterpriseTeamsTab.tsx:223). The three membership routes exist server-side under the same RBAC (backend/routes/enterprise.js:720/729/738) and are UNREACHABLE from any modern client.', note: 'V6 correction (RA-36): a member count is not member management. Assign/remove are gone while the backend that serves them remains, so this is a UI regression rather than an intentional retirement (no retirement decision is recorded anywhere in the package).',
   },
   {
     id: 'FP-B06', domain: 'B', capability: 'Workspaces + archive/restore',
@@ -351,11 +351,11 @@ const REGISTER = [
   },
   {
     id: 'FP-B08', domain: 'B', capability: 'Enterprise audit trail with CSV export',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/enterprise/components/EnterpriseAuditTab.jsx'],
     modern: ['frontend/src/components/enterprise/EnterpriseAuditTab.tsx'],
-    backend: 'yes', endpoints: ['/enterprise/audit'], invoke: 'yes', persist: 'yes', errors: 'yes', tests: 'partial',
-    evidence: 'EnterpriseAuditTab.tsx:85-90 CSV export', note: 'Refutes the "enterprise exports were dropped" allegation.',
+    backend: 'yes', endpoints: ['/enterprise/audit'], invoke: 'partial', persist: 'yes', errors: 'yes', tests: 'partial',
+    evidence: 'Read and CSV export are real (EnterpriseAuditTab.tsx:85-92). Removed relative to legacy: (a) JSON export of the filtered set (legacy EnterpriseAuditTab.jsx:174-178, button :258); (b) shareable deep links (legacy :192 builds a URL carrying filter state); (c) cursor pagination with Load-more (legacy :140/159/165) - the modern tab fetches limit:100 once (:42) and filters that single page CLIENT-SIDE (:60-68), so events older than the newest 100 are unreachable in the UI even though the backend still supports cursor, severity, action, actor, since and until (backend/routes/enterprise.js:652-662).', note: 'V6 correction (RA-37): CSV-only export from a fixed first page. For a SIEM/compliance workflow the exported set is both truncated and not reproducible across sessions.',
   },
   {
     id: 'FP-B09', domain: 'B', capability: 'Enterprise resumes + PDF rendering',
@@ -596,12 +596,12 @@ const REGISTER = [
   },
   {
     id: 'FP-E02', domain: 'E', capability: 'Template catalogue volume (51 legacy cv dirs)',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/cv-templates'],
     modern: ['frontend/src/lib/template-catalog.ts', 'frontend/src/cv-templates/templateUtils.ts'],
     backend: 'n/a', endpoints: [], invoke: 'n/a', persist: 'n/a', errors: 'n/a', tests: 'partial',
-    evidence: 'V4 counted the TEMPLATES array with a bracket/string-aware scan: 100 entries, ids Cv1..Cv100, each carrying archetype/category/palette/font/skillVariant/timelineStyle/dividerStyle/density/thumbnail; 51 legacy cv* dirs under src/cv-templates; router registers per-template export routes',
-    note: 'REFUTES the "51 templates reduced to 8/24" allegation as stated. Earlier passes said 104 entries; the verified count is 100 — corrected here rather than carried forward. See FP-E03 for the real regression.',
+    evidence: 'V4 counted the TEMPLATES array with a bracket/string-aware scan: 100 entries, ids Cv1..Cv100, carrying archetype/category/palette/font/skillVariant/timelineStyle/dividerStyle/density/thumbnail. Those 100 entries collapse onto FIVE structural archetypes (template-catalog.ts: modern-split 26, minimal-ats 21, executive-banner 20, tech-grid 20, compact-euro 13) rendered through 19 layout families (template-layouts.ts FAMILY_POOLS:155-161) and 6 bespoke specs (SPECIAL_SPECS:233 = Cv1, Cv4, Cv25, Cv34, Cv40, Cv51). Legacy was 51 hand-authored template directories plus 4 cover-letter templates, 55 SCSS files, 13,041 lines of JSX and 19,655 lines of SCSS (32,696 total) with per-template bespoke classes; the modern template stack is 3,254 lines (smart-layout-families.tsx 1,790 + smart-render-primitives.tsx 721 + template-layouts.ts 507 + catalog). Cover letters are not lost - cover-letter-builder.tsx inlines four letter templates (Cover1..Cover4, :147-370) - but the catalogue has no cover archetype, so letters are authored outside the template system the CVs use.',
+    note: 'V6 correction (RA-39), superseding the earlier refutation. Cardinality is preserved (100 ids exist) but design diversity is not: 100 ids over 5 archetypes is not 51 bespoke layouts, and the 4 cover-letter templates are absent. Classification held at PARTIAL rather than MISSING because the export/render path works and every id resolves.',
   },
   {
     id: 'FP-E03', domain: 'E', capability: 'Structurally distinct template layouts (design diversity)',
@@ -750,21 +750,21 @@ const REGISTER = [
   },
   {
     id: 'FP-F02', domain: 'F', capability: 'Applicant pipeline (kanban + list, stage transitions)',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/components/EmployerPortal'],
     modern: ['frontend/src/pages/employer/portal.tsx', 'frontend/src/components/employer/CandidateReviewDrawer.tsx'],
     backend: 'yes', endpoints: ['/jobs/{X}/applications'], invoke: 'yes', persist: 'yes', errors: 'yes', tests: 'partial',
-    evidence: 'portal.tsx:66 KANBAN_STAGES, :114 kanban/list toggle, optimistic concurrency noted in header',
-    note: 'Refutes "pipeline was dropped".',
+    evidence: 'Pipeline reads and stage writes are real: useJobApplications -> GET /jobs/{X}/applications, useJobs -> GET /employer/jobs, kanban/list toggle (portal.tsx:114), search filter (:194-203), counts derived from data (:206-216), CandidateReviewDrawer -> PATCH /job-applications/{id}/status (use-api-hooks.ts:304) with optimistic expectedStatus/expectedRevision. Removed relative to legacy: the drawer message composer POSTs /notify/email (CandidateReviewDrawer.tsx:159) - a path with no registration in backend/ - inside .catch(() => {}), then sets messageSuccess and shows Message Dispatched! (:160-180, :699) even on failure, so candidate email never leaves the app; and the Hiring Preferences form (portal.tsx:1091-1137) saves to local state only (handleSaveSettings :251 toggles a flag).',
+    note: 'V6 correction (RA-46): the pipeline is real, two side-actions inside it are not. FULL -> PARTIAL.',
   },
   {
     id: 'FP-F03', domain: 'F', capability: 'Employer candidate messaging / send-message dialog',
-    classification: 'PARTIAL PARITY',
+    classification: 'MOCK / FABRICATED STATE',
     legacy: ['src/components/EmployerPortal/EmployerCandidateMessages.jsx', 'src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx'],
     modern: ['frontend/src/pages/employer/portal.tsx'],
-    backend: 'yes', endpoints: ['/messages'], invoke: 'partial', persist: 'partial', errors: 'partial', tests: 'partial',
-    evidence: 'portal.tsx declares a `messages` tab; candidate-side messaging is fully built',
-    note: 'Employer-side message composition depth not verified (U-F01).',
+    backend: 'yes', endpoints: ['/messages'], invoke: 'no', persist: 'no', errors: 'no', tests: 'partial',
+    evidence: 'pages/employer/portal.tsx:145-185 hardcodes three candidate threads (Sarah Jenkins, David Chen, Emily Watson) with fabricated histories; :233 handleSendMessage appends to React state only (:237-247) and issues no HTTP request, so nothing survives a reload. A REAL messaging stack exists and is not used here: lib/messages.ts is a typed client for /messages/conversations and /messages/send and backs pages/dashboard/messages.tsx for candidates, backed by registered backend routes. The declared /messages path in this row is not itself a registered operation.',
+    note: 'V6 correction (RA-38): the employer messaging workflow is not partially built, it is a fixture. Candidate-side messaging remains real and is unaffected.',
   },
   {
     id: 'FP-F04', domain: 'F', capability: 'Employer onboarding wizard',
@@ -786,12 +786,12 @@ const REGISTER = [
   },
   {
     id: 'FP-F06', domain: 'F', capability: 'Company profile + team seats',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/components/EmployerPortal'],
     modern: ['frontend/src/components/employer/CompanyProfile.tsx', 'frontend/src/components/employer/TeamSeats.tsx'],
     backend: 'yes', endpoints: ['/employer/companies', '/employer/companies/{X}', '/enterprise/teams', '/enterprise/memberships'], invoke: 'yes', persist: 'yes', errors: 'partial', tests: 'partial',
-    evidence: 'CompanyProfile.tsx calls GET/POST/PATCH/DELETE /employer/companies[/{id}] (UI-REACHABLE); enterprise team seats use /enterprise/teams and /enterprise/memberships (UI-REACHABLE); the registered /enterprise/teams/{id}/members has no caller. The V4-declared /employer/company (singular) is NOT registered.',
-    note: 'V5 endpoint correction only: singular vs plural, plus team seats moved to the enterprise surface.',
+    evidence: 'CompanyProfile.tsx calls GET/POST/PATCH/DELETE /employer/companies[/{id}] (UI-REACHABLE) and enterprise membership administration is real (/enterprise/teams, /enterprise/memberships). The employer portal Team Seats tab is NOT: components/employer/TeamSeats.tsx:36 seeds INITIAL_TEAM with hardcoded people into state at :74, and inviting a seat only appends to that state while showing an invite-success message - the file issues no HTTP call at all. The registered /enterprise/teams routes are therefore not reached from this screen.',
+    note: 'V5 endpoint correction (singular vs plural, team seats moved to the enterprise surface), further corrected by V6 (RA-43): company profile is real, the Team Seats screen the employer portal actually renders is local-state only.',
   },
   {
     id: 'FP-F07', domain: 'F', capability: 'Job discovery with map view and location autocomplete',
@@ -842,11 +842,12 @@ const REGISTER = [
   // ======================= DOMAIN G =======================
   {
     id: 'FP-G01', domain: 'G', capability: 'Cuba application shell (nav, header, popovers, a11y)',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/components/cuba/CubaAppShell.jsx', 'src/components/cuba/CubaPortalShell.jsx'],
     modern: ['frontend/src/components/layout/cuba-app-shell.tsx', 'frontend/src/components/layout/app-shell.tsx'],
     backend: 'n/a', endpoints: [], invoke: 'n/a', persist: 'n/a', errors: 'n/a', tests: 'partial',
-    evidence: '792 legacy lines -> 1,342 modern lines', note: 'Modern exceeds legacy.',
+    evidence: 'Modern shell (cuba-app-shell.tsx + app-shell.tsx, 1,683 lines) keeps the skip link first in tab order (cuba-app-shell.tsx:561-566), 29 aria-* attributes, breadcrumbs, a live notifications region and a responsive drawer; legacy was 1,141 lines. Removed relative to legacy: the Cmd/Ctrl+K command palette (legacy src/components/cuba/CubaAppShell.jsx:28 imports CubaCommandPalette, 787 lines, hotkey :227) has NO modern counterpart - grepping frontend/src for CommandPalette/cmdk returns zero hits; and the mobile drawer lost the Escape handler, focus trap and focus restore that legacy documented and implemented (:12). The modern drawer opens via mobileMenuOpen and closes only on overlay or link click (cuba-app-shell.tsx:569-590).',
+    note: 'V6 correction (RA-44): navigation is intact but two keyboard-accessibility affordances were dropped, so the earlier line-count comparison (792 -> 1,342) was never a parity argument.',
   },
   {
     id: 'FP-G02', domain: 'G', capability: 'Cuba design-system primitives (30 components)',
@@ -1011,12 +1012,12 @@ const REGISTER = [
   },
   {
     id: 'FP-G21', domain: 'G', capability: 'AI interview coach / role-based question generation',
-    classification: 'FULL PARITY',
+    classification: 'PARTIAL PARITY',
     legacy: ['src/utils/interviewCoach.js', 'src/utils/roleInterviewGenerator.js'],
     modern: ['frontend/src/lib/interview-coach.ts'],
     backend: 'yes', endpoints: ['/generate-interview', '/live-interview/sessions', '/live-interview/sessions/{X}/turns'], invoke: 'yes', persist: 'yes', errors: 'yes', tests: 'partial',
-    evidence: 'interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE). The V4-declared /ai/generate-interview is a different (enterprise) operation and is UNREACHABLE.',
-    note: 'V5 endpoint correction only: the enterprise AI variant was cited instead of the live coach endpoints.',
+    evidence: 'interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE) - text question generation, typed answers and session persistence are real and V5-verified; the V4-declared /ai/generate-interview is a different enterprise operation and is UNREACHABLE. Removed relative to legacy: the entire live voice mode. Legacy shipped 2,432 lines of audio code - LiveVoiceEngine.js (233, speechSynthesis voice ranking, chunked speak with word boundaries), LiveAudioWaveform.jsx (254), LiveInterviewSession.jsx (1,691) and hooks/useInterviewMedia.js (254, getUserMedia + MediaRecorder). A grep of frontend/src for SpeechRecognition, MediaRecorder, getUserMedia, speechSynthesis and AudioContext returns ZERO hits, so microphone capture, speech playback and the waveform are all absent; practice is text-only.',
+    note: 'V6 correction (RA-41): the coach survived, the interview mode did not. Text-only practice is not equivalent to a spoken mock interview, and no retirement rationale is recorded.',
   },
   {
     id: 'FP-G22', domain: 'G', capability: 'Data models, runtime conf and React context scaffolding',
@@ -1124,7 +1125,8 @@ const today = new Date().toISOString().slice(0, 10);
 const L = [];
 L.push('# Feature Parity Matrix');
 L.push('');
-L.push(`**Audit revision:** \`${INV.revision.slice(0, 12)}\` · **Generated:** ${today} (generator clock, UTC) · **Generator:** \`developer-review/tools/parity-matrix.cjs\``);
+const headRev = (() => { try { return require('child_process').execSync('git rev-parse HEAD', { cwd: ROOT }).toString().trim().slice(0, 12); } catch { return INV.revision.slice(0, 12); } })();
+L.push(`**Audit revision:** \`${headRev}\` (inventory measured at \`${INV.revision.slice(0, 12)}\`) · **Generated:** ${today} (generator clock, UTC) · **Generator:** \`developer-review/tools/parity-matrix.cjs\``);
 L.push(`**Machine-checkable twin:** \`Evidence/artifacts/feature-parity.json\` (consumed by \`scripts/verify-audit-package.sh\`)`);
 L.push(`**Inventory basis:** \`LEGACY-MODERN-FEATURE-INVENTORY.md\` / \`Evidence/artifacts/legacy-modern-inventory.json\``);
 L.push('');
@@ -1254,7 +1256,8 @@ fs.writeFileSync(path.join(ROOT, 'developer-review', 'FEATURE-PARITY-MATRIX.md')
 fs.writeFileSync(
   path.join(ROOT, 'developer-review', 'Evidence', 'artifacts', 'feature-parity.json'),
   JSON.stringify({
-    revision: INV.revision,
+    revision: headRev,
+    inventoryRevision: INV.revision,
     generatedAt: new Date().toISOString(),
     vocabulary: VOCAB,
     counts,

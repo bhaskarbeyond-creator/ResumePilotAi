@@ -1,5 +1,13 @@
 # Executive Gap Summary — ResumePilotAi Forensic Audit
 
+> **Superseded (Mandate 6, base `a5835ff6`).** This document is the V1 executive summary and its
+> numbers (7 findings, 109 capability rows, 25 FULL) are **historical**. The current figures are:
+> 40 findings (DISC-001 … DISC-040), 112 capability rows — **12 FULL / 47 PARTIAL / 32 MISSING /
+> 12 MOCK / 6 REPLACED / 3 UNVERIFIED** — 48 allegations, 385 backend operations. Read
+> `FINAL-AUDIT-HANDOVER.md` and `FEATURE-DEPTH-EVIDENCE-REGISTER.md` for the current state. The numbers in
+> this file are deliberately not rewritten, so the audit's own history stays checkable.
+
+
 ## 1. Executive summary
 
 This is a **PARTIAL**, evidence-backed, read-only forensic audit of

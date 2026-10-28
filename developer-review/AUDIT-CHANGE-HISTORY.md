@@ -52,6 +52,27 @@ Corrections 12 and 13 are the first in this audit that were found by *fixing the
 reading the product. That is the most transferable lesson in the package: a register that is never
 re-derived will keep producing confident, wrong numbers.
 
+### 2.2 Corrections added by Mandate 6 (V6, base `a5835ff6`)
+
+| # | Previous conclusion | New evidence | Revision | Where |
+|---:|---|---|---|---|
+| 16 | `FP-B05` terms: FULL ("modern exceeds legacy") | the modern tab has a member **count**, not member management; the members API is alive and unreachable | FULL → **PARTIAL** | DISC-034, RA-36 |
+| 17 | `FP-B08` audit: FULL ("refutes the allegation that exports were dropped") | CSV survived; JSON export, deep links and cursor paging were dropped while the API still serves them | FULL → **PARTIAL** | DISC-035, RA-37 |
+| 18 | `FP-E02` templates: FULL ("refutes the 51→5 allegation") | 100 ids exist but resolve to 5 archetypes × 19 families + 6 bespoke specs; 32,696 legacy template lines → 3,254 | FULL → **PARTIAL** | DISC-036, RA-39 |
+| 19 | `FP-G21` interview coach: FULL | 2,432 lines of speech/audio code removed; **0** audio APIs in `frontend/src` | FULL → **PARTIAL** | DISC-038, RA-41 |
+| 20 | `FP-F06` team seats: FULL after a V5 endpoint fix | the seat screen is local state; invites never leave the browser | FULL → **PARTIAL** | DISC-033, RA-43 |
+| 21 | `FP-G01` shell: FULL by line count (792 → 1,342) | line count was never a parity argument: Cmd+K palette (787 lines) absent, drawer lost Escape/focus trap | FULL → **PARTIAL** | RA-44 |
+| 22 | `FP-F02` pipeline: FULL | pipeline real, but the drawer's "Message Dispatched!" posts to a non-existent route | FULL → **PARTIAL** | DISC-028, RA-46 |
+| 23 | `FP-A19` help desk: PARTIAL, "3 api refs, 1 seed array" | there is **no ticket backend at all**; the tab is entirely fabricated | PARTIAL → **MOCK** | DISC-029, RA-45 |
+| 24 | `FP-A11` moderation: PARTIAL, "real POSTs" | the POSTs are to unregistered paths; the queue is a fixture | PARTIAL → **MOCK** | DISC-030, RA-47 |
+| 25 | V5 counted "30 call sites / 23 paths" dead | normalising `{X}` gives **19 distinct paths**, of which 2 are benign fallbacks → 17 defective paths / 27 sites | sharpened, no row change | DISC-027, register §5 |
+| 26 | `verify-v4-reconciliation.py` asserted `full == 19` | a pinned expected value can be satisfied by editing the register; it now derives the count and asserts every FULL row is supported | verifier hardened, 16/16 | E-355 |
+
+Corrections 16–24 share one cause and it is not a careless reading: **a capability row was credited from
+the presence of a component with the right name.** V6's answer is mechanical — every row that claims
+`FULL PARITY` must show its subfeatures in the modern source, and every client call must resolve to a
+registered operation. Both checks now exist as scripts, which is the only durable fix.
+
 ## 3. Identifier reconciliation (`RA-31` … `RA-35`)
 
 The 2026-10-29 pass seeded four internal hypotheses as `RA-31`…`RA-34`. The V4 mandate assigns those same

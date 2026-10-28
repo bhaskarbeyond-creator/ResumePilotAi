@@ -150,3 +150,18 @@ storage, Firebase identity or SMTP. None were fabricated. Mock/contract coverage
 
 No screenshot, credential, or successful-run claim in this package is fabricated; where an execution did
 not happen, the row says so.
+
+## 9. V6 (Mandate 6) — runtime status re-stated, nothing new executed
+
+No runtime command was run in V6 beyond the audit's own generators and the two verifier scripts. The
+position therefore stands:
+
+| Surface | Executed | Evidence |
+|---|---|---|
+| Browser / E2E (3,675 enumerated) | **0** | no browser binary; `dist/` untracked so no served bundle to point at |
+| MariaDB-backed backend tests | **0** | no server; all 46 canonical-suite failures are `ECONNREFUSED 3306` / `503 APPLICATION_DATABASE_UNAVAILABLE` |
+| Live providers (SMTP, payment, AI) | **0** | no credentials, no outbound network |
+| Static checks | 364 files `node --check` OK, `tsc --noEmit` exit 0 | V4 logs under `Evidence/logs/v4/` |
+
+Consequence for V6: **every V6 claim is static**. No V6 finding rests on a browser observation, and the
+depth register says so per row (`§1` evidence levels, `§8` limitations).

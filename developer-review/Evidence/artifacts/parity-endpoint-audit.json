@@ -1,78 +1,18 @@
 {
-  "generatedAt": "2026-10-28T21:18:39.686Z",
-  "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
+  "generatedAt": "2026-10-28T21:34:18.012Z",
+  "revision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
+  "registerRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
   "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
   "reachableClasses": [
     "UI-REACHABLE",
     "INDIRECTLY-REACHABLE",
     "EXTERNAL-CALLER"
   ],
-  "fullParityRows": 19,
+  "fullParityRows": 12,
   "tally": {
-    "SUPPORTED": 19
+    "SUPPORTED": 12
   },
   "rows": [
-    {
-      "id": "FP-B05",
-      "capability": "Teams + archive/restore",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
-      "endpoints": [
-        {
-          "declared": "/enterprise/teams",
-          "status": "EXACT",
-          "path": "/enterprise/teams",
-          "methods": [
-            "GET",
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0204",
-            "OP-0205"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/enterprise/teams/{X}/archive",
-          "status": "EXACT",
-          "path": "/enterprise/teams/{X}/archive",
-          "methods": [
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0207"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/enterprise/teams/{X}/restore",
-          "status": "EXACT",
-          "path": "/enterprise/teams/{X}/restore",
-          "methods": [
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0211"
-          ],
-          "reachable": true
-        }
-      ],
-      "counts": {
-        "ok": 3,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
     {
       "id": "FP-B06",
       "capability": "Workspaces + archive/restore",
@@ -188,35 +128,6 @@
       ],
       "counts": {
         "ok": 3,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
-      "id": "FP-B08",
-      "capability": "Enterprise audit trail with CSV export",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
-      "endpoints": [
-        {
-          "declared": "/enterprise/audit",
-          "status": "EXACT",
-          "path": "/enterprise/audit",
-          "methods": [
-            "GET"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0165"
-          ],
-          "reachable": true
-        }
-      ],
-      "counts": {
-        "ok": 1,
         "unreachable": 0,
         "absent": 0,
         "ambiguous": 0
@@ -340,19 +251,6 @@
       ],
       "counts": {
         "ok": 1,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
-      "id": "FP-E02",
-      "capability": "Template catalogue volume (51 legacy cv dirs)",
-      "declaredInvoke": "n/a",
-      "grade": "SUPPORTED",
-      "endpoints": [],
-      "counts": {
-        "ok": 0,
         "unreachable": 0,
         "absent": 0,
         "ambiguous": 0
@@ -540,37 +438,6 @@
       }
     },
     {
-      "id": "FP-F02",
-      "capability": "Applicant pipeline (kanban + list, stage transitions)",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
-      "endpoints": [
-        {
-          "declared": "/jobs/{X}/applications",
-          "status": "EXACT",
-          "path": "/jobs/{X}/applications",
-          "methods": [
-            "GET",
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0259",
-            "OP-0260"
-          ],
-          "reachable": true
-        }
-      ],
-      "counts": {
-        "ok": 1,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
       "id": "FP-F05",
       "capability": "Job creation / requisition editor",
       "declaredInvoke": "yes",
@@ -613,101 +480,6 @@
       ],
       "counts": {
         "ok": 2,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
-      "id": "FP-F06",
-      "capability": "Company profile + team seats",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
-      "endpoints": [
-        {
-          "declared": "/employer/companies",
-          "status": "EXACT",
-          "path": "/employer/companies",
-          "methods": [
-            "GET",
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0154",
-            "OP-0155"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/employer/companies/{X}",
-          "status": "EXACT",
-          "path": "/employer/companies/{X}",
-          "methods": [
-            "DELETE",
-            "PATCH"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0156",
-            "OP-0157"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/enterprise/teams",
-          "status": "EXACT",
-          "path": "/enterprise/teams",
-          "methods": [
-            "GET",
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0204",
-            "OP-0205"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/enterprise/memberships",
-          "status": "EXACT",
-          "path": "/enterprise/memberships",
-          "methods": [
-            "GET",
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0174",
-            "OP-0175"
-          ],
-          "reachable": true
-        }
-      ],
-      "counts": {
-        "ok": 4,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
-      "id": "FP-G01",
-      "capability": "Cuba application shell (nav, header, popovers, a11y)",
-      "declaredInvoke": "n/a",
-      "grade": "SUPPORTED",
-      "endpoints": [],
-      "counts": {
-        "ok": 0,
         "unreachable": 0,
         "absent": 0,
         "ambiguous": 0
@@ -767,65 +539,6 @@
           "opIds": [
             "OP-0259",
             "OP-0260"
-          ],
-          "reachable": true
-        }
-      ],
-      "counts": {
-        "ok": 3,
-        "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
-      }
-    },
-    {
-      "id": "FP-G21",
-      "capability": "AI interview coach / role-based question generation",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
-      "endpoints": [
-        {
-          "declared": "/generate-interview",
-          "status": "EXACT",
-          "path": "/generate-interview",
-          "methods": [
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0238"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/live-interview/sessions",
-          "status": "EXACT",
-          "path": "/live-interview/sessions",
-          "methods": [
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0264"
-          ],
-          "reachable": true
-        },
-        {
-          "declared": "/live-interview/sessions/{X}/turns",
-          "status": "EXACT",
-          "path": "/live-interview/sessions/{X}/turns",
-          "methods": [
-            "POST"
-          ],
-          "classes": [
-            "UI-REACHABLE"
-          ],
-          "opIds": [
-            "OP-0268"
           ],
           "reachable": true
         }
@@ -1236,7 +949,7 @@
     {
       "id": "FP-A11",
       "capability": "Employer application + job posting moderation",
-      "declaredInvoke": "yes",
+      "declaredInvoke": "no",
       "grade": "UNSUPPORTED-ENDPOINT",
       "endpoints": [
         {
@@ -1266,7 +979,7 @@
         "absent": 1,
         "ambiguous": 1
       },
-      "classification": "PARTIAL PARITY"
+      "classification": "MOCK / FABRICATED STATE"
     },
     {
       "id": "FP-A12",
@@ -1436,29 +1149,73 @@
       "id": "FP-A16",
       "capability": "SMTP/IMAP + transactional email template settings",
       "declaredInvoke": "partial",
-      "grade": "UNSUPPORTED-ENDPOINT",
+      "grade": "SUPPORTED",
       "endpoints": [
         {
-          "declared": "/admin/settings/email",
-          "status": "ABSENT",
-          "methods": [],
-          "classes": [],
-          "opIds": [],
-          "reachable": false
+          "declared": "/email/admin/settings",
+          "status": "EXACT",
+          "path": "/email/admin/settings",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0144"
+          ],
+          "reachable": true
         },
         {
-          "declared": "/admin/email-templates",
-          "status": "ABSENT",
-          "methods": [],
-          "classes": [],
-          "opIds": [],
-          "reachable": false
+          "declared": "/email/admin/save-smtp",
+          "status": "EXACT",
+          "path": "/email/admin/save-smtp",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0142"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/email/admin/test-connection",
+          "status": "EXACT",
+          "path": "/email/admin/test-connection",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0145"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/email/admin/deliverability",
+          "status": "EXACT",
+          "path": "/email/admin/deliverability",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0140"
+          ],
+          "reachable": true
         }
       ],
       "counts": {
-        "ok": 0,
+        "ok": 4,
         "unreachable": 0,
-        "absent": 2,
+        "absent": 0,
         "ambiguous": 0
       },
       "classification": "PARTIAL PARITY"
@@ -1527,7 +1284,7 @@
     {
       "id": "FP-A19",
       "capability": "Support / help-desk tickets",
-      "declaredInvoke": "yes",
+      "declaredInvoke": "no",
       "grade": "UNSUPPORTED-ENDPOINT",
       "endpoints": [
         {
@@ -1557,7 +1314,7 @@
         "absent": 1,
         "ambiguous": 1
       },
-      "classification": "PARTIAL PARITY"
+      "classification": "MOCK / FABRICATED STATE"
     },
     {
       "id": "FP-A20",
@@ -2034,8 +1791,8 @@
     {
       "id": "FP-B05",
       "capability": "Teams + archive/restore",
-      "declaredInvoke": "yes",
-      "grade": "SUPPORTED",
+      "declaredInvoke": "partial",
+      "grade": "MIXED",
       "endpoints": [
         {
           "declared": "/enterprise/teams",
@@ -2083,15 +1840,47 @@
             "OP-0211"
           ],
           "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/members",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/members",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0208",
+            "OP-0209"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/enterprise/teams/{X}/members/{X}",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/members/{X}",
+          "methods": [
+            "DELETE"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0210"
+          ],
+          "reachable": false
         }
       ],
       "counts": {
         "ok": 3,
-        "unreachable": 0,
+        "unreachable": 2,
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-B06",
@@ -2218,7 +2007,7 @@
     {
       "id": "FP-B08",
       "capability": "Enterprise audit trail with CSV export",
-      "declaredInvoke": "yes",
+      "declaredInvoke": "partial",
       "grade": "SUPPORTED",
       "endpoints": [
         {
@@ -2243,7 +2032,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-B09",
@@ -3034,7 +2823,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-E03",
@@ -3566,12 +3355,12 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-F03",
       "capability": "Employer candidate messaging / send-message dialog",
-      "declaredInvoke": "partial",
+      "declaredInvoke": "no",
       "grade": "UNSUPPORTED-ENDPOINT",
       "endpoints": [
         {
@@ -3593,7 +3382,7 @@
         "absent": 0,
         "ambiguous": 1
       },
-      "classification": "PARTIAL PARITY"
+      "classification": "MOCK / FABRICATED STATE"
     },
     {
       "id": "FP-F04",
@@ -3739,7 +3528,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-F07",
@@ -3911,7 +3700,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-G02",
@@ -4361,7 +4150,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "FULL PARITY"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-G22",
@@ -4459,8 +4248,8 @@
     }
   ],
   "allRowsSummary": {
-    "withUnsupportedEndpoint": 31,
-    "withUnreachableEndpoint": 15,
+    "withUnsupportedEndpoint": 30,
+    "withUnreachableEndpoint": 16,
     "fullySupported": 67,
     "rowsWithNoDeclaredEndpoint": 38
   }

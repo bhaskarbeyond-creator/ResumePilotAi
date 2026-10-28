@@ -23,12 +23,12 @@ No other IDs were renumbered. `RA-01` … `RA-30` are unchanged.
 
 | Disposition | Count | IDs |
 |---|---:|---|
-| `CONFIRMED` | **19** | RA-01, 05, 06, 07, 08, 09, 10, 14, 15, 16, 17, 18, 19, 20, 24, 26, 28, 29, 34 |
+| `CONFIRMED` | **32** | RA-01, 05, 06, 07, 08, 09, 10, 14, 15, 16, 17, 18, 19, 20, 24, 26, 28, 29, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48 |
 | `CONFIRMED — CORRECTED` (right conclusion, wrong number) | **1** | RA-04 |
 | `PARTIALLY CONFIRMED` | **4** | RA-12, RA-21, RA-31, RA-32 |
 | `REFUTED` | **10** | RA-02, 03, 11, 13, 22, 23, 25, 27, 30, 33 |
 | `UNRESOLVED` | **1** | RA-35 |
-| **Total** | **35** | RA-01 … RA-35 |
+| **Total** | **48** | RA-01 … RA-48 |
 
 Every row carries evidence. A `REFUTED` verdict is never based on "a file with a similar name exists" —
 each cites the call site, endpoint, or measurement that disproves the claim.
@@ -72,6 +72,19 @@ each cites the call site, endpoint, or measurement that disproves the claim.
 | RA-33 | The portfolio gallery retained its capabilities | `REFUTED` (i.e. no capability loss found in the gallery itself) | see §3.3 — legacy and modern both route `/portfolios`; search, filter, count, loading, error+retry, empty state all present and improved; the loss is in the editor, not the gallery. **FP-C07 moved `UNVERIFIED` → `FULL PARITY`**, correcting a prior note that wrongly claimed legacy never routed the gallery | FP-C05, FP-C06, FP-C07 |
 | RA-34 | OAuth provider breadth unchanged | `CONFIRMED` (breadth regressed) | see §3.4 — Google only; Facebook provider instantiated but unwired; LinkedIn/GitHub backend alive, 0 client references; X and Apple never implemented | FP-G08 |
 | RA-35 | Employer dashboard analytics are server-derived | `UNRESOLVED` | `portal.tsx` header claims "real-time pipeline metrics"; no analytics endpoint call traced in the operation register | FP-F09 |
+| RA-36 | Teams member drawer removed (allegation 1) | `CONFIRMED` | legacy drawer `EnterpriseTeamsTab.jsx:9-145` (GET `:13`, add `:36`, remove `:62`, permission `:12`); modern tab has `t.memberCount` only (`EnterpriseTeamsTab.tsx:223`); members API alive but UNREACHABLE (`enterprise.js:720/729/738`). **FP-B05 `FULL PARITY` → `PARTIAL PARITY`** | FP-B05 |
+| RA-37 | Audit JSON export / cursor / deep links removed (allegation 2) | `CONFIRMED` | legacy JSON export `EnterpriseAuditTab.jsx:174-178`, deep link `:184-200`, cursor + Load more `:140/159/165`; modern single `limit:100` fetch (`EnterpriseAuditTab.tsx:42`), client-side filter `:55-63`, CSV only `:85-92`, while `enterprise.js:652-662` still serves cursor/severity/actor/since/until. **FP-B08 → PARTIAL** | FP-B08 |
+| RA-38 | Employer messaging is fixture data (allegation 5) | `CONFIRMED` (scoped) | threads hardcoded `pages/employer/portal.tsx:145-185`; send is state-only `:233-247`; the real client `lib/messages.ts` is used only by `pages/dashboard/messages.tsx`. Candidate-side messaging unaffected. **FP-F03 `PARTIAL` → `MOCK`** | FP-F03 |
+| RA-39 | 51 CV templates collapsed to 5 archetypes (allegation 4) | `CONFIRMED` | 51 `cvN` dirs + 4 covers / 55 SCSS / 13,041 JSX / 19,655 SCSS → 100 catalogue ids over 5 archetypes, 19 families (`template-layouts.ts:155-161`), 6 `SPECIAL_SPECS` (`:233`); 3,254 modern template lines. **FP-E02 → PARTIAL** | FP-E02 |
+| RA-40 | SMTP/IMAP/template editors/bounce logs removed (allegation 7) | `CONFIRMED` | 1,839 lines / 5 tabs (`EmailSmtpSettings.jsx:29`, IMAP `:52-68`, 20 toggles `:69-92`, preview modes `:100-104`) → 348 lines / 4 operations (`AdminEmailSmtpTab.tsx:75-114`); 8 email operations SERVER-ONLY. Classification stays `PARTIAL PARITY`; evidence rewritten | FP-A16 |
+| RA-41 | Voice interview coach removed (allegation 8) | `CONFIRMED` | 2,432 legacy audio lines (`LiveVoiceEngine.js` 233, `LiveAudioWaveform.jsx` 254, `LiveInterviewSession.jsx` 1,691, `useInterviewMedia.js` 254); modern audio-API hits in `frontend/src`: 0. **FP-G21 → PARTIAL** | FP-G21 |
+| RA-42 | Queue jobs hardcoded + errors swallowed (allegation 3) | `CONFIRMED` | real list (`platform.js:465-495`) but fixtures `AdminQueuesTab.tsx:48,55-105` survive `catch { /* Keep baseline */ }` `:158-160`; DLQ purge/retry POST to unregistered paths then report success `:204-212/262-268/285-290`. Classification stays `PARTIAL PARITY`; evidence rewritten | FP-A20 |
+| RA-43 | Employer Team Seats are real (sweep of FULL rows) | `CONFIRMED` (opposite of the earlier V5 note) | `TeamSeats.tsx:36/74` seeds `INITIAL_TEAM`; the invite flow appends to state and shows `inviteSuccess` with no HTTP call. **FP-F06 → PARTIAL** | FP-F06 |
+| RA-44 | Shell a11y and command palette retained (sweep) | `CONFIRMED` (regressed) | legacy `CubaCommandPalette.jsx` 787 lines, Cmd/Ctrl+K `CubaAppShell.jsx:227`; zero `CommandPalette`/`cmdk` hits in `frontend/src`; mobile drawer lost Escape + focus trap + focus restore (`:12`). **FP-G01 → PARTIAL** | FP-G01 |
+| RA-45 | Help desk present (sweep) | `CONFIRMED` (not present) | `DEFAULT_TICKETS` `AdminHelpDeskTab.tsx:47`; GET `:128` on `/admin/support/tickets` — **zero** registrations in `backend/`; replies/status dead + success. **FP-A19 `PARTIAL` → `MOCK`** (DISC-029) | FP-A19 |
+| RA-46 | Applicant pipeline real (sweep) | `CONFIRMED` (with two dead side-actions) | pipeline + stage PATCH real (`use-api-hooks.ts:304`); drawer email POSTs unregistered `/notify/email` with success (`CandidateReviewDrawer.tsx:159-180`); hiring preferences state-only (`portal.tsx:251`). **FP-F02 → PARTIAL** | FP-F02 |
+| RA-47 | Moderation decisions applied (sweep) | `CONFIRMED` (not applied) | fixtures `AdminModerationTab.tsx:58/108`; `POST /admin/employer-applications/{id}/verify` `:152/167` and `POST /admin/jobs/{id}/moderate` `:184` unregistered, `.catch(()=>{})` + success. **FP-A11 `PARTIAL` → `MOCK`** (DISC-030) | FP-A11 |
+| RA-48 | Blog authoring equivalent (allegation 6) | `CONFIRMED` | 1,631-line TipTap editor with 12 extensions (`BlogEditor.jsx:3-15`) → 461-line Markdown `<textarea>` (`pages/blog/editor.tsx:268/290-293/352`); the whole `/blog/posts*` path is unregistered. Classification stays `MISSING`; evidence confirmed at source (DISC-039) | FP-G09 |
 
 ## 3. Deep investigation of the four mandated allegations
 
@@ -226,6 +239,32 @@ toggle is not support.
 **Closure:** add provider buttons that call the existing server routes; verify `state`/PKCE round-trip
 in a sandbox per provider, and either wire or delete the Facebook provider object.
 
+### 3.5 V6 — the eight mandated feature-depth allegations
+
+Read subfeature-by-subfeature; the full traceability tables live in `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §3.
+
+| Allegation | Row | Disposition | One-line reason | Rows changed |
+|---|---|---|---|---|
+| Teams member drawer removed | FP-B05 | `CONFIRMED` | drawer absent; API alive; a count is not management | FULL → PARTIAL |
+| Audit JSON export / cursor / deep links removed | FP-B08 | `CONFIRMED` | 100-row single page, CSV only, API supports more | FULL → PARTIAL |
+| Queue jobs hardcoded + error swallowing | FP-A20 | `CONFIRMED` | real list, fabricated baseline, dead DLQ actions | unchanged (PARTIAL) |
+| 51 templates → 5 archetypes | FP-E02 | `CONFIRMED` | 100 ids over 5 structures × 19 families | FULL → PARTIAL |
+| Employer messaging fixtures | FP-F03 | `CONFIRMED` (scoped) | employer tab is state-only; candidate stack real | PARTIAL → MOCK |
+| TipTap editor → Markdown textarea | FP-G09 | `CONFIRMED` | 12 extensions and every formatting control gone | unchanged (MISSING) |
+| SMTP/IMAP/templates/logs reduced | FP-A16 | `CONFIRMED` | 5 tabs → 4 operations; 8 ops SERVER-ONLY | unchanged (PARTIAL) |
+| Voice interview coach removed | FP-G21 | `CONFIRMED` | 2,432 audio lines → 0 audio APIs | FULL → PARTIAL |
+
+**Governing rule applied:** behavioural equivalence, not component-name equivalence. Every row searches
+for the equivalent elsewhere before being downgraded — e.g. workspace membership survives via
+`enterpriseApi.updateMembership`, candidate messaging survives in `pages/dashboard/messages.tsx`, and
+cover letters survive as four inline letter templates. Those equivalences are why `FP-B06`, `FP-G20`
+and the cover-letter part of `FP-E09` were **not** downgraded.
+
+**Additional sweep result (not alleged):** `FP-F06`, `FP-G01`, `FP-F02` moved FULL → PARTIAL and
+`FP-A11`, `FP-A19` moved PARTIAL → MOCK; 13 further components were found rendering seeded data
+(`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §4); 17 client paths (27 call sites) resolve to no registered
+operation (§5, DISC-027).
+
 ## 4. Integrity statement
 
 - No allegation was marked `REFUTED` on the basis of a filename, a route declaration, or a settings
@@ -240,3 +279,17 @@ in a sandbox per provider, and either wire or delete the Facebook provider objec
   prepared for this register — that the deployed commit contains no `frontend/src` — was **withdrawn
   before publication** because `git ls-tree -r HEAD` shows 211 tracked `frontend/src` files. It was
   never released to any deliverable.
+
+## 5. V6 additions to the integrity statement
+
+- **No row was downgraded on a name, a missing file, or a detector lead alone.** Each of the 13 new
+  adjudications cites a legacy line, a modern line, and (where a backend exists) the route that proves
+  the server still supports the removed behaviour — i.e. the loss is a UI regression, not a retirement.
+- **Four detector leads were investigated and rejected** rather than reported: the four check-8 keyword
+  hits (`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §6) all came from broad legacy attribution, and the
+  favourites "swallow-then-success" lead is in fact a correct error path.
+- **An error in the earlier package was found and fixed at its source:** the V4/V5 client scanner
+  counted only literal `get/post/patch` verbs, which hid every `enterpriseRequest` call site. That is
+  why V5 reported enterprise operations as UI-unreachable when the modern UI does call them.
+- **Nothing was upgraded.** V6 produced no `UNVERIFIED` → `PASS` conversion; every classification
+  movement is downward (FULL → PARTIAL, PARTIAL → MOCK).

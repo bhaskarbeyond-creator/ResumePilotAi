@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-28T21:16:38.064Z",
-  "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
+  "generatedAt": "2026-10-28T21:34:17.952Z",
+  "revision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
   "method": "Every HTTP path literal passed to a call helper in frontend/src (tests, .d.ts, navigation excluded) tested against the routed register. MISSING = the client calls a path with no registered operation, i.e. a 404 at runtime (or a dead fallback branch).",
   "filesScanned": 205,
   "callSites": 229,

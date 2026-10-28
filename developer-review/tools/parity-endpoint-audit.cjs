@@ -124,7 +124,8 @@ function main() {
 
   const out = {
     generatedAt: new Date().toISOString(),
-    revision: reach.revision,
+    revision: (() => { try { return require('child_process').execSync('git rev-parse HEAD', { cwd: path.resolve(__dirname, '..', '..') }).toString().trim(); } catch { return reach.revision; } })(),
+    registerRevision: reach.revision,
     method:
       'Every FULL PARITY row\'s declared endpoints resolved against the routed register; ' +
       'capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as ' +

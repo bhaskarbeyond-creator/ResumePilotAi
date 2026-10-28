@@ -13,6 +13,14 @@ reproducible from it)
 
 ## 0. Headline counts (measured, not carried over)
 
+> **V6 note (base `a5835ff6`).** The inventory counts below are unchanged and were re-verified: 650 legacy
+> source files / 519 `.jsx` / 193,310 lines, 206 modern files / 151 `.tsx` / 68,812 lines. What changed in V6
+> is the **capability mix**, not the file counts: `FULL PARITY` is **12**, not the 19 this document's V5
+> annotation quotes, because seven rows were tested at subfeature depth (see
+> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §2.2). The domain map below still holds; the "modern tree genuinely
+> added" table now has a counterpart in §2.2 of that register listing what the modern tree *removed*.
+
+
 | Metric | Legacy `src/` | Modern `frontend/src/` |
 |---|---:|---:|
 | Source files (`.js`/`.jsx` vs `.ts`/`.tsx`) | **650** | **206** |

@@ -266,3 +266,24 @@ by V4 measurements were amended in place, keeping the previous text.
 **No requirement was downgraded.** That is a finding in itself: the requirements as written measure *the
 audit's* internal rigour, not the *product's* state, so evidence corrections do not change them. The
 product-level verdict is expressed in `V4-FINAL-ACCEPTANCE-REPORT.md`, not here.
+
+## §Q. V6 revalidation (2026-10-29, base `a5835ff6`)
+
+The V6 mandate adds ten requirements of its own (R-130 … R-139). Status is reported against what the pass
+actually executed, not against what the package contains.
+
+| ID | Requirement | Status | Evidence |
+|---|---|---|---|
+| **R-130** | Establish the authoritative revision and record the commit for every new finding | **PASS** | HEAD descends from `a5835ff6`; `cccd35a5` re-confirmed as the comparison checkpoint; every DISC-027 … DISC-040 entry carries `First raised: Mandate 6, revision a5835ff6` |
+| **R-131** | Adjudicate the eight allegations against source, independently of the developer and of V4/V5 | **PASS** | RA-36 … RA-48; 7 `CONFIRMED`, 1 `CONFIRMED — scoped`; each cites legacy + modern + backend anchors (`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §2.1) |
+| **R-132** | Apply behavioural equivalence, not component-name equivalence | **PASS** | equivalences searched and found for workspaces (membership via `updateMembership`), cover letters (4 inline templates), candidate messaging (`lib/messages.ts`) — those rows were **not** downgraded |
+| **R-133** | Sweep every FULL/PARTIAL row at subfeature level and downgrade mixed parents | **PARTIAL** | all 19 V5-FULL rows re-read (7 downgraded); 74 subfeatures traced in depth; the remaining 99 rows rest on V5 evidence and are declared as such (`§8` of the depth register) |
+| **R-134** | Classify with the existing vocabulary, preserve IDs and finding history | **PASS** | no row added, renumbered or deleted; 9 reclassifications recorded in-row and in `ALLEGATION-RESOLUTION-REGISTER.md` §5 |
+| **R-135** | New findings carry the 15 mandated fields | **PASS** | DISC-027 … DISC-040 are table-form with Finding ID, feature, severity+rationale, legacy, modern, backend, persistence/authz, reproduction, levels, workflow, impact, remediation, acceptance, closure, confidence |
+| **R-136** | Update the whole package and sweep stale claims | **PASS** | 12 documents amended; historical documents (`EXECUTIVE-GAP-SUMMARY.md`, `FINAL-ACCEPTANCE-REPORT.md`, `V4-FINAL-ACCEPTANCE-REPORT.md`, `HANDOVER.md`) carry dated superseded banners instead of rewritten numbers |
+| **R-137** | Publish separate, reproducible metrics; never aggregate into one score | **PASS** | `METRIC-DEFINITIONS.md` M13 … M20 with numerator/denominator/exclusions/formula/source; no composite published |
+| **R-138** | Ten automated checks + documented false-positive limits | **PASS** | `tools/parity-depth-checks.cjs` (10 checks); limits documented in the tool header and adjudicated in depth register §6 |
+| **R-139** | All acceptance gates, verdict not upgraded without runtime evidence | **PARTIAL** | 9 of 10 gates pass; the runtime gate cannot pass in this environment, so the verdict remains `PARTIAL — INCOMPLETE` and no capability is claimed repaired |
+
+**Nothing was upgraded.** V6 moved 9 rows downward and none upward; the product verdict is unchanged in
+kind (`PARTIAL — INCOMPLETE`) and weaker in the parity axis.
