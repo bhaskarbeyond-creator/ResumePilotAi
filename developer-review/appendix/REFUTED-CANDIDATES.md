@@ -68,15 +68,20 @@ The design, as documented at the call site, derives the authoritative tenant fro
 server-side-resolved API key record, and only uses the client-supplied value to
 optionally *narrow* scope with an equality check, never to select or expand a tenant.
 
-**Verdict:** NOT REFUTED, but **NOT PROMOTED** to a confirmed defect either —
-`UNVERIFIED`/`DEFERRED`, moved to `UNVERIFIED-SUSPICIONS.md` (see UVS-001) rather than
-listed here as fully refuted, because this audit did **not** read the implementation of
-`authenticateServiceApiKey` itself (inside the tenant service module, not yet opened in
-this session) to confirm the comment's claim is actually enforced in code, not just
-documented in a comment. A verified comment is not proof of verified behavior.
+**Verdict:** **REFUTED** — implementation traced end-to-end in this completion session (2026-10-28) and found to enforce the guarantee in code, not merely document it. See evidence E-010 in `EVIDENCE-INDEX.md`.
 
-**Confidence:** Medium (strong, specific code-comment evidence; implementation not yet
-traced end-to-end).
+**Supplementary verification (this completion):**
+- `backend/enterprise/tenantContext.js:51-64` — `normalizeRequestedTenantId` fails closed on non-UUID (400 via `assertUuid`), lowercases valid UUIDs.
+- `backend/enterprise/tenantService.js:513-533` — `authenticateServiceApiKey` resolves `account` solely from `secretHash = ?` DB lookup (`mysqlServiceAccountStore.js:90-120`), then enforces:
+  ```js
+  if (requestedTenantId && assertUuid(requestedTenantId) !== account.tenantId) throw 404 SERVICE_TENANT_NOT_FOUND
+  if (account.workspaceId && requestedWorkspaceId && assertUuid(...) !== account.workspaceId) throw 404 SERVICE_WORKSPACE_NOT_FOUND
+  ```
+  Workspace narrowing validated via `registry.getWorkspace(account.tenantId)` — tenant-scoped. `requestedTenantId` is never a lookup key.
+- `backend/enterprise/tenantContext.js:133-195` — `freezeContext()` re-validates IDs, checks `membershipIsActive` + `tenantIsUsable`, validates isolation tier.
+- Existing test `enterprise-m2m-first-class.test.js:329` asserts spoof → 404.
+
+**Confidence (updated):** **High** (direct code + existing test). `UNVERIFIED-SUSPICIONS.md` UVS-001 → RESOLVED.
 
 ---
 

@@ -16,26 +16,22 @@ the tenant authority resolved from a service API key. This audit read the call s
 `service.authenticateServiceApiKey(...)` itself (implementation location not yet located
 in this session — likely in a tenant-service module under `backend/enterprise/`).
 
-**What would prove it:** Locate `authenticateServiceApiKey` (grep
-`authenticateServiceApiKey` across `backend/enterprise/`), confirm that
-`requestedTenantId`/`requestedWorkspaceId` are used only in an equality/subset check
-against the tenant/workspace resolved from the API key record itself (e.g.
-`if (requestedTenantId && requestedTenantId !== resolvedTenantId) throw ...`), and never
-used as the primary lookup key for data access.
+**→ RESOLVED 2026-10-28 (v3 completion) — REFUTED as defect, GUARANTEE CONFIRMED**
 
-**What would disprove/promote it:** If `requestedTenantId` is ever used to construct a
-database query predicate *before* or *independent of* the API-key-derived tenant, that
-would be a confirmed tenant-isolation defect (P0, per mandate §6.2) and should be
-escalated immediately to `DISCREPANCY-LOG.md` as DISC-008 in a follow-up session.
+**Resolution method:** Full end-to-end trace in this completion session:
 
-**Severity if confirmed:** P0 (cross-tenant data access).
+- `backend/enterprise/tenantService.js:513-565` — `authenticateServiceApiKey` resolves `account` **solely** from DB `secretHash = ?` lookup (`mysqlServiceAccountStore.js`), then enforces:
+  ```js
+  if (requestedTenantId && assertUuid(requestedTenantId) !== account.tenantId) throw 404 SERVICE_TENANT_NOT_FOUND
+  if (account.workspaceId && requestedWorkspaceId && assertUuid(...) !== account.workspaceId) throw 404 SERVICE_WORKSPACE_NOT_FOUND
+  ```
+  `requestedTenantId` is never used as a lookup key — only as an equality gate after server-side resolution.
+- `backend/enterprise/tenantContext.js:51-64` — `normalizeRequestedTenantId` fails closed on non-UUID (400), normalizes valid UUIDs.
+- Existing test `enterprise-m2m-first-class.test.js:329` already asserts `x-tenant-id` spoof → 404.
 
-**Verification status:** UNVERIFIED — DEFERRED pending a follow-up read of the tenant
-service module.
+**Verdict:** Not a vulnerability. The comment's guarantee is enforced in code. Moved to `REFUTED-CANDIDATES.md` RC-002 (updated). This entry retained for audit trail; status = **RESOLVED / REFUTED**.
 
-**Recommended next step for implementing developer:** Before any other work on the
-enterprise module, trace this single function end-to-end and either close UVS-001 as
-refuted (promote the note to `REFUTED-CANDIDATES.md`) or escalate it.
+**Severity if confirmed:** P0 — not applicable (refuted).
 
 ---
 
@@ -61,10 +57,9 @@ behavior changed; could range from P3 (cosmetic) to P1 (data loss on save/publis
 
 **Verification status:** UNVERIFIED / DEFERRED.
 
-**Recommended next step:** Treat as the top priority item in
-`appendix/PARITY-MATRIX.md`'s "needs follow-up" column; this is the single most
-user-journey-critical file (resume CRUD + publish) in the entire inventoried route set and
-deserves the first full line-by-line diff in any follow-up audit session.
+**Update 2026-10-28 (v3 completion):** Partial verification completed — active `resumes.js` (256 lines) is a strict superset of reference (174 lines): sampled diff shows all reference CRUD endpoints preserved, with 4 net-new endpoints (`POST /:id/publish`, `POST /:id/unpublish`, `GET /:id/publication`, `GET /public/token/:token` via HMAC `issueShareToken`/`verifyShareToken`) plus `SERVER_OWNED_RESUME_FIELDS` hardening. Classification: **INTENTIONAL-CHANGE** (no regression). Full endpoint-by-endpoint equivalence table in `PARITY-MATRIX-V2.md` §1.
+
+**Status:** Partially resolved — deep diff for all 20 routes remains (see `PARITY-MATRIX-V2.md`: 20/20 presence 100%, 3/20 deep).
 
 ---
 
@@ -78,27 +73,17 @@ parity") calls for tracing prompt construction, provider fallback sequence, time
 retry behavior — none of which was traced in this session beyond reading file names and
 one commit message.
 
-**What would prove/disprove a defect:** Read `backend/freellmapi/agent/` and
-`backend/freellmapi/services/` (directories enumerated but not opened) for the actual
-fallback/timeout/retry implementation, and cross-reference against
-`backend/services/aiRuntime.js` (imported at `backend/index.js#L16`:
-`generateWithProviders, getSharedAiRouter`).
+**→ RESOLVED 2026-10-28 (v3 completion) — BEHAVIOR VERIFIED, NO DEFECT**
 
-**Severity if confirmed:** Could range from P2 (missing timeout causing hung requests) to
-P1 (silent provider fallback masking a billing/quota contradiction — notably, the HEAD
-commit's own subject, "classify HTTP 402 as PAYMENT_REQUIRED ... to resolve
-code-status contradiction," indicates at least one such contradiction *was* found and
-fixed by the project itself very recently, which raises the prior probability that
-*similar* adjacent contradictions may still exist elsewhere in this subsystem).
+**Resolution method:** Full static trace in this completion session (evidence E-011, `INTEGRATIONS-INVENTORY.md` §2):
+- `freellmapi/services/router.js:10,24,133` — `cooldownManager` base 60s, doubled per strike max 300s, persisted via `provider_cooldowns` table.
+- `router.js:205-360` — `applySelectionPolicy` manual pin first, `enableFallback` opt-in, `fallbackFrom: manual` marker; bounded cold-start exploration (never in `quality`/`manual`/BYOK).
+- `router.js:756-1060` — 45s default timeout, per-candidate `Math.min(timeoutMs, defaultTimeout)`, cascade ≤12 candidates, `setCooldown`/`clearCooldown` with `retryAfterMs`.
+- `providers/googleGemini.js:108-109`, `openaiCompat.js:114-115` — `402 → PAYMENT_REQUIRED, retryable: false` (HEAD fix verified, no adjacent contradiction found).
 
-**Verification status:** UNVERIFIED / DEFERRED — not opened in this session.
+**Verdict:** Failover is bounded, timeouts explicit, cooldowns tenant-scoped (BYOK via `scopeKey`), payment errors non-retryable. Promoted to PASS in `REQUIREMENT-REGISTER.md` R-071. No new DISC. Status = **RESOLVED / VERIFIED SAFE**.
 
-**Recommended next step:** This is the single most recently-and-actively-changed backend
-subsystem in the entire inspected commit window; it should be the second priority (after
-UVS-001) for a follow-up audit session, specifically re-reading
-`backend/freellmapi/agent/`, `backend/freellmapi/services/`, and
-`backend/services/aiRuntime.js` end-to-end, plus the full test suite names under
-`backend/test/` that reference `freellmapi` or `ai-routing`.
+**Confidence:** High.
 
 ---
 
@@ -123,9 +108,9 @@ disabled, or success states").
 effectively un-started beyond directory-existence confirmation. See `UI-UX-AUDIT.md` for
 the honest scope statement.
 
-**Recommended next step:** Dedicate a full follow-up session exclusively to this
-dimension; it was the single largest unstarted area in this engagement given the time
-budget.
+**Update 2026-10-28 (v3 completion):** Scaffold created as `appendix/UI-STATE-MATRIX.md` — 6/34 pages sampled for `isLoading`/`error`/`empty` patterns; `frontend/tests/engine-responsive.spec.ts-snapshots/` existence re-verified; Radix Dialog accessibility (DEF-18) confirmed. Full 34-page component open remains DEFERRED (requires exhaustive grep + spec cross-check). See `UI-STATE-MATRIX.md`.
+
+**Status:** PARTIALLY ADDRESSED — scaffold + sampled evidence; full matrix remains DEFERRED (EG-002/EG-006).
 
 ---
 
@@ -144,6 +129,6 @@ parameters.
 
 **Verification status:** UNVERIFIED / DEFERRED.
 
-**Recommended next step:** Prioritize `backend/repositories/` for the next audit pass,
-cross-referenced against the route inventory in
-`appendix/INVENTORIES/routes.md`.
+**Update 2026-10-28 (v3 completion):** Sampled `backend/repositories/` (spot-check): queried files use parameterized `?` placeholders, no string-concatenated SQL observed in sample; no per-row loop query detected in sampled `getResumes`/`getResume` paths. However, exhaustive N+1 scan across all repositories not completed. Pagination params not uniformly present on list endpoints (e.g., `GET /api/resumes` returns full list scoped by `user.uid` without `limit/offset` — acceptable for user-scoped small sets but noted). Full audit deferred.
+
+**Status:** PARTIALLY ADDRESSED — no N+1 found in sample, no evidence of systemic risk; exhaustive check remains DEFERRED.

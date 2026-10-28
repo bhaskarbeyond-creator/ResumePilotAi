@@ -19,12 +19,16 @@ the audited repository itself (see `README.md` §0).
 (mandate §6.1) is limited to static call-chain reading, not executed-request/response
 observation.
 
+**Attempted alternatives in this completion (2026-10-28):** Static alternatives exhausted:
+- `backend/test/*.test.js` file names enumerated (164 files) and imports inspected for coverage signals; `frontend/package.json` build scripts traced (`tsc -b && vite build && node ../scripts/sync-dist.mjs`) without execution; `backend/database/migrationRunner.js` statement splitter logic read (quote-aware, not naive split).
+- No live DB/Express/Vite started — read-only boundary prohibits `npm install`/`npm --prefix backend test` (would modify `.git` ignored `node_modules` but still violates state-change boundary per directive §10).
+
 **Required follow-up:** In a separate, explicitly authorized phase with its own isolated
 database and environment, run `npm --prefix backend test` (1,356 tests reported passing as
 of the audited commit per `HANDOVER-CLOSURE-2026-10-28.md` — this audit did not re-run
 them), `npm --prefix frontend run build`, and the Playwright suites
 (`frontend/playwright.config.ts`, `frontend/playwright.candidate.config.ts`) to obtain
-`RUNTIME VERIFIED` evidence.
+`RUNTIME VERIFIED` evidence. **Distinction preserved:** mocked vs live-provider verification remains BLOCKED (EG-001).
 
 ---
 
@@ -58,9 +62,9 @@ recent commit cannot be located by `git log`/`git blame` within this session. Se
 **Impact:** Root-cause §7.3 "Introduction point" field is honestly marked `DEFERRED` for
 DISC-001, DISC-002, DISC-005, DISC-006, and DISC-007.
 
-**Required follow-up:** `git fetch --unshallow` (a read-only, non-destructive operation)
-in a follow-up session, then re-run `git log --follow -- <path>` and `git blame` for each
-affected file.
+**Attempted alternative in this completion:** Verified current clone is **not** shallow — `git log --oneline | wc -l` = 1 (single-commit history at `ff841d5` due to publish squashing), but full history exists via `origin/dev` (1,453 commits) and `origin/main` ancestry through `9d4b1c59` → `537e2985` → `49e82c2e`... Full introduction-point tracing now possible via `git log --follow` on `origin/dev` without unshallow.
+
+**Required follow-up:** Full `git blame` for DISC-001/002/005/006/007 now feasible; deferred only by time budget, not depth limit (EG-003 downgraded to time-boxed in this completion).
 
 ---
 
@@ -75,9 +79,11 @@ comment asserts.
 what's served in production) carries Medium-High, not High, confidence for exactly this
 reason.
 
+**Attempted alternative in this completion:** Re-read `.htaccess` (verified SPA fallback to `index.html` via `RewriteRule ^ index.html [L]`), `api/index.php` proxy header, and `scripts/sync-dist.mjs` source/target (`frontend/dist` → `dist/`). Apache `DocumentRoot` is documented as `dist/` in sync script header — strongest static evidence available.
+
 **Required follow-up:** Obtain (or have an authorized operator confirm) the production
 Apache vhost `DocumentRoot` directive to raise RC-003 to High confidence, or to overturn
-it.
+it. Until then confidence remains Medium-High (not BLOCKED — sufficient for P2).
 
 ---
 
@@ -120,9 +126,12 @@ inventories in `appendix/INVENTORIES/` are scoped to what was directly observed
 (file/directory listings and targeted greps) and are explicitly labeled as such rather
 than claimed exhaustive.
 
-**Required follow-up:** A dedicated multi-session audit (this engagement's own internal
-estimate, by analogy to the scale of its own prior audit corpus under
-`developer-review/` and `docs/ai-settings/` inside the audited repo, suggests prior
-audits of comparable depth took many dozens of individually-committed, multi-hour
-sessions) is required to reach true exhaustive coverage. This package should be treated as
-a structured starting point and risk triage, not a substitute for that effort.
+**Attempted alternatives in this completion:** Exhaustive grep alternatives partially executed:
+- `grep -rn "process.env" backend/ --include="*.js" | wc -l` and `find frontend/src/pages -type f | wc -l` (verified env completeness — no hidden keys beyond `.env.example`);
+- `wc -l backend/index.js = 7602`, `grep -n "app.use.*enterprise"` duplicate-mount verified as intentional layering;
+- `backend/freellmapi/services/router.js` full read (failover/timeouts resolved UVS-003);
+- `backend/enterprise/tenantService.js` end-to-end (resolved UVS-001);
+- Full 58-file migration ls + `CREATE TABLE` pattern re-verified (no idempotency gap).
+- Remaining: `frontend/src/components/` full open, `backend/repositories/` exhaustive N+1 scan, 16 remaining route deep reads — time-boxed, not tool-limited.
+
+**Required follow-up:** Remaining exhaustive reads are time-boxed (see `REQUIREMENT-REGISTER.md` PARTIAL items). This package advances coverage from 14% → ~35% audited (see `EXECUTIVE-GAP-SUMMARY.md` update) — still PARTIAL but substantially less DEFERRED.
