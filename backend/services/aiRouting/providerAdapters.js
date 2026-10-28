@@ -56,7 +56,7 @@ function normalizeOpenAiUsage(meta) {
     return { promptTokens, completionTokens, totalTokens };
 }
 
-const NON_CHAT_MODEL_PATTERN = /\b(?:embed|embedding|embeddings|rerank|reranker|detector|diffusion|flux|clip|whisper|tts|asr|ocr|stt|upscaler|vae|deplot)\b|-(?:embed|rerank|detector|diffusion)$/i;
+const NON_CHAT_MODEL_PATTERN = /\b(?:embed|embedding|embeddings|rerank|reranker|detector|diffusion|flux|clip|whisper|tts|asr|ocr|stt|upscaler|vae|deplot|guard|guardrail|safety-guard)\b|-(?:embed|rerank|detector|diffusion|guard)$/i;
 
 /**
  * OpenAI-compatible chat-completions adapter factory. One instance per
@@ -218,7 +218,7 @@ function appIdentityHeaders() {
 const PROVIDER_ADAPTERS = new Map([
     ['nvidia', openAiCompatibleAdapter({
         id: 'nvidia', name: 'NVIDIA NIM',
-        defaultModel: 'meta/llama-3.2-11b-vision-instruct',
+        defaultModel: 'nvidia/nemotron-3.5-bolt-e4b',
         baseUrl: 'https://integrate.api.nvidia.com/v1',
     })],
     ['gemini', geminiAdapter],

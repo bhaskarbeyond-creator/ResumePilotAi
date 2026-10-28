@@ -3296,9 +3296,14 @@ function EducationStep({
     setGeneratingEduId(entry.id);
     try {
       const outcome = await runContentOperation('generate-education-description', {
+        school: entry.institution || 'University',
+        institution: entry.institution || 'University',
         degree: entry.degree || 'Bachelor of Science',
         field: entry.field || 'Computer Science',
-        institution: entry.institution || 'University',
+        fieldOfStudy: entry.field || 'Computer Science',
+        startDate: entry.startDate || '',
+        endDate: entry.endDate || '',
+        grade: entry.gpa || '',
       });
       const suggestions = outcome.kind === 'suggestions'
         ? outcome.suggestions
@@ -3508,10 +3513,22 @@ function SkillsStep({
     setGeneratingSkills(true);
     setSkillSuggestionNotice(null);
     try {
+      const candidateRoles = (experience || [])
+        .filter((e) => e.position || e.company || e.description)
+        .map((e) => ({
+          title: e.position || '',
+          employer: e.company || '',
+          description: e.description || '',
+          startDate: e.startDate || '',
+          endDate: e.endDate || '',
+          current: Boolean(e.current),
+        }));
+
       const outcome = await runContentOperation('generate-skills', {
         jobTitle: targetRole || 'Software Engineer',
         experienceLevel: 'senior',
         existingSkills: categories.flatMap((c) => c.skills),
+        candidateRoles,
         recentRoles: experience?.map((e) => e.position).filter(Boolean),
         companies: experience?.map((e) => e.company).filter(Boolean),
         educationFields: education?.map((ed) => ed.field).filter(Boolean),
@@ -3880,9 +3897,17 @@ function SummaryStep({
     setGenerating(true);
     setOutcome(null);
     try {
-      const workHistory = experience
+      const candidateRoles = experience
         .filter((entry) => entry.position || entry.company || entry.description)
-        .map((entry) => ({ jobTitle: entry.position, employer: entry.company, description: entry.description }));
+        .map((entry) => ({
+          title: entry.position,
+          jobTitle: entry.position,
+          employer: entry.company,
+          description: entry.description,
+          startDate: entry.startDate,
+          endDate: entry.endDate,
+          current: entry.current,
+        }));
 
       const skills = (skillCategories || []).flatMap((c) => c.skills || []);
 
@@ -3890,7 +3915,8 @@ function SummaryStep({
         existingText: summary,
         name: `${heading.firstName} ${heading.lastName}`.trim(),
         ...(heading.title?.trim() ? { jobTitle: heading.title.trim() } : {}),
-        workHistory,
+        candidateRoles,
+        workHistory: candidateRoles,
         ...(skills.length > 0 ? { skills } : {}),
         ...(targetJobDescription?.trim() ? { targetJd: targetJobDescription.trim() } : {}),
         tone: selectedTone,
@@ -4450,8 +4476,20 @@ function CertificationsStep({
     setGeneratingCerts(true);
     setCertSuggestionNotice(null);
     try {
+      const candidateRoles = (experience || [])
+        .filter((e) => e.position || e.company || e.description)
+        .map((e) => ({
+          title: e.position || '',
+          employer: e.company || '',
+          description: e.description || '',
+          startDate: e.startDate || '',
+          endDate: e.endDate || '',
+          current: Boolean(e.current),
+        }));
+
       const outcome = await runContentOperation('generate-certifications', {
         jobTitle: targetRole || 'Software Engineer',
+        candidateRoles,
         recentRoles: experience?.map((e) => e.position).filter(Boolean),
         companies: experience?.map((e) => e.company).filter(Boolean),
         skills: skillCategories?.flatMap((c) => c.skills),
@@ -4824,8 +4862,20 @@ function ProjectsStep({
     setGeneratingProjects(true);
     setProjectSuggestionNotice(null);
     try {
+      const candidateRoles = (experience || [])
+        .filter((e) => e.position || e.company || e.description)
+        .map((e) => ({
+          title: e.position || '',
+          employer: e.company || '',
+          description: e.description || '',
+          startDate: e.startDate || '',
+          endDate: e.endDate || '',
+          current: Boolean(e.current),
+        }));
+
       const outcome = await runContentOperation('generate-projects', {
         jobTitle: targetRole || 'Software Engineer',
+        candidateRoles,
         recentRoles: experience?.map((e) => e.position).filter(Boolean),
         companies: experience?.map((e) => e.company).filter(Boolean),
         skills: skillCategories?.flatMap((c) => c.skills),

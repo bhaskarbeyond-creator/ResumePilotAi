@@ -3271,6 +3271,18 @@ app.get('/api/freellmapi/metrics', requireSuperAdmin, async (_req, res) => {
     }
 });
 
+// Live AI Fleet Health & Model Reachability Probe (Super Admin Observability)
+app.get('/api/admin/ai-fleet-health', requireSuperAdmin, async (req, res) => {
+    try {
+        const { probeAiFleet } = require('./scripts/probe-ai-fleet');
+        const timeoutMs = Math.min(Number(req.query.timeoutMs) || 10000, 30000);
+        const report = await probeAiFleet({ timeoutMs });
+        return res.json({ success: true, ...report });
+    } catch (error) {
+        return res.status(503).json({ success: false, error: error.message });
+    }
+});
+
 // Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
 // deliberately isolated from existing certified UID-scoped module routes. The
 // enterprise API boundary (installed above) accepts either a Firebase bearer token

@@ -116,7 +116,10 @@ function calculateDetailedExperience(employments = []) {
     const intervals = [];
     let undatedRolesCount = 0;
 
-    for (const emp of employments) {
+    for (let emp of employments) {
+        if (typeof emp === 'string' && emp.trim().startsWith('{')) {
+            try { emp = JSON.parse(emp); } catch {}
+        }
         if (!emp || typeof emp !== 'object') continue;
         const startStr = emp.begin || emp.startDate || emp.start || emp.started || emp.startYear || '';
         const endStr = emp.end || emp.endDate || emp.finished || emp.endYear || '';
@@ -378,28 +381,64 @@ function buildEvidencePayload(operation, rawPayload = {}) {
     // flatText removed as it was unused
 
     // Extract roles polymorphically from context.facts or root payload
-    const candidateRoles = (Array.isArray(facts.roles) && facts.roles.length)
-        ? facts.roles
-        : (Array.isArray(payload.employments) && payload.employments.length
-            ? payload.employments
-            : (Array.isArray(payload.workExperiences) && payload.workExperiences.length
-                ? payload.workExperiences
-                : (Array.isArray(payload.workExperience) && payload.workExperience.length
-                    ? payload.workExperience
-                    : (Array.isArray(payload.recentRoles) && payload.recentRoles.length
-                        ? payload.recentRoles.map((role, i) => ({ title: String(role || '').trim(), employer: String((Array.isArray(payload.companies) ? payload.companies[i] : '') || '').trim(), begin: '', end: '', description: '' }))
-                        : (payload.workHistory ? [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }] : [])))));
+    let candidateRoles = [];
+    if (Array.isArray(facts.roles) && facts.roles.length) {
+        candidateRoles = facts.roles;
+    } else if (Array.isArray(payload.candidateRoles) && payload.candidateRoles.length) {
+        candidateRoles = payload.candidateRoles;
+    } else if (Array.isArray(payload.employments) && payload.employments.length) {
+        candidateRoles = payload.employments;
+    } else if (Array.isArray(payload.workExperiences) && payload.workExperiences.length) {
+        candidateRoles = payload.workExperiences;
+    } else if (Array.isArray(payload.workExperience) && payload.workExperience.length) {
+        candidateRoles = payload.workExperience;
+    } else if (Array.isArray(payload.recentRoles) && payload.recentRoles.length) {
+        candidateRoles = payload.recentRoles.map((role, i) => ({
+            title: String(role || '').trim(),
+            employer: String((Array.isArray(payload.companies) ? payload.companies[i] : '') || '').trim(),
+            begin: '',
+            end: '',
+            description: '',
+        }));
+    } else if (payload.workHistory) {
+        candidateRoles = [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }];
+    }
 
     // Extract education polymorphically
-    const candidateEdus = (Array.isArray(facts.education) && facts.education.length)
-        ? facts.education
-        : (Array.isArray(payload.educations) && payload.educations.length
-            ? payload.educations
-            : (Array.isArray(payload.education) && payload.education.length
-                ? payload.education
-                : (Array.isArray(payload.educationFields) && payload.educationFields.length
-                    ? payload.educationFields.map((field) => ({ degree: '', school: '', fieldOfStudy: String(field || '').trim(), started: '', finished: '', description: '' }))
-                    : (payload.education ? [{ degree: typeof payload.education === 'string' ? payload.education : '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }] : []))));
+    let candidateEdus = [];
+    if (Array.isArray(facts.education) && facts.education.length) {
+        candidateEdus = facts.education;
+    } else if (Array.isArray(payload.candidateEducations) && payload.candidateEducations.length) {
+        candidateEdus = payload.candidateEducations;
+    } else if (Array.isArray(payload.educations) && payload.educations.length) {
+        candidateEdus = payload.educations;
+    } else if (Array.isArray(payload.education) && payload.education.length) {
+        candidateEdus = payload.education;
+    } else if (Array.isArray(payload.educationFields) && payload.educationFields.length) {
+        candidateEdus = payload.educationFields.map((field) => ({
+            degree: '',
+            school: '',
+            fieldOfStudy: String(field || '').trim(),
+            started: '',
+            finished: '',
+            description: '',
+        }));
+    } else if (payload.education) {
+        candidateEdus = [{ degree: typeof payload.education === 'string' ? payload.education : '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }];
+    }
+
+    candidateRoles = candidateRoles.map(item => {
+        if (typeof item === 'string' && item.trim().startsWith('{')) {
+            try { return JSON.parse(item); } catch { return item; }
+        }
+        return item;
+    });
+    candidateEdus = candidateEdus.map(item => {
+        if (typeof item === 'string' && item.trim().startsWith('{')) {
+            try { return JSON.parse(item); } catch { return item; }
+        }
+        return item;
+    });
 
     // Calculate accurate, non-overlapping calendar experience
     const detailedTenure = calculateDetailedExperience(candidateRoles);
@@ -569,8 +608,25 @@ function summaryEvidenceLength(rawPayload = {}) {
     if (flatBodyLen >= EVIDENCE_THRESHOLD && (hasRole || flatBodyLen >= 20)) return flatBodyLen;
 
     // Structured evidence from previous steps: roles, education, skills, certifications, projects.
-    const roleCount = Array.isArray(facts.roles) ? facts.roles.length : (flatWork.length >= 5 ? 1 : 0);
-    const eduCount = Array.isArray(facts.education) ? facts.education.length : (flatEdu.length >= 5 ? 1 : 0);
+    const structuredRoles = Array.isArray(facts.roles) && facts.roles.length
+        ? facts.roles
+        : (Array.isArray(payload.candidateRoles) && payload.candidateRoles.length
+            ? payload.candidateRoles
+            : (Array.isArray(payload.employments) && payload.employments.length
+                ? payload.employments
+                : (Array.isArray(payload.workExperiences) && payload.workExperiences.length
+                    ? payload.workExperiences
+                    : null)));
+    const roleCount = structuredRoles ? structuredRoles.length : (flatWork.length >= 5 ? 1 : 0);
+
+    const structuredEdus = Array.isArray(facts.education) && facts.education.length
+        ? facts.education
+        : (Array.isArray(payload.candidateEducations) && payload.candidateEducations.length
+            ? payload.candidateEducations
+            : (Array.isArray(payload.educations) && payload.educations.length
+                ? payload.educations
+                : null));
+    const eduCount = structuredEdus ? structuredEdus.length : (flatEdu.length >= 5 ? 1 : 0);
     const skillCount = Array.isArray(facts.skills) ? facts.skills.length : flatSkills;
     const certCount = Array.isArray(facts.certifications) ? facts.certifications.length : (flatCerts.length >= 3 ? 1 : 0);
     const projectCount = Array.isArray(facts.projects) ? facts.projects.length : (flatProjects.length >= 3 ? 1 : 0);

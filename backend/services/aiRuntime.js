@@ -114,9 +114,28 @@ function compact(value, max = 4000) {
 function normalizePayload(payload = {}) {
     const normalized = {};
     for (const [key, value] of Object.entries(payload).slice(0, 80)) {
-        if (Array.isArray(value)) normalized[key] = value.slice(0, 100).map(item => compact(typeof item === 'object' ? JSON.stringify(item) : item, 500));
-        else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') normalized[key] = compact(value);
-        else if (value && typeof value === 'object') {
+        if (Array.isArray(value)) {
+            const isStructuredArray = ['candidateRoles', 'candidateEducations', 'employments', 'workExperiences', 'workExperience', 'educations', 'education', 'projects', 'certifications'].includes(key);
+            if (isStructuredArray) {
+                normalized[key] = value.slice(0, 100).map(item => {
+                    if (item && typeof item === 'object') {
+                        const cleanItem = {};
+                        for (const [k, v] of Object.entries(item)) {
+                            cleanItem[k] = typeof v === 'string' ? compact(v, 2000) : v;
+                        }
+                        return cleanItem;
+                    }
+                    if (typeof item === 'string' && item.trim().startsWith('{')) {
+                        try { return JSON.parse(item); } catch {}
+                    }
+                    return compact(item, 500);
+                });
+            } else {
+                normalized[key] = value.slice(0, 100).map(item => compact(typeof item === 'object' ? JSON.stringify(item) : item, 500));
+            }
+        } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            normalized[key] = compact(value);
+        } else if (value && typeof value === 'object') {
             normalized[key] = value;
             if (key === 'entry') {
                 if (value.jobTitle || value.title || value.role || value.position) {
@@ -213,9 +232,9 @@ function factualSourceSegments(operation, payload = {}) {
 
 function factualSourceText(operation, payload = {}) {
     const metadata = operation === 'generate-work-description'
-        ? ['jobTitle', 'employer', 'city', 'startDate', 'endDate']
+        ? ['jobTitle', 'role', 'position', 'employer', 'company', 'city', 'startDate', 'endDate']
         : operation === 'generate-education-description'
-            ? ['school', 'degree', 'fieldOfStudy', 'city', 'startDate', 'endDate', 'grade']
+            ? ['school', 'institution', 'degree', 'field', 'fieldOfStudy', 'city', 'startDate', 'endDate', 'grade']
             : [];
     return [...metadata.map(field => [field, compact(payload[field], 500)]), ...factualSourceSegments(operation, payload)]
         .filter(([, value]) => value.length > 0)
@@ -225,10 +244,12 @@ function factualSourceText(operation, payload = {}) {
 
 function sourceNotesForOperation(operation, payload = {}) {
     if (operation === 'generate-work-description') {
-        return compact(firstSourceValue(payload, FACTUAL_SOURCE_FIELDS[operation]), 4000);
+        const segs = factualSourceSegments(operation, payload).map(([, value]) => value).filter(Boolean).join('\n');
+        return compact(segs || firstSourceValue(payload, FACTUAL_SOURCE_FIELDS[operation]), 4000);
     }
     if (operation === 'generate-education-description') {
-        return compact(firstSourceValue(payload, FACTUAL_SOURCE_FIELDS[operation]), 4000);
+        const segs = factualSourceSegments(operation, payload).map(([, value]) => value).filter(Boolean).join('\n');
+        return compact(segs || firstSourceValue(payload, FACTUAL_SOURCE_FIELDS[operation]), 4000);
     }
     if (operation === 'enhance-single-bullet') {
         return compact(
@@ -248,13 +269,15 @@ function sourceNotesForOperation(operation, payload = {}) {
         const certs = Array.isArray(contextFacts.certifications) ? contextFacts.certifications.join(', ') : '';
         const projs = Array.isArray(contextFacts.projects) ? contextFacts.projects.map(p => typeof p === 'string' ? p : (p.title || '')).join('; ') : '';
 
-        const rootRoles = Array.isArray(payload.employments)
-            ? payload.employments.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
-            : (Array.isArray(payload.workExperiences)
-                ? payload.workExperiences.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
-                : (Array.isArray(payload.workHistory)
-                    ? payload.workHistory.map(e => typeof e === 'string' ? e : `${e.jobTitle || e.position || e.title || ''} at ${e.employer || e.company || ''} ${e.description || ''}`).join('; ')
-                    : ''));
+        const rootRoles = Array.isArray(payload.candidateRoles)
+            ? payload.candidateRoles.map(e => `${e.title || e.jobTitle || ''} at ${e.employer || e.company || ''} ${e.description || ''}`).join('; ')
+            : (Array.isArray(payload.employments)
+                ? payload.employments.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
+                : (Array.isArray(payload.workExperiences)
+                    ? payload.workExperiences.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
+                    : (Array.isArray(payload.workHistory)
+                        ? payload.workHistory.map(e => typeof e === 'string' ? e : `${e.jobTitle || e.position || e.title || ''} at ${e.employer || e.company || ''} ${e.description || ''}`).join('; ')
+                        : '')));
         const rootEdus = Array.isArray(payload.educations)
             ? payload.educations.map(e => `${e.degree || ''} from ${e.school || ''}`).join('; ')
             : '';
@@ -1027,17 +1050,17 @@ function lexicalEvidenceTokens(value) {
 
 const STANDARD_CONNECTIVE_TOKENS = new Set([
     'a', 'an', 'the', 'and', 'or', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'by', 'from', 'as', 'into', 'through',
-    'across', 'over', 'under', 'between', 'within', 'during', 'including', 'such', 'like', 'is', 'are', 'was', 'were',
+    'across', 'over', 'under', 'between', 'within', 'during', 'including', 'involving', 'involved', 'involves', 'via', 'upon', 'throughout', 'such', 'like', 'is', 'are', 'was', 'were',
     'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'may', 'might',
     'must', 'can', 'could', 'experienced', 'experience', 'professional', 'proven', 'track', 'record', 'specializing',
     'specialized', 'focused', 'focusing', 'dedicated', 'driven', 'skilled', 'proficient', 'background', 'expertise',
     'demonstrated', 'strong', 'solid', 'extensive', 'broad', 'deep', 'seeking', 'offering', 'delivering', 'providing',
-    'bringing', 'utilizing', 'applying', 'leveraging', 'executing', 'maintaining', 'building', 'developing', 'creating',
+    'bringing', 'utilizing', 'using', 'used', 'use', 'uses', 'applying', 'leveraging', 'executing', 'maintaining', 'building', 'developing', 'creating',
     'designing', 'working', 'collaborating', 'contributing', 'leading', 'managing', 'supporting', 'enhancing', 'optimizing',
     'improving', 'passionate', 'results', 'oriented', 'motivated', 'enthusiastic', 'years', 'year', 'month', 'months',
     'role', 'position', 'career', 'opportunity', 'environment', 'team', 'teams', 'projects', 'solutions', 'practices',
     'standards', 'technologies', 'tools', 'methodologies', 'systems', 'applications', 'services', 'platforms', 'operations',
-    'processes', 'dynamic', 'comprehensive', 'effective', 'successful', 'key', 'core', 'high', 'quality', 'timely',
+    'process', 'processes', 'processing', 'processed', 'dynamic', 'comprehensive', 'effective', 'successful', 'key', 'core', 'high', 'quality', 'timely',
     'adaptable', 'committed', 'adept', 'competent', 'profile', 'summary', 'overview', 'qualification', 'qualifications',
     'it', 'its', 'their', 'them', 'they', 'our', 'we', 'i', 'my', 'that', 'which', 'who', 'whom', 'whose', 'where',
     'when', 'while', 'both', 'each', 'all', 'any', 'some', 'other', 'more', 'most', 'well', 'also', 'further',
@@ -1050,6 +1073,11 @@ const STANDARD_CONNECTIVE_TOKENS = new Set([
     'launched', 'spearheaded', 'accelerated', 'streamlined', 'directed', 'executed', 'resolved',
     'guided', 'facilitated', 'maintained', 'maintain', 'monitored', 'monitor', 'organized', 'organize',
     'applied', 'apply', 'examined', 'examine', 'evaluated', 'evaluate', 'achieved', 'achieve',
+    'strengthening', 'strengthened', 'strengthen', 'strengthens', 'expanding', 'expanded', 'expand', 'expands',
+    'integrating', 'integrated', 'integrate', 'integrates', 'deploying', 'deployed', 'deploy', 'deploys',
+    'ensuring', 'ensured', 'ensure', 'ensures', 'driving', 'drives', 'handling', 'handled', 'handle', 'handles',
+    'benchmarking', 'benchmarked', 'benchmark', 'benchmarks', 'refining', 'refined', 'refine', 'refines',
+    'upgrading', 'upgraded', 'upgrade', 'upgrades', 'troubleshooting', 'troubleshot', 'troubleshoot',
     'demonstrated', 'demonstrate', 'recognized', 'recognize', 'capabilities', 'capability',
     'initiative', 'initiatives', 'solution', 'solutions', 'responsibility', 'responsibilities',
     'performance', 'level', 'levels', 'concept', 'concepts', 'effort', 'efforts',
@@ -1067,7 +1095,11 @@ const STANDARD_CONNECTIVE_TOKENS = new Set([
     'framework', 'frameworks', 'ecosystem', 'ecosystems', 'execution', 'velocity', 'retention',
     'throughput', 'compliance', 'oversight', 'portfolio', 'portfolios', 'tenure', 'visionary',
     'authoritative', 'distinguished', 'partnering', 'collaborative', 'impact', 'value', 'sustainable',
-    'streamlining', 'streamlined', 'p&l', 'operational', 'empowered', 'advancing', 'aligned', 'championing'
+    'streamlining', 'streamlined', 'p&l', 'operational', 'empowered', 'advancing', 'aligned', 'championing',
+    // Technical Architecture & Systems Engineering Vocabulary
+    'telemetry', 'observability', 'reliability', 'scalability', 'maintainability', 'resilience',
+    'pipeline', 'pipelines', 'service', 'services', 'microservices', 'database', 'cloud', 'architecture',
+    'data', 'datasets', 'stream', 'streams', 'streaming', 'traffic', 'load'
 ]);
 
 function exactExcerptIsPresent(excerpt, source) {
@@ -1091,7 +1123,18 @@ function quantifiedClaims(value) {
 }
 
 function normalizeQuantity(value) {
-    return String(value || '').toLocaleLowerCase('en').replace(/[\s,]/g, '');
+    let s = String(value || '').toLocaleLowerCase('en').replace(/[\s,]/g, '');
+    if (s.endsWith('k') || s.endsWith('thousand')) {
+        const num = parseFloat(s.replace(/(?:k|thousand)$/, ''));
+        if (!isNaN(num)) s = String(Math.round(num * 1000));
+    } else if (s.endsWith('m') || s.endsWith('million')) {
+        const num = parseFloat(s.replace(/(?:m|million)$/, ''));
+        if (!isNaN(num)) s = String(Math.round(num * 1000000));
+    } else if (s.endsWith('b') || s.endsWith('billion')) {
+        const num = parseFloat(s.replace(/(?:b|billion)$/, ''));
+        if (!isNaN(num)) s = String(Math.round(num * 1000000000));
+    }
+    return s;
 }
 
 function protectedIdentifiers(value) {
@@ -1161,17 +1204,36 @@ function assertSourceCitations(operation, parsed, payload) {
 // sizes). Operations that allow free phrasing (summary, bullet, education) still
 // may not introduce a numeric value that is absent from the candidate's source.
 function numericValues(value) {
-    return (String(value || '').match(/\d+(?:[.,]\d+)*/g) || []).map(n => n.replace(/,/g, ''));
+    const rawMatches = (String(value || '').match(/\d+(?:[.,]\d+)*/g) || []).map(n => n.replace(/,/g, ''));
+    const all = new Set(rawMatches);
+    for (const m of rawMatches) {
+        if (m.includes('.')) {
+            const intPart = m.split('.')[0];
+            if (intPart) all.add(intPart);
+        }
+    }
+    return [...all];
 }
 
 function safeJson(value) {
     try { return JSON.stringify(value); } catch { return ''; }
 }
 
+function stemsMatch(a, b) {
+    if (a === b) return true;
+    const cleanA = a.replace(/(?:ing|ed|es|s|e)$/, '');
+    const cleanB = b.replace(/(?:ing|ed|es|s|e)$/, '');
+    if (cleanA.length >= 3 && cleanA === cleanB) return true;
+    if (a.length >= 5 && b.length >= 5) {
+        if (a.startsWith(cleanB) || b.startsWith(cleanA)) return true;
+    }
+    return false;
+}
+
 function assertNoInventedNumbers(generated, source) {
     const known = new Set(numericValues(source));
-    const invented = numericValues(generated).find(n => !known.has(n));
-    if (invented) {
+    const hasInvented = numericValues(generated).some(n => !known.has(n));
+    if (hasInvented) {
         throw Object.assign(new Error('AI output introduced a number absent from the source'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
 }
@@ -1230,15 +1292,24 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (unsupportedQuantity) {
         throw Object.assign(new Error('AI output introduced a quantity absent from the source'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
-    // A citation can be real while the generated sentence still introduces unrelated
-    // claims. Keep factual operations extractive: every lexical token returned to the
-    // candidate must already occur in their submitted facts. Provider prose that uses
-    // synonyms or adds connective claims fails closed to the source-preserving fallback.
+
     const sourceTokens = new Set(lexicalEvidenceTokens(source));
-    const unsupportedToken = lexicalEvidenceTokens(generated).find(token => !sourceTokens.has(token) && !STANDARD_CONNECTIVE_TOKENS.has(token));
+    const unsupportedToken = lexicalEvidenceTokens(generated).find(token => {
+        if (sourceTokens.has(token) || STANDARD_CONNECTIVE_TOKENS.has(token)) return false;
+        if (/^\d+$/.test(token)) return false;
+        if (token.includes('-')) {
+            const parts = token.split('-').filter(Boolean);
+            if (parts.length > 0 && parts.every(p => sourceTokens.has(p) || STANDARD_CONNECTIVE_TOKENS.has(p))) return false;
+        }
+        for (const st of sourceTokens) {
+            if (stemsMatch(token, st)) return false;
+        }
+        return true;
+    });
     if (unsupportedToken) {
         throw Object.assign(new Error(`AI output introduced wording absent from the source: ${unsupportedToken}`), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
+
     for (const family of PROTECTED_CLAIM_FAMILIES) {
         if (family.label === 'proficiency') continue;
         if (family.pattern.test(generated) && !family.pattern.test(source)) {
@@ -2172,7 +2243,30 @@ async function executeContentOperation({ operation, payload, environment, fetchI
     const { prompt, payload: validatedPayload } = promptBuilder(operation, payload, { sessionId: requestId });
 
     const ask = deterministicAsk(operation, validatedPayload);
-    const configuration = providedConfiguration || await loadProviderConfiguration(environment);
+    let configuration;
+    try {
+        configuration = providedConfiguration || await loadProviderConfiguration(environment);
+    } catch (configError) {
+        if (validatedPayload.noFallback) throw configError;
+        const fallback = getContentOperationFallback(operation, validatedPayload);
+        if (fallback === null) throw configError;
+        console.warn('[generate-content] Provider configuration failed; returning safe diagnostic fallback', {
+            operation,
+            code: configError.code || configError.message,
+        });
+        return {
+            data: {
+                ...fallback,
+                aiUnavailable: true,
+                diagnosticCode: configError.diagnosticCode || configError.code || 'AI_CONFIGURATION_ERROR',
+                note: configError.message || fallback.note || 'AI generation is temporarily unavailable',
+                remediation: configError.remediation || null,
+            },
+            provider: 'fallback',
+            model: 'fallback',
+            grounding: FACTUAL_CONTENT_OPERATIONS.has(operation) ? 'source-preserving-fallback' : 'empty-fallback',
+        };
+    }
 
     if (isClarificationNeeded) {
         try {
@@ -2240,10 +2334,25 @@ async function executeContentOperation({ operation, payload, environment, fetchI
             operation,
             code: providerError.code || providerError.message,
         });
+        const firstFailure = Array.isArray(providerError.failures) && providerError.failures.length > 0 ? providerError.failures[0] : null;
+        const diagCode = providerError.diagnosticCode || firstFailure?.code || providerError.code || 'AI_PROVIDER_UNAVAILABLE';
+        const remediation = providerError.remediation
+            || firstFailure?.remediation
+            || (diagCode === 'AI_PROVIDER_TIMEOUT' ? 'Retry your request or select an alternative provider in AI Settings.' : null)
+            || (diagCode === 'AI_ENCRYPTION_KEY_MISSING_FOR_STORED_ENVELOPE' ? 'Set ENTERPRISE_ENCRYPTION_KEY in backend/.env or run recover-ai-secrets.js.' : null);
+        const safeNote = fallback.note
+            || (diagCode === 'AI_ENCRYPTION_KEY_MISSING_FOR_STORED_ENVELOPE' ? 'AI encryption key missing for stored envelope' : undefined);
+
         return {
-            // Flag the degraded state explicitly so clients show "AI unavailable"
-            // and never cache or present this as an AI result.
-            data: { ...fallback, aiUnavailable: true },
+            // Flag the degraded state explicitly with specific diagnostics so clients can
+            // truthfully report why the AI operation failed instead of showing generic error.
+            data: {
+                ...fallback,
+                aiUnavailable: true,
+                ...(diagCode ? { diagnosticCode: diagCode } : {}),
+                ...(safeNote ? { note: safeNote } : {}),
+                ...(remediation ? { remediation } : {}),
+            },
             provider: 'fallback',
             model: 'fallback',
             grounding: FACTUAL_CONTENT_OPERATIONS.has(operation) ? 'source-preserving-fallback' : 'empty-fallback',

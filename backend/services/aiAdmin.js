@@ -3,7 +3,7 @@
 const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider, resolveAiEngineChoice, getAiEngineShadowLog } = require('./aiRuntime');
 const { getModelQualityTier } = require('../freellmapi/providers/registry');
 // F-19: envelope boundary for platform AI provider secrets at rest.
-const { decryptProviderSecrets, encryptProviderSecrets, getSecretEncryptionStatus } = require('./aiSecretStore');
+const { decryptProviderSecrets, encryptProviderSecrets, getSecretEncryptionStatus, inspectSecretStore } = require('./aiSecretStore');
 
 const SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -398,6 +398,7 @@ async function loadAiAdminSettings(environment = process.env) {
     // Reflects the DEPLOYMENT environment (process.env), not the caller's
     // env snapshot: it describes how this process seals/opens the store.
     secretEncryption: getSecretEncryptionStatus(),
+    secretEncryptionDiagnostic: inspectSecretStore(secrets, environment),
     engine: {
       version: freellmEngine.ENGINE_VERSION,
       capabilities: freellmEngine.getEngineStatus().capabilities,
