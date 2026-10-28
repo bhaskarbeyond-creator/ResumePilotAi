@@ -1,0 +1,13 @@
+revision                 : 0adad00d0975
+route registrations      : 498
+unique METHOD+path       : 384
+duplicate registrations  : 114
+
+reachability classes (numerator / denominator = unique METHOD+path):
+  UI-REACHABLE              126  (32.8%)
+  INDIRECTLY-REACHABLE        6  (1.6%)
+  EXTERNAL-CALLER            27  (7%)
+  SERVER-ONLY                11  (2.9%)
+  INTENTIONALLY-UNEXPOSED     9  (2.3%)
+  UNREACHABLE               201  (52.3%)
+  UNVERIFIED                  4  (1%)

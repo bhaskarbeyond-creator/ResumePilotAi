@@ -7,7 +7,20 @@ investigated and **disproved** live in `appendix/REFUTED-CANDIDATES.md`, not her
 Candidates that remain **plausible but unproven** live in
 `appendix/UNVERIFIED-SUSPICIONS.md`, not here.
 
-Total confirmed findings in this log: **18** (DISC-001 … DISC-018).
+Total confirmed findings in this log: **22** (DISC-001 … DISC-022). DISC-019 … DISC-022 were
+raised by the V4 coverage-reconciliation mandate at revision `0adad00`; DISC-001 … DISC-018 are
+unchanged by that pass.
+
+> **Update 2026-10-29 (V4 coverage reconciliation, revision `0adad00`).** Every metric in this
+> log was rebuilt from the repository at `0adad00`, not carried forward from the report. Four entries
+> were added (DISC-019 … DISC-022); DISC-016 was refined from a binary count into a seven-class
+> register. Two earlier statements elsewhere in the package were found wrong and are corrected in
+> place with the corrected anchor cited: `FP-C07` ("no route in `main.jsx`" — `main.jsx:575` does
+> route the gallery) and `FP-F11` ("no employer-side rejection-reason capture" — it exists at
+> `CandidateReviewDrawer.tsx:84`). Counts previously published as "104 templates", "1,527 palette
+> lines" and "9 archetypes / 24 layout families" were not reproducible; the verified values are
+> **100**, **1,371** and **5 archetypes / 6 header styles**, and the old figures are withdrawn in
+> `ALLEGATION-RESOLUTION-REGISTER.md` rather than silently replaced.
 
 > **Update 2026-10-29 (forensic re-audit of the legacy→modern transition).**
 > DISC-013 … DISC-018 were raised by the re-audit. **DISC-001 is superseded in part**
@@ -1156,6 +1169,123 @@ never became DISC-013. The original E-002 row is left intact; the correction is 
 `EVIDENCE-INDEX.md` as E-325.
 
 ---
+
+## [DISC-019] OAuth provider breadth regressed from four integrations to one
+
+**Severity:** P2 — High (users of three identity providers lose a sign-in path; two hardened server flows become dead code)
+
+**Verification status:** STATICALLY VERIFIED
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — searched the whole modern tree for `/auth/linkedin`, `/auth/github`, `/auth/oauth/exchange`, `signInWithRedirect`, and for any provider button other than Google.
+
+**Evidence:** legacy starts four flows — Google + Facebook Firebase popups (`useOAuthSignIn.js`) and
+server OAuth for LinkedIn and GitHub (`src/components/auth/login/Login.jsx:389,396`, `src/components/auth/register/Register.jsx:254,261`), 11 client call sites
+in total. Modern: `pages/auth/login.tsx` is the only auth page; it imports `googleProvider` alone
+(`:16`), calls `signInWithPopup` at `:216`, and renders one "Continue with Google" button (`:429-444`).
+`grep -rn 'auth/linkedin\|auth/github\|oauth/exchange' frontend/src` → **0 matches**.
+The backend flow itself is intact and hardened (`backend/security/oauth.js`, `backend/database/oauthStore.js`:
+32-byte state stored only as SHA-256 with TTL, cookie binding via `timingSafeEqual`, single-use
+`SELECT … FOR UPDATE` consume, S256 PKCE, verified-email-only, conflict/link guards, fail-closed
+`oauth_not_configured`) — it is simply unreachable from the modern client.
+
+**Expected:** a migration preserves the set of supported identity providers, or records a retirement
+decision per provider.
+**Actual:** three providers were dropped with no recorded retirement, and the surviving security work
+is dead code. Recorded separately from the flow-quality question in `ALLEGATION-RESOLUTION-REGISTER.md`
+§3.1, which finds the *architecture* improved and only the *coverage* reduced.
+
+---
+
+## [DISC-020] Employer rejection feedback is written to a field the MySQL adapter never persists; the CAS counter is likewise inert
+
+**Severity:** P2 — High (a user-entered message is silently discarded on the only production data path; optimistic concurrency control is a no-op)
+
+**Verification status:** STATICALLY VERIFIED (code path); runtime confirmation blocked by the absence of a MariaDB server in this environment
+
+**Confidence:** High for the code path; the discard is a property of a 38-line closed function, not of a dynamic dispatch
+
+**Disproof outcome:** SURVIVED — searched for an `employer_notes` column in all six migrations and all of `backend/`, for any second write path (`UPDATE applications`), and for any test that references `employerNotes`.
+
+**Evidence:**
+1. `components/employer/CandidateReviewDrawer.tsx:245-258` sends `notes: "[Feedback: …] • …"`.
+2. `resilientMutations.js:321-328` calls `saveApplication(id, { ...current, status, employerNotes: notes, revision })`.
+3. `MySQLRepository.saveApplication` (`:1600-1637`) maps exactly 13 columns and takes `notes` from
+   `data.notes` — which, because `...current` is spread first, is the **pre-update** value read back by
+   `getApplication`. `employerNotes` has no column (`001_baseline.sql:180-204`) and `revision` is absent
+   from the column map, so neither is written.
+4. `InMemoryRepository.saveApplication` (`:529-534`) spreads everything, so the feature "works" in memory.
+5. `grep -rn employerNotes backend/test frontend/src` → **0 hits**: no test covers this path.
+6. The applicant notification is built in the request handler (`index.js:1629-1635`), so the text still
+   reaches the candidate even though the record does not change.
+
+**Expected:** a field the user typed is durably stored, and `expectedRevision` detects a concurrent edit.
+**Actual:** under MySQL the feedback is dropped and `applications.revision` stays at its default `1`, so
+`APPLICATION_CHANGED` can never fire. Because the client re-reads revision `1`, the UI shows no symptom —
+the failure is invisible without a database. This is also why the applicant-facing render is missing
+without anyone noticing.
+
+**Closure:** persist the payload's `notes` (or add `employer_notes`), map `revision`, and add a
+repository-contract test that runs against MariaDB rather than `InMemoryRepository`.
+
+---
+
+## [DISC-021] Applicant-scoped application reads are not field-projected, unlike the sibling endpoint
+
+**Severity:** P3 — Medium (latent disclosure of employer-only columns; becomes P2 once DISC-020 is fixed)
+
+**Verification status:** STATICALLY VERIFIED
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — compared both read paths for the same table and checked for a serializer in `backend/index.js`.
+
+**Evidence:** `GET /api/jobs/:jobId/applications` (`index.js:1728-1743`) authorizes correctly (owner sees
+all; everyone else only `app.applicant_id === req.user.uid`) but returns rows from
+`MySQLRepository.getApplications`, which is `SELECT * FROM applications` (`:1527-1536`) — including
+`employer_id`, `rating` and `notes`. The sibling `getApplicantApplications` (`:1539-1548`) exists
+specifically to avoid this and documents that "the employer's columns (rating, notes, employer_id,
+extra_json) … are not selected". No response serializer strips fields for the job-scoped path.
+
+**Expected:** one data-minimisation rule per table, applied on every read path.
+**Actual:** two rules. Exploitability today is low only because DISC-020 keeps `notes` empty; fixing
+DISC-020 without fixing this turns a latent gap into a live one, so the two must ship together.
+
+---
+
+## [DISC-022] A Facebook provider is constructed and advertised while no sign-in path exists
+
+**Severity:** P3 — Medium (configuration surface promises a working integration that cannot run)
+
+**Verification status:** STATICALLY VERIFIED
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — searched for `facebookProvider` consumers and for any Facebook button or handler.
+
+**Evidence:** `lib/firebase.ts:17` imports `FacebookAuthProvider` and `:62` instantiates
+`facebookProvider`. `grep -rn facebookProvider frontend/src` → only those two lines: nothing consumes it.
+`login.tsx` imports `googleProvider` only. Meanwhile `AdminSettingsTab.tsx:224-228` exposes
+`enableFacebookAuthModule` — "Enables 1-click Facebook Sign-in and Sign-up across authentication modals
+and registration forms platform-wide" — defaulting to `true` at `:378`.
+
+**Expected:** either the toggle controls a real flow, or it is absent.
+**Actual:** an operator can switch on a capability that has no implementation. Kept separate from
+DISC-019 because the remediation differs (wire or delete the provider object) and because a settings
+toggle is not support — a distinction this audit applies to every "configured" claim.
+
+---
+
+## Summary of status change caused by the V4 reconciliation (revision `0adad00`)
+
+| Finding | Status before | Status now |
+|---|---|---|
+| DISC-016 | 192/384 unreachable (binary coverage script) | **REFINED, not withdrawn** — 384-op register classified into seven classes: UI-REACHABLE 126, INDIRECTLY 6, EXTERNAL 27, SERVER-ONLY 11, INTENTIONALLY-UNEXPOSED 9, UNREACHABLE 201, UNVERIFIED 4. The earlier "192 without UI" and "58 neither" are superseded by a register with rule-level provenance (`Evidence/artifacts/backend-operations.tsv`) |
+| DISC-019 | — | **NEW** — OAuth breadth 4 → 1 provider (FP-G08) |
+| DISC-020 | — | **NEW** — rejection feedback dropped by the MySQL adapter; CAS counter inert |
+| DISC-021 | — | **NEW** — applicant-scoped reads unprojected (ordering dependency on DISC-020) |
+| DISC-022 | — | **NEW** — Facebook provider instantiated + advertised, unreachable |
 
 ## Summary of status change caused by this pass
 

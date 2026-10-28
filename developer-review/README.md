@@ -72,6 +72,17 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+> **Added 2026-10-29 (V4 coverage reconciliation, revision `0adad00`):** nine reconciliation artifacts —
+> `V4-COVERAGE-RECONCILIATION.md` (1,492/1,492 items dispositioned), `V4-FINAL-ACCEPTANCE-REPORT.md`
+> (verdict `PARTIAL — INCOMPLETE`), `ALLEGATION-RESOLUTION-REGISTER.md` (35 allegations),
+> `OAUTH-PROBE.md` (subfeature decomposition), `BACKEND-OPERATION-REACHABILITY.md` (384 operations in seven
+> classes), `EG-REVALIDATION-REGISTER.md` (EG-007…012 + accessibility re-tested),
+> `RUNTIME-VERIFICATION-V4.md` (executed evidence), `AUDIT-CHECK-PROVENANCE.md` (what the 61 checks really
+> prove), `METRIC-DEFINITIONS.md` + `AUDIT-CHANGE-HISTORY.md`. The parity register is now **112
+> capabilities** with **651/651 legacy and 206/206 modern files attributed** and **385 path anchors
+> stat-verified** by `scripts/verify-v4-reconciliation.py` (9 checks, separate from — and stricter than —
+> the original 61-check script, which is unchanged).
+
 > **Added 2026-10-29 (forensic re-audit of the legacy→modern transition):**
 > `LEGACY-MODERN-FEATURE-INVENTORY.md` (domain inventory, 34 allegation adjudications, backend-without-UI
 > analysis, verdict) and `FEATURE-PARITY-MATRIX.md` (**109 capability verdicts** with backend
@@ -107,7 +118,8 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 | `FINAL-ACCEPTANCE-REPORT.md` | **NEW (runtime pass):** directive §10 delivery report |
 | `Evidence/` | **NEW (runtime pass):** 45 screenshots, 25+ logs, `environment.json`, `browser-observations.json`, `axe-violation-details.json`, `migration-fidelity.json` |
 | `tools/` | **NEW (runtime pass):** audit-only Playwright configs, viewport spec, migration probe, secret scanner |
-| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification (34 checks, passing) |
+| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification (61 checks, passing) |
+| `scripts/verify-v4-reconciliation.py` | **NEW (V4):** stricter, separate verifier — stats all 385 register anchors, re-derives class sums, cross-checks documents against their JSON |
 
 ## 4. Scope limitations declared up front (see also `appendix/ENVIRONMENT-GAPS.md`)
 

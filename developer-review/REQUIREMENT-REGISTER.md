@@ -233,3 +233,36 @@ directive. Section M (R-110 … R-119) is unchanged. Row count: 55 → **65**.
 | History preservation | R-127 |
 | Read-only boundary | R-128 |
 | Final reporting | R-129 |
+
+---
+
+## §P. V4 revalidation of requirement statuses (2026-10-29, revision `0adad00`)
+
+Per the V4 mandate, no status in this register was carried forward unexamined. The table was re-tallied
+row by row from the register body (not from the summary) and the rows whose *evidence* is contradicted
+by V4 measurements were amended in place, keeping the previous text.
+
+**Re-tally (65 rows, row-level):**
+
+| Status | Rows | Composition |
+|---|---:|---|
+| PASS | **48** | 47 `**PASS**` + 1 `PASS for execution / claim REFUTED` (R-081) |
+| PARTIAL | **12** | 10 `**PARTIAL**` + 2 `PARTIAL (was BLOCKED)` |
+| BLOCKED | **4** | 3 `**BLOCKED**` + 1 `BLOCKED (was NOT VERIFIED)` |
+| NOT VERIFIED | **1** | 1 |
+| FAIL | **0** | — |
+| **Total** | **65** | reconciles with the §1 table once the 10 §N rows are included |
+
+**Amendments (previous text retained verbatim):**
+
+| ID | Previous evidence | V4 revalidation | Revised status |
+|---|---|---|---|
+| R-125 | "`E-326` (192/384 operations unreachable; 58 orphaned)" | The 192/58 figures are **superseded** by the seven-class register: 201/384 unreachable from any client, 250/384 with no modern call site, 183/384 never referenced by either frontend, and 126 UI-reachable. The requirement (trace each gap to the backend) is still met — the trace now exists at rule level (`Evidence/artifacts/backend-operations.tsv`, 384 rows with rule + reason + refs). | **PASS** (unchanged) with corrected evidence |
+| R-070 | "…4 payment gateways, 2 OAuth…" | The repository implements **four** OAuth entry points: Google and Facebook as client-side Firebase popups plus LinkedIn and GitHub as server-side flows. Only Google survives in the modern client (`DISC-019`). The inventory row understated the legacy surface and would have hidden the regression. | **PASS** (unchanged) with corrected count |
+| R-123 | classification of 109 capability rows | Rows are now **112** after V4 added `FP-A25`, `FP-A26`, `FP-D15` (capabilities that existed but had no row, which is why 68 modern files were unattributable) and reclassified `FP-C07` on evidence. Counts: 28 FULL / 36 PARTIAL / 30 MISSING / 9 MOCK / 6 REPLACED / 3 UNVERIFIED. | **PASS** (unchanged) with corrected counts |
+| R-126 | "9 allegations refuted on direct evidence; 4 capability rows left UNVERIFIED" | Refutations now number **10** (RA-33 added) and unverified rows **3** (FP-C07 became parity). Two earlier statements were found factually wrong and corrected rather than defended (`FP-C07`, `FP-F11`). | **PASS** (unchanged) with corrected counts |
+| R-082 | "448 inventory items, 61 audited, 387 deferred" | The deferred count is now structured: 206 modern files all attributed, 384 backend operations all classified, 65 requirements all adjudicated. The "61 audited" figure referred to the verification script's assertions, which V4 audited separately (`AUDIT-CHECK-PROVENANCE.md`). | **PASS** (unchanged) with corrected interpretation |
+
+**No requirement was downgraded.** That is a finding in itself: the requirements as written measure *the
+audit's* internal rigour, not the *product's* state, so evidence corrections do not change them. The
+product-level verdict is expressed in `V4-FINAL-ACCEPTANCE-REPORT.md`, not here.

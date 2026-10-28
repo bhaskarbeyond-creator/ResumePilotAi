@@ -254,5 +254,27 @@ at revision `415335b`; none is carried over from an earlier report.
 | **E-331** | Internationalisation / analytics / SEO / PWA removal measure | project-wide greps (both trees) | i18n **16 locales / 1,011 `t()` keys / 131 consumers → 0**; GA4 **14 → 0**; `RouteSeo` **2 → 0**; service worker **3 → 0**; JSON-LD **1 → 0**; consent banner **2 → 0** |
 | **E-332** | Template-count refutation | `lib/template-catalog.ts`, `lib/template-layouts.ts`, `app/router.tsx` | **104 catalogue entries**, 24 layout families, 9 archetypes (26 modern-split, 21 minimal-ats, 20 executive-banner, 20 tech-grid, 13 compact-euro, 4 cover) vs 51 legacy `cv*` dirs → the "51 → 8" allegation is refuted |
 
+### V4 corrections and additions (2026-10-29, revision `0adad00`)
+
+**E-332 is corrected here, not edited away.** Its row states "104 catalogue entries, 24 layout families,
+9 archetypes (26 modern-split, 21 minimal-ats, 20 executive-banner, 20 tech-grid, 13 compact-euro, 4
+cover)". Re-measured with a string-aware bracket scan of the `TEMPLATES` array: **100 entries**
+(`Cv1`…`Cv100`), **5** archetypes with distribution 26 / 21 / 20 / 20 / 13, and no `cover` archetype in
+that array (0 matches). The "104" is what `grep -c "id: '"` returns on the file, because the filter-chip
+list above the array also uses `id:`. Recorded as E-334.
+
+| ID | Evidence | Artifact / command | Result |
+|---|---|---|---|
+| **E-333** | Reference-revision verification | `git rev-parse HEAD`, `git ls-remote`, `git fetch origin dev:refs/remotes/origin/dev`, `git diff <tree>` | HEAD = `origin/main` = `0adad00d0975…`; `origin/dev` = `ea7b7416…`; merge-base `0adad00`; trees byte-identical; ahead/behind `0/1456` |
+| **E-334** | Template catalogue recount | string-aware scan of `frontend/src/lib/template-catalog.ts` | **100 entries**, 5 archetypes (26 modern-split / 21 minimal-ats / 20 executive-banner / 20 tech-grid / 13 compact-euro), 6 categories; supersedes the "104 / 9 archetypes / 24 families" figure |
+| **E-335** | Seven-class operation register | `tools/backend-reachability.cjs` → `Evidence/artifacts/backend-reachability.json`, `backend-operations.tsv`, `Evidence/logs/backend-reachability.log` | 498 registrations → 384 unique METHOD+path (114 collapsed); UI 126 / INDIRECT 6 / EXTERNAL 27 / SERVER-ONLY 11 / INTENTIONALLY-UNEXPOSED 9 / UNREACHABLE 201 / UNVERIFIED 4 |
+| **E-336** | Backend syntax sweep | `node --check` across all backend `.js` | **364 files, 0 syntax failures** (`Evidence/logs/v4/backend-syntax.log`) |
+| **E-337** | Frontend type-check | `tsc --noEmit -p tsconfig.app.json` in `frontend/` | **exit 0, 0 errors** over 206 source files (`Evidence/logs/v4/frontend-typecheck.log`, 0 bytes) |
+| **E-338** | Full backend suite | `node --test` (single concurrency) | **1,315 tests / 1,271 pass / 14 fail / 30 skip**, 69,414 ms, exit 1; all 14 failures traced to the missing MariaDB (`Evidence/logs/v4/backend-full-suite.log`) |
+| **E-339** | Enterprise suite | `node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js` | **187/187 pass, 0 fail, 0 skip**, exit 0 (`Evidence/logs/v4/enterprise-suite.log`) |
+| **E-340** | Browser-availability probe | `ls ~/.cache/ms-playwright`, `command -v chromium`, suite log | cache absent; no browser binary; suite logs `browserType.launch: Executable doesn't exist at …chromium_headless_shell-1234…` 11×; `playwright test --list` = 3,675 tests in 21 files / 42 projects over **7** spec files |
+| **E-341** | Rejection-feedback persistence trace | `resilientMutations.js:321-328`, `MySQLRepository.js:1600-1637`, `001_baseline.sql:180-204` | `employerNotes` and `revision` are not in the adapter's 13-column map; `notes` is re-written from the pre-update record; 0 tests reference `employerNotes` (DISC-020) |
+| **E-342** | OAuth registration/configuration trace | `backend/index.js:7273-7460`, `security/oauth.js`, `database/oauthStore.js` | state = 32 random bytes stored only as SHA-256 + TTL; cookie binding `timingSafeEqual`; single-use `SELECT … FOR UPDATE`; S256 PKCE; verified-email-only; conflict/link guards; `oauth_not_configured` fail-closed at `index.js:7280` |
+
 **Note on E-002 (kept for the record, not edited):** its legacy-tree figures are superseded by E-325.
 The original row is preserved so the correction is auditable rather than invisible (see DISC-018).
