@@ -58,27 +58,29 @@ and database operations are **different units** and never share a denominator.
 | Field | Value |
 |---|---|
 | Unit | capability row (a behaviour, decomposed to subfeature level where the mandate requires) |
-| **Value** | **112 rows** — 28 `FULL PARITY`, 36 `PARTIAL PARITY`, 30 `MISSING`, 9 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 0 `STATIC STUB`, 0 `LOCAL-ONLY PERSISTENCE`, 0 `INTENTIONAL RETIREMENT`, 3 `UNVERIFIED` |
+| **Value (V5)** | **112 rows** — 19 `FULL PARITY`, 43 `PARTIAL PARITY`, 32 `MISSING`, 9 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 0 `STATIC STUB`, 0 `LOCAL-ONLY PERSISTENCE`, 0 `INTENTIONAL RETIREMENT`, 3 `UNVERIFIED` |
+| **Value (V4, superseded)** | 28 / 36 / 30 / 9 / 6 / 3 — eight `FULL` rows rested on endpoints that do not exist (DISC-025) |
 | Denominator | 112 |
 | Formula | `count(classification) / 112`; each row ≥1 legacy anchor and, where it exists, ≥1 modern anchor |
 | Exclusions | none; `INTENTIONAL RETIREMENT` is zero because **no documented retirement decision exists anywhere** in the repository (grep for retirement/deprecation records → none) |
 | Source | `FEATURE-PARITY-MATRIX.md` (rendered), `Evidence/artifacts/feature-parity.json` (machine) |
-| **Do not report** | a single "% parity" number. 25 % of rows are `MISSING` while 25 % are `FULL`; their average describes nothing real |
+| Inclusion rule (V5) | a `FULL PARITY` row must have every declared endpoint resolve to a registered operation **and** that operation must be reachable — checked by `tools/parity-endpoint-audit.cjs`, 19/19 `SUPPORTED`. A route definition, a React page or an API reference count is never sufficient |
+| **Do not report** | a single "% parity" number. 29 % of rows are `MISSING` while 17 % are `FULL`; their average describes nothing real |
 
 ## M5 — Backend operation reachability
 
 | Field | Value |
 |---|---|
-| Unit A (registrations) | `router.<verb>` / `app.<verb>` call sites = **498** |
-| Unit B (unique `METHOD+path`) | **384** — **this is the only denominator used for reachability** |
+| Unit A (registrations) | `router.<verb>` / `app.<verb>` / `app.all` call sites = **499** |
+| Unit B (unique `METHOD+path`) | **385** — **this is the only denominator used for reachability** |
 | Collapsed | 114 duplicates (same method+path registered twice, e.g. `index.js` + module route) |
-| Unit C (handlers) | 384 (one inline handler per unique operation) |
+| Unit C (handlers) | 385 (one inline handler per unique operation) |
 | Unit D (DB operations) | **not counted** — not enumerable from route declarations; mixing it in would invalidate every percentage |
 | Exclusions | test trees are never callers; route-definition files are never callers; a string mention in display metadata is never a call |
-| Formula | `count(class) / 384` per class, classes assigned by first-match rule R1→R7→R2→R3→R5→R4→R6 |
+| Formula | `count(class) / 385` per class, classes assigned by first-match rule R1→R7→R7b→R2→R3→R5→R4→R6 |
 | **Values (V5)** | UI-REACHABLE 152 (39.5 %), INDIRECTLY-REACHABLE 7 (1.8 %), EXTERNAL-CALLER 27 (7.0 %), SERVER-ONLY 11 (2.9 %), INTENTIONALLY-UNEXPOSED 2 (0.5 %), UNREACHABLE 176 (45.7 %), UNVERIFIED 10 (2.6 %), over **385** operations |
 | **Values (V4, superseded)** | UI 126 / indirect 6 / external 27 / server 11 / machine 9 / unreachable 201 / unverified 4, over 384 — wrong in both directions (DISC-024) |
-| Derived measures | live UI path (UI+indirect) 132/384 = 34.4 %; no modern call site 250/384 = 65.1 %; never referenced by either frontend 183/384 = 47.7 %; legacy-called-but-modern-dropped 67/384 = 17.4 % |
+| Derived measures (V5) | live UI path (UI+indirect) 159/385 = 41.3 %; no modern call site 226/385 = 58.7 %; never referenced by either frontend 153/385 = 39.7 %; legacy-called-but-modern-dropped 23/385 = 6.0 % |
 | Source | `BACKEND-OPERATION-REACHABILITY.md`; `Evidence/artifacts/backend-reachability.json`, `backend-operations.tsv` |
 | Supersedes | `backend-ui-coverage.cjs` binary split (192 / 58) — kept for provenance, **not** used for any V4 claim |
 
@@ -86,24 +88,27 @@ and database operations are **different units** and never share a denominator.
 
 | Field | Value |
 |---|---|
-| Numerator | operations called by the legacy UI that also have a modern call site |
-| Denominator | operations called by the legacy UI |
-| **Value** | **14 / 82 = 17.1 %** — of the 82 operations the legacy UI called, only 14 still have a modern call site. The other 68 split: 57 `UNREACHABLE`, 7 `INTENTIONALLY-UNEXPOSED`, 3 `EXTERNAL-CALLER`, 1 `INDIRECTLY-REACHABLE` |
-| Caveat | legacy call detection uses the same call-site rule on `src/`; it is **not** a statement about the deployed legacy app (there is none) |
+| Numerator | 56 — operations called by the legacy UI that also have a modern call path (55 `UI-REACHABLE` + 1 `INDIRECTLY-REACHABLE`) |
+| Denominator | 82 — operations the legacy UI called (`legacyUiRefs` non-empty) |
+| **Value** | **56 / 82 = 68.3 %** |
+| The other 26 | 23 `UNREACHABLE` (candidate regressions), 3 `EXTERNAL-CALLER` (now driven by a provider instead of the browser) |
+| V4 figure, superseded | 14 / 82 = 17.1 % — wrong, and wrong in the alarming direction: the 45 enterprise operations the classifier could not see were most of the difference (DISC-024) |
+| Caveat | legacy call detection uses the same call-site rule on `src/`; it is **not** a statement about a deployed legacy app (there is none) |
 | Source | `backend-reachability.json` field `legacyUiRefs` |
 
 ## M7 — Test execution
 
 | Field | Value |
 |---|---|
-| Unit | `node --test` test cases at this revision |
-| Backend | 1,315 tests → **1,271 pass**, 14 fail, **30 skip**, 69,414 ms |
+| Unit | one `node --test` test case at this revision |
+| Backend (canonical, V5) | 1,315 discovered / **1,315 executed** / **1,269 pass** / 46 fail / **0 skip**, 70.8 s, exit 1 — `cd backend && npm test` |
+| Backend (V4, superseded) | 1,271 pass / 14 fail / 30 skip — the repo's MariaDB gate was left off, so 30 tests were reported as skipped instead of executed |
 | Enterprise | **187 / 187 pass**, 0 skip |
-| Pass rate reported as | `pass / (total − skipped)` where stated, else `pass / total`; **both quoted** for the backend: 1,271/1,315 = 96.7 %, and 1,271/1,285 = 98.9 % excluding skips |
-| Exclusions | none. Failures are **not** removed on the grounds of being environment-caused; they stay in the denominator and are triaged in `RUNTIME-VERIFICATION-V4.md` §3 |
-| Frontend | `tsc --noEmit` = 0 errors; **0 Playwright tests executed** (no browser) |
-| Source | `Evidence/logs/v4/*.log` |
-| Prior figure | "1,356 tests passing" (from a handover doc, not executed) and "1,545 executed" (1,315+187+43 across suites) — both superseded by this measured run |
+| Pass rate reported as | `pass / total` **and** `pass / (total − skipped)`: 1,269/1,315 = 96.5 %; with 0 skipped the two coincide, which is the point of running the canonical command |
+| Exclusions | none. The 46 failures stay in the denominator; they are attributed individually in `Evidence/logs/v5/backend-canonical-suite.triage.md` |
+| Frontend | `tsc --noEmit` = 0 errors; **0 of 3,675 enumerated Playwright tests executed** (no browser) |
+| Source | `Evidence/logs/v5/backend-canonical-suite.log`, `.triage.md`; `Evidence/logs/v4/*.log` |
+| Prior figures | "1,356 tests passing" (handover doc, never executed) — superseded by measurement |
 
 ## M8 — Audit-coverage of the *audit itself*
 
@@ -144,3 +149,48 @@ Each finding carries exactly one level:
 
 **No level is inferred from another.** A statically verified defect is not "probably confirmed at
 runtime", and an executed test that only exercises a mock is `VERIFIED (executed)` about the mock.
+
+## M11 — Client→server contract conformance
+
+| Field | Value |
+|---|---|
+| Unit | one HTTP path literal passed to a call helper in `frontend/src` (a *call site*, not a route) |
+| Numerator | **199** — 188 exact matches to a registered operation + 11 matches to a registered dynamic pattern (`/admin/settings/branding` vs `/admin/settings/{X}`) |
+| Denominator | **229** call sites over 205 files |
+| **Value** | **199 / 229 = 86.9 % conforming; 30 call sites (13.1 %) over 23 distinct paths are served by no operation** |
+| Inclusion rule | callee must be an HTTP helper (`get`/`post`/`patch`/`put`/`del`/`delete`/`fetch`/`*Request`/`api.*`/`axios`); an explicit `method:` in the options decides the verb; generic arguments may contain `;`, `{}` and newlines |
+| Exclusions | `window.open` targets (client-side routes), `<Link to>`/`href`/`navigate(`, `.d.ts`, test files, `utils/snippets.ts` (documentation strings), relative asset paths, bare `?tab=` style query keys |
+| What it does **not** claim | that a conforming call succeeds — auth, validation, entitlement and DB state can still fail; and that a non-conforming call is never served at runtime by a catch-all route (none exists) |
+| Source | `tools/client-call-existence.cjs` → `Evidence/artifacts/client-call-existence.json`; findings in DISC-025 |
+
+## M12 — Admin write-action truthfulness (inspected subset, not a percentage of the console)
+
+| Field | Value |
+|---|---|
+| Unit | an admin control that issues a write and then displays a success state |
+| Inspected | **4** (suspend/reactivate user, trigger backup, clear cache, delete blog article) |
+| Truthful | **0** — all four swallow the failure with `.catch(() => {})` and then mutate local state or print a success message; two of them write to endpoints that do not exist at all |
+| Denominator caveat | **n = 4 is not the console.** These are the write paths reached while chasing DISC-025; the console has 30 modules and the remaining write paths were not audited for this pattern. The figure is therefore reported as `0 of 4 inspected`, never as "0 % of admin actions" |
+| Inclusion rule | a control qualifies only if the failure branch is unreachable *by construction* (`.catch(() => {})`) and a success state is set unconditionally afterwards |
+| Source | `DISCREPANCY-LOG.md` DISC-026 with line anchors; `AdminUsersTab.tsx:206`, `AdminOperationsTab.tsx:122,136`, `AdminBlogManagementTab.tsx:126` |
+
+## Scorecard summary (12 dimensions, never averaged)
+
+| # | Dimension | Value | Denominator class |
+|---|---|---|---|
+| M1 | Legacy source surface | 650 files / 519 `.jsx` / 193,310 lines | counted |
+| M2 | Modern source surface | 206 files / 151 `.tsx` / 68,812 lines | counted |
+| M3 | File attribution | 650/650 and 206/206 | counted |
+| M4 | Capability parity | 19 / 43 / 32 / 9 / 6 / 3 of 112 | classified |
+| M5 | Operation reachability | 152 / 7 / 27 / 11 / 2 / 176 / 10 of 385 | classified |
+| M6 | Legacy-called still callable | 56 of 82 (68.3 %) | derived |
+| M7 | Test execution | 1,269 of 1,315 pass; 0 of 3,675 browser tests executed | executed |
+| M8 | Audit self-coverage | every unit in §1 of the reconciliation carries a class | counted |
+| M9 | Audited-vs-deferred | **not computable** — refused by design | — |
+| M10 | Verification level | per claim (executed / static / runtime-temp) | classified |
+| M11 | Client→server conformance | 199 of 229 call sites (86.9 %) | executed (static parse) |
+| M12 | Admin write truthfulness | 0 of 4 inspected | inspected subset |
+
+**Why the summary has no total:** M9 is not computable, M12's denominator is a subset, and M4/M5 are
+distributions rather than scores. Summing them would manufacture a number that no measurement supports —
+the same failure mode that produced V4's over-claimed `FULL PARITY` rows.

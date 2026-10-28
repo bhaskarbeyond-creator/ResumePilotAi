@@ -38,6 +38,20 @@ row points at the file that now carries the corrected text and at the anchor tha
 | 9 | (Prepared for this register, never published) "the deployed commit contains no `frontend/src`" | `git ls-tree -r HEAD` → **211** tracked `frontend/src` files | **withdrawn before publication**; recorded so the withdrawal itself is auditable | this row |
 | 10 | "Modern attribution 138/206 (68 unattributed)" | the 68 are consumers of surfaces the matrix tracked only at page level; three capability rows were missing | 3 rows added → **206/206** attributed, with the rule stated (row must name the path; no filename matching) | `METRIC-DEFINITIONS.md` M3 |
 
+### 2.1 Corrections added by Mandate 5 (V5, revision `cccd35a5`)
+
+| # | Previous conclusion | New evidence | Revision | Where |
+|---:|---|---|---|---|
+| 11 | Legacy inventory = 651 files / 193,320 lines | the walker did not exclude `*.test.*`; the 651st file is `src/components/welcome/App.test.js` | 650 / 193,310; 12 documents swept | DISC-023 |
+| 12 | Reachability register 126 / 6 / 27 / 11 / 9 / 201 / 4 over 384 operations | `enterpriseRequest(` invisible to the call-site regex (46 sites → 45 operations under-classified); `dynamicParent` over-promoting (14 operations); `app.all` unparsed (1 operation) | **152 / 7 / 27 / 11 / 2 / 176 / 10 over 385**; second parser agrees 385/385 | DISC-024, register §5 |
+| 13 | "No modern caller" was the only question asked | the converse check found **23 client paths served by no operation** (blog, helpdesk, queues, moderation, operations, user status, coupons) | new check + finding; 8 `FULL PARITY` rows downgraded | DISC-025, M11 |
+| 14 | Admin capability claims were treated as display-only fabrications (DISC-014) | four admin *write* controls swallow the failure and then report success | new finding, P1 | DISC-026, M12 |
+| 15 | Backend suite = 1,271 pass / 14 fail / 30 skip | those figures came from a run with the repo's MariaDB gate off; the canonical `npm test` enables it | **1,269 / 46 / 0**, all 46 DB-caused | M7, `Evidence/logs/v5/` |
+
+Corrections 12 and 13 are the first in this audit that were found by *fixing the instrument* rather than by
+reading the product. That is the most transferable lesson in the package: a register that is never
+re-derived will keep producing confident, wrong numbers.
+
 ## 3. Identifier reconciliation (`RA-31` … `RA-35`)
 
 The 2026-10-29 pass seeded four internal hypotheses as `RA-31`…`RA-34`. The V4 mandate assigns those same
