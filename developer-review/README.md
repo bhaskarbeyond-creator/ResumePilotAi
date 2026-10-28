@@ -8,19 +8,9 @@
 
 ## 0. How this audit was physically performed (full transparency)
 
-The execution environment for this engagement is a sandboxed Next.js/Drizzle scaffold
-project (unrelated to ResumePilotAi) located at the tool root. That sandbox project is
-**not** a Git repository (`git status` inside it returns `fatal: not a git repository`),
-and it is the only location this toolset can create or modify files in.
+**Partial audit (original):** Executed from a sandboxed Next.js/Drizzle scaffold at the tool root (not a Git repo) via a read-only clone at `/tmp/ResumePilotAi`.
 
-The audited repository does not live inside that writable project. To perform the audit
-without violating the write boundary, the target repository was **cloned read-only**
-into an ephemeral, non-project scratch path (`/tmp/ResumePilotAi`) strictly for
-inspection via read-only shell commands (`git log`, `git status`, `find`, `grep`, `sed -n`,
-`cat`, `wc`, `node -e` for JSON parsing). No write, format, install, migration, or
-state-changing command was ever executed inside the clone. The clone is a disposable
-mirror of the public repository; it is not part of the deliverable and is not a substitute
-for the real repository.
+**v3 completion (this update):** Executed directly inside the real repository checkout on branch `arena/7c4b5db0-resumepilotai` at `/home/user/ResumePilotAi`. All writes remain **strictly under `developer-review/`** (verified via `git diff --name-only` outside `developer-review/` = empty). No application source, config, schema, migration, or dependency was modified — read-only boundary preserved (Gate G). See `PROVENANCE.md` §5 and `HANDOVER.md` §12.
 
 This document, and every other file in `/developer-review/`, is the only material created
 or modified during this engagement. Nothing in `frontend/`, `backend/`, `reference-code/`,
@@ -40,6 +30,10 @@ or modified during this engagement. Nothing in `frontend/`, `backend/`, `referen
 | Total commits reachable in the 100-commit window | 100 (full project history is longer; see §4) |
 | Repository size on disk | 328M total, 179M `.git` |
 | Total tracked files (excluding `node_modules`, `.git`) | 3,570 |
+
+## 1.1 Provenance (v3 completion)
+
+See `PROVENANCE.md` for full remote/branch/SHA verification. `origin/main` and `origin/dev` are at the directive's supplied SHAs (`ff841d5` / `6e4929cf`), neither has advanced, and `537e2985` is verified as the underlying application revision with `ff841d5` as publication wrapper (no app source delta).
 
 ## 2. Active vs. reference implementation locations (verified, not assumed)
 
@@ -71,16 +65,26 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 | File | Purpose |
 |---|---|
-| `EXECUTIVE-GAP-SUMMARY.md` | Executive summary, scope, readiness verdict, coverage matrix |
-| `DISCREPANCY-LOG.md` | Master, evidence-backed finding log (stable `DISC-xxx` IDs) |
+| `PROVENANCE.md` | **NEW (v3 completion):** Remote/branch/SHA verification, source-of-truth revision, publish proof |
+| `REQUIREMENT-REGISTER.md` | **NEW (v3 completion):** 47 requirements with PASS/PARTIAL/BLOCKED, evidence-linked |
+| `EVIDENCE-INDEX.md` | **NEW (v3 completion):** Stable E-xxx evidence anchors for every PASS |
+| `SECURITY-ASSESSMENT.md` | **NEW (v3 completion):** Expanded security & tenant-isolation, UVS-001 resolved |
+| `INTEGRATIONS-INVENTORY.md` | **NEW (v3 completion):** 13 integrations + AI failover resolved (UVS-003) |
+| `DATABASE-INVENTORY.md` | **NEW (v3 completion):** 29 migrations, ledger integrity, parity |
+| `PARITY-MATRIX-V2.md` | **NEW (v3 completion):** 20/20 presence 100% (was 1/20 5%), 3/20 deep |
+| `HANDOVER.md` | **NEW (v3 completion):** Final verdict, gates A-H, blockers & closure |
+| `EXECUTIVE-GAP-SUMMARY.md` | Executive summary, scope, readiness verdict, coverage matrix (updated) |
+| `DISCREPANCY-LOG.md` | Master, evidence-backed finding log (stable `DISC-xxx` IDs) — re-validated |
 | `SWOT-ANALYSIS.md` | Evidence-bound SWOT across Architecture / UI-UX / Security / Scalability |
 | `UI-UX-AUDIT.md` | UI/UX audit scoped to what is statically verifiable; viewport/runtime items marked DEFERRED |
 | `REPAIR-ACTION-PLAN.md` | Phased, DISC-ID-linked remediation plan for a future implementation developer |
-| `appendix/PARITY-MATRIX.md` | Active vs. reference-code parity table |
-| `appendix/REFUTED-CANDIDATES.md` | Candidates investigated and disproved |
-| `appendix/UNVERIFIED-SUSPICIONS.md` | Plausible but unproven candidates |
-| `appendix/ENVIRONMENT-GAPS.md` | Tooling/environment limitations that blocked deeper verification |
+| `appendix/PARITY-MATRIX.md` | Original parity table (preserved) |
+| `appendix/REFUTED-CANDIDATES.md` | Candidates investigated and disproved (RC-002 updated High) |
+| `appendix/UNVERIFIED-SUSPICIONS.md` | Plausible but unproven candidates (UVS-001,003 resolved, others scaffolded) |
+| `appendix/ENVIRONMENT-GAPS.md` | Tooling/environment limitations (alternatives attempted) |
+| `appendix/UI-STATE-MATRIX.md` | **NEW (v3 completion):** UI state matrix scaffold 6/34 pages |
 | `appendix/INVENTORIES/*.md` | Routes, database, environment, frontend, security, integrations, tests |
+| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification |
 
 ## 4. Scope limitations declared up front (see also `appendix/ENVIRONMENT-GAPS.md`)
 
