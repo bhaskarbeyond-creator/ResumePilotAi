@@ -1,0 +1,35 @@
+########## engine-security ##########
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [audit-chromium] › tests/engine-security.spec.ts:61:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › DOM mask regex (/^•{8,}[A-Za-z0-9]{4}$/), zero network secret leakage, and zero Web Storage secret persistence (DEF-01, DEF-02) 
+  7 did not run
+########## engine-integrity ##########
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [audit-chromium] › tests/engine-integrity.spec.ts:474:1 › Zod contract tests against real :8080 endpoints (ai-settings, quota-stats, catalog, health) 
+  52 passed (2.0m)
+########## engine-responsive ##########
+    [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+########## accessibility ##########
+  Headings: 3
+  Images: 0
+  Images without alt: 0
+  ✓  59 [audit-chromium] › tests/accessibility.spec.ts:375:5 › ARIA & Semantic Structure › Enterprise Console - ARIA landmarks and semantic structure (1.6s)
+
+  59 passed (2.1m)
+########## billing-checkout ##########
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [audit-chromium] › tests/billing-checkout.spec.ts:4:3 › Billing & Checkout Engine Parity (DIR-002) › Pricing page renders all tiers and comparison matrix 
+  4 passed (10.4s)

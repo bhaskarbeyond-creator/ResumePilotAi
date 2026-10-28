@@ -1,0 +1,13 @@
+### Backend probe WITH substitute schema (MySQL 5.7, migration 001 only) — 2026-10-28T19:50:31Z
+## POST /api/admin/ai-settings
+status=400
+{"success":false,"code":"EXPECTED_REVISION_REQUIRED","reasonCode":"EXPECTED_REVISION_REQUIRED","error":"expectedRevision is required for administrative writes.","requestId":"45823857-b43a-4c8e-b039-2384d1b3be19"}
+## GET /api/admin/ai-settings
+status=200
+{"success":true,"settings":{"provider":"gemini","temperature":0.7,"maxTokens":2048,"enableFallback":true,"nvidiaModel":"nvidia/nemotron-3.5-bolt-e4b","model":"gemini-2.0-flash","openaiModel":"gpt-4o-m
+## GET /api/readyz
+status=200
+{"status":"ready","authoritativeDatabase":"MARIADB","checks":{"mysql":{"status":"READY","latencyMs":0,"version":"5.7.29","host":"127.0.0.1","database":"airesume_test"},"schema":"INCOMPLETE (You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r
+## GET /api/admin/ai-settings/catalog
+status=404
+{"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"0dc30b94-66cb-4a54-97c2-04c8ceb865e0"}}

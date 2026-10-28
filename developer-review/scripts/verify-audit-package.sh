@@ -50,7 +50,7 @@ check "REQUIREMENT-REGISTER has PASS counts" "grep -q \"PASS\" \"$DR/REQUIREMENT
 check "EVIDENCE-INDEX has E-010 tenant isolation" "grep -q \"E-010\" \"$DR/EVIDENCE-INDEX.md\""
 check "DISCREPANCY-LOG has 7 findings" "grep -q \"DISC-007\" \"$DR/DISCREPANCY-LOG.md\""
 check "No application source modified (git diff excludes DR)" "bash -c 'git -C \"$ROOT\" diff --name-only HEAD | grep -v \"^developer-review/\" | grep -q \"\" && exit 1 || exit 0'"
-check "Secret scan: no DB_PASSWORD value in DR" "! grep -R --include='*.md' 'DB_PASSWORD=' \"$DR\" | grep -v 'DB_PASSWORD.*secret' | grep -v 'DB_PASSWORD.*placeholder' | grep -v 'grep -r' | grep -q 'DB_PASSWORD='"
+check "Secret scan: no non-empty DB_PASSWORD value in DR" "python3 \"$ROOT/developer-review/scripts/scan-secrets.py\" \"$DR\""
 check "Refuted candidates updated (RC-002 High)" "grep -q \"Confidence (updated):.*High\" \"$DR/appendix/REFUTED-CANDIDATES.md\""
 echo "--- Summary ---"
 echo "PASS: $pass  FAIL: $fail"

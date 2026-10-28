@@ -158,9 +158,37 @@ No blocker is hidden; each maps to a Gate.
 
 ## 13. Final Verdict
 
-> **PARTIAL — BLOCKED**
+> **PARTIAL — BLOCKED** (runtime verification added; verdict unchanged, and now for
+> measured rather than assumed reasons)
 
-**Rationale:** Gates A (mandate coverage 100% reconciled), C (7 findings + 3 refuted + 5 suspicions reconciled — 2 fully resolved, 3 scaffolded), D (26 artifacts, all required §9 deliverables present), E (material PASS cites E-IDs), G (read-only boundary intact), H (self-audit below) **PASS**. Gates **B** (investigation — 6 BLOCKED items have alternatives attempted but remain runtime-blocked), **F** (verification — STATICALLY VERIFIED only, no RUNTIME VERIFIED) **do not pass** because live DB/browser/provider verification requires an authorized runtime that the read-only boundary forbids. Per directive §14, `COMPLETE` requires every mandatory acceptance criterion demonstrably satisfied; runtime verification is mandatory for GO — therefore verdict is **PARTIAL — BLOCKED**, not COMPLETE.
+**Rationale after the temporary-environment pass (2026-10-28):**
+
+Gate **F** (verification) improved from *"STATICALLY VERIFIED only"* to
+**partially runtime-verified**: 1,501 application tests executed (1,487 pass, 14 fail —
+all database-substitution), the Express API exercised live over HTTP, and a real
+Chromium driven through 194 browser test executions with 45 screenshots at the five
+mandated viewports. Five genuine accessibility defects were found by execution
+(DISC-008), plus two test-efficacy defects in the project's own suites (DISC-011,
+DISC-012). Those are exactly the kind of result a static audit cannot produce — so Gate
+F is **partially satisfied, not satisfied**.
+
+Gate **B** (investigation) also improved: the database blocker is no longer a vague
+"no running MariaDB"; it is a documented chain of seven attempted provisioning routes
+(`appendix/ENVIRONMENT-GAPS.md` EG-007) plus the repository's own gate refusing the only
+substitute engine (`target engine must be MariaDB, received 5.7.29`).
+
+The verdict **cannot** become `COMPLETE` or a GO because the mandatory criteria that
+still have no evidence are precisely the ones a substitute cannot supply:
+tenant-isolation over HTTP (R-117), MariaDB migration/rollback execution (R-119), live
+provider/payment/storage integrations (R-118), real authenticated candidate/admin
+journeys (EG-011), and the Apache/PHP served layer (EG-008). Per directive §14,
+`COMPLETE` requires **every** mandatory acceptance criterion demonstrated — therefore
+**PARTIAL — BLOCKED**.
+
+**What would move it:** one disposable MariaDB 11.4 lane (`REPAIR-ACTION-PLAN.md` P4-6)
+plus live-provider sandbox credentials. With those, the 30 skipped tests, the 14
+DB-gated failures and the 175 candidate-dashboard tests all become executable, and the
+verdict can be re-derived from data rather than from judgement.
 
 This does **not** claim the application is production-ready — it claims the **audit package** is complete to the maximum verifiable extent within authorized scope, with precise blockers documented for independent review.
 
@@ -179,3 +207,72 @@ This does **not** claim the application is production-ready — it claims the **
 
 Independent auditor: this package withstands review — blockers are explicit, evidence is reproducible.
 
+
+---
+
+## 15. Addendum — temporary-environment runtime verification pass (2026-10-28)
+
+This addendum records the pass requested by the "temporary test environment provisioning"
+directive. It did not change any application file and did not change the verdict.
+
+### 15.1 What was provisioned
+
+| Layer | Provisioned | Source |
+|---|---|---|
+| Node/npm runtime | Node 22.22.3, npm 10.9.8, lockfile-exact `npm ci` in `backend/` and `frontend/` | preinstalled + `registry.npmjs.org` |
+| Application API | Express 5.2.1 (`backend/index.js`) live on `:8080`, two repository modes | repository code |
+| Frontend | Vite 8 dev server live on `:4000` (+ `:5173` for one spec that hardcodes it) | repository code |
+| Browser | Chromium **149.0.7827.0** from the repo's own `@sparticuz/chromium` dependency (Playwright CDN blocked) | npm |
+| SQL engine | MySQL **5.7.29** (npm binary) + `libaio` from a PyPI wheel — **substitute, explicitly not MariaDB evidence** | npm / PyPI |
+| MariaDB 11.4 | **not obtainable** — 7 provisioning routes attempted and documented | EG-007 |
+
+### 15.2 What executed (all numbers reproduced from logs)
+
+* Backend: **1,315** discovered → 1,271 pass / 14 fail / 30 skip.
+* Enterprise **187/187**, payments **43/43**, security-policy checks exit 0,
+  `tsc -b` exit 0, `vite build` exit 0, `oxlint` 0/0 on 238 files.
+* Browser: audit matrix **45/45** (5 mandated viewports × 9 routes, 45 screenshots,
+  0 px horizontal overflow); `accessibility.spec.ts` **59/59**;
+  `engine-integrity` **53/53**; `engine-security` **8/8**;
+  `engine-responsive` **13 pass / 22 fail** (20 font-attributable visual deltas,
+  2 trace-write artifacts); `freellmapi-admin-e2e` **15 pass / 2 fail / 30 not-run**;
+  `billing-checkout` **4 pass / 1 fail** (console-error assertion vs blocked fonts).
+* API probes: health 200, readyz 503 fail-closed, unauth 401, forged 401,
+  **role-denied 403**, weak-password 400, CSP+nonce/HSTS/XFO/nosniff/Referrer/
+  Permissions/RateLimit headers all present.
+* Audit package verifier: **34 PASS / 0 FAIL** (its secret scan was tightened to detect
+  actual credential values instead of flagging a documented empty `DB_PASSWORD=`).
+
+### 15.3 What the execution discovered that reading could not
+
+| ID | Finding | Severity |
+|---|---|---|
+| DISC-008 | 5 WCAG 2.1 AA violations (A11Y-001…005), one **axe-critical**: unlabelled billing switch, 2.45:1 and 3.16:1 contrast, non-keyboard-scrollable table, `aria-label` on a role-less `div`, logo name mismatch | P2 |
+| DISC-009 | Claimed "1,356 tests" is not reproducible; runner discovers 1,315 (and 1,271 passing) | P3 |
+| DISC-010 | Baseline migration header claims MySQL compatibility; migrations 002+ are MariaDB-only (`ADD COLUMN IF NOT EXISTS`) | P3 |
+| DISC-011 | `freellmapi-admin-e2e.spec.ts` hardcodes `localhost:5173` while the project config serves `:4000` → 47/47 fail by construction | P2 |
+| DISC-012 | The accessibility suite's `ime_dev_user` shim does not authenticate the router, so its "authenticated surface" scans silently cover `/login` while reporting 59 passes | P2 |
+
+### 15.4 New artifacts delivered by this pass
+
+| Path | Purpose |
+|---|---|
+| `TEMP-ENVIRONMENT-MANIFEST.md` | reproducible environment record (incl. everything that could not be provisioned, and why) |
+| `TEST-EXECUTION-REPORT.md` | per-category test matrix with commands, exit codes, counts, failure classification |
+| `BROWSER-VERIFICATION-REPORT.md` | viewports, workflows, screenshots, console/network captures, axe findings, untested areas |
+| `FINAL-ACCEPTANCE-REPORT.md` | the directive §10 delivery report |
+| `Evidence/` | 45 screenshots, 25+ logs, `environment.json`, `browser-observations.json`, `axe-violation-details.json`, `migration-fidelity.json` |
+| `tools/` | audit-only Playwright configs (mirroring the repo's project matrix so baselines are *compared*), the viewport spec, the migration probe, the secret scanner |
+
+### 15.5 Honesty notes carried into the handover
+
+1. An early attempt at `engine-responsive` used a single project named
+   `audit-chromium`, which made Playwright **write** five new baselines instead of
+   comparing. That "pass" was discarded, the five files were deleted, the config was
+   fixed to mirror the repository's project names, and only the re-run is reported.
+2. The MySQL substitute is **never** presented as MariaDB evidence; the repository's own
+   gate refuses it explicitly.
+3. Traces/screenshots of failures were kept (not pruned) so that the 25 browser failures
+   can be re-examined rather than taken on trust.
+4. No application code, test, config, schema or dependency was modified; `git status`
+   outside `developer-review/` is empty.

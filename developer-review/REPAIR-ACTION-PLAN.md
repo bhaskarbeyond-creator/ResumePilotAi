@@ -187,6 +187,92 @@ repository's own prior documentation (see `appendix/INVENTORIES/tests.md`)
 | P3-6 | (UVS-005 follow-up) | Audit `backend/repositories/` for N+1 query patterns and missing pagination, starting with `GET /api/resumes` | Backend/Database | M |
 | P3-7 | (§3 `routes.md` observation) | Confirm whether the duplicate `/api/enterprise`, `/api/enterprise/m2m`, `/api/platform` mount calls in `backend/index.js` are intentional layering or dead duplication | Backend | S |
 
+
+---
+
+## Phase 4 — Actions created by the runtime verification pass (2026-10-28)
+
+These are new, evidence-backed items discovered by **executing** the application
+(`BROWSER-VERIFICATION-REPORT.md`, `TEST-EXECUTION-REPORT.md`). Nothing here was
+implemented — the audit remains read-only with respect to application code.
+
+### P4-1 — Fix five WCAG 2.1 AA violations on landing + pricing (DISC-008 / A11Y-001…005)
+
+| Sub-task | File:line | Change | Effort |
+|---|---|---|---|
+| A11Y-001 | `frontend/src/pages/landing.tsx:239` | give the star row `role="img"` + `aria-label="5 out of 5 stars"`, or `aria-hidden` the icons and add visually-hidden text | S |
+| A11Y-002 | `landing.tsx:79`, `:296` | include the visible brand text in the accessible name (or drop `aria-label` and rely on the visible text) | S |
+| A11Y-003 (**critical**) | `pages/billing/pricing.tsx:264-272` | add `aria-label="Annual billing"` (or `aria-labelledby` pointing at the "Monthly Billing"/"Annual" label) to the `role="switch"` button | S |
+| A11Y-004 | `pricing.tsx:285`, `:335` | raise contrast: `#009966`→ darker emerald (≥ 4.5:1 on the badge background) and `text-ink-muted/60` → `text-ink-muted` (2.45:1 → target ≥ 4.5:1) | S |
+| A11Y-005 | `pricing.tsx:384` | `tabIndex={0}` + `role="region"` + `aria-label` on the `overflow-x-auto` wrapper, or provide the table in a keyboard-navigable form | S |
+
+Verification after fix: re-run `developer-review/tools/audit-browser-verification.spec.ts`
+and require zero violations in `Evidence/artifacts/axe-violation-details.json`.
+
+### P4-2 — Stop the accessibility suite from silently testing the login page (DISC-012)
+
+`frontend/tests/accessibility.spec.ts` sets `localStorage.ime_dev_user`, which the router
+guard does not honour; every "Candidate Dashboard / Employer Portal / Admin Console /
+Enterprise Console" scan therefore runs against `/login`. Fix: authenticate via
+`POST /api/auth/preview-login` (the app's own non-production issuer, already used by
+`engine-security.spec.ts`) and assert `expect(page).not.toHaveURL(/\/login/)` before
+scanning. Effort: M. **This is the highest-value QA fix in the package** — it converts
+green-but-empty coverage into real coverage.
+
+### P4-3 — Remove the hardcoded port in `freellmapi-admin-e2e.spec.ts` (DISC-011)
+
+The spec navigates to `http://localhost:5173` while `playwright.config.ts` starts the app
+on `:4000` with `baseURL` set. Use `baseURL`-relative navigation (or read
+`process.env.E2E_BASE_URL`). Effort: S. Until fixed, this 47-test suite cannot pass under
+the repository's documented command in **any** environment.
+
+### P4-4 — Make the test-count claim reproducible (DISC-009)
+
+Delete/replace the "1,356 tests" claim with the reproducible figure produced by
+`cd backend && node scripts/run-tests-with-annotations.js` (1,315 discovered / 1,271 pass
+at this revision) and publish the command next to the number. Effort: S.
+
+### P4-5 — Correct the "MySQL / MariaDB compatible" claim in the baseline migration (DISC-010)
+
+`001_baseline.sql`'s header claims MySQL compatibility; `002`+ use `ADD COLUMN IF NOT
+EXISTS` (MariaDB-only). Either amend the header to state MariaDB ≥ 11.4 as the sole
+supported engine, or make later migrations portable. Effort: S (documentation) / L (portability).
+
+### P4-6 — Establish a repeatable MariaDB-backed verification lane (GAP-D1)
+
+The single largest remaining evidence gap. Requirement: a disposable MariaDB 11.4
+instance (CI service container or a `mariadb:11.4` ephemeral job) with
+`RUN_MARIADB_INTEGRATION=true`, `MARIADB_TEST_ALLOW_RESET=true`, a `DB_NAME` containing
+`test|ci|cert|sandbox|scratch`, then:
+
+```bash
+npm --prefix backend test                 # un-skips 30 tests, converts 14 failures
+npm --prefix backend run test:enterprise
+cd frontend && npx playwright test        # unblocks engine-responsive/authenticated + candidate suites
+```
+
+Expected outcome: 30 skips become executions, the 14 DB-gated failures resolve or turn
+into real defects, and the candidate dashboard suite (175 tests) becomes runnable.
+Effort: M (infrastructure), no application change.
+
+### P4-7 — Restore font parity for visual regression (GAP-B2)
+
+`fonts.googleapis.com` was unreachable in the verification sandbox, so 20/20 screenshot
+comparisons differ by 3–7 %. Either self-host the fonts (removes a third-party runtime
+dependency and a CSP source) or pin the baselines to an environment with font access.
+Effort: S–M.
+
+### Revised sequencing with the runtime evidence in hand
+
+1. **P4-2** (DISC-012) and **P4-3** (DISC-011) first — they repair trust in existing test
+   results and cost hours, not days.
+2. **P4-1** (A11Y-003 is axe-critical) — small diffs, user-visible, gate-able in CI with
+   axe.
+3. **P4-6** — infrastructure lane so the 30 MariaDB-gated tests stop being dark.
+4. **P4-4 / P4-5 / P4-7** — cheap documentation/environment hygiene.
+5. Then re-enter Phase 1 (P0/P1) items from the original plan, which this pass neither
+   confirmed nor refuted.
+
 ---
 
 ## Sequencing recommendation for the next developer

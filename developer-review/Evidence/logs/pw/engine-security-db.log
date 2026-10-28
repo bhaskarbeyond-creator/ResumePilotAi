@@ -1,0 +1,13 @@
+
+Running 8 tests using 1 worker
+
+  ✓  1 [audit-chromium] › tests/engine-security.spec.ts:61:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › DOM mask regex (/^•{8,}[A-Za-z0-9]{4}$/), zero network secret leakage, and zero Web Storage secret persistence (DEF-01, DEF-02) (5.8s)
+  ✓  2 [audit-chromium] › tests/engine-security.spec.ts:153:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › Post-save test-provider sends { provider } only (zero apiKey re-transmission) and pool draft renders count only (DEF-03, DEF-04) (3.1s)
+  ✓  3 [audit-chromium] › tests/engine-security.spec.ts:242:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › API RBAC boundary denies non-SUPER_ADMIN roles on /api/admin/ai-settings and 401 redirects UI to /login?next= (2.0s)
+  ✓  4 [audit-chromium] › tests/engine-security.spec.ts:287:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › A1 Assertion 1: Pre-save candidate key is discarded server-side and never written to database (system_settings) (3.0s)
+  ✓  5 [audit-chromium] › tests/engine-security.spec.ts:327:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › A1 Assertion 2: No server-side log line or audit record touches the candidate key (2.7s)
+  ✓  6 [audit-chromium] › tests/engine-security.spec.ts:364:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › A1 Assertion 3: POST-save probe strictly sends { provider } only with zero apiKey re-transmission (2.8s)
+  ✓  7 [audit-chromium] › tests/engine-security.spec.ts:416:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › A1 Assertion 4: Pre-save and POST-save probe workflows are distinct and cannot be blurred by future refactors (3.9s)
+  ✓  8 [audit-chromium] › tests/engine-security.spec.ts:442:3 › AI Engine Security, Secret Non-Disclosure & Runtime Rollback › CSP header includes script-src restriction on AI settings endpoints (34ms)
+
+  8 passed (24.0s)

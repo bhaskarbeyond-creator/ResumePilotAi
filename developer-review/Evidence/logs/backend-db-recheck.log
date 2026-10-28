@@ -1,0 +1,702 @@
+TAP version 13
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# Subtest: Enterprise Role View & Simulation Security Architecture
+    # Subtest: 1. role-view-audit accepts all 5 Enterprise roles when caller is Super Admin
+    ok 1 - 1. role-view-audit accepts all 5 Enterprise roles when caller is Super Admin
+      ---
+      duration_ms: 71.185083
+      type: 'test'
+      ...
+    # Subtest: 2. role-view-audit strictly requires a valid tenant UUID for Enterprise roles
+    ok 2 - 2. role-view-audit strictly requires a valid tenant UUID for Enterprise roles
+      ---
+      duration_ms: 7.095602
+      type: 'test'
+      ...
+    # Subtest: 3. Non-SuperAdmin cannot invoke role-view-audit
+    ok 3 - 3. Non-SuperAdmin cannot invoke role-view-audit
+      ---
+      duration_ms: 7.402728
+      type: 'test'
+      ...
+    # Subtest: 4. Enterprise context simulation: Viewer has strictly scoped permissions
+    ok 4 - 4. Enterprise context simulation: Viewer has strictly scoped permissions
+      ---
+      duration_ms: 7.926525
+      type: 'test'
+      ...
+    # Subtest: 5. Non-SuperAdmin cannot spoof simulated enterprise role
+    ok 5 - 5. Non-SuperAdmin cannot spoof simulated enterprise role
+      ---
+      duration_ms: 6.052068
+      type: 'test'
+      ...
+    # Subtest: 6. Super Admin role switching does NOT mutate MariaDB user role or permissions
+    ok 6 - 6. Super Admin role switching does NOT mutate MariaDB user role or permissions
+      ---
+      duration_ms: 2.524098
+      type: 'test'
+      ...
+    # Subtest: 7. Super Admin role switching does NOT mutate tenant configuration or lifecycle state
+    ok 7 - 7. Super Admin role switching does NOT mutate tenant configuration or lifecycle state
+      ---
+      duration_ms: 1.056669
+      type: 'test'
+      ...
+# [Enterprise Request Audit]: {"timestamp":"2026-10-28T19:34:32.145Z","level":"ERROR","requestId":"109086fa-c467-4bfc-9627-10a40668d557","correlationId":"109086fa-c467-4bfc-9627-10a40668d557","tenantId":"public","workspaceId":null,"method":"PATCH","path":"/workspaces/d3731679-5831-4e0d-baba-b4cc55d94828","status":503,"durationMs":4}
+    # Subtest: 8. Multi-tenant isolation: Tenant A cannot access Tenant B workspace
+    not ok 8 - 8. Multi-tenant isolation: Tenant A cannot access Tenant B workspace
+      ---
+      duration_ms: 10.134925
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/enterprise-role-view-simulation.test.js:169:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Cross-tenant workspace request must fail closed with 404, got 503
+        
+        503 !== 404
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 404
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/enterprise-role-view-simulation.test.js:181:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/enterprise-role-view-simulation.test.js:169:3)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    1..8
+not ok 1 - Enterprise Role View & Simulation Security Architecture
+  ---
+  duration_ms: 145.930947
+  type: 'test'
+  location: '/home/user/ResumePilotAi/backend/test/enterprise-role-view-simulation.test.js:38:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# (node:5928) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Admin user directory] batch membership read failed, using per-identity read: ER_NO_SUCH_TABLE
+# [Admin user directory error] Table 'airesume_test.enterprise_membership_invitations' doesn't exist
+# Subtest: Forensic MariaDB ↔ API Data Lineage Validation Suite
+    # Subtest: 1. Domain: Users Lineage
+    not ok 1 - 1. Domain: Users Lineage
+      ---
+      duration_ms: 72.249893
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:44:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:46:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:44:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: 2. Domain: System Settings & INR Currency Lineage
+    not ok 2 - 2. Domain: System Settings & INR Currency Lineage
+      ---
+      duration_ms: 9.346411
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:55:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        undefined !== 'INR'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'INR'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:62:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:55:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: 3. Domain: Admin Audit Logs Lineage
+    ok 3 - 3. Domain: Admin Audit Logs Lineage
+      ---
+      duration_ms: 9.04994
+      type: 'test'
+      ...
+    # Subtest: 4. Domain: Security Audit Events Lineage
+    not ok 4 - 4. Domain: Security Audit Events Lineage
+      ---
+      duration_ms: 6.750634
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:73:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:76:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:73:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: 5. Domain: Enterprise Tenants Lineage
+    ok 5 - 5. Domain: Enterprise Tenants Lineage
+      ---
+      duration_ms: 6.143187
+      type: 'test'
+      ...
+    # Subtest: 6. Domain: Blog Posts Lineage
+    ok 6 - 6. Domain: Blog Posts Lineage
+      ---
+      duration_ms: 19.962088
+      type: 'test'
+      ...
+# [Platform command center] Query failed: Platform currency is not initialized in MariaDB
+    # Subtest: 7. Domain: Command Center Platform KPIs Lineage
+    not ok 7 - 7. Domain: Command Center Platform KPIs Lineage
+      ---
+      duration_ms: 26.402064
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:109:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:111:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:109:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: 8. Domain: Health Matrix (28 Services) Lineage
+    ok 8 - 8. Domain: Health Matrix (28 Services) Lineage
+      ---
+      duration_ms: 25.154157
+      type: 'test'
+      ...
+    # Subtest: 9. Domain: Enterprise Queues Lineage
+    ok 9 - 9. Domain: Enterprise Queues Lineage
+      ---
+      duration_ms: 5.524715
+      type: 'test'
+      ...
+    # Subtest: 10. Domain: Contact Messages CRUD Lineage
+    ok 10 - 10. Domain: Contact Messages CRUD Lineage
+      ---
+      duration_ms: 7.040651
+      type: 'test'
+      ...
+    # Subtest: 11. Domain: Payment Settings & Gateway Lineage
+    ok 11 - 11. Domain: Payment Settings & Gateway Lineage
+      ---
+      duration_ms: 4.309321
+      type: 'test'
+      ...
+    # Subtest: 12. Domain: Support Tickets Lineage
+    not ok 12 - 12. Domain: Support Tickets Lineage
+      ---
+      duration_ms: 4.834416
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:157:13'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        500 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 500
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:159:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:157:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    1..12
+not ok 2 - Forensic MariaDB ↔ API Data Lineage Validation Suite
+  ---
+  duration_ms: 215.416573
+  type: 'test'
+  location: '/home/user/ResumePilotAi/backend/test/forensic-data-lineage.test.js:35:1'
+  failureType: 'subtestsFailed'
+  error: '5 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# Subtest: FreeLLMAPI: Engine status exports all supported providers
+ok 3 - FreeLLMAPI: Engine status exports all supported providers
+  ---
+  duration_ms: 1.656953
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: LRU Cache stores and retrieves completions
+ok 4 - FreeLLMAPI: LRU Cache stores and retrieves completions
+  ---
+  duration_ms: 0.724968
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Cooldown manager sets backoff and expires
+ok 5 - FreeLLMAPI: Cooldown manager sets backoff and expires
+  ---
+  duration_ms: 0.98968
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Fallback cascade switches to second provider when first fails with 429
+ok 6 - FreeLLMAPI: Fallback cascade switches to second provider when first fails with 429
+  ---
+  duration_ms: 5.24259
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Tenant Dedicated BYOK strictly isolates routing to tenant key
+ok 7 - FreeLLMAPI: Tenant Dedicated BYOK strictly isolates routing to tenant key
+  ---
+  duration_ms: 0.810055
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: All providers are registered in catalog
+ok 8 - FreeLLMAPI: All providers are registered in catalog
+  ---
+  duration_ms: 0.142929
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Dynamic live model discovery pulls models from provider /models endpoint
+ok 9 - FreeLLMAPI: Dynamic live model discovery pulls models from provider /models endpoint
+  ---
+  duration_ms: 2.49319
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Claude Code Agent handles Anthropic /v1/messages wire format
+ok 10 - FreeLLMAPI: Claude Code Agent handles Anthropic /v1/messages wire format
+  ---
+  duration_ms: 2.194129
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Autonomous self-healing maintenance starts and stops cleanly
+ok 11 - FreeLLMAPI: Autonomous self-healing maintenance starts and stops cleanly
+  ---
+  duration_ms: 0.503875
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status
+ok 12 - FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status
+  ---
+  duration_ms: 914.994135
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: streaming generator yields OpenAI-compatible deltas and [DONE]-less finish
+ok 13 - FreeLLMAPI: streaming generator yields OpenAI-compatible deltas and [DONE]-less finish
+  ---
+  duration_ms: 5.474653
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: streaming fails over to the next provider before the first token
+ok 14 - FreeLLMAPI: streaming fails over to the next provider before the first token
+  ---
+  duration_ms: 2.051694
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: compression pipeline reduces prompt tokens without breaking JSON
+ok 15 - FreeLLMAPI: compression pipeline reduces prompt tokens without breaking JSON
+  ---
+  duration_ms: 2.339085
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: compression is skipped on request when disabled
+ok 16 - FreeLLMAPI: compression is skipped on request when disabled
+  ---
+  duration_ms: 0.152758
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: multi-key pool rotates to the next key on 429 before benching the provider
+ok 17 - FreeLLMAPI: multi-key pool rotates to the next key on 429 before benching the provider
+  ---
+  duration_ms: 2.014835
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: a provider is benched only after every pooled key is rate-limited
+ok 18 - FreeLLMAPI: a provider is benched only after every pooled key is rate-limited
+  ---
+  duration_ms: 1.779345
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: search and media providers are excluded from the chat cascade
+ok 19 - FreeLLMAPI: search and media providers are excluded from the chat cascade
+  ---
+  duration_ms: 0.283304
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: search cascade calls Tavily /search (never /chat/completions) and falls back on 429
+ok 20 - FreeLLMAPI: search cascade calls Tavily /search (never /chat/completions) and falls back on 429
+  ---
+  duration_ms: 1.724996
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: plaintext tool-call dialects are rescued into structured tool_calls
+ok 21 - FreeLLMAPI: plaintext tool-call dialects are rescued into structured tool_calls
+  ---
+  duration_ms: 1.035074
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: an unparseable tool dialect is a dead turn, not prose
+ok 22 - FreeLLMAPI: an unparseable tool dialect is a dead turn, not prose
+  ---
+  duration_ms: 0.937676
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: durable metrics + cooldowns persist to node:sqlite and hydrate across restarts
+ok 23 - FreeLLMAPI: durable metrics + cooldowns persist to node:sqlite and hydrate across restarts
+  ---
+  duration_ms: 15.819202
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: persistence falls back to memory when node:sqlite is disabled
+ok 24 - FreeLLMAPI: persistence falls back to memory when node:sqlite is disabled
+  ---
+  duration_ms: 0.224295
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: POST /v1/chat/completions returns an OpenAI-shaped completion
+ok 25 - FreeLLMAPI: POST /v1/chat/completions returns an OpenAI-shaped completion
+  ---
+  duration_ms: 18.966735
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: POST /v1/chat/completions rejects bad and missing credentials
+ok 26 - FreeLLMAPI: POST /v1/chat/completions rejects bad and missing credentials
+  ---
+  duration_ms: 6.539448
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: POST /v1/chat/completions streams text/event-stream chunks
+ok 27 - FreeLLMAPI: POST /v1/chat/completions streams text/event-stream chunks
+  ---
+  duration_ms: 8.729732
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: POST /v1/messages handles Anthropic format and SSE streaming
+ok 28 - FreeLLMAPI: POST /v1/messages handles Anthropic format and SSE streaming
+  ---
+  duration_ms: 21.739572
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: POST /v1/search exposes Tavily results with the platform key
+ok 29 - FreeLLMAPI: POST /v1/search exposes Tavily results with the platform key
+  ---
+  duration_ms: 7.691049
+  type: 'test'
+  ...
+# Subtest: FreeLLMAPI: transparent 429 failover through the public HTTP surface
+ok 30 - FreeLLMAPI: transparent 429 failover through the public HTTP surface
+  ---
+  duration_ms: 8.237853
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# (node:6000) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints
+ok 31 - RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints
+  ---
+  duration_ms: 161.34406
+  type: 'test'
+  ...
+# Subtest: RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked
+not ok 32 - RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked
+  ---
+  duration_ms: 16.430412
+  type: 'test'
+  location: '/home/user/ResumePilotAi/backend/test/rbac-role-visibility-forensic.test.js:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    503 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 503
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/rbac-role-visibility-forensic.test.js:79:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: RBAC Forensic: Support role is strictly limited to Help Desk and User directory; Settings, Audit and Operators are blocked
+ok 33 - RBAC Forensic: Support role is strictly limited to Help Desk and User directory; Settings, Audit and Operators are blocked
+  ---
+  duration_ms: 23.068296
+  type: 'test'
+  ...
+# Subtest: RBAC Forensic: Plain USER role is completely rejected on all administrative routes
+ok 34 - RBAC Forensic: Plain USER role is completely rejected on all administrative routes
+  ---
+  duration_ms: 16.534331
+  type: 'test'
+  ...
+# Subtest: RBAC Forensic: Enterprise roles are strictly scoped and blocked from platform-wide system configuration
+ok 35 - RBAC Forensic: Enterprise roles are strictly scoped and blocked from platform-wide system configuration
+  ---
+  duration_ms: 40.673772
+  type: 'test'
+  ...
+# Subtest: RBAC Forensic: Unauthenticated requests are rejected fail-closed with 401
+ok 36 - RBAC Forensic: Unauthenticated requests are rejected fail-closed with 401
+  ---
+  duration_ms: 11.088814
+  type: 'test'
+  ...
+# Subtest: RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked)
+ok 37 - RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked)
+  ---
+  duration_ms: 5.317454
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# (node:6030) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Authentication, Token Lifecycle & Re-Authentication Architecture
+    # Subtest: A & B. Refreshed token is accepted and updates iat without corrupting auth_time
+    ok 1 - A & B. Refreshed token is accepted and updates iat without corrupting auth_time
+      ---
+      duration_ms: 70.214169
+      type: 'test'
+      ...
+    # Subtest: C & D. Single-flight token refresh coalesces concurrent requests and fails finite
+    ok 2 - C & D. Single-flight token refresh coalesces concurrent requests and fails finite
+      ---
+      duration_ms: 10.995527
+      type: 'test'
+      ...
+# [Enterprise Request Audit]: {"timestamp":"2026-10-28T19:34:36.484Z","level":"ERROR","requestId":"547c3b83-e0b2-4043-87a8-86d4ac9a20c5","correlationId":"547c3b83-e0b2-4043-87a8-86d4ac9a20c5","tenantId":"public","workspaceId":null,"method":"POST","path":"/context","status":503,"durationMs":5}
+    # Subtest: E. Genuine maximum-session expiry enforces TENANT_SESSION_REAUTH_REQUIRED for tenant members
+    not ok 3 - E. Genuine maximum-session expiry enforces TENANT_SESSION_REAUTH_REQUIRED for tenant members
+      ---
+      duration_ms: 16.501827
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:157:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expired session must return HTTP 401
+        
+        503 !== 401
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 401
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:164:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:157:3)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: F. Return-to-context preserves safe internal paths and rejects open redirects
+    ok 4 - F. Return-to-context preserves safe internal paths and rejects open redirects
+      ---
+      duration_ms: 1.094775
+      type: 'test'
+      ...
+# [Enterprise Request Audit]: {"timestamp":"2026-10-28T19:34:36.492Z","level":"ERROR","requestId":"bda903ec-97ce-4fd6-b409-b3165a255a2a","correlationId":"bda903ec-97ce-4fd6-b409-b3165a255a2a","tenantId":"public","workspaceId":null,"method":"POST","path":"/context","status":503,"durationMs":2}
+    # Subtest: G & H. Enterprise role simulation alters authorization context without mutating auth_time or identity
+    not ok 5 - G & H. Enterprise role simulation alters authorization context without mutating auth_time or identity
+      ---
+      duration_ms: 6.248434
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:207:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:215:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:207:3)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+# [Enterprise Request Audit]: {"timestamp":"2026-10-28T19:34:36.499Z","level":"ERROR","requestId":"a14551c0-26b1-4b38-b56b-d330d0556941","correlationId":"a14551c0-26b1-4b38-b56b-d330d0556941","tenantId":"public","workspaceId":null,"method":"POST","path":"/context","status":503,"durationMs":2}
+    # Subtest: I. Super Admin is governed by Platform policy and not blocked by customer tenant sessionMaxMinutes
+    not ok 6 - I. Super Admin is governed by Platform policy and not blocked by customer tenant sessionMaxMinutes
+      ---
+      duration_ms: 5.762065
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:224:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Super Admin must resolve tenant context without being aborted by tenant sessionMaxMinutes
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:232:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:224:3)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+# [Enterprise Request Audit]: {"timestamp":"2026-10-28T19:34:36.507Z","level":"ERROR","requestId":"d8684ecb-400c-4069-83ff-b67448faa417","correlationId":"d8684ecb-400c-4069-83ff-b67448faa417","tenantId":"public","workspaceId":null,"method":"POST","path":"/context","status":503,"durationMs":2}
+    # Subtest: J. Non-Super-Admin cannot spoof simulation headers
+    not ok 7 - J. Non-Super-Admin cannot spoof simulation headers
+      ---
+      duration_ms: 7.754154
+      type: 'test'
+      location: '/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:239:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        503 !== 200
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 200
+      actual: 503
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:248:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:239:3)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    1..7
+not ok 38 - Authentication, Token Lifecycle & Re-Authentication Architecture
+  ---
+  duration_ms: 140.3611
+  type: 'test'
+  location: '/home/user/ResumePilotAi/backend/test/session-reauth-lifecycle.test.js:71:1'
+  failureType: 'subtestsFailed'
+  error: '4 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# Subtest: Super Admin Bulk Operations: rejects unauthorized callers and self-modification
+ok 39 - Super Admin Bulk Operations: rejects unauthorized callers and self-modification
+  ---
+  duration_ms: 60.377271
+  type: 'test'
+  ...
+# Subtest: Super Admin Bulk Operations: validates action parameter and uid bounds
+ok 40 - Super Admin Bulk Operations: validates action parameter and uid bounds
+  ---
+  duration_ms: 16.91281
+  type: 'test'
+  ...
+# (node:6058) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Platform command center] Query failed: Platform currency is not initialized in MariaDB
+# Subtest: Super Admin Command Center: returns extended telemetry with growth and subscription metrics
+ok 41 - Super Admin Command Center: returns extended telemetry with growth and subscription metrics
+  ---
+  duration_ms: 70.668742
+  type: 'test'
+  ...
+# Subtest: Super Admin Global Search: returns multi-entity search results including orders and tickets
+ok 42 - Super Admin Global Search: returns multi-entity search results including orders and tickets
+  ---
+  duration_ms: 10.296803
+  type: 'test'
+  ...
+# Subtest: Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers
+ok 43 - Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers
+  ---
+  duration_ms: 17.707424
+  type: 'test'
+  ...
+# Subtest: Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID
+ok 44 - Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID
+  ---
+  duration_ms: 8.767387
+  type: 'test'
+  ...
+1..44
+# tests 71
+# suites 0
+# pass 57
+# fail 14
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6427.914218
+EXIT=1

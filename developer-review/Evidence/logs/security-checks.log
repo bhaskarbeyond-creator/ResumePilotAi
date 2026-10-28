@@ -1,0 +1,16 @@
+### npm run test:security
+
+> my-app@0.0.0 test:security
+> node scripts/generate-security-headers.mjs --check && node scripts/generate-public-discovery.mjs --check
+
+OK       .htaccess
+OK       public/.htaccess
+SKIP     dist/.htaccess (build artifact not present)
+
+All Apache configs match the canonical security header policy.
+origin: https://airesume.projectdemo.guru
+OK       public/robots.txt
+OK       public/sitemap.xml
+
+Static public discovery documents match the canonical policy.
+SECURITY_EXIT=0

@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-10-28T19:50:27.055Z",
+  "engine": {
+    "server": "5.7.29",
+    "comment": "MySQL Community Server (GPL)",
+    "sqlMode": "IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
+    "targetEnginePerRepository": "MariaDB 11.4 (backend/test/mariadb-migration-gate.test.js asserts this)",
+    "substitutionDeclared": true,
+    "substitutionNote": "MySQL 5.7.29 stands in only because no MariaDB artifact is obtainable in this sandbox. Per the repository gate, this is NOT target-database evidence."
+  },
+  "database": "resumepilot_migration_probe_test",
+  "migrationsDiscovered": 29,
+  "migrationsApplied": 1,
+  "tablesCreatedBeforeFirstFailure": 57,
+  "firstFailure": {
+    "version": "002",
+    "name": "single_owner_enterprise",
+    "file": "002_single_owner_enterprise.sql",
+    "statements": 33,
+    "statementsApplied": 0,
+    "applied": false,
+    "failure": {
+      "code": "ER_PARSE_ERROR",
+      "errno": 1064,
+      "message": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS revision INT NOT NULL DEFAULT 1' at line 1",
+      "statement": "ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1"
+    }
+  },
+  "results": [
+    {
+      "version": "001",
+      "name": "baseline",
+      "file": "001_baseline.sql",
+      "statements": 59,
+      "statementsApplied": 59,
+      "applied": true,
+      "failure": null
+    },
+    {
+      "version": "002",
+      "name": "single_owner_enterprise",
+      "file": "002_single_owner_enterprise.sql",
+      "statements": 33,
+      "statementsApplied": 0,
+      "applied": false,
+      "failure": {
+        "code": "ER_PARSE_ERROR",
+        "errno": 1064,
+        "message": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS revision INT NOT NULL DEFAULT 1' at line 1",
+        "statement": "ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1"
+      }
+    }
+  ]
+}

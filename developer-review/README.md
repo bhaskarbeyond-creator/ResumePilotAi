@@ -8,6 +8,15 @@
 
 ## 0. How this audit was physically performed (full transparency)
 
+**Runtime verification pass (2026-10-28):** A temporary environment was provisioned
+(Node 22 + lockfile `npm ci`, Express live, Vite live, Chromium 149 via the repo's own
+`@sparticuz/chromium`, MySQL 5.7.29 as a declared *substitute* for MariaDB) and the real
+suites were executed: 1,545 Node tests (1,501 pass) and 252 Playwright executions
+(197 pass) plus 45 viewport captures. Result: verdict unchanged at
+`PARTIAL — BLOCKED`, but five accessibility defects and two test-efficacy defects were
+found by execution. See `TEST-EXECUTION-REPORT.md`, `BROWSER-VERIFICATION-REPORT.md`,
+`FINAL-ACCEPTANCE-REPORT.md`.
+
 **Partial audit (original):** Executed from a sandboxed Next.js/Drizzle scaffold at the tool root (not a Git repo) via a read-only clone at `/tmp/ResumePilotAi`.
 
 **v3 completion (this update):** Executed directly inside the real repository checkout on branch `arena/7c4b5db0-resumepilotai` at `/home/user/ResumePilotAi`. All writes remain **strictly under `developer-review/`** (verified via `git diff --name-only` outside `developer-review/` = empty). No application source, config, schema, migration, or dependency was modified — read-only boundary preserved (Gate G). See `PROVENANCE.md` §5 and `HANDOVER.md` §12.
@@ -84,7 +93,13 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 | `appendix/ENVIRONMENT-GAPS.md` | Tooling/environment limitations (alternatives attempted) |
 | `appendix/UI-STATE-MATRIX.md` | **NEW (v3 completion):** UI state matrix scaffold 6/34 pages |
 | `appendix/INVENTORIES/*.md` | Routes, database, environment, frontend, security, integrations, tests |
-| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification |
+| `TEMP-ENVIRONMENT-MANIFEST.md` | **NEW (runtime pass):** exactly what was provisioned, how, what could not be, and how to reproduce |
+| `TEST-EXECUTION-REPORT.md` | **NEW (runtime pass):** every test category executed with command, exit code, counts, failure classification |
+| `BROWSER-VERIFICATION-REPORT.md` | **NEW (runtime pass):** 5 mandated viewports, screenshots, console/network captures, axe-core findings, untested areas |
+| `FINAL-ACCEPTANCE-REPORT.md` | **NEW (runtime pass):** directive §10 delivery report |
+| `Evidence/` | **NEW (runtime pass):** 45 screenshots, 25+ logs, `environment.json`, `browser-observations.json`, `axe-violation-details.json`, `migration-fidelity.json` |
+| `tools/` | **NEW (runtime pass):** audit-only Playwright configs, viewport spec, migration probe, secret scanner |
+| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification (34 checks, passing) |
 
 ## 4. Scope limitations declared up front (see also `appendix/ENVIRONMENT-GAPS.md`)
 

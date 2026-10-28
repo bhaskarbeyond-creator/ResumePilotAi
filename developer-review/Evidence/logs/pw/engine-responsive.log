@@ -1,0 +1,255 @@
+
+Running 7 tests using 1 worker
+
+  ✘  1 [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (26.8s)
+  ✓  2 [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.3s)
+  ✘  3 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (2.8s)
+  ✘  4 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (2.9s)
+  ✘  5 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (2.9s)
+  ✘  6 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (2.6s)
+  ✘  7 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (2.7s)
+
+
+  1) [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 43
+
+    - Array []
+    + Array [
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    +   "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    + ]
+
+      203 |     }
+      204 |
+    > 205 |     expect(consoleErrors).toEqual([]);
+          |                           ^
+      206 |   });
+      207 |
+      208 |   test('ADMIN role responsive bounds and WCAG 2.1 AA compliance', async ({
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:205:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: A snapshot doesn't exist at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-audit-chromium-linux.png, writing actual.
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |       ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:7
+
+    attachment #1: ai-settings-providers (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-audit-chromium-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/ai-settings-providers-actual.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: A snapshot doesn't exist at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-audit-chromium-linux.png, writing actual.
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |       ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:7
+
+    attachment #1: ai-settings-discovery (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-audit-chromium-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/ai-settings-discovery-actual.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: A snapshot doesn't exist at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-audit-chromium-linux.png, writing actual.
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |       ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:7
+
+    attachment #1: ai-settings-metrics (image/png) ─────────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-audit-chromium-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/ai-settings-metrics-actual.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: A snapshot doesn't exist at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-audit-chromium-linux.png, writing actual.
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |       ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:7
+
+    attachment #1: ai-settings-unified-gateway (image/png) ─────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-audit-chromium-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/ai-settings-unified-gateway-actual.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: A snapshot doesn't exist at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-audit-chromium-linux.png, writing actual.
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |       ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:7
+
+    attachment #1: ai-settings-playground (image/png) ──────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-audit-chromium-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/ai-settings-playground-actual.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6 failed
+    [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+  1 passed (49.9s)

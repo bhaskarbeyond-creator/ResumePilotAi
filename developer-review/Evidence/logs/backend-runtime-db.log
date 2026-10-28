@@ -1,0 +1,9 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[Firebase Admin] Initialized without credentials (limited local mode)
+HTTP Server running on port 8080
+[MariaDB] Migration verification/application failed: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS revision INT NOT NULL DEFAULT 1' at line 1
+[Startup] Schema bootstrap incomplete: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS revision INT NOT NULL DEFAULT 1' at line 1
+[Live interview cleanup] Failed: Table 'airesume_test.live_interview_sessions' doesn't exist
+[Live interview cleanup] Failed: Table 'airesume_test.live_interview_sessions' doesn't exist

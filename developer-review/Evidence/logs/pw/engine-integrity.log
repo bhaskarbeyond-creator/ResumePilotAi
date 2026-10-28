@@ -1,0 +1,91 @@
+
+Running 53 tests using 1 worker
+
+  ✓   1 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 320x568 (1.4s)
+  ✓   2 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 390x844 (1.3s)
+  ✓   3 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 430x932 (1.4s)
+  ✓   4 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 768x1024 (1.3s)
+  ✓   5 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 1366x768 (1.4s)
+  ✓   6 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 1440x900 (1.4s)
+  ✓   7 [audit-chromium] › tests/engine-integrity.spec.ts:41:3 › discovery selects server-added provider, reconciles models and marks stale at 1920x1080 (1.3s)
+  ✓   8 [audit-chromium] › tests/engine-integrity.spec.ts:68:1 › discovery failures are visible, do not erase the prior catalog, and refresh can retry (1.3s)
+  ✓   9 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 320x568 (2.0s)
+  ✓  10 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 320x568 (2.1s)
+  ✓  11 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 320x568 (1.9s)
+  ✓  12 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 320x568 (2.2s)
+  ✓  13 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 390x844 (2.0s)
+  ✓  14 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 390x844 (2.0s)
+  ✓  15 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 390x844 (1.9s)
+  ✓  16 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 390x844 (1.9s)
+  ✓  17 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 430x932 (1.9s)
+  ✓  18 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 430x932 (1.9s)
+  ✓  19 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 430x932 (1.9s)
+  ✓  20 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 430x932 (2.0s)
+  ✓  21 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 768x1024 (1.9s)
+  ✓  22 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 768x1024 (1.9s)
+  ✓  23 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 768x1024 (1.9s)
+  ✓  24 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 768x1024 (2.0s)
+  ✓  25 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 1366x768 (2.0s)
+  ✓  26 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 1366x768 (1.9s)
+  ✓  27 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 1366x768 (2.0s)
+  ✓  28 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 1366x768 (2.0s)
+  ✓  29 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 1440x900 (2.1s)
+  ✓  30 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 1440x900 (1.9s)
+  ✓  31 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 1440x900 (1.9s)
+  ✓  32 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 1440x900 (1.8s)
+  ✓  33 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › providers deep link and refresh render without overflow at 1920x1080 (2.0s)
+  ✓  34 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › key-pool deep link and refresh render without overflow at 1920x1080 (1.9s)
+  ✓  35 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › metrics deep link and refresh render without overflow at 1920x1080 (2.1s)
+  ✓  36 [audit-chromium] › tests/engine-integrity.spec.ts:89:5 › unified-gateway deep link and refresh render without overflow at 1920x1080 (2.2s)
+  ✓  37 [audit-chromium] › tests/engine-integrity.spec.ts:100:1 › configuration failure is not displayed as a successful zero-valued dashboard (974ms)
+  ✓  38 [audit-chromium] › tests/engine-integrity.spec.ts:107:1 › selection modes persist and manual model choices are sourced from discovery, not frontend IDs (2.6s)
+  ✓  39 [audit-chromium] › tests/engine-integrity.spec.ts:134:1 › all five dialogs render real content and close with Escape (2.2s)
+  ✓  40 [audit-chromium] › tests/engine-integrity.spec.ts:152:1 › URL sync (?provider, ?category, ?status, ?q, ?subtab, ?dialog), configured-first sort, and tab ARIA survive hard reload (4.4s)
+  ✓  41 [audit-chromium] › tests/engine-integrity.spec.ts:223:1 › Legacy ?tab=ai|aisettings|ai_settings|aimodels aliases and /adm + /platform LegacyRedirect preserve query strings (DEF-17) (8.8s)
+  ✓  42 [audit-chromium] › tests/engine-integrity.spec.ts:246:1 › Multi-context optimistic concurrency (409 REVISION_CONFLICT) surfaces banner with Reload and Overwrite affordances (DEF-11) (2.6s)
+  ✓  43 [audit-chromium] › tests/engine-integrity.spec.ts:324:1 › expectedRevision drift during 409 recovery triggers double-409 and prevents silent overwrite (1.5s)
+  ✓  44 [audit-chromium] › tests/engine-integrity.spec.ts:396:1 › All 5 Radix dialogs enforce aria-labelledby, body scroll lock, Escape + backdrop close, focus return, and Axe compliance (DEF-18) (5.7s)
+  ✓  45 [audit-chromium] › tests/engine-integrity.spec.ts:453:1 › Test Connection and Test Key Before Saving surface { success: false } payload failures instead of false green status (DEF-07, DEF-21, DEF-22) (1.2s)
+  ✘  46 [audit-chromium] › tests/engine-integrity.spec.ts:474:1 › Zod contract tests against real :8080 endpoints (ai-settings, quota-stats, catalog, health) (161ms)
+  ✓  47 [audit-chromium] › tests/engine-integrity.spec.ts:526:1 › Chaos: 3s slow-backend intercept per key endpoint displays loading state without crashing or state corruption (4.7s)
+  ✓  48 [audit-chromium] › tests/engine-integrity.spec.ts:581:1 › Chaos: 500 on save surfaces error banner, preserves form inputs, and performs no partial save (1.6s)
+  ✓  49 [audit-chromium] › tests/engine-integrity.spec.ts:652:1 › a11y skeletons: async panels render loading skeletons matched to layout during data fetch (1.7s)
+  ✓  50 [audit-chromium] › tests/engine-integrity.spec.ts:673:1 › empty states: empty provider search results render accessible empty state (1.2s)
+  ✓  51 [audit-chromium] › tests/engine-integrity.spec.ts:683:1 › error boundaries: subtab-level SubtabErrorBoundary isolates crash and provides retry affordance (1.0s)
+  ✓  52 [audit-chromium] › tests/engine-integrity.spec.ts:692:1 › keyboard-only flow: navigate to configure provider and add candidate key using keyboard navigation only (1.2s)
+  ✓  53 [audit-chromium] › tests/engine-integrity.spec.ts:709:1 › focus-visible audit: interactive controls exhibit visible focus rings on keyboard navigation (1.0s)
+
+
+  1) [audit-chromium] › tests/engine-integrity.spec.ts:474:1 › Zod contract tests against real :8080 endpoints (ai-settings, quota-stats, catalog, health) 
+
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 1
+    Received:    0
+
+      505 |   expect(settingsRes.ok()).toBe(true);
+      506 |   const parsedSettings = AiSettingsSchema.parse(await settingsRes.json());
+    > 507 |   expect(parsedSettings.revision).toBeGreaterThanOrEqual(1);
+          |                                   ^
+      508 |   expect(parsedSettings.catalog.length).toBeGreaterThan(0);
+      509 |
+      510 |   // 3. Validate /api/admin/ai/quota-stats contract
+        at /home/user/ResumePilotAi/frontend/tests/engine-integrity.spec.ts:507:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-integrity-Zod-contr-904c8-quota-stats-catalog-health--audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-integrity-Zod-contr-904c8-quota-stats-catalog-health--audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-integrity-Zod-contr-904c8-quota-stats-catalog-health--audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-integrity-Zod-contr-904c8-quota-stats-catalog-health--audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [audit-chromium] › tests/engine-integrity.spec.ts:474:1 › Zod contract tests against real :8080 endpoints (ai-settings, quota-stats, catalog, health) 
+  52 passed (1.9m)

@@ -1,0 +1,12 @@
+# Runtime-verification evidence must be published *with* the audit package.
+#
+# The repository-level .gitignore excludes generic `logs`, `*.log`, `artifacts/`
+# and `test-results/` paths (correct for application build output). Those rules
+# would silently drop every log and JSON capture this audit pass produced, which
+# is the opposite of what an evidence package needs. The negations below are
+# scoped to developer-review/Evidence/ only — they re-include nothing outside it.
+!logs/
+!logs/**
+!artifacts/
+!artifacts/**
+!*.log

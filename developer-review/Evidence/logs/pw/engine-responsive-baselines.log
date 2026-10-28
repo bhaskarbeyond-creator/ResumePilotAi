@@ -1,0 +1,1180 @@
+
+Running 35 tests using 1 worker
+
+  ✘   1 [mobile] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (28.6s)
+  ✓   2 [mobile] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.2s)
+  ✘   3 [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (2.1s)
+  ✘   4 [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (3.0s)
+  ✘   5 [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (2.3s)
+  ✘   6 [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (2.3s)
+  ✘   7 [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (2.3s)
+  ✘   8 [tablet] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (29.1s)
+  ✓   9 [tablet] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.5s)
+  ✘  10 [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (2.9s)
+  ✘  11 [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (3.1s)
+  ✘  12 [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (3.0s)
+  ✘  13 [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (2.6s)
+  ✘  14 [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (3.1s)
+  ✓  15 [desktop] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (25.7s)
+  ✓  16 [desktop] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.2s)
+  ✘  17 [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (3.3s)
+  ✘  18 [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (2.8s)
+  ✘  19 [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (3.2s)
+  ✘  20 [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (3.1s)
+  ✘  21 [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (2.7s)
+  ✓  22 [laptop] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (28.4s)
+  ✓  23 [laptop] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.6s)
+  ✘  24 [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (3.8s)
+  ✘  25 [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (3.8s)
+  ✘  26 [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (4.0s)
+  ✘  27 [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (3.8s)
+  ✘  28 [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (3.9s)
+  ✓  29 [4k] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (33.8s)
+  ✓  30 [4k] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (2.8s)
+  ✓  31 [4k] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (3.7s)
+  ✓  32 [4k] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (3.1s)
+  ✓  33 [4k] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (3.3s)
+  ✓  34 [4k] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (3.2s)
+  ✓  35 [4k] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (3.0s)
+
+
+  1) [mobile] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-0/traces/5b24c0ec567f0f7821d8-82705793cd9ebe3c641e.network'
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-mobile/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      13585 pixels (ratio 0.06 of all image pixels) are different.
+
+      Snapshot: ai-settings-providers.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-providers.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 13585 pixels (ratio 0.06 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 13585 pixels (ratio 0.06 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-providers (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-mobile-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/ai-settings-providers-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/ai-settings-providers-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14998 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-discovery.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-discovery.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-discovery (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-mobile-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/ai-settings-discovery-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/ai-settings-discovery-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14998 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-metrics.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-metrics.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-metrics (image/png) ─────────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-mobile-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/ai-settings-metrics-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/ai-settings-metrics-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14998 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-unified-gateway.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-unified-gateway.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-unified-gateway (image/png) ─────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-mobile-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/ai-settings-unified-gateway-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/ai-settings-unified-gateway-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14998 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-playground.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-playground.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14998 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-playground (image/png) ──────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-mobile-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/ai-settings-playground-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/ai-settings-playground-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [tablet] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open '/home/user/ResumePilotAi/developer-review/Evidence/artifacts/playwright-results/.playwright-artifacts-6/traces/5b24c0ec567f0f7821d8-4e8969e00942070c283f.network'
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-tablet/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      58094 pixels (ratio 0.08 of all image pixels) are different.
+
+      Snapshot: ai-settings-providers.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-providers.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 58094 pixels (ratio 0.08 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 58094 pixels (ratio 0.08 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-providers (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-tablet-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/ai-settings-providers-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/ai-settings-providers-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      57423 pixels (ratio 0.08 of all image pixels) are different.
+
+      Snapshot: ai-settings-discovery.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-discovery.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 57423 pixels (ratio 0.08 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 57423 pixels (ratio 0.08 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-discovery (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-tablet-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/ai-settings-discovery-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/ai-settings-discovery-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      43075 pixels (ratio 0.06 of all image pixels) are different.
+
+      Snapshot: ai-settings-metrics.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-metrics.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 43075 pixels (ratio 0.06 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 43075 pixels (ratio 0.06 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-metrics (image/png) ─────────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-tablet-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/ai-settings-metrics-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/ai-settings-metrics-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      51760 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-unified-gateway.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-unified-gateway.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 51760 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 51760 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-unified-gateway (image/png) ─────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-tablet-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/ai-settings-unified-gateway-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/ai-settings-unified-gateway-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      50129 pixels (ratio 0.07 of all image pixels) are different.
+
+      Snapshot: ai-settings-playground.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-playground.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 50129 pixels (ratio 0.07 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 50129 pixels (ratio 0.07 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-playground (image/png) ──────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-tablet-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/ai-settings-playground-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/ai-settings-playground-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-tablet/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      60127 pixels (ratio 0.06 of all image pixels) are different.
+
+      Snapshot: ai-settings-providers.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-providers.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 60127 pixels (ratio 0.06 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 60127 pixels (ratio 0.06 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-providers (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-desktop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/ai-settings-providers-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/ai-settings-providers-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      57563 pixels (ratio 0.06 of all image pixels) are different.
+
+      Snapshot: ai-settings-discovery.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-discovery.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 57563 pixels (ratio 0.06 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 57563 pixels (ratio 0.06 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-discovery (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-desktop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/ai-settings-discovery-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/ai-settings-discovery-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      44180 pixels (ratio 0.05 of all image pixels) are different.
+
+      Snapshot: ai-settings-metrics.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-metrics.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 44180 pixels (ratio 0.05 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 44180 pixels (ratio 0.05 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-metrics (image/png) ─────────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-desktop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/ai-settings-metrics-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/ai-settings-metrics-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      50678 pixels (ratio 0.05 of all image pixels) are different.
+
+      Snapshot: ai-settings-unified-gateway.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-unified-gateway.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 50678 pixels (ratio 0.05 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 50678 pixels (ratio 0.05 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-unified-gateway (image/png) ─────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-desktop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/ai-settings-unified-gateway-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/ai-settings-unified-gateway-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      52788 pixels (ratio 0.06 of all image pixels) are different.
+
+      Snapshot: ai-settings-playground.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-playground.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 52788 pixels (ratio 0.06 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 52788 pixels (ratio 0.06 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-playground (image/png) ──────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-desktop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/ai-settings-playground-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/ai-settings-playground-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      68727 pixels (ratio 0.04 of all image pixels) are different.
+
+      Snapshot: ai-settings-providers.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-providers.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 68727 pixels (ratio 0.04 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 68727 pixels (ratio 0.04 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-providers (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-providers-laptop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/ai-settings-providers-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/ai-settings-providers-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-laptop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      58708 pixels (ratio 0.03 of all image pixels) are different.
+
+      Snapshot: ai-settings-discovery.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-discovery.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 58708 pixels (ratio 0.03 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 58708 pixels (ratio 0.03 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-discovery (image/png) ───────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-discovery-laptop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/ai-settings-discovery-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/ai-settings-discovery-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-laptop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      63898 pixels (ratio 0.04 of all image pixels) are different.
+
+      Snapshot: ai-settings-metrics.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-metrics.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 63898 pixels (ratio 0.04 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 63898 pixels (ratio 0.04 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-metrics (image/png) ─────────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-metrics-laptop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/ai-settings-metrics-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/ai-settings-metrics-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-laptop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      52736 pixels (ratio 0.03 of all image pixels) are different.
+
+      Snapshot: ai-settings-unified-gateway.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-unified-gateway.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 52736 pixels (ratio 0.03 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 52736 pixels (ratio 0.03 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-unified-gateway (image/png) ─────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-unified-gateway-laptop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/ai-settings-unified-gateway-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/ai-settings-unified-gateway-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-laptop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      53551 pixels (ratio 0.03 of all image pixels) are different.
+
+      Snapshot: ai-settings-playground.png
+
+    Call log:
+      - Expect "toHaveScreenshot(ai-settings-playground.png)" with timeout 15000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 53551 pixels (ratio 0.03 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 53551 pixels (ratio 0.03 of all image pixels) are different.
+
+
+      321 |       await page.goto(`/admin/ai-settings?subtab=${subtab}`);
+      322 |       await expect(page.getByRole('heading', { name: 'Runtime model selection' })).toBeVisible();
+    > 323 |       await expect(page).toHaveScreenshot(`ai-settings-${subtab}.png`, {
+          |                          ^
+      324 |         animations: 'disabled',
+      325 |       });
+      326 |     });
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:323:26
+
+    attachment #1: ai-settings-playground (image/png) ──────────────────────────────────────────────
+    Expected: tests/engine-responsive.spec.ts-snapshots/ai-settings-playground-laptop-linux.png
+    Received: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/ai-settings-playground-actual.png
+    Diff:     ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/ai-settings-playground-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-laptop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22 failed
+    [mobile] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+    [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [mobile] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+    [tablet] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+    [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [tablet] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+    [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [desktop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+    [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [laptop] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+  13 passed (4.3m)

@@ -69,3 +69,34 @@
 
 `backend/index.js` mounts `/api/enterprise`, `/api/enterprise/m2m`, `/api/platform` twice (L520-522 and L3291-3299, 2770-line gap). Second mount adds `createAdminAuditMiddleware` layering — **intentional layering, not copy-paste defect** (verified by middleware ordering in §2 of route inventory). Not promoted to DISC.
 
+
+---
+
+## 6. Runtime parity check (added by the temporary-environment pass)
+
+Parity so far was established by reading code. This pass could execute the active
+implementation, so parity has been re-examined against **observed behaviour**, with the
+honest limitation that `reference-code/` was **not** bootstrapped (it has no runnable
+environment here), i.e. this is *active-side behaviour capture*, which is the
+precondition for a future A/B parity run.
+
+| Observable | Active implementation, observed | Reference baseline | Classification |
+|---|---|---|---|
+| Public routing (`/`, `/login`, `/pricing`, `/portfolios`) | HTTP 200, renders, 0 px overflow at 5 widths | not executed | presence parity confirmed, behaviour parity **DEFERRED** |
+| Auth guard on protected routes | redirects to `/login?next=<path>` (5 routes × 5 widths) | not executed | **active-only evidence** |
+| Auth/RBAC API | 401 unauth, 401 forged, **403** role-denied, 400 validation (`E-310`) | not executed | **active-only evidence** |
+| Security headers | CSP w/ nonce, HSTS, XFO DENY, nosniff, Referrer-Policy, Permissions-Policy, `RateLimit-*` | `.htaccess` declares equivalent block (E-024) | **runtime-confirmed on Express**; Apache-served parity still unverified (no httpd) |
+| AI engine admin UI (7 subtabs + modals) | exercised at 5 projects: responsive/axe pass; 5 screenshots compared against baselines | absent in reference (pre-mesh) | INTENTIONAL-CHANGE (unchanged conclusion) |
+| Schema/migrations | `001` applies on MySQL; `002`–`029` are MariaDB-only (`E-312`) | reference `016` | **cannot be compared at runtime** — MariaDB unavailable |
+| Candidate dashboard journeys | not executed (needs MariaDB + live AI, `E-322`) | not executed | **DEFERRED** |
+
+### 6.1 Net movement in this matrix
+
+* Presence classification unchanged: **20/20 presence, 6/20 deep** — no new route-level
+  classifications were earned by execution.
+* Behavioural parity evidence added for **7 observables** that previously had none,
+  all on the active side only. Nothing in this section upgrades a parity row to
+  REGRESSION / REFERENCE-DEFECT, because the reference implementation was not run.
+* New hard constraint for the next parity pass: the reference tree's database era
+  (`016`) versus the active MariaDB-only DDL (`002`+) means a **schema-level A/B parity
+  test requires a MariaDB 11.4 instance**; a MySQL substitute is not usable (`E-311`).

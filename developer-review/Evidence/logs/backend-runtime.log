@@ -1,0 +1,6 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[Firebase Admin] Initialized without credentials (limited local mode)
+HTTP Server running on port 8080
+[Startup] DEGRADED_MODE_REPOSITORY=inmemory explicitly set — using in-memory repository.

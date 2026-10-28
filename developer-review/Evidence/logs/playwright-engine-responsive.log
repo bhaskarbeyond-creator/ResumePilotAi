@@ -1,0 +1,237 @@
+
+Running 7 tests using 1 worker
+
+  ✘  1 [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals (189ms)
+  ✘  2 [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance (188ms)
+  ✘  3 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers (204ms)
+  ✘  4 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery (198ms)
+  ✘  5 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics (188ms)
+  ✘  6 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway (211ms)
+  ✘  7 [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground (194ms)
+
+
+  1) [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:124:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-937dd-ross-all-subtabs-and-modals-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:212:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a7b99--and-WCAG-2-1-AA-compliance-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a7b99--and-WCAG-2-1-AA-compliance-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a7b99--and-WCAG-2-1-AA-compliance-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a7b99--and-WCAG-2-1-AA-compliance-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:229:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-c5a1a-baseline-—-subtab-providers-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:229:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-2be48-baseline-—-subtab-discovery-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:229:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-a6a6c-n-baseline-—-subtab-metrics-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:229:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-ec597-ne-—-subtab-unified-gateway-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      90 |     data: { email, password: 'ephemeral-e2e-only' },
+      91 |   });
+    > 92 |   expect(res.status()).toBe(200);
+         |                        ^
+      93 |   return res.json();
+      94 | }
+      95 |
+        at loginRole (/home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:92:24)
+        at /home/user/ResumePilotAi/frontend/tests/engine-responsive.spec.ts:229:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../developer-review/Evidence/artifacts/playwright-results/engine-responsive-AI-Multi-e622c-aseline-—-subtab-playground-audit-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7 failed
+    [audit-chromium] › tests/engine-responsive.spec.ts:120:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Live authenticated responsive bounds, above-the-fold CTA, modal reflow & WCAG 2.1 AA across all subtabs and modals 
+    [audit-chromium] › tests/engine-responsive.spec.ts:208:3 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › ADMIN role responsive bounds and WCAG 2.1 AA compliance 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=providers 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=discovery 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=metrics 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=unified-gateway 
+    [audit-chromium] › tests/engine-responsive.spec.ts:226:5 › AI Multi-Provider Engine — Multi-Viewport Responsive, Axe & Visual Baselines › Visual regression baseline — subtab=playground 

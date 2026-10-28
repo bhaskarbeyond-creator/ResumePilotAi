@@ -1,0 +1,38 @@
+### Backend HTTP probe — 2026-10-28T19:44:29Z
+## 1. GET /api/health
+status=200 time=0.008126s
+{"status":"ok","identityProviderConfigured":true,"firebaseAdminConfigured":true,"firestoreDataPlane":"REMOVED","authoritativeDatabase":"MARIADB","date":"2026-10-28T19:44:29.952Z","commitSha":"a7d08a2fa67b44aefe4692405b470fa6b174d29f","databases":{"mariadb":{"status":"UNKNOWN","healthy":null,"lastErr
+## 2. GET /api/readyz
+status=503
+{"status":"not_ready","authoritativeDatabase":"MARIADB","checks":{"mysql":{"status":"UNAVAILABLE","error":"Unknown database 'ai_resume_builder'","code":"ER_BAD_DB_ERROR"},"schema":"INCOMPLETE (Unknown database 'ai_resume_builder')","identityProvider":"CONFIGURED","firestoreDataPlane":"REMOVED","ente
+## 3. GET /api/admin/ai-settings (no auth)
+status=401
+{"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"71336477-24a3-4f29-a7e0-0cb5cded9f1f"}}
+## 4. Security headers on /api/health
+   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'nonce-amTNP9S95RqTcOBaPbh1hg==' https://js.stripe.com https://static.cloudflareinsights.com https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com https://securegw.paytm.in https://securegw-stage.paytm.in https://maps.googleapis.com https://apis.google.com; style-src 'self' https://fonts.googleapis.com https://rsms.me; style-src-attr 'unsafe-inline'; style-src-elem 'self' 'nonce-amTNP9S95RqTcOBaPbh1hg==' 'unsafe-inline' https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; connect-src 'self' https://api.stripe.com https://cloudflareinsights.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com https://maps.googleapis.com; frame-src 'self' https://app.supademo.com https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
+   X-Content-Type-Options: nosniff
+   X-Frame-Options: DENY
+   Referrer-Policy: no-referrer
+   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self)
+   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+   RateLimit-Policy: 10000;w=900
+   RateLimit-Limit: 10000
+   RateLimit-Remaining: 9996
+   RateLimit-Reset: 900
+## 5. POST /api/auth/preview-login (superadmin)
+status=200
+   role=SUPER_ADMIN uid=local_95f21abc074ede598bf775 token_len=323
+## 6. GET /api/admin/ai-settings (SUPER_ADMIN token)
+status=200
+{"success":true,"settings":{"provider":"gemini","temperature":0.7,"maxTokens":2048,"enableFallback":true,"nvidiaModel":"nvidia/nemotron-3.5-bolt-e4b","model":"gemini-2.0-flash","openaiModel":"gpt-4o-mini","groqModel":"llama-3.3-70b-versatile","openrouterModel":"openrouter/auto","deepseekModel":"deep
+## 7. GET /api/admin/ai-settings (forged/garbage token)
+status=401
+## 8. RBAC: CANDIDATE token on admin route
+status=403
+## 9. preview-login rejects short password
+status=400
+## 10. unknown API route
+status=401
+## POST /api/admin/ai-settings (SUPER_ADMIN, seed write)
+status=400
+{"success":false,"code":"ER_BAD_DB_ERROR","reasonCode":"ER_BAD_DB_ERROR","error":"Unknown database 'ai_resume_builder'","requestId":"acad02c6-e45f-4916-bbee-65c87c5bff89"}status=404
