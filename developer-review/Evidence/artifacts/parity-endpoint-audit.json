@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-28T21:34:18.012Z",
-  "revision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
+  "generatedAt": "2026-10-28T21:34:29.166Z",
+  "revision": "abd366084901f2e36b6c9b1cfb77a0a2b127ebc2",
   "registerRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
   "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
   "reachableClasses": [

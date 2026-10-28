@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Audit revision:** `a5835ff6693d` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-28 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
+**Audit revision:** `abd366084901` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-28 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
 **Machine-checkable twin:** `Evidence/artifacts/feature-parity.json` (consumed by `scripts/verify-audit-package.sh`)
 **Inventory basis:** `LEGACY-MODERN-FEATURE-INVENTORY.md` / `Evidence/artifacts/legacy-modern-inventory.json`
 
