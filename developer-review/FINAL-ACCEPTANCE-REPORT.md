@@ -183,3 +183,31 @@ It did **not** reach `COMPLETE`, and it does not claim to:
   live external provider remains **unverified**.
 
 **Verdict retained: `PARTIAL — BLOCKED`.**
+
+---
+
+## 13. Addendum — 2026-10-29 forensic re-audit of the legacy→modern transition
+
+**This report's verdict (`PARTIAL — BLOCKED`) is unchanged.** Its *basis* has widened.
+
+This acceptance report certified what could be **executed** in a temporary environment. A follow-on
+re-audit asked a different question: was the legacy product actually carried into the shipping
+frontend? Answer: partly. See `LEGACY-MODERN-FEATURE-INVENTORY.md` and `FEATURE-PARITY-MATRIX.md`.
+
+| New fact | Value |
+|---|---|
+| Capability verdicts across 7 domains | **109**: 25 FULL · 6 REPLACED · 35 PARTIAL · **30 MISSING** · **9 MOCK/FABRICATED** · 4 UNVERIFIED |
+| Legacy tree actually measured | **651 files / 519 `.jsx` / 193,320 lines** (prior package said "144 files/dirs" — corrected in DISC-018 / E-325) |
+| Backend operations unreachable from the modern UI | **192 of 384 (50 %)**; 58 reachable from neither frontend |
+| New confirmed findings | **DISC-013 … DISC-018** |
+| Allegations adjudicated | 34: 18 confirmed, 1 confirmed-with-correction, 2 partial, **9 refuted**, 4 unresolved |
+
+**Consequence for this report's §"readiness":** nothing here weakens the runtime findings, and nothing
+here promotes the release. It does add a warning that must travel with the verdict: *a passing runtime
+smoke test of the modern app says nothing about whether a given legacy capability still exists.* Nine
+admin capabilities currently pass a visual inspection while displaying fabricated data, which a
+smoke-test-style acceptance cannot detect.
+
+The remediation path for everything in this addendum is `REPAIR-ACTION-PLAN.md` **Phase 5**, ordered so
+that the fabricated-state defects (highest severity, backend already present) come first.
+

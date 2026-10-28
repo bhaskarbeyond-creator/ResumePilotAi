@@ -1,0 +1,1856 @@
+{
+ "revision": "415335b4b85f39456529850b38962a7c5c79dd73",
+ "generatedAt": "2026-10-28T20:25:56.560Z",
+ "vocabulary": [
+  "FULL PARITY",
+  "PARTIAL PARITY",
+  "MISSING",
+  "STATIC STUB",
+  "MOCK / FABRICATED STATE",
+  "LOCAL-ONLY PERSISTENCE",
+  "INTENTIONAL RETIREMENT",
+  "REPLACED BY EQUIVALENT",
+  "UNVERIFIED"
+ ],
+ "counts": {
+  "FULL PARITY": 25,
+  "PARTIAL PARITY": 35,
+  "MISSING": 30,
+  "STATIC STUB": 0,
+  "MOCK / FABRICATED STATE": 9,
+  "LOCAL-ONLY PERSISTENCE": 0,
+  "INTENTIONAL RETIREMENT": 0,
+  "REPLACED BY EQUIVALENT": 6,
+  "UNVERIFIED": 4
+ },
+ "byDomain": {
+  "A": {
+   "total": 24,
+   "byClassification": {
+    "FULL PARITY": 2,
+    "PARTIAL PARITY": 7,
+    "MISSING": 6,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 9,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 0,
+    "UNVERIFIED": 0
+   }
+  },
+  "B": {
+   "total": 11,
+   "byClassification": {
+    "FULL PARITY": 5,
+    "PARTIAL PARITY": 5,
+    "MISSING": 1,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 0,
+    "UNVERIFIED": 0
+   }
+  },
+  "C": {
+   "total": 7,
+   "byClassification": {
+    "FULL PARITY": 1,
+    "PARTIAL PARITY": 1,
+    "MISSING": 4,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 0,
+    "UNVERIFIED": 1
+   }
+  },
+  "D": {
+   "total": 14,
+   "byClassification": {
+    "FULL PARITY": 0,
+    "PARTIAL PARITY": 6,
+    "MISSING": 7,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 1,
+    "UNVERIFIED": 0
+   }
+  },
+  "E": {
+   "total": 17,
+   "byClassification": {
+    "FULL PARITY": 9,
+    "PARTIAL PARITY": 4,
+    "MISSING": 3,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 0,
+    "UNVERIFIED": 1
+   }
+  },
+  "F": {
+   "total": 11,
+   "byClassification": {
+    "FULL PARITY": 3,
+    "PARTIAL PARITY": 5,
+    "MISSING": 2,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 0,
+    "UNVERIFIED": 1
+   }
+  },
+  "G": {
+   "total": 25,
+   "byClassification": {
+    "FULL PARITY": 5,
+    "PARTIAL PARITY": 7,
+    "MISSING": 7,
+    "STATIC STUB": 0,
+    "MOCK / FABRICATED STATE": 0,
+    "LOCAL-ONLY PERSISTENCE": 0,
+    "INTENTIONAL RETIREMENT": 0,
+    "REPLACED BY EQUIVALENT": 5,
+    "UNVERIFIED": 1
+   }
+  }
+ },
+ "total": 109,
+ "legacyFilesMeasured": 651,
+ "legacyFilesUnattributed": 0,
+ "legacySourceUnattributed": [],
+ "capabilities": [
+  {
+   "id": "FP-A01",
+   "domain": "A",
+   "capability": "Platform KPI dashboard (users, resumes, applications, AI generations, storage)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 508,
+   "modernFiles": 1,
+   "modernLines": 261,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/stats"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminDashboardTab.tsx:37 usePlatformStats(); :41-48 KPI values"
+  },
+  {
+   "id": "FP-A02",
+   "domain": "A",
+   "capability": "KPI fabricated fallback values shown when the stats endpoint returns nothing",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 0,
+   "legacyLines": 0,
+   "modernFiles": 1,
+   "modernLines": 261,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/stats"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminDashboardTab.tsx:41-48 `stats?.totalUsers ?? '48,290'`, `?? '420,910'`, `?? '184.2 GB'`"
+  },
+  {
+   "id": "FP-A03",
+   "domain": "A",
+   "capability": "Subsystem health catalogue (28 services, latency, remediation hints)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 882,
+   "modernFiles": 1,
+   "modernLines": 910,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/operational-status"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminHealthTab.tsx:508 DEFAULT_28_SERVICES; :528-543 remote override"
+  },
+  {
+   "id": "FP-A04",
+   "domain": "A",
+   "capability": "Health fallback claims (invented latency, \"99.8%\" delivery, \"100% Enforced\" isolation) displayed when no telemetry arrives",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 0,
+   "legacyLines": 0,
+   "modernFiles": 1,
+   "modernLines": 910,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/operational-status"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminHealthTab.tsx:460-500 metrics {'Carrier Delivery':'99.8%'}, {'Active Tenants':12}, {'Isolation Invariants':'100% Enforced'}"
+  },
+  {
+   "id": "FP-A05",
+   "domain": "A",
+   "capability": "Security event stream / audit viewer",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 2,
+   "legacyLines": 762,
+   "modernFiles": 1,
+   "modernLines": 929,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/audit-logs",
+    "/platform/security-events"
+   ],
+   "invoke": "no",
+   "evidence": "AdminSecurityTab.tsx 928 lines, 0 api-client references, INITIAL_EVENTS at :66-110 incl. fabricated requestPath :98"
+  },
+  {
+   "id": "FP-A06",
+   "domain": "A",
+   "capability": "Operator roster + force-revoke sessions",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 1,
+   "legacyLines": 770,
+   "modernFiles": 1,
+   "modernLines": 929,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/operators",
+    "/platform/operators/{X}/revoke-sessions"
+   ],
+   "invoke": "no",
+   "evidence": "handleRevokeSessions only setState + toast asserting \"Next request will return 401\" (~:204-213)"
+  },
+  {
+   "id": "FP-A07",
+   "domain": "A",
+   "capability": "IP blocklist / deny rules",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 1,
+   "legacyLines": 363,
+   "modernFiles": 1,
+   "modernLines": 929,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "handleBlockIp -> setState + toast; no endpoint found in backend/routes"
+  },
+  {
+   "id": "FP-A08",
+   "domain": "A",
+   "capability": "Platform announcements publisher",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 68,
+   "legacyLines": 29850,
+   "modernFiles": 1,
+   "modernLines": 929,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/announcements"
+   ],
+   "invoke": "no",
+   "evidence": "announcements state seeded in AdminSecurityTab; CRUD backend present in backend/routes/platform.js"
+  },
+  {
+   "id": "FP-A09",
+   "domain": "A",
+   "capability": "Marketing content: phrases, reviews, trusted-by logos, landing pages",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 4,
+   "legacyLines": 1127,
+   "modernFiles": 1,
+   "modernLines": 457,
+   "backend": "yes",
+   "endpoints": [
+    "/phrases",
+    "/admin/reviews",
+    "/admin/trusted-by",
+    "/admin/pages",
+    "/public/trusted-by",
+    "/public/custom-pages"
+   ],
+   "invoke": "no",
+   "evidence": "AdminContentMarketingTab.tsx 456 lines / 0 API refs; INITIAL_PHRASES 5, INITIAL_REVIEWS 3, INITIAL_TRUSTED 5, INITIAL_PAGES 3 (:40-150)"
+  },
+  {
+   "id": "FP-A10",
+   "domain": "A",
+   "capability": "At-risk attention inbox / platform insights",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 1,
+   "legacyLines": 131,
+   "modernFiles": 1,
+   "modernLines": 170,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/attention"
+   ],
+   "invoke": "no",
+   "evidence": "AdminAttentionTab.tsx 169 lines, 0 api refs, DEFAULT_SIGNALS :31, refresh does not fetch"
+  },
+  {
+   "id": "FP-A11",
+   "domain": "A",
+   "capability": "Employer application + job posting moderation",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 1186,
+   "modernFiles": 1,
+   "modernLines": 675,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/employer-applications/{X}/verify",
+    "/admin/jobs/{X}/moderate"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminModerationTab.tsx:152,167,184 real POSTs but `.catch(() => {})`; list seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS :61-111 and never re-fetched"
+  },
+  {
+   "id": "FP-A12",
+   "domain": "A",
+   "capability": "Platform tenant registry (list tenants, quotas, suspend)",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 2106,
+   "modernFiles": 1,
+   "modernLines": 675,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/platform/tenants",
+    "/enterprise/platform/tenants/{X}/suspend"
+   ],
+   "invoke": "no",
+   "evidence": "AdminModerationTab.tsx:389 renders companies/tenants sub-sections from DEFAULT_APPLICATIONS; no tenant list fetch"
+  },
+  {
+   "id": "FP-A13",
+   "domain": "A",
+   "capability": "Company management (verification, documents, quotas)",
+   "classification": "MOCK / FABRICATED STATE",
+   "legacyFiles": 1,
+   "legacyLines": 642,
+   "modernFiles": 1,
+   "modernLines": 675,
+   "backend": "partial",
+   "endpoints": [
+    "/admin/employer-applications/{X}/verify"
+   ],
+   "invoke": "partial",
+   "evidence": "companies sub-section (:389) renders seeded application objects; no company entity endpoint used"
+  },
+  {
+   "id": "FP-A14",
+   "domain": "A",
+   "capability": "Coupon / promo-code administration",
+   "classification": "MISSING",
+   "legacyFiles": 35,
+   "legacyLines": 14191,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/coupons"
+   ],
+   "invoke": "no",
+   "evidence": "no admin coupon surface in frontend/src; only a feature-flag toggle (AdminSettingsTab.tsx:334) and a checkout promo field"
+  },
+  {
+   "id": "FP-A15",
+   "domain": "A",
+   "capability": "Refunds, invoices, payment orders administration",
+   "classification": "MISSING",
+   "legacyFiles": 35,
+   "legacyLines": 14191,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/payments/refund",
+    "/invoices",
+    "/payment-orders"
+   ],
+   "invoke": "no",
+   "evidence": "frontend/src contains only `payment_refunded: billing` in lib/notification-display.ts"
+  },
+  {
+   "id": "FP-A16",
+   "domain": "A",
+   "capability": "SMTP/IMAP + transactional email template settings",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 35,
+   "legacyLines": 14191,
+   "modernFiles": 2,
+   "modernLines": 1674,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/settings/email",
+    "/admin/email-templates"
+   ],
+   "invoke": "partial",
+   "evidence": "AdminEmailSmtpTab.tsx present; 2 api refs; legacy EmailSmtpSettings.jsx + template editor"
+  },
+  {
+   "id": "FP-A17",
+   "domain": "A",
+   "capability": "User manager, User360 drawer, session revoke",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 4,
+   "legacyLines": 3243,
+   "modernFiles": 1,
+   "modernLines": 1132,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/users",
+    "/admin/users/{X}/revoke-sessions"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminUsersTab.tsx 1131 lines, 7 api refs, :280 revoke-sessions"
+  },
+  {
+   "id": "FP-A18",
+   "domain": "A",
+   "capability": "Bulk user operations (multi-select, bulk role change, bulk removal)",
+   "classification": "MISSING",
+   "legacyFiles": 3,
+   "legacyLines": 2773,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "no selectedRows/bulk handler in frontend/src admin tabs; legacy EnterpriseUsersTab.jsx:251-297 has handleBulkAction with partial-failure reporting"
+  },
+  {
+   "id": "FP-A19",
+   "domain": "A",
+   "capability": "Support / help-desk tickets",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 68,
+   "legacyLines": 29850,
+   "modernFiles": 1,
+   "modernLines": 381,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/support/tickets",
+    "/admin/support/tickets/{X}/messages"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminHelpDeskTab.tsx 380 lines, 3 api refs, 1 seed array"
+  },
+  {
+   "id": "FP-A20",
+   "domain": "A",
+   "capability": "Job queues, DLQ, outbox, cache, backups (operations console)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 5,
+   "legacyLines": 1634,
+   "modernFiles": 2,
+   "modernLines": 984,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/queues",
+    "/admin/queues/dlq/replay-all",
+    "/admin/operations"
+   ],
+   "invoke": "yes",
+   "evidence": "AdminQueuesTab 683 lines / 6 api refs; replay-all + outbox retry are modern-only additions"
+  },
+  {
+   "id": "FP-A21",
+   "domain": "A",
+   "capability": "Platform settings, feature flags, maintenance, encryption/backup status",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 35,
+   "legacyLines": 14191,
+   "modernFiles": 1,
+   "modernLines": 1325,
+   "backend": "yes",
+   "endpoints": [
+    "/platform/feature-flags",
+    "/platform/maintenance",
+    "/platform/encryption",
+    "/platform/backup-status"
+   ],
+   "invoke": "partial",
+   "evidence": "AdminSettingsTab.tsx 1324 lines / 8 api refs + feature-flag catalogue"
+  },
+  {
+   "id": "FP-A22",
+   "domain": "A",
+   "capability": "Dedicated audit-log browser with filters and export",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 399,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "yes",
+   "endpoints": [
+    "/admin/audit-logs",
+    "/admin/audit-logs/stats"
+   ],
+   "invoke": "no",
+   "evidence": "hooks/use-api-hooks.ts useAdminAuditLogs has 0 consumers; AdminSecurityTab fabricates instead"
+  },
+  {
+   "id": "FP-A23",
+   "domain": "A",
+   "capability": "Admin command palette + entity search",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 382,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "AdminCommandPalette.jsx 239 lines + adminEntitySearch.js 141 lines; 0 modern matches for palette/⌘K handlers"
+  },
+  {
+   "id": "FP-A24",
+   "domain": "A",
+   "capability": "Public pricing, plan comparison and checkout",
+   "classification": "FULL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 3856,
+   "modernFiles": 2,
+   "modernLines": 1586,
+   "backend": "yes",
+   "endpoints": [
+    "/billing/plans",
+    "/billing/checkout",
+    "/paypal/create-order",
+    "/razorpay/create-order"
+   ],
+   "invoke": "yes",
+   "evidence": "modern adds per-gateway checkout (PayPal/Razorpay create-order) absent from legacy"
+  },
+  {
+   "id": "FP-B01",
+   "domain": "B",
+   "capability": "Enterprise console shell + context switching",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 8,
+   "legacyLines": 1898,
+   "modernFiles": 2,
+   "modernLines": 675,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/context"
+   ],
+   "invoke": "yes",
+   "evidence": "console.tsx drives 14 tabs; switchers collapsed into a single org selector"
+  },
+  {
+   "id": "FP-B02",
+   "domain": "B",
+   "capability": "Member directory, invitations, single-member removal, CSV export",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 973,
+   "modernFiles": 1,
+   "modernLines": 902,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/memberships"
+   ],
+   "invoke": "yes",
+   "evidence": "modern :259 deleteMembership, :287 CSV build; legacy :251-297 bulk handler"
+  },
+  {
+   "id": "FP-B03",
+   "domain": "B",
+   "capability": "Bulk member actions with per-member partial-failure reporting",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 973,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "legacy EnterpriseUsersTab.jsx:251-297 `Successfully applied bulk action to N member(s)` + per-failure error; modern has single-target delete only"
+  },
+  {
+   "id": "FP-B04",
+   "domain": "B",
+   "capability": "Roles & permissions matrix",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 741,
+   "modernFiles": 1,
+   "modernLines": 686,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/roles"
+   ],
+   "invoke": "yes",
+   "evidence": "ROLE_HIERARCHY present in both"
+  },
+  {
+   "id": "FP-B05",
+   "domain": "B",
+   "capability": "Teams + archive/restore",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 599,
+   "modernFiles": 1,
+   "modernLines": 358,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/teams",
+    "/enterprise/teams/{X}/archive",
+    "/enterprise/teams/{X}/restore"
+   ],
+   "invoke": "yes",
+   "evidence": "archive/restore are modern-only endpoints"
+  },
+  {
+   "id": "FP-B06",
+   "domain": "B",
+   "capability": "Workspaces + archive/restore",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 561,
+   "modernFiles": 1,
+   "modernLines": 520,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/workspaces",
+    "/enterprise/workspaces/{X}/archive",
+    "/enterprise/workspaces/{X}/restore"
+   ],
+   "invoke": "yes",
+   "evidence": "modern adds suspend/reactivate lifecycle"
+  },
+  {
+   "id": "FP-B07",
+   "domain": "B",
+   "capability": "Tenant lifecycle (suspend / reactivate) from the enterprise platform tab",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 324,
+   "modernFiles": 1,
+   "modernLines": 230,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/platform/tenants",
+    "/enterprise/platform/tenants/{X}/suspend",
+    "/enterprise/platform/tenants/{X}/reactivate"
+   ],
+   "invoke": "yes",
+   "evidence": "suspend/reactivate are modern-only"
+  },
+  {
+   "id": "FP-B08",
+   "domain": "B",
+   "capability": "Enterprise audit trail with CSV export",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 550,
+   "modernFiles": 1,
+   "modernLines": 312,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/audit"
+   ],
+   "invoke": "yes",
+   "evidence": "EnterpriseAuditTab.tsx:85-90 CSV export"
+  },
+  {
+   "id": "FP-B09",
+   "domain": "B",
+   "capability": "Enterprise resumes + PDF rendering",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 1723,
+   "modernFiles": 2,
+   "modernLines": 878,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/resumes"
+   ],
+   "invoke": "yes",
+   "evidence": "1:1 file correspondence"
+  },
+  {
+   "id": "FP-B10",
+   "domain": "B",
+   "capability": "AI quota rings + enterprise AI controls",
+   "classification": "FULL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 530,
+   "modernFiles": 2,
+   "modernLines": 738,
+   "backend": "yes",
+   "endpoints": [
+    "/ai/providers",
+    "/enterprise/ai"
+   ],
+   "invoke": "yes",
+   "evidence": "provider administration is modern-only"
+  },
+  {
+   "id": "FP-B11",
+   "domain": "B",
+   "capability": "Usage, email, security, support, settings tabs",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 7,
+   "legacyLines": 2895,
+   "modernFiles": 5,
+   "modernLines": 1594,
+   "backend": "yes",
+   "endpoints": [
+    "/enterprise/usage",
+    "/enterprise/email",
+    "/enterprise/settings"
+   ],
+   "invoke": "yes",
+   "evidence": "5/5 tabs reimplemented; per-tab depth not individually verified (U-B01)"
+  },
+  {
+   "id": "FP-C01",
+   "domain": "C",
+   "capability": "Puck-based drag-and-drop portfolio page editor",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 1789,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [
+    "/portfolios"
+   ],
+   "invoke": "no",
+   "evidence": "no @puckeditor reference anywhere under frontend/src; package no longer in any built entry"
+  },
+  {
+   "id": "FP-C02",
+   "domain": "C",
+   "capability": "71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, …)",
+   "classification": "MISSING",
+   "legacyFiles": 72,
+   "legacyLines": 18016,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "71 block components; modern renders a fixed canonical section set (lib/portfolio-document.ts)"
+  },
+  {
+   "id": "FP-C03",
+   "domain": "C",
+   "capability": "WebCV Studio (layout ladder, template presets, template utils)",
+   "classification": "MISSING",
+   "legacyFiles": 6,
+   "legacyLines": 2325,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "WebCvStudio 856 lines + presets 683 + utils 427; modern offers a 6-entry PORTFOLIO_TEMPLATES gallery"
+  },
+  {
+   "id": "FP-C04",
+   "domain": "C",
+   "capability": "Editing portfolios created by the legacy editor",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 1743,
+   "modernFiles": 1,
+   "modernLines": 453,
+   "backend": "yes",
+   "endpoints": [
+    "/portfolios/{X}"
+   ],
+   "invoke": "yes",
+   "evidence": "builder.tsx:347 `const editable = stored ? isWebCvDocument(stored) : false;`, :477 \"Built with the earlier page editor\", :490-533 save/preview gated; isWebCvDocument() portfolio-document.ts:412 rejects block content"
+  },
+  {
+   "id": "FP-C05",
+   "domain": "C",
+   "capability": "Public portfolio rendering + slug availability + publish",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 308,
+   "modernFiles": 6,
+   "modernLines": 1725,
+   "backend": "yes",
+   "endpoints": [
+    "/portfolios/public/{X}",
+    "/portfolios/slug-availability",
+    "/portfolios/{X}"
+   ],
+   "invoke": "yes",
+   "evidence": "public-portfolio.tsx sets document.title; canonical document model"
+  },
+  {
+   "id": "FP-C06",
+   "domain": "C",
+   "capability": "Portfolio template gallery with palettes",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 7,
+   "legacyLines": 1822,
+   "modernFiles": 3,
+   "modernLines": 729,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "modern portfolio-view.tsx:33 PALETTES (modernMinimal, …); legacy template family library larger"
+  },
+  {
+   "id": "FP-C07",
+   "domain": "C",
+   "capability": "Portfolio gallery / showcase",
+   "classification": "UNVERIFIED",
+   "legacyFiles": 1,
+   "legacyLines": 239,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "PortfolioGallery.jsx 239 lines; no modern counterpart located, but no route in main.jsx referenced it either"
+  },
+  {
+   "id": "FP-D01",
+   "domain": "D",
+   "capability": "Live voice interview (TTS question delivery + pacing)",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 1926,
+   "modernFiles": 1,
+   "modernLines": 510,
+   "backend": "yes",
+   "endpoints": [
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/turns"
+   ],
+   "invoke": "yes",
+   "evidence": "0 matches for speechSynthesis|SpeechRecognition|getUserMedia|MediaRecorder|AudioContext anywhere in frontend/src"
+  },
+  {
+   "id": "FP-D02",
+   "domain": "D",
+   "capability": "Microphone capture + live audio waveform",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 510,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "LiveAudioWaveform.jsx 254 lines + useInterviewMedia.js 254 lines; modern 0 media APIs"
+  },
+  {
+   "id": "FP-D03",
+   "domain": "D",
+   "capability": "Interview session UI (question flow, transcript, scoring)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 6,
+   "legacyLines": 5823,
+   "modernFiles": 16,
+   "modernLines": 15105,
+   "backend": "yes",
+   "endpoints": [
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/complete"
+   ],
+   "invoke": "yes",
+   "evidence": "live-interview-panel.tsx 509 lines (text mode)"
+  },
+  {
+   "id": "FP-D04",
+   "domain": "D",
+   "capability": "Candidate command palette (⌘K) with fuzzy entity search",
+   "classification": "MISSING",
+   "legacyFiles": 5,
+   "legacyLines": 1376,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "1,527 legacy lines across palette + entity search + fuzzyRank; 0 modern ⌘K/palette handlers"
+  },
+  {
+   "id": "FP-D05",
+   "domain": "D",
+   "capability": "Copilot assistant (mascot, prompt builder, action registry)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 545,
+   "modernFiles": 1,
+   "modernLines": 571,
+   "backend": "yes",
+   "endpoints": [
+    "/ai/generate-summary",
+    "/ai/generate-interview"
+   ],
+   "invoke": "yes",
+   "evidence": "mascot (72 lines) and copilotActions registry (265 lines) have no modern counterpart"
+  },
+  {
+   "id": "FP-D06",
+   "domain": "D",
+   "capability": "Candidate HUD overlay",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 47,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "CubaHud.jsx 46 lines; no modern HUD component"
+  },
+  {
+   "id": "FP-D07",
+   "domain": "D",
+   "capability": "Notification centre (bell, unread poller, routing)",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 4,
+   "legacyLines": 1143,
+   "modernFiles": 3,
+   "modernLines": 1796,
+   "backend": "yes",
+   "endpoints": [
+    "/notifications"
+   ],
+   "invoke": "yes",
+   "evidence": "modern bell in cuba-app-shell + dedicated notifications page + category mapping"
+  },
+  {
+   "id": "FP-D08",
+   "domain": "D",
+   "capability": "User-selectable UI density",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 69,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "CubaDensityProvider.jsx 68 lines; modern \"density\" occurrences are all resume-layout tokens"
+  },
+  {
+   "id": "FP-D09",
+   "domain": "D",
+   "capability": "Candidate dashboard home, next-steps onboarding, applied-jobs tracker",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 16,
+   "legacyLines": 7098,
+   "modernFiles": 2,
+   "modernLines": 1616,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs/applications",
+    "/dashboard"
+   ],
+   "invoke": "yes",
+   "evidence": "3 legacy areas map to 2 modern pages; onboarding checklist dropped (FP-D10)"
+  },
+  {
+   "id": "FP-D10",
+   "domain": "D",
+   "capability": "Guided \"next steps\" onboarding checklist",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 125,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "modern mentions onboarding once in overview.tsx; no checklist component"
+  },
+  {
+   "id": "FP-D12",
+   "domain": "D",
+   "capability": "Dashboard-v2 element library (stats, activity, profile display, resumes/covers lists)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 28,
+   "legacyLines": 3390,
+   "modernFiles": 18,
+   "modernLines": 16414,
+   "backend": "yes",
+   "endpoints": [
+    "/dashboard",
+    "/resumes",
+    "/cover-letters"
+   ],
+   "invoke": "yes",
+   "evidence": "14 Dashboard2 element files + 9 Dashboard sub-panels consolidated into modern dashboard pages; dashboard search and portfolio list have no located twin"
+  },
+  {
+   "id": "FP-D13",
+   "domain": "D",
+   "capability": "Candidate shell, AI career briefing, top job matches, executive rail, progress charts",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 16,
+   "legacyLines": 2920,
+   "modernFiles": 2,
+   "modernLines": 1711,
+   "backend": "yes",
+   "endpoints": [
+    "/ai/generate-summary",
+    "/jobs/search"
+   ],
+   "invoke": "yes",
+   "evidence": "14 legacy Candidate modules (CubaCandidateShell/Hero, AiCareerBriefing, CandidateCareerAssistant, TopJobMatches, ApplicationProgressChart) vs 1 modern ai-assistant page"
+  },
+  {
+   "id": "FP-D14",
+   "domain": "D",
+   "capability": "Payment grace-period / dunning banner",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 138,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "9 legacy grace-period references; 0 genuine modern matches (remaining hits are autocomplete/admin strings)"
+  },
+  {
+   "id": "FP-D11",
+   "domain": "D",
+   "capability": "Candidate⇄employer messaging",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 867,
+   "modernFiles": 6,
+   "modernLines": 1068,
+   "backend": "yes",
+   "endpoints": [
+    "/messages"
+   ],
+   "invoke": "yes",
+   "evidence": "conversation-list/thread/participant-avatar + query-keys; module gating (entitlement) not found"
+  },
+  {
+   "id": "FP-E01",
+   "domain": "E",
+   "capability": "Guided multi-step resume builder (Form/Boards/Actions steps)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 61,
+   "legacyLines": 25243,
+   "modernFiles": 8,
+   "modernLines": 10001,
+   "backend": "yes",
+   "endpoints": [
+    "/resumes",
+    "/users/ai/generate-summary"
+   ],
+   "invoke": "yes",
+   "evidence": "modern single-page builder + 7 resume components vs 146 legacy step files"
+  },
+  {
+   "id": "FP-E02",
+   "domain": "E",
+   "capability": "Template catalogue volume (51 legacy cv dirs)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 73,
+   "legacyLines": 13985,
+   "modernFiles": 1,
+   "modernLines": 237,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "template-catalog.ts exports 104 TEMPLATES entries vs 51 legacy cv* dirs; router registers per-template export routes"
+  },
+  {
+   "id": "FP-E03",
+   "domain": "E",
+   "capability": "Structurally distinct template layouts (design diversity)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 73,
+   "legacyLines": 13985,
+   "modernFiles": 2,
+   "modernLines": 2299,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "104 catalogue entries collapse into 9 archetypes / 24 layout families with token variation"
+  },
+  {
+   "id": "FP-E04",
+   "domain": "E",
+   "capability": "ATS score with per-section breakdown and job-description targeting",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 349,
+   "modernFiles": 2,
+   "modernLines": 445,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "lib/atsScore.js 53,831 bytes; ats-score.tsx:311 renders result.sections with score/maxScore; JD targeting :202-225"
+  },
+  {
+   "id": "FP-E05",
+   "domain": "E",
+   "capability": "Server-side ATS audit (authoritative score from backend)",
+   "classification": "UNVERIFIED",
+   "legacyFiles": 1,
+   "legacyLines": 349,
+   "modernFiles": 1,
+   "modernLines": 369,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "no ATS scoring route found in backend/routes; both trees compute in the browser"
+  },
+  {
+   "id": "FP-E06",
+   "domain": "E",
+   "capability": "Profile photo crop / zoom",
+   "classification": "MISSING",
+   "legacyFiles": 20,
+   "legacyLines": 10124,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "yes",
+   "endpoints": [
+    "/storage/signed-upload-url"
+   ],
+   "invoke": "no",
+   "evidence": "0 `crop` matches in frontend/src; ImageCropModal.jsx in legacy"
+  },
+  {
+   "id": "FP-E07",
+   "domain": "E",
+   "capability": "QR code generation for shares / MFA enrolment",
+   "classification": "MISSING",
+   "legacyFiles": 5,
+   "legacyLines": 7408,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [
+    "/auth/2fa/setup"
+   ],
+   "invoke": "no",
+   "evidence": "0 `qrcode` matches in frontend/src"
+  },
+  {
+   "id": "FP-E08",
+   "domain": "E",
+   "capability": "Public share links / share modal",
+   "classification": "FULL PARITY",
+   "legacyFiles": 36,
+   "legacyLines": 16941,
+   "modernFiles": 2,
+   "modernLines": 477,
+   "backend": "yes",
+   "endpoints": [
+    "/share",
+    "/resumes/{X}/share"
+   ],
+   "invoke": "yes",
+   "evidence": "share-modal + share-publication present in modern"
+  },
+  {
+   "id": "FP-E09",
+   "domain": "E",
+   "capability": "Cover letters",
+   "classification": "FULL PARITY",
+   "legacyFiles": 74,
+   "legacyLines": 15832,
+   "modernFiles": 2,
+   "modernLines": 1454,
+   "backend": "yes",
+   "endpoints": [
+    "/cover-letters"
+   ],
+   "invoke": "yes",
+   "evidence": "4 cover template entries + dedicated builder page"
+  },
+  {
+   "id": "FP-E16",
+   "domain": "E",
+   "capability": "Export access guard (plan-gated export routes)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 179,
+   "modernFiles": 2,
+   "modernLines": 479,
+   "backend": "yes",
+   "endpoints": [
+    "/export"
+   ],
+   "invoke": "yes",
+   "evidence": "router.tsx:13 imports RequireExportAccess and wraps /export/* routes (:328)"
+  },
+  {
+   "id": "FP-E17",
+   "domain": "E",
+   "capability": "Document rendering surface (page composer, template renderer, public resume)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 4,
+   "legacyLines": 931,
+   "modernFiles": 3,
+   "modernLines": 1496,
+   "backend": "yes",
+   "endpoints": [
+    "/resumes/{X}"
+   ],
+   "invoke": "yes",
+   "evidence": "cv-renderer.tsx + ResumePageComposer.tsx mirror the legacy composer"
+  },
+  {
+   "id": "FP-E11",
+   "domain": "E",
+   "capability": "DOCX export with ZIP magic-byte validation",
+   "classification": "FULL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 123,
+   "modernFiles": 2,
+   "modernLines": 2147,
+   "backend": "yes",
+   "endpoints": [
+    "/export-docx",
+    "/public-export-docx"
+   ],
+   "invoke": "yes",
+   "evidence": "preview-modal.tsx:151 `fetch('/api/export-docx')`; backend/index.js:5167 route + adversarial-certification.test.js:338 entitlement test"
+  },
+  {
+   "id": "FP-E12",
+   "domain": "E",
+   "capability": "Server-rendered PDF export",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 372,
+   "modernFiles": 2,
+   "modernLines": 2147,
+   "backend": "yes",
+   "endpoints": [
+    "/export",
+    "/public-export"
+   ],
+   "invoke": "no",
+   "evidence": "modern handleDownloadPdf does `window.open('/export/<templateId>/<id>/en')` — the SPA print route (router.tsx:352); `/api/export` is never called"
+  },
+  {
+   "id": "FP-E13",
+   "domain": "E",
+   "capability": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 23,
+   "legacyLines": 3082,
+   "modernFiles": 4,
+   "modernLines": 3510,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "legacy engine/hybrid layouts CompactEuroLayout/ExecutiveBannerLayout/MinimalATSLayout/ModernSplitLayout/TechGridLayout map 1:1 onto the modern archetype names modern-split/minimal-ats/executive-banner/tech-grid/compact-euro"
+  },
+  {
+   "id": "FP-E14",
+   "domain": "E",
+   "capability": "Bullet-point quality/health cards and role health checks",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 1471,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "bulletQuality referenced by 6 legacy files (WorkHistoryStep, EducationStep, RoleHealthCard, RoleAiCopilotModal); 0 modern references"
+  },
+  {
+   "id": "FP-E15",
+   "domain": "E",
+   "capability": "Free-tier watermark + export entitlement gating",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 210,
+   "modernFiles": 2,
+   "modernLines": 736,
+   "backend": "yes",
+   "endpoints": [
+    "/billing/plans"
+   ],
+   "invoke": "partial",
+   "evidence": "resume-view.tsx:28 WatermarkConfig; pricing advertises \"PDF Download with watermark\"; client-side moduleFlags/entitlements.js has no modern twin (FP-G13)"
+  },
+  {
+   "id": "FP-E10",
+   "domain": "E",
+   "capability": "AI writing aids (grammar check, summary, import)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 995,
+   "modernFiles": 3,
+   "modernLines": 899,
+   "backend": "yes",
+   "endpoints": [
+    "/ai/check-grammar",
+    "/ai/generate-summary"
+   ],
+   "invoke": "yes",
+   "evidence": "grammar check is a modern-only endpoint"
+  },
+  {
+   "id": "FP-F01",
+   "domain": "F",
+   "capability": "Employer portal shell with tabbed workspace",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 12,
+   "legacyLines": 2100,
+   "modernFiles": 1,
+   "modernLines": 1169,
+   "backend": "yes",
+   "endpoints": [
+    "/employer"
+   ],
+   "invoke": "yes",
+   "evidence": "portal.tsx 1,168 lines, 7 tabs"
+  },
+  {
+   "id": "FP-F02",
+   "domain": "F",
+   "capability": "Applicant pipeline (kanban + list, stage transitions)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 12,
+   "legacyLines": 2100,
+   "modernFiles": 2,
+   "modernLines": 2024,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs/{X}/applications"
+   ],
+   "invoke": "yes",
+   "evidence": "portal.tsx:66 KANBAN_STAGES, :114 kanban/list toggle, optimistic concurrency noted in header"
+  },
+  {
+   "id": "FP-F03",
+   "domain": "F",
+   "capability": "Employer candidate messaging / send-message dialog",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 142,
+   "modernFiles": 1,
+   "modernLines": 1169,
+   "backend": "yes",
+   "endpoints": [
+    "/messages"
+   ],
+   "invoke": "partial",
+   "evidence": "portal.tsx declares a `messages` tab; candidate-side messaging is fully built"
+  },
+  {
+   "id": "FP-F04",
+   "domain": "F",
+   "capability": "Employer onboarding wizard",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 136,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "EmployerOnboarding.jsx in legacy; 0 employer onboarding components in frontend/src"
+  },
+  {
+   "id": "FP-F05",
+   "domain": "F",
+   "capability": "Job creation / requisition editor",
+   "classification": "FULL PARITY",
+   "legacyFiles": 12,
+   "legacyLines": 2100,
+   "modernFiles": 1,
+   "modernLines": 747,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs"
+   ],
+   "invoke": "yes",
+   "evidence": "CreateJobModal.tsx 746 lines"
+  },
+  {
+   "id": "FP-F06",
+   "domain": "F",
+   "capability": "Company profile + team seats",
+   "classification": "FULL PARITY",
+   "legacyFiles": 12,
+   "legacyLines": 2100,
+   "modernFiles": 2,
+   "modernLines": 1007,
+   "backend": "yes",
+   "endpoints": [
+    "/employer/company",
+    "/employer/team"
+   ],
+   "invoke": "yes",
+   "evidence": "657 + 348 lines"
+  },
+  {
+   "id": "FP-F07",
+   "domain": "F",
+   "capability": "Job discovery with map view and location autocomplete",
+   "classification": "MISSING",
+   "legacyFiles": 3,
+   "legacyLines": 302,
+   "modernFiles": 1,
+   "modernLines": 345,
+   "backend": "partial",
+   "endpoints": [
+    "/jobs/search"
+   ],
+   "invoke": "partial",
+   "evidence": "0 map-provider references in frontend/src; jobs portal binds a plain <input> (:124); AutocompleteInput used only by resume-builder"
+  },
+  {
+   "id": "FP-F08",
+   "domain": "F",
+   "capability": "Regional job hubs / landing pages",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 4,
+   "legacyLines": 901,
+   "modernFiles": 1,
+   "modernLines": 413,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs"
+   ],
+   "invoke": "yes",
+   "evidence": "regional-hub.tsx exists"
+  },
+  {
+   "id": "FP-F11",
+   "domain": "F",
+   "capability": "Employer dashboard: companies management, job editing, application modals, rejection reasons",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 7,
+   "legacyLines": 3394,
+   "modernFiles": 3,
+   "modernLines": 2574,
+   "backend": "yes",
+   "endpoints": [
+    "/employer/company",
+    "/jobs/{X}"
+   ],
+   "invoke": "yes",
+   "evidence": "useUpdateJob is wired in portal.tsx:48, so job editing exists; no employer-side rejection-reason capture located (admin-side only)"
+  },
+  {
+   "id": "FP-F10",
+   "domain": "F",
+   "capability": "Job listing browse/filter UI (beyond maps and autocomplete)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 21,
+   "legacyLines": 7818,
+   "modernFiles": 1,
+   "modernLines": 345,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs/search",
+    "/jobs/{X}"
+   ],
+   "invoke": "yes",
+   "evidence": "15 further legacy JobsListings files (filters, cards, saved searches) map onto one 1,000+ line modern portal page"
+  },
+  {
+   "id": "FP-F09",
+   "domain": "F",
+   "capability": "Employer dashboard analytics",
+   "classification": "UNVERIFIED",
+   "legacyFiles": 13,
+   "legacyLines": 2111,
+   "modernFiles": 1,
+   "modernLines": 1169,
+   "backend": "partial",
+   "endpoints": [],
+   "invoke": "partial",
+   "evidence": "portal.tsx header claims \"Real-time pipeline metrics\"; no analytics endpoint call verified"
+  },
+  {
+   "id": "FP-G01",
+   "domain": "G",
+   "capability": "Cuba application shell (nav, header, popovers, a11y)",
+   "classification": "FULL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 1141,
+   "modernFiles": 2,
+   "modernLines": 1683,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "792 legacy lines -> 1,342 modern lines"
+  },
+  {
+   "id": "FP-G02",
+   "domain": "G",
+   "capability": "Cuba design-system primitives (30 components)",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 52,
+   "legacyLines": 7164,
+   "modernFiles": 13,
+   "modernLines": 2363,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "13 modern ui primitives (button, card, dialog, dropdown, input, select, textarea, …) replace ~30 Cuba components"
+  },
+  {
+   "id": "FP-G03",
+   "domain": "G",
+   "capability": "Internationalisation (16 locales, ~1,011 translation keys)",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 44,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "src/locales has 16 locale dirs (de, dk, en, es, fr, gk, hi, is, it, nl, no, pl, pt, ro, ru, se); 1,011 distinct t() keys; 0 i18next/useTranslation matches in frontend/src"
+  },
+  {
+   "id": "FP-G04",
+   "domain": "G",
+   "capability": "Product analytics (GA4 / gtag)",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 55,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "0 gtag/analytics-init matches in frontend/src or frontend/index.html; GA4Provider referenced by 14 legacy files"
+  },
+  {
+   "id": "FP-G05",
+   "domain": "G",
+   "capability": "Per-route SEO metadata (title, description, canonical, structured data)",
+   "classification": "MISSING",
+   "legacyFiles": 4,
+   "legacyLines": 604,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "RouteSeo.jsx 407 lines; frontend/index.html carries one static <title>/description; only public-portfolio.tsx mutates document.title"
+  },
+  {
+   "id": "FP-G06",
+   "domain": "G",
+   "capability": "Service worker / offline shell",
+   "classification": "MISSING",
+   "legacyFiles": 2,
+   "legacyLines": 49,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "0 serviceWorker registrations in frontend/src or frontend/vite.config.ts"
+  },
+  {
+   "id": "FP-G07",
+   "domain": "G",
+   "capability": "Toast / notification feedback primitives",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 1,
+   "legacyLines": 132,
+   "modernFiles": 1,
+   "modernLines": 300,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "no toast/sonner library in frontend/src; admin tabs use inline notice state"
+  },
+  {
+   "id": "FP-G08",
+   "domain": "G",
+   "capability": "Auth flows: OAuth sign-in, 2FA, forced password change",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 6,
+   "legacyLines": 1727,
+   "modernFiles": 1,
+   "modernLines": 635,
+   "backend": "yes",
+   "endpoints": [
+    "/auth/login",
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "invoke": "yes",
+   "evidence": "11 modern 2FA matches vs 7 legacy; useOAuthSignIn.js + 18 OAuth-referencing legacy files vs 4 modern"
+  },
+  {
+   "id": "FP-G09",
+   "domain": "G",
+   "capability": "Blog authoring + public blog",
+   "classification": "FULL PARITY",
+   "legacyFiles": 7,
+   "legacyLines": 3915,
+   "modernFiles": 3,
+   "modernLines": 1088,
+   "backend": "yes",
+   "endpoints": [
+    "/blog",
+    "/admin/blog"
+   ],
+   "invoke": "yes",
+   "evidence": "editor + list + admin tab present"
+  },
+  {
+   "id": "FP-G10",
+   "domain": "G",
+   "capability": "CMS custom pages / landing page rendering",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 17,
+   "legacyLines": 3985,
+   "modernFiles": 2,
+   "modernLines": 720,
+   "backend": "yes",
+   "endpoints": [
+    "/public/custom-pages"
+   ],
+   "invoke": "partial",
+   "evidence": "public reader endpoint used by modern cms page; admin authoring is fabricated (FP-A09)"
+  },
+  {
+   "id": "FP-G11",
+   "domain": "G",
+   "capability": "Marketing site: welcome, features, FAQ, about, contact, legal",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 4,
+   "legacyLines": 2602,
+   "modernFiles": 3,
+   "modernLines": 786,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "Welcome.jsx 1,504 lines + Features.jsx 666 lines vs consolidated landing/features pages"
+  },
+  {
+   "id": "FP-G12",
+   "domain": "G",
+   "capability": "Privacy consent banner + cookie policy surface",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 88,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "no consent-banner component in frontend/src (cookie policy page exists)"
+  },
+  {
+   "id": "FP-G13",
+   "domain": "G",
+   "capability": "Entitlements / plan-gating data model",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 142,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [
+    "/billing/plans"
+   ],
+   "invoke": "partial",
+   "evidence": "1 modern `entitlement` match vs 11 legacy files with client-side gating"
+  },
+  {
+   "id": "FP-G15",
+   "domain": "G",
+   "capability": "Shared utility library (42 modules: formatting, validation, download, OAuth resolvers, print)",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 43,
+   "legacyLines": 9669,
+   "modernFiles": 36,
+   "modernLines": 7630,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "37 modern lib modules absorb the surviving utilities; the ones with no modern twin are tracked individually (FP-E14 bulletQuality, FP-G04 ga4, FP-G05 seo, FP-G12 privacyConsent, FP-G18 geo)"
+  },
+  {
+   "id": "FP-G16",
+   "domain": "G",
+   "capability": "Typed API service layer (client, resumes, covers, jobs, portfolios, blog, platform, users, databaseAdmin)",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 23,
+   "legacyLines": 5686,
+   "modernFiles": 4,
+   "modernLines": 1482,
+   "backend": "yes",
+   "endpoints": [],
+   "invoke": "yes",
+   "evidence": "modern api-client normalises errors (normalizeError) and centralises baseURL /api; endpoint parity measured in the inventory (161 modern vs 153 legacy)"
+  },
+  {
+   "id": "FP-G17",
+   "domain": "G",
+   "capability": "Geo / location datasets, autocomplete directories, job-location helpers",
+   "classification": "MISSING",
+   "legacyFiles": 3,
+   "legacyLines": 2099,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "partial",
+   "endpoints": [
+    "/jobs/search"
+   ],
+   "invoke": "no",
+   "evidence": "5 legacy geo/location modules; modern autocomplete-service.ts exists but is consumed only by resume-builder"
+  },
+  {
+   "id": "FP-G18",
+   "domain": "G",
+   "capability": "Structured data / JSON-LD for public pages",
+   "classification": "MISSING",
+   "legacyFiles": 1,
+   "legacyLines": 179,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "0 matches for application/ld+json | jsonld | schema.org in frontend/src"
+  },
+  {
+   "id": "FP-G19",
+   "domain": "G",
+   "capability": "TOTP / MFA secret provisioning helpers",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 231,
+   "modernFiles": 16,
+   "modernLines": 15230,
+   "backend": "yes",
+   "endpoints": [
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "invoke": "yes",
+   "evidence": "7 modern totp/2FA matches; QR rendering absent (FP-E07)"
+  },
+  {
+   "id": "FP-G20",
+   "domain": "G",
+   "capability": "Job application tracker",
+   "classification": "FULL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 1355,
+   "modernFiles": 2,
+   "modernLines": 763,
+   "backend": "yes",
+   "endpoints": [
+    "/jobs/applications"
+   ],
+   "invoke": "yes",
+   "evidence": "dedicated modern page + route"
+  },
+  {
+   "id": "FP-G21",
+   "domain": "G",
+   "capability": "AI interview coach / role-based question generation",
+   "classification": "FULL PARITY",
+   "legacyFiles": 2,
+   "legacyLines": 859,
+   "modernFiles": 1,
+   "modernLines": 346,
+   "backend": "yes",
+   "endpoints": [
+    "/ai/generate-interview"
+   ],
+   "invoke": "yes",
+   "evidence": "lib/interview-coach.ts + modern-only generate-interview endpoint"
+  },
+  {
+   "id": "FP-G22",
+   "domain": "G",
+   "capability": "Data models, runtime conf and React context scaffolding",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 7,
+   "legacyLines": 344,
+   "modernFiles": 37,
+   "modernLines": 8001,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "legacy JS model factories replaced by TypeScript types in lib/*.types and app/"
+  },
+  {
+   "id": "FP-G23",
+   "domain": "G",
+   "capability": "Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs)",
+   "classification": "PARTIAL PARITY",
+   "legacyFiles": 11,
+   "legacyLines": 1431,
+   "modernFiles": 2,
+   "modernLines": 637,
+   "backend": "yes",
+   "endpoints": [
+    "/notifications",
+    "/platform/operational-status"
+   ],
+   "invoke": "partial",
+   "evidence": "useAiTokenUsage/useAiEngineStatus/useServiceAvailability have no located modern twin; useUnreadMessages became the notification page (FP-D07)"
+  },
+  {
+   "id": "FP-G24",
+   "domain": "G",
+   "capability": "In-app support surface and input validation modals",
+   "classification": "FULL PARITY",
+   "legacyFiles": 3,
+   "legacyLines": 1420,
+   "modernFiles": 5,
+   "modernLines": 978,
+   "backend": "yes",
+   "endpoints": [
+    "/support/tickets"
+   ],
+   "invoke": "yes",
+   "evidence": "dedicated support page with ticket threads (modern-only /support/tickets/{X}/messages)"
+  },
+  {
+   "id": "FP-G25",
+   "domain": "G",
+   "capability": "App bootstrap, route focus management, global spinner",
+   "classification": "REPLACED BY EQUIVALENT",
+   "legacyFiles": 4,
+   "legacyLines": 740,
+   "modernFiles": 3,
+   "modernLines": 503,
+   "backend": "n/a",
+   "endpoints": [],
+   "invoke": "n/a",
+   "evidence": "modern entrypoint + loading primitive; route-level focus management not verified (U-G05)"
+  },
+  {
+   "id": "FP-G14",
+   "domain": "G",
+   "capability": "Misc legacy orphans (Front, initailisation, Analytics, variables.scss)",
+   "classification": "UNVERIFIED",
+   "legacyFiles": 5,
+   "legacyLines": 108,
+   "modernFiles": 0,
+   "modernLines": 0,
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "Analytics.jsx is 10 lines; Front/initailisation are scaffolding"
+  }
+ ]
+}

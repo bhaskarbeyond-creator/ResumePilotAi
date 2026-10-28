@@ -1,0 +1,8 @@
+capabilities        : 109
+  FULL PARITY               25
+  PARTIAL PARITY            35
+  MISSING                   30
+  MOCK / FABRICATED STATE   9
+  REPLACED BY EQUIVALENT    6
+  UNVERIFIED                4
+legacy files covered: 651/651 (unattributed source: 0)

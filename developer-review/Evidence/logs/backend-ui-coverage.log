@@ -1,0 +1,111 @@
+revision                     : 415335b4b85f
+route declarations           : 498
+unique METHOD+path           : 384
+consumed by modern frontend  : 192
+backend WITHOUT modern UI    : 192
+backend WITHOUT any UI       : 58
+unresolved mount (excluded)  : 0
+
+backend-without-modern-UI by first path segment:
+    65  /admin
+    33  /platform
+    12  /auth
+    11  /email
+     9  /enterprise
+     6  /blog-data
+     6  /public
+     4  /phrases
+     3  /paytm
+     3  /phonepe
+     3  /v1
+     2  /stats
+     2  /payment-orders
+     2  /coupons
+     2  /invoice
+     2  /invoices
+     2  /health
+     1  /live-interview
+     1  /reviews
+     1  /users-data
+     1  /stripe-webhook
+     1  /paypal
+     1  /razorpay
+     1  /subscription
+     1  /check
+     1  /employer-applications
+     1  /contact
+     1  /export
+     1  /public-export
+     1  /send-sms
+     1  /payment
+     1  /public-export-docx
+     1  /rtl-font-config
+     1  /jobs
+     1  /service-availability
+     1  /healthz
+     1  /readyz
+     1  /linkedin-scraper
+     1  /notify
+     1  /custom-pages.json
+     1  /trusted-by.json
+     1  /account
+
+backend-without-any-UI (never referenced by either frontend):
+  POST   /auth/purge-orphaned-auth   (backend/index.js)
+  POST   /check   (backend/index.js)
+  GET    /custom-pages.json   (backend/index.js)
+  GET    /email/admin/circuit-breaker-status   (backend/routes/email.js)
+  GET    /email/admin/custom-templates   (backend/routes/email.js)
+  POST   /email/admin/save-template-customization   (backend/routes/email.js)
+  POST   /email/admin/test-imap   (backend/routes/email.js)
+  GET    /email/logs   (backend/routes/email.js)
+  POST   /email/resend   (backend/routes/email.js)
+  POST   /email/send-email   (backend/routes/email.js)
+  POST   /email/send-invoice-email   (backend/routes/email.js)
+  GET    /email/templates   (backend/routes/email.js)
+  POST   /email/templates   (backend/routes/email.js)
+  POST   /enterprise/ai/generate-content   (backend/routes/enterprise.js)
+  POST   /enterprise/ai/generate-interview   (backend/routes/enterprise.js)
+  GET    /enterprise/m2m/context   (backend/routes/enterpriseM2m.js)
+  GET    /enterprise/queue/jobs   (backend/routes/enterprise.js)
+  POST   /enterprise/queue/jobs   (backend/routes/enterprise.js)
+  POST   /enterprise/storage/token   (backend/routes/enterprise.js)
+  POST   /enterprise/storage/verify   (backend/routes/enterprise.js)
+  GET    /enterprise/support/context   (backend/routes/enterprise.js)
+  POST   /invoice   (backend/index.js)
+  POST   /invoice/generate   (backend/index.js)
+  POST   /jobs/naukri   (backend/index.js)
+  GET    /linkedin-scraper   (backend/index.js)
+  POST   /notify/user-signup   (backend/index.js)
+  POST   /payment/razorpay-order   (backend/index.js)
+  POST   /paypal/verify   (backend/index.js)
+  POST   /paytm/callback   (backend/index.js)
+  POST   /paytm/initiate-transaction   (backend/index.js)
+  POST   /paytm/verify-transaction   (backend/index.js)
+  POST   /phonepe/callback   (backend/index.js)
+  POST   /phonepe/initiate   (backend/index.js)
+  POST   /phonepe/status   (backend/index.js)
+  GET    /platform/payment-settings   (backend/routes/platform.js)
+  GET    /platform/payment-webhooks   (backend/routes/platform.js)
+  POST   /platform/payment-webhooks/{X}/replay   (backend/routes/platform.js)
+  GET    /platform/search   (backend/routes/platform.js)
+  GET    /platform/security-events   (backend/routes/platform.js)
+  GET    /platform/tenants/{X}   (backend/routes/platform.js)
+  PATCH  /platform/tenants/{X}   (backend/routes/platform.js)
+  POST   /platform/tenants/{X}/decommission   (backend/routes/platform.js)
+  POST   /platform/tenants/garbage-collect   (backend/routes/platform.js)
+  GET    /platform/version   (backend/routes/platform.js)
+  GET    /public/blog/{X}/og.png   (backend/routes/publicDiscovery.js)
+  GET    /public/featured-companies   (backend/index.js)
+  GET    /public/jobs/{X}/og.png   (backend/routes/publicDiscovery.js)
+  POST   /razorpay/verify-payment   (backend/index.js)
+  GET    /readyz   (backend/index.js)
+  GET    /reviews   (backend/routes/miscData.js)
+  GET    /rtl-font-config   (backend/index.js)
+  POST   /stripe-webhook   (backend/index.js)
+  POST   /subscription/preferences   (backend/index.js)
+  GET    /trusted-by.json   (backend/index.js)
+  GET    /users-data/{X}   (backend/routes/usersData.js)
+  POST   /v1/messages   (backend/index.js)
+  POST   /v1/search   (backend/index.js)
+  GET    /v1/status   (backend/index.js)

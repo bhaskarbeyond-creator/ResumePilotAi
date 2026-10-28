@@ -72,6 +72,14 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+> **Added 2026-10-29 (forensic re-audit of the legacy→modern transition):**
+> `LEGACY-MODERN-FEATURE-INVENTORY.md` (domain inventory, 34 allegation adjudications, backend-without-UI
+> analysis, verdict) and `FEATURE-PARITY-MATRIX.md` (**109 capability verdicts** with backend
+> traceability, machine-checked by `tools/parity-matrix.cjs`). Supporting generators:
+> `tools/legacy-modern-inventory.cjs`, `tools/parity-matrix.cjs`, `tools/backend-ui-coverage.cjs`;
+> artifacts under `Evidence/artifacts/`. Every prior document now carries a dated amendment section
+> rather than edited history — see `DISCREPANCY-LOG.md` DISC-001 (superseded in part) and DISC-013…018.
+
 | File | Purpose |
 |---|---|
 | `PROVENANCE.md` | **NEW (v3 completion):** Remote/branch/SHA verification, source-of-truth revision, publish proof |

@@ -19,18 +19,19 @@
 | BLOCKED | 4 | 6 |
 | NOT VERIFIED | 1 | 5 |
 | AUTHORIZED EXCEPTION | 0 (R-081 no longer needs it) | 1 |
-| **Total R-xxx requirements** | **55** | *(published tally said 47)* |
+| **Total R-xxx requirements** | **65** | *(55 at the runtime pass; +10 in §N, re-audit 2026-10-29)* |
 
 **Tally reconciliation (disclosed rather than smoothed):** the previously published
 summary claimed 47 total, but the register contained **45** `R-xxx` rows at that time —
 the published tally was internally inconsistent by 2. This pass recomputes the numbers
-directly from the table (55 rows now, after adding the 10 new `R-110 … R-119`
-requirements) instead of carrying the arithmetic error forward. The 20 deliverable rows
+directly from the table (65 rows now: 55 after `R-110 … R-119`, plus 10 in §N
+`R-120 … R-129`) instead of carrying the arithmetic error forward. The 20 deliverable rows
 `D-01 … D-20` are tracked separately in §L and are unaffected. Logged as part of DISC-009's
 theme (reporting-accuracy drift) rather than as a new finding.
 
 > **Status changes were made only where a runtime artifact demonstrates the criterion.**
-> Section **M** (R-110 … R-119) is new in this pass. Installing a tool changed nothing:
+> Section **M** (R-110 … R-119) is new in the runtime pass; section **N**
+> (R-120 … R-129) is new in the 2026-10-29 re-audit. Installing a tool changed nothing:
 > e.g. R-034/R-035 moved because 45 browser executions across the five mandated
 > viewports exist, not because Chromium was installed. The overall verdict stays
 > **PARTIAL — BLOCKED** (`HANDOVER.md` §1).
@@ -198,3 +199,37 @@ Gate A (mandate coverage) = **COMPLETE** — every recoverable requirement is li
 
 Every PASS required: (1) file path + line anchor, (2) excerpt or count observed via `cat`/`grep`/`wc`, (3) interpretation + confidence. See `EVIDENCE-INDEX.md` for stable `E-xxx` IDs.
 
+
+---
+
+## 5. Section N — Forensic re-audit of the legacy→modern transition (R-120 … R-129)
+
+Added 2026-10-29. These requirements were not in the original mandate; they derive from the re-audit
+directive. Section M (R-110 … R-119) is unchanged. Row count: 55 → **65**.
+
+| ID | Requirement | Status | Evidence |
+|---|---|---|---|
+| **R-120** | Independently verify the supplied omission report as an allegation register; accept nothing from it | **PASS** | `LEGACY-MODERN-FEATURE-INVENTORY.md` §5 — 34 adjudications: 18 confirmed, 1 confirmed-with-correction, 2 partial, 9 refuted, 4 unresolved |
+| **R-121** | Establish which frontend is active, distinguishing "outside the active build" from "intentionally retired" | **PASS** | Inventory §1 — npm scripts all `--prefix frontend`; `scripts/sync-dist.mjs` ships `frontend/dist`; legacy still consumed by 7 backend contract tests + 1 tooling script → outside build, **not** retired |
+| **R-122** | Recalculate every count; do not trust reported figures | **PASS** | 651 legacy / 206 modern files, 519 `.jsx` / 151 `.tsx`, 193,320 / 68,812 lines, 153 / 161 endpoints, 58 / 100 routes (`E-325`) |
+| **R-123** | Classify every capability against the closed nine-value vocabulary; no component-level scoring | **PASS** | `FEATURE-PARITY-MATRIX.md` — 109 rows; generator rejects out-of-vocabulary values; `INTENTIONAL RETIREMENT` = 0, deliberately |
+| **R-124** | Cover all seven required domains (A super-admin, B enterprise, C portfolio, D voice/HUD/palette, E templates/ATS/export, F employer, G remainder) | **PASS** | Inventory §2 — all 651 legacy files attributed to a domain and to ≥1 capability row (coverage 651/651) |
+| **R-125** | Trace each gap to the backend (exists / authz / tenant / invoked / schema / persisted / errors / tests) | **PASS** | `FEATURE-PARITY-MATRIX.md` §4 (per-row trace) + `E-326` (192/384 operations unreachable; 58 orphaned) |
+| **R-126** | Do not declare parity from filename similarity; do not claim parity without evidence | **PASS** | 9 allegations refuted on direct evidence; 4 capability rows left `UNVERIFIED`; one of this audit's own hypotheses refuted and recorded (RA-30) |
+| **R-127** | Record earlier conclusion + new evidence + revised conclusion; never silently rewrite history | **PASS** | `DISCREPANCY-LOG.md` DISC-001 banner (original text preserved); DISC-018 corrects the package's own `E-002` figures; superseded text retained in `PARITY-MATRIX-V2.md` §3/§7 and `EXECUTIVE-GAP-SUMMARY.md` §12 |
+| **R-128** | Application source unchanged; no force-push; audit trail preserved | **PASS** | `E-324` — 0 files touched outside `developer-review/`; branch not rewritten |
+| **R-129** | Final report states real counts, coverage by domain/classification, confirmed/refuted/unresolved allegations, backend-without-UI list, tests run, and an updated NO-GO verdict | **PASS** | `HANDOVER.md` §12, `EXECUTIVE-GAP-SUMMARY.md` §12, `FEATURE-PARITY-MATRIX.md` §2/§3, inventory §5/§6 |
+
+**Coverage of the nine execution classes required by the re-audit directive:**
+
+| Directive class | Rows |
+|---|---|
+| Legacy/modern file+line counts | R-122 |
+| Active-build determination | R-121 |
+| Capability classification | R-123 |
+| Domain coverage A–G | R-124 |
+| Backend traceability | R-125 |
+| Allegation adjudication | R-120, R-126 |
+| History preservation | R-127 |
+| Read-only boundary | R-128 |
+| Final reporting | R-129 |

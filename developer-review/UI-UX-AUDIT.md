@@ -145,3 +145,33 @@ payload level because their authenticated surfaces could not be reached (DISC-01
 **Methodological caveat carried forward:** a green `frontend/tests/accessibility.spec.ts`
 (59/59 in this same session) does not contradict these findings — see DISC-012 for why a
 portion of that suite scans the login page rather than the surface it names.
+
+---
+
+## 8. UX capability regressions from the legacy→modern transition (re-audit 2026-10-29)
+
+Sections 1–7 audited the modern UI as it stands. This section records what the modern UI no longer has,
+because a UX audit of a replacement app is incomplete without it. Evidence: `FEATURE-PARITY-MATRIX.md`,
+`LEGACY-MODERN-FEATURE-INVENTORY.md` §4.
+
+| # | Lost UX capability | User-visible effect | Legacy evidence | Severity |
+|---|---|---|---|---|
+| 1 | **Localisation** (16 languages, 1,011 keys) | Every non-English user is locked out of their language; all strings hard-coded English | `src/i18n.js`, `src/locales/{de,dk,en,es,fr,gk,hi,is,it,nl,no,pl,pt,ro,ru,se}` | High |
+| 2 | **Voice interview** | Interview practice is silent; `speechSynthesis`/`SpeechRecognition` and mic waveform gone | `LiveInterviewSession.jsx` 1,691 lines, `LiveVoiceEngine.js`, `LiveAudioWaveform.jsx` | High |
+| 3 | **Command palette (⌘K)** | No keyboard-driven navigation or fuzzy entity jump on any surface | `CubaCommandPalette.jsx` 787, `fuzzyRank.js`, `adminEntitySearch.js`, `candidateEntitySearch.js` (1,527 lines total) | High |
+| 4 | **Portfolio editing for existing content** | A saved portfolio opens with "Built with the earlier page editor" and disabled actions | `builder.tsx:347/477/490-533`, `portfolio-document.ts:412` | Critical |
+| 5 | **Fabricated admin panels** | Operators see invented security events and partner logos; actions appear to succeed but do not | `AdminSecurityTab.tsx`, `AdminContentMarketingTab.tsx` | Critical |
+| 6 | **Photo crop / zoom** | Profile photos can only be uploaded whole; no framing control | `ImageCropModal.jsx` | Medium |
+| 7 | **QR codes** | Sharing and 2FA enrolment lose a scannable path | `mfaService.js`, `totpHelper.js` | Medium |
+| 8 | **Map + location autocomplete in job search** | Job discovery is a plain text box; no geo narrowing | `GoogleMapsProvider.jsx`, `LocationAutocomplete.jsx` (components survive in modern `lib/`/`ui/`, unwired) | Medium |
+| 9 | **Employer onboarding** | A new employer lands in the full console with no guided setup | `EmployerOnboarding.jsx` | Medium |
+| 10 | **Inline "next steps" onboarding** | No checklist guiding a new candidate to a first resume | `CubaNextSteps.jsx` | Low |
+| 11 | **Density preference / HUD / copilot mascot** | No comfort controls, no ambient assistant affordances | `CubaDensityProvider.jsx`, `CubaHud.jsx`, `CubaCopilotMascot.jsx` | Low |
+| 12 | **Toast feedback primitive** | Feedback is ad-hoc per tab; no verified global live region | `src/components/Toasts` (15 consumers) → 0 | Medium (a11y) |
+| 13 | **Privacy consent banner** | No consent capture UI while a cookie-policy route remains | `PrivacyConsentBanner.jsx` | Medium (compliance) |
+
+**Positive counter-evidence (must be recorded too):** notification centre, enterprise CSV export,
+job tracker, AI interview coach, support ticket threads, billing checkout, DLQ replay and the Cuba app
+shell were all **retained or improved** — `cuba-app-shell` grew from 792 to 1,342 lines and the modern
+shell adds tenant lifecycle, provider admin and threaded support. The regression list above is real but
+it is not the whole story, and the modern UI is not a downgrade in every dimension.

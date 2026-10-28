@@ -1,0 +1,18 @@
+legacy files      : 651 (519 .jsx, 193320 lines)
+modern files      : 206 (151 .tsx, 68812 lines)
+endpoints legacy  : 153
+endpoints modern  : 161
+shared / legacy-only / modern-only: 69 / 84 / 92
+
+domain                 files  jsx   lines  endpoints
+A-super-admin             87   83   37391         22
+B-enterprise              27   23   10991         26
+C-portfolio-webcv         88   83   24260          1
+D-candidate-experience   121  100   32886         12
+D-voice-interview          6    5    5823          0
+E-resume-builder          65   61   25557          2
+E-resume-templates        73   72   13985          0
+F-employer                35   33   11542          2
+G-content                 10    9    3676          1
+G-platform-shared        110   34   22638        108
+G-unclassified            29   16    4571         10
