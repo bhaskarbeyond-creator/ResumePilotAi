@@ -37,6 +37,34 @@ PASS: DISCREPANCY-LOG has 7 findings
 PASS: No application source modified (git diff excludes DR)
 PASS: Secret scan: no non-empty DB_PASSWORD value in DR
 PASS: Refuted candidates updated (RC-002 High)
+--- Re-audit artifacts (2026-10-29) ---
+PASS: exists LEGACY-MODERN-FEATURE-INVENTORY.md
+PASS: exists FEATURE-PARITY-MATRIX.md
+PASS: exists tools/legacy-modern-inventory.cjs
+PASS: exists tools/parity-matrix.cjs
+PASS: exists tools/backend-ui-coverage.cjs
+PASS: exists scripts/verify-parity.py
+PASS: exists Evidence/artifacts/legacy-modern-inventory.json
+PASS: exists Evidence/artifacts/feature-parity.json
+PASS: exists Evidence/artifacts/backend-ui-coverage.json
+PASS: exists Evidence/artifacts/legacy-file-inventory.tsv
+PASS: exists Evidence/logs/parity-matrix.log
+PASS: exists Evidence/logs/backend-ui-coverage.log
+PASS: Parity register parses with 100+ capabilities
+PASS: Parity register: IDs unique and FP-prefixed
+PASS: Parity register: classifications inside the closed vocabulary
+PASS: Parity register: every legacy source file attributed
+PASS: Parity register: totals reconcile with domain counts
+PASS: Parity matrix doc renders every capability ID
+PASS: Backend-UI coverage artifact reconciles
+PASS: Allegation register: 30+ adjudications, all verdict classes present
+PASS: DISCREPANCY-LOG: DISC-013..018 present and dedupe count truthful
+PASS: Audit history preserved (superseded text retained, not rewritten)
+PASS: EVIDENCE-INDEX: E-325..E-332 present
+PASS: REQUIREMENT-REGISTER: R-120..R-129 present
+PASS: Every amended document carries a dated amendment section
+PASS: INTENTIONAL RETIREMENT never asserted without documented intent
+PASS: Inventory covers all seven required domains
 --- Summary ---
-PASS: 34  FAIL: 0
+PASS: 61  FAIL: 0
 VERIFICATION PASSED

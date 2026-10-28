@@ -276,3 +276,67 @@ directive. It did not change any application file and did not change the verdict
    can be re-examined rather than taken on trust.
 4. No application code, test, config, schema or dependency was modified; `git status`
    outside `developer-review/` is empty.
+
+---
+
+## 12. Re-audit amendment — legacy→modern capability parity (2026-10-29)
+
+**What this section adds.** Section 5 below lists *confirmed findings* about the active application;
+section 6 lists *refuted candidates*. Neither answered "was the legacy product carried across?".
+This amendment answers it, and it changes the answers to two earlier questions: **is the legacy tree
+dead code?** (no) and **is the modern app a faithful re-implementation?** (no — it is a larger
+re-architecture with 30 missing and 9 fabricated capabilities).
+
+### 12.1 Final measured state
+
+| Fact | Value |
+|---|---|
+| Branch / revision | `arena/393531fe-resumepilotai` @ `415335b` (parent audit `a7d08a2`) |
+| Active frontend | `frontend/` (all root npm scripts `--prefix frontend`; `scripts/sync-dist.mjs` publishes `frontend/dist`) |
+| Legacy tree | **651 files / 519 `.jsx` / 193,320 lines / 153 endpoints / 58 routes** — outside the active build, **not** deletable (30 capabilities + 7 backend contract tests + 1 tooling import) |
+| Modern tree | **206 files / 151 `.tsx` / 68,812 lines / 161 endpoints / 100 routes** |
+| Capability verdicts | **109**: 25 FULL · 6 REPLACED · 35 PARTIAL · 30 MISSING · 9 MOCK/FABRICATED · 4 UNVERIFIED |
+| Legacy file attribution | **651 / 651** (100 % of the tree accounted for) |
+| Backend reachability | 384 operations; **192 (50 %) unreachable from the modern UI**; **58 reachable from neither frontend** |
+| Allegation adjudication | 34 claims: **18 confirmed**, 1 confirmed-with-correction, 2 partial, **9 refuted**, 4 unresolved |
+
+### 12.2 Findings this re-audit added (DISC-013 … DISC-018)
+
+1. **DISC-013** — 30 capabilities unported, **0** documented retirements. Voice interview 2,432 lines;
+   command palette 1,527 lines; i18n 16 locales / 1,011 keys; Puck + 71 portfolio blocks; image crop;
+   QR; job maps; employer onboarding; admin audit/operators/announcements; coupons/refunds; bulk ops.
+2. **DISC-014** — 9 admin capabilities render **fabricated state**. `AdminSecurityTab` asserts a session
+   revocation that never happened ("Next request will return 401"); `AdminContentMarketingTab` shows five
+   real partner brands as live content. Every backing endpoint exists, so remediation is cheap.
+3. **DISC-015** — every portfolio created with the legacy editor is **read-only** ("Built with the
+   earlier page editor", save disabled), with no migration path.
+4. **DISC-016** — **half the backend is undrivable** from the shipping UI (192/384); 58 operations are
+   reachable from neither frontend (invoices, webhook replay, IMAP diagnostics, tenant decommission,
+   five payment verifiers). This is the root cause of DISC-014 going unnoticed.
+5. **DISC-017** — i18n, GA4, per-route SEO, JSON-LD, service worker and the privacy-consent banner were
+   removed wholesale. None of these was named in the supplied omission report.
+6. **DISC-018** — this package's own prior figures for the legacy tree were **~4.5× understated**
+   (`E-002`: "144 files/dirs", "main.jsx 37k lines" — actual 651 files / 645 lines). Corrected in
+   `E-325` with the original row left intact.
+
+### 12.3 Allegations refuted (do not repeat them as findings)
+
+"Root `src/` is dead code" · "the modern frontend is a thin shell" · "enterprise features are missing" ·
+"enterprise CSV export was dropped" · "messaging was dropped" · "the notification centre was dropped" ·
+"51 templates were cut to 8" · "per-section ATS health was lost" · and this audit's own initial reading
+that "DOCX export was dropped" (it is wired and backend-tested).
+
+### 12.4 Verdict
+
+**PARTIAL — BLOCKED**, unchanged in substance from section 1 and `FINAL-ACCEPTANCE-REPORT.md`, and
+unchanged in *cause* (R-117 HTTP tenant isolation, R-118 live providers, R-119 MariaDB migrations,
+EG-008, EG-011). The re-audit adds no new blocker ID but changes the **interpretation** of the evidence:
+backend route presence (20/20 in `PARITY-MATRIX-V2.md` §1) must not be read as delivery, because half of
+those routes cannot be reached from the product. **No release decision should treat this package's
+earlier "routes present" result as feature-completeness.**
+
+### 12.5 Read this after the earlier sections
+
+`LEGACY-MODERN-FEATURE-INVENTORY.md` (domains + allegations) → `FEATURE-PARITY-MATRIX.md`
+(109 verdicts + backend trace) → `DISCREPANCY-LOG.md` DISC-013…DISC-018 → `REPAIR-ACTION-PLAN.md`
+Phase 5 (remediation order).

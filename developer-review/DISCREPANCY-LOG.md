@@ -7,7 +7,13 @@ investigated and **disproved** live in `appendix/REFUTED-CANDIDATES.md`, not her
 Candidates that remain **plausible but unproven** live in
 `appendix/UNVERIFIED-SUSPICIONS.md`, not here.
 
-Total confirmed findings in this log: **12** (DISC-001 … DISC-012).
+Total confirmed findings in this log: **18** (DISC-001 … DISC-018).
+
+> **Update 2026-10-29 (forensic re-audit of the legacy→modern transition).**
+> DISC-013 … DISC-018 were raised by the re-audit. **DISC-001 is superseded in part**
+> (see the banner on that entry). The re-audit also **corrected prior figures** rather
+> than editing them in place: the legacy tree is 651 source files / 519 `.jsx` /
+> 193,320 lines, not "144 files/dirs" as recorded in `EVIDENCE-INDEX.md` E-002.
 
 > **Update 2026-10-28 (runtime verification pass).** DISC-001 … DISC-007 were
 > established statically in the read-only pass. **DISC-008 … DISC-012 were
@@ -18,6 +24,26 @@ Total confirmed findings in this log: **12** (DISC-001 … DISC-012).
 ---
 
 ## [DISC-001] Two parallel, divergent frontend source trees create active-implementation ambiguity
+
+> ### ⚠ SUPERSEDED IN PART — 2026-10-29
+> The original finding below is preserved verbatim; only its *disposition* changes.
+>
+> **Original conclusion:** two divergent trees create ambiguity; the duplicate tree "is not
+> guarded by the same publish pipeline as the real app", divergence class `UNKNOWN`.
+>
+> **New evidence:** `npm --prefix frontend` in every root script and
+> `scripts/sync-dist.mjs` shipping `frontend/dist` settle the ambiguity: **the active app is
+> `frontend/`**, and root `src/` is outside the build. But "outside the active build" is not
+> "dead": 7 `backend/test/*.test.js` assert legacy source strings (contract surface) and
+> `scripts/candidate-workspace-inventory.mjs:5` imports legacy code. Measured:
+> **651 legacy files / 519 `.jsx` / 193,320 lines** vs **206 modern files / 151 `.tsx` /
+> 68,812 lines**.
+>
+> **Revised conclusion:** the ambiguity about *which app runs* is **RESOLVED** (frontend). What
+> remains is the opposite problem: the legacy tree is the **only** implementation of 30
+> capabilities the modern app lacks (DISC-013), so it cannot be deleted as dead code without
+> destroying the record of unported behaviour. Re-classified from *ambiguity* to
+> *unmigrated-capability debt*. See `LEGACY-MODERN-FEATURE-INVENTORY.md` §1, §7.
 
 **Severity:** P2 — High
 
@@ -977,6 +1003,160 @@ session, or the suite asserts the expected surface identity before scanning.
 
 ---
 
+## [DISC-013] Thirty legacy capabilities were not ported to the active frontend, with no recorded retirement decision
+
+**Severity:** P1 — Critical (product-wide capability debt; the shipping app is materially smaller than the product it replaced)
+
+**Verification status:** STATICALLY VERIFIED (109 capability rows, 3 reproducible generators)
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — attempted to disprove by (a) searching for an ADR/changelog/migration
+note documenting any retirement, and (b) re-measuring every count from source. Neither yields a
+decision record; and the counts reproduce exactly (`tools/legacy-modern-inventory.cjs`,
+`tools/parity-matrix.cjs`).
+
+**Evidence:** `FEATURE-PARITY-MATRIX.md` (109 rows: 25 `FULL PARITY`, 35 `PARTIAL PARITY`,
+30 `MISSING`, 9 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 4 `UNVERIFIED`);
+`Evidence/artifacts/feature-parity.json`; `Evidence/logs/parity-matrix.log`.
+Legacy file attribution is complete: 651/651 files map to a capability row.
+
+**Description:** `INTENTIONAL RETIREMENT` is applied **zero** times because no evidence of intent
+exists. The largest omissions: voice interview (2,432 lines), candidate command palette (1,527 lines),
+internationalisation (16 locales / 1,011 keys), Puck + 71 portfolio blocks, image crop, QR generation,
+job-map discovery, employer onboarding, admin audit/operators/announcements, coupon & refund
+administration, bulk member operations.
+
+**Expected:** every legacy capability is either ported, or its retirement is documented and approved.
+**Actual:** silent removal. Deletion without a decision record is indistinguishable from loss.
+
+---
+
+## [DISC-014] Nine admin capabilities render from fabricated state, including a false assertion that a security action succeeded
+
+**Severity:** P1 — Critical (operator deception in security and marketing surfaces)
+
+**Verification status:** STATICALLY VERIFIED (+ reachable in the running app under an admin session)
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — attempted to disprove by tracing every mutation handler to a network
+call. `AdminSecurityTab.tsx` (928 lines) and `AdminContentMarketingTab.tsx` (456 lines) contain **zero**
+api-client references; `AdminAttentionTab.tsx` contains zero; `AdminModerationTab.tsx` seeds its lists
+and swallows write failures via `.catch(() => {})`.
+
+**Evidence:** `AdminSecurityTab.tsx:66-110` (invented events, principals, IPs, `requestPath`),
+`:204-213` (`handleRevokeSessions` → toast asserting "Next request will return 401", no fetch);
+`AdminContentMarketingTab.tsx:40-150` (`INITIAL_PHRASES` 5, `INITIAL_REVIEWS` 3, `INITIAL_TRUSTED` 5,
+`INITIAL_PAGES` 3 — 16 records, 0 API); `AdminDashboardTab.tsx:41-48` (`?? '48,290'`, `?? '420,910'`);
+`AdminHealthTab.tsx:460-500` (fabricated latency, "99.8%" delivery, "100% Enforced" isolation).
+All corresponding backends exist: `/platform/security-events`, `/platform/operators`,
+`/platform/announcements`, `/phrases`, `/admin/reviews`, `/admin/trusted-by`, `/admin/pages`,
+`/platform/operational-status`.
+
+**Expected:** panels either call the documented endpoints or present an explicit empty/error state.
+**Actual:** invented records presented as live platform data; the highest-severity instance asserts a
+completed session revocation that never happened.
+
+---
+
+## [DISC-015] Portfolios created with the legacy page editor are permanently read-only
+
+**Severity:** P1 — Critical (user data becomes uneditable after the platform upgrade)
+
+**Verification status:** STATICALLY VERIFIED
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — attempted to disprove by looking for a migration path from legacy
+`content` blocks to the canonical document model. None exists.
+
+**Evidence:** `frontend/src/pages/portfolio/builder.tsx:347`
+`const editable = stored ? isWebCvDocument(stored) : false;`, `:477` renders
+"Built with the earlier page editor", `:490-533` gates save/preview on `editable`;
+`frontend/src/lib/portfolio-document.ts:412-420` `isWebCvDocument()` returns false for documents
+carrying block content. Puck is gone (`@puckeditor` absent from `frontend/src`), as are the 71
+`PortfolioComponents/*` blocks.
+
+**Expected:** existing portfolios remain editable, or are migrated, or are exportable for re-creation.
+**Actual:** a read-only dead end with no migration. This is a data-access regression, distinct from a
+missing feature.
+
+---
+
+## [DISC-016] Half of the backend's operation surface (192 of 384) is unreachable from the modern UI
+
+**Severity:** P1 — Critical (implemented, tested backend capability is undrivable by the product)
+
+**Verification status:** STATICALLY VERIFIED (mount prefixes resolved, 0 guessed)
+
+**Confidence:** Medium-High (prefix matching biases toward "consumed", so the figure is a floor)
+
+**Disproof outcome:** SURVIVED — attempted to disprove by widening what counts as a consumer
+(prefix matching either direction). The 192 figure survived that generous test.
+
+**Evidence:** `Evidence/artifacts/backend-ui-coverage.json`, `Evidence/logs/backend-ui-coverage.log`:
+498 route declarations → **384** unique `METHOD+path` → 192 referenced by modern code → **192** not →
+**58** referenced by neither frontend. Clusters: `/admin` 65, `/platform` 33, `/auth` 12, `/email` 11,
+`/enterprise` 9.
+
+**Description:** monetisation and operations are the worst hit: `/admin/coupons`,
+`/admin/payments/refund`, `/invoices`, `/invoice/generate`, `/payment-orders`,
+`/platform/payment-webhooks(/:id/replay)`, `/email/logs|resend|templates|admin/test-imap`,
+`/platform/tenants/:id{/decommission}`, `/platform/security-events`, five payment-gateway verifier
+routes. This is also the root cause of DISC-014 going unnoticed: nobody reached the real endpoints.
+
+---
+
+## [DISC-017] Internationalisation, product analytics, per-route SEO and the offline shell were removed wholesale
+
+**Severity:** P2 — High (breadth of user-visible regression; compliance-adjacent for consent)
+
+**Verification status:** STATICALLY VERIFIED
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — searched for successor implementations under alternate names
+(`i18next`, `useTranslation`, `react-intl`, `gtag`, `react-helmet`, `serviceWorker`, JSON-LD).
+
+**Evidence:** 16 locale directories (`de dk en es fr gk hi is it nl no pl pt ro ru se`), 1,011 distinct
+`t()` keys, 131 legacy consumers → **0** i18n references in `frontend/src`; `GA4Provider.jsx` referenced
+by 14 legacy files → 0 modern analytics init; `RouteSeo.jsx` (407 lines) + `MetaManager` → one static
+`<title>`/description in `frontend/index.html`, only `public-portfolio.tsx` mutates `document.title`;
+`src/serviceWorker.js` → 0 registrations; `services/seo/structuredData.js` → 0 JSON-LD;
+`PrivacyConsentBanner.jsx` → 0 consent UI (a cookie-policy route remains).
+
+**Description:** Not named in the supplied omission report; found by the Domain G sweep. All modern UI
+strings are hard-coded English, every route shares one SEO title, and job postings carry no schema.org
+markup (Google Jobs eligibility).
+
+---
+
+## [DISC-018] Prior published figures for the legacy tree were understated by roughly 4.5×
+
+**Severity:** P3 — Medium (audit-integrity: conclusions were drawn from an under-measured baseline)
+
+**Verification status:** STATICALLY VERIFIED (recount)
+
+**Confidence:** High
+
+**Disproof outcome:** N/A — this is a correction of this package's own record, disclosed rather than
+edited away.
+
+**Evidence:** `EVIDENCE-INDEX.md` E-002 recorded "`src/` tree | 144 files/dirs, 59 template folders,
+`src/main.jsx` 37k lines". Measured: **651** source files (519 `.jsx`), **51** `cv*` template
+directories (+6 `cover*`), `src/main.jsx` = **645** lines, 193,320 total lines.
+Recount via `tools/legacy-modern-inventory.cjs`; per-file ledger in
+`Evidence/artifacts/legacy-file-inventory.tsv`.
+
+**Expected:** prior audits state a reproducible measurement with its command.
+**Actual:** the earlier figure counted directories at one level and mis-attributed `main.jsx` line
+count, which is partly why the legacy tree's true capability surface went unexamined and why DISC-001
+never became DISC-013. The original E-002 row is left intact; the correction is appended to
+`EVIDENCE-INDEX.md` as E-325.
+
+---
+
 ## Summary of status change caused by this pass
 
 | Finding | Status before | Status now |
@@ -987,3 +1167,15 @@ session, or the suite asserts the expected surface identity before scanning.
 | DISC-010 | — | **NEW — RUNTIME VERIFIED** (MariaDB-only DDL vs "MySQL compatible" comment) |
 | DISC-011 | — | **NEW — RUNTIME VERIFIED** (hardcoded :5173 in an E2E spec) |
 | DISC-012 | — | **NEW — RUNTIME VERIFIED** (auth shim gives false assurance) |
+
+## Summary of status change caused by the 2026-10-29 re-audit
+
+| Finding | Status before | Status now |
+|---|---|---|
+| DISC-001 | open — ambiguity between two trees | **SUPERSEDED IN PART** — active app settled as `frontend/`; reframed as unmigrated-capability debt |
+| DISC-013 | — | **NEW** — 30 capabilities not ported, 0 recorded retirements |
+| DISC-014 | — | **NEW** — 9 fabricated admin capabilities, incl. false security assertion |
+| DISC-015 | — | **NEW** — legacy portfolios are read-only dead ends |
+| DISC-016 | — | **NEW** — 192/384 backend operations unreachable from the modern UI |
+| DISC-017 | — | **NEW** — i18n / analytics / SEO / PWA / consent removed |
+| DISC-018 | — | **NEW** — prior legacy-tree figures understated ~4.5× (self-correction) |

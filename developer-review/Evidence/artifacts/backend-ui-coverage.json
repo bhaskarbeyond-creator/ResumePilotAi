@@ -1,0 +1,1311 @@
+{
+ "revision": "415335b4b85f39456529850b38962a7c5c79dd73",
+ "generatedAt": "2026-10-28T20:23:19.251Z",
+ "counts": {
+  "routeDeclarations": 498,
+  "uniqueMethodPaths": 384,
+  "consumedByModern": 192,
+  "backendWithoutModernUi": 192,
+  "backendWithoutAnyUi": 58,
+  "unresolvedMount": 0,
+  "note": "Only routes whose mount prefix resolved from backend/index.js are asserted; unresolved ones are excluded, not guessed."
+ },
+ "backendWithoutModernUi": [
+  {
+   "method": "POST",
+   "path": "/account/export",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/ads",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/ads",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/ads/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/ai-fleet-health",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/ai/entitlements",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/ai/reset-state",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/ai/routing-telemetry",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/blog/categories",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/blog/categories",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/blog/categories/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/blog/categories/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/blog/posts",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/blog/posts/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/blog/posts/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/blog/publish-due",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/companies",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/companies/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/coupons",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/coupons",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/coupons/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/coupons/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/admin/coupons/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/database-settings",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/database-settings",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/database-settings/conflicts",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/database-settings/dead-letter",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/database-settings/initialize-schema",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/database-settings/prune-outbox",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/database-settings/retry-dead-letter",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/database-settings/sync-status",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/database-settings/test-connection",
+   "file": "backend/routes/databaseAdmin.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/delete-user",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/firebase-service-account",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/firebase-service-account",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/operations/feature-flags",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/operations/feature-flags/{X}",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/admin/operations/feature-flags/{X}",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/pages",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/pages/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/admin/pages/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/payment-orders",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/payments/refund",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/platform/currency",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/admin/platform/currency",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/platform/status",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/platform/tenants/{X}/ai-keys/test",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/platform/tenants/{X}/ai-policy",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/platform/tenants/{X}/commercials",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/platform/tenants/{X}/members",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/platform/tenants/{X}/members/{X}",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/platform/tenants/{X}/members/{X}",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/reviews",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/reviews",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/reviews/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/settings/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/settings/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/subscriptions",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/subscriptions/{X}/reconcile",
+   "file": "backend/routes/adminPlatformOperations.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/trusted-by",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/trusted-by",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/admin/trusted-by/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/admin/trusted-by/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/admin/twilio-settings",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/twilio-settings",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/admin/website-meta",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/custom-password-reset",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/github",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/github/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/github/test-credentials",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/linkedin",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/linkedin/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/auth/linkedin/test-credentials",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/oauth/exchange",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/purge-orphaned-auth",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/send-verification-email",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/set-user-password",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/auth/verify-email-token",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/blog-data",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/blog-data/{X}",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/blog-data/{X}",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/blog-data/{X}",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/blog-data/categories",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/blog-data/slug/{X}",
+   "file": "backend/routes/blogData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/check",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/contact",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/coupons/active",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/coupons/validate",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/custom-pages.json",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/admin/circuit-breaker-status",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/admin/custom-templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/admin/reset-circuit-breaker",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/admin/save-template-customization",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/admin/test-imap",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/logs",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/resend",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/send-email",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/send-invoice-email",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/employer-applications",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/ai/generate-content",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/ai/generate-interview",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/lifecycle/suspend",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/m2m/context",
+   "file": "backend/routes/enterpriseM2m.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/queue/jobs",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/queue/jobs",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/storage/token",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/storage/verify",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/support/context",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/export",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/health",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/health/databases",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/healthz",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/invoice",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/invoice/generate",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/invoices",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/invoices/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/jobs/naukri",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/linkedin-scraper",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/live-interview/guide",
+   "file": "backend/routes/ai.js"
+  },
+  {
+   "method": "POST",
+   "path": "/notify/user-signup",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/payment-orders",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/payment-orders/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/payment/razorpay-order",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paypal/verify",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/initiate-transaction",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/verify-transaction",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/initiate",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/status",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/phrases",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phrases",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/phrases/{X}",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/phrases/{X}",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/announcements",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/announcements",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "DELETE",
+   "path": "/platform/announcements/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/platform/announcements/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/attention",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/backup-status",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/command-center",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/configuration",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/encryption",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/enterprise-queue",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/feature-flags",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "PUT",
+   "path": "/platform/feature-flags/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/health",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/health-indicator",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/maintenance",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/maintenance",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/observability",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/operational-status/api-matrix",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/operators",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/operators",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/operators/{X}/revoke-sessions",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/overview",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/payment-settings",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/payment-webhooks",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/payment-webhooks/{X}/replay",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/payments-health",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/search",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/security-events",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/tenants/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/platform/tenants/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/tenants/{X}/decommission",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/tenants/garbage-collect",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/version",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/public-export",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/public-export-docx",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/blog/{X}/og.png",
+   "file": "backend/routes/publicDiscovery.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/custom-pages",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/custom-pages/{X}",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/featured-companies",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/jobs/{X}/og.png",
+   "file": "backend/routes/publicDiscovery.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/trusted-by",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/razorpay/verify-payment",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/readyz",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/reviews",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/rtl-font-config",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/send-sms",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/service-availability",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/stats",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/stats/increment",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/stripe-webhook",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/subscription/preferences",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/trusted-by.json",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/users-data/{X}",
+   "file": "backend/routes/usersData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/messages",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/search",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/status",
+   "file": "backend/index.js"
+  }
+ ],
+ "backendWithoutAnyUi": [
+  {
+   "method": "POST",
+   "path": "/auth/purge-orphaned-auth",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/check",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/custom-pages.json",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/admin/circuit-breaker-status",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/admin/custom-templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/admin/save-template-customization",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/admin/test-imap",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/logs",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/resend",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/send-email",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/send-invoice-email",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "GET",
+   "path": "/email/templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/email/templates",
+   "file": "backend/routes/email.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/ai/generate-content",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/ai/generate-interview",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/m2m/context",
+   "file": "backend/routes/enterpriseM2m.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/queue/jobs",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/queue/jobs",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/storage/token",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/enterprise/storage/verify",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "GET",
+   "path": "/enterprise/support/context",
+   "file": "backend/routes/enterprise.js"
+  },
+  {
+   "method": "POST",
+   "path": "/invoice",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/invoice/generate",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/jobs/naukri",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/linkedin-scraper",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/notify/user-signup",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/payment/razorpay-order",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paypal/verify",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/initiate-transaction",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/paytm/verify-transaction",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/callback",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/initiate",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/phonepe/status",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/payment-settings",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/payment-webhooks",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/payment-webhooks/{X}/replay",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/search",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/security-events",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/tenants/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "PATCH",
+   "path": "/platform/tenants/{X}",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/tenants/{X}/decommission",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "POST",
+   "path": "/platform/tenants/garbage-collect",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/platform/version",
+   "file": "backend/routes/platform.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/blog/{X}/og.png",
+   "file": "backend/routes/publicDiscovery.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/featured-companies",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/public/jobs/{X}/og.png",
+   "file": "backend/routes/publicDiscovery.js"
+  },
+  {
+   "method": "POST",
+   "path": "/razorpay/verify-payment",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/readyz",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/reviews",
+   "file": "backend/routes/miscData.js"
+  },
+  {
+   "method": "GET",
+   "path": "/rtl-font-config",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/stripe-webhook",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/subscription/preferences",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/trusted-by.json",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/users-data/{X}",
+   "file": "backend/routes/usersData.js"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/messages",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/search",
+   "file": "backend/index.js"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/status",
+   "file": "backend/index.js"
+  }
+ ],
+ "byPrefix": {
+  "admin": 65,
+  "live-interview": 1,
+  "blog-data": 6,
+  "email": 11,
+  "enterprise": 9,
+  "stats": 2,
+  "reviews": 1,
+  "phrases": 4,
+  "platform": 33,
+  "public": 6,
+  "users-data": 1,
+  "payment-orders": 2,
+  "stripe-webhook": 1,
+  "paypal": 1,
+  "razorpay": 1,
+  "paytm": 3,
+  "phonepe": 3,
+  "subscription": 1,
+  "check": 1,
+  "employer-applications": 1,
+  "contact": 1,
+  "export": 1,
+  "public-export": 1,
+  "v1": 3,
+  "coupons": 2,
+  "send-sms": 1,
+  "payment": 1,
+  "invoice": 2,
+  "invoices": 2,
+  "public-export-docx": 1,
+  "rtl-font-config": 1,
+  "jobs": 1,
+  "service-availability": 1,
+  "healthz": 1,
+  "health": 2,
+  "readyz": 1,
+  "linkedin-scraper": 1,
+  "notify": 1,
+  "auth": 12,
+  "custom-pages.json": 1,
+  "trusted-by.json": 1,
+  "account": 1
+ }
+}

@@ -320,3 +320,53 @@ storage integrations, real authenticated candidate and admin journeys, Apache/PH
 layer) remain unverified — now for measured, documented reasons rather than for absence of
 attempt. Details: `TEST-EXECUTION-REPORT.md`, `BROWSER-VERIFICATION-REPORT.md`,
 `FINAL-ACCEPTANCE-REPORT.md`, `appendix/ENVIRONMENT-GAPS.md` Part 2.
+
+---
+
+## 12. Re-audit amendment (2026-10-29) — legacy→modern capability parity
+
+**Scope of this amendment.** §1–§11 above audited the *active* application, its backend, and its
+release governance. They did not answer the question "was the legacy product actually carried across?".
+This section answers it and revises the verdict accordingly. Earlier text is preserved unchanged.
+
+### 12.1 What changed
+
+| Item | Before this re-audit | After |
+|---|---|---|
+| Frontend parity | Not measured (only backend route presence, §7) | **109 capability verdicts**: 25 FULL, 6 REPLACED, 35 PARTIAL, **30 MISSING**, **9 MOCK / FABRICATED**, 4 UNVERIFIED |
+| Legacy tree size | "144 files/dirs" (`EVIDENCE-INDEX` E-002) | **651 source files / 519 `.jsx` / 193,320 lines** (≈4.5× understated) |
+| Legacy disposition | Ambiguous duplicate tree (DISC-001) | Outside the active build, but **not deletable** — sole implementation of 30 capabilities and an active backend-test contract |
+| Backend reachability | Route presence only | **192 of 384 operations (50 %) unreachable from the modern UI**; 58 reachable from *neither* frontend |
+
+### 12.2 The three findings that change the verdict
+
+1. **Fabricated admin surfaces (DISC-014).** Nine capabilities render invented data, including a
+   security panel that asserts "Next request will return 401" after a session revocation that never
+   happened, and a marketing tab displaying five real partner brands as if live. Severity is
+   trust/compliance, not cosmetic — and every corresponding endpoint exists, so this is cheap to fix.
+2. **Half the backend is undrivable (DISC-016).** Coupons, refunds, invoices, payment-webhook replay,
+   IMAP diagnostics, tenant decommission and five payment verifiers have no UI in either tree. The 50 %
+   figure is a *floor* (prefix matching biases toward "consumed").
+3. **Unrecorded capability loss (DISC-013).** Voice interview (2,432 lines), command palette
+   (1,527 lines), i18n (16 locales / 1,011 keys), Puck portfolio editing, image crop, QR, job maps,
+   employer onboarding. `INTENTIONAL RETIREMENT` is applied **zero** times because no ADR, changelog or
+   migration note documents any removal.
+
+### 12.3 What the supplied omission report got wrong
+
+Recorded in full in `LEGACY-MODERN-FEATURE-INVENTORY.md` §5 (34 adjudications: 18 confirmed, 1 confirmed
+with correction, 2 partial, **9 refuted**, 4 unresolved). Refuted: "modern is a thin shell", "enterprise
+features missing", "CSV export dropped", "messaging dropped", "notification centre dropped",
+"51 templates reduced to 8", "ATS per-section lost", "root `src/` is dead code". This audit also refuted
+one of its own working hypotheses (DOCX export) and recorded the reversal rather than dropping it.
+
+### 12.4 Readiness verdict — unchanged, with a wider basis
+
+The verdict remains **PARTIAL — BLOCKED** for the same runtime blockers (R-117 HTTP tenant isolation,
+R-118 live providers, R-119 MariaDB migrations, EG-008, EG-011). The re-audit **does not lower** it and
+adds no new blocker ID: DISC-013…DISC-017 are *capability debt and integrity* findings rather than
+unverifiable gates. They do, however, mean **the product is further from feature-complete than the
+prior package implied**, and no release decision should treat "backend routes present" as delivery.
+
+**No percentage-completion figure is offered.** Weighting a fabricated security panel against a lost
+mascot would manufacture precision the evidence does not support.

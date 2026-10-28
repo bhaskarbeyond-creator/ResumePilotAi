@@ -288,3 +288,66 @@ Effort: S–M.
 5. **Task P2-1** (dual-frontend cleanup) can happen any time — it is low-risk and
    independent of everything else.
 6. Phase 3 items are backlog-appropriate and do not block any release decision.
+
+---
+
+## Phase 5 — Capability-parity remediation (added by the 2026-10-29 re-audit)
+
+Ordering is by severity × cost. The first phase is unusually cheap because **the backend already
+exists** for every item in it (see `LEGACY-MODERN-FEATURE-INVENTORY.md` §6).
+
+### Phase 5.1 — P0: stop presenting fabricated state (highest severity, lowest cost)
+
+| # | Action | Evidence of defect | Endpoint to wire |
+|---|---|---|---|
+| R-A5-01 | Wire or remove `AdminSecurityTab` event stream | 0 API refs, invented principals/IPs/paths | `GET /api/platform/security-events` |
+| R-A5-02 | Wire or remove operator roster + revoke-sessions | toast asserts a revocation that never happens | `GET/POST /api/platform/operators`, `POST …/:uid/revoke-sessions` |
+| R-A5-03 | Wire or remove announcement publisher, IP blocklist | 0 API refs; no backend for IP blocklist → remove the control | `GET/POST/PATCH/DELETE /api/platform/announcements` |
+| R-A5-04 | Wire or remove marketing-content tab (phrases, reviews, trusted-by, pages) | 16 invented records incl. 5 real brand names | `/api/phrases`, `/api/admin/reviews`, `/admin/trusted-by`, `/admin/pages` |
+| R-A5-05 | Wire or remove attention inbox | 0 API refs | `GET /api/platform/attention` |
+| R-A5-06 | Remove fabricated KPI/health fallbacks or label them as sample data | `?? '48,290'`, `'99.8%'`, `'100% Enforced'` | `/platform/stats`, `/platform/operational-status` |
+| R-A5-07 | Stop swallowing moderation write failures | `.catch(() => {})` at `AdminModerationTab.tsx:152,167,184` | same |
+
+**Acceptance:** a grep for `?? '` on fabricated literals in admin tabs returns nothing; every admin
+mutation has an error branch that surfaces failure; each panel has an explicit empty state.
+
+### Phase 5.2 — P1: restore capabilities whose backend already exists
+
+| # | Action | Notes |
+|---|---|---|
+| R-A5-08 | Admin audit-log browser | `useAdminAuditLogs` already defined, unused; `/admin/audit-logs` is permission-guarded and tested |
+| R-A5-09 | Coupon CRUD | `/api/admin/coupons` implemented; only a feature flag references coupons today |
+| R-A5-10 | Refunds / invoices / payment-order administration | `/admin/payments/refund`, `/invoices`, `/payment-orders`; also `POST /invoice/generate` |
+| R-A5-11 | Payment-webhook inspection + replay | `/platform/payment-webhooks`, `/:id/replay` — currently orphaned |
+| R-A5-12 | Email operations surface | `/email/logs`, `/email/resend`, `/email/templates`, `/email/admin/test-imap`, `/email/admin/circuit-breaker-status` |
+| R-A5-13 | Platform tenant registry + decommission | `/platform/tenants/:id` (GET/PATCH), `/decommission`, `/garbage-collect` |
+| R-A5-14 | Enterprise bulk member actions with partial-failure reporting | port `EnterpriseUsersTab.jsx:251-297` semantics |
+
+### Phase 5.3 — P1: restore capabilities with no backend dependency
+
+| # | Action | Notes |
+|---|---|---|
+| R-A5-15 | Voice interview (TTS + optional STT + waveform) | 2,432 legacy lines; browser-only; `/live-interview/sessions/:id/turns` already accepts text |
+| R-A5-16 | Internationalisation | 16 locales / 1,011 keys exist in `src/locales`; reintroduce i18n and port keys |
+| R-A5-17 | Legacy portfolio migration path | `isWebCvDocument()` gate must accept or convert block content; otherwise document an export-to-recreate path |
+| R-A5-18 | Command palette (⌘K) + fuzzy entity search | `fuzzyRank.js` is directly portable; 1,527 lines to recover |
+| R-A5-19 | Bullet-quality coaching | `src/utils/bulletQuality.js`, 6 consumers |
+
+### Phase 5.4 — P2: wiring and small surfaces
+
+R-A5-20 job-map/location autocomplete (`lib/autocomplete-service.ts` already exists, unused by jobs) ·
+R-A5-21 image crop (`ImageCropModal.jsx`) · R-A5-22 QR codes · R-A5-23 employer onboarding ·
+R-A5-24 next-steps checklist · R-A5-25 per-route SEO + JSON-LD + OG images (`/public/jobs/:id/og.png`
+already exists) · R-A5-26 GA4 instrumentation (`GA4Provider.jsx`) · R-A5-27 service worker ·
+R-A5-28 privacy-consent banner · R-A5-29 global toast/live-region · R-A5-30 HUD, density, mascot.
+
+### Phase 5.5 — P3: decision records
+
+For each of the 30 `MISSING` capabilities, record either "restore" or an approved retirement note. An
+undocumented removal stays indistinguishable from loss, which is why `INTENTIONAL RETIREMENT` has zero
+entries in `FEATURE-PARITY-MATRIX.md`.
+
+### Sequencing
+
+5.1 → 5.3 (voice, i18n) → 5.2 → 5.4 → 5.5. Phase 5.1 is a *removal* exercise as much as a build
+exercise and should not wait for anything. Nothing in Phases 5.1–5.3 requires a schema migration.

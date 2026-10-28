@@ -100,3 +100,43 @@ precondition for a future A/B parity run.
 * New hard constraint for the next parity pass: the reference tree's database era
   (`016`) versus the active MariaDB-only DDL (`002`+) means a **schema-level A/B parity
   test requires a MariaDB 11.4 instance**; a MySQL substitute is not usable (`E-311`).
+
+---
+
+## 7. Frontend capability parity — re-audit 2026-10-29 (supersedes §3)
+
+**Earlier conclusion (§3, preserved above):** *"Active `frontend/` is a different, larger application …
+parity != replication"* — i.e. frontend drift was acknowledged but no loss was itemised, and §3 offered
+no per-capability verdict.
+
+**Why this section exists:** the 2026-10-29 directive required capability-level parity rather than
+component-name similarity. §1–§6 measure **backend route presence**; they never measured whether the
+*frontend* could drive those routes.
+
+**New evidence** (`LEGACY-MODERN-FEATURE-INVENTORY.md`, `FEATURE-PARITY-MATRIX.md`):
+
+| Measure | Legacy `src/` | Modern `frontend/src/` |
+|---|---:|---:|
+| Source files | 651 (519 `.jsx`) | 206 (151 `.tsx`) |
+| Lines | 193,320 | 68,812 |
+| Distinct endpoints referenced | 153 | 161 |
+| Routes declared | 58 | 100 |
+
+109 capability verdicts: **25 `FULL PARITY` · 6 `REPLACED BY EQUIVALENT` · 35 `PARTIAL PARITY` ·
+30 `MISSING` · 9 `MOCK / FABRICATED STATE` · 4 `UNVERIFIED`**; 0 `INTENTIONAL RETIREMENT`.
+
+**Revised conclusion:** backend route parity (§1, 20/20 present) remains true and is *not* evidence of
+frontend parity. The capability-level answer is: **the modern frontend is larger than the legacy one by
+surface (206 files, 100 routes, 161 endpoints) but omits 30 legacy capabilities outright and fabricates
+9 more.** §1's "20/20 routes present" and §7's "30 capabilities missing" are both correct and describe
+different layers of the stack.
+
+**Superseded claims, stated explicitly:**
+
+- §3's implication that divergence is benign is **withdrawn**. Divergence is one-directional in both
+  directions: modern added capability (tenant lifecycle, DLQ replay, ticket threads, provider admin,
+  gateway checkout) and removed capability (voice, palette, i18n, portfolio editing, admin operations).
+- Any inference from template counts ("51 → 8") is **refuted**: the modern catalogue holds 104 entries
+  over 24 layout families. The real regression is design diversity (9 archetypes), not template count.
+- "ATS per-section health was lost" is **refuted**: `pages/dashboard/ats-score.tsx:311` renders
+  `result.sections`.
