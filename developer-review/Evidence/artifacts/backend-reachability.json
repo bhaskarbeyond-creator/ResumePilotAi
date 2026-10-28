@@ -1,32 +1,32 @@
 {
- "revision": "0adad00d0975444f13b98f9cda3ec7e24c2c6a62",
- "generatedAt": "2026-10-28T20:41:56.293Z",
+ "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
+ "generatedAt": "2026-10-28T21:16:16.871Z",
  "units": {
-  "routeRegistrations": 498,
-  "uniqueMethodPath": 384,
+  "routeRegistrations": 499,
+  "uniqueMethodPath": 385,
   "duplicateRegistrations": 114,
-  "handlers": 384,
+  "handlers": 385,
   "databaseOperations": null,
   "databaseOperationsNote": "not counted: database operations are not enumerable from route declarations; see DATABASE-INVENTORY.md"
  },
  "classes": {
-  "UI-REACHABLE": 126,
-  "INDIRECTLY-REACHABLE": 6,
+  "UI-REACHABLE": 152,
+  "INDIRECTLY-REACHABLE": 7,
   "EXTERNAL-CALLER": 27,
   "SERVER-ONLY": 11,
-  "INTENTIONALLY-UNEXPOSED": 9,
-  "UNREACHABLE": 201,
-  "UNVERIFIED": 4
+  "INTENTIONALLY-UNEXPOSED": 2,
+  "UNREACHABLE": 176,
+  "UNVERIFIED": 10
  },
- "total": 384,
+ "total": 385,
  "percentages": {
-  "UI-REACHABLE": 32.8,
-  "INDIRECTLY-REACHABLE": 1.6,
+  "UI-REACHABLE": 39.5,
+  "INDIRECTLY-REACHABLE": 1.8,
   "EXTERNAL-CALLER": 7,
   "SERVER-ONLY": 2.9,
-  "INTENTIONALLY-UNEXPOSED": 2.3,
-  "UNREACHABLE": 52.3,
-  "UNVERIFIED": 1
+  "INTENTIONALLY-UNEXPOSED": 0.5,
+  "UNREACHABLE": 45.7,
+  "UNVERIFIED": 2.6
  },
  "rules": {
   "R1": "UI-REACHABLE: referenced from frontend/src outside the dead-hook file",
@@ -205,6 +205,23 @@
   },
   {
    "id": "OP-0010",
+   "method": "ALL",
+   "path": "/admin/ai/fetch-models",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "frontend/tests/engine-authenticated.spec.ts"
+   ],
+   "mentionedOnlyInModern": true,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
+  },
+  {
+   "id": "OP-0011",
    "method": "POST",
    "path": "/admin/ai/quota-limits",
    "file": "backend/index.js",
@@ -222,7 +239,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0011",
+   "id": "OP-0012",
    "method": "GET",
    "path": "/admin/ai/quota-stats",
    "file": "backend/index.js",
@@ -242,7 +259,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0012",
+   "id": "OP-0013",
    "method": "POST",
    "path": "/admin/ai/reset-quota",
    "file": "backend/index.js",
@@ -261,7 +278,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0013",
+   "id": "OP-0014",
    "method": "POST",
    "path": "/admin/ai/reset-state",
    "file": "backend/index.js",
@@ -279,7 +296,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0014",
+   "id": "OP-0015",
    "method": "GET",
    "path": "/admin/ai/routing-telemetry",
    "file": "backend/index.js",
@@ -294,7 +311,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0015",
+   "id": "OP-0016",
    "method": "POST",
    "path": "/admin/ai/test-provider",
    "file": "backend/index.js",
@@ -313,7 +330,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0016",
+   "id": "OP-0017",
    "method": "GET",
    "path": "/admin/audit-logs",
    "file": "backend/routes/adminAudit.js",
@@ -332,7 +349,7 @@
    "reason": "only dead hook(s) useAdminAuditLogs call it — 0 consumers"
   },
   {
-   "id": "OP-0017",
+   "id": "OP-0018",
    "method": "GET",
    "path": "/admin/audit-logs/{X}",
    "file": "backend/routes/adminAudit.js",
@@ -347,7 +364,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0018",
+   "id": "OP-0019",
    "method": "GET",
    "path": "/admin/audit-logs/stats",
    "file": "backend/routes/adminAudit.js",
@@ -362,23 +379,8 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0019",
-   "method": "GET",
-   "path": "/admin/blog/categories",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0020",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/blog/categories",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -393,8 +395,8 @@
   },
   {
    "id": "OP-0021",
-   "method": "DELETE",
-   "path": "/admin/blog/categories/{X}",
+   "method": "POST",
+   "path": "/admin/blog/categories",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
@@ -408,7 +410,7 @@
   },
   {
    "id": "OP-0022",
-   "method": "PATCH",
+   "method": "DELETE",
    "path": "/admin/blog/categories/{X}",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -423,6 +425,21 @@
   },
   {
    "id": "OP-0023",
+   "method": "PATCH",
+   "path": "/admin/blog/categories/{X}",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0024",
    "method": "GET",
    "path": "/admin/blog/posts",
    "file": "backend/index.js",
@@ -437,7 +454,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0024",
+   "id": "OP-0025",
    "method": "DELETE",
    "path": "/admin/blog/posts/{X}",
    "file": "backend/index.js",
@@ -452,7 +469,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0025",
+   "id": "OP-0026",
    "method": "PATCH",
    "path": "/admin/blog/posts/{X}",
    "file": "backend/index.js",
@@ -467,7 +484,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0026",
+   "id": "OP-0027",
    "method": "POST",
    "path": "/admin/blog/publish-due",
    "file": "backend/index.js",
@@ -484,7 +501,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0027",
+   "id": "OP-0028",
    "method": "GET",
    "path": "/admin/companies",
    "file": "backend/index.js",
@@ -499,7 +516,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0028",
+   "id": "OP-0029",
    "method": "PATCH",
    "path": "/admin/companies/{X}",
    "file": "backend/index.js",
@@ -514,23 +531,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0029",
-   "method": "GET",
-   "path": "/admin/coupons",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0030",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/coupons",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -545,6 +547,21 @@
   },
   {
    "id": "OP-0031",
+   "method": "POST",
+   "path": "/admin/coupons",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0032",
    "method": "DELETE",
    "path": "/admin/coupons/{X}",
    "file": "backend/index.js",
@@ -559,23 +576,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0032",
-   "method": "POST",
-   "path": "/admin/coupons/{X}",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0033",
-   "method": "PUT",
+   "method": "POST",
    "path": "/admin/coupons/{X}",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -590,25 +592,22 @@
   },
   {
    "id": "OP-0034",
-   "method": "GET",
-   "path": "/admin/database-settings",
-   "file": "backend/routes/databaseAdmin.js",
+   "method": "PUT",
+   "path": "/admin/coupons/{X}",
+   "file": "backend/index.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/database-admin.test.js",
-    "backend/test/rbac-role-visibility-forensic.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0035",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/database-settings",
    "file": "backend/routes/databaseAdmin.js",
    "alsoDefinedIn": [],
@@ -626,6 +625,24 @@
   },
   {
    "id": "OP-0036",
+   "method": "POST",
+   "path": "/admin/database-settings",
+   "file": "backend/routes/databaseAdmin.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/database-admin.test.js",
+    "backend/test/rbac-role-visibility-forensic.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0037",
    "method": "GET",
    "path": "/admin/database-settings/conflicts",
    "file": "backend/routes/databaseAdmin.js",
@@ -640,7 +657,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0037",
+   "id": "OP-0038",
    "method": "GET",
    "path": "/admin/database-settings/dead-letter",
    "file": "backend/routes/databaseAdmin.js",
@@ -655,7 +672,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0038",
+   "id": "OP-0039",
    "method": "POST",
    "path": "/admin/database-settings/initialize-schema",
    "file": "backend/routes/databaseAdmin.js",
@@ -670,7 +687,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0039",
+   "id": "OP-0040",
    "method": "POST",
    "path": "/admin/database-settings/prune-outbox",
    "file": "backend/routes/databaseAdmin.js",
@@ -685,7 +702,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0040",
+   "id": "OP-0041",
    "method": "POST",
    "path": "/admin/database-settings/retry-dead-letter",
    "file": "backend/routes/databaseAdmin.js",
@@ -700,7 +717,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0041",
+   "id": "OP-0042",
    "method": "GET",
    "path": "/admin/database-settings/sync-status",
    "file": "backend/routes/databaseAdmin.js",
@@ -715,7 +732,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0042",
+   "id": "OP-0043",
    "method": "POST",
    "path": "/admin/database-settings/test-connection",
    "file": "backend/routes/databaseAdmin.js",
@@ -732,7 +749,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0043",
+   "id": "OP-0044",
    "method": "POST",
    "path": "/admin/delete-user",
    "file": "backend/index.js",
@@ -747,7 +764,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0044",
+   "id": "OP-0045",
    "method": "GET",
    "path": "/admin/employer-applications",
    "file": "backend/index.js",
@@ -762,43 +779,23 @@
    "reason": "no direct call site, but a child path (/admin/employer-applications/{X}/verify) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0045",
+   "id": "OP-0046",
    "method": "PATCH",
    "path": "/admin/employer-applications/{X}",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminModerationTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0046",
-   "method": "GET",
-   "path": "/admin/firebase-service-account",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js",
-    "backend/test/routes.integration.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "no direct call site, but a child path (/admin/employer-applications/{X}/verify) is called from modern code; parent reachability not determinable statically"
   },
   {
    "id": "OP-0047",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/firebase-service-account",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -816,6 +813,24 @@
   },
   {
    "id": "OP-0048",
+   "method": "POST",
+   "path": "/admin/firebase-service-account",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/degraded-endpoint-semantics.test.js",
+    "backend/test/routes.integration.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "INTENTIONALLY-UNEXPOSED",
+   "rule": "R5",
+   "reason": "machine/service-account scoped route"
+  },
+  {
+   "id": "OP-0049",
    "method": "GET",
    "path": "/admin/health-summary",
    "file": "backend/index.js",
@@ -830,7 +845,7 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0049",
+   "id": "OP-0050",
    "method": "GET",
    "path": "/admin/jobs",
    "file": "backend/index.js",
@@ -847,41 +862,37 @@
    "reason": "no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0050",
+   "id": "OP-0051",
    "method": "DELETE",
    "path": "/admin/jobs/{X}",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminModerationTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0051",
+   "id": "OP-0052",
    "method": "PATCH",
    "path": "/admin/jobs/{X}",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminModerationTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0052",
+   "id": "OP-0053",
    "method": "GET",
    "path": "/admin/operations/feature-flags",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -896,23 +907,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0053",
-   "method": "GET",
-   "path": "/admin/operations/feature-flags/{X}",
-   "file": "backend/routes/adminPlatformOperations.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0054",
-   "method": "PUT",
+   "method": "GET",
    "path": "/admin/operations/feature-flags/{X}",
    "file": "backend/routes/adminPlatformOperations.js",
    "alsoDefinedIn": [],
@@ -927,6 +923,21 @@
   },
   {
    "id": "OP-0055",
+   "method": "PUT",
+   "path": "/admin/operations/feature-flags/{X}",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0056",
    "method": "GET",
    "path": "/admin/pages",
    "file": "backend/index.js",
@@ -941,7 +952,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0056",
+   "id": "OP-0057",
    "method": "DELETE",
    "path": "/admin/pages/{X}",
    "file": "backend/index.js",
@@ -956,7 +967,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0057",
+   "id": "OP-0058",
    "method": "PUT",
    "path": "/admin/pages/{X}",
    "file": "backend/index.js",
@@ -971,7 +982,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0058",
+   "id": "OP-0059",
    "method": "GET",
    "path": "/admin/payment-orders",
    "file": "backend/index.js",
@@ -986,27 +997,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0059",
-   "method": "GET",
-   "path": "/admin/payment-settings",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminSettingsTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/payment-settings-rbac.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0060",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/payment-settings",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -1026,6 +1018,25 @@
   {
    "id": "OP-0061",
    "method": "POST",
+   "path": "/admin/payment-settings",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/components/admin/AdminSettingsTab.tsx"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/payment-settings-rbac.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0062",
+   "method": "POST",
    "path": "/admin/payment/test-provider",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -1041,7 +1052,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0062",
+   "id": "OP-0063",
    "method": "POST",
    "path": "/admin/payments/refund",
    "file": "backend/index.js",
@@ -1056,25 +1067,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0063",
-   "method": "GET",
-   "path": "/admin/platform/currency",
-   "file": "backend/routes/adminPlatformOperations.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/superadmin-control-plane.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
    "id": "OP-0064",
-   "method": "PUT",
+   "method": "GET",
    "path": "/admin/platform/currency",
    "file": "backend/routes/adminPlatformOperations.js",
    "alsoDefinedIn": [],
@@ -1091,6 +1085,23 @@
   },
   {
    "id": "OP-0065",
+   "method": "PUT",
+   "path": "/admin/platform/currency",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/superadmin-control-plane.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0066",
    "method": "GET",
    "path": "/admin/platform/status",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1105,7 +1116,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0066",
+   "id": "OP-0067",
    "method": "POST",
    "path": "/admin/platform/tenants/{X}/ai-keys/test",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1120,7 +1131,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0067",
+   "id": "OP-0068",
    "method": "PATCH",
    "path": "/admin/platform/tenants/{X}/ai-policy",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1135,7 +1146,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0068",
+   "id": "OP-0069",
    "method": "PATCH",
    "path": "/admin/platform/tenants/{X}/commercials",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1150,7 +1161,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0069",
+   "id": "OP-0070",
    "method": "POST",
    "path": "/admin/platform/tenants/{X}/members",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1167,7 +1178,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0070",
+   "id": "OP-0071",
    "method": "DELETE",
    "path": "/admin/platform/tenants/{X}/members/{X}",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1182,7 +1193,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0071",
+   "id": "OP-0072",
    "method": "PATCH",
    "path": "/admin/platform/tenants/{X}/members/{X}",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1197,7 +1208,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0072",
+   "id": "OP-0073",
    "method": "GET",
    "path": "/admin/reviews",
    "file": "backend/index.js",
@@ -1214,7 +1225,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0073",
+   "id": "OP-0074",
    "method": "POST",
    "path": "/admin/reviews",
    "file": "backend/index.js",
@@ -1231,7 +1242,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0074",
+   "id": "OP-0075",
    "method": "DELETE",
    "path": "/admin/reviews/{X}",
    "file": "backend/index.js",
@@ -1246,7 +1257,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0075",
+   "id": "OP-0076",
    "method": "GET",
    "path": "/admin/settings",
    "file": "backend/index.js",
@@ -1266,28 +1277,8 @@
    "reason": "no direct call site, but a child path (/admin/settings/modules) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0076",
-   "method": "GET",
-   "path": "/admin/settings/{X}",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminSettingsTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/mariadb-only-integration.test.js",
-    "backend/test/routes.integration.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0077",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/settings/{X}",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -1307,6 +1298,26 @@
   },
   {
    "id": "OP-0078",
+   "method": "POST",
+   "path": "/admin/settings/{X}",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/components/admin/AdminSettingsTab.tsx"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/mariadb-only-integration.test.js",
+    "backend/test/routes.integration.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0079",
    "method": "GET",
    "path": "/admin/subscriptions",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1323,7 +1334,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0079",
+   "id": "OP-0080",
    "method": "POST",
    "path": "/admin/subscriptions/{X}/reconcile",
    "file": "backend/routes/adminPlatformOperations.js",
@@ -1338,7 +1349,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0080",
+   "id": "OP-0081",
    "method": "POST",
    "path": "/admin/system-health-settings",
    "file": "backend/index.js",
@@ -1355,23 +1366,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0081",
-   "method": "GET",
-   "path": "/admin/trusted-by",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0082",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/trusted-by",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -1386,6 +1382,21 @@
   },
   {
    "id": "OP-0083",
+   "method": "POST",
+   "path": "/admin/trusted-by",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0084",
    "method": "DELETE",
    "path": "/admin/trusted-by/{X}",
    "file": "backend/index.js",
@@ -1400,7 +1411,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0084",
+   "id": "OP-0085",
    "method": "PATCH",
    "path": "/admin/trusted-by/{X}",
    "file": "backend/index.js",
@@ -1415,25 +1426,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0085",
-   "method": "GET",
-   "path": "/admin/twilio-settings",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/routes.integration.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
    "id": "OP-0086",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/twilio-settings",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -1450,29 +1444,24 @@
   },
   {
    "id": "OP-0087",
-   "method": "GET",
-   "path": "/admin/users",
-   "file": "backend/routes/adminUsers.js",
+   "method": "POST",
+   "path": "/admin/twilio-settings",
+   "file": "backend/index.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx",
-    "frontend/src/hooks/use-api-hooks.ts"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "backend/test/forensic-data-lineage.test.js",
-    "backend/test/mariadb-only-integration.test.js",
-    "backend/test/superadmin-control-plane.test.js"
+    "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
   },
   {
    "id": "OP-0088",
-   "method": "POST",
+   "method": "GET",
    "path": "/admin/users",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
@@ -1494,6 +1483,28 @@
   },
   {
    "id": "OP-0089",
+   "method": "POST",
+   "path": "/admin/users",
+   "file": "backend/routes/adminUsers.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/components/admin/AdminUsersTab.tsx",
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/forensic-data-lineage.test.js",
+    "backend/test/mariadb-only-integration.test.js",
+    "backend/test/superadmin-control-plane.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0090",
    "method": "GET",
    "path": "/admin/users/{X}",
    "file": "backend/routes/adminUsers.js",
@@ -1504,28 +1515,6 @@
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "backend/test/admin-tenant-assignment.test.js",
-    "backend/test/superadmin-control-plane.test.js",
-    "backend/test/superadmin-remediation-pass.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0090",
-   "method": "PATCH",
-   "path": "/admin/users/{X}",
-   "file": "backend/routes/adminUsers.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/admin-tenant-assignment.test.js",
     "backend/test/superadmin-control-plane.test.js",
     "backend/test/superadmin-remediation-pass.test.js"
    ],
@@ -1536,8 +1525,8 @@
   },
   {
    "id": "OP-0091",
-   "method": "DELETE",
-   "path": "/admin/users/{X}/ai-entitlement",
+   "method": "PATCH",
+   "path": "/admin/users/{X}",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
@@ -1545,7 +1534,10 @@
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [],
+   "testRefs": [
+    "backend/test/superadmin-control-plane.test.js",
+    "backend/test/superadmin-remediation-pass.test.js"
+   ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
@@ -1553,125 +1545,126 @@
   },
   {
    "id": "OP-0092",
-   "method": "GET",
+   "method": "DELETE",
    "path": "/admin/users/{X}/ai-entitlement",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0093",
+   "method": "GET",
+   "path": "/admin/users/{X}/ai-entitlement",
+   "file": "backend/routes/adminUsers.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0094",
    "method": "PUT",
    "path": "/admin/users/{X}/ai-entitlement",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0094",
+   "id": "OP-0095",
    "method": "POST",
    "path": "/admin/users/{X}/ai-quota-reset",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0095",
-   "method": "GET",
-   "path": "/admin/users/{X}/audit",
-   "file": "backend/routes/adminUsers.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0096",
    "method": "GET",
-   "path": "/admin/users/{X}/details",
+   "path": "/admin/users/{X}/audit",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0097",
    "method": "GET",
-   "path": "/admin/users/{X}/export",
+   "path": "/admin/users/{X}/details",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0098",
+   "method": "GET",
+   "path": "/admin/users/{X}/export",
+   "file": "backend/routes/adminUsers.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0099",
    "method": "POST",
    "path": "/admin/users/{X}/password-reset",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0099",
+   "id": "OP-0100",
    "method": "POST",
    "path": "/admin/users/{X}/revoke-sessions",
    "file": "backend/routes/adminUsers.js",
@@ -1688,7 +1681,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0100",
+   "id": "OP-0101",
    "method": "POST",
    "path": "/admin/users/{X}/send-password-reset",
    "file": "backend/routes/adminUsers.js",
@@ -1705,98 +1698,88 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0101",
+   "id": "OP-0102",
    "method": "POST",
    "path": "/admin/users/{X}/tenants",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
     "backend/test/admin-tenant-assignment.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0102",
+   "id": "OP-0103",
    "method": "DELETE",
    "path": "/admin/users/{X}/tenants/{X}",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
     "backend/test/admin-tenant-assignment.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0103",
-   "method": "POST",
-   "path": "/admin/users/{X}/unenroll-mfa",
-   "file": "backend/routes/adminUsers.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
   },
   {
    "id": "OP-0104",
    "method": "POST",
-   "path": "/admin/users/{X}/verify-email",
+   "path": "/admin/users/{X}/unenroll-mfa",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0105",
    "method": "POST",
+   "path": "/admin/users/{X}/verify-email",
+   "file": "backend/routes/adminUsers.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0106",
+   "method": "POST",
    "path": "/admin/users/bulk",
    "file": "backend/routes/adminUsers.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/admin/AdminUsersTab.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
     "backend/test/superadmin-remediation-pass.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "a shape-compatible call (/admin/users/{X} in frontend/src/components/admin/AdminUsersTab.tsx) may construct this path at runtime"
   },
   {
-   "id": "OP-0106",
+   "id": "OP-0107",
    "method": "POST",
    "path": "/admin/website-meta",
    "file": "backend/index.js",
@@ -1811,7 +1794,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0107",
+   "id": "OP-0108",
    "method": "GET",
    "path": "/ai-usage",
    "file": "backend/routes/ai.js",
@@ -1828,7 +1811,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0108",
+   "id": "OP-0109",
    "method": "POST",
    "path": "/auth/custom-password-reset",
    "file": "backend/index.js",
@@ -1837,7 +1820,6 @@
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js",
     "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -1846,7 +1828,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0109",
+   "id": "OP-0110",
    "method": "GET",
    "path": "/auth/github",
    "file": "backend/index.js",
@@ -1854,16 +1836,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0110",
+   "id": "OP-0111",
    "method": "GET",
    "path": "/auth/github/callback",
    "file": "backend/index.js",
@@ -1871,16 +1851,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "EXTERNAL-CALLER",
    "rule": "R3",
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0111",
+   "id": "OP-0112",
    "method": "GET",
    "path": "/auth/github/test-credentials",
    "file": "backend/index.js",
@@ -1888,16 +1866,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0112",
+   "id": "OP-0113",
    "method": "GET",
    "path": "/auth/linkedin",
    "file": "backend/index.js",
@@ -1905,16 +1881,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0113",
+   "id": "OP-0114",
    "method": "GET",
    "path": "/auth/linkedin/callback",
    "file": "backend/index.js",
@@ -1922,16 +1896,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "EXTERNAL-CALLER",
    "rule": "R3",
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0114",
+   "id": "OP-0115",
    "method": "GET",
    "path": "/auth/linkedin/test-credentials",
    "file": "backend/index.js",
@@ -1940,7 +1912,6 @@
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js",
     "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -1949,7 +1920,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0115",
+   "id": "OP-0116",
    "method": "POST",
    "path": "/auth/oauth/exchange",
    "file": "backend/index.js",
@@ -1957,16 +1928,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0116",
+   "id": "OP-0117",
    "method": "POST",
    "path": "/auth/preview-login",
    "file": "backend/index.js",
@@ -1988,7 +1957,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0117",
+   "id": "OP-0118",
    "method": "POST",
    "path": "/auth/purge-orphaned-auth",
    "file": "backend/index.js",
@@ -1996,16 +1965,14 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0118",
+   "id": "OP-0119",
    "method": "POST",
    "path": "/auth/send-verification-email",
    "file": "backend/index.js",
@@ -2014,7 +1981,6 @@
    "backendRefs": [],
    "legacyUiRefs": 3,
    "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js",
     "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -2023,7 +1989,7 @@
    "reason": "legacy UI called it in 3 file(s); no modern client does"
   },
   {
-   "id": "OP-0119",
+   "id": "OP-0120",
    "method": "POST",
    "path": "/auth/set-user-password",
    "file": "backend/index.js",
@@ -2031,26 +1997,7 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0120",
-   "method": "POST",
-   "path": "/auth/verify-email-token",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/test/degraded-endpoint-semantics.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
@@ -2058,6 +2005,21 @@
   },
   {
    "id": "OP-0121",
+   "method": "POST",
+   "path": "/auth/verify-email-token",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
+  },
+  {
+   "id": "OP-0122",
    "method": "GET",
    "path": "/blog-data",
    "file": "backend/routes/blogData.js",
@@ -2074,7 +2036,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0122",
+   "id": "OP-0123",
    "method": "DELETE",
    "path": "/blog-data/{X}",
    "file": "backend/routes/blogData.js",
@@ -2089,23 +2051,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0123",
-   "method": "GET",
-   "path": "/blog-data/{X}",
-   "file": "backend/routes/blogData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
-  },
-  {
    "id": "OP-0124",
-   "method": "POST",
+   "method": "GET",
    "path": "/blog-data/{X}",
    "file": "backend/routes/blogData.js",
    "alsoDefinedIn": [],
@@ -2120,8 +2067,8 @@
   },
   {
    "id": "OP-0125",
-   "method": "GET",
-   "path": "/blog-data/categories",
+   "method": "POST",
+   "path": "/blog-data/{X}",
    "file": "backend/routes/blogData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
@@ -2136,7 +2083,7 @@
   {
    "id": "OP-0126",
    "method": "GET",
-   "path": "/blog-data/slug/{X}",
+   "path": "/blog-data/categories",
    "file": "backend/routes/blogData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
@@ -2150,6 +2097,21 @@
   },
   {
    "id": "OP-0127",
+   "method": "GET",
+   "path": "/blog-data/slug/{X}",
+   "file": "backend/routes/blogData.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0128",
    "method": "POST",
    "path": "/check",
    "file": "backend/index.js",
@@ -2166,7 +2128,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0128",
+   "id": "OP-0129",
    "method": "POST",
    "path": "/check-grammar",
    "file": "backend/routes/ai.js",
@@ -2183,7 +2145,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0129",
+   "id": "OP-0130",
    "method": "POST",
    "path": "/contact",
    "file": "backend/index.js",
@@ -2201,7 +2163,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0130",
+   "id": "OP-0131",
    "method": "GET",
    "path": "/coupons/active",
    "file": "backend/index.js",
@@ -2216,7 +2178,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0131",
+   "id": "OP-0132",
    "method": "POST",
    "path": "/coupons/validate",
    "file": "backend/index.js",
@@ -2231,7 +2193,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0132",
+   "id": "OP-0133",
    "method": "GET",
    "path": "/covers",
    "file": "backend/routes/covers.js",
@@ -2251,27 +2213,8 @@
    "reason": "called from 2 modern source file(s)"
   },
   {
-   "id": "OP-0133",
-   "method": "DELETE",
-   "path": "/covers/{X}",
-   "file": "backend/routes/covers.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/cover-letters.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/cover-letters.spec.ts"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0134",
-   "method": "GET",
+   "method": "DELETE",
    "path": "/covers/{X}",
    "file": "backend/routes/covers.js",
    "alsoDefinedIn": [],
@@ -2290,7 +2233,7 @@
   },
   {
    "id": "OP-0135",
-   "method": "POST",
+   "method": "GET",
    "path": "/covers/{X}",
    "file": "backend/routes/covers.js",
    "alsoDefinedIn": [],
@@ -2309,6 +2252,25 @@
   },
   {
    "id": "OP-0136",
+   "method": "POST",
+   "path": "/covers/{X}",
+   "file": "backend/routes/covers.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/cover-letters.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/cover-letters.spec.ts"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0137",
    "method": "GET",
    "path": "/custom-pages.json",
    "file": "backend/index.js",
@@ -2323,7 +2285,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0137",
+   "id": "OP-0138",
    "method": "GET",
    "path": "/email/admin/circuit-breaker-status",
    "file": "backend/routes/email.js",
@@ -2338,7 +2300,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0138",
+   "id": "OP-0139",
    "method": "GET",
    "path": "/email/admin/custom-templates",
    "file": "backend/routes/email.js",
@@ -2353,7 +2315,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0139",
+   "id": "OP-0140",
    "method": "GET",
    "path": "/email/admin/deliverability",
    "file": "backend/routes/email.js",
@@ -2372,7 +2334,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0140",
+   "id": "OP-0141",
    "method": "POST",
    "path": "/email/admin/reset-circuit-breaker",
    "file": "backend/routes/email.js",
@@ -2387,7 +2349,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0141",
+   "id": "OP-0142",
    "method": "POST",
    "path": "/email/admin/save-smtp",
    "file": "backend/routes/email.js",
@@ -2406,7 +2368,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0142",
+   "id": "OP-0143",
    "method": "POST",
    "path": "/email/admin/save-template-customization",
    "file": "backend/routes/email.js",
@@ -2421,7 +2383,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0143",
+   "id": "OP-0144",
    "method": "GET",
    "path": "/email/admin/settings",
    "file": "backend/routes/email.js",
@@ -2440,7 +2402,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0144",
+   "id": "OP-0145",
    "method": "POST",
    "path": "/email/admin/test-connection",
    "file": "backend/routes/email.js",
@@ -2459,7 +2421,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0145",
+   "id": "OP-0146",
    "method": "POST",
    "path": "/email/admin/test-imap",
    "file": "backend/routes/email.js",
@@ -2474,7 +2436,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0146",
+   "id": "OP-0147",
    "method": "GET",
    "path": "/email/logs",
    "file": "backend/routes/email.js",
@@ -2489,7 +2451,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0147",
+   "id": "OP-0148",
    "method": "POST",
    "path": "/email/resend",
    "file": "backend/routes/email.js",
@@ -2504,7 +2466,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0148",
+   "id": "OP-0149",
    "method": "POST",
    "path": "/email/send-email",
    "file": "backend/routes/email.js",
@@ -2519,7 +2481,7 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0149",
+   "id": "OP-0150",
    "method": "POST",
    "path": "/email/send-invoice-email",
    "file": "backend/routes/email.js",
@@ -2534,23 +2496,8 @@
    "reason": "router module reused in-process by backend/services/emailNotifier.js"
   },
   {
-   "id": "OP-0150",
-   "method": "GET",
-   "path": "/email/templates",
-   "file": "backend/routes/email.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "SERVER-ONLY",
-   "rule": "R4",
-   "reason": "router module reused in-process by backend/services/emailNotifier.js"
-  },
-  {
    "id": "OP-0151",
-   "method": "POST",
+   "method": "GET",
    "path": "/email/templates",
    "file": "backend/routes/email.js",
    "alsoDefinedIn": [],
@@ -2566,6 +2513,21 @@
   {
    "id": "OP-0152",
    "method": "POST",
+   "path": "/email/templates",
+   "file": "backend/routes/email.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "SERVER-ONLY",
+   "rule": "R4",
+   "reason": "router module reused in-process by backend/services/emailNotifier.js"
+  },
+  {
+   "id": "OP-0153",
+   "method": "POST",
    "path": "/employer-applications",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -2579,26 +2541,8 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0153",
-   "method": "GET",
-   "path": "/employer/companies",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/employer/CompanyProfile.tsx",
-    "frontend/src/hooks/use-api-hooks.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0154",
-   "method": "POST",
+   "method": "GET",
    "path": "/employer/companies",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -2616,6 +2560,24 @@
   },
   {
    "id": "OP-0155",
+   "method": "POST",
+   "path": "/employer/companies",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/components/employer/CompanyProfile.tsx",
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0156",
    "method": "DELETE",
    "path": "/employer/companies/{X}",
    "file": "backend/index.js",
@@ -2632,7 +2594,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0156",
+   "id": "OP-0157",
    "method": "PATCH",
    "path": "/employer/companies/{X}",
    "file": "backend/index.js",
@@ -2649,27 +2611,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0157",
-   "method": "GET",
-   "path": "/employer/jobs",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/hooks/use-api-hooks.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/routes.integration.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "INDIRECTLY-REACHABLE",
-   "rule": "R2",
-   "reason": "reached through hook(s) useJobs, useCreateJob with consumer(s)"
-  },
-  {
    "id": "OP-0158",
-   "method": "POST",
+   "method": "GET",
    "path": "/employer/jobs",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -2688,6 +2631,25 @@
   },
   {
    "id": "OP-0159",
+   "method": "POST",
+   "path": "/employer/jobs",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/routes.integration.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "INDIRECTLY-REACHABLE",
+   "rule": "R2",
+   "reason": "reached through hook(s) useJobs, useCreateJob with consumer(s)"
+  },
+  {
+   "id": "OP-0160",
    "method": "DELETE",
    "path": "/employer/jobs/{X}",
    "file": "backend/index.js",
@@ -2706,7 +2668,7 @@
    "reason": "reached through hook(s) useUpdateJob with consumer(s)"
   },
   {
-   "id": "OP-0160",
+   "id": "OP-0161",
    "method": "PATCH",
    "path": "/employer/jobs/{X}",
    "file": "backend/index.js",
@@ -2725,7 +2687,7 @@
    "reason": "reached through hook(s) useUpdateJob with consumer(s)"
   },
   {
-   "id": "OP-0161",
+   "id": "OP-0162",
    "method": "GET",
    "path": "/employer/jobs/{X}/applications/{X}/resume",
    "file": "backend/index.js",
@@ -2735,16 +2697,14 @@
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/routes.integration.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
+   "reachability": "INDIRECTLY-REACHABLE",
    "rule": "R2",
-   "reason": "called only from hooks/use-api-hooks.ts with no resolvable hook binding"
+   "reason": "reached through hook(s) useApplicationResume with consumer(s)"
   },
   {
-   "id": "OP-0162",
+   "id": "OP-0163",
    "method": "POST",
    "path": "/enterprise/ai/generate-content",
    "file": "backend/routes/enterprise.js",
@@ -2765,7 +2725,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0163",
+   "id": "OP-0164",
    "method": "POST",
    "path": "/enterprise/ai/generate-interview",
    "file": "backend/routes/enterprise.js",
@@ -2784,34 +2744,38 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0164",
+   "id": "OP-0165",
    "method": "GET",
    "path": "/enterprise/audit",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0165",
+   "id": "OP-0166",
    "method": "GET",
    "path": "/enterprise/configuration",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 8,
    "testRefs": [
@@ -2820,20 +2784,22 @@
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
     "backend/enterprise-test/enterprise-routes.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 8 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0166",
+   "id": "OP-0167",
    "method": "PATCH",
    "path": "/enterprise/configuration",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 8,
    "testRefs": [
@@ -2842,20 +2808,22 @@
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
     "backend/enterprise-test/enterprise-routes.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 8 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0167",
+   "id": "OP-0168",
    "method": "GET",
    "path": "/enterprise/context",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
@@ -2864,20 +2832,22 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0168",
+   "id": "OP-0169",
    "method": "POST",
    "path": "/enterprise/context",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
@@ -2886,50 +2856,54 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0169",
+   "id": "OP-0170",
    "method": "GET",
    "path": "/enterprise/data-plane/status",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 2,
    "testRefs": [],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0170",
+   "id": "OP-0171",
    "method": "GET",
    "path": "/enterprise/data/export",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
     "backend/enterprise-test/enterprise-completeness.test.js",
     "backend/enterprise-test/enterprise-m2m-first-class.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0171",
+   "id": "OP-0172",
    "method": "POST",
    "path": "/enterprise/lifecycle/suspend",
    "file": "backend/routes/enterprise.js",
@@ -2950,7 +2924,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0172",
+   "id": "OP-0173",
    "method": "GET",
    "path": "/enterprise/m2m/context",
    "file": "backend/routes/enterpriseM2m.js",
@@ -2972,14 +2946,16 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0173",
+   "id": "OP-0174",
    "method": "GET",
    "path": "/enterprise/memberships",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 6,
    "testRefs": [
@@ -2988,20 +2964,22 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 6 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0174",
+   "id": "OP-0175",
    "method": "POST",
    "path": "/enterprise/memberships",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 6,
    "testRefs": [
@@ -3010,20 +2988,22 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 6 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0175",
+   "id": "OP-0176",
    "method": "DELETE",
    "path": "/enterprise/memberships/{X}",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3033,19 +3013,21 @@
     "backend/enterprise-test/enterprise-workflow.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0176",
+   "id": "OP-0177",
    "method": "PATCH",
    "path": "/enterprise/memberships/{X}",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3055,55 +3037,61 @@
     "backend/enterprise-test/enterprise-workflow.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0177",
+   "id": "OP-0178",
    "method": "POST",
    "path": "/enterprise/memberships/{X}/invitation-resend",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
     "backend/enterprise-test/enterprise-completeness.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0178",
+   "id": "OP-0179",
    "method": "GET",
    "path": "/enterprise/observability/metrics",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 2,
    "testRefs": [],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0179",
+   "id": "OP-0180",
    "method": "GET",
    "path": "/enterprise/platform/tenants",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 2,
    "testRefs": [
@@ -3111,73 +3099,57 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/test/forensic-data-lineage.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0180",
+   "id": "OP-0181",
    "method": "POST",
    "path": "/enterprise/platform/tenants/{X}/reactivate",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
-   "legacyUiRefs": 1,
+   "legacyUiRefs": 0,
    "testRefs": [
     "backend/enterprise-test/enterprise-completeness.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0181",
+   "id": "OP-0182",
    "method": "POST",
    "path": "/enterprise/platform/tenants/{X}/suspend",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
-   "legacyUiRefs": 1,
+   "legacyUiRefs": 0,
    "testRefs": [
     "backend/enterprise-test/enterprise-completeness.test.js",
     "backend/enterprise-test/enterprise-m2m-first-class.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0182",
-   "method": "GET",
-   "path": "/enterprise/queue/jobs",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
    "id": "OP-0183",
-   "method": "POST",
+   "method": "GET",
    "path": "/enterprise/queue/jobs",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
@@ -3198,258 +3170,7 @@
   {
    "id": "OP-0184",
    "method": "POST",
-   "path": "/enterprise/queue/replay",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0185",
-   "method": "GET",
-   "path": "/enterprise/queue/status",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 2,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0186",
-   "method": "GET",
-   "path": "/enterprise/resources",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-routes.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0187",
-   "method": "POST",
-   "path": "/enterprise/resources",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-routes.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0188",
-   "method": "DELETE",
-   "path": "/enterprise/resources/{X}",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0189",
-   "method": "GET",
-   "path": "/enterprise/resources/{X}",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0190",
-   "method": "PATCH",
-   "path": "/enterprise/resources/{X}",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0191",
-   "method": "GET",
-   "path": "/enterprise/roles-matrix",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 2,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0192",
-   "method": "GET",
-   "path": "/enterprise/service-accounts",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-admin-crud.test.js",
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
-  },
-  {
-   "id": "OP-0193",
-   "method": "POST",
-   "path": "/enterprise/service-accounts",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-admin-crud.test.js",
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
-  },
-  {
-   "id": "OP-0194",
-   "method": "POST",
-   "path": "/enterprise/service-accounts/{X}/revoke",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-admin-crud.test.js",
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
-  },
-  {
-   "id": "OP-0195",
-   "method": "POST",
-   "path": "/enterprise/service-accounts/{X}/rotate",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
-  },
-  {
-   "id": "OP-0196",
-   "method": "GET",
-   "path": "/enterprise/status",
+   "path": "/enterprise/queue/jobs",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
@@ -3458,8 +3179,8 @@
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "backend/enterprise-test/enterprise-routes.test.js",
-    "backend/enterprise-test/enterprise-workflow.test.js"
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
    ],
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
@@ -3467,7 +3188,304 @@
    "reason": "called only by tests, never by a client"
   },
   {
+   "id": "OP-0185",
+   "method": "POST",
+   "path": "/enterprise/queue/replay",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0186",
+   "method": "GET",
+   "path": "/enterprise/queue/status",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 2,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0187",
+   "method": "GET",
+   "path": "/enterprise/resources",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-routes.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0188",
+   "method": "POST",
+   "path": "/enterprise/resources",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-routes.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0189",
+   "method": "DELETE",
+   "path": "/enterprise/resources/{X}",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0190",
+   "method": "GET",
+   "path": "/enterprise/resources/{X}",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0191",
+   "method": "PATCH",
+   "path": "/enterprise/resources/{X}",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0192",
+   "method": "GET",
+   "path": "/enterprise/roles-matrix",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 2,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-completeness.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0193",
+   "method": "GET",
+   "path": "/enterprise/service-accounts",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-admin-crud.test.js",
+    "backend/enterprise-test/enterprise-completeness.test.js",
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0194",
+   "method": "POST",
+   "path": "/enterprise/service-accounts",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-admin-crud.test.js",
+    "backend/enterprise-test/enterprise-completeness.test.js",
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0195",
+   "method": "POST",
+   "path": "/enterprise/service-accounts/{X}/revoke",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-admin-crud.test.js",
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0196",
+   "method": "POST",
+   "path": "/enterprise/service-accounts/{X}/rotate",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-completeness.test.js",
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
    "id": "OP-0197",
+   "method": "GET",
+   "path": "/enterprise/status",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-routes.test.js",
+    "backend/enterprise-test/enterprise-workflow.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0198",
    "method": "POST",
    "path": "/enterprise/storage/token",
    "file": "backend/routes/enterprise.js",
@@ -3484,7 +3502,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0198",
+   "id": "OP-0199",
    "method": "POST",
    "path": "/enterprise/storage/verify",
    "file": "backend/routes/enterprise.js",
@@ -3501,14 +3519,16 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0199",
+   "id": "OP-0200",
    "method": "GET",
    "path": "/enterprise/support-grants",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3517,20 +3537,22 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-routes.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0200",
+   "id": "OP-0201",
    "method": "POST",
    "path": "/enterprise/support-grants",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3539,20 +3561,22 @@
     "backend/enterprise-test/enterprise-m2m-first-class.test.js",
     "backend/enterprise-test/enterprise-routes.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0201",
+   "id": "OP-0202",
    "method": "POST",
    "path": "/enterprise/support-grants/{X}/revoke",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3561,12 +3585,12 @@
     "backend/enterprise-test/enterprise-routes.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "INTENTIONALLY-UNEXPOSED",
-   "rule": "R5",
-   "reason": "machine/service-account scoped route"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0202",
+   "id": "OP-0203",
    "method": "GET",
    "path": "/enterprise/support/context",
    "file": "backend/routes/enterprise.js",
@@ -3585,14 +3609,16 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0203",
+   "id": "OP-0204",
    "method": "GET",
    "path": "/enterprise/teams",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 2,
    "testRefs": [
@@ -3601,20 +3627,22 @@
     "backend/enterprise-test/enterprise-routes.test.js",
     "backend/enterprise-test/enterprise-workflow.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0204",
+   "id": "OP-0205",
    "method": "POST",
    "path": "/enterprise/teams",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 2,
    "testRefs": [
@@ -3623,20 +3651,22 @@
     "backend/enterprise-test/enterprise-routes.test.js",
     "backend/enterprise-test/enterprise-workflow.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 2 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0205",
+   "id": "OP-0206",
    "method": "PATCH",
    "path": "/enterprise/teams/{X}",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3644,19 +3674,21 @@
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0206",
+   "id": "OP-0207",
    "method": "POST",
    "path": "/enterprise/teams/{X}/archive",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3664,12 +3696,12 @@
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0207",
+   "id": "OP-0208",
    "method": "GET",
    "path": "/enterprise/teams/{X}/members",
    "file": "backend/routes/enterprise.js",
@@ -3680,27 +3712,6 @@
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-org-management.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0208",
-   "method": "POST",
-   "path": "/enterprise/teams/{X}/members",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -3710,6 +3721,25 @@
   },
   {
    "id": "OP-0209",
+   "method": "POST",
+   "path": "/enterprise/teams/{X}/members",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-org-management.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
+  },
+  {
+   "id": "OP-0210",
    "method": "DELETE",
    "path": "/enterprise/teams/{X}/members/{X}",
    "file": "backend/routes/enterprise.js",
@@ -3720,27 +3750,6 @@
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-org-management.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0210",
-   "method": "POST",
-   "path": "/enterprise/teams/{X}/restore",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -3750,41 +3759,40 @@
   },
   {
    "id": "OP-0211",
+   "method": "POST",
+   "path": "/enterprise/teams/{X}/restore",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-completeness.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0212",
    "method": "PATCH",
    "path": "/enterprise/tenant",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
     "backend/enterprise-test/enterprise-completeness.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0212",
-   "method": "GET",
-   "path": "/enterprise/tenants",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [
-    "frontend/src/lib/tenant-context.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 4,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-completeness.test.js",
-    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
-    "backend/enterprise-test/enterprise-routes.test.js",
-    "backend/test/ai-audit-multitenant-isolation-proof.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -3793,13 +3801,14 @@
   },
   {
    "id": "OP-0213",
-   "method": "POST",
+   "method": "GET",
    "path": "/enterprise/tenants",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
    "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts",
     "frontend/src/lib/tenant-context.ts"
    ],
    "backendRefs": [],
@@ -3813,10 +3822,35 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
+   "reason": "called from 2 modern source file(s)"
   },
   {
    "id": "OP-0214",
+   "method": "POST",
+   "path": "/enterprise/tenants",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/tenant-context.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 4,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-completeness.test.js",
+    "backend/enterprise-test/enterprise-m2m-first-class.test.js",
+    "backend/enterprise-test/enterprise-routes.test.js",
+    "backend/test/ai-audit-multitenant-isolation-proof.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 2 modern source file(s)"
+  },
+  {
+   "id": "OP-0215",
    "method": "POST",
    "path": "/enterprise/tenants/{X}/reactivate",
    "file": "backend/routes/enterprise.js",
@@ -3835,26 +3869,28 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0215",
+   "id": "OP-0216",
    "method": "POST",
    "path": "/enterprise/test-email",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
     "backend/enterprise-test/enterprise-m2m-first-class.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0216",
+   "id": "OP-0217",
    "method": "GET",
    "path": "/enterprise/usage/ai",
    "file": "backend/routes/enterprise.js",
@@ -3870,36 +3906,40 @@
     "backend/enterprise-test/enterprise-workflow.test.js"
    ],
    "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "no direct call site, but a child path (/enterprise/usage/ai/events) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0217",
+   "id": "OP-0218",
    "method": "GET",
    "path": "/enterprise/usage/ai/events",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0218",
+   "id": "OP-0219",
    "method": "GET",
    "path": "/enterprise/workspaces",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3908,20 +3948,22 @@
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0219",
+   "id": "OP-0220",
    "method": "POST",
    "path": "/enterprise/workspaces",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3930,20 +3972,22 @@
     "backend/enterprise-test/enterprise-mariadb-isolation.test.js",
     "backend/enterprise-test/enterprise-org-management.test.js"
    ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0220",
+   "id": "OP-0221",
    "method": "PATCH",
    "path": "/enterprise/workspaces/{X}",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
@@ -3951,32 +3995,33 @@
     "backend/test/enterprise-role-view-simulation.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0221",
+   "id": "OP-0222",
    "method": "POST",
    "path": "/enterprise/workspaces/{X}/archive",
    "file": "backend/routes/enterprise.js",
    "alsoDefinedIn": [
     "backend/routes/enterprise.js"
    ],
-   "modernUiRefs": [],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/enterprise-test/enterprise-org-management.test.js",
-    "backend/test/enterprise-role-view-simulation.test.js"
+    "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0222",
+   "id": "OP-0223",
    "method": "GET",
    "path": "/enterprise/workspaces/{X}/members",
    "file": "backend/routes/enterprise.js",
@@ -3987,28 +4032,7 @@
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/enterprise-test/enterprise-org-management.test.js",
-    "backend/test/enterprise-role-view-simulation.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0223",
-   "method": "POST",
-   "path": "/enterprise/workspaces/{X}/members",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-org-management.test.js",
-    "backend/test/enterprise-role-view-simulation.test.js"
+    "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
@@ -4017,6 +4041,25 @@
   },
   {
    "id": "OP-0224",
+   "method": "POST",
+   "path": "/enterprise/workspaces/{X}/members",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-org-management.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
+  },
+  {
+   "id": "OP-0225",
    "method": "DELETE",
    "path": "/enterprise/workspaces/{X}/members/{X}",
    "file": "backend/routes/enterprise.js",
@@ -4027,28 +4070,7 @@
    "backendRefs": [],
    "legacyUiRefs": 1,
    "testRefs": [
-    "backend/enterprise-test/enterprise-org-management.test.js",
-    "backend/test/enterprise-role-view-simulation.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "legacy UI called it in 1 file(s); no modern client does"
-  },
-  {
-   "id": "OP-0225",
-   "method": "POST",
-   "path": "/enterprise/workspaces/{X}/restore",
-   "file": "backend/routes/enterprise.js",
-   "alsoDefinedIn": [
-    "backend/routes/enterprise.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/enterprise-test/enterprise-org-management.test.js",
-    "backend/test/enterprise-role-view-simulation.test.js"
+    "backend/enterprise-test/enterprise-org-management.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
@@ -4057,6 +4079,27 @@
   },
   {
    "id": "OP-0226",
+   "method": "POST",
+   "path": "/enterprise/workspaces/{X}/restore",
+   "file": "backend/routes/enterprise.js",
+   "alsoDefinedIn": [
+    "backend/routes/enterprise.js"
+   ],
+   "modernUiRefs": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/enterprise-test/enterprise-org-management.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0227",
    "method": "POST",
    "path": "/export",
    "file": "backend/index.js",
@@ -4076,7 +4119,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0227",
+   "id": "OP-0228",
    "method": "POST",
    "path": "/export-docx",
    "file": "backend/index.js",
@@ -4101,7 +4144,7 @@
    "reason": "called from 4 modern source file(s)"
   },
   {
-   "id": "OP-0228",
+   "id": "OP-0229",
    "method": "GET",
    "path": "/export-render-data",
    "file": "backend/index.js",
@@ -4121,30 +4164,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0229",
-   "method": "GET",
-   "path": "/favourites",
-   "file": "backend/routes/miscData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/favourites.ts",
-    "frontend/src/pages/dashboard/overview.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/favourites.spec.ts",
-    "backend/test/favourites-candidate-api.test.js",
-    "backend/test/mariadb-only-integration.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 2 modern source file(s)"
-  },
-  {
    "id": "OP-0230",
-   "method": "POST",
+   "method": "GET",
    "path": "/favourites",
    "file": "backend/routes/miscData.js",
    "alsoDefinedIn": [],
@@ -4166,6 +4187,28 @@
   },
   {
    "id": "OP-0231",
+   "method": "POST",
+   "path": "/favourites",
+   "file": "backend/routes/miscData.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/pages/dashboard/overview.tsx"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/favourites.spec.ts",
+    "backend/test/favourites-candidate-api.test.js",
+    "backend/test/mariadb-only-integration.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 2 modern source file(s)"
+  },
+  {
+   "id": "OP-0232",
    "method": "DELETE",
    "path": "/favourites/{X}",
    "file": "backend/routes/miscData.js",
@@ -4187,28 +4230,24 @@
    "reason": "called from 2 modern source file(s)"
   },
   {
-   "id": "OP-0232",
+   "id": "OP-0233",
    "method": "GET",
    "path": "/favourites/{X}/check",
    "file": "backend/routes/miscData.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/favourites.ts",
-    "frontend/src/pages/dashboard/overview.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/favourites.spec.ts",
     "backend/test/favourites-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 2 modern source file(s)"
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0233",
+   "id": "OP-0234",
    "method": "GET",
    "path": "/freellmapi/metrics",
    "file": "backend/index.js",
@@ -4225,7 +4264,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0234",
+   "id": "OP-0235",
    "method": "GET",
    "path": "/freellmapi/status",
    "file": "backend/index.js",
@@ -4244,7 +4283,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0235",
+   "id": "OP-0236",
    "method": "POST",
    "path": "/generate-ai-cover-letter",
    "file": "backend/index.js",
@@ -4262,7 +4301,7 @@
    "reason": "called from 2 modern source file(s)"
   },
   {
-   "id": "OP-0236",
+   "id": "OP-0237",
    "method": "POST",
    "path": "/generate-content",
    "file": "backend/routes/ai.js",
@@ -4284,7 +4323,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0237",
+   "id": "OP-0238",
    "method": "POST",
    "path": "/generate-interview",
    "file": "backend/routes/ai.js",
@@ -4304,7 +4343,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0238",
+   "id": "OP-0239",
    "method": "GET",
    "path": "/health",
    "file": "backend/index.js",
@@ -4322,7 +4361,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0239",
+   "id": "OP-0240",
    "method": "GET",
    "path": "/health/databases",
    "file": "backend/index.js",
@@ -4337,7 +4376,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0240",
+   "id": "OP-0241",
    "method": "GET",
    "path": "/healthz",
    "file": "backend/index.js",
@@ -4355,7 +4394,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0241",
+   "id": "OP-0242",
    "method": "POST",
    "path": "/invoice",
    "file": "backend/index.js",
@@ -4370,7 +4409,7 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0242",
+   "id": "OP-0243",
    "method": "POST",
    "path": "/invoice/generate",
    "file": "backend/index.js",
@@ -4385,7 +4424,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0243",
+   "id": "OP-0244",
    "method": "GET",
    "path": "/invoices",
    "file": "backend/index.js",
@@ -4400,7 +4439,7 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0244",
+   "id": "OP-0245",
    "method": "GET",
    "path": "/invoices/{X}",
    "file": "backend/index.js",
@@ -4415,7 +4454,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0245",
+   "id": "OP-0246",
    "method": "PATCH",
    "path": "/job-applications/{X}/status",
    "file": "backend/index.js",
@@ -4435,7 +4474,7 @@
    "reason": "reached through hook(s) useUpdateApplicationStatus with consumer(s)"
   },
   {
-   "id": "OP-0246",
+   "id": "OP-0247",
    "method": "GET",
    "path": "/jobs-data",
    "file": "backend/routes/jobsData.js",
@@ -4455,13 +4494,12 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0247",
+   "id": "OP-0248",
    "method": "DELETE",
    "path": "/jobs-data/{X}",
    "file": "backend/routes/jobsData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/applications.ts",
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
@@ -4475,16 +4513,15 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 2 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0248",
+   "id": "OP-0249",
    "method": "GET",
    "path": "/jobs-data/{X}",
    "file": "backend/routes/jobsData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/applications.ts",
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
@@ -4498,16 +4535,15 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 2 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0249",
+   "id": "OP-0250",
    "method": "POST",
    "path": "/jobs-data/{X}",
    "file": "backend/routes/jobsData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/applications.ts",
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
@@ -4521,10 +4557,10 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 2 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0250",
+   "id": "OP-0251",
    "method": "DELETE",
    "path": "/jobs-data/applications/{X}",
    "file": "backend/routes/jobsData.js",
@@ -4536,8 +4572,6 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
-    "backend/test/favourites-candidate-api.test.js",
     "backend/test/job-applications-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4546,7 +4580,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0251",
+   "id": "OP-0252",
    "method": "PATCH",
    "path": "/jobs-data/applications/{X}",
    "file": "backend/routes/jobsData.js",
@@ -4558,8 +4592,6 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
-    "backend/test/favourites-candidate-api.test.js",
     "backend/test/job-applications-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4568,7 +4600,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0252",
+   "id": "OP-0253",
    "method": "POST",
    "path": "/jobs-data/applications/{X}",
    "file": "backend/routes/jobsData.js",
@@ -4580,8 +4612,6 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
-    "backend/test/favourites-candidate-api.test.js",
     "backend/test/job-applications-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4590,7 +4620,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0253",
+   "id": "OP-0254",
    "method": "GET",
    "path": "/jobs-data/applications/list",
    "file": "backend/routes/jobsData.js",
@@ -4602,8 +4632,6 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
-    "backend/test/favourites-candidate-api.test.js",
     "backend/test/job-applications-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4612,7 +4640,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0254",
+   "id": "OP-0255",
    "method": "GET",
    "path": "/jobs-data/tracker",
    "file": "backend/routes/jobsData.js",
@@ -4624,9 +4652,9 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
-    "frontend/tests/candidate/cover-letters.spec.ts"
+    "frontend/tests/candidate/cover-letters.spec.ts",
+    "frontend/tests/candidate/job-tracker.spec.ts"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4634,7 +4662,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0255",
+   "id": "OP-0256",
    "method": "POST",
    "path": "/jobs-data/tracker",
    "file": "backend/routes/jobsData.js",
@@ -4646,9 +4674,9 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
-    "frontend/tests/candidate/cover-letters.spec.ts"
+    "frontend/tests/candidate/cover-letters.spec.ts",
+    "frontend/tests/candidate/job-tracker.spec.ts"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4656,7 +4684,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0256",
+   "id": "OP-0257",
    "method": "DELETE",
    "path": "/jobs-data/tracker/{X}",
    "file": "backend/routes/jobsData.js",
@@ -4668,9 +4696,9 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
-    "frontend/tests/candidate/cover-letters.spec.ts"
+    "frontend/tests/candidate/cover-letters.spec.ts",
+    "frontend/tests/candidate/job-tracker.spec.ts"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4678,7 +4706,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0257",
+   "id": "OP-0258",
    "method": "PATCH",
    "path": "/jobs-data/tracker/{X}",
    "file": "backend/routes/jobsData.js",
@@ -4690,31 +4718,9 @@
    "legacyUiRefs": 0,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
-    "frontend/tests/candidate/cover-letters.spec.ts"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0258",
-   "method": "GET",
-   "path": "/jobs/{X}/applications",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/components/jobs/job-application-modal.tsx",
-    "frontend/src/hooks/use-api-hooks.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/arrange-applications.ts",
-    "frontend/tests/candidate/messages.spec.ts"
+    "frontend/tests/candidate/cover-letters.spec.ts",
+    "frontend/tests/candidate/job-tracker.spec.ts"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4723,7 +4729,7 @@
   },
   {
    "id": "OP-0259",
-   "method": "POST",
+   "method": "GET",
    "path": "/jobs/{X}/applications",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -4746,6 +4752,28 @@
   {
    "id": "OP-0260",
    "method": "POST",
+   "path": "/jobs/{X}/applications",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/components/jobs/job-application-modal.tsx",
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/applied-jobs.spec.ts",
+    "frontend/tests/candidate/arrange-applications.ts",
+    "frontend/tests/candidate/messages.spec.ts"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0261",
+   "method": "POST",
    "path": "/jobs/naukri",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -4761,7 +4789,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0261",
+   "id": "OP-0262",
    "method": "GET",
    "path": "/linkedin-scraper",
    "file": "backend/index.js",
@@ -4776,7 +4804,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0262",
+   "id": "OP-0263",
    "method": "POST",
    "path": "/live-interview/guide",
    "file": "backend/routes/ai.js",
@@ -4785,28 +4813,8 @@
     "frontend/src/lib/interview-coach.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
-    "backend/test/live-interview-routes.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0263",
-   "method": "POST",
-   "path": "/live-interview/sessions",
-   "file": "backend/routes/ai.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/interview-coach.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/interview-multitenant-ai.test.js",
     "backend/test/live-interview-routes.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4816,15 +4824,15 @@
   },
   {
    "id": "OP-0264",
-   "method": "DELETE",
-   "path": "/live-interview/sessions/{X}",
+   "method": "POST",
+   "path": "/live-interview/sessions",
    "file": "backend/routes/ai.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
     "frontend/src/lib/interview-coach.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/interview-multitenant-ai.test.js",
     "backend/test/live-interview-routes.test.js"
@@ -4836,6 +4844,25 @@
   },
   {
    "id": "OP-0265",
+   "method": "DELETE",
+   "path": "/live-interview/sessions/{X}",
+   "file": "backend/routes/ai.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/interview-coach.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/live-interview-routes.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0266",
    "method": "GET",
    "path": "/live-interview/sessions/{X}",
    "file": "backend/routes/ai.js",
@@ -4846,7 +4873,6 @@
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "backend/test/interview-multitenant-ai.test.js",
     "backend/test/live-interview-routes.test.js"
    ],
    "mentionedOnlyInModern": false,
@@ -4855,7 +4881,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0266",
+   "id": "OP-0267",
    "method": "POST",
    "path": "/live-interview/sessions/{X}/complete",
    "file": "backend/routes/ai.js",
@@ -4875,7 +4901,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0267",
+   "id": "OP-0268",
    "method": "POST",
    "path": "/live-interview/sessions/{X}/turns",
    "file": "backend/routes/ai.js",
@@ -4895,28 +4921,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0268",
-   "method": "GET",
-   "path": "/messages/conversations",
-   "file": "backend/index.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/messages.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/messages.spec.ts",
-    "backend/test/mariadb-query-budget.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0269",
-   "method": "POST",
+   "method": "GET",
    "path": "/messages/conversations",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -4936,6 +4942,26 @@
   },
   {
    "id": "OP-0270",
+   "method": "POST",
+   "path": "/messages/conversations",
+   "file": "backend/index.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/messages.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/messages.spec.ts",
+    "backend/test/mariadb-query-budget.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0271",
    "method": "GET",
    "path": "/messages/conversations/{X}/messages",
    "file": "backend/index.js",
@@ -4952,7 +4978,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0271",
+   "id": "OP-0272",
    "method": "GET",
    "path": "/messages/conversations/{X}/participant-profile",
    "file": "backend/index.js",
@@ -4969,7 +4995,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0272",
+   "id": "OP-0273",
    "method": "POST",
    "path": "/messages/conversations/{X}/read",
    "file": "backend/index.js",
@@ -4986,7 +5012,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0273",
+   "id": "OP-0274",
    "method": "POST",
    "path": "/messages/send",
    "file": "backend/index.js",
@@ -5006,7 +5032,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0274",
+   "id": "OP-0275",
    "method": "GET",
    "path": "/notifications-data",
    "file": "backend/routes/notificationsData.js",
@@ -5026,7 +5052,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0275",
+   "id": "OP-0276",
    "method": "PATCH",
    "path": "/notifications-data/{X}",
    "file": "backend/routes/notificationsData.js",
@@ -5037,28 +5063,7 @@
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/notifications.spec.ts",
-    "backend/test/forensic-data-lineage.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0276",
-   "method": "GET",
-   "path": "/notifications-data/contact/list",
-   "file": "backend/routes/notificationsData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/notifications.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/notifications.spec.ts",
-    "backend/test/forensic-data-lineage.test.js"
+    "frontend/tests/candidate/notifications.spec.ts"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -5067,6 +5072,23 @@
   },
   {
    "id": "OP-0277",
+   "method": "GET",
+   "path": "/notifications-data/contact/list",
+   "file": "backend/routes/notificationsData.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/forensic-data-lineage.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0278",
    "method": "POST",
    "path": "/notifications-data/mark-all-read",
    "file": "backend/routes/notificationsData.js",
@@ -5085,7 +5107,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0278",
+   "id": "OP-0279",
    "method": "POST",
    "path": "/notify/user-signup",
    "file": "backend/index.js",
@@ -5102,7 +5124,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0279",
+   "id": "OP-0280",
    "method": "POST",
    "path": "/parse-resume",
    "file": "backend/routes/ai.js",
@@ -5122,7 +5144,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0280",
+   "id": "OP-0281",
    "method": "POST",
    "path": "/pay",
    "file": "backend/index.js",
@@ -5141,7 +5163,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0281",
+   "id": "OP-0282",
    "method": "GET",
    "path": "/payment-orders",
    "file": "backend/index.js",
@@ -5156,7 +5178,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0282",
+   "id": "OP-0283",
    "method": "GET",
    "path": "/payment-orders/{X}",
    "file": "backend/index.js",
@@ -5171,7 +5193,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0283",
+   "id": "OP-0284",
    "method": "POST",
    "path": "/payment/razorpay-order",
    "file": "backend/index.js",
@@ -5188,7 +5210,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0284",
+   "id": "OP-0285",
    "method": "POST",
    "path": "/paypal/create-order",
    "file": "backend/index.js",
@@ -5205,7 +5227,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0285",
+   "id": "OP-0286",
    "method": "POST",
    "path": "/paypal/verify",
    "file": "backend/index.js",
@@ -5222,7 +5244,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0286",
+   "id": "OP-0287",
    "method": "POST",
    "path": "/paytm/callback",
    "file": "backend/index.js",
@@ -5237,7 +5259,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0287",
+   "id": "OP-0288",
    "method": "POST",
    "path": "/paytm/initiate-transaction",
    "file": "backend/index.js",
@@ -5252,7 +5274,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0288",
+   "id": "OP-0289",
    "method": "POST",
    "path": "/paytm/verify-transaction",
    "file": "backend/index.js",
@@ -5267,7 +5289,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0289",
+   "id": "OP-0290",
    "method": "POST",
    "path": "/phonepe/callback",
    "file": "backend/index.js",
@@ -5282,7 +5304,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0290",
+   "id": "OP-0291",
    "method": "POST",
    "path": "/phonepe/initiate",
    "file": "backend/index.js",
@@ -5297,7 +5319,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0291",
+   "id": "OP-0292",
    "method": "POST",
    "path": "/phonepe/status",
    "file": "backend/index.js",
@@ -5312,25 +5334,8 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0292",
-   "method": "GET",
-   "path": "/phrases",
-   "file": "backend/routes/miscData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/mariadb-only-integration.test.js"
-   ],
-   "mentionedOnlyInModern": true,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
    "id": "OP-0293",
-   "method": "POST",
+   "method": "GET",
    "path": "/phrases",
    "file": "backend/routes/miscData.js",
    "alsoDefinedIn": [],
@@ -5347,22 +5352,24 @@
   },
   {
    "id": "OP-0294",
-   "method": "DELETE",
-   "path": "/phrases/{X}",
+   "method": "POST",
+   "path": "/phrases",
    "file": "backend/routes/miscData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [],
-   "mentionedOnlyInModern": false,
+   "testRefs": [
+    "backend/test/mariadb-only-integration.test.js"
+   ],
+   "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "called only by tests, never by a client"
   },
   {
    "id": "OP-0295",
-   "method": "GET",
+   "method": "DELETE",
    "path": "/phrases/{X}",
    "file": "backend/routes/miscData.js",
    "alsoDefinedIn": [],
@@ -5378,25 +5385,21 @@
   {
    "id": "OP-0296",
    "method": "GET",
-   "path": "/platform/announcements",
-   "file": "backend/routes/platform.js",
-   "alsoDefinedIn": [
-    "backend/routes/platform.js"
-   ],
+   "path": "/phrases/{X}",
+   "file": "backend/routes/miscData.js",
+   "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/superadmin-platform.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0297",
-   "method": "POST",
+   "method": "GET",
    "path": "/platform/announcements",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
@@ -5415,6 +5418,25 @@
   },
   {
    "id": "OP-0298",
+   "method": "POST",
+   "path": "/platform/announcements",
+   "file": "backend/routes/platform.js",
+   "alsoDefinedIn": [
+    "backend/routes/platform.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/superadmin-platform.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0299",
    "method": "DELETE",
    "path": "/platform/announcements/{X}",
    "file": "backend/routes/platform.js",
@@ -5433,7 +5455,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0299",
+   "id": "OP-0300",
    "method": "PATCH",
    "path": "/platform/announcements/{X}",
    "file": "backend/routes/platform.js",
@@ -5452,7 +5474,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0300",
+   "id": "OP-0301",
    "method": "GET",
    "path": "/platform/attention",
    "file": "backend/routes/platform.js",
@@ -5471,7 +5493,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0301",
+   "id": "OP-0302",
    "method": "GET",
    "path": "/platform/backup-status",
    "file": "backend/routes/platform.js",
@@ -5488,7 +5510,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0302",
+   "id": "OP-0303",
    "method": "GET",
    "path": "/platform/command-center",
    "file": "backend/routes/platform.js",
@@ -5509,7 +5531,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0303",
+   "id": "OP-0304",
    "method": "GET",
    "path": "/platform/configuration",
    "file": "backend/routes/platform.js",
@@ -5528,7 +5550,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0304",
+   "id": "OP-0305",
    "method": "GET",
    "path": "/platform/encryption",
    "file": "backend/routes/platform.js",
@@ -5547,7 +5569,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0305",
+   "id": "OP-0306",
    "method": "GET",
    "path": "/platform/enterprise-queue",
    "file": "backend/routes/platform.js",
@@ -5566,7 +5588,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0306",
+   "id": "OP-0307",
    "method": "GET",
    "path": "/platform/feature-flags",
    "file": "backend/routes/platform.js",
@@ -5585,7 +5607,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0307",
+   "id": "OP-0308",
    "method": "PUT",
    "path": "/platform/feature-flags/{X}",
    "file": "backend/routes/platform.js",
@@ -5604,7 +5626,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0308",
+   "id": "OP-0309",
    "method": "GET",
    "path": "/platform/health",
    "file": "backend/routes/platform.js",
@@ -5624,7 +5646,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0309",
+   "id": "OP-0310",
    "method": "GET",
    "path": "/platform/health-indicator",
    "file": "backend/routes/platform.js",
@@ -5641,28 +5663,8 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0310",
-   "method": "GET",
-   "path": "/platform/maintenance",
-   "file": "backend/routes/platform.js",
-   "alsoDefinedIn": [
-    "backend/routes/platform.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/superadmin-platform.test.js",
-    "backend/test/totp-mfa-lifecycle.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
    "id": "OP-0311",
-   "method": "POST",
+   "method": "GET",
    "path": "/platform/maintenance",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
@@ -5682,6 +5684,26 @@
   },
   {
    "id": "OP-0312",
+   "method": "POST",
+   "path": "/platform/maintenance",
+   "file": "backend/routes/platform.js",
+   "alsoDefinedIn": [
+    "backend/routes/platform.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/superadmin-platform.test.js",
+    "backend/test/totp-mfa-lifecycle.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0313",
    "method": "GET",
    "path": "/platform/observability",
    "file": "backend/routes/platform.js",
@@ -5700,7 +5722,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0313",
+   "id": "OP-0314",
    "method": "GET",
    "path": "/platform/operational-status",
    "file": "backend/routes/platform.js",
@@ -5723,7 +5745,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0314",
+   "id": "OP-0315",
    "method": "GET",
    "path": "/platform/operational-status/{X}",
    "file": "backend/routes/platform.js",
@@ -5742,7 +5764,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0315",
+   "id": "OP-0316",
    "method": "POST",
    "path": "/platform/operational-status/{X}/test",
    "file": "backend/routes/platform.js",
@@ -5761,7 +5783,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0316",
+   "id": "OP-0317",
    "method": "GET",
    "path": "/platform/operational-status/api-matrix",
    "file": "backend/routes/platform.js",
@@ -5778,7 +5800,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0317",
+   "id": "OP-0318",
    "method": "POST",
    "path": "/platform/operational-status/refresh",
    "file": "backend/routes/platform.js",
@@ -5797,29 +5819,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0318",
-   "method": "GET",
-   "path": "/platform/operators",
-   "file": "backend/routes/platform.js",
-   "alsoDefinedIn": [
-    "backend/routes/platform.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/operators-iam.test.js",
-    "backend/test/rbac-role-visibility-forensic.test.js",
-    "backend/test/superadmin-platform.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
    "id": "OP-0319",
-   "method": "POST",
+   "method": "GET",
    "path": "/platform/operators",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
@@ -5841,6 +5842,27 @@
   {
    "id": "OP-0320",
    "method": "POST",
+   "path": "/platform/operators",
+   "file": "backend/routes/platform.js",
+   "alsoDefinedIn": [
+    "backend/routes/platform.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "backend/test/operators-iam.test.js",
+    "backend/test/rbac-role-visibility-forensic.test.js",
+    "backend/test/superadmin-platform.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "called only by tests, never by a client"
+  },
+  {
+   "id": "OP-0321",
+   "method": "POST",
    "path": "/platform/operators/{X}/revoke-sessions",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
@@ -5856,7 +5878,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0321",
+   "id": "OP-0322",
    "method": "GET",
    "path": "/platform/overview",
    "file": "backend/routes/platform.js",
@@ -5875,7 +5897,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0322",
+   "id": "OP-0323",
    "method": "GET",
    "path": "/platform/payment-settings",
    "file": "backend/routes/platform.js",
@@ -5897,7 +5919,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0323",
+   "id": "OP-0324",
    "method": "GET",
    "path": "/platform/payment-webhooks",
    "file": "backend/routes/platform.js",
@@ -5918,7 +5940,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0324",
+   "id": "OP-0325",
    "method": "POST",
    "path": "/platform/payment-webhooks/{X}/replay",
    "file": "backend/routes/platform.js",
@@ -5937,7 +5959,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0325",
+   "id": "OP-0326",
    "method": "GET",
    "path": "/platform/payments-health",
    "file": "backend/routes/platform.js",
@@ -5954,7 +5976,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0326",
+   "id": "OP-0327",
    "method": "GET",
    "path": "/platform/public-config",
    "file": "backend/routes/platform.js",
@@ -5975,7 +5997,7 @@
    "reason": "reached through hook(s) usePlatformStats with consumer(s)"
   },
   {
-   "id": "OP-0327",
+   "id": "OP-0328",
    "method": "GET",
    "path": "/platform/queues",
    "file": "backend/routes/platform.js",
@@ -5996,7 +6018,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0328",
+   "id": "OP-0329",
    "method": "POST",
    "path": "/platform/queues/purge",
    "file": "backend/routes/platform.js",
@@ -6013,7 +6035,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0329",
+   "id": "OP-0330",
    "method": "POST",
    "path": "/platform/queues/retry",
    "file": "backend/routes/platform.js",
@@ -6032,7 +6054,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0330",
+   "id": "OP-0331",
    "method": "POST",
    "path": "/platform/role-view-audit",
    "file": "backend/routes/platform.js",
@@ -6054,7 +6076,7 @@
    "reason": "called from 2 modern source file(s)"
   },
   {
-   "id": "OP-0331",
+   "id": "OP-0332",
    "method": "GET",
    "path": "/platform/search",
    "file": "backend/routes/platform.js",
@@ -6073,7 +6095,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0332",
+   "id": "OP-0333",
    "method": "GET",
    "path": "/platform/security-events",
    "file": "backend/routes/platform.js",
@@ -6092,7 +6114,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0333",
+   "id": "OP-0334",
    "method": "GET",
    "path": "/platform/tenants/{X}",
    "file": "backend/routes/platform.js",
@@ -6102,37 +6124,16 @@
    "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/superadmin-platform.test.js"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
-  },
-  {
-   "id": "OP-0334",
-   "method": "PATCH",
-   "path": "/platform/tenants/{X}",
-   "file": "backend/routes/platform.js",
-   "alsoDefinedIn": [
-    "backend/routes/platform.js"
-   ],
-   "modernUiRefs": [],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "backend/test/superadmin-platform.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UNREACHABLE",
-   "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "no call site anywhere outside its defining route file"
   },
   {
    "id": "OP-0335",
-   "method": "POST",
-   "path": "/platform/tenants/{X}/decommission",
+   "method": "PATCH",
+   "path": "/platform/tenants/{X}",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
     "backend/routes/platform.js"
@@ -6149,7 +6150,7 @@
   {
    "id": "OP-0336",
    "method": "POST",
-   "path": "/platform/tenants/garbage-collect",
+   "path": "/platform/tenants/{X}/decommission",
    "file": "backend/routes/platform.js",
    "alsoDefinedIn": [
     "backend/routes/platform.js"
@@ -6165,6 +6166,23 @@
   },
   {
    "id": "OP-0337",
+   "method": "POST",
+   "path": "/platform/tenants/garbage-collect",
+   "file": "backend/routes/platform.js",
+   "alsoDefinedIn": [
+    "backend/routes/platform.js"
+   ],
+   "modernUiRefs": [],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [],
+   "mentionedOnlyInModern": false,
+   "reachability": "UNREACHABLE",
+   "rule": "R6",
+   "reason": "no call site anywhere outside its defining route file"
+  },
+  {
+   "id": "OP-0338",
    "method": "GET",
    "path": "/platform/version",
    "file": "backend/routes/platform.js",
@@ -6183,7 +6201,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0338",
+   "id": "OP-0339",
    "method": "GET",
    "path": "/portfolios",
    "file": "backend/routes/portfolios.js",
@@ -6203,7 +6221,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0339",
+   "id": "OP-0340",
    "method": "DELETE",
    "path": "/portfolios/{X}",
    "file": "backend/routes/portfolios.js",
@@ -6224,29 +6242,8 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0340",
-   "method": "GET",
-   "path": "/portfolios/{X}",
-   "file": "backend/routes/portfolios.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/portfolio.spec.ts",
-    "backend/test/master-configuration-control.test.js",
-    "backend/test/portfolio-routes.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
    "id": "OP-0341",
-   "method": "POST",
+   "method": "GET",
    "path": "/portfolios/{X}",
    "file": "backend/routes/portfolios.js",
    "alsoDefinedIn": [],
@@ -6267,6 +6264,27 @@
   },
   {
    "id": "OP-0342",
+   "method": "POST",
+   "path": "/portfolios/{X}",
+   "file": "backend/routes/portfolios.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/portfolio.spec.ts",
+    "backend/test/master-configuration-control.test.js",
+    "backend/test/portfolio-routes.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0343",
    "method": "GET",
    "path": "/portfolios/public",
    "file": "backend/routes/portfolios.js",
@@ -6276,16 +6294,14 @@
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/portfolio.spec.ts"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0343",
+   "id": "OP-0344",
    "method": "GET",
    "path": "/portfolios/public/{X}",
    "file": "backend/routes/portfolios.js",
@@ -6305,7 +6321,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0344",
+   "id": "OP-0345",
    "method": "GET",
    "path": "/portfolios/slug-availability",
    "file": "backend/routes/portfolios.js",
@@ -6315,16 +6331,14 @@
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/portfolio.spec.ts"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0345",
+   "id": "OP-0346",
    "method": "POST",
    "path": "/public-export",
    "file": "backend/index.js",
@@ -6341,7 +6355,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0346",
+   "id": "OP-0347",
    "method": "POST",
    "path": "/public-export-docx",
    "file": "backend/index.js",
@@ -6356,7 +6370,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0347",
+   "id": "OP-0348",
    "method": "GET",
    "path": "/public/blog/{X}/og.png",
    "file": "backend/routes/publicDiscovery.js",
@@ -6371,7 +6385,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0348",
+   "id": "OP-0349",
    "method": "GET",
    "path": "/public/custom-pages",
    "file": "backend/index.js",
@@ -6386,7 +6400,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0349",
+   "id": "OP-0350",
    "method": "GET",
    "path": "/public/custom-pages/{X}",
    "file": "backend/index.js",
@@ -6401,7 +6415,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0350",
+   "id": "OP-0351",
    "method": "GET",
    "path": "/public/featured-companies",
    "file": "backend/index.js",
@@ -6416,7 +6430,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0351",
+   "id": "OP-0352",
    "method": "GET",
    "path": "/public/geo/regions",
    "file": "backend/routes/publicDiscovery.js",
@@ -6433,7 +6447,7 @@
    "reason": "no direct call site, but a child path (/public/geo/regions/{X}/{X}) is called from modern code; parent reachability not determinable statically"
   },
   {
-   "id": "OP-0352",
+   "id": "OP-0353",
    "method": "GET",
    "path": "/public/geo/regions/{X}/{X}",
    "file": "backend/routes/publicDiscovery.js",
@@ -6450,7 +6464,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0353",
+   "id": "OP-0354",
    "method": "GET",
    "path": "/public/jobs/{X}/og.png",
    "file": "backend/routes/publicDiscovery.js",
@@ -6465,7 +6479,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0354",
+   "id": "OP-0355",
    "method": "GET",
    "path": "/public/trusted-by",
    "file": "backend/index.js",
@@ -6480,7 +6494,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0355",
+   "id": "OP-0356",
    "method": "POST",
    "path": "/razorpay/create-order",
    "file": "backend/index.js",
@@ -6499,7 +6513,7 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0356",
+   "id": "OP-0357",
    "method": "POST",
    "path": "/razorpay/verify-payment",
    "file": "backend/index.js",
@@ -6516,7 +6530,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0357",
+   "id": "OP-0358",
    "method": "GET",
    "path": "/readyz",
    "file": "backend/index.js",
@@ -6534,7 +6548,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0358",
+   "id": "OP-0359",
    "method": "GET",
    "path": "/resumes",
    "file": "backend/routes/resumes.js",
@@ -6560,14 +6574,13 @@
    "reason": "called from 6 modern source file(s)"
   },
   {
-   "id": "OP-0359",
+   "id": "OP-0360",
    "method": "DELETE",
    "path": "/resumes/{X}",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
     "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
     "frontend/src/pages/dashboard/ats-score.tsx",
     "frontend/src/pages/dashboard/resume-builder.tsx",
     "frontend/src/pages/dashboard/resumes.tsx",
@@ -6584,17 +6597,16 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 5 modern source file(s)"
   },
   {
-   "id": "OP-0360",
+   "id": "OP-0361",
    "method": "GET",
    "path": "/resumes/{X}",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
     "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
     "frontend/src/pages/dashboard/ats-score.tsx",
     "frontend/src/pages/dashboard/resume-builder.tsx",
     "frontend/src/pages/dashboard/resumes.tsx",
@@ -6611,17 +6623,16 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 5 modern source file(s)"
   },
   {
-   "id": "OP-0361",
+   "id": "OP-0362",
    "method": "POST",
    "path": "/resumes/{X}",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
     "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
     "frontend/src/pages/dashboard/ats-score.tsx",
     "frontend/src/pages/dashboard/resume-builder.tsx",
     "frontend/src/pages/dashboard/resumes.tsx",
@@ -6638,143 +6649,104 @@
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 5 modern source file(s)"
   },
   {
-   "id": "OP-0362",
+   "id": "OP-0363",
    "method": "GET",
    "path": "/resumes/{X}/publication",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
-    "frontend/src/pages/dashboard/ats-score.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx",
-    "frontend/src/pages/dashboard/resumes.tsx",
-    "frontend/src/pages/export/cv-renderer.tsx"
+    "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/favourites.spec.ts",
-    "frontend/tests/candidate/portfolio.spec.ts"
+    "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0363",
+   "id": "OP-0364",
    "method": "POST",
    "path": "/resumes/{X}/publish",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
-    "frontend/src/pages/dashboard/ats-score.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx",
-    "frontend/src/pages/dashboard/resumes.tsx",
-    "frontend/src/pages/export/cv-renderer.tsx"
+    "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/favourites.spec.ts",
-    "frontend/tests/candidate/portfolio.spec.ts"
+    "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0364",
+   "id": "OP-0365",
    "method": "POST",
    "path": "/resumes/{X}/unpublish",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts",
-    "frontend/src/lib/share-publication.ts",
-    "frontend/src/pages/dashboard/ats-score.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx",
-    "frontend/src/pages/dashboard/resumes.tsx",
-    "frontend/src/pages/export/cv-renderer.tsx"
+    "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
-   "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/favourites.spec.ts",
-    "frontend/tests/candidate/portfolio.spec.ts"
-   ],
+   "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 6 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0365",
+   "id": "OP-0366",
    "method": "GET",
    "path": "/resumes/public/{X}",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts",
-    "frontend/src/pages/dashboard/ats-score.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx",
-    "frontend/src/pages/dashboard/resumes.tsx",
-    "frontend/src/pages/export/cv-renderer.tsx"
-   ],
+   "modernUiRefs": [],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/favourites.spec.ts",
-    "frontend/tests/candidate/portfolio.spec.ts"
+    "backend/test/adversarial-certification.test.js",
+    "backend/test/cross-app-download-share-audit.test.js",
+    "backend/test/dir008-public-share.test.js",
+    "backend/test/dir008-resume-crud.test.js"
    ],
    "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 5 modern source file(s)"
+   "reachability": "UNVERIFIED",
+   "rule": "R7",
+   "reason": "a shape-compatible call (/resumes/{X}/publication in frontend/src/lib/share-publication.ts) may construct this path at runtime"
   },
   {
-   "id": "OP-0366",
+   "id": "OP-0367",
    "method": "GET",
    "path": "/resumes/public/token/{X}",
    "file": "backend/routes/resumes.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
-    "frontend/src/lib/portfolio.ts",
-    "frontend/src/pages/dashboard/ats-score.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx",
-    "frontend/src/pages/dashboard/resumes.tsx",
     "frontend/src/pages/export/cv-renderer.tsx"
    ],
    "backendRefs": [],
    "legacyUiRefs": 0,
    "testRefs": [
-    "frontend/tests/candidate/applied-jobs.spec.ts",
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/favourites.spec.ts",
-    "frontend/tests/candidate/portfolio.spec.ts"
+    "backend/test/dir008-public-share.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
    "rule": "R1",
-   "reason": "called from 5 modern source file(s)"
+   "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0367",
+   "id": "OP-0368",
    "method": "GET",
    "path": "/reviews",
    "file": "backend/routes/miscData.js",
@@ -6789,7 +6761,7 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0368",
+   "id": "OP-0369",
    "method": "GET",
    "path": "/rtl-font-config",
    "file": "backend/index.js",
@@ -6806,7 +6778,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0369",
+   "id": "OP-0370",
    "method": "POST",
    "path": "/send-sms",
    "file": "backend/index.js",
@@ -6821,7 +6793,7 @@
    "reason": "mentioned only as display metadata in modern code; never called"
   },
   {
-   "id": "OP-0370",
+   "id": "OP-0371",
    "method": "GET",
    "path": "/service-availability",
    "file": "backend/index.js",
@@ -6836,7 +6808,7 @@
    "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
-   "id": "OP-0371",
+   "id": "OP-0372",
    "method": "GET",
    "path": "/stats",
    "file": "backend/routes/miscData.js",
@@ -6853,7 +6825,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0372",
+   "id": "OP-0373",
    "method": "POST",
    "path": "/stats/increment",
    "file": "backend/routes/miscData.js",
@@ -6870,7 +6842,7 @@
    "reason": "called only by tests, never by a client"
   },
   {
-   "id": "OP-0373",
+   "id": "OP-0374",
    "method": "POST",
    "path": "/stripe-webhook",
    "file": "backend/index.js",
@@ -6887,7 +6859,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0374",
+   "id": "OP-0375",
    "method": "POST",
    "path": "/subscription/preferences",
    "file": "backend/index.js",
@@ -6902,7 +6874,7 @@
    "reason": "no call site anywhere outside its defining route file"
   },
   {
-   "id": "OP-0375",
+   "id": "OP-0376",
    "method": "GET",
    "path": "/trusted-by.json",
    "file": "backend/index.js",
@@ -6917,7 +6889,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0376",
+   "id": "OP-0377",
    "method": "GET",
    "path": "/user-stats",
    "file": "backend/routes/miscData.js",
@@ -6936,55 +6908,9 @@
    "reason": "called from 1 modern source file(s)"
   },
   {
-   "id": "OP-0377",
+   "id": "OP-0378",
    "method": "GET",
    "path": "/users-data/{X}",
-   "file": "backend/routes/usersData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/account-settings.ts",
-    "frontend/src/lib/cover-letters.ts",
-    "frontend/src/lib/preview-session.ts",
-    "frontend/src/pages/auth/login.tsx",
-    "frontend/src/pages/dashboard/overview.tsx",
-    "frontend/src/pages/dashboard/resume-builder.tsx"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "frontend/tests/candidate/ats-scoring.spec.ts",
-    "frontend/tests/candidate/auth.setup.ts",
-    "frontend/tests/candidate/settings.spec.ts",
-    "frontend/tests/engine-authenticated.spec.ts"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 7 modern source file(s)"
-  },
-  {
-   "id": "OP-0378",
-   "method": "POST",
-   "path": "/users-data/mfa/disable",
-   "file": "backend/routes/usersData.js",
-   "alsoDefinedIn": [],
-   "modernUiRefs": [
-    "frontend/src/lib/account-settings.ts"
-   ],
-   "backendRefs": [],
-   "legacyUiRefs": 1,
-   "testRefs": [
-    "backend/test/self-service-sensitive-operations.test.js"
-   ],
-   "mentionedOnlyInModern": false,
-   "reachability": "UI-REACHABLE",
-   "rule": "R1",
-   "reason": "called from 1 modern source file(s)"
-  },
-  {
-   "id": "OP-0379",
-   "method": "GET",
-   "path": "/users-data/profile",
    "file": "backend/routes/usersData.js",
    "alsoDefinedIn": [],
    "modernUiRefs": [
@@ -7009,8 +6935,27 @@
    "reason": "called from 7 modern source file(s)"
   },
   {
-   "id": "OP-0380",
+   "id": "OP-0379",
    "method": "POST",
+   "path": "/users-data/mfa/disable",
+   "file": "backend/routes/usersData.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/account-settings.ts"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 1,
+   "testRefs": [
+    "backend/test/self-service-sensitive-operations.test.js"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 1 modern source file(s)"
+  },
+  {
+   "id": "OP-0380",
+   "method": "GET",
    "path": "/users-data/profile",
    "file": "backend/routes/usersData.js",
    "alsoDefinedIn": [],
@@ -7038,6 +6983,33 @@
   {
    "id": "OP-0381",
    "method": "POST",
+   "path": "/users-data/profile",
+   "file": "backend/routes/usersData.js",
+   "alsoDefinedIn": [],
+   "modernUiRefs": [
+    "frontend/src/lib/account-settings.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/pages/auth/login.tsx",
+    "frontend/src/pages/dashboard/overview.tsx",
+    "frontend/src/pages/dashboard/resume-builder.tsx"
+   ],
+   "backendRefs": [],
+   "legacyUiRefs": 0,
+   "testRefs": [
+    "frontend/tests/candidate/ats-scoring.spec.ts",
+    "frontend/tests/candidate/auth.setup.ts",
+    "frontend/tests/candidate/settings.spec.ts",
+    "frontend/tests/engine-authenticated.spec.ts"
+   ],
+   "mentionedOnlyInModern": false,
+   "reachability": "UI-REACHABLE",
+   "rule": "R1",
+   "reason": "called from 7 modern source file(s)"
+  },
+  {
+   "id": "OP-0382",
+   "method": "POST",
    "path": "/v1/chat/completions",
    "file": "backend/index.js",
    "alsoDefinedIn": [],
@@ -7055,7 +7027,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0382",
+   "id": "OP-0383",
    "method": "POST",
    "path": "/v1/messages",
    "file": "backend/index.js",
@@ -7072,7 +7044,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0383",
+   "id": "OP-0384",
    "method": "POST",
    "path": "/v1/search",
    "file": "backend/index.js",
@@ -7089,7 +7061,7 @@
    "reason": "provider webhook/callback/M2M/agent-API/OG-image/health-probe surface"
   },
   {
-   "id": "OP-0384",
+   "id": "OP-0385",
    "method": "GET",
    "path": "/v1/status",
    "file": "backend/index.js",

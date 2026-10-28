@@ -117,8 +117,8 @@ component-name similarity. §1–§6 measure **backend route presence**; they ne
 
 | Measure | Legacy `src/` | Modern `frontend/src/` |
 |---|---:|---:|
-| Source files | 651 (519 `.jsx`) | 206 (151 `.tsx`) |
-| Lines | 193,320 | 68,812 |
+| Source files | 650 (519 `.jsx`) | 206 (151 `.tsx`) |
+| Lines | 193,310 | 68,812 |
 | Distinct endpoints referenced | 153 | 161 |
 | Routes declared | 58 | 100 |
 

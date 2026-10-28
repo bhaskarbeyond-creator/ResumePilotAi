@@ -153,6 +153,106 @@ def c_no_placeholder_ids():
     assert not suspicious, f"glob-style paths in register: {suspicious[:5]}"
 
 
+
+def _filesystem_count(root, exts, exclude_patterns=()):
+    total = 0
+    for base, _dirs, names in os.walk(os.path.join(ROOT, root)):
+        for name in names:
+            if not name.endswith(tuple(exts)):
+                continue
+            if any(re.search(pat, name) for pat in exclude_patterns):
+                continue
+            total += 1
+    return total
+
+
+def c_source_counts_independent():
+    """Recompute the two headline file counts from the working tree, not from the artifact."""
+    data = parity()
+    legacy_disk = _filesystem_count("src", (".js", ".jsx"), (r"\.(test|spec)\.[cm]?jsx?$",))
+    modern_disk = _filesystem_count("frontend/src", (".ts", ".tsx"))
+    assert data["legacyFilesMeasured"] == legacy_disk, (
+        f"legacy: register says {data['legacyFilesMeasured']}, filesystem has {legacy_disk}")
+    assert data["modernFilesMeasured"] == modern_disk, (
+        f"modern: register says {data['modernFilesMeasured']}, filesystem has {modern_disk}")
+    ledger = read("Evidence", "artifacts", "legacy-file-inventory.tsv").strip().splitlines()
+    assert len(ledger) - 1 == legacy_disk, f"ledger rows {len(ledger) - 1} != filesystem {legacy_disk}"
+
+
+def c_operation_register_matches_tsv():
+    tsv = read("Evidence", "artifacts", "backend-operations.tsv").strip().splitlines()
+    rows = len(tsv) - 1
+    total = reach()["total"]
+    assert rows == total, f"tsv has {rows} rows, json total is {total}"
+
+
+def c_dispositions_enumerated():
+    """Every category the coverage claim aggregates must still enumerate to its stated size."""
+    disc = len(re.findall(r"## \[DISC-\d{3}\]", read("DISCREPANCY-LOG.md")))
+    req = len(re.findall(r"^\| \*\*R-\d{3}\*\*", read("REQUIREMENT-REGISTER.md"), re.M))
+    ra = len(re.findall(r"^\| (RA-\d{2}) \|", read("ALLEGATION-RESOLUTION-REGISTER.md"), re.M))
+    eg_doc = read("EG-REVALIDATION-REGISTER.md")
+    eg_missing = [f"EG-{n:03d}" for n in range(1, 13) if f"EG-{n:03d}" not in eg_doc]
+    a11y = len(re.findall(r"A11Y-00[1-5]", read("EG-REVALIDATION-REGISTER.md")))
+    caps = parity()["total"]
+    ops = reach()["total"]
+    assert disc == 26, f"expected 26 findings after DISC-024..026, found {disc}"
+    assert req == 65, f"expected 65 requirements, found {req}"
+    assert ra == 35, f"expected 35 allegations, found {ra}"
+    assert not eg_missing, f"EG entries not dispositioned: {eg_missing}"
+    assert caps == 112 and ops == 385, f"caps {caps}, ops {ops}"
+
+
+def c_coverage_total_arithmetic():
+    """The package's headline coverage figure must equal the sum of its parts."""
+    data = parity()
+    doc = read("V4-COVERAGE-RECONCILIATION.md")
+    parts = [data["legacyFilesMeasured"], data["modernFilesMeasured"], data["total"],
+             reach()["total"], 35, 26, 65, 17]
+    total = sum(parts)
+    assert total == 1496, f"parts sum to {total}, not 1,496"
+    assert "1,496" in doc, "coverage document does not state the corrected total"
+    assert "2,092" not in doc, "retracted total still present as a claim"
+
+
+def c_client_calls_consistent():
+    """DISC-025's numbers must match the artifact it cites, and the artifact must be internally consistent."""
+    art = json.loads(read("Evidence/artifacts/client-call-existence.json"))
+    tally = art["tally"]
+    assert art["callSites"] == sum(tally.values()), "callSites != sum of tally"
+    assert art["filesScanned"] > 200, f"only {art['filesScanned']} files scanned"
+    missing_sites = tally.get("MISSING", 0)
+    dead_paths = len(art["distinctMissingEndpoints"])
+    assert dead_paths == 23, f"expected 23 dead paths, found {dead_paths}"
+    assert missing_sites == sum(min(1, 1) for c in art["calls"] if c["status"] == "MISSING"), "MISSING tally mismatch"
+    assert tally.get("METHOD-MISMATCH", 0) == 0, "unexpected verb mismatches"
+    log = read("DISCREPANCY-LOG.md")
+    assert "23 client-side paths" in log, "DISC-025 headline does not match the artifact"
+    rows = len(re.findall(r"^\| \d+ \| `(?:GET|POST|PUT|PATCH|DELETE) /", log, re.M))
+    assert rows == 23, f"DISC-025 table lists {rows} paths, artifact has {dead_paths}"
+
+
+def c_full_parity_supported():
+    """Every surviving FULL PARITY row must be endpoint-supported and reachability-supported."""
+    art = json.loads(read("Evidence/artifacts/parity-endpoint-audit.json"))
+    data = parity()
+    full = sum(1 for c in data["capabilities"] if c["classification"] == "FULL PARITY")
+    assert art["fullParityRows"] == full, f"audit covers {art['fullParityRows']} rows, parity has {full} FULL"
+    bad = {k: v for k, v in art["tally"].items() if k != "SUPPORTED" and v}
+    assert not bad, f"FULL PARITY rows still unsupported: {bad}"
+    assert full == 19, f"expected 19 FULL PARITY rows, found {full}"
+
+
+def c_reach_doc_matches_register():
+    """The reachability document's class table must equal the register artifact."""
+    doc = read("BACKEND-OPERATION-REACHABILITY.md")
+    classes = reach()["classes"]
+    for name, n in classes.items():
+        assert re.search(r"\| `%s` \| \*\*%d\*\* \|" % (re.escape(name), n), doc), \
+            f"{name}={n} not found in the reachability document table"
+    assert "Per-operation rationale for all 176" in doc, "per-operation rationale table missing"
+
+
 for name, fn in [
     ("capability totals reconcile", c_totals),
     ("every cited path exists on disk", c_paths_exist),
@@ -163,6 +263,13 @@ for name, fn in [
     ("all V4 artifacts present", c_artifacts_present),
     ("no FULL PARITY row without a modern anchor", c_no_unevidenced_full),
     ("no glob-style paths in the register", c_no_placeholder_ids),
+    ("legacy/modern counts recomputed from the filesystem", c_source_counts_independent),
+    ("operation register matches its TSV", c_operation_register_matches_tsv),
+    ("every dispositioned category enumerates", c_dispositions_enumerated),
+    ("client call existence artifact reconciles", c_client_calls_consistent),
+    ("every FULL PARITY row is supported", c_full_parity_supported),
+    ("reachability document matches the register", c_reach_doc_matches_register),
+    ("coverage total equals the sum of its parts", c_coverage_total_arithmetic),
 ]:
     check(name, fn)
 

@@ -1,10 +1,23 @@
-# Runtime Verification — V4
+# Runtime Verification — V4 (running status log; serves as `RUNTIME-VERIFICATION-STATUS.md`)
 
 **Revision verified:** `0adad00d0975444f13b98f9cda3ec7e24c2c6a62` (`arena/393531fe-resumepilotai`)
 **Environment:** Node `v22.22.3`, npm `10.9.8`, Linux x86-64 sandbox. No MariaDB/MySQL server, no
 browser binaries, no PHP/Apache, network egress limited to five package/GitHub hosts.
 **Logs:** `Evidence/logs/v4/` — `backend-syntax.log`, `frontend-typecheck.log`, `backend-test-probe.log`,
-`backend-full-suite.log`, `enterprise-suite.log`.
+`backend-full-suite.log`, `enterprise-suite.log`; `Evidence/logs/v5/` — `backend-canonical-suite.log`,
+`backend-canonical-suite.triage.md`.
+
+> **V5 status correction (revision `cccd35a5`).** Row 4 below is **superseded**. It invoked the test runner
+> in a way that left the repo's MariaDB gate off, reporting 30 skipped tests as though the suite had run.
+> The canonical command is `cd backend && npm test`, which runs
+> `backend/scripts/run-tests-with-annotations.js` — and that script sets `RUN_MARIADB_INTEGRATION=true`
+> and `MARIADB_TEST_ALLOW_RESET=true` **by default**. Canonical result:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, 70.8 s
+> (`Evidence/logs/v5/backend-canonical-suite.log`). All 46 failures are DB-caused, each with a cited
+> mechanism (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Rows 1, 2, 3, 5 are unchanged and
+> still stand. A separate V5 attempt that called `node --test test/` directly resolved to a nonexistent
+> module and produced 1 test / 0 pass / 1 fail; that log (`backend-suite.log`) is **invalid** and is cited
+> nowhere.
 
 This report replaces the claim "no runtime evidence exists" for the parts that *can* run here, and it
 keeps those results strictly separate from the parts that cannot. Nothing below is inferred from a
@@ -19,12 +32,12 @@ harness; every line cites an executed command.
 | 1 | `node --check` over all **364** backend `.js` files | **0 syntax failures** | every backend file parses under the pinned Node version | that any code path executes, that imports resolve, that a route mounts |
 | 2 | `npx tsc --noEmit -p tsconfig.app.json` in `frontend/` | **exit 0, 0 errors** | the 206-file modern TypeScript surface type-checks against its own declarations | runtime behaviour, prop correctness, CSS/layout, a11y |
 | 3 | `node --test` on 4 sampled backend files | **4/4 files pass** | the runner works and these files tolerate a missing DB | anything about DB-backed assertions — they log `ECONNREFUSED` and the file still exits 0 |
-| 4 | Full backend suite (`node --test`, single concurrency) | **1,315 tests — 1,271 pass, 14 fail, 30 skipped**, 69.4 s, exit 1 | the suite's non-DB half genuinely runs and passes at this revision | anything requiring MariaDB (see §3) |
+| 4 | Full backend suite (`node --test`, single concurrency) — *superseded, see banner* | **1,315 tests — 1,271 pass, 14 fail, 30 skipped**, 69.4 s, exit 1 → canonical **1,269 pass / 46 fail / 0 skip** | the suite's non-DB half genuinely runs and passes at this revision | anything requiring MariaDB (see §3) |
 | 5 | Enterprise suite (25 files, `--test-concurrency=1 --test-force-exit`) | **187/187 pass, 0 fail, 0 skip**, exit 0 | the enterprise contract surface passes in isolation | the same surface against a live store |
 
 Commands 4 and 5 are the first full-suite executions this audit has performed. Earlier passes reported
 "1,356 tests passing" from a prior handover document without re-running anything; that number is
-superseded by the measured **1,315 tests / 1,271 passing** at this revision (DISC-009 already flagged
+superseded by the measured **1,315 tests / 1,269 passing / 46 failing** at this revision under the canonical harness (DISC-009 already flagged
 the claim drift; V4 replaces the figure with an executed measurement).
 
 ## 2. Frontend type-check detail
@@ -120,14 +133,14 @@ baseline captured here differs for reasons unrelated to the product.
 
 No provider credentials exist for Stripe/PayPal/Razorpay/Paytm/PhonePe, AI providers, S3-compatible
 storage, Firebase identity or SMTP. None were fabricated. Mock/contract coverage is limited to the
-1,271 passing tests, and a passing mock test is evidence only about the mock.
+1,269 canonical passing tests, and a passing mock test is evidence only about the mock.
 
 ## 8. What this pass therefore claims
 
 | Claim | Status |
 |---|---|
 | Backend parses; frontend type-checks | **VERIFIED (executed)** |
-| 1,271 backend tests pass; 187/187 enterprise tests pass | **VERIFIED (executed)** |
+| 1,269 of 1,315 backend tests pass under the canonical harness (46 fail, all DB-caused); 187/187 enterprise tests pass | **VERIFIED (executed)** |
 | 14 backend tests fail — cause: no database | **VERIFIED (executed + code-read)** |
 | 30 tests skipped — cause: DB gate | **VERIFIED (executed, gate strings captured)** |
 | Anything requiring MariaDB | **BLOCKED (EG-007)** |

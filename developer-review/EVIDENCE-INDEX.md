@@ -1,5 +1,11 @@
 # Evidence Index — Stable E-IDs for Senior Architectural Mandate v3 Completion
 
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
 **Source revision:** `ff841d5dfe7776fb05b094c9f005d551a0d32032` (app revision `537e2985`)
 **Branch:** `main` (and `dev` `6e4929cf`)
 **Generated:** 2026-10-28
@@ -245,9 +251,9 @@ at revision `415335b`; none is carried over from an earlier report.
 
 | ID | Evidence | Artifact / command | Result |
 |---|---|---|---|
-| **E-325** | Complete legacy/modern inventory with per-file ledger | `node developer-review/tools/legacy-modern-inventory.cjs` → `Evidence/artifacts/legacy-modern-inventory.json`, `legacy-file-inventory.tsv`, `Evidence/logs/legacy-modern-inventory.log` | legacy **651 files / 519 `.jsx` / 193,320 lines / 153 endpoints**; modern **206 / 151 `.tsx` / 68,812 lines / 161 endpoints**; 69 shared, 84 legacy-only, 92 modern-only. **Corrects E-002's "144 files/dirs" and "main.jsx 37k lines"** (actual: 645 lines) |
+| **E-325** | Complete legacy/modern inventory with per-file ledger | `node developer-review/tools/legacy-modern-inventory.cjs` → `Evidence/artifacts/legacy-modern-inventory.json`, `legacy-file-inventory.tsv`, `Evidence/logs/legacy-modern-inventory.log` | legacy **650 files / 519 `.jsx` / 193,310 lines / 153 endpoints**; modern **206 / 151 `.tsx` / 68,812 lines / 161 endpoints**; 69 shared, 84 legacy-only, 92 modern-only. **Corrects E-002's "144 files/dirs" and "main.jsx 37k lines"** (actual: 645 lines) |
 | **E-326** | Backend operation coverage vs both frontends | `node developer-review/tools/backend-ui-coverage.cjs` → `Evidence/artifacts/backend-ui-coverage.json`, `Evidence/logs/backend-ui-coverage.log` | 498 declarations → **384** unique `METHOD+path`; 192 consumed by modern; **192 (50 %) unreachable from the modern UI**; **58 referenced by neither frontend**; 0 unresolved mounts |
-| **E-327** | Capability parity register (machine-checkable) | `node developer-review/tools/parity-matrix.cjs` → `FEATURE-PARITY-MATRIX.md`, `Evidence/artifacts/feature-parity.json`, `Evidence/logs/parity-matrix.log` | **109 capabilities**: 25 FULL, 6 REPLACED, 35 PARTIAL, **30 MISSING**, **9 MOCK/FABRICATED**, 4 UNVERIFIED, 0 STATIC STUB / LOCAL-ONLY / INTENTIONAL RETIREMENT. Legacy attribution **651/651** |
+| **E-327** | Capability parity register (machine-checkable) | `node developer-review/tools/parity-matrix.cjs` → `FEATURE-PARITY-MATRIX.md`, `Evidence/artifacts/feature-parity.json`, `Evidence/logs/parity-matrix.log` | **109 capabilities**: 25 FULL, 6 REPLACED, 35 PARTIAL, **30 MISSING**, **9 MOCK/FABRICATED**, 4 UNVERIFIED, 0 STATIC STUB / LOCAL-ONLY / INTENTIONAL RETIREMENT. Legacy attribution **650/650** |
 | **E-328** | Fabricated-state audit of admin surfaces | `AdminSecurityTab.tsx` (928 L, 0 API refs, 4 seed arrays), `AdminContentMarketingTab.tsx` (456 L, 0 API refs, 16 records), `AdminAttentionTab.tsx` (169 L, 0 API refs), `AdminModerationTab.tsx` (seeded reads, `.catch(() => {})` writes) | 9 capability rows classified `MOCK / FABRICATED STATE`; every corresponding backend endpoint confirmed present |
 | **E-329** | Voice-interview removal measure | `wc -l` on 4 legacy files + project-wide grep for media APIs | **2,432 legacy lines** (`LiveInterviewSession` 1,691, `LiveVoiceEngine` 233, `LiveAudioWaveform` 254, `useInterviewMedia` 254) → **0** matches for `speechSynthesis|SpeechRecognition|getUserMedia|MediaRecorder|AudioContext` in `frontend/src` |
 | **E-330** | Portfolio edit dead-end trace | `pages/portfolio/builder.tsx:347,477,490-533`, `lib/portfolio-document.ts:412-420` | `editable=false` for every legacy document; message "Built with the earlier page editor"; no migration path in repo |
@@ -275,6 +281,12 @@ list above the array also uses `id:`. Recorded as E-334.
 | **E-340** | Browser-availability probe | `ls ~/.cache/ms-playwright`, `command -v chromium`, suite log | cache absent; no browser binary; suite logs `browserType.launch: Executable doesn't exist at …chromium_headless_shell-1234…` 11×; `playwright test --list` = 3,675 tests in 21 files / 42 projects over **7** spec files |
 | **E-341** | Rejection-feedback persistence trace | `resilientMutations.js:321-328`, `MySQLRepository.js:1600-1637`, `001_baseline.sql:180-204` | `employerNotes` and `revision` are not in the adapter's 13-column map; `notes` is re-written from the pre-update record; 0 tests reference `employerNotes` (DISC-020) |
 | **E-342** | OAuth registration/configuration trace | `backend/index.js:7273-7460`, `security/oauth.js`, `database/oauthStore.js` | state = 32 random bytes stored only as SHA-256 + TTL; cookie binding `timingSafeEqual`; single-use `SELECT … FOR UPDATE`; S256 PKCE; verified-email-only; conflict/link guards; `oauth_not_configured` fail-closed at `index.js:7280` |
+
+| **E-343** | Client call → served operation sweep | `tools/client-call-existence.cjs` → `Evidence/artifacts/client-call-existence.json` | **229 call sites** over 205 files: 188 exact, 11 dynamic-pattern matches, **30 sites / 23 distinct paths served by no operation**, 0 verb mismatches. Basis of DISC-025 |
+| **E-344** | Reachability cross-check | `tools/reachability-crosscheck.cjs` | independent parser agrees on **385/385** operations, **0 disagreements**, 356 raw route literals counted pre-expansion |
+| **E-345** | FULL PARITY challenge | `tools/parity-endpoint-audit.cjs` → `Evidence/artifacts/parity-endpoint-audit.json` | 19 surviving FULL rows, **19/19 SUPPORTED**; 8 rows downgraded first (6 partial, 2 missing) with the endpoint evidence in `DISCREPANCY-LOG.md` DISC-025 |
+| **E-346** | Canonical backend suite | `cd backend && npm test` → `Evidence/logs/v5/backend-canonical-suite.log` | **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skip**, 70.8 s, exit 1 |
+| **E-347** | Suite failure causation | `Evidence/logs/v5/backend-canonical-suite.triage.md` | **46/46** failures mapped: 40 `ECONNREFUSED 127.0.0.1:3306`, 4 explicit 503 `APPLICATION_DATABASE_UNAVAILABLE`, 2 handler-level (audit-logs 503; webhook replay `getPool()` → 500) | 
 
 **Note on E-002 (kept for the record, not edited):** its legacy-tree figures are superseded by E-325.
 The original row is preserved so the correction is auditable rather than invisible (see DISC-018).

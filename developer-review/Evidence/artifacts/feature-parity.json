@@ -1,6 +1,6 @@
 {
- "revision": "0adad00d0975444f13b98f9cda3ec7e24c2c6a62",
- "generatedAt": "2026-10-28T20:56:37.485Z",
+ "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
+ "generatedAt": "2026-10-28T21:16:02.797Z",
  "vocabulary": [
   "FULL PARITY",
   "PARTIAL PARITY",
@@ -13,9 +13,9 @@
   "UNVERIFIED"
  ],
  "counts": {
-  "FULL PARITY": 28,
-  "PARTIAL PARITY": 36,
-  "MISSING": 30,
+  "FULL PARITY": 19,
+  "PARTIAL PARITY": 43,
+  "MISSING": 32,
   "STATIC STUB": 0,
   "MOCK / FABRICATED STATE": 9,
   "LOCAL-ONLY PERSISTENCE": 0,
@@ -27,8 +27,8 @@
   "A": {
    "total": 26,
    "byClassification": {
-    "FULL PARITY": 3,
-    "PARTIAL PARITY": 8,
+    "FULL PARITY": 0,
+    "PARTIAL PARITY": 11,
     "MISSING": 6,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 9,
@@ -41,8 +41,8 @@
   "B": {
    "total": 11,
    "byClassification": {
-    "FULL PARITY": 5,
-    "PARTIAL PARITY": 5,
+    "FULL PARITY": 4,
+    "PARTIAL PARITY": 6,
     "MISSING": 1,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
@@ -83,8 +83,8 @@
   "E": {
    "total": 17,
    "byClassification": {
-    "FULL PARITY": 9,
-    "PARTIAL PARITY": 4,
+    "FULL PARITY": 6,
+    "PARTIAL PARITY": 7,
     "MISSING": 3,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
@@ -111,9 +111,9 @@
   "G": {
    "total": 25,
    "byClassification": {
-    "FULL PARITY": 5,
+    "FULL PARITY": 3,
     "PARTIAL PARITY": 7,
-    "MISSING": 7,
+    "MISSING": 9,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -124,7 +124,7 @@
   }
  },
  "total": 112,
- "legacyFilesMeasured": 651,
+ "legacyFilesMeasured": 650,
  "legacyFilesUnattributed": 0,
  "legacySourceUnattributed": [],
  "modernFilesMeasured": 206,
@@ -561,7 +561,7 @@
    "id": "FP-A20",
    "domain": "A",
    "capability": "Job queues, DLQ, outbox, cache, backups (operations console)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/admin/queues",
     "src/components/admin/operations",
@@ -578,12 +578,12 @@
    "modernLines": 984,
    "backend": "yes",
    "endpoints": [
-    "/admin/queues",
-    "/admin/queues/dlq/replay-all",
-    "/admin/operations"
+    "/platform/queues",
+    "/platform/queues/retry",
+    "/admin/operations/feature-flags"
    ],
    "invoke": "yes",
-   "evidence": "AdminQueuesTab 683 lines / 6 api refs; replay-all + outbox retry are modern-only additions"
+   "evidence": "AdminQueuesTab.tsx:138/173 call /platform/queues and /platform/queues/retry (UI-REACHABLE). The V4-declared /admin/queues and /admin/queues/dlq/replay-all are NOT registered: the same tab reaches them only as .catch() fallbacks (AdminQueuesTab.tsx:138/173/186/204) and those branches 404. AdminOperationsTab.tsx:122/136 POST /admin/operations/backup and /admin/operations/cache-clear, neither registered; /admin/operations/feature-flags is UNREACHABLE."
   },
   {
    "id": "FP-A21",
@@ -653,7 +653,7 @@
    "id": "FP-A24",
    "domain": "A",
    "capability": "Public pricing, plan comparison and checkout",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/Billing/Plans",
     "src/components/Billing"
@@ -668,19 +668,18 @@
    "modernLines": 1586,
    "backend": "yes",
    "endpoints": [
-    "/billing/plans",
-    "/billing/checkout",
     "/paypal/create-order",
-    "/razorpay/create-order"
+    "/razorpay/create-order",
+    "/coupons/validate"
    ],
    "invoke": "yes",
-   "evidence": "modern adds per-gateway checkout (PayPal/Razorpay create-order) absent from legacy"
+   "evidence": "checkout-modal.tsx calls /paypal/create-order and /razorpay/create-order (UI-REACHABLE); the coupon field at checkout-modal.tsx:246 POSTs /billing/validate-coupon, which is NOT registered (the registered op is /coupons/validate). /billing/plans and /billing/checkout are NOT registered; the plan catalogue is client-side data."
   },
   {
    "id": "FP-A25",
    "domain": "A",
    "capability": "AI provider / gateway administration (provider CRUD, key pool, quotas, discovery, playground, unified gateway)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/admin/settings/AiSettings.jsx",
     "src/services/adminAiSettings.js"
@@ -698,11 +697,12 @@
    "endpoints": [
     "/admin/ai-settings",
     "/admin/ai/test-provider",
-    "/ai/providers",
-    "/admin/ai/quota-limits"
+    "/admin/ai/quota-stats",
+    "/admin/ai/reset-quota",
+    "/admin/ai/fetch-models"
    ],
    "invoke": "yes",
-   "evidence": "46 modern files under components/admin/ai-settings (providers, quotas, discovery, gateway, metrics, playground) vs a single legacy AiSettings.jsx + 76-line service"
+   "evidence": "ai-settings hooks call /admin/ai/test-provider, /admin/ai/quota-stats and /admin/ai/reset-quota (UI-REACHABLE); /admin/ai/fetch-models is registered via app.all and is UI-REACHABLE (useDiscoveryPlayground.ts:60). /ai/providers is NOT registered; /admin/ai/entitlements, /admin/ai/quota-limits, /admin/ai/routing-telemetry and /admin/ai/reset-state are UNREACHABLE."
   },
   {
    "id": "FP-A26",
@@ -941,7 +941,7 @@
    "id": "FP-B10",
    "domain": "B",
    "capability": "AI quota rings + enterprise AI controls",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/enterprise/AiQuotaRing.jsx",
     "src/enterprise/components/EnterpriseAiTab.jsx",
@@ -957,11 +957,12 @@
    "modernLines": 738,
    "backend": "yes",
    "endpoints": [
-    "/ai/providers",
-    "/enterprise/ai"
+    "/enterprise/usage/ai/events",
+    "/admin/ai/quota-stats",
+    "/admin/ai/reset-quota"
    ],
    "invoke": "yes",
-   "evidence": "provider administration is modern-only"
+   "evidence": "/enterprise/usage/ai/events UI-REACHABLE (enterprise-api.ts:487); quota governance hooks call /admin/ai/quota-stats and /admin/ai/reset-quota (UI-REACHABLE). /enterprise/ai/generate-content and /enterprise/ai/generate-interview are registered but UNREACHABLE — no client call site exists."
   },
   {
    "id": "FP-B11",
@@ -1687,11 +1688,12 @@
    "modernLines": 477,
    "backend": "yes",
    "endpoints": [
-    "/share",
-    "/resumes/{X}/share"
+    "/resumes/{X}/publication",
+    "/resumes/{X}/publish",
+    "/resumes/{X}/unpublish"
    ],
    "invoke": "yes",
-   "evidence": "share-modal + share-publication present in modern"
+   "evidence": "share-publication.ts:41 GET /resumes/{id}/publication, :52 POST /resumes/{id}/publish, :73 POST /resumes/{id}/unpublish — all three UI-REACHABLE. The V4-declared /share and /resumes/{X}/share are NOT registered."
   },
   {
    "id": "FP-E09",
@@ -1712,16 +1714,18 @@
    "modernLines": 1454,
    "backend": "yes",
    "endpoints": [
-    "/cover-letters"
+    "/covers",
+    "/covers/{X}",
+    "/generate-ai-cover-letter"
    ],
    "invoke": "yes",
-   "evidence": "4 cover template entries + dedicated builder page"
+   "evidence": "cover-letters.ts:207/220/232/238 call GET/POST/DELETE /covers[/{id}] and :303 POST /generate-ai-cover-letter — all UI-REACHABLE. The V4-declared /cover-letters is NOT registered."
   },
   {
    "id": "FP-E16",
    "domain": "E",
    "capability": "Export access guard (plan-gated export routes)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/Exporter"
    ],
@@ -1735,10 +1739,12 @@
    "modernLines": 479,
    "backend": "yes",
    "endpoints": [
-    "/export"
+    "/export",
+    "/export-docx",
+    "/export-render-data"
    ],
    "invoke": "yes",
-   "evidence": "router.tsx:13 imports RequireExportAccess and wraps /export/* routes (:328)"
+   "evidence": "The token-fragment guard is implemented client-side (require-export-access.tsx:32) and the export page redeems the token. /export-docx and /export-render-data are UI-REACHABLE. POST /export is registered (index.js:2420) but has NO caller — UNREACHABLE. No plan/entitlement middleware is applied: index.js:575 attaches only exportAccountLimiter to the four export paths."
   },
   {
    "id": "FP-E17",
@@ -1772,7 +1778,7 @@
    "id": "FP-E11",
    "domain": "E",
    "capability": "DOCX export with ZIP magic-byte validation",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/utils/docxDownload.js"
    ],
@@ -1786,11 +1792,10 @@
    "modernLines": 2147,
    "backend": "yes",
    "endpoints": [
-    "/export-docx",
-    "/public-export-docx"
+    "/export-docx"
    ],
    "invoke": "yes",
-   "evidence": "preview-modal.tsx:151 `fetch('/api/export-docx')`; backend/index.js:5167 route + adversarial-certification.test.js:338 entitlement test"
+   "evidence": "preview-modal.tsx:168, resumes.tsx:497 and cv-renderer.tsx:218 POST /export-docx (UI-REACHABLE; backend/index.js:5167). /public-export-docx is registered but UNREACHABLE. The ZIP magic-byte check exists only in legacy src/utils/docxDownload.js:14 (DOCX_MAGIC [0x50,0x4b]); the modern path calls res.blob() at preview-modal.tsx:185 and saves it without any signature check."
   },
   {
    "id": "FP-E12",
@@ -1888,7 +1893,7 @@
    "id": "FP-E10",
    "domain": "E",
    "capability": "AI writing aids (grammar check, summary, import)",
-   "classification": "FULL PARITY",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/BuildResume/ResumeImportModal.jsx",
     "src/components/BuildResume/SyncProfileModal.jsx"
@@ -1904,11 +1909,11 @@
    "modernLines": 899,
    "backend": "yes",
    "endpoints": [
-    "/ai/check-grammar",
-    "/ai/generate-summary"
+    "/check-grammar",
+    "/parse-resume"
    ],
    "invoke": "yes",
-   "evidence": "grammar check is a modern-only endpoint"
+   "evidence": "ai-content.ts calls /check-grammar and /parse-resume (UI-REACHABLE). The declared /ai/generate-summary is NOT registered and no summary endpoint exists (the only \"summary\" path is /admin/health-summary)."
   },
   {
    "id": "FP-F01",
@@ -2013,10 +2018,11 @@
    "modernLines": 747,
    "backend": "yes",
    "endpoints": [
-    "/jobs"
+    "/employer/jobs",
+    "/employer/jobs/{X}"
    ],
    "invoke": "yes",
-   "evidence": "CreateJobModal.tsx 746 lines"
+   "evidence": "useJobs/useCreateJob/useUpdateJob/useDeleteJob call GET/POST/PATCH/DELETE /employer/jobs[/{X}] and each hook has live consumers — INDIRECTLY-REACHABLE. The V4-declared /jobs is ambiguous and resolves to four different resources."
   },
   {
    "id": "FP-F06",
@@ -2036,11 +2042,13 @@
    "modernLines": 1007,
    "backend": "yes",
    "endpoints": [
-    "/employer/company",
-    "/employer/team"
+    "/employer/companies",
+    "/employer/companies/{X}",
+    "/enterprise/teams",
+    "/enterprise/memberships"
    ],
    "invoke": "yes",
-   "evidence": "657 + 348 lines"
+   "evidence": "CompanyProfile.tsx calls GET/POST/PATCH/DELETE /employer/companies[/{id}] (UI-REACHABLE); enterprise team seats use /enterprise/teams and /enterprise/memberships (UI-REACHABLE); the registered /enterprise/teams/{id}/members has no caller. The V4-declared /employer/company (singular) is NOT registered."
   },
   {
    "id": "FP-F07",
@@ -2326,7 +2334,7 @@
    "id": "FP-G09",
    "domain": "G",
    "capability": "Blog authoring + public blog",
-   "classification": "FULL PARITY",
+   "classification": "MISSING",
    "legacyPaths": [
     "src/components/Blog",
     "src/components/admin/blogManagement"
@@ -2340,12 +2348,9 @@
    "modernFiles": 3,
    "modernLines": 1088,
    "backend": "yes",
-   "endpoints": [
-    "/blog",
-    "/admin/blog"
-   ],
-   "invoke": "yes",
-   "evidence": "editor + list + admin tab present"
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "Every blog operation in the register is UNREACHABLE (14 of 14). The modern pages call paths that do not exist: pages/blog/index.tsx:46 GET /blog/posts; pages/blog/editor.tsx:91/147/149 GET/PUT/POST /blog/posts[/{id}]; AdminBlogManagementTab.tsx:97 GET /blog/posts and :126 DELETE /blog/posts/{id}. The backend serves /blog-data, /blog-data/{id} and /admin/blog/posts — never /blog/posts."
   },
   {
    "id": "FP-G10",
@@ -2386,8 +2391,8 @@
     "frontend/src/pages/features",
     "frontend/src/pages/shared"
    ],
-   "legacyFiles": 4,
-   "legacyLines": 2602,
+   "legacyFiles": 3,
+   "legacyLines": 2592,
    "modernFiles": 3,
    "modernLines": 786,
    "backend": "n/a",
@@ -2564,10 +2569,12 @@
    "modernLines": 1548,
    "backend": "yes",
    "endpoints": [
-    "/jobs/applications"
+    "/jobs-data/tracker",
+    "/jobs-data/tracker/{X}",
+    "/jobs/{X}/applications"
    ],
    "invoke": "yes",
-   "evidence": "dedicated modern page + route"
+   "evidence": "job-tracker.ts:208/214/224 call GET/POST/PATCH /jobs-data/tracker[/{id}] (UI-REACHABLE); job-application-modal.tsx calls GET/POST /jobs/{id}/applications (UI-REACHABLE). The V4-declared /jobs/applications is NOT registered."
   },
   {
    "id": "FP-G21",
@@ -2587,10 +2594,12 @@
    "modernLines": 346,
    "backend": "yes",
    "endpoints": [
-    "/ai/generate-interview"
+    "/generate-interview",
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/turns"
    ],
    "invoke": "yes",
-   "evidence": "lib/interview-coach.ts + modern-only generate-interview endpoint"
+   "evidence": "interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE). The V4-declared /ai/generate-interview is a different (enterprise) operation and is UNREACHABLE."
   },
   {
    "id": "FP-G22",
@@ -2642,7 +2651,7 @@
    "id": "FP-G24",
    "domain": "G",
    "capability": "In-app support surface and input validation modals",
-   "classification": "FULL PARITY",
+   "classification": "MISSING",
    "legacyPaths": [
     "src/components/Dashboard/DashboardSupport",
     "src/components/Dashboard/ValidationModal",
@@ -2656,12 +2665,10 @@
    "legacyLines": 1420,
    "modernFiles": 5,
    "modernLines": 978,
-   "backend": "yes",
-   "endpoints": [
-    "/support/tickets"
-   ],
-   "invoke": "yes",
-   "evidence": "dedicated support page with ticket threads (modern-only /support/tickets/{X}/messages)"
+   "backend": "no",
+   "endpoints": [],
+   "invoke": "no",
+   "evidence": "No ticket operation exists in the register: zero paths contain /support/tickets or /admin/support/tickets. AdminHelpDeskTab.tsx:128/157/188 and use-api-hooks.ts:588/599/612 call six non-existent paths (GET/POST /support/tickets, POST /support/tickets/{X}/messages, GET /admin/support/tickets, POST /admin/support/tickets/{X}/messages, PATCH /admin/support/tickets/{X})."
   },
   {
    "id": "FP-G25",

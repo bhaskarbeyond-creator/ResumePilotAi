@@ -1,5 +1,10 @@
 # V4 Final Acceptance Report
 
+> **V5 supersession:** this report's verdict is retained for the record. The current verdict, with the
+> corrected reachability register and parity mix, is in `FINAL-AUDIT-HANDOVER.md` §1 — still
+> `PARTIAL — INCOMPLETE`, but derived from corrected counts (DISC-024/025/026).
+
+
 **Revision:** `0adad00d0975444f13b98f9cda3ec7e24c2c6a62`
 **Mandate:** final audit coverage reconciliation — independent validation of the whole package at the
 reference checkpoint, every metric recalculated, 100 % traceable coverage.
@@ -17,7 +22,7 @@ distinction matters, so it is stated explicitly:
 
 | Mandate requirement | Result |
 |---|---|
-| (a) every legacy capability gets a decision in the 9-value vocabulary, with subfeature decomposition | **SATISFIED** — 112 rows, 100 % of 651 legacy files attributed; subfeature probes (`OAUTH-PROBE.md`) applied to the four mandated allegations |
+| (a) every legacy capability gets a decision in the 9-value vocabulary, with subfeature decomposition | **SATISFIED** — 112 rows, 100 % of 650 legacy files attributed; subfeature probes (`OAUTH-PROBE.md`) applied to the four mandated allegations |
 | (b) seven reachability classes; no orphan claim before checking wrappers/dispatch/webhooks/jobs/M2M | **SATISFIED** — 384/384 dispositioned; the check prevented 27 webhooks and 9 machine routes from being mislabelled orphans |
 | (c) separate counting units; never mixed in one denominator | **SATISFIED** — `METRIC-DEFINITIONS.md`; DB operations explicitly excluded from the route denominator |
 | (d) revalidate EG-007…EG-011 and accessibility; never carry forward | **SATISFIED** — all re-tested; one widened (EG-011), one reinterpreted (EG-009 direction), five a11y defects re-read in code |
@@ -37,7 +42,7 @@ providers) never executed.
 
 | Dimension | Measured state | Confidence |
 |---|---|---|
-| Legacy capability surface | 651 files / 193,320 lines / 153 endpoints | high (executed inventory) |
+| Legacy capability surface | 650 files / 193,310 lines / 153 endpoints | high (executed inventory) |
 | Modern capability surface | 206 files / 68,812 lines / 100 routes / 161 endpoints | high (executed inventory + `tsc`) |
 | Capabilities lost outright | **30 of 112 rows `MISSING`** — voice interview, Puck editor + 71 blocks, command palette, HUD, i18n, analytics, SEO/JSON-LD, service worker, consent, maps, photo crop, QR, onboarding wizard, bulk member ops, tenant/coupon/refund/invoice admin, audit-log browser | high (anchored per row) |
 | Capabilities fabricated | **9 rows `MOCK / FABRICATED STATE`**, all in the admin console, including a security panel that reports invented events and revokes nothing | high (code cites) |
@@ -69,7 +74,7 @@ providers) never executed.
 | # | Artifact | Purpose |
 |---:|---|---|
 | 1 | `V4-COVERAGE-RECONCILIATION.md` | master reconciliation; the 1,492-item disposition table; every delta figure |
-| 2 | `FEATURE-PARITY-MATRIX.md` + `Evidence/artifacts/feature-parity.json` | 112 rows, 9-value vocabulary, 651/651 + 206/206 attribution |
+| 2 | `FEATURE-PARITY-MATRIX.md` + `Evidence/artifacts/feature-parity.json` | 112 rows, 9-value vocabulary, 650/650 + 206/206 attribution |
 | 3 | `BACKEND-OPERATION-REACHABILITY.md` + `backend-reachability.json` / `backend-operations.tsv` | seven classes, 384/384, rule + reason per row |
 | 4 | `ALLEGATION-RESOLUTION-REGISTER.md` | 35 allegations; `RA-31`…`RA-34` investigated in full |
 | 5 | `OAUTH-PROBE.md` | subfeature decomposition of the four mandated areas (OAuth, payments, rejection, gallery) |

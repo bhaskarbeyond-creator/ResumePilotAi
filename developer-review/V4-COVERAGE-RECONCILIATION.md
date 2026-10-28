@@ -8,37 +8,51 @@ limitation a reproducible disposition.
 **Explicit non-claim:** this document does **not** assert feature parity, production readiness, or
 security compliance. It asserts *traceability*.
 
+> **V5 correction banner (Mandate 5, revision `cccd35a5`).** This document was written for V4. Independent
+> verification found the reachability register wrong in both directions and a whole missing check
+> direction (client call → served operation). Every figure below has been recomputed; superseded V4 values
+> are retained in the "previously published" column rather than deleted. The headline change is that
+> **16 of the 28 V4 `FULL PARITY` rows were over-claims**: 8 downgraded (2 to `MISSING`), 8 kept with
+> corrected endpoints. See `DISCREPANCY-LOG.md` DISC-024 (classifier), DISC-025 (23 dead client paths),
+> DISC-026 (fabricated success). A total-item count is still printed below — and still does not mean
+> the audit is complete.
+
 ---
 
 ## 1. The one number this package will stand behind
 
 | Unit | Enumerated | Dispositioned | Evidence store |
 |---|---:|---:|---|
-| Legacy source files | 651 | **651 (100 %)** | `legacy-file-inventory.tsv`, `feature-parity.json` |
+| Legacy source files | 650 | **650 (100 %)** | `legacy-file-inventory.tsv`, `feature-parity.json` |
 | Modern source files | 206 | **206 (100 %)** | `feature-parity.json` |
 | Capability rows | 112 | **112 (100 %)** | `FEATURE-PARITY-MATRIX.md`, `feature-parity.json` |
-| Backend operations (unique METHOD+path) | 384 | **384 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
+| Backend operations (unique METHOD+path) | 385 | **385 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
 | Allegations | 35 | **35 (100 %)** | `ALLEGATION-RESOLUTION-REGISTER.md` |
-| Findings | 22 | **22 (100 %)** | `DISCREPANCY-LOG.md` |
+| Findings | 26 | **26 (100 %)** | `DISCREPANCY-LOG.md` |
 | Requirements | 65 | **65 (100 %)** | `REQUIREMENT-REGISTER.md` §P |
 | Environment gaps + a11y defects | 12 + 5 | **17 (100 %)** | `EG-REVALIDATION-REGISTER.md` |
-| **Total items** | **1,492** | **1,492** | — |
+| **Total items** | **1,496** | **1,496** | — |
 
-Arithmetic: 651 + 206 + 112 + 384 + 35 + 22 + 65 + 17 = **1,492**. (An earlier draft of this table said
-"2,092"; the sum did not support it, and it was corrected before publication rather than left as a round
-number.)
+Arithmetic: 650 + 206 + 112 + 385 + 35 + 26 + 65 + 17 = **1,496**.
+
+The aggregate moved twice, both times disclosed: V4 → 1,492 after the legacy baseline lost one file and
+one finding joined (DISC-023); V5 → 1,496 after three findings joined (DISC-024, DISC-025, DISC-026) and
+the operation register gained one operation (`app.all('/api/admin/ai/fetch-models')`, DISC-024 item 4).
+**A rising total is not evidence of better coverage** — it is evidence that the enumeration changed. That
+is exactly why §2 reports every category separately and why the verdict in §12 is not derived from this
+number.
 
 "Dispositioned" means: classified, with a cited anchor and, where unresolved, an explicit class and a
-closure condition. It does **not** mean "resolved". 201 of 384 backend operations are dispositioned as
-`UNREACHABLE`; 30 capability rows are dispositioned as `MISSING`; those are dispositions, not fixes.
+closure condition. It does **not** mean "resolved". 176 of 385 backend operations are dispositioned as
+`UNREACHABLE`; 32 capability rows are dispositioned as `MISSING`; those are dispositions, not fixes.
 
 ## 2. Delta: every figure the package previously published
 
 | Metric | Previously published | V4 revalidated | Direction | Cause |
 |---|---|---|---|---|
-| Legacy files / `.jsx` / lines | 651 / 519 / 193,320 | **651 / 519 / 193,320** | confirmed | re-ran `legacy-modern-inventory.cjs` |
+| Legacy files / `.jsx` / lines | 650 / 519 / 193,310 | **650 / 519 / 193,310** | confirmed | re-ran `legacy-modern-inventory.cjs` |
 | Modern files / `.tsx` / lines | 206 / 151 / 68,812 | **206 / 151 / 68,812** | confirmed | re-ran the same tool |
-| Legacy attribution | 651/651 | **651/651** | confirmed | — |
+| Legacy attribution | 650/650 | **650/650** | confirmed | — |
 | Modern attribution | 138/206 (68 unattributed) | **206/206** | **corrected** | three capability rows were missing (`FP-A25`, `FP-A26`, `FP-D15`); the 68 files were real consumers, not noise |
 | Capability rows | 109 | **112** | **corrected** | +3 rows, 1 reclassified |
 | Parity mix | 25 FULL / 35 PARTIAL / 30 MISSING / 9 MOCK / 6 REPLACED / 4 UNVERIFIED | **28 / 36 / 30 / 9 / 6 / 0 STUB / 0 LOCAL / 0 RETIRE / 3 UNVERIFIED** | **corrected** | `FP-C07` full; `FP-A25`, `FP-D15` full; `FP-A26` partial |
@@ -56,6 +70,12 @@ closure condition. It does **not** mean "resolved". 201 of 384 backend operation
 | Environment gaps | EG-001…EG-012 | **EG-001…EG-012 re-tested; 5 still blocking** | **revalidated** | EG-011 scope widened |
 | Audit checks | "61/61 pass" | **61/61 pass — 58 are self-referential** | **reinterpreted** | `AUDIT-CHECK-PROVENANCE.md` |
 
+| Reachability classes (V5) | 126 / 6 / 27 / 11 / 9 / 201 / 4 | **152 / 7 / 27 / 11 / 2 / 176 / 10** | **corrected both directions** | DISC-024: `enterpriseRequest` invisible (+45 in), `dynamicParent` over-promotion (−12), `app.all` unparsed (+1 op) |
+| Unique operations | 384 | **385** | **corrected** | `app.all` registration parsed |
+| Parity mix (V5) | 28 / 36 / 30 / 9 / 6 / 3 | **19 / 43 / 32 / 9 / 6 / 3** | **corrected against parity** | 8 over-claims downgraded after endpoint+reachability audit (DISC-025) |
+| Client call sites served by no operation | not measured | **30 call sites / 23 paths (13.1 %)** | **new** | `tools/client-call-existence.cjs` — the check direction V4 never ran |
+| Canonical backend suite | 1,271 pass / 14 fail / 30 skip | **1,269 pass / 46 fail / 0 skip**, exit 1 | **corrected** | `npm test` runs the repo's own harness, which turns the MariaDB gate **on**; the 30 skipped DB tests now execute (DISC-018 context) |
+
 Two corrections moved the *bad* numbers upward (250 and 183 vs 192 and 58). That is the direction an audit
 should be suspicious of, so both were re-derived twice: once from the fault-injected rule ordering, once
 by an independent field count on the JSON (`modernUiRefs` empty = 250; of those, `legacyUiRefs>0` = 67 ⇒
@@ -63,38 +83,67 @@ never-any = 183).
 
 ## 3. The seven reachability classes (mandate requirement b)
 
-Denominator: **384 unique METHOD+path**. Rule precedence R1 → R7 → R2 → R3 → R5 → R4 → R6, first match
-wins, deterministic.
+Denominator: **385 unique METHOD+path**. Rule precedence R1 → R7 → R7b → R2 → R3 → R5 → R4 → R6, first
+match wins, deterministic.
 
 | Class | Count | % | What a reader should conclude |
 |---|---:|---:|---|
-| `UI-REACHABLE` | 126 | 32.8 | a modern call site exists (call context, never a string mention) |
-| `INDIRECTLY-REACHABLE` | 6 | 1.6 | only a *live* hook calls it (hook has ≥1 consumer) |
+| `UI-REACHABLE` | 152 | 39.5 | a modern call site exists (call context, never a string mention) |
+| `INDIRECTLY-REACHABLE` | 7 | 1.8 | only a *live* hook calls it (hook has ≥1 consumer) |
 | `EXTERNAL-CALLER` | 27 | 7.0 | webhook / OAuth callback / payment verifier / M2M `/v1` / OG-image / health probe — **not** orphaned |
 | `SERVER-ONLY` | 11 | 2.9 | another backend module reuses it in-process |
-| `INTENTIONALLY-UNEXPOSED` | 9 | 2.3 | machine/service-account scoped; a browser caller would be a defect |
-| `UNREACHABLE` | 201 | 52.3 | no caller of any kind; 57 were legacy-called (regressions), 144 never had a caller in either tree |
-| `UNVERIFIED` | 4 | 1.0 | a child path is called; parent reachability undecidable statically |
+| `INTENTIONALLY-UNEXPOSED` | 2 | 0.5 | machine/service-account scoped; a browser caller would be a defect |
+| `UNREACHABLE` | 176 | 45.7 | no working call site of any kind; 23 were legacy-called (regressions), 153 never had a caller in either tree |
+| `UNVERIFIED` | 10 | 2.6 | a child path or a shape-compatible call exists; parent reachability undecidable statically |
 
-**The mandate's warning was load-bearing:** before checking wrappers, dynamic dispatch, webhooks, jobs and
-M2M clients, a naive classifier called 27 webhooks and 9 machine routes "orphaned". They are not.
+**The mandate's warning was load-bearing in both directions.** Before checking wrappers, dynamic dispatch,
+webhooks, jobs and M2M clients, a naive classifier called 27 webhooks and 9 machine routes "orphaned".
+Conversely, V4's own classifier called 45 live enterprise operations orphaned (DISC-024) while promoting
+14 uncalled `/admin/users/{X}/*` children through a prefix rule.
+
+**Per-operation rationale:** `BACKEND-OPERATION-REACHABILITY.md` §9 lists all 176 `UNREACHABLE` operations
+with rule, reason and a legacy-called flag, separating "regression" from "never exposed".
+
+### 3.1 The check V4 did not run: is the client's call served? (DISC-025)
+
+| Measure | Count |
+|---|---:|
+| HTTP path literals passed to a call helper in `frontend/src` (call sites) | 229 |
+| Resolved exactly to a registered operation | 188 |
+| Resolved to a registered dynamic pattern (`/admin/settings/{X}`) | 11 |
+| **Served by no registered operation** | **30 call sites / 23 distinct paths** |
+| Verb mismatches | 0 |
+
+`UI-REACHABLE` therefore has a caveat that matters: 30 call sites are themselves broken. The clearest
+cases are the entire blog surface (`/blog/posts*` against a backend that serves `/blog-data`), the entire
+support/helpdesk surface (no ticket endpoint exists), the queue console's DLQ actions, the moderation
+actions, `/admin/users/{X}/status`, and `/billing/validate-coupon`. `FULL PARITY` cannot be claimed for a
+capability whose every call 404s, which is why §4 below no longer shows blog or support as full.
 
 ## 4. Capability dispositions by domain (mandate requirement a)
 
 | Domain | Rows | FULL | PARTIAL | MISSING | MOCK | REPLACED | UNVERIFIED |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| A — platform admin | 26 | 3 | 8 | 6 | 9 | 0 | 0 |
-| B — enterprise | 11 | 5 | 5 | 1 | 0 | 0 | 0 |
+| A — platform admin | 26 | 0 | 11 | 6 | 9 | 0 | 0 |
+| B — enterprise | 11 | 4 | 6 | 1 | 0 | 0 | 0 |
 | C — portfolio / WebCV | 7 | 2 | 1 | 4 | 0 | 0 | 0 |
 | D — candidate experience | 15 | 1 | 6 | 7 | 0 | 1 | 0 |
-| E — resume / templates / export | 17 | 9 | 4 | 3 | 0 | 0 | 1 |
+| E — resume / templates / export | 17 | 6 | 7 | 3 | 0 | 0 | 1 |
 | F — employer | 11 | 3 | 5 | 2 | 0 | 0 | 1 |
-| G — platform-shared | 25 | 5 | 7 | 7 | 0 | 5 | 1 |
-| **Total** | **112** | **28** | **36** | **30** | **9** | **6** | **3** |
+| G — platform-shared | 25 | 3 | 7 | 9 | 0 | 5 | 1 |
+| **Total** | **112** | **19** | **43** | **32** | **9** | **6** | **3** |
 
-Domain A carries **all** nine fabricated-state rows (9 of its 26) — the concentration is itself a finding: the admin console is where state is invented.
-Domain E is the only domain where `FULL PARITY` exceeds half the rows (9/17); domain B is the strongest non-A domain (5 full, 5 partial, 1 missing) — template volume, DOCX/PDF
-export, ATS scoring and layout engines were ported well.
+Three things a reader should take from this table, none of them flattering:
+
+1. **Domain A (platform admin) has no `FULL PARITY` row at all.** It carries all nine fabricated-state rows
+   *and* seven of the eight rows V5 downgraded. The admin console is simultaneously the most built-out
+   surface in the repository (30 modules, 79 unreachable `/admin` operations) and the least trustworthy.
+2. **The 19 surviving `FULL PARITY` rows are individually defended**: every declared endpoint resolves to
+   a registered operation and that operation is reachable (`tools/parity-endpoint-audit.cjs`, 19/19
+   `SUPPORTED`). That is a stronger statement than V4 could make for any row — V4's 28 full rows included
+   eight whose cited endpoints do not exist.
+3. **`MISSING` grew from 30 to 32 not because code disappeared** but because a UI whose every call 404s
+   (blog, support) is not a working capability. A route definition plus a React page is not parity.
 
 ## 5. Requirement-level dispositions (mandate requirement f)
 
@@ -109,25 +158,63 @@ present one are not commensurable units.
 
 ## 6. Findings and allegations
 
-22 findings (DISC-001…022), 35 allegations (RA-01…RA-35): **19 confirmed**, 1 confirmed-with-correction,
-4 partially confirmed, 10 refuted, 1 unresolved. Every refutation cites a call site or measurement; no
-refutation rests on a filename, a route declaration alone, or a settings toggle.
+**26 findings** (DISC-001…DISC-026), **35 allegations** (RA-01…RA-35): 19 confirmed, 1 confirmed-with-
+correction, 4 partially confirmed, 10 refuted, 1 unresolved. Every refutation cites a call site or a
+measurement; none rests on a filename, a route declaration alone, or a settings toggle.
 
-Seven items remain open by design, each naming the evidence that would close it: three capability rows
-(`FP-E05` server-side ATS audit, `FP-F09` employer analytics, `FP-G14` misc legacy orphans), four backend
-operations awaiting a network capture, and allegation `RA-35` (same subject as `FP-F09`).
+V5 added three findings and they are the three most consequential in the log for a reader deciding
+whether to ship: DISC-024 (this register was wrong in both directions — it is the *evidence base*, so its
+errors propagate to the verdict), DISC-025 (23 client paths served by nothing; the blog, helpdesk, queue
+console, moderation, operations console, user-status action and coupon validation all 404), DISC-026 (four
+admin controls report success after swallowing a failed write, including *"MariaDB hot backup snapshot
+completed successfully"* for a request never sent and a user who is shown as suspended but is not).
+
+Open by design, each naming what would close it: three capability rows (`FP-E05` server-side ATS audit,
+`FP-F09` employer analytics, `FP-G14` misc legacy orphans), ten backend operations awaiting a network
+capture (`UNVERIFIED`), and allegation `RA-35` (same subject as `FP-F09`).
 
 ## 7. What is still blocked, stated once
 
 | Blocker | Consequence | Re-tested |
 |---|---|---|
-| EG-007 no MariaDB | 30 tests skip; 14 fail; tenant isolation, migrations, persistence, CAS behaviour unexercised | yes |
-| EG-008 no Apache/PHP | `.htaccess`/`api/index.php` behaviour static only; served bundle freshness unknown | yes |
-| EG-010 no live providers | payments, AI routing, storage, Firebase, SMTP verified against mocks only | yes |
-| EG-011 no browser | all 7 Playwright spec files (3,675 enumerated tests) unexecuted; axe cannot run | yes |
+| EG-007 no MariaDB | canonical suite: **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skip**, exit 1. All 46 failures are DB-caused (`Evidence/logs/v5/backend-canonical-suite.triage.md`); tenant isolation, migrations, persistence, CAS and idempotency were never executed against a real engine | yes |
+| EG-008 no Apache/PHP | `.htaccess`/`api/index.php` behaviour static only; `dist/` is not committed, so served-bundle freshness is unverifiable | yes |
+| EG-010 no live providers | payments, AI routing, storage, Firebase, SMTP verified against mocks only. No provider was contacted; no test asserts a real provider round-trip | yes |
+| EG-011 no browser | all 7 Playwright spec files (3,675 enumerated tests) unexecuted — **0 executed**; axe cannot run, so the a11y findings remain static | yes |
 | EG-009 no fonts | no visual-regression claim in either direction | yes |
+
+The first blocker deserves a warning about how test numbers were previously stated. The repo's own harness
+(`backend/scripts/run-tests-with-annotations.js`) sets `RUN_MARIADB_INTEGRATION=true` and
+`MARIADB_TEST_ALLOW_RESET=true` **by default**. A run with the gate off reports 30 skipped tests as if they
+were part of the suite; the canonical run executes them and they fail for a known reason. "30 skipped"
+must never be read as "30 not applicable".
 
 ## 8. Verdict
 
-`PARTIAL — INCOMPLETE`, not `COMPLETE` and not `FAILED`. See `V4-FINAL-ACCEPTANCE-REPORT.md` for the
-criterion-by-criterion derivation and the exact conditions that would move it.
+`PARTIAL — INCOMPLETE`.
+
+Stated on the three axes the mandate requires, separately and not blended:
+
+| Axis | Verdict | Basis |
+|---|---|---|
+| **Traceability** | **ACHIEVED for the inventoried units, with a disclosed correction cycle** | 650/650 legacy files, 206/206 modern files, 112/112 capability rows, 385/385 operations, 35/35 allegations, 26/26 findings, 65/65 requirements each carry a class and an anchor. Two of those guarantees were *earned this pass* by fixing tools that were wrong (DISC-023, DISC-024) — traceability is a property of the tooling, not of the claim. |
+| **Parity** | **INCOMPLETE, and weaker than V4 stated** | 19 full / 43 partial / 32 missing / 9 mock / 6 replaced / 3 unverified of 112. 8 of V4's 28 `FULL PARITY` rows were over-claims. 23 client paths are served by no operation. No capability can be called production-ready on this evidence. |
+| **Runtime** | **BLOCKED** | 0 browser tests executed; 0 live provider calls; 0 MariaDB-backed tests executed; 46/1,315 backend tests fail for DB absence. A passing mock test is evidence about the mock. |
+
+`COMPLETE` is refused because parity is not demonstrated and runtime is unverified. `FAILED` is refused
+because the mandate's failure condition is a *falsified* audit — and while this pass falsified two V4
+figures (the register and the parity mix), it falsified them with reproducible evidence and revised them
+in public rather than defending them. `PARTIAL — BLOCKED` is refused because it would understate what was
+actually established: the traceability work is done and re-runnable, and the product defects found are
+specific, anchored, and count-limited.
+
+**What would move this verdict:**
+
+* to `PARTIAL — BLOCKED` — if the mandate were to weight unexecuted runtime verification above the parity
+  defects. We do not: both are blocked, and parity is *additionally* incomplete (DISC-025/026 are product
+  defects, not verification gaps).
+* to `COMPLETE` — a MariaDB instance (closes 46 failures and the isolation/migration gaps), a browser
+  (executes 3,675 tests and the axe scan), a live provider key for each gateway, *plus* closure of
+  DISC-025 and DISC-026 and a re-derived parity mix with ≥1 independent reviewer re-running
+  `reachability-crosscheck.cjs` and `client-call-existence.cjs`.
+* to `FAILED` — any of the V5 counts failing to reproduce from a clean checkout at `cccd35a5`.

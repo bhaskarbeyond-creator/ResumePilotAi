@@ -1,0 +1,841 @@
+{
+  "generatedAt": "2026-10-28T21:16:38.121Z",
+  "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
+  "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
+  "reachableClasses": [
+    "UI-REACHABLE",
+    "INDIRECTLY-REACHABLE",
+    "EXTERNAL-CALLER"
+  ],
+  "fullParityRows": 19,
+  "tally": {
+    "SUPPORTED": 19
+  },
+  "rows": [
+    {
+      "id": "FP-B05",
+      "capability": "Teams + archive/restore",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/teams",
+          "status": "EXACT",
+          "path": "/enterprise/teams",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0204",
+            "OP-0205"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/archive",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/archive",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0207"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/restore",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/restore",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0211"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-B06",
+      "capability": "Workspaces + archive/restore",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/workspaces",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0219",
+            "OP-0220"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/archive",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/archive",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0222"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/restore",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/restore",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0226"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-B07",
+      "capability": "Tenant lifecycle (suspend / reactivate) from the enterprise platform tab",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/platform/tenants",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0180"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/suspend",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/suspend",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0182"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/reactivate",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/reactivate",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0181"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-B08",
+      "capability": "Enterprise audit trail with CSV export",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/audit",
+          "status": "EXACT",
+          "path": "/enterprise/audit",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0165"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-C05",
+      "capability": "Public portfolio rendering + slug availability + publish",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/public/{X}",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0344"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/slug-availability",
+          "status": "EXACT",
+          "path": "/portfolios/slug-availability",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0345"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0340",
+            "OP-0341",
+            "OP-0342"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-C07",
+      "capability": "Portfolio gallery / showcase",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public",
+          "status": "EXACT",
+          "path": "/portfolios/public",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0343"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-D15",
+      "capability": "Saved jobs / favourites",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/favourites",
+          "status": "EXACT",
+          "path": "/favourites",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0230",
+            "OP-0231"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E02",
+      "capability": "Template catalogue volume (51 legacy cv dirs)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E04",
+      "capability": "ATS score with per-section breakdown and job-description targeting",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E08",
+      "capability": "Public share links / share modal",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}/publication",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publication",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0363"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/publish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0364"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/unpublish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/unpublish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0365"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E09",
+      "capability": "Cover letters",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/covers",
+          "status": "EXACT",
+          "path": "/covers",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0133"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/covers/{X}",
+          "status": "EXACT",
+          "path": "/covers/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0134",
+            "OP-0135",
+            "OP-0136"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/generate-ai-cover-letter",
+          "status": "EXACT",
+          "path": "/generate-ai-cover-letter",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0236"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E17",
+      "capability": "Document rendering surface (page composer, template renderer, public resume)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}",
+          "status": "EXACT",
+          "path": "/resumes/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0360",
+            "OP-0361",
+            "OP-0362"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E13",
+      "capability": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-F02",
+      "capability": "Applicant pipeline (kanban + list, stage transitions)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/jobs/{X}/applications",
+          "status": "EXACT",
+          "path": "/jobs/{X}/applications",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0259",
+            "OP-0260"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-F05",
+      "capability": "Job creation / requisition editor",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/employer/jobs",
+          "status": "EXACT",
+          "path": "/employer/jobs",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0158",
+            "OP-0159"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/employer/jobs/{X}",
+          "status": "EXACT",
+          "path": "/employer/jobs/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0160",
+            "OP-0161"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-F06",
+      "capability": "Company profile + team seats",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/employer/companies",
+          "status": "EXACT",
+          "path": "/employer/companies",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0154",
+            "OP-0155"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/employer/companies/{X}",
+          "status": "EXACT",
+          "path": "/employer/companies/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0156",
+            "OP-0157"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams",
+          "status": "EXACT",
+          "path": "/enterprise/teams",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0204",
+            "OP-0205"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/memberships",
+          "status": "EXACT",
+          "path": "/enterprise/memberships",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0174",
+            "OP-0175"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 4,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-G01",
+      "capability": "Cuba application shell (nav, header, popovers, a11y)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-G20",
+      "capability": "Job application tracker",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/jobs-data/tracker",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0255",
+            "OP-0256"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs-data/tracker/{X}",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0257",
+            "OP-0258"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs/{X}/applications",
+          "status": "EXACT",
+          "path": "/jobs/{X}/applications",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0259",
+            "OP-0260"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-G21",
+      "capability": "AI interview coach / role-based question generation",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/generate-interview",
+          "status": "EXACT",
+          "path": "/generate-interview",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0238"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions",
+          "status": "EXACT",
+          "path": "/live-interview/sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0264"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions/{X}/turns",
+          "status": "EXACT",
+          "path": "/live-interview/sessions/{X}/turns",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0268"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    }
+  ]
+}

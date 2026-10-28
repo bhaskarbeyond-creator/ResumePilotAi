@@ -75,11 +75,11 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 > **Added 2026-10-29 (V4 coverage reconciliation, revision `0adad00`):** nine reconciliation artifacts —
 > `V4-COVERAGE-RECONCILIATION.md` (1,492/1,492 items dispositioned), `V4-FINAL-ACCEPTANCE-REPORT.md`
 > (verdict `PARTIAL — INCOMPLETE`), `ALLEGATION-RESOLUTION-REGISTER.md` (35 allegations),
-> `OAUTH-PROBE.md` (subfeature decomposition), `BACKEND-OPERATION-REACHABILITY.md` (384 operations in seven
+> `OAUTH-PROBE.md` (subfeature decomposition), `BACKEND-OPERATION-REACHABILITY.md` (**385** operations in seven
 > classes), `EG-REVALIDATION-REGISTER.md` (EG-007…012 + accessibility re-tested),
 > `RUNTIME-VERIFICATION-V4.md` (executed evidence), `AUDIT-CHECK-PROVENANCE.md` (what the 61 checks really
 > prove), `METRIC-DEFINITIONS.md` + `AUDIT-CHANGE-HISTORY.md`. The parity register is now **112
-> capabilities** with **651/651 legacy and 206/206 modern files attributed** and **385 path anchors
+> capabilities** with **650/650 legacy and 206/206 modern files attributed** and **385 path anchors
 > stat-verified** by `scripts/verify-v4-reconciliation.py` (9 checks, separate from — and stricter than —
 > the original 61-check script, which is unchanged).
 

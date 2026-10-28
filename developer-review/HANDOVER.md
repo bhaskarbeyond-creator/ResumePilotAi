@@ -1,5 +1,11 @@
 # Final Handover Report — Senior Architectural Mandate v3 Completion
 
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
 **Repository:** `git@github.com:bhaskarbeyond-creator/ResumePilotAi.git` (`https://github.com/bhaskarbeyond-creator/ResumePilotAi.git`)
 **Branch audited:** `main` (and `dev` parity)
 **Source revision (publication wrapper):** `ff841d5dfe7776fb05b094c9f005d551a0d32032` — `docs(audit): publish partial forensic audit deliverables`
@@ -293,10 +299,10 @@ re-architecture with 30 missing and 9 fabricated capabilities).
 |---|---|
 | Branch / revision | `arena/393531fe-resumepilotai` @ `415335b` (parent audit `a7d08a2`) |
 | Active frontend | `frontend/` (all root npm scripts `--prefix frontend`; `scripts/sync-dist.mjs` publishes `frontend/dist`) |
-| Legacy tree | **651 files / 519 `.jsx` / 193,320 lines / 153 endpoints / 58 routes** — outside the active build, **not** deletable (30 capabilities + 7 backend contract tests + 1 tooling import) |
+| Legacy tree | **650 files / 519 `.jsx` / 193,310 lines / 153 endpoints / 58 routes** — outside the active build, **not** deletable (30 capabilities + 7 backend contract tests + 1 tooling import) |
 | Modern tree | **206 files / 151 `.tsx` / 68,812 lines / 161 endpoints / 100 routes** |
 | Capability verdicts | **109**: 25 FULL · 6 REPLACED · 35 PARTIAL · 30 MISSING · 9 MOCK/FABRICATED · 4 UNVERIFIED |
-| Legacy file attribution | **651 / 651** (100 % of the tree accounted for) |
+| Legacy file attribution | **650 / 650** (100 % of the tree accounted for) |
 | Backend reachability | 384 operations; **192 (50 %) unreachable from the modern UI**; **58 reachable from neither frontend** |
 | Allegation adjudication | 34 claims: **18 confirmed**, 1 confirmed-with-correction, 2 partial, **9 refuted**, 4 unresolved |
 
@@ -316,7 +322,7 @@ re-architecture with 30 missing and 9 fabricated capabilities).
 5. **DISC-017** — i18n, GA4, per-route SEO, JSON-LD, service worker and the privacy-consent banner were
    removed wholesale. None of these was named in the supplied omission report.
 6. **DISC-018** — this package's own prior figures for the legacy tree were **~4.5× understated**
-   (`E-002`: "144 files/dirs", "main.jsx 37k lines" — actual 651 files / 645 lines). Corrected in
+   (`E-002`: "144 files/dirs", "main.jsx 37k lines" — actual 650 files / 645 lines). Corrected in
    `E-325` with the original row left intact.
 
 ### 12.3 Allegations refuted (do not repeat them as findings)

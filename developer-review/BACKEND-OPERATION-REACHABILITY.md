@@ -2,8 +2,11 @@
 
 **Authoritative revision:** `0adad00d0975444f13b98f9cda3ec7e24c2c6a62` (branch `arena/393531fe-resumepilotai`; `origin/main` = same; `origin/dev` = `ea7b7416…`, tree-identical)
 **Generator:** `developer-review/tools/backend-reachability.cjs`
-**Machine-readable register:** `Evidence/artifacts/backend-reachability.json` (384 records),
+**Machine-readable register:** `Evidence/artifacts/backend-reachability.json` (385 records),
 `Evidence/artifacts/backend-operations.tsv` (tabular), `Evidence/logs/backend-reachability.log`
+**Independent cross-check:** `tools/reachability-crosscheck.cjs` — 385/385 agreements, 0 disagreements
+**Client-side contract check:** `tools/client-call-existence.cjs` — 229 call sites, 23 served by no operation (DISC-025)
+**V5 status:** superseded counts are retained in §5; the register itself is authoritative as of `cccd35a5`.
 **Supersedes:** the binary "consumed / not consumed" split in `tools/backend-ui-coverage.cjs` (kept, unmodified, for provenance)
 
 ---
@@ -36,13 +39,13 @@ mandate defines.
 
 | Unit | Value | Method |
 |---|---:|---|
-| Route **registrations** (`router.<verb>(…)` / `app.<verb>(…)` call sites) | **498** | regex over `backend/routes/*.js` + `backend/index.js`, mount-prefix expanded |
-| Unique **METHOD + path** pairs after mount resolution and de-duplication | **384** | this is the operation register denominator |
-| Duplicate/overlapping registrations collapsed | **114** | 498 − 384 (same method+path declared twice, e.g. index.js + a router) |
+| Route **registrations** (`router.<verb>(…)` / `app.<all>(…)` call sites) | **499** | regex over `backend/routes/*.js` + `backend/index.js`, mount-prefix expanded |
+| Unique **METHOD + path** pairs after mount resolution and de-duplication | **385** | this is the operation register denominator |
+| Duplicate/overlapping registrations collapsed | **114** | 499 − 385 (same method+path declared twice, e.g. index.js + a router) |
 | Handlers | **384** | 1 inline handler per unique operation; no shared handler serves two paths |
 | Database operations | **not counted** | not enumerable from route declarations; see `DATABASE-INVENTORY.md` and §8 |
 
-Mount prefixes were resolved for all 384 operations (0 unresolved). `backend/index.js` is CommonJS with
+Mount prefixes were resolved for all 385 operations (0 unresolved). `backend/index.js` is CommonJS with
 destructured `require`, so imports are resolved from `const { x } = require('./routes/y')` and
 `const x = require('./routes/y')` as well as ESM `import`.
 
@@ -53,7 +56,8 @@ destructured `require`, so imports are resolved from `const { x } = require('./r
 | R1 | `UI-REACHABLE` | A **call site** exists in `frontend/src` other than the dead-hook file. A file that only *registers* the route is never a caller. |
 | R2 | `INDIRECTLY-REACHABLE` | Called only from `hooks/use-api-hooks.ts`, and the hook(s) that call it have ≥1 consumer in `frontend/src`. |
 | R2′ | `UNREACHABLE` | Called only from that file, and every hook that calls it has **0 consumers**. |
-| R7 | `UNVERIFIED` | No direct call site, but a *child* path is called from modern code — static analysis cannot decide parent reachability. |
+| R7 | `UNVERIFIED` | No direct call site, but a *child* path is called from modern code — static analysis cannot decide parent reachability. Note: several such child paths are themselves not registered (DISC-025), so this rule records *ambiguity*, never reachability. |
+| R7b | `UNVERIFIED` | No direct call site, but a call exists whose path shape is compatible (same segment count, dynamic segments on either side) — it may construct this path at runtime. Replaced the V4 `dynamicParent` rule, which wrongly promoted every child of a called parent to `UI-REACHABLE`. |
 | R3 | `EXTERNAL-CALLER` | Provider webhook/callback, OAuth redirect, payment verifier, M2M API, agent/LLM `v1` API, OG-image generator, health probe, public JSON feed. |
 | R5 | `INTENTIONALLY-UNEXPOSED` | Machine/service-account scoped route (`m2m`, `service-account`, `support-grant`). |
 | R4 | `SERVER-ONLY` | Called by backend code (HTTP self-call) or its router module is required and invoked in-process by another backend module. `backend/services/platformHealth.js` is excluded — it enumerates routers for existence probes and does not invoke handlers. |
@@ -61,49 +65,63 @@ destructured `require`, so imports are resolved from `const { x } = require('./r
 
 ## 4. Result
 
-| Reachability class | Operations | % of 384 |
+| Reachability class | Operations | % of 385 |
 |---|---:|---:|
-| `UI-REACHABLE` | **126** | 32.8 % |
-| `INDIRECTLY-REACHABLE` | **6** | 1.6 % |
+| `UI-REACHABLE` | **152** | 39.5 % |
+| `INDIRECTLY-REACHABLE` | **7** | 1.8 % |
 | `EXTERNAL-CALLER` | **27** | 7.0 % |
 | `SERVER-ONLY` | **11** | 2.9 % |
-| `INTENTIONALLY-UNEXPOSED` | **9** | 2.3 % |
-| `UNREACHABLE` | **201** | 52.3 % |
-| `UNVERIFIED` | **4** | 1.0 % |
-| **Total** | **384** | 100 % |
+| `INTENTIONALLY-UNEXPOSED` | **2** | 0.5 % |
+| `UNREACHABLE` | **176** | 45.7 % |
+| `UNVERIFIED` | **10** | 2.6 % |
+| **Total** | **385** | 100 % |
 
 Derived measures, each with its own denominator:
 
 | Measure | Numerator / denominator | Value |
 |---|---|---:|
-| Operations with a live modern call path (UI + indirect) | 132 / 384 | **34.4 %** |
-| Operations with **no** modern UI call site | 250 / 384 | **65.1 %** |
-| Operations unreachable from *any* client, after accounting for webhooks, server reuse and machine scope | 201 / 384 | **52.3 %** |
-| Operations never referenced by **either** frontend (modern or legacy) | 183 / 384 | **47.7 %** |
-| Operations the legacy UI called that no modern client calls | 67 / 384 | **17.4 %** |
+| Operations with a live modern call path (UI + indirect) | 159 / 385 | **41.3 %** |
+| Operations with **no** modern UI call site | 226 / 385 | **58.7 %** |
+| Operations unreachable from *any* client, after accounting for webhooks, server reuse and machine scope | 176 / 385 | **45.7 %** |
+| Operations never referenced by **either** frontend (modern or legacy) | 153 / 385 | **39.7 %** |
+| Operations the legacy UI called that no modern client calls | 23 / 385 | **6.0 %** |
+| Client call sites whose path no operation serves | 30 of 229 call sites / 23 distinct paths | **13.1 %** (DISC-025) |
 
 ## 5. Reconciliation with the previously reported figures
 
-| Reported (2026-10-29) | V4 revalidated | Explanation |
-|---|---|---|
-| 384 unique operations | **384 confirmed** | Same denominator; mount resolution now complete (0 unresolved). |
-| 192 "unreachable from modern UI" | **250 with no modern UI call site; 201 unreachable from any client** | The 192 counted dead-hook references as reachable (−67) and counted external callers/server reuse as unreachable (+27 external, +11 server, +9 machine-scoped, +4 unverified). The two errors partially offset, which is why 192 looked plausible. |
-| 58 "completely orphaned" | **183 never referenced by either frontend** | The old rule treated *any* string mention (including in tests and in the health-tab display table) plus loose prefix matches as a caller. |
-| — | **27 `EXTERNAL-CALLER`** | Not previously represented at all: these are legitimate provider webhooks and health probes, not missing UI. |
-| — | **9 `INTENTIONALLY-UNEXPOSED`** | Machine-scoped routes that should never have a browser caller. |
+Three successive figures exist for this register. None is deleted.
 
-**Net effect on the audit's conclusion:** the backend is *more* undrivable than previously reported
-(52.3 % vs 50 %), and the "orphan" figure was overstated in the opposite direction for a different
-reason (string mentions). Both corrections are disclosed rather than smoothed; the earlier numbers stay
-in the record (`DISCREPANCY-LOG.md` DISC-016 carries a supersession note).
+| Version | Unique ops | UI / indirect / external / server / machine / unreachable / unverified | What changed and why |
+|---|---:|---|---|
+| 2026-10-29 pass | 384 | binary: 192 "unreachable from modern UI", 58 "orphaned" | counted dead-hook mentions and string metadata as callers |
+| V4 (`0adad00`) | 384 | 126 / 6 / 27 / 11 / 9 / 201 / 4 | seven classes introduced; but `enterpriseRequest` was invisible and `dynamicParent` over-promoted |
+| **V5 (`cccd35a5`)** | **385** | **152 / 7 / 27 / 11 / 2 / 176 / 10** | three classifier defects fixed and `app.all` parsed (DISC-024) |
 
-## 6. Unreachable operations by area (201)
+V4 to V5 movement, reconciled class by class (66 operations changed class):
+
+| Movement | Ops | Cause |
+|---|---:|---|
+| `UNREACHABLE` to `UI-REACHABLE` | 38 | `enterpriseRequest(` was not a recognised call helper (46 call sites in `lib/enterprise-api.ts`) |
+| `INTENTIONALLY-UNEXPOSED` to `UI-REACHABLE` | 7 | same defect: the `/enterprise/service-accounts` and `/enterprise/support-grants` families are in fact driven from the enterprise console |
+| `UI-REACHABLE` to `UNREACHABLE` | 12 | `dynamicParent` removed; a call to `/admin/users/:id` is not a call to `/admin/users/:id/ai-entitlement` |
+| `UI-REACHABLE` to `UNVERIFIED` | 5 | replaced by the shape-compatible rule (R7b), which records ambiguity instead of asserting reachability |
+| `UNREACHABLE` to `UNVERIFIED` | 1 | the public resume path is shape-compatible with the publication path |
+| `UNREACHABLE` to `INDIRECTLY-REACHABLE` | 1 | multi-line hook attribution fixed (`/employer/jobs/{X}/applications/{X}/resume`) |
+| new operation | 1 | `app.all('/api/admin/ai/fetch-models')` parsed for the first time |
+
+**Net effect:** the backend is *less* undrivable than V4 reported (176 = 45.7 % vs 201 = 52.3 %), because
+the enterprise control plane is actually wired. The `UNREACHABLE` figure is still large, and 176 is a
+floor rather than a ceiling: 23 of the client paths that would explain some of these operations do not
+exist at all (DISC-025), so "no call site" here sometimes means "the call site is broken", which is
+worse than orphaned, not better.
+
+## 6. Unreachable operations by area (176)
 
 | Prefix | Unreachable operations |
 |---|---:|
-| `/admin` | 66 |
-| `/enterprise` | 54 |
+| `/admin` | 79 |
 | `/platform` | 34 |
+| `/enterprise` | 15 |
 | `/auth` | 10 |
 | `/blog-data` | 6 |
 | `/phrases` | 4 |
@@ -115,10 +133,27 @@ in the record (`DISCREPANCY-LOG.md` DISC-016 carries a supersession note).
 | `/check` | 1 |
 | `/contact` | 1 |
 | `/employer-applications` | 1 |
+| `/export` | 1 |
+| `/favourites` | 1 |
+| `/health` | 1 |
+| `/jobs` | 1 |
+| `/linkedin-scraper` | 1 |
+| `/notifications-data` | 1 |
+| `/notify` | 1 |
+| `/payment` | 1 |
+| `/public-export` | 1 |
+| `/public-export-docx` | 1 |
+| `/reviews` | 1 |
+| `/rtl-font-config` | 1 |
+| `/send-sms` | 1 |
+| `/service-availability` | 1 |
+| `/subscription` | 1 |
 
-Split by provenance: **57** operations were called by the legacy UI and are not called by any modern
-client (regressions); **144** have never been called by any client in either tree (latent or
-server-to-server features awaiting a UI).
+Split by provenance: **23** operations were called by the legacy UI and are not called by any modern
+client (candidate regressions); **153** have never been called by any client in either tree (latent or
+server-to-server features awaiting a UI). Every one of the 176 carries a machine-readable `rule` +
+`reason` in `Evidence/artifacts/backend-reachability.json` and `Evidence/artifacts/backend-operations.tsv`,
+and §9 prints all of them.
 
 ### 6.1 Highest-consequence unreachable operations
 
@@ -141,17 +176,26 @@ server-to-server features awaiting a UI).
 Full enumeration: `Evidence/artifacts/backend-operations.tsv` (columns: `op_id, method, path,
 reachability, rule, reason, modern_refs, legacy_refs, test_refs, defined_in`).
 
-## 7. The four `UNVERIFIED` operations
+## 7. The ten `UNVERIFIED` operations
 
-| Operation | Why undecidable |
-|---|---|
-| `GET /admin/employer-applications` | only a child (`/verify`) is called; the list may or may not be fetched via a path built at runtime |
-| `GET /admin/jobs` | same pattern (`/moderate` child called) |
-| `GET /admin/settings` | child `/admin/settings/modules` is called; parent not resolvable |
-| `GET /public/geo/regions` | child `/public/geo/regions/{…}` called |
+| Operation | Rule | Why undecidable |
+|---|---|---|
+| `GET /admin/employer-applications` | R7 | no direct call site, but a child path (/admin/employer-applications/{X}/verify) is called from modern code; parent reachability not determinable statically |
+| `PATCH /admin/employer-applications/{X}` | R7 | no direct call site, but a child path (/admin/employer-applications/{X}/verify) is called from modern code; parent reachability not determinable statically |
+| `GET /admin/jobs` | R7 | no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically |
+| `DELETE /admin/jobs/{X}` | R7 | no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically |
+| `PATCH /admin/jobs/{X}` | R7 | no direct call site, but a child path (/admin/jobs/{X}/moderate) is called from modern code; parent reachability not determinable statically |
+| `GET /admin/settings` | R7 | no direct call site, but a child path (/admin/settings/modules) is called from modern code; parent reachability not determinable statically |
+| `POST /admin/users/bulk` | R7 | a shape-compatible call (/admin/users/{X} in frontend/src/components/admin/AdminUsersTab.tsx) may construct this path at runtime |
+| `GET /enterprise/usage/ai` | R7 | no direct call site, but a child path (/enterprise/usage/ai/events) is called from modern code; parent reachability not determinable statically |
+| `GET /public/geo/regions` | R7 | no direct call site, but a child path (/public/geo/regions/{X}/{X}) is called from modern code; parent reachability not determinable statically |
+| `GET /resumes/public/{X}` | R7 | a shape-compatible call (/resumes/{X}/publication in frontend/src/lib/share-publication.ts) may construct this path at runtime |
 
-They are **not** counted as reachable and **not** counted as unreachable. Closure: instrument a running
-build (network capture) or read the parent calls in `AdminSettingsTab`/`AdminModerationTab` at runtime.
+They are **not** counted as reachable and **not** counted as unreachable. Two of them
+(`/admin/jobs/{X}` and `/admin/employer-applications/{X}`) are undecidable only because a *non-existent*
+child path is called (DISC-025): if that call were removed the parent would be plain `UNREACHABLE`.
+Closure: instrument a running build (network capture) and read the parent calls in
+`AdminSettingsTab`, `AdminModerationTab` and `AdminUsersTab` at runtime.
 
 ## 8. Limitations
 
@@ -173,3 +217,201 @@ build (network capture) or read the parent calls in `AdminSettingsTab`/`AdminMod
   the served bundle cannot be inspected here and **build freshness is unverifiable** — that is the
   real limitation, not a different frontend. Root `src/` is not referenced by any build or deploy
   script; it survives as source-of-record and as the subject of the parity comparison.
+
+## 9. Per-operation rationale for all 176 `UNREACHABLE` operations
+
+Mandate 5 (e) requires a rationale per unreachable operation and a distinction between "no call site"
+and "orphaned". The `reason` column below is the classifier's own machine-readable output; the `legacy`
+column records whether the *legacy* tree called the operation, which separates a **regression**
+(legacy used it, modern does not) from a **latent / never-exposed** operation.
+
+| Operation | Rule | Legacy called it | Reason |
+|---|---|---|---|
+| `GET /admin/ads` | R6 | no | called only by tests, never by a client |
+| `POST /admin/ads` | R6 | no | called only by tests, never by a client |
+| `DELETE /admin/ads/{X}` | R6 | no | called only by tests, never by a client |
+| `GET /admin/ai-fleet-health` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/ai/entitlements` | R6 | no | called only by tests, never by a client |
+| `ALL /admin/ai/fetch-models` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /admin/ai/quota-limits` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /admin/ai/reset-state` | R6 | no | called only by tests, never by a client |
+| `GET /admin/ai/routing-telemetry` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/audit-logs` | R2 | no | only dead hook(s) useAdminAuditLogs call it — 0 consumers |
+| `GET /admin/audit-logs/stats` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /admin/audit-logs/{X}` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /admin/blog/categories` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/blog/categories` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /admin/blog/categories/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/blog/categories/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/blog/posts` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /admin/blog/posts/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/blog/posts/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/blog/publish-due` | R6 | no | called only by tests, never by a client |
+| `GET /admin/companies` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/companies/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/coupons` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/coupons` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /admin/coupons/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/coupons/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PUT /admin/coupons/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/database-settings` | R6 | no | called only by tests, never by a client |
+| `POST /admin/database-settings` | R6 | no | called only by tests, never by a client |
+| `GET /admin/database-settings/conflicts` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/database-settings/dead-letter` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/database-settings/initialize-schema` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/database-settings/prune-outbox` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/database-settings/retry-dead-letter` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/database-settings/sync-status` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/database-settings/test-connection` | R6 | no | called only by tests, never by a client |
+| `POST /admin/delete-user` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/health-summary` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `GET /admin/operations/feature-flags` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/operations/feature-flags/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PUT /admin/operations/feature-flags/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/pages` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /admin/pages/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PUT /admin/pages/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/payment-orders` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/payments/refund` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/platform/currency` | R6 | no | called only by tests, never by a client |
+| `PUT /admin/platform/currency` | R6 | no | called only by tests, never by a client |
+| `GET /admin/platform/status` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/platform/tenants/{X}/ai-keys/test` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/platform/tenants/{X}/ai-policy` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/platform/tenants/{X}/commercials` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/platform/tenants/{X}/members` | R6 | no | called only by tests, never by a client |
+| `DELETE /admin/platform/tenants/{X}/members/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/platform/tenants/{X}/members/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/reviews` | R6 | no | called only by tests, never by a client |
+| `POST /admin/reviews` | R6 | no | called only by tests, never by a client |
+| `DELETE /admin/reviews/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/subscriptions` | R6 | no | called only by tests, never by a client |
+| `POST /admin/subscriptions/{X}/reconcile` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/trusted-by` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/trusted-by` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /admin/trusted-by/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /admin/trusted-by/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/twilio-settings` | R6 | no | called only by tests, never by a client |
+| `POST /admin/twilio-settings` | R6 | no | called only by tests, never by a client |
+| `DELETE /admin/users/{X}/ai-entitlement` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/users/{X}/ai-entitlement` | R6 | no | no call site anywhere outside its defining route file |
+| `PUT /admin/users/{X}/ai-entitlement` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/users/{X}/ai-quota-reset` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/users/{X}/audit` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/users/{X}/details` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /admin/users/{X}/export` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/users/{X}/password-reset` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/users/{X}/tenants` | R6 | no | called only by tests, never by a client |
+| `DELETE /admin/users/{X}/tenants/{X}` | R6 | no | called only by tests, never by a client |
+| `POST /admin/users/{X}/unenroll-mfa` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/users/{X}/verify-email` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /admin/website-meta` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /auth/custom-password-reset` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /auth/github` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /auth/github/test-credentials` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /auth/linkedin` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /auth/linkedin/test-credentials` | R6 | no | called only by tests, never by a client |
+| `POST /auth/oauth/exchange` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /auth/purge-orphaned-auth` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /auth/send-verification-email` | R6 | yes | legacy UI called it in 3 file(s); no modern client does |
+| `POST /auth/set-user-password` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /auth/verify-email-token` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /blog-data` | R6 | no | called only by tests, never by a client |
+| `GET /blog-data/categories` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /blog-data/slug/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `DELETE /blog-data/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /blog-data/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /blog-data/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /check` | R6 | no | called only by tests, never by a client |
+| `POST /contact` | R6 | no | called only by tests, never by a client |
+| `GET /coupons/active` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /coupons/validate` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /employer-applications` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `POST /enterprise/ai/generate-content` | R6 | no | called only by tests, never by a client |
+| `POST /enterprise/ai/generate-interview` | R6 | no | called only by tests, never by a client |
+| `POST /enterprise/lifecycle/suspend` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /enterprise/queue/jobs` | R6 | no | called only by tests, never by a client |
+| `POST /enterprise/queue/jobs` | R6 | no | called only by tests, never by a client |
+| `POST /enterprise/storage/token` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /enterprise/storage/verify` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /enterprise/support/context` | R6 | no | called only by tests, never by a client |
+| `GET /enterprise/teams/{X}/members` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /enterprise/teams/{X}/members` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `DELETE /enterprise/teams/{X}/members/{X}` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /enterprise/tenants/{X}/reactivate` | R6 | no | called only by tests, never by a client |
+| `GET /enterprise/workspaces/{X}/members` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /enterprise/workspaces/{X}/members` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `DELETE /enterprise/workspaces/{X}/members/{X}` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `POST /export` | R6 | no | called only by tests, never by a client |
+| `GET /favourites/{X}/check` | R6 | no | called only by tests, never by a client |
+| `GET /health/databases` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /invoice` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `POST /invoice/generate` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /invoices` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `GET /invoices/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /jobs/naukri` | R6 | no | called only by tests, never by a client |
+| `GET /linkedin-scraper` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /notifications-data/contact/list` | R6 | no | called only by tests, never by a client |
+| `POST /notify/user-signup` | R6 | no | called only by tests, never by a client |
+| `GET /payment-orders` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /payment-orders/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /payment/razorpay-order` | R6 | no | called only by tests, never by a client |
+| `GET /phrases` | R6 | no | called only by tests, never by a client |
+| `POST /phrases` | R6 | no | called only by tests, never by a client |
+| `DELETE /phrases/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /phrases/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/announcements` | R6 | no | called only by tests, never by a client |
+| `POST /platform/announcements` | R6 | no | called only by tests, never by a client |
+| `DELETE /platform/announcements/{X}` | R6 | no | called only by tests, never by a client |
+| `PATCH /platform/announcements/{X}` | R6 | no | called only by tests, never by a client |
+| `GET /platform/attention` | R6 | no | called only by tests, never by a client |
+| `GET /platform/backup-status` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/command-center` | R6 | no | called only by tests, never by a client |
+| `GET /platform/configuration` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /platform/encryption` | R6 | no | called only by tests, never by a client |
+| `GET /platform/enterprise-queue` | R6 | no | called only by tests, never by a client |
+| `GET /platform/feature-flags` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `PUT /platform/feature-flags/{X}` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /platform/health` | R6 | no | called only by tests, never by a client |
+| `GET /platform/health-indicator` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/maintenance` | R6 | no | called only by tests, never by a client |
+| `POST /platform/maintenance` | R6 | no | called only by tests, never by a client |
+| `GET /platform/observability` | R6 | no | called only by tests, never by a client |
+| `GET /platform/operational-status/api-matrix` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/operators` | R6 | no | called only by tests, never by a client |
+| `POST /platform/operators` | R6 | no | called only by tests, never by a client |
+| `POST /platform/operators/{X}/revoke-sessions` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/overview` | R6 | no | called only by tests, never by a client |
+| `GET /platform/payment-settings` | R6 | no | called only by tests, never by a client |
+| `GET /platform/payment-webhooks` | R6 | no | called only by tests, never by a client |
+| `POST /platform/payment-webhooks/{X}/replay` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/payments-health` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /platform/queues/purge` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /platform/search` | R6 | no | called only by tests, never by a client |
+| `GET /platform/security-events` | R6 | no | called only by tests, never by a client |
+| `POST /platform/tenants/garbage-collect` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/tenants/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `PATCH /platform/tenants/{X}` | R6 | no | no call site anywhere outside its defining route file |
+| `POST /platform/tenants/{X}/decommission` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /platform/version` | R6 | no | called only by tests, never by a client |
+| `POST /public-export` | R6 | no | called only by tests, never by a client |
+| `POST /public-export-docx` | R6 | no | no call site anywhere outside its defining route file |
+| `GET /reviews` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `GET /rtl-font-config` | R6 | no | called only by tests, never by a client |
+| `POST /send-sms` | R6 | no | mentioned only as display metadata in modern code; never called |
+| `GET /service-availability` | R6 | yes | legacy UI called it in 1 file(s); no modern client does |
+| `GET /stats` | R6 | no | called only by tests, never by a client |
+| `POST /stats/increment` | R6 | no | called only by tests, never by a client |
+| `POST /subscription/preferences` | R6 | no | no call site anywhere outside its defining route file |
+
+## 10. Client calls with no served operation (DISC-025)
+
+This register asks "is this operation called?". The converse question — "is this call served?" — was not
+asked until Mandate 5, and it changes the picture: 30 of 229 call sites (13.1 %) target a path that no
+registered operation serves. Full table: `DISCREPANCY-LOG.md` DISC-025 and
+`Evidence/artifacts/client-call-existence.json`.
+
+Consequence for reading §9: an `UNREACHABLE` verdict means *no working call site was found*. For
+/admin/queues*, /admin/jobs/{X}/moderate*, /blog-data*, /coupons* and /admin/audit-logs* the modern UI does
+attempt a call, but to a different (non-existent) path — that is a broken integration, not an absent
+feature.

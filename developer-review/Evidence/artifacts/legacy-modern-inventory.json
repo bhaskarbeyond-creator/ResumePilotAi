@@ -1,10 +1,10 @@
 {
- "generatedAt": "2026-10-28T20:37:28.030Z",
- "revision": "0adad00d0975444f13b98f9cda3ec7e24c2c6a62",
+ "generatedAt": "2026-10-28T21:16:02.698Z",
+ "revision": "cccd35a5dac62efa5ead2c309a0fc60b201f9b08",
  "counts": {
-  "legacyFiles": 651,
+  "legacyFiles": 650,
   "legacyJsx": 519,
-  "legacyLines": 193320,
+  "legacyLines": 193310,
   "modernFiles": 206,
   "modernTsx": 151,
   "modernLines": 68812,
@@ -317,9 +317,9 @@
    "endpoints": 1
   },
   "G-platform-shared": {
-   "files": 110,
+   "files": 109,
    "jsx": 34,
-   "lines": 22638,
+   "lines": 22628,
    "endpoints": 108
   },
   "E-resume-templates": {
@@ -9195,26 +9195,6 @@
     "path": "src/components/initailisation/installationSuccess/installationSuccess.jsx",
     "bytes": 1068,
     "lines": 35,
-    "domain": "G-platform-shared",
-    "endpoints": [],
-    "signals": {
-     "seedArrays": 0,
-     "apiCalls": 0,
-     "localStorage": 0,
-     "setTimeoutFake": 0,
-     "todoMarkers": 0,
-     "speechApis": 0,
-     "qrCode": 0,
-     "imageCrop": 0,
-     "puck": 0,
-     "mapProvider": 0
-    }
-   },
-   {
-    "tree": "legacy",
-    "path": "src/components/welcome/App.test.js",
-    "bytes": 284,
-    "lines": 10,
     "domain": "G-platform-shared",
     "endpoints": [],
     "signals": {

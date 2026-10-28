@@ -1,5 +1,11 @@
 # Metric Definitions (V4)
 
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
 Every number this package publishes is defined here with its **numerator, denominator, exclusions,
 formula and source register**. No metric is reported as a bare percentage, and **no composite score is
 computed** anywhere: averaging incomparable units is what produced the "192 uncovered / 58 orphaned"
@@ -16,7 +22,7 @@ and database operations are **different units** and never share a denominator.
 |---|---|
 | Numerator | files under repository-root `src/` that are source (`.js`, `.jsx`), excluding tests and assets |
 | Denominator | n/a (absolute count) |
-| **Value** | **651 files**, **519 `.jsx`**, **193,320 lines** |
+| **Value** | **650 files**, **519 `.jsx`**, **193,310 lines** |
 | Exclusions | `src/**/*.test.js`, `src/assets/**` binaries, `node_modules` |
 | Formula | `find src -name '*.js*' -not -name '*.test.js'` then `wc -l` |
 | Source | `Evidence/artifacts/legacy-file-inventory.tsv`; `tools/legacy-modern-inventory.cjs` |
@@ -40,7 +46,7 @@ and database operations are **different units** and never share a denominator.
 | Numerator | source files mapped to ≥1 capability row |
 | Denominator | source files measured |
 | Formula | `attributed / measured`, computed separately per tree |
-| **Legacy** | **651 / 651 = 100 %** (0 unattributed) |
+| **Legacy** | **650 / 650 = 100 %** (0 unattributed) |
 | **Modern** | **206 / 206 = 100 %** (0 unattributed) |
 | Exclusions | none — this is the point: an exclusion here would hide a capability |
 | Source | `Evidence/artifacts/feature-parity.json` (`legacySourceUnattributed`, `modernSourceUnattributed`) |
@@ -70,7 +76,8 @@ and database operations are **different units** and never share a denominator.
 | Unit D (DB operations) | **not counted** — not enumerable from route declarations; mixing it in would invalidate every percentage |
 | Exclusions | test trees are never callers; route-definition files are never callers; a string mention in display metadata is never a call |
 | Formula | `count(class) / 384` per class, classes assigned by first-match rule R1→R7→R2→R3→R5→R4→R6 |
-| **Values** | UI-REACHABLE 126 (32.8 %), INDIRECTLY-REACHABLE 6 (1.6 %), EXTERNAL-CALLER 27 (7.0 %), SERVER-ONLY 11 (2.9 %), INTENTIONALLY-UNEXPOSED 9 (2.3 %), UNREACHABLE 201 (52.3 %), UNVERIFIED 4 (1.0 %) |
+| **Values (V5)** | UI-REACHABLE 152 (39.5 %), INDIRECTLY-REACHABLE 7 (1.8 %), EXTERNAL-CALLER 27 (7.0 %), SERVER-ONLY 11 (2.9 %), INTENTIONALLY-UNEXPOSED 2 (0.5 %), UNREACHABLE 176 (45.7 %), UNVERIFIED 10 (2.6 %), over **385** operations |
+| **Values (V4, superseded)** | UI 126 / indirect 6 / external 27 / server 11 / machine 9 / unreachable 201 / unverified 4, over 384 — wrong in both directions (DISC-024) |
 | Derived measures | live UI path (UI+indirect) 132/384 = 34.4 %; no modern call site 250/384 = 65.1 %; never referenced by either frontend 183/384 = 47.7 %; legacy-called-but-modern-dropped 67/384 = 17.4 % |
 | Source | `BACKEND-OPERATION-REACHABILITY.md`; `Evidence/artifacts/backend-reachability.json`, `backend-operations.tsv` |
 | Supersedes | `backend-ui-coverage.cjs` binary split (192 / 58) — kept for provenance, **not** used for any V4 claim |
@@ -104,7 +111,7 @@ and database operations are **different units** and never share a denominator.
 |---|---|
 | Numerator | items with a reproducible disposition |
 | Denominator | items enumerated |
-| Files | 651 + 206 = 857 / 857 |
+| Files | 650 + 206 = 857 / 857 |
 | Capability rows | 112 / 112 |
 | Backend operations | 384 / 384 |
 | Allegations | 35 / 35 |

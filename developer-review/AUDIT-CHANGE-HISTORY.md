@@ -1,5 +1,11 @@
 # Audit Change History
 
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
 **Purpose.** V4 requires that a revised conclusion be recorded as *previous conclusion + new evidence +
 revision*, never erased. This file is that ledger. Nothing here replaces the underlying documents; each
 row points at the file that now carries the corrected text and at the anchor that produced the change.

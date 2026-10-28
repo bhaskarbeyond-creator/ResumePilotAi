@@ -7,7 +7,13 @@ investigated and **disproved** live in `appendix/REFUTED-CANDIDATES.md`, not her
 Candidates that remain **plausible but unproven** live in
 `appendix/UNVERIFIED-SUSPICIONS.md`, not here.
 
-Total confirmed findings in this log: **22** (DISC-001 … DISC-022). DISC-019 … DISC-022 were
+> **Update 2026-10-29 (Mandate 5 — independent verification of V4, revision `cccd35a5`).** Three entries
+> added. DISC-024 records that the V4 reachability register was wrong in *both* directions (see it before
+> citing any V4 class count). DISC-025 records 23 client-side paths that no backend operation serves.
+> DISC-026 records admin controls that report success after swallowing a failed write. No V4 entry was
+> deleted; DISC-016 keeps its published numbers and is now annotated as superseded by DISC-024.
+
+Total confirmed findings in this log: **26** (DISC-001 … DISC-026). DISC-019 … DISC-022 were
 raised by the V4 coverage-reconciliation mandate at revision `0adad00`; DISC-001 … DISC-018 are
 unchanged by that pass.
 
@@ -27,6 +33,10 @@ unchanged by that pass.
 > (see the banner on that entry). The re-audit also **corrected prior figures** rather
 > than editing them in place: the legacy tree is 651 source files / 519 `.jsx` /
 > 193,320 lines, not "144 files/dirs" as recorded in `EVIDENCE-INDEX.md` E-002.
+> **V5 (independent verification):** those figures were themselves off by one file — the
+> inventory counted `src/components/welcome/App.test.js`, which the audit's own rule excludes.
+> Corrected to **650 / 193,310**; see DISC-023. The 651 figure is kept here because this
+> banner records what the V4 pass published.
 
 > **Update 2026-10-28 (runtime verification pass).** DISC-001 … DISC-007 were
 > established statically in the read-only pass. **DISC-008 … DISC-012 were
@@ -49,7 +59,7 @@ unchanged by that pass.
 > `frontend/`**, and root `src/` is outside the build. But "outside the active build" is not
 > "dead": 7 `backend/test/*.test.js` assert legacy source strings (contract surface) and
 > `scripts/candidate-workspace-inventory.mjs:5` imports legacy code. Measured:
-> **651 legacy files / 519 `.jsx` / 193,320 lines** vs **206 modern files / 151 `.tsx` /
+> **651 legacy files / 519 `.jsx` / 193,320 lines** (V5: 650 / 193,310 — DISC-023) vs **206 modern files / 151 `.tsx` /
 > 68,812 lines**.
 >
 > **Revised conclusion:** the ambiguity about *which app runs* is **RESOLVED** (frontend). What
@@ -1032,7 +1042,7 @@ decision record; and the counts reproduce exactly (`tools/legacy-modern-inventor
 **Evidence:** `FEATURE-PARITY-MATRIX.md` (109 rows: 25 `FULL PARITY`, 35 `PARTIAL PARITY`,
 30 `MISSING`, 9 `MOCK / FABRICATED STATE`, 6 `REPLACED BY EQUIVALENT`, 4 `UNVERIFIED`);
 `Evidence/artifacts/feature-parity.json`; `Evidence/logs/parity-matrix.log`.
-Legacy file attribution is complete: 651/651 files map to a capability row.
+Legacy file attribution is complete: 650/650 files map to a capability row.
 
 **Description:** `INTENTIONAL RETIREMENT` is applied **zero** times because no evidence of intent
 exists. The largest omissions: voice interview (2,432 lines), candidate command palette (1,527 lines),
@@ -1157,8 +1167,10 @@ markup (Google Jobs eligibility).
 edited away.
 
 **Evidence:** `EVIDENCE-INDEX.md` E-002 recorded "`src/` tree | 144 files/dirs, 59 template folders,
-`src/main.jsx` 37k lines". Measured: **651** source files (519 `.jsx`), **51** `cv*` template
+`src/main.jsx` 37k lines". Measured: **650** source files (519 `.jsx`), **51** `cv*` template
 directories (+6 `cover*`), `src/main.jsx` = **645** lines, 193,320 total lines.
+**V5 note:** the file count in this entry was 651 and included one test file; the corrected figures are
+650 files / 193,310 lines (DISC-023). The 651 is retained because this entry records the V4 measurement.
 Recount via `tools/legacy-modern-inventory.cjs`; per-file ledger in
 `Evidence/artifacts/legacy-file-inventory.tsv`.
 
@@ -1277,6 +1289,37 @@ toggle is not support — a distinction this audit applies to every "configured"
 
 ---
 
+## [DISC-023] The legacy inventory counted a test file, inflating its own baseline by one
+
+**Severity:** P3 — Minor (audit-integrity: a 0.15 % count error in the denominator every legacy metric is expressed against)
+
+**Verification status:** STATICALLY VERIFIED + reproduced (independent recount)
+
+**Confidence:** High
+
+**Disproof outcome:** SURVIVED — compared the generator's ledger against `find src -name '*.js*'` line by line.
+
+**Evidence:** `Evidence/artifacts/legacy-file-inventory.tsv` contained 651 rows; the working tree contains
+**650** source files under `src/`. The extra row was `src/components/welcome/App.test.js` (9 lines).
+`tools/legacy-modern-inventory.cjs` → `walk()` filtered extensions but not `*.test.js`, while
+`METRIC-DEFINITIONS.md` M1 declares "Excluding `src/**/*.test.js`". The generator and its own stated rule
+disagreed, and no verifier compared them — `check_attribution_complete` only asserts ≥600 files and an
+empty unattributed list, both of which the inflated number satisfies.
+
+**Impact, measured:** legacy files 651 → **650**; legacy lines 193,320 → **193,310**; the V4 aggregate
+"1,492 items" → **1,491**. No capability row, classification or verdict changes: the file was attributed
+and its removal changes no ratio by more than 0.15 percentage points. Every document that quoted 651 now
+quotes 650, with the V4 figure preserved in this log and in `AUDIT-CHANGE-HISTORY.md` §6.
+
+**Expected:** the generator implements its documented exclusion rule, and a verifier asserts the ledger
+size equals an independent `find` count.
+**Actual:** both were absent. `scripts/verify-v4-reconciliation.py` now recomputes the legacy file count
+from the filesystem and compares it to the ledger.
+
+---
+
+## Summary of status change caused by the V5 independent verification (revision `cccd35a5`)
+
 ## Summary of status change caused by the V4 reconciliation (revision `0adad00`)
 
 | Finding | Status before | Status now |
@@ -1309,3 +1352,167 @@ toggle is not support — a distinction this audit applies to every "configured"
 | DISC-016 | — | **NEW** — 192/384 backend operations unreachable from the modern UI |
 | DISC-017 | — | **NEW** — i18n / analytics / SEO / PWA / consent removed |
 | DISC-018 | — | **NEW** — prior legacy-tree figures understated ~4.5× (self-correction) |
+
+---
+
+## [DISC-024] The V4 reachability register was wrong in both directions: 45 operations under-classified, 14 over-classified, 1 absent
+
+**Severity:** P2 — High (the register is the evidence base for parity claims; errors propagate into
+`FEATURE-PARITY-MATRIX.md`, the scorecard and the verdict)
+**Confidence:** High — three independent defect mechanisms, each reproduced from source and each fixed in
+`tools/backend-reachability.cjs`; the repaired register is cross-checked by a separate parser at 385/385 agreement.
+**First raised:** Mandate 5, revision `cccd35a5`. Supersedes the class counts in DISC-016.
+
+**Expected:** every registered operation is classified from actual call sites, in both directions —
+a call the client makes must be visible, and a call must not transfer reachability to a *different*
+operation.
+
+**Actual:** three independent defects in the V4 classifier.
+
+1. **`enterpriseRequest(` was invisible (false UNREACHABLE).** The call-site regex enumerated
+   `get|post|patch|put|del|delete|fetch|request|apiRequest|apiClient.*` but not **`enterpriseRequest`**.
+   `frontend/src/lib/enterprise-api.ts` uses it **46 times**. Consequence: **45 operations** were
+   classified `UNREACHABLE` or `INTENTIONALLY-UNEXPOSED` although modern code calls them — 38 to
+   `UI-REACHABLE` (teams, workspaces, tenants, audit, configuration, memberships, service accounts,
+   support grants, data export …) and 7 out of `INTENTIONALLY-UNEXPOSED` (the
+   `/enterprise/service-accounts` and `/enterprise/support-grants` families). This is the direction that
+   *flatters the audit*: V4's UNREACHABLE figure (201) was inflated by ~38.
+2. **`dynamicParent` promoted sub-resources (false UI-REACHABLE).** A call to
+   `patch('/admin/users/${id}')` was treated as evidence for every registered child
+   (`/admin/users/{X}/ai-entitlement`, `/audit`, `/details`, `/export`, `/password-reset`, `/tenants`,
+   `/unenroll-mfa`, `/verify-email`, …). **14 operations** lost their class, including
+   `GET /favourites/{X}/check` and `GET /notifications-data/contact/list`, which are called only by
+   backend tests. Rule removed; replaced by R7b (`patternCompatibleCall`), which returns `UNVERIFIED`
+   with an explicit reason instead of claiming reachability.
+3. **A dynamic tail swallowed a sibling operation.** `/resumes/public/{X}` was promoted by the call
+   `/resumes/public/token/{X}` — a *different* registered operation with one more segment. Fixed with a
+   same-segment-count guard.
+4. **`app.all(…)` was not parsed.** `app.all('/api/admin/ai/fetch-models', …)` at
+   `backend/index.js:4033` is a live super-admin endpoint; V4's route parser only accepted
+   `get|post|put|patch|delete`, so the operation was missing from the register entirely
+   (385 unique operations, not 384).
+5. **Hook attribution was line-oriented.** A call whose template literal begins on the next line
+   (`get<…>(` then `` `/employer/jobs/${jobId}/…` ``) was attributed to no hook and looked dead.
+   `GET /employer/jobs/{X}/applications/{X}/resume` moved `UNREACHABLE → INDIRECTLY-REACHABLE`; it has
+   two live consumers.
+
+**Corrected register (authoritative):** 499 registrations → **385 unique METHOD+path**, 114 duplicates.
+`UI-REACHABLE 152 (39.5 %) / INDIRECTLY-REACHABLE 7 (1.8 %) / EXTERNAL-CALLER 27 (7.0 %) /
+SERVER-ONLY 11 (2.9 %) / INTENTIONALLY-UNEXPOSED 2 (0.5 %) / UNREACHABLE 176 (45.7 %) /
+UNVERIFIED 10 (2.6 %)`. V4 published 126 / 6 / 27 / 11 / 9 / 201 / 4.
+
+**Net effect is not uniformly favourable.** 45 operations came *into* reachability and 14 came *out* of
+it, so the correction cannot be characterised as either tightening or loosening the audit. Both
+directions are reported because both were published.
+
+**Independent cross-check:** `tools/reachability-crosscheck.cjs` (separate parser, exact-literal
+matching, hook function ranges) now agrees on **385 of 385** operations, 0 disagreements. Two parsers
+agreeing is *not* independent proof of runtime behaviour — it is independent proof that the numbers are
+reproducible from the source tree.
+
+**Closure condition:** register regenerated from a clean checkout at the reference revision with both
+tools reporting 0 disagreements (met), *and* DISC-025's dead client paths addressed — a call to a
+non-existent path means the calling UI is not evidence of reachability even when the classifier is right.
+
+**Severity rationale (honest both ways):** this is not an application defect; nothing in the product
+changed. It is an audit-integrity defect, and it is rated P2 because a reader who trusted V4's
+`UNREACHABLE 201` would have concluded that a fifth of the API was dead, including the whole enterprise
+control plane that the admin UI actually drives.
+
+---
+
+## [DISC-025] 23 client-side paths are served by no backend operation — blog, helpdesk, queue console, moderation, operations and user-status actions 404 at runtime
+
+**Severity:** P1 — Critical (shipped admin and public surfaces are non-functional; one of them reports success)
+**Confidence:** High — two independent static enumerations plus direct reads of both sides of each contract.
+**First raised:** Mandate 5, revision `cccd35a5`. Found by the direction the V4 tools never checked:
+register → client. `tools/client-call-existence.cjs` checks client → register.
+
+**Expected:** every HTTP path literal passed to a call helper in `frontend/src` resolves to a registered
+operation (or to a registered dynamic pattern such as `/admin/settings/{X}`).
+
+**Actual:** 229 call sites were enumerated: 188 exact matches, 11 matches against a registered dynamic
+pattern, **30 call sites across 23 distinct paths with no registered operation**, 0 method mismatches.
+The dead paths, with their first call site:
+
+| # | Client call | Call site | Backend reality |
+|---:|---|---|---|
+| 1 | `GET /blog/posts` | `pages/blog/index.tsx:46`, `AdminBlogManagementTab.tsx:97` | serves `/blog-data`, `/admin/blog/posts` |
+| 2 | `GET /blog/posts/{X}` | `pages/blog/editor.tsx:91` | serves `/blog-data/{id}` |
+| 3 | `PUT /blog/posts/{X}` | `pages/blog/editor.tsx:147` | serves `POST /blog-data/{id}` |
+| 4 | `POST /blog/posts` | `pages/blog/editor.tsx:149` | serves `POST /admin/blog/posts` |
+| 5 | `DELETE /blog/posts/{X}` | `AdminBlogManagementTab.tsx:126` | serves `DELETE /admin/blog/posts/{id}` |
+| 6 | `GET /support/tickets` | `use-api-hooks.ts:588` | **no ticket endpoint exists** |
+| 7 | `POST /support/tickets` | `use-api-hooks.ts:599` | none |
+| 8 | `POST /support/tickets/{X}/messages` | `use-api-hooks.ts:612` | none |
+| 9 | `GET /admin/support/tickets` | `AdminHelpDeskTab.tsx:128` | none |
+| 10 | `PATCH /admin/support/tickets/{X}` | `AdminHelpDeskTab.tsx:188` | none |
+| 11 | `POST /admin/support/tickets/{X}/messages` | `AdminHelpDeskTab.tsx:157` | none |
+| 12 | `POST /admin/jobs/{X}/moderate` | `AdminModerationTab.tsx:184` | serves `PATCH /admin/jobs/{id}` |
+| 13 | `POST /admin/employer-applications/{X}/verify` | `AdminModerationTab.tsx:152,167` | serves `PATCH /admin/employer-applications/{id}` |
+| 14 | `POST /admin/operations/backup` | `AdminOperationsTab.tsx:122` | **no operations write endpoint** |
+| 15 | `POST /admin/operations/cache-clear` | `AdminOperationsTab.tsx:136` | none |
+| 16 | `GET /admin/queues` (fallback) | `AdminQueuesTab.tsx:138` | serves `/platform/queues` |
+| 17 | `POST /admin/queues/{X}/retry` (fallback) | `AdminQueuesTab.tsx:173` | serves `/platform/queues/retry` |
+| 18 | `POST /admin/queues/dead-letter-queue/retry` | `AdminQueuesTab.tsx:186,262` | none |
+| 19 | `POST /admin/queues/dead-letter-queue/purge` | `AdminQueuesTab.tsx:204,285` | none |
+| 20 | `POST /admin/users/{X}/status` | `AdminUsersTab.tsx:206` | serves `PATCH /admin/users/{id}` |
+| 21 | `POST /notify/email` | `CandidateReviewDrawer.tsx:159` | only `/notify/user-signup`, `/notify/email-otp` |
+| 22 | `GET /platform/status` | `enterprise-api.ts:528` | serves `/admin/platform/status` |
+| 23 | `POST /billing/validate-coupon` | `checkout-modal.tsx:246` | serves `POST /coupons/validate` |
+
+**Why V4 missed it:** every V4 tool asked "is this registered operation called?" and none asked "is this
+call served?". The parity matrix also counted API *references* in a tab (`AdminQueuesTab 683 lines /
+6 api refs`) as evidence of wiring, which is true of a call that 404s.
+
+**Consequence for parity claims:** `FP-G09` (blog) and `FP-G24` (support) were `FULL PARITY` and are
+reclassified `MISSING`; `FP-A20`, `FP-A24`, `FP-A25`, `FP-B10`, `FP-E10`, `FP-E11` and `FP-E16` drop to
+`PARTIAL PARITY`. See `FEATURE-PARITY-MATRIX.md` — `FULL PARITY` is now 19 of 112, and all 19 are
+endpoint- and reachability-supported by `tools/parity-endpoint-audit.cjs` (19/19 `SUPPORTED`).
+
+**Cross-check:** each path was also grepped in the backend (`support/tickets` 0 hits, `queues` 0 route
+definitions, `operations/backup` 0, `cache-clear` 0, `validate-coupon` 0, `moderate` 0 route matches,
+`blog/posts` only under `/admin`). `app.all` was checked separately — it is the reason
+`/admin/ai/fetch-models` is *not* in this list.
+
+**Closure condition:** every row above either gains a matching backend operation or is removed from the
+client; a re-run of `client-call-existence.cjs` reports 0 `MISSING`. Not met.
+
+---
+
+## [DISC-026] Admin controls fabricate success after swallowing a failed write (suspend user, backup, cache purge, blog delete)
+
+**Severity:** P1 — Critical (an administrator is told a security-relevant action succeeded when the server never received it)
+**Confidence:** High — four verbatim code paths; the failing endpoint is independently confirmed absent (DISC-025).
+**First raised:** Mandate 5, revision `cccd35a5`.
+
+**Expected:** if a write fails, the UI reports failure and the displayed state stays as the server has it.
+
+**Actual:** four controls POST to a non-existent endpoint, swallow the error with `.catch(() => {})`, then
+mutate local state and display a success message.
+
+1. **Suspend / reactivate user** — `AdminUsersTab.tsx:206` posts to `/admin/users/${id}/status`, then
+   `.catch(() => {})`, then `setUsers(... status: nextStatus)` (line 210-212) and reports success. The
+   account is **not** suspended; the console says it is. This is the most serious instance: a moderator
+   who suspends an abusive account gets a success state and an unsuspended account.
+2. **Backup** — `AdminOperationsTab.tsx:122` posts to `/admin/operations/backup`, `.catch(() => {})`, then
+   sets `lastBackup: 'Just now (Verified OK)'` and the message *"MariaDB hot backup snapshot completed
+   successfully."* (line 126-128). A backup is claimed that was never requested. The word "Verified" is
+   fabricated: nothing verified anything.
+3. **Cache purge** — `AdminOperationsTab.tsx:136-140` same shape, *"Application route and model caches
+   purged across nodes."*
+4. **Blog article delete** — `AdminBlogManagementTab.tsx:126` `del(...).catch(() => {})`, removes the row
+   from local state, and shows *"Article … deleted successfully."* (line 128-130); the article is untouched.
+
+**Pattern:** the failure mode is not a crash or a 500 the operator can see — it is a confident success
+message. `DISCREPANCY-LOG.md` DISC-014 already records nine fabricated admin capabilities from display
+metadata; these four are different because the *action* is fabricated, not the *reading*.
+
+**Fix direction (not applied — application source is out of scope):** remove the `.catch(() => {})`,
+surface the error, and only mutate local state after a 2xx; and give the operations console a real
+endpoint or remove the buttons.
+
+**Closure condition:** no admin write mutates local state or shows success on a rejected promise; a
+Playwright spec asserts the failure path. Not met — and forbidden by the audit's no-app-change rule, so
+this is recorded, not fixed.
+

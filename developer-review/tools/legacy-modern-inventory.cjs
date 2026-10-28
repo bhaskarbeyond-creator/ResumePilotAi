@@ -94,6 +94,9 @@ function walk(dir, exts) {
         if (['node_modules', '.git', 'dist', 'coverage'].includes(entry.name)) continue;
         stack.push(full);
       } else if (exts.includes(path.extname(entry.name))) {
+        // V5 correction: the audit's own scope rule excludes test files. `walk` did not,
+        // so src/components/welcome/App.test.js was counted in the legacy baseline (651 -> 650).
+        if (/\.(test|spec)\.[cm]?jsx?$/.test(entry.name)) continue;
         out.push(full);
       }
     }

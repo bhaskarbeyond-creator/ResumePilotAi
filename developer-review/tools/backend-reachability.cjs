@@ -121,7 +121,9 @@ for (const file of routeFiles) {
 }
 
 // direct app.<verb> handlers in index.js
-for (const m of idx.matchAll(/\bapp\.(get|post|put|patch|delete)\(\s*(\[[^\]]*\]|'[^']*'|"[^"]*")/g)) {
+// V5: `app.all('/api/admin/ai/fetch-models', …)` is a real registration; omitting `all`
+// made a live super-admin endpoint look missing.
+for (const m of idx.matchAll(/\bapp\.(get|post|put|patch|delete|all)\(\s*(\[[^\]]*\]|'[^']*'|"[^"]*")/g)) {
   for (const lit of (m[2].match(/['"]([^'"]+)['"]/g) || [])) {
     const routePath = lit.slice(1, -1);
     if (!routePath.startsWith('/api')) continue;
@@ -144,7 +146,9 @@ const uniq = [...byKey.values()].sort((a, b) => a.path.localeCompare(b.path) || 
 // A path appearing in a file is NOT evidence of a caller: admin health tables list
 // API paths as display metadata (`affectedApis: ['/api/admin/audit-logs']`). A real
 // caller must appear in call context — `get(`/`post(`/`fetch(`/`apiClient.get(` etc.
-const CALL_SITE_RE = /(?:\b(?:get|post|patch|put|del|delete|fetch|request|apiRequest|apiClient\.(?:get|post|patch|put|delete)))\s*(?:<[^\n]{0,200}?>)?\(\s*(?:[`'"])(\/[^`'"]{1,160})/g;
+// V5: `enterpriseRequest(` (46 call sites in frontend/src/lib/enterprise-api.ts) was invisible to
+// this regex, so every enterprise surface it drives was classified UNREACHABLE.
+const CALL_SITE_RE = /(?:\b(?:get|post|patch|put|del|delete|fetch|request|apiRequest|\w*[Rr]equest|apiClient\.(?:get|post|patch|put|delete)))\s*(?:<[^\n]{0,200}?>)?\(\s*(?:[`'"])(\/[^`'"]{1,160})/g;
 
 function normaliseClientPath(raw) {
   let v = raw.replace(/\$\{[^}]*\}/g, '{X}').replace(/\/:([A-Za-z0-9_]+)/g, '/{X}');
@@ -202,9 +206,13 @@ function callers(opPath, treeFilter) {
       // exact match, or a prefix match only across a dynamic segment ('{X}').
       // Loose prefix matching falsely promotes '/auth' to a caller of '/auth/login'.
       const exact = call === opPath;
-      const dynamicChild = opPath.endsWith('{X}') && call.startsWith(opPath.replace(/\{X\}$/, ''));
-      const dynamicParent = call.endsWith('{X}') && opPath.startsWith(call.replace(/\{X\}$/, ''));
-      if (exact || dynamicChild || dynamicParent) { hits.push(rel); break; }
+      // V5(a): a dynamic tail must not swallow a sibling literal (`/resumes/public/{X}` was
+      // promoted by the call `/resumes/public/token/{X}`, a different registered operation).
+      const sameSegments = call.split('/').filter(Boolean).length === opPath.split('/').filter(Boolean).length;
+      const dynamicChild = opPath.endsWith('{X}') && sameSegments && call.startsWith(opPath.replace(/\{X\}$/, ''));
+      // V5(b): the former `dynamicParent` promoted EVERY sub-resource of a called dynamic parent
+      // (`patch('/admin/users/${id}')` made `/admin/users/{X}/ai-entitlement` look reachable).
+      if (exact || dynamicChild) { hits.push(rel); break; }
     }
   }
   return hits;
@@ -212,6 +220,24 @@ function callers(opPath, treeFilter) {
 
 // A child endpoint being called does not prove the parent is called, and it prevents a
 // confident UNREACHABLE verdict. Used by rule R7.
+// V5(c): a call whose segments are shape-compatible (same length, each segment equal or either
+// side dynamic) may construct this path at runtime. It proves ambiguity, never reachability.
+function patternCompatibleCall(opPath) {
+  const target = opPath.split('/').filter(Boolean);
+  for (const [rel, calls] of calledByFile) {
+    if (treeOf(rel) !== 'modern-ui') continue;
+    if ((definedByFile.get(rel) || new Set()).has(opPath)) continue;
+    for (const call of calls) {
+      if (call === opPath) continue;
+      const parts = call.split('/').filter(Boolean);
+      if (parts.length !== target.length) continue;
+      if (!parts.includes('{X}')) continue;
+      if (parts.every((seg, i) => seg === target[i] || seg === '{X}' || target[i] === '{X}')) return { file: rel, call };
+    }
+  }
+  return null;
+}
+
 function childCalledFromModern(opPath) {
   for (const [rel, calls] of calledByFile) {
     if (treeOf(rel) !== 'modern-ui') continue;
@@ -264,17 +290,23 @@ const hookEndpoints = new Map();   // endpoint -> [hook names]
 const hookConsumers = new Map();   // hook name -> consumer count
 
 if (hookSource) {
-  const lines = hookSource.text.split('\n');
-  let currentHook = null;
-  for (const line of lines) {
-    const decl = line.match(/export function (use\w+)\s*\(/);
-    if (decl) { currentHook = decl[1]; continue; }
-    if (!currentHook) continue;
-    const call = line.match(/(?:get|post|patch|put|del)(?:<[^>]*>)?\(\s*[`'"](\/[^`'"]*)[`'"]/);
-    if (!call) continue;
-    const raw = call[1].replace(/\$\{[^}]*\}/g, '{X}');
-    const endpoint = raw.replace(/^\/api\//, '/').replace(/\/+$/, '');
-    (hookEndpoints.get(endpoint) ?? hookEndpoints.set(endpoint, []).get(endpoint)).push(currentHook);
+  // V5(d): parse the hook file as a whole. `get<…>(` ending on one line and the template literal
+  // beginning the next hid a live hook and made `/employer/jobs/{X}/applications/{X}/resume` look
+  // UNREACHABLE even though CandidateReviewDrawer consumes the hook.
+  const text = hookSource.text;
+  const decls = [];
+  const declRe = /export function (use\w+)\s*\(/g;
+  let d;
+  while ((d = declRe.exec(text))) decls.push({ name: d[1], index: d.index });
+  const callRe = /(?:get|post|patch|put|del)(?:<[\s\S]{0,200}?>)?\(\s*[`'"](\/[^`'"]*)[`'"]/g;
+  let c;
+  while ((c = callRe.exec(text))) {
+    const owner = [...decls].reverse().find((entry) => entry.index < c.index);
+    if (!owner) continue;
+    const endpoint = c[1].replace(/\$\{[^}]*\}/g, '{X}').replace(/^\/api\//, '/').replace(/\/+$/, '');
+    const list = hookEndpoints.get(endpoint) || [];
+    if (!list.includes(owner.name)) list.push(owner.name);
+    hookEndpoints.set(endpoint, list);
   }
   for (const hook of new Set([...hookEndpoints.values()].flat())) {
     let consumers = 0;
@@ -352,6 +384,16 @@ function classify(op) {
       reachability: 'UNVERIFIED',
       rule: 'R7',
       reason: `no direct call site, but a child path (${childCall}) is called from modern code; parent reachability not determinable statically`,
+    };
+  }
+  // R7b (V5) — shape-compatible call may construct this path at runtime.
+  const shape = patternCompatibleCall(op.path);
+  if (shape) {
+    return {
+      ...base,
+      reachability: 'UNVERIFIED',
+      rule: 'R7',
+      reason: `a shape-compatible call (${shape.call} in ${shape.file}) may construct this path at runtime`,
     };
   }
   // R3 — external caller

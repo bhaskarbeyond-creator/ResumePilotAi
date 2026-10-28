@@ -334,9 +334,9 @@ This section answers it and revises the verdict accordingly. Earlier text is pre
 | Item | Before this re-audit | After |
 |---|---|---|
 | Frontend parity | Not measured (only backend route presence, §7) | **109 capability verdicts**: 25 FULL, 6 REPLACED, 35 PARTIAL, **30 MISSING**, **9 MOCK / FABRICATED**, 4 UNVERIFIED |
-| Legacy tree size | "144 files/dirs" (`EVIDENCE-INDEX` E-002) | **651 source files / 519 `.jsx` / 193,320 lines** (≈4.5× understated) |
+| Legacy tree size | "144 files/dirs" (`EVIDENCE-INDEX` E-002) | **650 source files / 519 `.jsx` / 193,310 lines** (≈4.5× understated) |
 | Legacy disposition | Ambiguous duplicate tree (DISC-001) | Outside the active build, but **not deletable** — sole implementation of 30 capabilities and an active backend-test contract |
-| Backend reachability | Route presence only | **192 of 384 operations (50 %) unreachable from the modern UI**; 58 reachable from *neither* frontend |
+| Backend reachability | Route presence only | **V5: 176 of 385 operations (45.7 %) unreachable from any client; 152 UI-driven.** The earlier "192 of 384" and "58 orphaned" figures are superseded — see `BACKEND-OPERATION-REACHABILITY.md` §5 |
 
 ### 12.2 The three findings that change the verdict
 

@@ -19,9 +19,25 @@ Status vocabulary: `STILL BLOCKED` (reproduced), `CHANGED` (evidence differs fro
 | EG-010 | Live provider credentials | BLOCKED | **STILL BLOCKED** | none present; none fabricated; mock coverage only |
 | EG-011 | Candidate Playwright suite | BLOCKED | **STILL BLOCKED — and broader** | no browser binary at all, so *all* 7 spec files are blocked, not just the candidate suite |
 | EG-012 | Harness artefacts ≠ product failures | recorded | **CONFIRMED, not re-observable** | no browser ⇒ no trace I/O; the distinction stands but cannot be re-exercised here |
+| EG-001…EG-006 | historical | see Part 2 of `appendix/ENVIRONMENT-GAPS.md` | **dispositioned, not re-run** | §EG-001…EG-006 above; EG-003 closed, EG-001 absorbed, EG-006 closed for inventory |
 | A11Y-001…005 | 5 WCAG 2.1 AA defects (1 critical) | RUNTIME VERIFIED (axe, temp env) | **CODE UNCHANGED — ratio not re-measurable** | all five cited code constructs still present verbatim; no axe run possible (no browser) |
 
 ---
+
+## EG-001 … EG-006 — historical entries, dispositioned at V5
+
+The six original entries are not re-tested (their subject matter is either closed or absorbed into
+EG-007…EG-012), but they are **dispositioned**, so that "12 environment gaps" in the coverage table is an
+enumerated count rather than an inherited one.
+
+| Entry | Original subject | V5 disposition | Evidence |
+|---|---|---|---|
+| **EG-001** | No live runtime (DB/Express/Vite) | **SPLIT AND SUPERSEDED** — backend and frontend now execute (`node --test`, `tsc`); the residual is absorbed into EG-007 (DB), EG-010 (providers), EG-011 (browser) | `Evidence/logs/v4/*` |
+| **EG-002** | No browser/a11y tooling | **CLOSED IN THE EARLIER RUNTIME PASS, NOT RE-EXECUTABLE HERE** — axe-core + Chromium ran and produced A11Y-001…005; no browser exists in this sandbox, so the *defects* are re-read in code but the *tooling* cannot be re-run | `BROWSER-VERIFICATION-REPORT.md`; §A11Y below |
+| **EG-003** | Shallow clone prevents introduction-point tracing | **CLOSED — and the earlier "now worse-documented" note was wrong.** This clone has 5 commits on the branch but full ancestry through `origin/dev` (1,459 commits), and `git log --follow` resolves introduction points today (e.g. `src/components/welcome/App.test.js` → `a7d08a2f`) | `git rev-list --count origin/dev` = 1,459; `git merge-base HEAD origin/dev` = `0adad00` |
+| **EG-004** | No Apache vhost configuration | **OPEN, ABSORBED INTO EG-008** — no `httpd`/`php` binary; `.htaccess` read statically only | §EG-008 |
+| **EG-005** | No production secrets | **UNCHANGED** — no credential requested, used or fabricated at any point in any pass | `scan-secrets.py` clean; no provider call attempted |
+| **EG-006** | Exhaustive grep not completed for several trees | **CLOSED FOR INVENTORY, OPEN FOR BEHAVIOUR** — 650/650 legacy and 206/206 modern files are attributed; what remains unexamined is runtime behaviour, which is EG-007/010/011, not a grep gap | `feature-parity.json` |
 
 ## EG-007 — MariaDB 11.4 cannot be provisioned
 
