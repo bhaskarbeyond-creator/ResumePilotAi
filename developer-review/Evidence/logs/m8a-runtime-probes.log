@@ -1,0 +1,46 @@
+# M8A runtime probe log
+revision: 888c2e511d5c2c32ec959232ec2d451aa4dd80ce
+revision_full: 888c2e511d5c2c32ec959232ec2d451aa4dd80ce
+recorded_utc: 2026-10-29T10:39:51Z
+env: PORT=5099 IN_MEMORY_REPOSITORY=1 NODE_ENV=test node index.js
+caveat: IN-MEMORY REPOSITORY MODE — NOT MariaDB, NOT production. Proves routing/admission behaviour only.
+caveat: no auth token, no provider credential, no browser. 401 responses are auth-shielded and may mask route absence.
+
+## contact route (B1) — fail-closed admission
+T1 valid      -> HTTP 503 RATE_LIMIT_UNAVAILABLE
+T2 short msg  -> HTTP 503 RATE_LIMIT_UNAVAILABLE
+T3 bad email  -> HTTP 503 RATE_LIMIT_UNAVAILABLE
+T4 honeypot   -> HTTP 503 RATE_LIMIT_UNAVAILABLE
+cause: security/abuse.js:108 fails closed when the rate-limit store is absent
+conclusion: /api/contact CANNOT be exercised in this environment; B1 backend half remains BLOCKED
+
+## route identity probes (B2/B3)
+GET /api/blog/posts                     -> 401 AUTH_REQUIRED
+GET /api/blog-data                      -> 200 {"success":true,"posts":[]}
+GET /api/blog-data/slug/any-slug        -> 404 {"success":false,"error":"Post not found"}
+GET /api/public/custom-pages            -> 200 {"success":true,"pages":[],"source":"MARIADB_CUSTOM_PAGES"}
+GET /api/public/custom-pages/some-slug  -> 404 CUSTOM_PAGE_NOT_FOUND
+GET /api/pages                          -> 401 AUTH_REQUIRED
+GET /api/cms-pages                      -> 410 API_RETIRED (replacement /api/public/custom-pages)
+
+## corrections forced by these probes
+B3: observed 401, not 404. The static reading said the route does not exist; runtime shows an
+    auth-shielded response that cannot be distinguished from a real handler without credentials.
+    The user-visible defect is unchanged (anonymous reader gets an error swallowed into an empty state)
+    but the stated CAUSE must be demoted from 'confirmed 404' to 'unverified (401 observed)'.
+B2: observed 401 for /api/pages, not 404. Static grep finds no such registration, so absence stands
+    on static evidence only; runtime cannot confirm it while auth shields the path.
+B3: /api/blog-data/slug/:slug DOES implement a correct 'Post not found' 404 — the proper handler exists
+    server-side and the modern reader does not use it.
+
+## root cause of every blocked-probe path (server stderr, verbatim, sanitized)
+[Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306
+[Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+=> no MariaDB/MySQL listening on 3306 in this sandbox. The admission layer therefore fails closed,
+   so /api/contact returns 503 before the handler is reached. No credential, DB, or browser is
+   available; see M8A-RUNTIME-VERIFICATION.md for the per-claim blocked record.
+
+## server lifecycle
+boot: "HTTP Server running on port 5099" / "[Startup] DEGRADED_MODE_REPOSITORY=inmemory explicitly set"
+shutdown: SIGTERM -> "Clean exit complete."
+no application file, config, or dependency manifest was modified; node_modules is git-ignored

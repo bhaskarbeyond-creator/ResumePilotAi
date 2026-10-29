@@ -321,5 +321,14 @@ list above the array also uses `id:`. Recorded as E-334.
 | **E-371** | M8 verifier quality review (gate H) | `M8-VERIFIER-QUALITY-REVIEW.md`; `scripts/verify-audit-package.sh`, `verify-v4-reconciliation.py`, `verify-parity.py` | **61/61**, **20/20**, exit 0 — but what they prove is *presence and arithmetic*: no re-derivation in the shell suite, floor thresholds, a literal `"176"` pin, vacuous `SUPPORTED` for endpoint-less FULL rows, a `[30,45]` band on `rowsWithNoDeclaredEndpoint`, one shared helper-verb assumption. Published as PASS **with weaknesses**, not PASS clean |
 | **E-372** | M8 independent acceptance report (gate K) | `M8-INDEPENDENT-ACCEPTANCE-REPORT.md` | gates **A PARTIAL / B PASS / C PASS (static) / D PASS (static) / E PASS / F FAIL (product) — PASS (identification) / G BLOCKED / H PASS with weaknesses / I PASS / J PASS / K PASS** → verdict **`PARTIAL — BLOCKED`**; production readiness **NOT ESTABLISHED**; six dimensions kept separate; §9 proves **0 changes outside `developer-review/`** |
 
+| **E-373** | M8A source crosswalk | `M8A-SOURCE-CROSSWALK.md` | 16 claims traced legacy → modern → backend → persistence → authz; **9 of 24 dossier paths did not resolve**; `U-G03` and `GET /api/pages` do not exist |
+| **E-374** | M8A omission challenge register | `M8A-omission-challenge.json` | one record per claim, 16/16, declared histogram reconciled programmatically: **1:3 / 2:7 / 3:4 / 4:1 / 5:0 / 6:0 / 7:1** |
+| **E-375** | M8A challenge report | `M8A-OMISSION-CHALLENGE-REPORT.md` | 15 of 16 claims engage real defects; **5 survive as stated**; 4 worse, 4 narrower, 2 partly falsified, 1 wholly falsified |
+| **E-376** | M8A parity register delta | `M8A-PARITY-REGISTER-DELTA.md` | +5 new rows (`FP-A27/A28/A29`, `FP-G22/G23`), 12 corrections, 2 no-change; **proposed, not applied** |
+| **E-377** | M8A false-success and mock data | `M8A-FALSE-SUCCESS-AND-MOCK-DATA.md` | 5 fabricated surfaces (`FS-M8A-01`…`05`) incl. a fabricated **PAID invoice** on payment failure |
+| **E-378** | M8A runtime verification | `M8A-RUNTIME-VERIFICATION.md`, `Evidence/logs/m8a-runtime-probes.log` | end-to-end **0/16**, backend route-level **2/16**, **14 blocked**; contact route 503 at admission (`3306` ECONNREFUSED); **two static conclusions demoted by runtime (401 ≠ 404)** |
+| **E-379** | M8A method quality review | `M8A-METHOD-QUALITY-REVIEW.md` | dossier defects (9 paths, `U-G03`, `/api/pages`), register defects (**`FP-A14`/`FP-A15` identical tables**, `FP-G19`, `FP-G11` 3-vs-15), and **4 self-corrections** |
+| **E-380** | M8A toolchain log | `Evidence/logs/m8a-toolchain.log` | provenance assert, inspection commands, bounded runtime attempt, JSON validation, scope proof |
+
 **Note on E-002 (kept for the record, not edited):** its legacy-tree figures are superseded by E-325.
 The original row is preserved so the correction is auditable rather than invisible (see DISC-018).
