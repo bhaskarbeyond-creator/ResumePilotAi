@@ -215,25 +215,40 @@ def c04_duplicate_corpus(rep, parity, overlay):
 
 # --------------------------------------------------------------------- C05
 MIN_MASS = 2  # see note in c05: distributions this small can coincide by chance
+AUDITED_REV = "69a3ed4"   # the revision every measurement in this package must reproduce at
 
 
-def c05_duplicate_distribution(rep, subs, overlay):
+def c05_duplicate_distribution(rep, subs, overlay, parity):
     """Identical non-trivial subfeature vectors across different capabilities are a symptom
     of shared corpora or a copied template, never of two independent measurements.
 
-    Justification is a property of the GROUP, not of a row: a shared corpus is a relationship
-    between two capabilities, so one member declaring the relationship documents the group.
-    A group in which NO member declares it is an unexplained duplication and fails.
+    EXEMPTION IS PER ROW, PROPAGATED ONLY BY CORPUS RELATION (M8D hardening)
+    ----------------------------------------------------------------------
+    The first attempt skipped a whole group when ANY member was justified. An independent bypass
+    test showed why that is wrong: a defective row placed beside a justified one inherits the
+    group's exemption and disappears from the detector. Exemption is therefore granted per row,
+    and only in two cases:
+      (a) the row declares its own sharing (sharedCorpusJustification / nestedCorpusJustification);
+      (b) the row OWNS a corpus that strictly contains an exempted row's corpus -- the subset row
+          carries the copy, the superset row is the original measurement.
+    A row that merely shares a group with an exempted row gets nothing.
     """
     rows = subs.get("capabilities") or subs.get("rows") or []
     if isinstance(rows, int) or not rows:
         rep.add("C05 duplicate-dist", False, "subfeature artifact has no row array to check", [])
         return
-    groups, bad, justified_groups = {}, [], 0
+    by_id = {r.get("id"): r for r in (parity.get("capabilities") or [])}
+    groups, exempt, bad = {}, {}, []
+
+    def corpus_of(rid):
+        r = by_id.get(rid)
+        if not r:
+            return frozenset()
+        paths, _files, _lines, _scope, _just = effective_corpus(r, overlay)
+        return frozenset(paths or ())
+
     for r in rows:
         o = (overlay.get("rows") or {}).get(r.get("id")) or {}
-        # effective distribution: the overlay's capability-scoped classes win over the
-        # generated artifact, for exactly the same reason the effective corpus does.
         scoped = (o.get("capabilityScoped") or {}).get("classes")
         if scoped:
             vec = tuple(sorted((k, v) for k, v in scoped.items()))
@@ -249,30 +264,48 @@ def c05_duplicate_distribution(rep, subs, overlay):
                 continue
         if not vec or all((v or 0) == 0 for _, v in vec):
             continue
-        # A distribution whose total mass is <=2 can coincide by chance; identical single
-        # counts are not evidence of a shared corpus. MIN_MASS is declared, not tuned to a result.
         if sum((v or 0) for _, v in vec) <= MIN_MASS:
             continue
         justified = bool(o.get("sharedCorpusJustification") or o.get("nestedCorpusJustification"))
-        groups.setdefault(vec, []).append((r.get("id"), justified))
-    for vec, members in groups.items():
-        if len(members) < 2:
+        groups.setdefault(vec, []).append(r.get("id"))
+        if justified:
+            exempt[r.get("id")] = "declares its own sharing"
+
+    # (b) corpus-superset propagation, independent of group membership
+    for rid, _why in list(exempt.items()):
+        base = corpus_of(rid)
+        if not base:
             continue
-        if any(j for _, j in members):
-            # Two rows measuring different PROPERTIES of one corpus, or a row whose corpus is a
-            # strict SUBSET of another's, are expected to carry the same distribution. The
-            # duplication is then a documented consequence, not an unexplained coincidence.
-            # Such a row is still reported (status/requiresCorrection in the overlay) -- it is
-            # not silently accepted as an independent measurement.
+        for other in by_id:
+            oc = corpus_of(other)
+            if oc and base < oc:
+                exempt.setdefault(other, f"owns a corpus that strictly contains {rid}'s")
+
+    justified_groups = 0
+    for vec, ids in groups.items():
+        if len(ids) < 2:
+            continue
+        unflagged = [i for i in ids if i not in exempt]
+        if not unflagged:
             justified_groups += 1
             continue
-        bad.append({"rows": [i for i, _ in members],
+        if len(unflagged) == 1 and len(ids) > len(unflagged):
+            # one undeclared row sitting beside declared ones: still an undeclared duplication
+            bad.append({"row": unflagged[0],
+                        "sharesDistributionWith": [i for i in ids if i != unflagged[0]],
+                        "reason": "row carries an identical non-trivial distribution but declares "
+                                  "no sharing of its own; proximity to a justified row is not a "
+                                  "justification"})
+            continue
+        bad.append({"rows": unflagged,
+                    "sharesDistributionWith": [i for i in ids if i not in unflagged],
                     "distribution": {k: v for k, v in vec if v},
-                    "reason": "identical non-trivial distribution across different rows, "
-                              "with no member declaring the sharing"})
+                    "reason": "identical non-trivial distribution across rows that declare no "
+                              "sharing"})
     rep.add("C05 duplicate-dist", not bad,
-            f"{len(rows)} rows; {justified_groups} groups skipped as documented shared/nested "
-            f"corpora; identical non-trivial distributions must not otherwise repeat", bad)
+            f"{len(rows)} rows; {len(exempt)} rows exempt on declared sharing or corpus "
+            f"ownership ({justified_groups} fully-documented groups); an identical non-trivial "
+            f"distribution must otherwise repeat for no row", bad)
 
 
 # --------------------------------------------------------------------- C12
@@ -536,6 +569,71 @@ def c10_verification_evidence(rep, data_dir):
 
 
 
+# --------------------------------------------------------------------- C13
+def _legacy_code_paths():
+    """Every in-scope legacy code file at the audited revision, from git rather than the working
+    copy, so an untracked or deleted file cannot change the answer."""
+    try:
+        out = subprocess.run(["git", "ls-tree", "-r", "--name-only", AUDITED_REV, "--", "src"],
+                             cwd=os.path.dirname(os.path.dirname(os.path.dirname(
+                                 os.path.abspath(__file__)))),
+                             capture_output=True, text=True, check=True).stdout
+    except Exception:
+        return None
+    return [p for p in out.splitlines()
+            if os.path.splitext(p)[1] in (".js", ".jsx")
+            and not re.search(r"\.(test|spec)\.", p)]
+
+
+def c13_corpus_volume(rep, parity):
+    """A row's declared corpus volume must reproduce from the files it names.
+
+    WHY: a row can otherwise pass every structural check while its legacyFiles/legacyLines are
+    edited -- counts are the numbers a reader quotes. This check recomputes (files, lines) from the
+    declared paths at the audited revision and requires an exact match. It says nothing about
+    whether the corpus is the RIGHT corpus; C03/C04/C05/C12 do that.
+    """
+    code = _legacy_code_paths()
+    if code is None:
+        rep.add("C13 corpus-volume", False, "cannot enumerate the audit tree (git unavailable)", [])
+        return
+    code = set(code)
+    bad, checked = [], 0
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    for r in parity.get("capabilities") or []:
+        paths = r.get("legacyPaths") or []
+        if not paths:
+            continue
+        files = set()
+        for p in paths:
+            if any(ch in p for ch in "*?["):
+                continue
+            full = os.path.join(root, p)
+            if os.path.isdir(full):
+                files |= {f for f in code if f.startswith(p.rstrip("/") + "/")}
+            elif p in code:
+                files.add(p)
+        n_lines = 0
+        for f in files:
+            try:
+                n_lines += len(open(os.path.join(root, f), encoding="utf-8",
+                                    errors="replace").read().split("\n"))
+            except OSError:
+                bad.append({"row": r.get("id"), "reason": f"declared file unreadable: {f}"})
+        checked += 1
+        if len(files) != (r.get("legacyFiles") or 0):
+            bad.append({"row": r.get("id"), "declaredFiles": r.get("legacyFiles"),
+                        "recomputedFiles": len(files),
+                        "reason": "declared file count does not reproduce from the declared paths"})
+        elif n_lines != (r.get("legacyLines") or 0):
+            bad.append({"row": r.get("id"), "declaredLines": r.get("legacyLines"),
+                        "recomputedLines": n_lines,
+                        "reason": "declared line count does not reproduce from the declared paths"})
+    rep.add("C13 corpus-volume", not bad,
+            f"{checked} rows: declared files and lines must reproduce exactly from the declared "
+            f"paths at the audited revision", bad)
+
+
 # --------------------------------------------------------------------- C11
 def c11_unique_rows(rep, parity):
     """A capability register must not contain the same row id twice: a duplicate id silently
@@ -576,7 +674,7 @@ def main():
         ov = load_overlay(dd)
         c03_corpus_scope(rep, parity, ov)
         c04_duplicate_corpus(rep, parity, ov)
-        c05_duplicate_distribution(rep, subs, ov)
+        c05_duplicate_distribution(rep, subs, ov, parity)
         if ep:
             c06_full_evidence(rep, ep, parity, ov)
         else:
@@ -587,6 +685,7 @@ def main():
         c10_verification_evidence(rep, dd)
         c11_unique_rows(rep, parity)
         c12_artifact_staleness(rep, subs, ov)
+        c13_corpus_volume(rep, parity)
 
     if a.json:
         print(json.dumps({"atRev": at_rev, "dataDir": dd,

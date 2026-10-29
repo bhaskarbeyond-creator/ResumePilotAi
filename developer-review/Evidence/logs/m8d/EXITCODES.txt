@@ -1,0 +1,90 @@
+# M8D tool run — 2026-10-29T11:19:42Z
+# HEAD 0bf550a85a7177170f9b7df3796a78d71ea44532
+integrity exit=0 -> PASS: 13  FAIL: 0
+fixtures exit=0 -> fixtures: 16  rejected-for-the-right-reason: 16  failures: 0
+audit-package exit=0 -> PASS: exists README.md
+PASS: exists EXECUTIVE-GAP-SUMMARY.md
+PASS: exists DISCREPANCY-LOG.md
+PASS: exists SWOT-ANALYSIS.md
+PASS: exists UI-UX-AUDIT.md
+PASS: exists REPAIR-ACTION-PLAN.md
+PASS: exists PROVENANCE.md
+PASS: exists REQUIREMENT-REGISTER.md
+PASS: exists EVIDENCE-INDEX.md
+PASS: exists SECURITY-ASSESSMENT.md
+PASS: exists INTEGRATIONS-INVENTORY.md
+PASS: exists DATABASE-INVENTORY.md
+PASS: exists PARITY-MATRIX-V2.md
+PASS: exists HANDOVER.md
+PASS: exists appendix/PARITY-MATRIX.md
+PASS: exists appendix/REFUTED-CANDIDATES.md
+PASS: exists appendix/UNVERIFIED-SUSPICIONS.md
+PASS: exists appendix/ENVIRONMENT-GAPS.md
+PASS: exists appendix/INVENTORIES/routes.md
+PASS: exists appendix/INVENTORIES/database.md
+PASS: exists appendix/INVENTORIES/environment-config.md
+PASS: exists appendix/INVENTORIES/external-integrations.md
+PASS: exists appendix/INVENTORIES/frontend.md
+PASS: exists appendix/INVENTORIES/security-tenant-isolation.md
+PASS: exists appendix/INVENTORIES/tests.md
+PASS: exists appendix/UI-STATE-MATRIX.md
+PASS: exists scripts/verify-audit-package.sh
+PASS: README mentions PROVENANCE
+PASS: REQUIREMENT-REGISTER has PASS counts
+PASS: EVIDENCE-INDEX has E-010 tenant isolation
+PASS: DISCREPANCY-LOG has 7 findings
+PASS: No application source modified (git diff excludes DR)
+PASS: Secret scan: no non-empty DB_PASSWORD value in DR
+PASS: Refuted candidates updated (RC-002 High)
+PASS: exists LEGACY-MODERN-FEATURE-INVENTORY.md
+PASS: exists FEATURE-PARITY-MATRIX.md
+PASS: exists tools/legacy-modern-inventory.cjs
+PASS: exists tools/parity-matrix.cjs
+PASS: exists tools/backend-ui-coverage.cjs
+PASS: exists scripts/verify-parity.py
+PASS: exists Evidence/artifacts/legacy-modern-inventory.json
+PASS: exists Evidence/artifacts/feature-parity.json
+PASS: exists Evidence/artifacts/backend-ui-coverage.json
+PASS: exists Evidence/artifacts/legacy-file-inventory.tsv
+PASS: exists Evidence/logs/parity-matrix.log
+PASS: exists Evidence/logs/backend-ui-coverage.log
+PASS: Parity register parses with 100+ capabilities
+PASS: Parity register: IDs unique and FP-prefixed
+PASS: Parity register: classifications inside the closed vocabulary
+PASS: Parity register: every legacy source file attributed
+PASS: Parity register: totals reconcile with domain counts
+PASS: Parity matrix doc renders every capability ID
+PASS: Backend-UI coverage artifact reconciles
+PASS: Allegation register: 30+ adjudications, all verdict classes present
+PASS: DISCREPANCY-LOG: DISC-013..018 present and dedupe count truthful
+PASS: Audit history preserved (superseded text retained, not rewritten)
+PASS: EVIDENCE-INDEX: E-325..E-332 present
+PASS: REQUIREMENT-REGISTER: R-120..R-129 present
+PASS: Every amended document carries a dated amendment section
+PASS: INTENTIONAL RETIREMENT never asserted without documented intent
+PASS: Inventory covers all seven required domains
+PASS: 61  FAIL: 0
+v4 exit=0 -> PASS: capability totals reconcile
+PASS: every cited path exists on disk
+PASS: both trees fully attributed
+PASS: reachability classes are the seven and sum to the total
+PASS: reachability document matches its JSON
+PASS: finding/allegation IDs are consistent
+PASS: all V4 artifacts present
+PASS: no FULL PARITY row without a modern anchor
+PASS: no glob-style paths in the register
+PASS: legacy/modern counts recomputed from the filesystem
+PASS: operation register matches its TSV
+PASS: every dispositioned category enumerates
+PASS: client call existence artifact reconciles
+PASS: every FULL PARITY row is supported
+PASS: reachability document matches the register
+PASS: coverage total equals the sum of its parts
+PASS: registration counts reconcile across the two parsers
+PASS: legacy call evidence re-derivable from src/
+PASS: M8 gap adjudications cite registered operations
+PASS: M8 parity revalidation agrees with the register
+PASS: 20  FAIL: 0
+inventory exit=0
+ledger exit=0
+runtime exit=0

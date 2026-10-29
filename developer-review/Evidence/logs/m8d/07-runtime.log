@@ -1,0 +1,30 @@
+PROBES (evidence about routing; never browser correctness)
+  total 35: 2xx=5, 4xx=18, 5xx=11, skipped=1
+
+TEST CASES
+  PASS             8  T3, T4, T4b, T5, T7, T8, T11, T14
+  FAIL             1  T6
+  BLOCKED         12  T2, T2-UI, T3-UI, T4-UI, T5-UI, T7-UI, T8b, T9, T10, T15, T16, T17
+  NOT APPLICABLE   2  T4c, C2
+  total           23
+
+ALLEGED WRONG-URL CONTRACT DEFECTS (one test each)
+  PASS             0
+  FAIL             0
+  BLOCKED         11
+  NOT APPLICABLE   0
+
+REQUIRED DOMAINS
+  PASS            payment rejection / fail-closed
+  BLOCKED         contact form
+  BLOCKED         admin queue telemetry + fabricated errors
+  BLOCKED         CMS create/publish/public read authz
+  BLOCKED         blog routing + error states
+  FAIL            profile sync / persistence
+  BLOCKED         billing / subscriptions
+  BLOCKED         MFA enrol + QR + recovery
+  BLOCKED         enterprise team UI / permission gates
+  BLOCKED         employer messaging
+  PASS            admin financial settings
+  BLOCKED         rich-text editor
+  BLOCKED         interview voice / media

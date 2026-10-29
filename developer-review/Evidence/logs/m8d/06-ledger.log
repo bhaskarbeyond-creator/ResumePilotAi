@@ -1,0 +1,18 @@
+accepted rows        : 112  (FULL PARITY=13, PARTIAL PARITY=51, MISSING=28, MOCK / FABRICATED STATE=12, REPLACED BY EQUIVALENT=5, UNVERIFIED=3)
+sum check            : 112 (must equal 112)
+proposed not accepted: 5  ['FP-A27', 'FP-A28', 'FP-A29', 'FP-G26', 'FP-G27']
+unverified rows      : 3  ['FP-E05', 'FP-F09', 'FP-G14']
+mixed universe       : 117 = 112 accepted + 5 proposed
+
+M-01   13/112 = 11.61%  strict FULL parity
+M-02   18/112 = 16.07%  FULL + REPLACED (functionality present, differently implemented)
+M-03   69/112 = 61.61%  any implementation at all (FULL + PARTIAL + REPLACED)
+M-04   40/112 = 35.71%  missing or fabricated
+M-05   13/109 = 11.93%  strict FULL parity, excluding rows the register itself calls UNVERIFIED
+M-06   18/117 = 15.38%  full + replaced over the 117 mixed universe   <-- NOT A LEGITIMATE DENOMINATOR
+M-07   13/117 = 11.11%  strict FULL parity over the 117 mixed universe   <-- NOT A LEGITIMATE DENOMINATOR
+
+published  11.1%  reproduces as 11.11% via M-07 (13/117)  -> accepted-only equivalent 11.61%
+published  15.4%  reproduces as 15.38% via M-06 (18/117)  -> accepted-only equivalent 16.07%
+
+CONSISTENT
