@@ -68,6 +68,25 @@ function grantHarness({ failOutbox = false } = {}) {
           invitationQueueRevision: 1,
         }]];
       }
+      // Seat enforcement (DISC-034 / DISC-050) runs in this same transaction:
+      // the tenant row is locked, lapsed invitations are expired, seats are
+      // counted, then the membership/invitation rows are written.
+      // Occupancy probe for the seat this invitation would consume.
+      if (/^SELECT m\.status, i\.invitationState, i\.expiresAt/.test(sql)) {
+        return [[]];
+      }
+      if (/^SELECT id FROM enterprise_tenants WHERE id = \? FOR UPDATE/.test(sql)) {
+        return [[{ id: TENANT_ID }]];
+      }
+      if (/^SELECT commercials FROM enterprise_tenant_configurations/.test(sql)) {
+        return [[{ commercials: JSON.stringify({ plan: 'enterprise-scale', seatLimit: 10, currency: 'INR', billingStatus: 'ACTIVE' }) }]];
+      }
+      if (/^UPDATE enterprise_membership_invitations\s+SET invitationState = 'EXPIRED'/.test(sql)) {
+        return [{ affectedRows: 0 }];
+      }
+      if (/SUM\(CASE WHEN m\.status = 'ACTIVE'/.test(sql)) {
+        return [[{ active_members: 0, pending_invites: 0, owners: 0 }]];
+      }
       if (/INSERT INTO enterprise_memberships|INSERT INTO enterprise_workspace_memberships|INSERT INTO enterprise_membership_invitations/.test(sql)) {
         return [{ affectedRows: 1 }];
       }

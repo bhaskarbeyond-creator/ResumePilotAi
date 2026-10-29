@@ -299,4 +299,30 @@ async function processOutboxOnce({ pool, dispatch, authorize = null, workerId = 
   return { processed: true, eventId: event.eventId, providerAccepted: result?.success === true };
 }
 
-module.exports = { MAX_ATTEMPTS, outboxId, queueEmailInTransaction, queueEmail, claimDueEvent, finishAttempt, processOutboxOnce, retryDelay, normalizeRow };
+/**
+ * Bounded batch processing (DISC-022 / FS-M8A-05).
+ *
+ * The batch processor is the thin orchestrator in `services/outboxWorker.js`; it
+ * reuses `claimDueEvent` / `processOutboxOnce` / `finishAttempt` from this module
+ * so a batch run and the interval worker can never disagree about retry,
+ * backoff or dead-letter semantics. The require is late-bound to avoid a cycle.
+ *
+ * @param {object} [options] { pool, batchSize, dispatch, authorize, workerId, now }
+ */
+async function processPendingOutboxMessages(options = {}) {
+  const { processPendingOutboxMessages: runBatch } = require('./outboxWorker');
+  return runBatch(options);
+}
+
+module.exports = {
+  MAX_ATTEMPTS,
+  claimDueEvent,
+  finishAttempt,
+  normalizeRow,
+  outboxId,
+  processOutboxOnce,
+  processPendingOutboxMessages,
+  queueEmail,
+  queueEmailInTransaction,
+  retryDelay,
+};

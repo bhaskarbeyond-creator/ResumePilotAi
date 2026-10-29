@@ -320,11 +320,24 @@ function invoiceFromRow(row, expectedUid) {
   return creditNote ? { ...invoice, creditNote } : invoice;
 }
 
-async function listInvoicesForUser({ uid, limit = 50 }) {
+/**
+ * List the caller's own invoices, newest first.
+ *
+ * Backward compatible with the original `{ uid, limit }` contract: `limit`
+ * keeps its 1..100 clamp. `offset` and `status` are additive and validated by
+ * `boundedPage` / `invoiceStatusFilter`; ownership is enforced in the query, so
+ * no caller can page into another account's ledger.
+ */
+async function listInvoicesForUser({ uid, limit = 50, offset = 0, status = null }) {
   if (!uid) throw invoiceError('AUTH_REQUIRED', 'Authentication is required.', 401);
   const boundedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+  const parsedOffset = Number(offset);
+  if (!Number.isInteger(parsedOffset) || parsedOffset < 0 || parsedOffset > 1_000_000) {
+    throw invoiceError('INVALID_PAGINATION', 'offset must be a non-negative integer.');
+  }
+  const filter = invoiceStatusFilter(status);
   const [rows] = await getPool().query(
-    `SELECT i.invoice_number, i.payment_order_id, i.payload,
+    `SELECT i.id, i.invoice_number, i.payment_order_id, i.issued_at, i.payload,
             cn.credit_note_number, cn.provider_refund_id AS credit_note_provider_refund_id,
             cn.provider_refund_reference_type AS credit_note_provider_refund_reference_type,
             cn.taxable_amount AS credit_note_taxable_amount,
@@ -333,10 +346,10 @@ async function listInvoicesForUser({ uid, limit = 50 }) {
             cn.payload AS credit_note_payload
      FROM invoices i
      LEFT JOIN credit_notes cn ON cn.invoice_id = i.id
-     WHERE i.user_id = ?
-     ORDER BY i.issued_at DESC
-     LIMIT ?`,
-    [uid, boundedLimit]
+     WHERE i.user_id = ?${filter.sql}
+     ORDER BY i.issued_at DESC, i.id ASC
+     LIMIT ? OFFSET ?`,
+    [uid, ...filter.params, boundedLimit, parsedOffset]
   );
   return rows.map(row => invoiceFromRow(row, uid));
 }
@@ -772,14 +785,182 @@ async function generateInvoice({ uid, paymentOrderId, details = {} }) {
   }
 }
 
+const INVOICE_STATUSES = Object.freeze(['ISSUED', 'PAID', 'REFUNDED']);
+
+/**
+ * Durable invoice status projection.
+ *
+ * The invoices ledger has no lifecycle column of its own: an invoice is issued
+ * and paid at the same instant (`payment_status = 'PAID'`), and a full reversal
+ * is recorded as a credit note. The status contract the billing API exposes is
+ * therefore derived, never invented:
+ *
+ *   ISSUED   - every persisted invoice (the ledger is append-only)
+ *   PAID     - issued and not reversed by a credit note
+ *   REFUNDED - issued and fully reversed by a credit note
+ */
+function invoiceStatusFilter(status) {
+  const normalized = String(status == null ? '' : status).trim().toUpperCase();
+  if (!normalized) return { sql: '', params: [], status: null };
+  if (!INVOICE_STATUSES.includes(normalized)) {
+    throw invoiceError('INVALID_INVOICE_STATUS', `status must be one of ${INVOICE_STATUSES.join(', ')}.`);
+  }
+  if (normalized === 'ISSUED') return { sql: '', params: [], status: normalized };
+  if (normalized === 'PAID') return { sql: ' AND cn.credit_note_number IS NULL', params: [], status: normalized };
+  return { sql: ' AND cn.credit_note_number IS NOT NULL', params: [], status: normalized };
+}
+
+function boundedPage({ limit = 20, offset = 0 } = {}) {
+  const parsedLimit = Number(limit);
+  const parsedOffset = Number(offset);
+  if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
+    throw invoiceError('INVALID_PAGINATION', 'limit must be an integer between 1 and 100.');
+  }
+  if (!Number.isInteger(parsedOffset) || parsedOffset < 0 || parsedOffset > 1_000_000) {
+    throw invoiceError('INVALID_PAGINATION', 'offset must be a non-negative integer.');
+  }
+  return { limit: parsedLimit, offset: parsedOffset };
+}
+
+const INVOICE_PROJECTION = `SELECT i.id, i.invoice_number, i.payment_order_id, i.issued_at, i.payload,
+            cn.credit_note_number, cn.provider_refund_id AS credit_note_provider_refund_id,
+            cn.provider_refund_reference_type AS credit_note_provider_refund_reference_type,
+            cn.taxable_amount AS credit_note_taxable_amount,
+            cn.tax_amount AS credit_note_tax_amount,
+            cn.total_amount AS credit_note_total_amount,
+            cn.payload AS credit_note_payload
+     FROM invoices i
+     LEFT JOIN credit_notes cn ON cn.invoice_id = i.id`;
+
+/** Count the caller's own invoices with the exact filter used for the page. */
+async function countInvoicesForUser({ uid, status = null }) {
+  if (!uid) throw invoiceError('AUTH_REQUIRED', 'Authentication is required.', 401);
+  const filter = invoiceStatusFilter(status);
+  const [rows] = await getPool().query(
+    `SELECT COUNT(*) AS total
+       FROM invoices i
+       LEFT JOIN credit_notes cn ON cn.invoice_id = i.id
+      WHERE i.user_id = ?${filter.sql}`,
+    [uid, ...filter.params]
+  );
+  return Number(rows[0]?.total || 0);
+}
+
+/**
+ * Owner-scoped invoice detail. The invoice identity may be the ledger primary
+ * key (sha256 hex) or the payment-order id the checkout flow uses; both resolve
+ * inside the same owner-scoped predicate, so a foreign invoice is a 404 rather
+ * than a 403 that would confirm its existence.
+ */
+async function getInvoiceForUserByIdentity({ uid, invoiceId }) {
+  if (!uid) throw invoiceError('AUTH_REQUIRED', 'Authentication is required.', 401);
+  const identity = String(invoiceId == null ? '' : invoiceId).trim();
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(identity)) {
+    throw invoiceError('INVOICE_NOT_FOUND', 'Invoice not found.', 404);
+  }
+  const [rows] = await getPool().query(
+    `${INVOICE_PROJECTION}
+      WHERE i.user_id = ? AND (i.id = ? OR i.payment_order_id = ?)
+      ORDER BY i.issued_at DESC
+      LIMIT 1`,
+    [uid, identity, identity]
+  );
+  if (!rows.length) throw invoiceError('INVOICE_NOT_FOUND', 'Invoice not found.', 404);
+  return invoiceFromRow(rows[0], uid);
+}
+
+/** Validated [startDate, endDate) window; both ends are optional. */
+function parseInvoiceDateRange({ startDate, endDate } = {}) {
+  const parse = (value, field) => {
+    if (value === undefined || value === null || value === '') return null;
+    const text = String(value).trim();
+    if (!/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+Z?)?$/.test(text)) {
+      throw invoiceError('INVALID_DATE_FILTER', `${field} must be an ISO date (YYYY-MM-DD).`);
+    }
+    const date = new Date(text.length === 10 ? `${text}T00:00:00Z` : text);
+    if (!Number.isFinite(date.getTime())) throw invoiceError('INVALID_DATE_FILTER', `${field} is not a valid date.`);
+    return date;
+  };
+  const from = parse(startDate, 'startDate');
+  const to = parse(endDate, 'endDate');
+  if (from && to && to.getTime() <= from.getTime()) {
+    throw invoiceError('INVALID_DATE_RANGE', 'endDate must be after startDate.');
+  }
+  return { from, to };
+}
+
+/**
+ * Administrative invoice ledger.
+ *
+ * Authorization is the CALLER's responsibility (the router enforces
+ * `payments.read`); this function is intentionally tenant-wide and never scoped
+ * by an arbitrary client-supplied user id.
+ */
+async function listInvoicesForAdmin({
+  limit = 20,
+  offset = 0,
+  status = null,
+  startDate = null,
+  endDate = null,
+  search = null,
+} = {}) {
+  const page = boundedPage({ limit, offset });
+  const filter = invoiceStatusFilter(status);
+  const { from, to } = parseInvoiceDateRange({ startDate, endDate });
+  const predicates = [];
+  const params = [];
+  if (filter.status) { predicates.push(`1 = 1${filter.sql}`); params.push(...filter.params); }
+  if (from) { predicates.push('i.issued_at >= ?'); params.push(from); }
+  if (to) { predicates.push('i.issued_at < ?'); params.push(to); }
+  let searchTerm = null;
+  if (search !== undefined && search !== null && String(search).trim() !== '') {
+    const raw = String(search).trim();
+    if (raw.length > 120) throw invoiceError('INVALID_SEARCH', 'search must be 120 characters or fewer.');
+    searchTerm = `%${raw.replace(/[\\%_]/g, match => `\\${match}`)}%`;
+    predicates.push(`(i.invoice_number LIKE ? OR i.payment_order_id LIKE ?
+      OR i.user_id LIKE ? OR i.payment_reference LIKE ?
+      OR JSON_UNQUOTE(JSON_EXTRACT(i.payload, '$.customerSnapshot.name')) LIKE ?
+      OR JSON_UNQUOTE(JSON_EXTRACT(i.payload, '$.customerSnapshot.email')) LIKE ?)`);
+    params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+  }
+  const where = predicates.length ? ` WHERE ${predicates.join(' AND ')}` : '';
+
+  const [rows] = await getPool().query(
+    `${INVOICE_PROJECTION}${where}
+      ORDER BY i.issued_at DESC, i.id ASC
+      LIMIT ? OFFSET ?`,
+    [...params, page.limit, page.offset]
+  );
+  const [countRows] = await getPool().query(
+    `SELECT COUNT(*) AS total
+       FROM invoices i
+       LEFT JOIN credit_notes cn ON cn.invoice_id = i.id${where}`,
+    params
+  );
+  // Administrative records are projected per owner so the credit-note integrity
+  // check stays identical to the owner-facing projection.
+  const invoices = rows.map(row => {
+    const ownerUid = row.payload ? parseJson(row.payload, {})?.userId : null;
+    return invoiceFromRow(row, ownerUid || row.user_id || null);
+  });
+  return { invoices, total: Number(countRows[0]?.total || 0), limit: page.limit, offset: page.offset };
+}
+
 module.exports = {
   GSTIN_PATTERN,
   INDIAN_STATES,
+  INVOICE_STATUSES,
   amountToIndianWords,
   billingSnapshotHash,
   createBillingSnapshots,
+  boundedPage,
+  countInvoicesForUser,
   creditNoteFromRow,
   generateInvoice,
+  getInvoiceForUserByIdentity,
+  invoiceStatusFilter,
+  listInvoicesForAdmin,
+  parseInvoiceDateRange,
   getInvoiceForUser,
   invoiceFromRow,
   issueCreditNoteInTransaction,

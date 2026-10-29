@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
+const outboxWorker = require('./services/outboxWorker');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
 const { generateWithProviders, getSharedAiRouter } = require('./services/aiRuntime');
 const { buildCoverLetterPrompt, coverLetterFields, validateCoverLetterOutput } = require('./services/coverLetterAi');
@@ -70,6 +71,10 @@ const { adminUsersRouter } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
+const { publicPortfoliosRouter } = require('./routes/publicPortfolios');
+const { billingRouter, adminBillingRouter } = require('./routes/billing');
+const { outboxAdminRouter } = require('./routes/outboxAdmin');
+const { interviewsRouter } = require('./routes/interviews');
 const { coversRouter } = require('./routes/covers');
 const { supportUserRouter, supportAdminRouter } = require('./routes/support');
 const indianGatewayActivation = require('./services/indianGatewayActivation');
@@ -456,6 +461,9 @@ function isPublicApiPath(pathname) {
         || /^\/jobs\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
+        // Canonical public portfolio route; it is an alias of the frontend's
+        // /portfolios/public/:slug contract, so it must be equally anonymous.
+        || /^\/public\/portfolios\/[A-Za-z0-9_-]{1,180}$/.test(pathname)
         || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname)
         || /^\/public\/geo\/regions\/(?:city|in)\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(pathname)
         || /^\/public\/jobs\/[a-z0-9_-]{1,128}\/og\.png$/.test(pathname)
@@ -520,11 +528,21 @@ app.use(['/api/admin', '/api/platform'], createAdminAuditMiddleware());
 // Mount Data Abstraction Layer APIs
 app.use('/api/resumes', resumesRouter);
 app.use('/api/portfolios', portfoliosRouter);
+// Billing documents (DISC-012 / DISC-048): owner invoices + administrative ledger.
+app.use('/api/billing', billingRouter);
+app.use('/api/admin/billing', adminBillingRouter);
+// Transactional outbox operator endpoints (DISC-022 / FS-M8A-05).
+app.use('/api/admin/system/outbox', outboxAdminRouter);
+// Employer interview scheduling (FP-A15 / DISC-028).
+app.use('/api/employer/interviews', interviewsRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/support', supportUserRouter);
 app.use('/api', notificationsRouter);
 app.use('/api/jobs-data', jobsDataRouter);
 app.use('/api/jobs', jobsDataRouter);
+// Canonical public portfolio read. Mounted BEFORE the discovery router so the
+// specific prefix wins; both public aliases share services/publicPortfolio.
+app.use('/api/public/portfolios', publicPortfoliosRouter);
 app.use('/api/public', publicDiscoveryRouter);
 app.use('/api/blog-data', blogDataRouter);
 app.use('/api/blog', blogDataRouter);
@@ -5625,9 +5643,15 @@ if (require.main === module) {
             try {
                 const emailRoute = require('./routes/email');
                 const tenantService = app.get('tenantService');
-                await processOutboxOnce({
+                // One bounded batch per tick through the shared outbox worker, so the
+                // scheduled path and the administrator-triggered path use identical
+                // claim/retry/dead-letter rules. The scheduled path keeps the
+                // repository's certified template+transport adapter; the worker's
+                // default adapter delivers through services/mailer.js.
+                await outboxWorker.processPendingOutboxMessages({
                     pool: getPool(),
                     workerId,
+                    batchSize: outboxWorker.normalizeBatchSize(process.env.NOTIFICATION_OUTBOX_BATCH_SIZE, { fallback: 25 }),
                     // Tenant-bound outbox events are reauthorized at execution time;
                     // legacy events retain their certified UID-era delivery behavior.
                     authorize: event => tenantService?.authorizeOutboxEvent(event),
@@ -5637,6 +5661,9 @@ if (require.main === module) {
                         vars: event.vars,
                         customSubject: event.metadata?.customSubject,
                         customBody: event.metadata?.customBody,
+                        // Interview invitations carry a real RFC 5545 part.
+                        calendar: event.metadata?.calendar || null,
+                        calendarMethod: event.metadata?.calendarMethod || 'REQUEST',
                     })
                 });
                 await indianGatewayActivation.reconcilePendingIndianGatewayOrders({

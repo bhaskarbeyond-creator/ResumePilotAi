@@ -20,6 +20,12 @@ const {
   stablePrincipalHash,
 } = require('./tenantContext');
 const { createEncryptionProvider } = require('./encryptionProvider');
+const {
+  assertSeatCapacity,
+  computeSeatUsage,
+  resolveSeatLimit,
+  seatLimitReachedError,
+} = require('./memberSeats');
 
 const DEFAULT_DATA_PLANE = Object.freeze({
   id: 'mysql-primary',
@@ -853,6 +859,81 @@ class MySqlTenantRegistry {
     return validateMembership(rows[0], principalId);
   }
 
+  /** Commercial seat cap for a tenant, resolved from its configuration. */
+  async _readSeatLimitInTransaction(connection, tenantId) {
+    const [rows] = await connection.query(
+      'SELECT commercials FROM enterprise_tenant_configurations WHERE tenantId = ?',
+      [tenantId]
+    );
+    const commercials = rows[0] ? parseJsonField(rows[0].commercials, null) : null;
+    return resolveSeatLimit({ tenantSeatLimit: commercials?.seatLimit ?? null });
+  }
+
+  /**
+   * Count occupied seats INSIDE the caller's transaction.
+   *
+   * Expired PENDING invitations are expired first, so an invitation that lapsed
+   * while the member never accepted cannot pin a seat forever. The count itself
+   * is a single aggregate statement, so it observes one consistent snapshot of
+   * `enterprise_memberships` joined to its invitation.
+   */
+  async _countSeatsInTransaction(connection, tenantId) {
+    await connection.query(
+      `UPDATE enterprise_membership_invitations
+          SET invitationState = 'EXPIRED'
+        WHERE tenantId = ? AND invitationState = 'PENDING' AND expiresAt <= NOW(6)`,
+      [tenantId]
+    );
+    const [rows] = await connection.query(
+      `SELECT
+          SUM(CASE WHEN m.status = 'ACTIVE' THEN 1 ELSE 0 END) AS active_members,
+          SUM(CASE WHEN m.status = 'INVITED' AND i.invitationState = 'PENDING'
+                     AND i.expiresAt > NOW(6) THEN 1 ELSE 0 END) AS pending_invites,
+          SUM(CASE WHEN m.status = 'ACTIVE'
+                     AND JSON_CONTAINS(m.roles, '"ENTERPRISE_OWNER"') THEN 1 ELSE 0 END) AS owners
+         FROM enterprise_memberships m
+         LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+        WHERE m.tenantId = ?`,
+      [tenantId]
+    );
+    const row = rows[0] || {};
+    const seatLimit = await this._readSeatLimitInTransaction(connection, tenantId);
+    return computeSeatUsage({
+      seatLimit,
+      activeMembers: Number(row.active_members || 0),
+      pendingInvites: Number(row.pending_invites || 0),
+      owners: Number(row.owners || 0),
+    });
+  }
+
+  /**
+   * Current seat usage for a tenant (read-only report).
+   * @returns {Promise<{seatLimit:number|null, seatsUsed:number, seatsRemaining:number|null, pendingInvites:number, activeMembers:number}>}
+   */
+  async getSeatUsage({ tenantId } = {}) {
+    this.assertAvailable();
+    const scopedTenantId = assertUuid(tenantId, 'Tenant identifier');
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [tenantRows] = await connection.query(
+        'SELECT id FROM enterprise_tenants WHERE id = ? FOR UPDATE',
+        [scopedTenantId]
+      );
+      if (!tenantRows.length) {
+        throw Object.assign(new Error('Tenant was not found'), { code: 'TENANT_NOT_FOUND', status: 404 });
+      }
+      const usage = await this._countSeatsInTransaction(connection, scopedTenantId);
+      await connection.commit();
+      return usage;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
   async grantMembership({
     tenantId,
     principalId,
@@ -911,6 +992,22 @@ class MySqlTenantRegistry {
         throw Object.assign(new Error('Workspace is not active'), { code: 'WORKSPACE_INACTIVE', status: 409 });
       }
 
+      // SEAT ENFORCEMENT (DISC-034 / DISC-050).
+      //
+      // The tenant row is the serialization point for every membership write in
+      // this tenant: concurrent invitations from different workspaces queue on
+      // this lock, so the count below cannot be invalidated by another request
+      // between the read and the INSERT. Re-inviting an existing member (or an
+      // already-pending invitation) does not need a new seat, so a resend never
+      // consumes capacity.
+      const [tenantLock] = await connection.query(
+        'SELECT id FROM enterprise_tenants WHERE id = ? FOR UPDATE',
+        [tenantId]
+      );
+      if (!tenantLock.length) {
+        throw Object.assign(new Error('Tenant was not found'), { code: 'TENANT_NOT_FOUND', status: 404 });
+      }
+
       const [existingRows] = await connection.query(
         'SELECT id, principalId, revision FROM enterprise_memberships WHERE id = ? FOR UPDATE',
         [membershipId]
@@ -919,6 +1016,22 @@ class MySqlTenantRegistry {
         throw Object.assign(new Error('Membership identity collision detected'), { code: 'TENANT_IDENTITY_MISMATCH', status: 409 });
       }
       const nextRevision = Number(existingRows[0]?.revision || 0) + 1;
+
+      const [occupiedRows] = await connection.query(
+        `SELECT m.status, i.invitationState, i.expiresAt
+           FROM enterprise_memberships m
+           LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+          WHERE m.id = ?`,
+        [membershipId]
+      );
+      const occupied = occupiedRows[0];
+      const invitationLive = String(occupied?.invitationState || '').toUpperCase() === 'PENDING'
+        && occupied?.expiresAt
+        && new Date(occupied.expiresAt).getTime() > Date.now();
+      const alreadySeated = Boolean(occupied)
+        && ((String(occupied.status || '').toUpperCase() === 'ACTIVE') || invitationLive);
+      const seatUsage = await this._countSeatsInTransaction(connection, tenantId);
+      assertSeatCapacity({ usage: seatUsage, requiresNewSeat: !alreadySeated });
 
       await connection.query(
         `INSERT INTO enterprise_memberships

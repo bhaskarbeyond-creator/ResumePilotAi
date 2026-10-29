@@ -982,6 +982,100 @@ class TenantService {
     return this.registry.listTenantMemberships(context.tenantId);
   }
 
+  /**
+   * Seat usage for the active tenant (DISC-034 / DISC-050).
+   * `seatsUsed` includes pending invitations; see enterprise/memberSeats.js.
+   */
+  async getSeatUsage({ context }) {
+    if (!context?.tenantId) {
+      throw Object.assign(new Error('A tenant context is required'), { code: 'TENANT_CONTEXT_REQUIRED', status: 400 });
+    }
+    return this.registry.getSeatUsage({ tenantId: context.tenantId });
+  }
+
+  /**
+   * Invite one person to the active tenant/workspace.
+   *
+   * Order matters: role authorization is decided from the CALLER's roles before
+   * the target identity is even resolved, so an unauthorized caller cannot use
+   * this endpoint as an identity-directory oracle. Seat capacity is enforced
+   * inside `registry.grantMembership` (same transaction as the invitation
+   * INSERT), so a concurrent invitation cannot slip past the count below.
+   */
+  async inviteMember({ context, input = {}, actor = null }) {
+    const seats = require('./memberSeats');
+    if (!context?.tenantId) {
+      throw Object.assign(new Error('A tenant context is required'), { code: 'TENANT_CONTEXT_REQUIRED', status: 400 });
+    }
+    const seatRole = seats.normalizeSeatRole(input.role);
+    if (!seats.canAssignRole({ assignerRoles: context.roles || [], targetSeatRole: seatRole })) {
+      throw Object.assign(new Error('Your role does not allow granting that membership role'), {
+        code: 'ROLE_GRANT_FORBIDDEN', status: 403,
+      });
+    }
+    const email = String(input.email || '').trim().toLowerCase();
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,189}$/.test(email)) {
+      throw Object.assign(new Error('A valid invitation email address is required'), {
+        code: 'INVALID_INVITATION_EMAIL', status: 400,
+      });
+    }
+    if (!this.admin?.auth) {
+      throw Object.assign(new Error('The identity directory is unavailable'), {
+        code: 'IDENTITY_DIRECTORY_UNAVAILABLE', status: 503,
+      });
+    }
+    let principalId;
+    try {
+      principalId = String((await this.admin.auth().getUserByEmail(email)).uid || '');
+    } catch (_error) {
+      throw Object.assign(new Error('No registered identity exists for that email address'), {
+        code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404,
+      });
+    }
+    if (!principalId) {
+      throw Object.assign(new Error('No registered identity exists for that email address'), {
+        code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404,
+      });
+    }
+
+    let existing = null;
+    try {
+      existing = await this.registry.getMembership(context.tenantId, principalId);
+    } catch (error) {
+      if (Number(error?.status) !== 404) throw error;
+    }
+    if (existing) {
+      const status = String(existing.status || '').toUpperCase();
+      const invitationLive = String(existing.invitationState || '').toUpperCase() === 'PENDING'
+        && existing.invitationExpiresAt
+        && new Date(existing.invitationExpiresAt).getTime() > Date.now();
+      if (status === 'ACTIVE') {
+        throw Object.assign(new Error('That person is already a member of this workspace'), {
+          code: 'MEMBER_ALREADY_EXISTS', status: 409,
+        });
+      }
+      if (status === 'INVITED' && invitationLive) {
+        throw Object.assign(new Error('An invitation is already pending for that person'), {
+          code: 'INVITATION_ALREADY_PENDING', status: 409,
+        });
+      }
+    }
+
+    const membership = await this.grantMembership({
+      context,
+      actor,
+      input: {
+        principalId,
+        roles: [seats.tenantRoleForSeatRole(seatRole)],
+        status: 'INVITED',
+        invitationEmail: email,
+        workspaceId: input.workspaceId || null,
+      },
+    });
+    const usage = await this.registry.getSeatUsage({ tenantId: context.tenantId });
+    return { membership, seatUsage: usage, seatRole };
+  }
+
   async listTeams({ context, includeArchived = false }) {
     return this.registry.listTeams({
       tenantId: context.tenantId,

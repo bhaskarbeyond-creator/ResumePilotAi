@@ -2087,7 +2087,15 @@ router.post('/resend', requirePermission('system.config.write'), requireRecentAd
 router.get('/templates', requirePermission('system.config.read'), getCustomTemplates);
 router.post('/templates', requirePermission('system.config.write'), requireRecentAdminAuthentication, saveTemplateCustomization);
 
-async function dispatchNotification({ to, templateType, vars = {}, customSubject, customBody }) {
+/**
+ * Deliver one notification through the single mail transport.
+ *
+ * `calendar`/`calendarMethod` add an RFC 5545 alternative part
+ * (`text/calendar; method=REQUEST; charset=UTF-8`) so interview invitations
+ * booked through the outbox carry the same iCalendar payload whether they are
+ * delivered by this dispatcher or by `services/outboxWorker.defaultDispatch`.
+ */
+async function dispatchNotification({ to, templateType, vars = {}, customSubject, customBody, calendar = null, calendarMethod = 'REQUEST' }) {
     const recipient = String(to || '').trim().toLowerCase();
     if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(recipient) || recipient.length > 254) {
         return { success: false, error: 'A single valid recipient address is required' };
@@ -2194,6 +2202,13 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
             : (new URL(siteUrl).hostname || process.env.APP_DOMAIN || 'ai-resume-builder.local');
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
+        const calendarPart = typeof calendar === 'string' && calendar.startsWith('BEGIN:VCALENDAR')
+            ? {
+                contentType: `text/calendar; method=${String(calendarMethod || 'REQUEST').toUpperCase()}; charset=UTF-8`,
+                content: calendar,
+            }
+            : null;
+
         const mailOptions = {
             from: `"${config.smtp?.senderName || 'IME365 Enterprise'}" <${config.smtp?.senderEmail || config.smtp?.username}>`,
             replyTo: config.smtp?.replyTo || config.smtp?.username,
@@ -2207,7 +2222,8 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
                 'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                 'X-Auto-Response-Suppress': 'OOF, AutoReply',
                 'MIME-Version': '1.0',
-            }
+            },
+            ...(calendarPart ? { alternatives: [calendarPart] } : {}),
         };
 
         const result = await dispatchMailWithFallback(config, mailOptions);

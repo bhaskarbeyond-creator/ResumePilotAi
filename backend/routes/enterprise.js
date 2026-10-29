@@ -508,6 +508,65 @@ router.post('/memberships/:principalId/invitation-resend', resolveTenantContext,
   }
 });
 
+// ─── Seat quota surface (DISC-034 / DISC-050) ───────────────────────────────
+//
+// `POST /members/invite` requires the tenant's invitation permission, which is
+// held by owners (`*`) and administrators only — a MEMBER or VIEWER is rejected
+// with 403 before any identity lookup happens. `GET /members/seats` is a read
+// surface for members/managers, scoped to the caller's own tenant context.
+router.get('/members/seats', resolveTenantContext, requireAnyTenantPermission('tenant.members.read', 'tenant.read', 'tenant.members.manage'), async (req, res) => {
+  try {
+    const usage = await enterpriseService(req).getSeatUsage({ context: req.tenantContext });
+    return res.json({
+      success: true,
+      seatLimit: usage.seatLimit,
+      seatsUsed: usage.seatsUsed,
+      seatsRemaining: usage.seatsRemaining,
+      pendingInvites: usage.pendingInvites,
+      activeMembers: usage.activeMembers,
+      ownersIncluded: usage.ownersIncluded,
+      limitReached: usage.limitReached === true,
+    });
+  } catch (error) {
+    return res.status(error.status || 503).json({ error: { code: error.code || 'SEAT_USAGE_UNAVAILABLE', message: error.status && error.status < 500 ? error.message : 'Seat usage is unavailable', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/members/invite', resolveTenantContext, requireTenantPermission('tenant.members.invite'), async (req, res) => {
+  try {
+    const result = await enterpriseService(req).inviteMember({
+      context: req.tenantContext,
+      input: req.body || {},
+      actor: req.user,
+    });
+    return res.status(201).json({
+      success: true,
+      invitation: {
+        membershipId: result.membership.id,
+        principalId: result.membership.principalId,
+        email: result.membership.invitationEmail,
+        role: result.seatRole,
+        status: result.membership.status,
+        invitationState: result.membership.invitationState,
+        deliveryState: result.membership.invitationDeliveryState,
+        notificationId: result.membership.invitationNotificationId,
+        expiresAt: result.membership.invitationExpiresAt,
+      },
+      seatUsage: {
+        seatLimit: result.seatUsage.seatLimit,
+        seatsUsed: result.seatUsage.seatsUsed,
+        seatsRemaining: result.seatUsage.seatsRemaining,
+        pendingInvites: result.seatUsage.pendingInvites,
+      },
+    });
+  } catch (error) {
+    const status = Number(error?.status) >= 400 && Number(error?.status) < 600 ? Number(error.status) : 503;
+    const code = error?.code || 'TENANT_INVITATION_FAILED';
+    const message = status < 500 ? error.message : 'The invitation could not be created';
+    return res.status(status).json({ error: { code, message, requestId: res.locals?.requestId } });
+  }
+});
+
 router.delete('/memberships/:principalId', resolveTenantContext, requireTenantPermission('tenant.members.manage'), async (req, res) => {
   try {
     await enterpriseService(req).removeTenantMembership({ context: req.tenantContext, principalId: req.params.principalId });

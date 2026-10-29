@@ -77,6 +77,12 @@ function resolveAdminReadPermission(pathname) {
   if (pathname === '/admin/dashboard' || pathname === '/platform/overview' || pathname === '/platform/command-center') return ['system.config.read', 'users.read', 'audit.read'];
   if (isSupportDeskPath(pathname)) return 'tickets.manage';
   if (pathname === '/admin/audit-logs' || pathname.startsWith('/admin/audit-logs/')) return 'audit.read';
+  // DISC-048: the administrative invoice ledger is a payments surface. Without
+  // this explicit mapping it would inherit the generic system.config.read/write
+  // default, which is a permission bypass: an operator holding only platform
+  // configuration rights must not be able to read every customer's invoices.
+  if (pathname === '/admin/billing/invoices' || pathname.startsWith('/admin/billing/invoices/')) return 'payments.read';
+  if (pathname === '/admin/system/outbox/stats') return ['system.config.read', 'system.config.write'];
   // Admin reads require system.config.read OR system.config.write: holding write
   // authority implies read authority on the same administrative surface.
   return ['system.config.read', 'system.config.write'];
@@ -96,6 +102,9 @@ function resolveAdminMutationPermission(pathname) {
   // Users endpoint mutations (role change, entitlement change, revoke,
   // etc.) require users.update — enforced per-router.
   if (pathname.startsWith('/admin/users/')) return 'users.update';
+  // Processing the notification outbox is an operator action on delivery state,
+  // not a read: it requires write authority explicitly.
+  if (pathname === '/admin/system/outbox/process') return 'system.config.write';
   return 'system.config.write';
 }
 
