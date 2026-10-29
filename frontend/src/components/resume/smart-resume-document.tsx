@@ -1,488 +1,188 @@
-/**
- * SmartResumeDocument Component
- *
- * Universal, vector-grade A4 Multi-Page Resume & Cover Letter Rendering Engine.
- * Shared seamlessly across both /export/CvX/:resumeId/en and Cuba PreviewModal.
- *
- * Architectural Invariants:
- * - 100 ATS Resume Layouts (Cv1 to Cv100) + 4 Cover Letters (Cover1 to Cover4)
- * - True Smart Partitioning: Greedy packed across discrete 210mm x 297mm A4 sheets
- * - Continuation Headers: Rendered on Page 2+ ("Candidate Name — Role — Page X of Y")
- * - Page Footers: Rendered on every sheet with page counter and verified watermark
- * - Zero Layout Monotony: Fully honors TemplateMeta tokens:
- *     archetype, headerStyle, skillVariant, timelineStyle, dividerStyle,
- *     sidebarPosition, sidebarBg, sidebarText, font, density
- * - Candidate Headshots: Real builder photo rendered across all archetypes
- */
-
-import React, { useMemo } from 'react';
-import { cn } from '@/lib/utils';
+/** Shared preview, public-view and export document. */
+import { useMemo } from 'react';
 import type { TemplateMeta } from '@/lib/template-catalog';
-import { partitionResumeContent, type PartitionedPage } from '@/lib/smart-partitioner';
+import { tryGetTemplateMeta } from '@/lib/template-catalog';
 import { getLayoutSpec } from '@/lib/template-layouts';
-import { TemplatePageOne } from './smart-layout-families';
-import { FlowItemRenderer, LinkedinIcon, Mail, MapPin, Phone } from './smart-render-primitives';
+import { normalizeDocumentResume, text, getContrastTextColor, readableAccent } from '@/cv-templates/templateUtils';
+import ResumePageComposer, { type ResumeWatermark } from '@/components/ResumePageComposer';
+import { ComposableResumeLayout } from './smart-layout-families';
+import { RichTextContent } from './smart-render-primitives';
 
-// Re-exported for callers/tests that historically imported the sanitizer sink
-// from the document module.
 export { RichTextContent } from './smart-render-primitives';
 
 export interface SmartResumeProps {
-  resume: any;
+  // The view-model adapter is the boundary for legacy API / builder payloads.
+  resume: unknown;
   meta: TemplateMeta;
-  palette?: {
-    primary: string;
-    secondary: string;
-    soft?: string;
-    text?: string;
-  };
+  palette?: { primary: string; secondary: string; soft?: string; text?: string };
   density?: 'compact' | 'standard' | 'spacious';
   isPrint?: boolean;
+  watermark?: ResumeWatermark;
 }
 
-export function SmartResumeDocument({
-  resume,
-  meta,
-  palette: customPalette,
-  density = 'standard',
-  isPrint = false,
-}: SmartResumeProps) {
-  const primary = customPalette?.primary || meta.primary || '#1e3a8a';
-  const secondary = customPalette?.secondary || meta.secondary || '#3b82f6';
-  const palette = {
-    primary,
-    secondary,
-    soft: customPalette?.soft || `${primary}18`,
-    text: customPalette?.text || primary,
+const DOCUMENT_STYLES = `
+.resume-composer-source { position:fixed; left:-10000px; top:0; width:210mm; visibility:hidden; pointer-events:none; }
+.resume-composer-source.resume-source-fallback { position:static; visibility:visible; pointer-events:auto; }
+.resume-compose-scratch { position:fixed; left:-10000px; top:0; width:210mm; visibility:hidden; pointer-events:none; }
+.resume-compose-warning { max-width:210mm; margin:0 auto 12px; padding:10px; color:#7f1d1d; background:#fef2f2; border:1px solid #fca5a5; font:600 13px sans-serif; }
+.resume-pages { display:flex; flex-direction:column; align-items:center; gap:24px; }
+.resume-page { position:relative; width:210mm; height:297mm; min-height:297mm; max-height:none; box-sizing:border-box; display:flex; flex-direction:column; overflow:visible; background:white; color:#172033; box-shadow:0 8px 25px rgba(15,23,42,.16); font-size:12.5px; line-height:1.45; }
+.resume-page *, [data-resume-source] * { box-sizing:border-box; min-width:0; overflow-wrap:anywhere; word-break:normal; }
+.resume-identity { flex:none; display:flex; align-items:center; gap:18px; padding:26px 34px 20px; border-bottom:2px solid var(--resume-primary); color:#172033; }
+.resume-page[data-template-id='Cv1'] .resume-identity { background:#f8fafc; }
+.resume-page[data-template-id='Cv34'] .resume-identity { background:white; color:#172033; border-bottom:5px solid transparent; border-image:linear-gradient(90deg, var(--resume-primary), var(--resume-secondary), var(--resume-tertiary)) 1; }
+.resume-page[data-template-id='Cv34'] .resume-identity h1 { color:var(--resume-accent-text); }
+.resume-identity h1 { margin:0; color:inherit; font-size:var(--resume-name-size); font-weight:750; line-height:1.12; }
+.resume-identity p { margin:4px 0 0; }
+.resume-identity-executive-banner, .resume-identity-tech-grid { background:var(--resume-primary); color:var(--resume-header-text); border:0; }
+.resume-identity-centered { justify-content:center; text-align:center; }
+.resume-identity-compact-euro { border-left:8px solid var(--resume-primary); background:#f8fafc; }
+.resume-identity-minimal-ats { border-bottom:1px solid #334155; }
+.resume-page[data-template-id='Cover1'] .resume-identity { text-align:center; border-bottom:4px solid var(--resume-primary); }
+.resume-page[data-template-id='Cover2'] .resume-identity { border-bottom:2px solid #172033; }
+.resume-page[data-template-id='Cover3'] .resume-identity { border-bottom:2px solid var(--resume-primary); }
+.resume-page[data-template-id='Cover4'] .resume-identity { background:var(--resume-primary); color:var(--resume-header-text); border-bottom:4px solid var(--resume-secondary); }
+.resume-page[data-template-id='Cover1'] .resume-contact-row { justify-content:center; }
+.resume-page[data-header-style='centered'] .resume-identity, .resume-page[data-header-style='letterhead'] .resume-identity { justify-content:center; text-align:center; }
+.resume-page[data-header-style='bracket'] .resume-identity { border-inline-start:6px solid var(--resume-primary); }
+.resume-page[data-accent-bar='true']:not([data-template-id='Cv34']) .resume-identity { border-bottom:4px solid var(--resume-secondary); }
+.resume-page[data-contact-layout='stack'] .resume-contact-row { flex-direction:column; align-items:start; }
+.resume-page[data-contact-layout='grid'] .resume-contact-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.resume-identity-copy { flex:1; }
+.resume-occupation { font-weight:650; font-size:12px; }
+.resume-contact-row { display:flex; flex-wrap:wrap; gap:3px 14px; margin-top:9px; font-size:11px; }
+.resume-contact-row a, .resume-contact-row span { color:inherit; }
+.resume-photo { width:70px; height:70px; flex:none; object-fit:cover; }
+.resume-photo-circle { border-radius:50%; } .resume-photo-rounded { border-radius:10px; }
+.resume-initials { width:70px; height:70px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--resume-primary); color:var(--resume-header-text); font-size:24px; font-weight:700; }
+.resume-columns { display:flex; flex:1 1 0; min-height:0; width:100%; }
+.resume-column { height:100%; min-height:0; overflow:visible; padding:20px 30px; }
+.resume-main { flex:1 1 0; }
+.resume-rail { flex:0 0 var(--resume-rail-width); background:var(--resume-rail-bg); color:var(--resume-rail-text); padding:20px 20px; }
+.resume-block { padding:0 0 var(--resume-block-space); }
+.resume-block h2 { margin:0 0 7px; font-size:11px; line-height:1.3; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--resume-accent-text); border-bottom:1px solid currentColor; padding-bottom:3px; }
+.resume-rail .resume-block h2 { color:inherit; }
+.resume-title-bar, .resume-title-bracket { border-left:3px solid currentColor; padding-left:7px; }
+.resume-title-double { border-bottom:3px double currentColor !important; }
+.resume-title-plain, .resume-title-micro { border:0 !important; }
+.resume-page[data-divider-style='double-line'] .resume-block h2 { border-bottom:3px double currentColor; }
+.resume-page[data-divider-style='solid-thick'] .resume-block h2 { border-bottom:2px solid currentColor; }
+.resume-page[data-divider-style='left-bar'] .resume-block h2 { border-inline-start:3px solid currentColor; padding-inline-start:7px; }
+.resume-block h3 { font-size:12.5px; line-height:1.35; font-weight:700; margin:0; color:inherit; }
+.resume-block p { margin:0 0 4px; } .resume-block p:last-child { margin-bottom:0; }
+.resume-block ul, .resume-block ol { padding-left:18px; margin:3px 0; }
+.resume-block ul { list-style:disc; } .resume-block ol { list-style:decimal; }
+.resume-block a { color:inherit; text-decoration:underline; }
+.resume-muted { color:inherit; }
+.resume-role { display:flex; flex-direction:row-reverse; gap:10px; justify-content:space-between; }
+.resume-role-details { flex:1; } .resume-role-date { flex:0 1 auto; font-size:11px; text-align:right; }
+.resume-page[data-timeline-style='subtle-line'] .resume-role-details, .resume-page[data-timeline-style='modern-node'] .resume-role-details { border-inline-start:1px solid currentColor; padding-inline-start:9px; }
+.resume-page[data-timeline-style='code-tag'] .resume-role-date { font-family:monospace; }
+.resume-page[data-timeline-style='accent-bullet'] .resume-role-details h3::before { content:'• '; color:var(--resume-accent-text); }
+.resume-role[data-date-rail=true] { display:grid; grid-template-columns:minmax(75px, 25%) 1fr; gap:14px; }
+.resume-role[data-date-rail=true] .resume-role-date { text-align:left; font-weight:600; }
+.resume-project-card { padding:9px 11px; border:1px solid #cbd5e1; border-inline-start:3px solid var(--resume-secondary); border-radius:5px; }
+.resume-skill-list { display:flex; flex-wrap:wrap; gap:5px; margin-top:3px; }
+.resume-skill-list .resume-skill { display:inline-block; border:1px solid currentColor; border-radius:var(--resume-badge-radius); padding:1px 6px; }
+.resume-page[data-skill-variant='pills'] .resume-skill { border-radius:999px; }
+.resume-page[data-skill-variant='dots'] .resume-skill::before { content:'• '; }
+.resume-page[data-skill-variant='bars'] .resume-skill { border-inline-start:3px solid currentColor; }
+.resume-contact-list > div { margin-bottom:3px; }
+.resume-continuation-header { display:flex; justify-content:space-between; gap:14px; flex:none; margin:0 30px; padding:18px 0 9px; border-bottom:1px solid #cbd5e1; font-size:11px; font-weight:650; }
+.resume-continuation-header span:last-child { flex:none; }
+.resume-watermark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; pointer-events:none; z-index:1; }
+.resume-watermark span { color:#0f172a; font:900 38px sans-serif; letter-spacing:.2em; text-transform:uppercase; white-space:nowrap; user-select:none; }
+.resume-page-footer { flex:none; border-top:1px solid #e2e8f0; padding:7px 30px; text-align:right; color:#475569; font-size:10px; }
+@media print {
+  @page { size:A4; margin:0; }
+  html, body { margin:0 !important; padding:0 !important; background:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .resume-composer-source, .resume-compose-scratch { display:none !important; }
+  .resume-pages { display:block !important; }
+  .resume-page.page-sheet { width:210mm !important; height:297mm !important; min-height:297mm !important; max-height:297mm !important; margin:0 !important; box-shadow:none !important; break-after:page !important; page-break-after:always !important; }
+  .resume-page.page-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }
+  #printable-document, [data-preview-scale] { transform:none !important; zoom:1 !important; }
+  main:has(> #printable-document) { display:block !important; overflow:visible !important; padding:0 !important; }
+  body:has([data-testid="cuba-preview-modal"]) > :not([data-testid="cuba-preview-modal"]) { display:none !important; }
+  [data-testid="cuba-preview-modal"] { position:static !important; transform:none !important; width:auto !important; max-width:none !important; height:auto !important; max-height:none !important; overflow:visible !important; display:block !important; padding:0 !important; border:0 !important; }
+  [data-preview-controls], [data-testid="cuba-preview-modal"] > button { display:none !important; }
+  [data-preview-canvas] { display:block !important; overflow:visible !important; padding:0 !important; background:white !important; }
+}
+`;
+
+export function SmartResumeDocument({ resume, meta, palette, density, isPrint = false, watermark }: SmartResumeProps) {
+  const model = useMemo(() => normalizeDocumentResume(resume), [resume]);
+  const resolved = tryGetTemplateMeta(meta?.id || '');
+  const fullName = [model.heading.firstName, model.heading.lastName].filter(Boolean).join(' ').trim();
+  const composerValues = useMemo(() => ({ fullName }), [fullName]);
+  const raw = resume && typeof resume === 'object' ? resume as Record<string, unknown> : {};
+  // The export route supplies its locale in the URL after an upstream model
+  // normalizer has removed transport-only fields.
+  const routeLanguage = typeof window !== 'undefined' ? window.location.pathname.match(/^\/export\/[^/]+\/[^/]+\/([^/]+)$/)?.[1] : '';
+  const language = text(raw.language) || routeLanguage || 'en';
+  if (!resolved) return <div role="alert">Unsupported template layout. Choose a registered template to preview this resume.</div>;
+  const effectivePalette = {
+    primary: palette?.primary || resolved.primary,
+    secondary: palette?.secondary || resolved.secondary,
+    soft: palette?.soft,
+    text: palette?.text,
   };
 
-  const isCoverLetter = meta.id.startsWith('Cover');
-
-  // Smart greedy packing across discrete A4 sheets
-  const partitionResult = useMemo(() => {
-    return partitionResumeContent(resume, meta, (density || meta.density || 'standard') as any);
-  }, [resume, meta, density]);
-
-  const fullName = `${resume.heading?.firstName || ''} ${resume.heading?.lastName || ''}`.trim() || resume.name || 'Candidate Name';
-
-  // Font family class mapping
-  const fontStyle = meta.font ? { fontFamily: meta.font } : undefined;
-
-  if (isCoverLetter) {
+  if (resolved.id.startsWith('Cover')) {
+    // The separate cover builder keeps its own persistence and UI. This export
+    // uses only supplied candidate/recipient fields and the actual letter body.
+    const body = text(model.letterBody || raw.letterBody || raw.body);
+    const details = model.coverDetails;
+    const recipient = [details?.recipientName, details?.companyName, details?.companyAddress,
+      [details?.companyCity, details?.companyPostalCode].filter(Boolean).join(' ')].filter(Boolean);
+    const contacts = [model.heading.email, model.heading.phone, details?.candidateAddress,
+      model.heading.location].filter(Boolean);
+    const recipientBlock = recipient.length ? (
+      <section className="resume-block" data-resume-block="true" data-section="recipient">
+        <h2>Recipient</h2>{recipient.map((line, index) => <div key={index}>{line}</div>)}
+      </section>
+    ) : null;
+    const isSplitCover = resolved.id === 'Cover3';
+    const coverStyle = {
+      fontFamily: resolved.font || "'Inter', sans-serif",
+      '--resume-primary': effectivePalette.primary,
+      '--resume-secondary': effectivePalette.secondary,
+      '--resume-accent-text': readableAccent(effectivePalette.primary),
+      '--resume-header-text': getContrastTextColor(effectivePalette.primary),
+      '--resume-rail-bg': '#f1f5f9', '--resume-rail-text': '#172033', '--resume-rail-width': '30%',
+      '--resume-name-size': '29px', '--resume-block-space': '12px',
+    } as React.CSSProperties;
     return (
-      <div
-        className="smart-resume-page page-sheet relative bg-white shadow-xl mx-auto print:shadow-none print:m-0"
-        style={{
-          width: '210mm',
-          minHeight: '297mm',
-          boxSizing: 'border-box',
-          ...fontStyle,
-        }}
-      >
-        {meta.id === 'Cover2' ? (
-          <Cover2Layout resume={resume} palette={palette} />
-        ) : meta.id === 'Cover3' ? (
-          <Cover3Layout resume={resume} palette={palette} />
-        ) : meta.id === 'Cover4' ? (
-          <Cover4Layout resume={resume} palette={palette} />
-        ) : (
-          <Cover1Layout resume={resume} palette={palette} />
-        )}
+      <div className="smart-resume-document" data-is-print={isPrint}>
+        <style>{DOCUMENT_STYLES}</style>
+        <ResumePageComposer enabled templateId={resolved.id} values={composerValues} language={language} watermark={watermark}>
+          <div data-resume-source="true" data-template-id={resolved.id} data-archetype={resolved.archetype} data-layout-family={resolved.archetype} style={coverStyle}>
+            <header className="resume-identity" data-resume-header="true">
+              <div className="resume-identity-copy">
+                <h1>{fullName || 'Cover letter'}</h1>
+                {model.heading.title && <p className="resume-occupation">{model.heading.title}</p>}
+                {contacts.length > 0 && <div className="resume-contact-row">{contacts.map((contact, index) => <span key={index}>{contact}</span>)}</div>}
+              </div>
+            </header>
+            <div className="resume-columns" data-resume-columns="true" data-sidebar-position={isSplitCover ? 'right' : 'none'}>
+              <main className="resume-column resume-main" data-resume-column="main">
+                {!isSplitCover && recipientBlock}
+                {details?.jobTitle && <section className="resume-block" data-resume-block="true"><p>Re: {details.jobTitle}</p></section>}
+                <section className="resume-block" data-resume-block="true" data-section="letter">{body ? <RichTextContent content={body} /> : <p>No cover letter body is available in this export.</p>}</section>
+              </main>
+              {isSplitCover && <aside className="resume-column resume-rail" data-resume-column="rail">{recipientBlock}</aside>}
+            </div>
+          </div>
+        </ResumePageComposer>
       </div>
     );
   }
-
+  const layout = getLayoutSpec(resolved.id);
   return (
-    <div
-      className="smart-resume-document flex flex-col items-center gap-8 print:gap-0"
-      data-is-print={isPrint ? 'true' : 'false'}
-    >
-      {partitionResult.pages.map((page) => (
-        <div
-          key={`page-${page.pageNumber}`}
-          data-page-number={page.pageNumber}
-          data-total-pages={partitionResult.totalPages}
-          className={cn(
-            'smart-resume-page page-sheet relative bg-white shadow-xl transition-transform print:shadow-none print:m-0 print:break-after-page',
-            `density-${density}`
-          )}
-          style={{
-            width: '210mm',
-            minHeight: '297mm',
-            maxHeight: '297mm',
-            boxSizing: 'border-box',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            ...fontStyle,
-          }}
-        >
-          {/* Main Document Content */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {page.pageNumber === 1 ? (
-              // ─── PAGE 1: Master Header & Layout ───
-              <PageOneContent
-                resume={resume}
-                meta={meta}
-                palette={palette}
-                page={page}
-                fullName={fullName}
-              />
-            ) : (
-              // ─── PAGE 2+: Continuation Header & Flow ───
-              <ContinuationPageContent
-                resume={resume}
-                meta={meta}
-                palette={palette}
-                page={page}
-                totalPages={partitionResult.totalPages}
-                fullName={fullName}
-              />
-            )}
-          </div>
-
-          {/* Master Page Footer */}
-          <footer className="page-footer border-t border-neutral-200/60 pt-2 px-8 pb-3 text-[10px] text-neutral-400 flex justify-between items-center shrink-0">
-            <span>
-              {fullName}
-            </span>
-            <span className="font-medium text-neutral-500">
-              Page {page.pageNumber} of {partitionResult.totalPages}
-            </span>
-          </footer>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
- * PAGE 1 CONTENT RENDERER
- *
- * DIR-008: page one is composed by the template's registered layout family
- * (see `template-layouts.ts`). There is no archetype switch here and no
- * generic fallback — an unknown template id throws before render.
- * ───────────────────────────────────────────────────────────── */
-function PageOneContent({
-  resume,
-  meta,
-  palette,
-  page,
-  fullName,
-}: {
-  resume: any;
-  meta: TemplateMeta;
-  palette: any;
-  page: PartitionedPage;
-  fullName: string;
-}) {
-  const layout = getLayoutSpec(meta.id);
-  return (
-    <TemplatePageOne
-      resume={resume}
-      meta={meta}
-      palette={palette}
-      page={page}
-      fullName={fullName}
-      layout={layout}
-    />
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
- * CONTINUATION PAGE CONTENT (Page 2+)
- * ───────────────────────────────────────────────────────────── */
-function ContinuationPageContent({
-  resume,
-  meta,
-  palette,
-  page,
-  totalPages,
-  fullName,
-}: {
-  resume: any;
-  meta: TemplateMeta;
-  palette: any;
-  page: PartitionedPage;
-  totalPages: number;
-  fullName: string;
-}) {
-  return (
-    <div className="p-8 sm:p-10 flex flex-col flex-1 min-h-0">
-      {/* Dynamic Continuation Header */}
-      <header className="continuation-header border-b border-neutral-200 pb-2.5 mb-6 flex justify-between items-baseline shrink-0">
-        <div className="flex items-baseline gap-2">
-          <span className="font-extrabold text-sm text-neutral-900 tracking-tight">{fullName}</span>
-          <span className="text-xs text-neutral-500 font-medium">· {resume.heading?.title}</span>
-        </div>
-        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-          Page {page.pageNumber} of {totalPages}
-        </span>
-      </header>
-
-      {/* Continuation Flow Items */}
-      <div className="space-y-4 flex-1">
-        {page.flowItems.map((item, idx) => (
-          <FlowItemRenderer
-            key={item.id}
-            item={item}
-            meta={meta}
-            palette={palette}
-            isFirstItem={idx === 0}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
- * COVER LETTER TEMPLATES (Cover 1 to Cover 4)
- * ───────────────────────────────────────────────────────────── */
-function CoverBody({ heading }: { heading: any }) {
-  return (
-    <>
-      <p>Dear Hiring Manager,</p>
-      <p>
-        I am writing to express my enthusiastic interest in joining your engineering organization. With over
-        eight years of experience architecting resilient cloud systems, driving developer platforms, and
-        leading high-impact software initiatives, I have dedicated my career to building scalable software that
-        solves meaningful problems.
-      </p>
-      <p>
-        In my current role as Staff Infrastructure Architect at CloudScale Networks, I spearheaded the migration
-        of our core multi-region platform to a zero-trust service mesh. This initiative eliminated latency
-        bottlenecks, decreased operational cloud costs by 42%, and improved our system availability to four nines.
-        Furthermore, I have led engineering mentorship programs and established architectural review standards
-        that elevated engineering quality across our distributed teams.
-      </p>
-      <p>
-        What excites me most about your company is your commitment to delivering world-class customer
-        experiences through cutting-edge technology. My background in distributed systems, modern web
-        architectures, and team empowerment aligns closely with your strategic objectives.
-      </p>
-      <p>
-        I welcome the opportunity to discuss how my technical expertise and leadership approach can support your
-        upcoming milestones. Thank you for your time, consideration, and dedication to excellence.
-      </p>
-      <p className="pt-4">Sincerely,</p>
-      <div className="pt-1">
-        <p className="text-sm font-bold text-neutral-900">
-          {heading.firstName} {heading.lastName}
-        </p>
-        <p className="text-xs text-neutral-500">{heading.title}</p>
-      </div>
-    </>
-  );
-}
-
-function Cover1Layout({ resume, palette }: { resume: any; palette: any }) {
-  const { heading } = resume;
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  return (
-    <div className="p-12 font-sans text-neutral-800 text-[13px] leading-relaxed">
-      <div className="flex flex-col items-center text-center pb-2">
-        <h1 className="text-3xl font-extrabold text-neutral-900 tracking-tight">
-          {heading.firstName} {heading.lastName}
-        </h1>
-        {heading.location && <p className="text-xs text-neutral-600 mt-1">{heading.location}</p>}
-        <div className="mt-2 flex flex-wrap justify-center items-center gap-3 text-xs text-neutral-500">
-          {heading.phone && <span>{heading.phone}</span>}
-          {heading.email && <span>• {heading.email}</span>}
-          {heading.linkedin && <span>• {heading.linkedin}</span>}
-        </div>
-      </div>
-
-      <div
-        className="w-full h-[2px] rounded-sm my-5"
-        style={{ background: `linear-gradient(90deg, ${palette.primary} 0%, ${palette.secondary} 100%)` }}
-      />
-
-      <div className="flex justify-between items-start text-xs text-neutral-700">
-        <div>
-          <p className="font-bold text-neutral-900">Hiring Team / Engineering Leadership</p>
-          <p>Acme Innovations Corporation</p>
-          <p>100 Enterprise Way</p>
-          <p>San Francisco, CA 94105</p>
-        </div>
-        <div className="font-medium text-neutral-800">{today}</div>
-      </div>
-
-      <div className="mt-6 text-sm font-bold text-neutral-900">
-        Re: Application for Senior Technical Leadership / Engineering Role
-      </div>
-
-      <div className="mt-5 space-y-4 text-xs text-neutral-700 leading-relaxed">
-        <CoverBody heading={heading} />
-      </div>
-    </div>
-  );
-}
-
-function Cover2Layout({ resume, palette }: { resume: any; palette: any }) {
-  const { heading } = resume;
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  return (
-    <div className="p-12 font-sans text-neutral-800 text-[13px] leading-relaxed">
-      <div className="pb-2">
-        <h1 className="text-3xl font-black text-neutral-900 tracking-tight">
-          {heading.firstName} {heading.lastName}
-        </h1>
-        <p className="text-sm font-semibold mt-0.5" style={{ color: palette.primary }}>
-          {heading.title}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-4 text-xs text-neutral-600">
-          {heading.location && <span>{heading.location}</span>}
-          {heading.phone && <span>{heading.phone}</span>}
-          {heading.email && <span>{heading.email}</span>}
-          {heading.linkedin && <span>{heading.linkedin}</span>}
-        </div>
-      </div>
-
-      <div className="w-full h-[2px] bg-neutral-900 my-5 rounded-xs" />
-
-      <div className="flex justify-between items-start text-xs text-neutral-700">
-        <div>
-          <p className="font-bold text-neutral-900">Hiring Team / Engineering Leadership</p>
-          <p>Acme Innovations Corporation</p>
-          <p>100 Enterprise Way, Suite 400</p>
-          <p>San Francisco, CA 94105</p>
-        </div>
-        <div className="font-medium text-neutral-800">{today}</div>
-      </div>
-
-      <div className="mt-6 text-sm font-bold text-neutral-900">
-        Re: Application for Senior Technical Leadership / Engineering Role
-      </div>
-
-      <div className="mt-5 space-y-4 text-xs text-neutral-700 leading-relaxed">
-        <CoverBody heading={heading} />
-      </div>
-    </div>
-  );
-}
-
-function Cover3Layout({ resume, palette }: { resume: any; palette: any }) {
-  const { heading } = resume;
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  return (
-    <div className="p-12 font-sans text-neutral-800 text-[13px] leading-relaxed">
-      <div className="flex justify-between items-end border-b-2 border-neutral-900 pb-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-black text-neutral-900 tracking-tight">
-            {heading.firstName} {heading.lastName}
-          </h1>
-          <p className="text-xs font-semibold uppercase tracking-wider mt-1" style={{ color: palette.primary }}>
-            {heading.title}
-          </p>
-        </div>
-        <div className="text-xs font-medium text-neutral-500">{today}</div>
-      </div>
-
-      <div className="flex gap-8">
-        <div className="flex-1 space-y-4 text-xs text-neutral-700 leading-relaxed">
-          <div className="text-sm font-bold text-neutral-900 pb-1">
-            Re: Application for Senior Technical Leadership / Engineering Role
-          </div>
-          <CoverBody heading={heading} />
-        </div>
-
-        <div className="w-60 shrink-0 border-l border-neutral-200 pl-6 space-y-6 text-xs">
-          <div className="p-3.5 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1">
-            <h2 className="font-bold text-[11px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
-              Recipient
-            </h2>
-            <p className="font-bold text-neutral-900">Hiring Committee</p>
-            <p className="text-neutral-700">Acme Innovations Corp</p>
-            <p className="text-neutral-500">100 Enterprise Way</p>
-            <p className="text-neutral-500">San Francisco, CA</p>
-          </div>
-
-          <div className="p-3.5 rounded-lg bg-neutral-50 border border-neutral-200 space-y-1">
-            <h2 className="font-bold text-[11px] uppercase tracking-wider text-neutral-500 border-b border-neutral-200 pb-1 mb-2">
-              Sender Details
-            </h2>
-            <p className="font-bold text-neutral-900">{heading.firstName} {heading.lastName}</p>
-            {heading.location && <p className="text-neutral-600">{heading.location}</p>}
-            {heading.phone && <p className="text-neutral-600">{heading.phone}</p>}
-            {heading.email && <p className="text-neutral-600 break-all">{heading.email}</p>}
-            {heading.linkedin && <p className="text-blue-600 break-all">{heading.linkedin}</p>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Cover4Layout({ resume, palette }: { resume: any; palette: any }) {
-  const { heading } = resume;
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  return (
-    <div className="p-12 font-sans text-neutral-800 text-[13px] leading-relaxed">
-      <div className="pb-4 border-b-2 border-neutral-200 mb-6">
-        <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: palette.primary }}>
-          {heading.firstName} {heading.lastName}
-        </h1>
-        {heading.title && (
-          <div className="mt-1">
-            <span
-              className="inline-block px-3 py-0.5 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: `${palette.primary}18`, color: palette.primary }}
-            >
-              {heading.title}
-            </span>
-          </div>
-        )}
-
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-wrap gap-x-6 gap-y-2 text-xs text-neutral-600">
-          {heading.phone && (
-            <div className="flex items-center gap-1.5">
-              <Phone className="size-3.5" style={{ color: palette.primary }} />
-              <span>{heading.phone}</span>
-            </div>
-          )}
-          {heading.email && (
-            <div className="flex items-center gap-1.5">
-              <Mail className="size-3.5" style={{ color: palette.primary }} />
-              <span>{heading.email}</span>
-            </div>
-          )}
-          {heading.location && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="size-3.5" style={{ color: palette.primary }} />
-              <span>{heading.location}</span>
-            </div>
-          )}
-          {heading.linkedin && (
-            <div className="flex items-center gap-1.5">
-              <LinkedinIcon className="size-3.5" style={{ color: palette.primary }} />
-              <span>{heading.linkedin}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200 flex justify-between items-start text-xs text-neutral-700 mb-6">
-        <div className="space-y-0.5">
-          <p className="font-bold text-neutral-900">Engineering Hiring Team</p>
-          <p>Acme Innovations Corporation</p>
-          <p>100 Enterprise Way, San Francisco, CA 94105</p>
-        </div>
-        <div className="font-semibold text-neutral-800">{today}</div>
-      </div>
-
-      <div className="text-sm font-bold text-neutral-900 mb-4">
-        Re: Application for Senior Technical Leadership / Engineering Role
-      </div>
-
-      <div className="space-y-4 text-xs text-neutral-700 leading-relaxed">
-        <CoverBody heading={heading} />
-      </div>
+    <div className="smart-resume-document" data-is-print={isPrint}>
+      <style>{DOCUMENT_STYLES}</style>
+      <ResumePageComposer enabled templateId={resolved.id} values={composerValues} language={language} watermark={watermark}>
+        <ComposableResumeLayout resume={model} meta={resolved} layout={layout} palette={effectivePalette} fullName={fullName} density={density || resolved.density || layout.density} />
+      </ResumePageComposer>
     </div>
   );
 }

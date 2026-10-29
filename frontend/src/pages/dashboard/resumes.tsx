@@ -7,14 +7,16 @@
  * Master CV hero banner, and seamless Grid / List view toggle.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageSpinner } from '@/components/ui/loading';
 import { get, post, del, normalizeError } from '@/lib/api-client';
-import { getTemplateMeta } from '@/lib/template-catalog';
+import { TEMPLATES, TEMPLATE_CATEGORIES, tryGetTemplateMeta } from '@/lib/template-catalog';
+import { normalizeDocumentResume } from '@/cv-templates/templateUtils';
+import type { ResumeDocumentModel } from '@/lib/resume-view-model';
 import { describeMasterCompleteness, type MasterProfileCompleteness } from '@/lib/master-profile';
 import { resumeContentPayload } from '@/lib/resume-payload';
 import {
@@ -93,6 +95,13 @@ interface Resume {
 
 const PAGE_SIZE = 8;
 
+// An invalid saved reference remains visible as invalid rather than crashing the
+// library or pretending that the saved document uses Cv1.
+function displayTemplate(id: string) {
+  return tryGetTemplateMeta(id) || { id, name: 'Unsupported template', thumbnail: '', primary: '#475569' };
+}
+
+
 export function ResumesPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,7 +120,25 @@ export function ResumesPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modal & operation states
-  const [previewResume, setPreviewResume] = useState<any | null>(null);
+  const [previewResume, setPreviewResume] = useState<ResumeDocumentModel | null>(null);
+  const [previewSavedTemplate, setPreviewSavedTemplate] = useState('');
+  const [galleryQuery, setGalleryQuery] = useState('');
+  const [galleryCategory, setGalleryCategory] = useState('all');
+  const [galleryResumeId, setGalleryResumeId] = useState('');
+  const [galleryTemplate, setGalleryTemplate] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewRequest = useRef(0);
+  const previewTrigger = useRef<HTMLElement | null>(null);
+  useEffect(() => () => { previewRequest.current += 1; }, []);
+  const galleryResults = useMemo(() => {
+    const query = galleryQuery.trim().toLowerCase();
+    return TEMPLATES.filter(template =>
+      (galleryCategory === 'all' || template.category === galleryCategory) &&
+      (!query || [template.id, template.name, template.archetype, template.category, template.description || '', template.headerStyle || '', template.timelineStyle || '']
+        .some(value => value.toLowerCase().includes(query)))
+    );
+  }, [galleryCategory, galleryQuery]);
+  const galleryResume = resumes.find(item => item.id === galleryResumeId) || resumes[0];
   const [shareResume, setShareResume] = useState<{ id: string; name: string; template: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Resume | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -236,7 +263,7 @@ export function ResumesPage() {
       const title = (r.title || r.name || 'Untitled Resume').toLowerCase();
       const role = (r.occupation || r.targetRole || '').toLowerCase();
       const tmpl = (r.template || 'Cv1').toLowerCase();
-      const meta = getTemplateMeta(r.template || 'Cv1');
+      const meta = displayTemplate(r.template || 'Cv1');
       const templateName = meta.name.toLowerCase();
 
       const searchMatch =
@@ -316,158 +343,24 @@ export function ResumesPage() {
     navigate(`/build-resume/${resume.id}`);
   };
 
-  const handleOpenPreview = async (resume: Resume) => {
+  const handleOpenPreview = async (resume: Resume, requestedTemplate?: string) => {
+    const request = ++previewRequest.current;
+    previewTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setPreviewLoading(true);
+    setActionError(null);
     try {
-      const full = await get<{ resume: any }>(`/resumes/${resume.id}`);
-      const raw = full.resume || resume;
-      const parseJsonSafe = (val: any) => {
-        if (typeof val === 'string') {
-          try {
-            return JSON.parse(val);
-          } catch {
-            return [];
-          }
-        }
-        return val || [];
-      };
-
-      const parsedData = typeof raw.data === 'string' ? JSON.parse(raw.data) : (raw.data || {});
-
-      // Extract raw arrays safely
-      const rawExp = parseJsonSafe(raw.employments || raw.experience || parsedData.employments || parsedData.experience);
-      const rawEdu = parseJsonSafe(raw.educations || raw.education || parsedData.educations || parsedData.education);
-      const rawCerts = parseJsonSafe(raw.certifications || parsedData.certifications);
-      const rawSkills = parseJsonSafe(raw.skills || parsedData.skills);
-      const rawProjects = parseJsonSafe(raw.projects || parsedData.projects);
-      const rawLanguages = parseJsonSafe(raw.languages || parsedData.languages);
-
-      const experience = Array.isArray(rawExp) ? rawExp.map((e: any, idx: number) => ({
-        id: e.id || `exp-${idx}`,
-        company: e.company || e.employer || e.organization || '',
-        position: e.position || e.jobTitle || e.title || '',
-        location: e.location || '',
-        startDate: e.startDate || e.begin || '',
-        endDate: e.endDate || e.end || (e.current ? 'Present' : ''),
-        current: Boolean(e.current || e.endDate === 'Present'),
-        description: e.description || e.summary || '',
-      })) : [];
-
-      const education = Array.isArray(rawEdu) ? rawEdu.map((ed: any, idx: number) => ({
-        id: ed.id || `edu-${idx}`,
-        institution: ed.institution || ed.school || '',
-        degree: ed.degree || '',
-        field: ed.field || ed.major || '',
-        startDate: ed.startDate || ed.begin || '',
-        endDate: ed.endDate || ed.end || '',
-        gpa: ed.gpa || '',
-        description: ed.description || '',
-      })) : [];
-
-      let skillCategories: { id: string; category: string; skills: string[] }[] = [];
-      if (Array.isArray(rawSkills) && rawSkills.length > 0) {
-        if (typeof rawSkills[0] === 'string') {
-          skillCategories = [{ id: 'core', category: 'Core Competencies', skills: rawSkills }];
-        } else if (typeof rawSkills[0] === 'object') {
-          const grouped: Record<string, string[]> = {};
-          for (const s of rawSkills) {
-            const cat = s.category || 'Core Skills';
-            const name = s.name || s.skillName || s.skill || s.value || '';
-            if (name) {
-              if (!grouped[cat]) grouped[cat] = [];
-              grouped[cat].push(name);
-            }
-          }
-          skillCategories = Object.entries(grouped).map(([category, skills], i) => ({
-            id: `cat-${i}`,
-            category,
-            skills,
-          }));
-        }
-      } else if (parsedData.skillCategories) {
-        skillCategories = parsedData.skillCategories;
-      }
-
-      const certifications = Array.isArray(rawCerts) ? rawCerts.map((c: any, idx: number) => ({
-        id: c.id || `cert-${idx}`,
-        name: c.name || c.title || c.certificationName || '',
-        issuer: c.issuer || c.institution || c.organization || '',
-        date: c.date || c.issueDate || c.year || '',
-      })) : [];
-
-      const projects = Array.isArray(rawProjects) ? rawProjects.map((p: any, idx: number) => ({
-        id: p.id || `proj-${idx}`,
-        title: p.title || p.name || '',
-        technologies: p.technologies || p.techStack || '',
-        liveUrl: p.liveUrl || p.link || '',
-        description: p.description || p.summary || '',
-      })) : [];
-
-      const rawAchievements = parseJsonSafe(raw.achievements || parsedData.achievements);
-      const achievements = Array.isArray(rawAchievements) ? rawAchievements.map((a: any, idx: number) => ({
-        id: a.id || `ach-${idx}`,
-        title: a.title || a.name || '',
-        description: a.description || a.summary || '',
-      })) : [];
-
-      const languages = Array.isArray(rawLanguages) ? rawLanguages.map((l: any, idx: number) => ({
-        id: l.id || `lang-${idx}`,
-        language: l.language || l.name || (typeof l === 'string' ? l : ''),
-        proficiency: l.proficiency || l.level || '',
-      })) : [];
-
-      const photo = raw.photo || parsedData.photo || parsedData.heading?.photo || '';
-      const showPhoto = (raw.showPhoto !== false && parsedData.showPhoto !== false && parsedData.heading?.showPhoto !== false) && Boolean(photo);
-
-      setPreviewResume({
-        id: raw.id || resume.id,
-        name: raw.title || raw.name || resume.title || resume.name || 'Untitled Resume',
-        template: raw.template || resume.template || 'Cv1',
-        heading: {
-          firstName: raw.firstname || parsedData.heading?.firstName || parsedData.firstName || '',
-          lastName: raw.lastname || parsedData.heading?.lastName || parsedData.lastName || '',
-          email: raw.email || parsedData.heading?.email || parsedData.email || '',
-          phone: raw.phone || parsedData.heading?.phone || parsedData.phone || '',
-          location: [raw.city, raw.country].filter(Boolean).join(', ') || raw.address || parsedData.heading?.location || parsedData.location || '',
-          website: raw.website || parsedData.heading?.website || parsedData.website || '',
-          linkedin: raw.linkedin || parsedData.heading?.linkedin || parsedData.linkedin || '',
-          github: raw.github || parsedData.heading?.github || parsedData.github || '',
-          title: raw.occupation || parsedData.heading?.title || parsedData.title || '',
-          photo,
-          showPhoto,
-        },
-        experience,
-        education,
-        skillCategories,
-        summary: raw.summary || parsedData.summary || '',
-        certifications,
-        projects,
-        achievements,
-        languages,
-      });
-    } catch {
-      setPreviewResume({
-        id: resume.id,
-        name: resume.title || resume.name || 'Untitled Resume',
-        template: resume.template || 'Cv1',
-        heading: {
-          firstName: resume.firstname || '',
-          lastName: resume.lastname || '',
-          email: resume.email || '',
-          phone: resume.phone || '',
-          location: '',
-          title: resume.occupation || '',
-          photo: (resume as any).photo || '',
-          showPhoto: Boolean((resume as any).photo),
-        },
-        experience: [],
-        education: [],
-        skillCategories: [],
-        summary: '',
-        certifications: [],
-        projects: [],
-        achievements: [],
-        languages: [],
-      });
+      const full = await get<{ resume?: unknown }>(`/resumes/${encodeURIComponent(resume.id)}`);
+      if (!full?.resume) throw new Error('The saved resume was not returned.');
+      const model = normalizeDocumentResume(full.resume);
+      if (request !== previewRequest.current) return;
+      const template = requestedTemplate || model.template || resume.template || 'Cv1';
+      setGalleryTemplate(template);
+      setPreviewSavedTemplate(model.template || resume.template || 'Cv1');
+      setPreviewResume({ ...model, id: model.id || resume.id, template });
+    } catch (err) {
+      if (request === previewRequest.current) setActionError(`Could not load the resume preview: ${normalizeError(err).message}`);
+    } finally {
+      if (request === previewRequest.current) setPreviewLoading(false);
     }
   };
 
@@ -816,6 +709,55 @@ export function ResumesPage() {
         </div>
       )}
 
+      {/* The catalog is lightweight: only the selected document is rendered. */}
+      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5 space-y-4" aria-labelledby="template-gallery-heading" data-testid="template-gallery">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="template-gallery-heading" className="text-lg font-bold text-ink">Resume template gallery</h2>
+            <p className="mt-1 text-sm text-ink-muted">Preview a design with a saved resume. Switching designs here does not change your saved resume.</p>
+          </div>
+          <div className="w-full sm:w-64">
+            <label htmlFor="gallery-resume" className="mb-1 block text-xs font-semibold text-ink">Resume for preview</label>
+            <select id="gallery-resume" className="h-10 w-full rounded-lg border border-border bg-white px-2 text-sm" value={galleryResume?.id || ''} onChange={event => setGalleryResumeId(event.target.value)}>
+              {!galleryResume && <option value="">No saved resumes</option>}
+              {resumes.map(item => <option key={item.id} value={item.id}>{item.title || item.name || 'Untitled Resume'}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="gallery-search" className="mb-1 block text-xs font-semibold text-ink">Search templates</label>
+          <Input id="gallery-search" type="search" value={galleryQuery} onChange={event => setGalleryQuery(event.target.value)} placeholder="Search name, style, category, or ID" />
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Template categories">
+          {TEMPLATE_CATEGORIES.map(category => (
+            <button key={category.id} type="button" aria-pressed={galleryCategory === category.id}
+              onClick={() => setGalleryCategory(category.id)}
+              className={cn('rounded-full border px-3 py-1.5 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600', galleryCategory === category.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100')}>
+              {category.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-ink-muted" aria-live="polite">{galleryResults.length} template{galleryResults.length === 1 ? '' : 's'} found{!galleryResume ? ' · Save a resume to preview it.' : ''}</p>
+        {galleryResults.length === 0 ? <p className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700">No templates match these filters. Try another search or category.</p> : (
+          <div className="grid max-h-[680px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" aria-label="Template results">
+            {galleryResults.map(template => (
+              <article key={template.id} data-testid="template-card" data-template-id={template.id} data-selected={galleryTemplate === template.id || undefined} className="min-w-0 rounded-xl border border-slate-200 bg-white p-2.5">
+                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md bg-slate-100" aria-hidden="true">
+                  <div className="absolute inset-3 bg-white p-2 shadow-sm"><div className="h-3 w-2/3" style={{ backgroundColor: template.primary }} /><div className="mt-3 h-1 w-full bg-slate-200" /><div className="mt-2 h-1 w-4/5 bg-slate-200" /><div className="mt-4 h-1 w-full bg-slate-200" /></div>
+                  <img src={template.thumbnail} alt="" loading="lazy" className="relative h-full w-full object-cover object-top" onError={event => { event.currentTarget.style.display = 'none'; }} />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900">{template.name}</h3>
+                <p className="mt-0.5 text-[11px] text-slate-600">{template.id} · {template.category}</p>
+                <Button variant="outline" size="sm" className="mt-2 w-full text-xs" disabled={!galleryResume || previewLoading}
+                  aria-label={`Preview ${template.name}`} onClick={() => { if (galleryResume) void handleOpenPreview(galleryResume, template.id); }}>
+                  Preview
+                </Button>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* 4. Section Heading & Search / Filter Controls */}
       <div className="space-y-3 min-w-0">
         <div className="flex items-center justify-between gap-2 min-w-0">
@@ -928,7 +870,7 @@ export function ResumesPage() {
                   >
                     <option value="all">All Templates</option>
                     {availableTemplates.map((t) => {
-                      const meta = getTemplateMeta(t);
+                      const meta = displayTemplate(t);
                       return (
                         <option key={t} value={t}>
                           {t} ({meta.name})
@@ -1046,7 +988,7 @@ export function ResumesPage() {
         >
           {paginatedResumes.map((resume) => {
             const templateId = resume.template || 'Cv1';
-            const meta = getTemplateMeta(templateId);
+            const meta = displayTemplate(templateId);
             const score = getResumeScore(resume);
             const title = resume.title || resume.name || 'Untitled Resume';
             const created = resume.createdAt || resume.created_at;
@@ -1151,7 +1093,7 @@ export function ResumesPage() {
                 {/* Visual A4 Document Thumbnail Preview */}
                 <div className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-xs">
                   <img
-                    src={meta.thumbnail}
+                    src={meta.thumbnail || undefined}
                     alt={`${meta.name} preview`}
                     className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
@@ -1266,7 +1208,7 @@ export function ResumesPage() {
               <tbody className="divide-y divide-border/60">
                 {paginatedResumes.map((resume) => {
                   const templateId = resume.template || 'Cv1';
-                  const meta = getTemplateMeta(templateId);
+                  const meta = displayTemplate(templateId);
                   const score = getResumeScore(resume);
                   const title = resume.title || resume.name || 'Untitled Resume';
                   const role = resume.occupation || resume.targetRole || '';
@@ -1282,7 +1224,7 @@ export function ResumesPage() {
                         <div className="flex items-center gap-3">
                           <div className="size-9 shrink-0 overflow-hidden rounded-lg border border-border bg-neutral-100">
                             <img
-                              src={meta.thumbnail}
+                              src={meta.thumbnail || undefined}
                               alt=""
                               className="h-full w-full object-cover object-top"
                               loading="lazy"
@@ -1471,8 +1413,11 @@ export function ResumesPage() {
             if (!open) setPreviewResume(null);
           }}
           resume={previewResume}
+          returnFocusTo={previewTrigger.current}
+          savedTemplateId={previewSavedTemplate}
           onTemplateChange={(tmplId) => {
-            setPreviewResume((prev: any) => (prev ? { ...prev, template: tmplId } : null));
+            setGalleryTemplate(tmplId);
+            setPreviewResume((prev) => (prev ? { ...prev, template: tmplId } : null));
           }}
         />
       )}

@@ -12,6 +12,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { containsHtml, sanitizeRichText } from '@/lib/rich-text';
 import { formatDateRange } from '@/lib/resume-format';
+import { getContrastTextColor } from '@/cv-templates/templateUtils';
 import type { TemplateMeta } from '@/lib/template-catalog';
 import type { FlowItem } from '@/lib/smart-partitioner';
 import type { TemplateLayoutSpec, TitleStyle } from '@/lib/template-layouts';
@@ -118,7 +119,7 @@ export function SectionTitle({
       <h2 className="mb-2.5 flex items-center gap-2">
         <span
           className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white"
-          style={{ backgroundColor: palette.primary }}
+          style={{ backgroundColor: palette.primary, color: getContrastTextColor(palette.primary) }}
         >
           {title}
         </span>
@@ -567,16 +568,17 @@ export function SidebarSkillsRenderer({
   if (variant === 'bars') {
     return (
       <div className="space-y-2">
-        {allSkills.slice(0, 10).map((s, idx) => {
+        {allSkills.map((s, idx) => {
           const name = typeof s === 'string' ? s : (s.name || s.skillName || '');
-          const pct = typeof s === 'object' && s.rating ? s.rating * 20 : 85 + (idx % 3) * 5;
+          const rawRating = typeof s === 'object' && s !== null && typeof s.rating === 'number' ? s.rating : null;
+          const pct = rawRating === null || !Number.isFinite(rawRating) ? null : Math.max(0, Math.min(100, rawRating <= 5 ? rawRating * 20 : rawRating));
           return (
             <div key={idx} className="space-y-0.5">
               <div className="flex justify-between text-[10px] font-medium">
                 <span>{name}</span>
-                <span className={isDark ? "text-white/60" : "text-neutral-400"}>{pct}%</span>
+                {pct !== null && <span className={isDark ? "text-white/80" : "text-neutral-600"}>{pct}%</span>}
               </div>
-              <div className={cn("w-full h-1 rounded-full overflow-hidden", isDark ? "bg-white/20" : "bg-neutral-200")}>
+              {pct !== null && <div className={cn("w-full h-1 rounded-full overflow-hidden", isDark ? "bg-white/20" : "bg-neutral-200")}>
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -584,7 +586,7 @@ export function SidebarSkillsRenderer({
                     backgroundColor: isDark ? '#ffffff' : (palette.secondary || palette.primary),
                   }}
                 />
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -595,13 +597,13 @@ export function SidebarSkillsRenderer({
   if (variant === 'dots') {
     return (
       <div className="space-y-1.5">
-        {allSkills.slice(0, 10).map((s, idx) => {
+        {allSkills.map((s, idx) => {
           const name = typeof s === 'string' ? s : (s.name || s.skillName || '');
-          const rating = typeof s === 'object' && s.rating ? s.rating : (idx % 3 === 0 ? 5 : 4);
+          const rating = typeof s === 'object' && s !== null && typeof s.rating === 'number' && Number.isFinite(s.rating) ? Math.max(0, Math.min(5, s.rating <= 5 ? s.rating : s.rating / 20)) : null;
           return (
             <div key={idx} className="flex items-center justify-between text-[10px]">
-              <span className="font-medium truncate pr-2">{name}</span>
-              <div className="flex gap-1 shrink-0">
+              <span className="font-medium break-words pr-2">{name}</span>
+              {rating !== null && <div className="flex gap-1 shrink-0" aria-label={`${name}: ${rating} of 5`}>
                 {[1, 2, 3, 4, 5].map((d) => (
                   <span
                     key={d}
@@ -616,7 +618,7 @@ export function SidebarSkillsRenderer({
                     }}
                   />
                 ))}
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -654,15 +656,8 @@ export function SidebarSkillsRenderer({
  * SIDEBAR LANGUAGES RENDERER (Variant-Aware)
  * ───────────────────────────────────────────────────────────── */
 export function getLanguageRating(l: any): number {
-  if (typeof l.rating === 'number') return l.rating;
-  const prof = String(l.proficiency || '').toLowerCase();
-  if (prof.includes('native') || prof.includes('fluent') || prof.includes('c2') || prof.includes('c1')) {
-    return 5;
-  }
-  if (prof.includes('advanced') || prof.includes('intermediate') || prof.includes('b2')) {
-    return 4;
-  }
-  return 4;
+  return l && typeof l.rating === 'number' && Number.isFinite(l.rating)
+    ? Math.max(0, Math.min(5, l.rating)) : 0;
 }
 
 export function SidebarLanguagesRenderer({
@@ -683,12 +678,12 @@ export function SidebarLanguagesRenderer({
     return (
       <div className="space-y-1.5">
         {languages.map((l: any, idx: number) => {
-          const langName = l.name || l.language || (typeof l === 'string' ? l : '');
+          const langName = l?.name || l?.language || (typeof l === 'string' ? l : '');
           const dotsCount = getLanguageRating(l);
           return (
-            <div key={l.id || idx} className="flex items-center justify-between text-[10px]">
-              <span className="font-medium truncate pr-2">{langName}</span>
-              <div className="flex gap-1 shrink-0">
+            <div key={l?.id || idx} className="flex items-center justify-between text-[10px]">
+              <span className="font-medium break-words pr-2">{langName}{l?.proficiency || l?.level ? ` (${l.proficiency || l.level})` : ''}</span>
+              {dotsCount > 0 && <div className="flex gap-1 shrink-0" aria-label={`${langName}: ${dotsCount} of 5`}>
                 {[1, 2, 3, 4, 5].map((d) => (
                   <span
                     key={d}
@@ -698,7 +693,7 @@ export function SidebarLanguagesRenderer({
                     }}
                   />
                 ))}
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -709,10 +704,10 @@ export function SidebarLanguagesRenderer({
   return (
     <div className="space-y-1.5 text-xs">
       {languages.map((l: any, idx: number) => (
-        <div key={l.id || idx} className="flex justify-between items-baseline">
-          <span className="font-medium">{l.name || l.language || (typeof l === 'string' ? l : '')}</span>
+        <div key={l?.id || idx} className="flex justify-between items-baseline">
+          <span className="font-medium">{l?.name || l?.language || (typeof l === 'string' ? l : '')}</span>
           <span className={cn("text-[10px]", isDark ? "text-white/70" : "text-neutral-500")}>
-            {l.proficiency || l.level || ''}
+            {l?.proficiency || l?.level || ''}
           </span>
         </div>
       ))}

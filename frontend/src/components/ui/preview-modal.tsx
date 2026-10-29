@@ -6,7 +6,7 @@
  * Built on Radix UI Dialog with Cuba M3 Executive Glassmorphic styling.
  */
 
-import { useId, useState } from 'react';
+import { useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -107,6 +107,8 @@ interface PreviewModalProps {
   onOpenChange: (open: boolean) => void;
   resume: ResumePreviewData;
   onTemplateChange?: (templateId: string) => void;
+  returnFocusTo?: HTMLElement | null;
+  savedTemplateId?: string;
 }
 
 export function PreviewModal({
@@ -114,25 +116,59 @@ export function PreviewModal({
   onOpenChange,
   resume,
   onTemplateChange,
+  returnFocusTo,
+  savedTemplateId,
 }: PreviewModalProps) {
   const [zoom, setZoom] = useState<number>(100);
+  const [selectedTemplate, setSelectedTemplate] = useState(resume.template || 'Cv1');
+  const canvasRef = useRef<HTMLDivElement>(null);
+  // This dialog is controlled externally rather than through a Radix Trigger.
+  const returnFocus = useRef<HTMLElement | null>(returnFocusTo || (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null));
+  useLayoutEffect(() => {
+    if (open) return;
+    const isOutsideDialog = (value: EventTarget | null): value is HTMLElement =>
+      value instanceof HTMLElement && !value.closest('[data-testid="cuba-preview-modal"]');
+    const rememberFocus = (event: FocusEvent) => {
+      // Radix may move focus before this closed-state effect cleans up.
+      if (isOutsideDialog(event.target)) returnFocus.current = event.target;
+    };
+    // During closing the active element can still be a dialog control; do not
+    // overwrite the saved trigger before Radix emits its close-autofocus event.
+    if (isOutsideDialog(document.activeElement)) returnFocus.current = document.activeElement;
+    document.addEventListener('focusin', rememberFocus);
+    return () => document.removeEventListener('focusin', rememberFocus);
+  }, [open]);
+  useEffect(() => { if (returnFocusTo) returnFocus.current = returnFocusTo; }, [returnFocusTo]);
+  useEffect(() => { setSelectedTemplate(resume.template || 'Cv1'); }, [resume.id, resume.template]);
+  useEffect(() => { if (open) setZoom(100); }, [open, resume.id]);
+  const fitToWidth = () => {
+    const width = canvasRef.current?.clientWidth || 0;
+    const pageWidth = 210 * 96 / 25.4;
+    setZoom(Math.max(50, Math.min(150, Math.floor(((width - 48) / pageWidth) * 100))));
+  };
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const descriptionId = useId();
 
-  const currentTemplateId = resume.template || 'Cv1';
+  const currentTemplateId = selectedTemplate;
+  const hasOmittedOptionalSections = ['achievements', 'references', 'hobbies', 'customSections']
+    .some(key => !Object.prototype.hasOwnProperty.call(resume, key));
   // Unknown template ids are an explicit unsupported state, never a silent
   // downgrade to a different resume design.
   const meta = tryGetTemplateMeta(currentTemplateId);
-  const isSaved = Boolean(resume.id);
-  const unsavedHint = 'Save this resume before exporting or sharing it.';
+  const isSaved = Boolean(resume.id && meta);
+  // DOCX is generated from the persisted template; the server rejects a
+  // temporary gallery selection that does not match the saved template.
+  const canDownloadDocx = isSaved && (!savedTemplateId || savedTemplateId === currentTemplateId);
+  const docxHint = canDownloadDocx ? 'Download Word document' : (isSaved ? 'Save this template before downloading Word.' : 'Save this resume and choose a supported template before downloading Word.');
+  const unsavedHint = meta ? 'Save this resume before exporting or sharing it.' : 'Choose a supported template before exporting or sharing.';
 
-  const fullName = `${resume.heading.firstName || ''} ${resume.heading.lastName || ''}`.trim() || resume.name || 'Candidate Name';
+  const fullName = `${resume.heading?.firstName || ''} ${resume.heading?.lastName || ''}`.trim() || resume.name || 'Resume';
 
   const handleDownloadPdf = () => {
-    if (!resume.id) {
+    if (!isSaved) {
       setExportError(unsavedHint);
       return;
     }
@@ -147,8 +183,8 @@ export function PreviewModal({
   };
 
   const handleDownloadDocx = async () => {
-    if (!resume.id) {
-      setExportError(unsavedHint);
+    if (!canDownloadDocx) {
+      setExportError(docxHint);
       return;
     }
     setExportError(null);
@@ -199,14 +235,14 @@ export function PreviewModal({
   };
 
   const handlePrint = () => {
-    if (!resume.id) {
+    if (!isSaved) {
       setExportError(unsavedHint);
       return;
     }
     setExportError(null);
     // Print the dedicated export document (A4 page sheets, no app chrome)
     // rather than the dashboard behind this modal.
-    window.open(`/export/${encodeURIComponent(currentTemplateId)}/${encodeURIComponent(resume.id)}/en`, '_blank', 'noopener,noreferrer');
+    window.open(`/export/${encodeURIComponent(currentTemplateId)}/${encodeURIComponent(resume.id)}/en?print=1`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -216,9 +252,12 @@ export function PreviewModal({
           aria-describedby={descriptionId}
           className="max-w-5xl h-[92vh] flex flex-col p-0 overflow-hidden border-border bg-neutral-900/40 backdrop-blur-2xl"
           data-testid="cuba-preview-modal"
+          onCloseAutoFocus={(event) => {
+            if (returnFocus.current?.isConnected) { event.preventDefault(); returnFocus.current.focus(); }
+          }}
         >
           {/* Top Control Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-surface/90 px-4 py-3 backdrop-blur-md sm:px-6">
+          <div data-preview-controls className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-surface/90 px-4 py-3 pr-14 backdrop-blur-md sm:px-6 sm:pr-14">
             <div className="flex items-center gap-3">
               <div
                 className="flex size-9 items-center justify-center rounded-xl text-white shadow-sm"
@@ -239,12 +278,12 @@ export function PreviewModal({
 
             {/* Middle: Template Switcher & Zoom */}
             <div className="flex items-center gap-2">
-              <div className="hidden sm:block">
+              <div>
                 <Select
                   value={currentTemplateId}
-                  onValueChange={(val) => onTemplateChange?.(val)}
+                  onValueChange={(val) => { setSelectedTemplate(val); onTemplateChange?.(val); }}
                 >
-                  <SelectTrigger className="h-8 w-44 text-xs font-medium">
+                  <SelectTrigger aria-label="Switch resume template" className="h-8 w-36 sm:w-44 text-xs font-medium">
                     <SelectValue placeholder="Switch template" />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
@@ -263,7 +302,7 @@ export function PreviewModal({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => setZoom((prev) => Math.max(50, prev - 15))}
+                  onClick={() => setZoom((prev) => Math.max(50, prev - 10))}
                   disabled={zoom <= 50}
                   aria-label="Zoom out"
                   title="Zoom out"
@@ -280,7 +319,7 @@ export function PreviewModal({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => setZoom((prev) => Math.min(150, prev + 15))}
+                  onClick={() => setZoom((prev) => Math.min(150, prev + 10))}
                   disabled={zoom >= 150}
                   aria-label="Zoom in"
                   title="Zoom in"
@@ -290,9 +329,9 @@ export function PreviewModal({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => setZoom(100)}
-                  aria-label="Reset zoom to 100 percent"
-                  title="Reset zoom (100%)"
+                  onClick={fitToWidth}
+                  aria-label="Fit preview to width"
+                  title="Fit to width"
                 >
                   <Maximize2 className="size-3" aria-hidden="true" />
                 </Button>
@@ -300,7 +339,7 @@ export function PreviewModal({
             </div>
 
             {/* Actions: Download, DOCX, Share, Print */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -308,7 +347,7 @@ export function PreviewModal({
                 disabled={!isSaved}
                 aria-label={isSaved ? 'Print preview' : unsavedHint}
                 title={isSaved ? 'Print preview' : unsavedHint}
-                className="hidden md:flex gap-1.5 text-xs"
+                className="flex gap-1.5 text-xs"
               >
                 <Printer className="size-3.5" />
                 Print
@@ -330,9 +369,10 @@ export function PreviewModal({
                 size="sm"
                 onClick={handleDownloadDocx}
                 loading={downloadingDocx}
-                disabled={!isSaved}
-                aria-label={isSaved ? 'Download Word document' : unsavedHint}
-                className="hidden sm:flex gap-1.5 text-xs text-emerald-600 hover:text-emerald-700"
+                disabled={!canDownloadDocx}
+                aria-label={docxHint}
+                title={docxHint}
+                className="flex gap-1.5 text-xs text-emerald-800 hover:text-emerald-900"
               >
                 <Download className="size-3.5" />
                 DOCX
@@ -360,8 +400,13 @@ export function PreviewModal({
             </div>
           )}
 
+          {hasOmittedOptionalSections && (
+            <p role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6">
+              Some optional sections were not supplied to this preview. Save the resume and open it from My Resumes for the complete saved document.
+            </p>
+          )}
           {/* Document Canvas Area */}
-          <div className="flex-1 overflow-auto bg-neutral-100/90 p-4 sm:p-8 flex justify-center items-start">
+          <div ref={canvasRef} data-preview-canvas className="flex-1 min-h-0 overflow-auto bg-neutral-100/90 p-4 sm:p-6 flex justify-center items-start">
             {!meta ? (
               <div role="alert" className="m-auto max-w-sm rounded-xl border border-rose-200 bg-white p-6 text-center">
                 <p className="text-sm font-semibold text-rose-700">Unsupported template layout</p>
@@ -371,13 +416,7 @@ export function PreviewModal({
                 </p>
               </div>
             ) : (
-            <div
-              className="transition-transform duration-150 origin-top flex flex-col items-center"
-              style={{
-                transform: `scale(${zoom / 100})`,
-                marginBottom: zoom > 100 ? `${(zoom - 100) * 12}px` : '32px',
-              }}
-            >
+            <div data-preview-scale className="shrink-0 flex flex-col items-center" style={{ zoom: `${zoom}%` }}>
               <SmartResumeDocument
                 resume={resume}
                 meta={meta}
@@ -398,7 +437,7 @@ export function PreviewModal({
         onOpenChange={setShareOpen}
         resumeId={resume.id || ''}
         resumeName={resume.name || fullName}
-        templateId={currentTemplateId}
+        templateId={savedTemplateId || 'Last saved template'}
       />
     </>
   );
