@@ -33,7 +33,7 @@ volume with its own files**, so quoted counts could be edited freely. Both are c
 | HEAD at the start of M8D (= reported M8C HEAD, verified against remote) | `0bf550a85a7177170f9b7df3796a78d71ea44532` |
 | Remote at the same moment | `0bf550a8…` — **equal**, no drift, no merges |
 | Audited source revision | `69a3ed4` |
-| M8D commits | recorded in §11 |
+| M8D commit | `32a8ae91fc675bdb84e2800b48951cb3f1cc8e7d` (deliverables, tools, fixtures) |
 
 The repository had **not** advanced beyond the reported M8C HEAD; no revision substitution was needed.
 
