@@ -11,6 +11,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckoutModal } from './checkout-modal';
+import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
 import {
   Check,
@@ -22,6 +23,7 @@ import {
   HelpCircle,
   ArrowRight,
   ChevronDown,
+  Receipt,
 } from 'lucide-react';
 
 interface PlanTier {
@@ -186,6 +188,7 @@ const FAQS = [
 ];
 
 export function PricingPage() {
+  const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
   const [annualBilling, setAnnualBilling] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -233,12 +236,29 @@ export function PricingPage() {
             <span>Interview Made Easy</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-ink-muted hover:text-ink transition-colors">
-              Sign In
-            </Link>
-            <Button size="sm" asChild>
-              <Link to="/login?tab=register">Get Started</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard/settings?tab=billing"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors"
+                >
+                  <Receipt className="size-4 text-accent" aria-hidden="true" />
+                  <span>Billing &amp; Invoices</span>
+                </Link>
+                <Button size="sm" asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+                  Sign In
+                </Link>
+                <Button size="sm" asChild>
+                  <Link to="/login?tab=register">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

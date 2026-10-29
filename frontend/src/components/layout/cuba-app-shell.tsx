@@ -63,6 +63,7 @@ import {
   Command,
   Crown,
   Check,
+  Receipt,
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -122,6 +123,7 @@ const candidateNavGroups: NavGroup[] = [
     label: 'Account & Security',
     items: [
       { id: 'plans', label: 'Subscription & Plans', href: '/pricing', icon: CreditCard, matchPaths: ['/pricing', '/billing'] },
+      { id: 'billing-invoices', label: 'Billing & Invoices', href: '/dashboard/settings?tab=billing', icon: Receipt, matchPaths: ['/dashboard/settings?tab=billing'] },
       { id: 'profile', label: 'Master Profile', href: '/dashboard/settings?tab=profile', icon: User, matchPaths: ['/dashboard/settings?tab=profile'] },
       { id: 'security', label: 'Security & 2FA Hub', href: '/dashboard/settings?tab=security', icon: Shield, matchPaths: ['/dashboard/settings?tab=security'] },
       { id: 'support', label: 'Help Desk & Support', href: '/dashboard/support', icon: HelpCircle, matchPaths: ['/dashboard/support'] },
