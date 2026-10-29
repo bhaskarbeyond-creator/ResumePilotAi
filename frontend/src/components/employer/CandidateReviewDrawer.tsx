@@ -93,6 +93,7 @@ export function CandidateReviewDrawer({
   const [messageBody, setMessageBody] = useState('');
   const [messageSending, setMessageSending] = useState(false);
   const [messageSuccess, setMessageSuccess] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
 
   // Sync internal state when application changes
   useEffect(() => {
@@ -104,6 +105,7 @@ export function CandidateReviewDrawer({
       setConfirmModal(null);
       setMessageModalOpen(false);
       setMessageSuccess(false);
+      setMessageError(null);
       setZoomLevel(100);
     }
   }, [application]);
@@ -155,17 +157,31 @@ export function CandidateReviewDrawer({
     if (!messageSubject.trim() || !messageBody.trim() || messageSending) return;
 
     setMessageSending(true);
+    setMessageError(null);
     try {
-      await post('/notify/email', {
-        to: application.applicantEmail,
-        subject: messageSubject.trim(),
-        body: messageBody.trim(),
-        recipientName: application.applicantName,
-        jobId,
-        applicationId: application.id,
-      }).catch(() => {
-        // Fallback: log notification to application record
-      });
+      const candidateId = application.applicantId || application.id;
+      let res: any;
+      try {
+        res = await post(`/employer/candidates/${candidateId}/notify`, {
+          subject: messageSubject.trim(),
+          message: messageBody.trim(),
+          template: 'custom',
+        });
+      } catch {
+        res = await post('/notify/email', {
+          to: application.applicantEmail,
+          subject: messageSubject.trim(),
+          body: messageBody.trim(),
+          recipientName: application.applicantName,
+          jobId,
+          applicationId: application.id,
+        });
+      }
+
+      if (res && res.error) {
+        throw new Error(typeof res.error === 'string' ? res.error : 'Failed to deliver notification to candidate.');
+      }
+
       setMessageSuccess(true);
       setTimeout(() => {
         setMessageSuccess(false);
@@ -173,12 +189,9 @@ export function CandidateReviewDrawer({
         setMessageSubject('');
         setMessageBody('');
       }, 1500);
-    } catch {
-      setMessageSuccess(true);
-      setTimeout(() => {
-        setMessageSuccess(false);
-        setMessageModalOpen(false);
-      }, 1500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send communication to candidate.';
+      setMessageError(msg);
     } finally {
       setMessageSending(false);
     }
@@ -703,6 +716,12 @@ export function CandidateReviewDrawer({
               </div>
             ) : (
               <form onSubmit={handleSendMessage} className="p-5 space-y-4 text-xs">
+                {messageError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>{messageError}</span>
+                  </div>
+                )}
                 {/* Template Chips */}
                 <div className="space-y-1.5">
                   <label className="font-bold text-ink block">Quick Message Templates</label>

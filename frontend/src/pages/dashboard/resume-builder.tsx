@@ -51,6 +51,7 @@ import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
 import type { ParsedResumeData } from '@/lib/ai-content';
 import { TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
+import { compressProfilePhoto } from '@/lib/image-compression';
 import {
   User,
   Briefcase,
@@ -2591,29 +2592,36 @@ function HeadingStep({
   onOpenImport?: () => void;
 }) {
   const [tailoringOpen, setTailoringOpen] = useState(Boolean(heading.targetRole || heading.jobDescription));
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [compressingPhoto, setCompressingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const update = (field: keyof ResumeHeading, value: any) => {
     onChange({ ...heading, [field]: value });
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Photo must be under 5MB');
+    setPhotoError(null);
+    if (file.size > 15 * 1024 * 1024) {
+      setPhotoError('Photo must be under 15MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        update('photo', reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setCompressingPhoto(true);
+      const compressed = await compressProfilePhoto(file);
+      update('photo', compressed);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to compress photo';
+      setPhotoError(msg);
+    } finally {
+      setCompressingPhoto(false);
+    }
   };
 
   const handleRemovePhoto = () => {
+    setPhotoError(null);
     update('photo', '');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -2654,18 +2662,29 @@ function HeadingStep({
               <img src={heading.photo} alt="Avatar" className="size-full object-cover" />
             ) : (
               <div className="flex flex-col items-center justify-center text-ink-muted">
-                <Camera className="size-7 text-ink-muted" aria-hidden="true" />
-                <span className="text-[10px] mt-1 font-medium">Add Photo</span>
+                {compressingPhoto ? (
+                  <RefreshCw className="size-6 text-brand-600 animate-spin" aria-hidden="true" />
+                ) : (
+                  <>
+                    <Camera className="size-7 text-ink-muted" aria-hidden="true" />
+                    <span className="text-[10px] mt-1 font-medium">Add Photo</span>
+                  </>
+                )}
               </div>
             )}
           </div>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute bottom-0 right-0 p-1.5 rounded-full bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-colors"
+            disabled={compressingPhoto}
+            className="absolute bottom-0 right-0 p-1.5 rounded-full bg-brand-600 text-white shadow-sm hover:bg-brand-700 disabled:opacity-50 transition-colors"
             title="Upload photo"
           >
-            <UploadCloud className="size-3.5" />
+            {compressingPhoto ? (
+              <RefreshCw className="size-3.5 animate-spin" />
+            ) : (
+              <UploadCloud className="size-3.5" />
+            )}
           </button>
           <input
             ref={fileInputRef}
@@ -2682,17 +2701,28 @@ function HeadingStep({
               type="button"
               variant="outline"
               size="sm"
+              disabled={compressingPhoto}
               onClick={() => fileInputRef.current?.click()}
               className="gap-1.5 text-xs font-semibold"
             >
-              <UploadCloud className="size-3.5" />
-              <span>{heading.photo ? 'Change Photo' : 'Upload Headshot'}</span>
+              {compressingPhoto ? (
+                <>
+                  <RefreshCw className="size-3.5 animate-spin" />
+                  <span>Optimizing...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="size-3.5" />
+                  <span>{heading.photo ? 'Change Photo' : 'Upload Headshot'}</span>
+                </>
+              )}
             </Button>
             {heading.photo && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
+                disabled={compressingPhoto}
                 onClick={handleRemovePhoto}
                 className="gap-1.5 text-xs text-error-600 hover:text-error-700 hover:bg-error-50"
               >
@@ -2710,9 +2740,13 @@ function HeadingStep({
               <span>Show photo on CV</span>
             </label>
           </div>
-          <p className="text-xs text-ink-muted">
-            PNG, JPG or WebP up to 5MB. A crisp professional headshot increases profile engagement by 40% on European/Creative CV layouts.
-          </p>
+          {photoError ? (
+            <p className="text-xs text-error-600 font-medium">{photoError}</p>
+          ) : (
+            <p className="text-xs text-ink-muted">
+              PNG, JPG or WebP up to 15MB. Automatically optimized for fast loading and PDF export under 64 KB.
+            </p>
+          )}
         </div>
       </div>
 

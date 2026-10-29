@@ -147,6 +147,7 @@ const adminNavGroups: NavGroup[] = [
     label: 'Identity & Support',
     items: [
       { id: 'users', label: 'Users Manager & 360', href: '/admin/users', icon: Users, matchPaths: ['/admin/users'] },
+      { id: 'billing', label: 'Billing & Order Ledgers', href: '/admin/billing', icon: CreditCard, matchPaths: ['/admin/billing', '/admin/orders'] },
       { id: 'support', label: 'Help Desk & Tickets', href: '/admin/support', icon: HelpCircle, matchPaths: ['/admin/support', '/admin/help-desk'] },
       { id: 'security', label: 'Security & Staff RBAC', href: '/admin/security', icon: ShieldCheck, matchPaths: ['/admin/security'] },
     ],

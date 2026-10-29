@@ -9,13 +9,19 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
   HelpCircle,
   MessageSquare,
   Send,
   Search,
-  X,
   Clock,
   AlertTriangle,
   CheckCircle2,
@@ -350,80 +356,70 @@ export function SupportPage() {
         </div>
       </div>
 
-      {/* ─── Create Ticket Modal ─── */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="create-ticket-title">
-          <div className="absolute inset-0" onClick={() => setShowCreateModal(false)} />
-          <div className="relative bg-surface border border-edge rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(false)}
-              className="absolute top-4 right-4 text-ink-muted hover:text-ink transition-colors"
-              aria-label="Close create ticket modal"
-            >
-              <X className="size-5" />
-            </button>
+      {/* ─── Create Ticket Modal (Radix Dialog with Focus Trap & Escape Dismissal) ─── */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-ink">Create Support Ticket</DialogTitle>
+            <DialogDescription className="text-xs text-ink-muted">
+              Submit a new inquiry to our support team. We typically respond within 24 hours.
+            </DialogDescription>
+          </DialogHeader>
 
+          <form onSubmit={handleCreateTicket} className="space-y-4 pt-2">
             <div>
-              <h3 id="create-ticket-title" className="text-base font-bold text-ink">Create Support Ticket</h3>
-              <p className="text-xs text-ink-muted">Submit a new inquiry to our support team. We typically respond within 24 hours.</p>
+              <label className="block text-xs font-semibold text-ink mb-1">Subject</label>
+              <Input
+                required
+                placeholder="Brief summary of your issue"
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                className="text-xs h-9"
+              />
             </div>
 
-            <form onSubmit={handleCreateTicket} className="space-y-4 pt-2">
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Subject</label>
-                <Input
-                  required
-                  placeholder="Brief summary of your issue"
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                  className="text-xs h-9"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink mb-1">Priority</label>
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value as SupportPriority)}
+                className="w-full rounded-lg border border-edge bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+              >
+                <option value="low">Low - General question or feedback</option>
+                <option value="normal">Normal - Standard support request</option>
+                <option value="urgent">Urgent - Time-sensitive issue affecting your account</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Priority</label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as SupportPriority)}
-                  className="w-full rounded-lg border border-edge bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
-                >
-                  <option value="low">Low - General question or feedback</option>
-                  <option value="normal">Normal - Standard support request</option>
-                  <option value="urgent">Urgent - Time-sensitive issue affecting your account</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink mb-1">Message</label>
+              <Textarea
+                required
+                placeholder="Describe your issue in detail. Include any error messages, steps to reproduce, and relevant context."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                rows={5}
+                className="w-full resize-none rounded-xl border border-edge bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Message</label>
-                <Textarea
-                  required
-                  placeholder="Describe your issue in detail. Include any error messages, steps to reproduce, and relevant context."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  rows={5}
-                  className="w-full resize-none rounded-xl border border-edge bg-canvas px-3 py-2 text-xs text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" className="text-xs font-semibold" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Submitting...' : 'Submit Ticket'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreateModal(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" className="text-xs font-semibold" disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Submitting...' : 'Submit Ticket'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -29,6 +29,7 @@ import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
 import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
 import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
+import { AdminBillingTab } from '@/components/admin/AdminBillingTab';
 
 export type AdminTabId =
   | 'dashboard'
@@ -37,6 +38,7 @@ export type AdminTabId =
   | 'operations'
   | 'attention'
   | 'users'
+  | 'billing'
   | 'support'
   | 'moderation'
   | 'blog'
@@ -54,6 +56,7 @@ const VALID_TABS: AdminTabId[] = [
   'operations',
   'attention',
   'users',
+  'billing',
   'support',
   'moderation',
   'blog',
@@ -119,6 +122,7 @@ export function AdminConsolePage() {
     if (segments[0] === 'admin' && segments[1]) {
       const section = segments[1].toLowerCase();
       if (section === 'help-desk') return 'support';
+      if (section === 'billing' || section === 'orders' || section === 'subscriptions') return 'billing';
       if (section === 'blog-management') return 'blog';
       if (['employer-applications', 'jobs-manager', 'company-management', 'tenants'].includes(section)) return 'moderation';
       if (['phrases', 'reviews', 'landing-pages', 'trustedby'].includes(section)) return 'content';
@@ -209,6 +213,7 @@ export function AdminConsolePage() {
             {activeTab === 'operations' && <AdminOperationsTab />}
             {activeTab === 'attention' && <AdminAttentionTab onNavigateTab={handleSelectTab} />}
             {activeTab === 'users' && <AdminUsersTab />}
+            {activeTab === 'billing' && <AdminBillingTab />}
             {activeTab === 'support' && <AdminHelpDeskTab />}
             {activeTab === 'security' && <AdminSecurityTab />}
             {activeTab === 'moderation' && <AdminModerationTab />}

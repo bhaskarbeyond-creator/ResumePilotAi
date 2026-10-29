@@ -4,8 +4,24 @@
  * evaluations, completion and the report; this component only renders what the
  * server returns and never substitutes canned questions, feedback or scores.
  */
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, Info, Lightbulb, Loader2, MessageSquare, RotateCcw, Send, Square } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  Info,
+  Lightbulb,
+  Loader2,
+  MessageSquare,
+  RotateCcw,
+  Send,
+  Square,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Radio,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,6 +40,7 @@ import {
   type LiveEvaluation,
   type LiveInterviewSession,
 } from '@/lib/interview-coach';
+import { VoiceInterviewRecorder, getVoiceCapabilities } from '@/lib/voice-interview';
 import { cn } from '@/lib/utils';
 
 const INTERVIEW_TYPE_LABELS: Record<string, string> = {
@@ -96,6 +113,63 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
   const answerErrorId = useId();
   const hintsId = useId();
 
+  // Voice Interview Mode State (DISC-038)
+  const capabilities = useMemo(() => getVoiceCapabilities(), []);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0);
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+  const voiceRecorderRef = useRef<VoiceInterviewRecorder | null>(null);
+
+  // Initialize voice recorder
+  useEffect(() => {
+    const recorder = new VoiceInterviewRecorder(
+      (transcript) => {
+        setAnswer((prev) => {
+          if (!prev) return transcript;
+          return `${prev.trim()} ${transcript}`.trim();
+        });
+        setAnswerError('');
+      },
+      (vol) => setAudioVolume(vol),
+      (err) => setVoiceNotice(err)
+    );
+    voiceRecorderRef.current = recorder;
+
+    return () => {
+      recorder.stopListening();
+      recorder.stopSpeaking();
+    };
+  }, []);
+
+  const handleToggleVoice = async () => {
+    if (!voiceRecorderRef.current) return;
+    setVoiceNotice(null);
+    if (isRecording) {
+      voiceRecorderRef.current.stopListening();
+      setIsRecording(false);
+    } else {
+      const ok = await voiceRecorderRef.current.startListening();
+      if (ok) {
+        setIsRecording(true);
+      }
+    }
+  };
+
+  const handleSpeakQuestion = () => {
+    if (!voiceRecorderRef.current) return;
+    if (isPlayingAudio) {
+      voiceRecorderRef.current.stopSpeaking();
+      setIsPlayingAudio(false);
+    } else {
+      const textToSpeak = `${session.interviewer.message ? session.interviewer.message + '. ' : ''}${session.interviewer.question}`;
+      setIsPlayingAudio(true);
+      voiceRecorderRef.current.speakQuestion(textToSpeak, () => {
+        setIsPlayingAudio(false);
+      });
+    }
+  };
+
   const closed = liveInterviewClosed(session);
   const report = session.report;
   const { completedTurns, targetTurns } = session.progress;
@@ -108,6 +182,12 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
     previousTurnId.current = session.interviewer.turnId;
     setAnswer('');
     setAnswerError('');
+    if (voiceRecorderRef.current) {
+      voiceRecorderRef.current.stopListening();
+      voiceRecorderRef.current.stopSpeaking();
+    }
+    setIsRecording(false);
+    setIsPlayingAudio(false);
     setShowHints(false);
     questionRef.current?.focus();
   }, [session.interviewer.turnId]);
@@ -328,9 +408,33 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
             {session.latestEvaluation && session.transcript.length > 0 && <EvaluationCard evaluation={session.latestEvaluation} />}
 
             <section aria-labelledby="live-question-heading" className="rounded-2xl border border-border bg-surface p-5">
-              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-700">
-                <MessageSquare className="size-3.5" aria-hidden="true" /> Interviewer
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                  <MessageSquare className="size-3.5" aria-hidden="true" /> Interviewer
+                </p>
+                {capabilities.speechSynthesis && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSpeakQuestion}
+                    className="h-7 text-xs px-2 gap-1.5 text-brand-700 hover:text-brand-800 font-semibold"
+                    title={isPlayingAudio ? 'Stop voice playback' : 'Listen to interviewer voice'}
+                  >
+                    {isPlayingAudio ? (
+                      <>
+                        <VolumeX className="size-3.5 text-rose-600 animate-pulse" />
+                        <span className="text-rose-600">Stop Voice</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="size-3.5" />
+                        <span>Listen to Question</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
               {session.interviewer.message && <p className="mt-2 text-sm text-ink-secondary break-words">{session.interviewer.message}</p>}
               <h2 id="live-question-heading" ref={questionRef} tabIndex={-1} className="mt-2 text-base font-semibold leading-relaxed text-ink outline-none break-words">
                 {session.interviewer.question}
@@ -358,8 +462,53 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
               )}
             </section>
 
-            <form onSubmit={(event) => void submitAnswer(event)} className="space-y-2" noValidate>
-              <label htmlFor={answerId} className="block text-sm font-semibold text-ink">Your answer</label>
+            <form onSubmit={(event) => void submitAnswer(event)} className="space-y-3" noValidate>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label htmlFor={answerId} className="block text-sm font-semibold text-ink">Your answer</label>
+                
+                {/* Voice Input Toolbar (DISC-038) */}
+                <div className="flex items-center gap-2">
+                  {isRecording && (
+                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-pulse">
+                      <Radio className="size-3 animate-spin" />
+                      <span>Listening</span>
+                      {/* Audio waveform activity bars */}
+                      <div className="flex items-end gap-0.5 h-3 ml-1">
+                        {[0.4, 0.8, 1.0, 0.6, 0.3].map((factor, i) => (
+                          <span
+                            key={i}
+                            className="w-1 bg-rose-600 rounded-full transition-all duration-75"
+                            style={{ height: `${Math.max(3, Math.min(12, Math.round((audioVolume * factor) / 8)))}px` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {capabilities.speechRecognition ? (
+                    <Button
+                      type="button"
+                      variant={isRecording ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={handleToggleVoice}
+                      className="h-7 text-xs px-2.5 gap-1.5 font-semibold"
+                      title={isRecording ? 'Stop voice dictation' : 'Speak your answer using microphone'}
+                    >
+                      {isRecording ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-brand-600" />}
+                      <span>{isRecording ? 'Stop Mic' : 'Voice Answer'}</span>
+                    </Button>
+                  ) : (
+                    <span className="text-[11px] text-ink-muted">Voice dictation requires Web Speech API</span>
+                  )}
+                </div>
+              </div>
+
+              {voiceNotice && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center justify-between gap-2">
+                  <span>{voiceNotice}</span>
+                  <button type="button" onClick={() => setVoiceNotice(null)} className="text-xs font-bold underline">Dismiss</button>
+                </div>
+              )}
+
               <Textarea
                 id={answerId}
                 value={answer}
@@ -369,7 +518,7 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
                 disabled={busy !== null}
                 aria-invalid={answerError ? true : undefined}
                 aria-describedby={answerError ? `${answerHelpId} ${answerErrorId}` : answerHelpId}
-                placeholder="Answer as you would in the interview."
+                placeholder={isRecording ? 'Listening to your speech... speak your answer naturally.' : 'Answer as you would in the interview, or use Voice Answer to dictate.'}
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p id={answerHelpId} className="text-xs text-ink-muted">
