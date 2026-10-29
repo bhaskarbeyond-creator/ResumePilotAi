@@ -97,8 +97,15 @@ export function CoverLettersPage() {
       ? letters.filter((letter) => [letter.title, letter.companyName, letter.recipientName, letter.excerpt].some((field) => field.toLowerCase().includes(needle)))
       : letters;
     const sorted = [...filtered];
+    // Ties are broken by title so the order is stable between renders and fetches.
     if (sort === 'title-asc') sorted.sort((a, b) => a.title.localeCompare(b.title));
-    else sorted.sort((a, b) => (sort === 'updated-asc' ? timeOf(a.updatedAt) - timeOf(b.updatedAt) : timeOf(b.updatedAt) - timeOf(a.updatedAt)));
+    else {
+      const direction = sort === 'updated-asc' ? 1 : -1;
+      sorted.sort((a, b) => {
+        const delta = (timeOf(a.updatedAt) - timeOf(b.updatedAt)) * direction;
+        return delta !== 0 ? delta : a.title.localeCompare(b.title);
+      });
+    }
     return sorted;
   }, [letters, query, sort]);
 
@@ -227,6 +234,12 @@ export function CoverLettersPage() {
               </select>
             </div>
           </div>
+
+          <p className="sr-only" role="status">
+            {visible.length === letters.length
+              ? `Showing all ${letters.length} saved cover letters.`
+              : `Showing ${visible.length} of ${letters.length} saved cover letters.`}
+          </p>
 
           {visible.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-ink-muted">

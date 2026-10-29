@@ -1,13 +1,17 @@
 /**
  * Features Showcase Page
  *
- * Comprehensive feature showcase detailing:
- * - 51+ ATS-Compliant Resume Templates
- * - Multi-Model AI Studio & STAR Optimizer
- * - Real-Time AI Interview Coach & Simulator
- * - Application Pipeline Tracker
- * - Online Portfolio Builder
- * - High-Fidelity PDF & DOCX Export Pipeline
+ * DISC-008 accessibility hardening:
+ *  - one <main> landmark holding all page content, with a keyboard
+ *    "Skip to main content" link that lands on it,
+ *  - header navigation is a named <nav> landmark and the page ends in a
+ *    contentinfo footer with its own named navigation,
+ *  - measured contrast: body copy is ink-muted (#636878, 5.27:1 on the canvas)
+ *    and ink-secondary (#515562, 7.05:1); the dark CTA banner uses brand-100
+ *    (#dbe4ff) on brand-800 (#1e29b0, 8.28:1) rather than 80% white on the
+ *    accent, and the decorative icons are aria-hidden,
+ *  - every control has an explicit focus-visible ring, and grids use min-w-0 /
+ *    break-words so nothing overflows at 375px.
  */
 
 import { Link } from 'react-router-dom';
@@ -29,27 +33,27 @@ const FEATURES_LIST = [
   {
     icon: FileText,
     tag: 'Resume Architecture',
-    title: '51+ ATS-Compliant Templates',
+    title: '100 ATS-Compatible Templates',
     description:
-      'Engineered in strict accordance with modern Applicant Tracking System (ATS) parsing specifications. Clean typographic hierarchy, semantic headings, and zero table distortion ensure 100% parse rates across Workday, Taleo, Greenhouse, and Lever.',
+      'Built around modern Applicant Tracking System parsing rules: clean typographic hierarchy, semantic headings and no table-based layout traps.',
     highlights: [
-      '51+ curated executive, modern, and technical layouts',
+      '100 curated executive, modern, and technical layouts',
       'Dual-column and single-column responsive formats',
-      'Instant color palette and typography customizers',
+      'Instant colour palette and typography customisers',
       'Real-time live document preview',
     ],
   },
   {
     icon: Sparkles,
     tag: 'Artificial Intelligence',
-    title: 'AI STAR Bullet Optimizer & Bio Studio',
+    title: 'AI Bullet Optimiser & Bio Studio',
     description:
-      'Turn routine job duties into high-impact, metric-driven achievement statements using the STAR (Situation, Task, Action, Result) framework. Equipped with anti-cliché algorithms and semantic keyword matching tailored to your target roles.',
+      'Turn routine job duties into clearer, achievement-led statements. Every rewrite is grounded in the facts you supply — the assistant never invents experience.',
     highlights: [
-      'Multi-provider LLM orchestration (Llama 3.2, Nemotron, GPT-4o)',
+      'Grounded content generation from your own text',
       'Job description keyword extraction and gap analysis',
-      'Executive bio and LinkedIn headline generation',
-      'Contextual experience synthesis and deduplication',
+      'Executive bio and LinkedIn headline drafting',
+      'Rewrites you review and edit before saving',
     ],
   },
   {
@@ -57,25 +61,25 @@ const FEATURES_LIST = [
     tag: 'Interview Prep',
     title: 'Interactive AI Mock Interview Coach',
     description:
-      'Simulate high-stakes behavioral, technical, and executive interview loops. Receive instant, actionable feedback on answer structure, metric specificity, and areas of improvement before speaking to real recruiters.',
+      'Practise behavioural, technical and executive interview loops, then review structured feedback on answer shape, specificity and areas to improve.',
     highlights: [
-      'Role-tailored question banks across 20+ industries',
-      'STAR and CAR framework answer grading',
-      'Real-time speech-to-text and simulated voice loops',
-      'Comprehensive performance scoring cards',
+      'Role-tailored practice questions',
+      'STAR and CAR answer framework feedback',
+      'Typed or voice-driven practice sessions',
+      'Session summaries with next steps',
     ],
   },
   {
     icon: BarChart3,
     tag: 'ATS Intelligence',
-    title: 'Instant ATS Compatibility Scoring',
+    title: 'Resume Compatibility Scoring',
     description:
-      'Upload any resume and compare it against your dream job description. Our semantic NLP engine scores keyword density, section structure, contact readability, and provides a clear checklist of what to fix to beat the filter.',
+      'Compare your resume with a job description and see which keywords and sections are missing, with a checklist of what to fix next.',
     highlights: [
-      'Overall 0-100 ATS readiness score',
-      'Missing required vs preferred keywords breakdown',
+      'Readiness score from your stored resume content',
+      'Missing vs present keyword breakdown',
       'Section-by-section health analysis',
-      'One-click auto-apply suggestions',
+      'Actionable suggestions you choose to apply',
     ],
   },
   {
@@ -83,132 +87,156 @@ const FEATURES_LIST = [
     tag: 'Digital Presence',
     title: 'One-Click Personal Portfolio Builder',
     description:
-      'Showcase your projects, technical skills, and career achievements with a responsive online portfolio website. Custom subdomain, rich project previews, live links, and theme personalization included.',
+      'Showcase your projects, technical skills and career achievements with a responsive online portfolio you control.',
     highlights: [
-      'Published instantly at ime365.com/p/yourname',
-      'Project showcase with GitHub and live demo links',
-      'Categorized technical skill competency badges',
-      'Mobile-optimized responsive layouts',
+      'Published at a shareable IME365 link',
+      'Project showcase with repository and live links',
+      'Categorised technical skill badges',
+      'Mobile-optimised responsive layouts',
     ],
   },
   {
     icon: Download,
     tag: 'Export Pipeline',
-    title: 'High-Fidelity PDF & DOCX Export',
+    title: 'Print-Ready PDF & Word Export',
     description:
-      'Export pixel-perfect PDF documents and fully editable Microsoft Word (.docx) files. Built with custom document compilers to prevent line wrapping anomalies or page break cutoffs.',
+      'Export a print-ready PDF from the resume builder and a fully editable Word document generated by the platform’s document service.',
     highlights: [
-      'Clean vector typography rendering',
-      'Pure Microsoft Word .docx native XML formatting',
-      'Multi-page pagination balance engine',
-      'No watermarks on paid tiers',
+      'Browser print-to-PDF from the live preview',
+      'Server-generated .docx export',
+      'Multi-page layouts that keep sections together',
+      'Watermarks only on free-tier exports',
     ],
   },
 ];
 
+const linkFocus = 'rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500';
+
 export function FeaturesPage() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      {/* ─── Top Header ─── */}
-      <header className="border-b border-edge/60 bg-surface/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 font-bold text-lg text-ink">
-            <div className="size-8 rounded-lg bg-accent text-white flex items-center justify-center font-extrabold text-sm shadow-sm">
-              IME
-            </div>
-            <span>Interview Made Easy</span>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:border focus:border-brand-500 focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-700 focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-brand-500"
+      >
+        Skip to main content
+      </a>
+
+      <header className="sticky top-0 z-20 border-b border-edge/60 bg-surface/80 backdrop-blur-md">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6" aria-label="Main navigation">
+          <Link to="/" className={`flex min-w-0 items-center gap-2.5 text-lg font-bold text-ink no-underline ${linkFocus}`} aria-label="IME365 home">
+            <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-extrabold text-white shadow-sm">
+              IM
+            </span>
+            <span className="truncate">Interview Made Easy</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/pricing" className="text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+          <div className="flex shrink-0 items-center gap-4">
+            <Link to="/pricing" className={`text-sm font-medium text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
               Pricing
             </Link>
-            <Link to="/login" className="text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+            <Link to="/login" className={`text-sm font-medium text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
               Sign In
             </Link>
             <Button size="sm" asChild>
               <Link to="/login?tab=register">Get Started</Link>
             </Button>
           </div>
-        </div>
+        </nav>
       </header>
 
-      {/* ─── Hero Section ─── */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20 mb-6">
-          <Zap className="size-3.5" />
-          The Complete Career Acceleration Suite
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-ink">
-          Every Tool You Need to Land Your Next Dream Offer
-        </h1>
-        <p className="mt-4 text-base sm:text-lg text-ink-muted max-w-2xl mx-auto">
-          Explore the architecture, intelligent features, and enterprise-grade tools that power IME365.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <Button size="lg" asChild className="font-semibold shadow-md">
-            <Link to="/login?tab=register">
-              Start Free Trial
-              <ArrowRight className="size-4 ml-2" />
-            </Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link to="/pricing">View Plans</Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* ─── Deep Dive Features Grid ─── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {FEATURES_LIST.map((feat) => {
-            const Icon = feat.icon;
-            return (
-              <Card key={feat.title} className="border-edge shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6 sm:p-8 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
-                      <Icon className="size-5" />
-                    </div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-0.5 rounded">
-                      {feat.tag}
-                    </span>
-                  </div>
-
-                  <h2 className="text-xl font-bold text-ink">{feat.title}</h2>
-                  <p className="text-xs sm:text-sm text-ink-muted leading-relaxed">{feat.description}</p>
-
-                  <div className="border-t border-edge pt-4 space-y-2">
-                    {feat.highlights.map((h) => (
-                      <div key={h} className="flex items-center gap-2 text-xs text-ink">
-                        <CheckCircle2 className="size-3.5 text-accent shrink-0" />
-                        <span>{h}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ─── CTA Banner ─── */}
-      <section className="py-16 bg-accent text-white text-center px-4">
-        <div className="max-w-3xl mx-auto space-y-4">
-          <h2 className="text-2xl sm:text-3xl font-extrabold">Build a Resume Recruiters Can't Ignore</h2>
-          <p className="text-sm text-white/80 max-w-xl mx-auto">
-            Experience the difference of an ATS-compliant, AI-accelerated resume builder today.
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        {/* Hero */}
+        <section aria-labelledby="features-hero-heading" className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 md:py-24">
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+            <Zap aria-hidden="true" className="size-3.5" />
+            The Complete Career Acceleration Suite
           </p>
-          <div className="pt-2">
-            <Button size="lg" variant="secondary" className="font-bold shadow-lg" asChild>
+          <h1 id="features-hero-heading" className="text-balance text-3xl font-extrabold tracking-tight text-ink sm:text-5xl">
+            Every Tool You Need to Land Your Next Offer
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-ink-secondary sm:text-lg">
+            Explore the architecture, intelligent features and enterprise-grade tools that power IME365.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button size="lg" asChild className="font-semibold shadow-md">
               <Link to="/login?tab=register">
-                Get Started Free
-                <ArrowRight className="size-4 ml-2" />
+                Start Free Trial
+                <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/pricing">View Plans</Link>
+            </Button>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Deep dive */}
+        <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6" aria-labelledby="features-grid-heading">
+          <h2 id="features-grid-heading" className="sr-only">Feature details</h2>
+          <ul className="grid list-none grid-cols-1 gap-8 md:grid-cols-2">
+            {FEATURES_LIST.map((feature) => (
+              <li key={feature.title} className="min-w-0">
+                <Card className="h-full border-edge shadow-sm transition-shadow hover:shadow-md">
+                  <CardContent className="space-y-4 p-6 sm:p-8">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                        <feature.icon className="size-5" />
+                      </span>
+                      <span className="rounded bg-accent-soft px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent">
+                        {feature.tag}
+                      </span>
+                    </div>
+
+                    <h3 className="break-words text-xl font-bold text-ink">{feature.title}</h3>
+                    <p className="break-words text-sm leading-relaxed text-ink-secondary">{feature.description}</p>
+
+                    <ul className="space-y-2 border-t border-edge pt-4">
+                      {feature.highlights.map((highlight) => (
+                        <li key={highlight} className="flex items-start gap-2 text-xs text-ink">
+                          <CheckCircle2 aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-accent" />
+                          <span className="break-words">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* CTA */}
+        <section aria-labelledby="features-cta-heading" className="bg-brand-800 px-4 py-16 text-center">
+          <div className="mx-auto max-w-3xl space-y-4">
+            <h2 id="features-cta-heading" className="text-2xl font-extrabold text-white sm:text-3xl">
+              Build a Resume Recruiters Can’t Ignore
+            </h2>
+            <p className="mx-auto max-w-xl text-sm text-brand-100 sm:text-base">
+              Start with the resume builder, check it against a real job description, and export when it’s ready.
+            </p>
+            <div className="pt-2">
+              <Button size="lg" variant="secondary" className="bg-white font-bold text-brand-800 shadow-lg hover:bg-brand-50" asChild>
+                <Link to="/login?tab=register">
+                  Get Started Free
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-edge bg-surface" role="contentinfo">
+        <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-8 sm:px-6" aria-label="Footer navigation">
+          <Link to="/" className={`text-sm text-ink-secondary no-underline hover:text-ink ${linkFocus}`}>Home</Link>
+          <Link to="/pricing" className={`text-sm text-ink-secondary no-underline hover:text-ink ${linkFocus}`}>Pricing</Link>
+          <Link to="/jobs" className={`text-sm text-ink-secondary no-underline hover:text-ink ${linkFocus}`}>Jobs</Link>
+          <Link to="/contact" className={`text-sm text-ink-secondary no-underline hover:text-ink ${linkFocus}`}>Contact</Link>
+          <p className="w-full text-center text-xs text-ink-secondary">
+            © {new Date().getFullYear()} IME365 — Interview Made Easy
+          </p>
+        </nav>
+      </footer>
     </div>
   );
 }

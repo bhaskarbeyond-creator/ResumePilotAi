@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NoticeRegions, type Notice } from '@/components/settings/notice-regions';
 import { SavedItem, titleId } from '@/components/favourites/saved-item';
+import { JobApplicationModal } from '@/components/jobs/job-application-modal';
 import { cn } from '@/lib/utils';
 import { FAVOURITES_QUERY_KEY, listFavourites, removeFavourite, restoreFavourite, type Favourite } from '@/lib/favourites';
 import {
@@ -28,6 +29,8 @@ import {
 } from '@/lib/favourite-display';
 
 const HEADING_ID = 'favourites-heading';
+/** Job ids the application endpoint accepts (POST /api/jobs/:jobId/applications). */
+const APPLICATION_JOB_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const UNDO_ID = 'favourites-undo';
 
 const countLabel = (count: number) => (count === 1 ? '1 saved item' : `${count} saved items`);
@@ -58,6 +61,8 @@ export function FavouritesPage() {
   // The last removal, which Undo saves again. It belongs to the notice next to it.
   const [undo, setUndo] = useState<{ item: Favourite; name: string } | null>(null);
   const [restoring, setRestoring] = useState(false);
+  // The saved job whose application dialog is open (the shared modal).
+  const [applying, setApplying] = useState<Favourite | null>(null);
   const [removingIds, setRemovingIds] = useState<ReadonlySet<string>>(new Set());
   const removingRef = useRef(new Set<string>());
   const announce = (next: Notice, nextUndo: { item: Favourite; name: string } | null = null) => {
@@ -282,14 +287,50 @@ export function FavouritesPage() {
 
         {loaded && visible.length > 0 && (
           <ul role="list" aria-label="Saved items" className="space-y-3">
-            {visible.map(({ item, view }) => (
-              <li key={item.itemId}>
-                <SavedItem item={item} view={view} removing={removingIds.has(item.itemId)} onRemove={(target, targetView) => void remove(target, targetView)} />
-              </li>
-            ))}
+            {visible.map(({ item, view }) => {
+              // Apply is offered only for a job that is open on the board and whose
+              // stored id is one the application endpoint accepts.
+              const canApply = view.kind === 'job'
+                && view.state?.tone === 'listed'
+                && APPLICATION_JOB_ID.test(item.itemId);
+              return (
+                <li key={item.itemId} className="space-y-2">
+                  <SavedItem item={item} view={view} removing={removingIds.has(item.itemId)} onRemove={(target, targetView) => void remove(target, targetView)} />
+                  {canApply && (
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={() => setApplying(item)}
+                        aria-label={`Apply to ${favouriteName(view)}`}
+                      >
+                        Apply now
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
+
+      <JobApplicationModal
+        isOpen={Boolean(applying)}
+        onClose={() => setApplying(null)}
+        job={applying ? {
+          id: applying.itemId,
+          title: applying.job?.title || String(applying.data.title ?? ''),
+          company: applying.job?.company || String(applying.data.company ?? ''),
+          location: applying.job?.location || String(applying.data.location ?? ''),
+        } : null}
+        onApplied={() => {
+          // The dialog keeps its own confirmation screen (with the link to the
+          // applications tracker); closing it here would hide the proof that the
+          // server accepted the application.
+          setNotice({ tone: 'success', text: 'Application submitted.' });
+          void queryClient.invalidateQueries({ queryKey: FAVOURITES_QUERY_KEY });
+        }}
+      />
     </div>
   );
 }

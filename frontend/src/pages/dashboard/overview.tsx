@@ -16,6 +16,7 @@ import { get, post, del, normalizeError } from '@/lib/api-client';
 import { resumeQualityScore } from '@/lib/resume-score';
 import { ATS_READY_THRESHOLD, computeResumeMetrics } from '@/lib/resume-metrics';
 import { getTemplateMeta } from '@/lib/template-catalog';
+import { JobApplicationModal } from '@/components/jobs/job-application-modal';
 import { cn } from '@/lib/utils';
 import {
   FileText,
@@ -33,6 +34,7 @@ import {
   Target,
   RefreshCw,
   ExternalLink,
+  AlertCircle,
   Clock,
   PenLine,
   UserCheck,
@@ -92,6 +94,12 @@ export function DashboardOverview() {
 
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
+  // A failed read is shown, never disguised as "no jobs".
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  // Bookmarks and the activity stream are secondary: their failures are reported, not swallowed.
+  const [secondaryError, setSecondaryError] = useState<string | null>(null);
+  // The job whose application dialog is open (the same modal the job board uses).
+  const [applyJob, setApplyJob] = useState<JobListing | null>(null);
 
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
   const [favouritesList, setFavouritesList] = useState<any[]>([]);
@@ -140,8 +148,11 @@ export function DashboardOverview() {
       }
       setRecentResumesDelta(recent);
 
-    } catch {
+    } catch (err) {
+      // Resumes drive the ATS readiness figure: a failed read must be visible,
+      // never rendered as "not scored".
       setResumes([]);
+      setSecondaryError(`Your resumes couldn’t be loaded: ${normalizeError(err).message}`);
     }
 
     // 3. Fetch Top Jobs from MariaDB
@@ -149,9 +160,14 @@ export function DashboardOverview() {
       const jobsRes = await get<{ jobs: JobListing[] }>('/jobs-data');
       if (jobsRes?.jobs && Array.isArray(jobsRes.jobs)) {
         setJobs(jobsRes.jobs.slice(0, 4));
+        setJobsError(null);
+      } else {
+        setJobs([]);
+        setJobsError('The job board returned an unexpected response.');
       }
-    } catch {
+    } catch (err) {
       setJobs([]);
+      setJobsError(normalizeError(err).message || 'Open jobs could not be loaded.');
     } finally {
       setJobsLoading(false);
     }
@@ -168,8 +184,10 @@ export function DashboardOverview() {
         });
         setFavourites(favIds);
       }
-    } catch {
-      // Non-blocking
+    } catch (err) {
+      setFavouritesList([]);
+      setFavourites(new Set());
+      setSecondaryError(`Saved items couldn’t be loaded: ${normalizeError(err).message}`);
     }
 
     // 5. Fetch Cover Letters (for activity stream)
@@ -178,8 +196,9 @@ export function DashboardOverview() {
       if (coversRes?.covers && Array.isArray(coversRes.covers)) {
         setCoversList(coversRes.covers);
       }
-    } catch {
-      // Non-blocking
+    } catch (err) {
+      setCoversList([]);
+      setSecondaryError((previous) => previous ?? `Cover letters couldn’t be loaded: ${normalizeError(err).message}`);
     }
   }, []);
 
@@ -238,8 +257,12 @@ export function DashboardOverview() {
       // Refresh favourites list for activity stream
       const refreshedFavs = await get<{ favourites: any[] }>('/favourites');
       if (refreshedFavs?.favourites) setFavouritesList(refreshedFavs.favourites);
+      setSecondaryError(null);
     } catch (err) {
-      console.error('Failed to toggle favourite:', err);
+      // The bookmark did not change: say so instead of leaving the UI out of step.
+      setSecondaryError(
+        `${isFav ? 'The job wasn’t removed from your saved items' : 'The job wasn’t saved'}: ${normalizeError(err).message}`,
+      );
     }
   };
 
@@ -449,6 +472,15 @@ export function DashboardOverview() {
           <span>Failed to load candidate metrics: {statsError}</span>
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => void loadData()}>
             Retry
+          </Button>
+        </div>
+      )}
+
+      {secondaryError && (
+        <div role="alert" className="flex flex-col gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-xs text-warning-800 sm:flex-row sm:items-center sm:justify-between">
+          <span className="min-w-0 flex-1">{secondaryError}</span>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 self-start text-[11px] sm:self-auto" onClick={() => void loadData()}>
+            <RefreshCw aria-hidden="true" className="size-3" /> Retry
           </Button>
         </div>
       )}
@@ -973,9 +1005,11 @@ export function DashboardOverview() {
               <div>
                 <h2 className="text-base font-bold text-ink flex items-center gap-2">
                   <Briefcase className="size-4 text-accent" />
-                  Top Job Matches for You
+                  Recently posted jobs
                 </h2>
-                <p className="text-xs text-ink-muted">Curated positions matching your profile and skills</p>
+                <p className="text-xs text-ink-muted">
+                  Newest listings from the public job board — not personalised to your profile
+                </p>
               </div>
               <Link
                 to="/dashboard/jobs"
@@ -992,6 +1026,14 @@ export function DashboardOverview() {
                 <Skeleton className="h-16 w-full rounded-xl" />
                 <Skeleton className="h-16 w-full rounded-xl" />
               </div>
+            ) : jobsError ? (
+              <div role="alert" className="flex flex-col gap-2 rounded-xl border border-error-200 bg-error-50 p-3 text-xs text-error-800 sm:flex-row sm:items-center">
+                <AlertCircle aria-hidden="true" className="size-4 shrink-0" />
+                <span className="min-w-0 flex-1">Open jobs couldn’t be loaded: {jobsError}</span>
+                <Button size="sm" variant="outline" className="h-7 shrink-0 self-start text-[11px] sm:self-auto" onClick={() => void loadData()}>
+                  <RefreshCw aria-hidden="true" className="size-3" /> Retry
+                </Button>
+              </div>
             ) : jobs.length === 0 ? (
               <div className="py-12 text-center text-xs text-ink-muted">
                 <Briefcase className="mx-auto mb-2 size-8 text-ink-subtle" />
@@ -1005,7 +1047,8 @@ export function DashboardOverview() {
               <div className="space-y-2.5">
                 {jobs.map((job) => {
                   const isFav = favourites.has(job.id);
-                  const companyName = job.company_name || job.company || 'Enterprise Partner';
+                  // Only what the listing carries: a missing company is shown as missing.
+                  const companyName = job.company_name || job.company || 'Company not listed';
                   const postTime = postedLabel(job.created_at || job.createdAt);
 
                   return (
@@ -1058,12 +1101,11 @@ export function DashboardOverview() {
                           variant="ghost"
                           size="sm"
                           className="h-8 text-xs font-semibold gap-1 text-accent hover:text-accent hover:bg-accent/10"
-                          asChild
+                          onClick={() => setApplyJob(job)}
+                          aria-label={`Apply to ${job.title}${companyName ? ` at ${companyName}` : ''}`}
                         >
-                          <Link to={`/dashboard/jobs?id=${job.id}`}>
-                            Apply
-                            <ExternalLink className="size-3" />
-                          </Link>
+                          Apply
+                          <ExternalLink aria-hidden="true" className="size-3" />
                         </Button>
                       </div>
                     </div>
@@ -1200,6 +1242,19 @@ export function DashboardOverview() {
           </section>
         </div>
       </div>
+
+      {/* The same accessible application dialog the public job board uses. */}
+      <JobApplicationModal
+        isOpen={Boolean(applyJob)}
+        onClose={() => setApplyJob(null)}
+        job={applyJob ? {
+          id: applyJob.id,
+          title: applyJob.title,
+          company: applyJob.company_name || applyJob.company || 'Company not listed',
+          location: applyJob.location ?? '',
+        } : null}
+        onApplied={() => { setApplyJob(null); void loadData(); }}
+      />
     </div>
   );
 }
@@ -1241,7 +1296,7 @@ function AtsDonut({ score }: { score: number | null }) {
             strokeLinecap="round"
             strokeDasharray={DONUT_CIRCUMFERENCE}
             strokeDashoffset={offset}
-            className={cn('transition-all duration-700', ringColor)}
+            className={cn('transition-all duration-700 motion-reduce:transition-none', ringColor)}
           />
         )}
       </svg>

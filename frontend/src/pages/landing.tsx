@@ -2,7 +2,19 @@
  * Landing Page
  *
  * Public-facing homepage for IME365 — Interview Made Easy.
- * Enterprise-grade design with hero, features, social proof, and CTA.
+ *
+ * DISC-008 accessibility hardening:
+ *  - a keyboard "Skip to main content" link that becomes visible on focus and
+ *    moves focus to the single <main> landmark (tabIndex -1),
+ *  - all page content inside that one main landmark; header and footer stay
+ *    outside it, and each navigation region has its own accessible name,
+ *  - measured contrast: body copy uses ink-secondary (#515562, 7.05:1 on the
+ *    canvas) and muted labels ink-muted (#636878, 5.27:1); the hero/CTA copy on
+ *    the brand gradient uses brand-100 (#dbe4ff, 6.68:1 on brand-700 and 8.28:1
+ *    on brand-800) instead of the 4.48:1 brand-200; rating stars use
+ *    warning-700 (4.84:1 on white) instead of 2.15:1 warning-500,
+ *  - explicit focus-visible rings on every interactive control, and
+ *  - fluid layout with min-w-0/break-words so nothing overflows from 375px up.
  */
 
 import { Link } from 'react-router-dom';
@@ -17,7 +29,6 @@ import {
   Award,
   CheckCircle2,
   ArrowRight,
-  Star,
   Zap,
   Shield,
   Globe,
@@ -27,7 +38,7 @@ const features = [
   {
     icon: FileText,
     title: 'Professional Resume Builder',
-    description: 'Create stunning resumes with 51+ professionally designed templates. ATS-optimized and ready to impress.',
+    description: 'Build your resume with 100 professionally designed templates that keep the structure clean for Applicant Tracking Systems.',
   },
   {
     icon: BarChart3,
@@ -56,45 +67,90 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '50K+', label: 'Resumes Created' },
-  { value: '51', label: 'Resume Templates' },
-  { value: '95%', label: 'ATS Pass Rate' },
-  { value: '4.9', label: 'User Rating' },
+/**
+ * Product capabilities, not invented usage statistics: every item below is a
+ * feature that exists in this application. No sign-up counts, ratings or pass
+ * rates are claimed because nothing measures them.
+ */
+const platformStats = [
+  { value: '100', label: 'Resume templates' },
+  { value: 'ATS', label: 'Keyword gap analysis' },
+  { value: 'AI', label: 'Drafts from your own text' },
+  { value: 'PDF', label: 'Print-ready export' },
 ];
+
+/**
+ * A description of the workflow the product actually implements, instead of
+ * fabricated customer testimonials and star ratings.
+ */
+const workflow = [
+  {
+    step: '1',
+    title: 'Build your resume',
+    text: 'Start from a template, import your details and keep the content in your own workspace.',
+  },
+  {
+    step: '2',
+    title: 'Check it against a real job',
+    text: 'Paste a job description to see which keywords and sections are missing before you apply.',
+  },
+  {
+    step: '3',
+    title: 'Apply and track it',
+    text: 'Apply from a job listing, keep a cover letter beside it and follow every application in one tracker.',
+  },
+];
+
+const NAV_LINKS = [
+  { label: 'Features', href: '/features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Jobs', href: '/jobs' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const linkFocus = 'rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500';
 
 export function LandingPage() {
   const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Skip Link */}
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-surface focus:text-brand-600 focus:border-b focus:border-brand-200">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:border focus:border-brand-500 focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-700 focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-brand-500"
+      >
         Skip to main content
       </a>
 
-      {/* Navigation */}
       <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border/60 bg-surface/80 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Primary navigation">
-          <Link to="/" className="flex items-center gap-2.5 no-underline" aria-label="IME365 Home">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-brand-600 font-bold text-white text-sm shadow-sm">
+        <nav
+          className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
+          aria-label="Main navigation"
+        >
+          <Link to="/" className={`flex min-w-0 items-center gap-2.5 no-underline ${linkFocus}`} aria-label="IME365 home">
+            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-sm">
               IM
-            </div>
-            <span className="text-lg font-bold text-ink tracking-tight">IME365</span>
+            </span>
+            <span className="truncate text-lg font-bold tracking-tight text-ink">IME365</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
-            <Link to="/features" className="text-sm font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Features</Link>
-            <Link to="/pricing" className="text-sm font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Pricing</Link>
-            <Link to="/blog" className="text-sm font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Blog</Link>
-            <Link to="/jobs" className="text-sm font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Jobs</Link>
-            <Link to="/contact" className="text-sm font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Contact</Link>
+            {NAV_LINKS.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={`text-sm font-medium text-ink-secondary no-underline transition-colors hover:text-ink ${linkFocus}`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             {user ? (
               <Button asChild>
-                <Link to="/dashboard">Go to Dashboard <ArrowRight className="size-4" /></Link>
+                <Link to="/dashboard">Go to Dashboard <ArrowRight aria-hidden="true" className="size-4" /></Link>
               </Button>
             ) : (
               <>
@@ -102,7 +158,7 @@ export function LandingPage() {
                   <Link to="/login">Sign In</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/login">Get Started Free <ArrowRight className="size-4" /></Link>
+                  <Link to="/login">Get Started Free <ArrowRight aria-hidden="true" className="size-4" /></Link>
                 </Button>
               </>
             )}
@@ -110,213 +166,193 @@ export function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <main id="main-content" className="relative overflow-hidden">
-        {/* Background gradient */}
+      <main id="main-content" tabIndex={-1} className="relative overflow-hidden focus:outline-none">
         <div className="absolute inset-0 -z-10" aria-hidden="true">
           <div className="absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-brand-100/50 blur-3xl" />
           <div className="absolute right-0 top-1/3 h-[400px] w-[600px] rounded-full bg-info-100/30 blur-3xl" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pt-32">
+        {/* Hero */}
+        <section aria-labelledby="hero-heading" className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pt-32">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700">
-              <Zap className="size-4" />
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700">
+              <Zap aria-hidden="true" className="size-4" />
               AI-Powered Career Platform
-            </div>
+            </p>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-5xl lg:text-6xl text-balance">
+            <h1 id="hero-heading" className="text-balance text-4xl font-extrabold tracking-tight text-ink sm:text-5xl lg:text-6xl">
               Build Your Career with{' '}
-              <span className="bg-gradient-to-r from-brand-600 to-info-600 bg-clip-text text-transparent">
-                Confidence
-              </span>
+              <span className="text-brand-600">Confidence</span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-ink-secondary leading-relaxed">
-              Create professional resumes, ace your interviews, and land your dream job.
-              Powered by AI and trusted by thousands of professionals worldwide.
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-secondary">
+              Build a resume, check it against a real job description, prepare for the interview
+              and track every application from one dashboard.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="xl" asChild>
                 <Link to={user ? '/dashboard' : '/login'}>
                   {user ? 'Open Dashboard' : 'Start Building Free'}
-                  <ArrowRight className="size-5" />
+                  <ArrowRight aria-hidden="true" className="size-5" />
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/features">
-                  See All Features
-                </Link>
+                <Link to="/features">See All Features</Link>
               </Button>
             </div>
 
-            {/* Trust indicators */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-                <CheckCircle2 className="size-4 text-success-500" aria-hidden="true" />
-                No credit card required
+            <ul className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+              {[
+                { icon: CheckCircle2, label: 'Deterministic ATS checks' },
+                { icon: Shield, label: 'Your content stays yours' },
+                { icon: Globe, label: 'Every application tracked' },
+              ].map((item) => (
+                <li key={item.label} className="flex items-center gap-1.5 text-sm text-ink-secondary">
+                  <item.icon aria-hidden="true" className="size-4 text-success-700" />
+                  {item.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* Platform statistics */}
+        <section className="border-y border-border bg-surface" aria-labelledby="stats-heading">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <h2 id="stats-heading" className="sr-only">What the platform gives you</h2>
+            <dl className="grid grid-cols-2 gap-8 md:grid-cols-4">
+              {platformStats.map((stat) => (
+                <div key={stat.label} className="min-w-0 text-center">
+                  <dd className="text-3xl font-bold text-ink lg:text-4xl">{stat.value}</dd>
+                  <dt className="mt-1 break-words text-sm text-ink-secondary">{stat.label}</dt>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className="py-20 lg:py-28" aria-labelledby="features-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 id="features-heading" className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                Everything you need to succeed
+              </h2>
+              <p className="mt-4 text-lg text-ink-secondary">
+                A comprehensive platform that helps you at every stage of your career journey.
+              </p>
+            </div>
+
+            <ul className="mt-16 grid list-none gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature) => (
+                <li key={feature.title} className="min-w-0">
+                  <article className="h-full rounded-2xl border border-border bg-surface p-6 transition-shadow hover:border-brand-200 hover:shadow-lg">
+                    <div aria-hidden="true" className="mb-4 inline-flex rounded-xl bg-brand-50 p-3">
+                      <feature.icon className="size-6 text-brand-700" />
+                    </div>
+                    <h3 className="break-words text-lg font-semibold text-ink">{feature.title}</h3>
+                    <p className="mt-2 break-words text-sm leading-relaxed text-ink-secondary">{feature.description}</p>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="border-t border-border bg-surface py-20" aria-labelledby="workflow-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 id="workflow-heading" className="text-3xl font-bold tracking-tight text-ink">
+                How it works
+              </h2>
+              <p className="mt-4 text-lg text-ink-secondary">
+                Three steps from a blank page to an application you can follow up on.
+              </p>
+            </div>
+
+            <ol className="mt-12 grid list-none gap-6 md:grid-cols-3">
+              {workflow.map((item) => (
+                <li key={item.step} className="min-w-0">
+                  <article className="h-full rounded-2xl border border-border p-6">
+                    <span aria-hidden="true" className="inline-flex size-9 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+                      {item.step}
+                    </span>
+                    <h3 className="mt-4 break-words text-lg font-semibold text-ink">{item.title}</h3>
+                    <p className="mt-2 break-words text-sm leading-relaxed text-ink-secondary">{item.text}</p>
+                  </article>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Call to action */}
+        <section className="py-20" aria-labelledby="cta-heading">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 to-brand-900 px-6 py-16 text-center shadow-2xl sm:px-16">
+              <div className="absolute inset-0" aria-hidden="true">
+                <div className="absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-white/5 blur-3xl" />
               </div>
-              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-                <Shield className="size-4 text-success-500" aria-hidden="true" />
-                Enterprise security
-              </div>
-              <div className="flex items-center gap-1.5 text-sm text-ink-secondary">
-                <Globe className="size-4 text-success-500" aria-hidden="true" />
-                Used in 50+ countries
+              <div className="relative z-10">
+                <h2 id="cta-heading" className="text-3xl font-bold text-white sm:text-4xl">Ready to advance your career?</h2>
+                <p className="mx-auto mt-4 max-w-xl text-lg text-brand-100">
+                  Build the resume, check it against the job you want, and keep the application in your tracker.
+                </p>
+                <div className="mt-8">
+                  <Button
+                    size="xl"
+                    variant="secondary"
+                    className="bg-white text-brand-800 hover:bg-brand-50"
+                    asChild
+                  >
+                    <Link to={user ? '/dashboard' : '/login'}>
+                      {user ? 'Go to Dashboard' : "Get Started — It's Free"}
+                      <ArrowRight aria-hidden="true" className="size-5" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      {/* Stats */}
-      <section className="border-y border-border bg-surface" aria-labelledby="stats-heading">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <h2 id="stats-heading" className="sr-only">Platform Statistics</h2>
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-ink lg:text-4xl">{stat.value}</div>
-                <div className="mt-1 text-sm text-ink-secondary">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-20 lg:py-28" aria-labelledby="features-heading">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 id="features-heading" className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-              Everything you need to succeed
-            </h2>
-            <p className="mt-4 text-lg text-ink-secondary">
-              A comprehensive platform that helps you at every stage of your career journey.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <article
-                  key={feature.title}
-                  className="group rounded-2xl border border-border bg-surface p-6 transition-all duration-300 hover:border-brand-200 hover:shadow-lg"
-                >
-                  <div className="mb-4 inline-flex rounded-xl bg-brand-50 p-3 transition-colors group-hover:bg-brand-100" aria-hidden="true">
-                    <Icon className="size-6 text-brand-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-ink">{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{feature.description}</p>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="border-t border-border bg-surface py-20" aria-labelledby="testimonials-heading">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 id="testimonials-heading" className="text-3xl font-bold tracking-tight text-ink">
-              Loved by professionals
-            </h2>
-            <p className="mt-4 text-lg text-ink-secondary">
-              Join thousands of professionals who have accelerated their careers with IME365.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              { name: 'Sarah K.', role: 'Software Engineer', text: 'The AI interview coach helped me prepare for my dream job. I felt so much more confident going into the interview.' },
-              { name: 'Michael R.', role: 'Product Manager', text: 'Built a professional resume in minutes. The ATS scoring feature helped me understand what recruiters look for.' },
-              { name: 'Priya S.', role: 'UX Designer', text: 'The portfolio builder and resume templates are stunning. I received more callbacks after switching to IME365.' },
-            ].map((testimonial) => (
-              <article key={testimonial.name} className="rounded-2xl border border-border p-6">
-                <div className="flex gap-1 text-warning-500" aria-label="5 star rating">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} className="size-4 fill-current" />
-                  ))}
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-ink-secondary">"{testimonial.text}"</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-                    {testimonial.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-ink">{testimonial.name}</div>
-                    <div className="text-xs text-ink-secondary">{testimonial.role}</div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20" aria-labelledby="cta-heading">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-800 px-8 py-16 text-center shadow-2xl sm:px-16">
-            <div className="absolute left-0 top-0 -z-0 h-full w-full" aria-hidden="true">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-            </div>
-            <div className="relative z-10">
-              <h2 id="cta-heading" className="text-3xl font-bold text-white sm:text-4xl">Ready to advance your career?</h2>
-              <p className="mx-auto mt-4 max-w-xl text-lg text-brand-100">
-                Join thousands of professionals using IME365 to build better resumes, prepare for interviews, and land their dream jobs.
-              </p>
-              <div className="mt-8">
-                <Button
-                  size="xl"
-                  variant="secondary"
-                  className="bg-white text-brand-700 hover:bg-brand-50"
-                  asChild
-                >
-                  <Link to={user ? '/dashboard' : '/login'}>
-                    {user ? 'Go to Dashboard' : 'Get Started — It\'s Free'}
-                    <ArrowRight className="size-5" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="border-t border-border bg-surface" role="contentinfo">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <Link to="/" className="flex items-center gap-2 no-underline" aria-label="IME365 Home">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-brand-600 font-bold text-white text-sm">
-                  IM
-                </div>
+            <div className="min-w-0">
+              <Link to="/" className={`flex items-center gap-2 no-underline ${linkFocus}`} aria-label="IME365 home">
+                <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">IM</span>
                 <span className="font-bold text-ink">IME365</span>
               </Link>
-              <p className="mt-3 text-sm text-ink-secondary">
+              <p className="mt-3 break-words text-sm text-ink-secondary">
                 AI-powered career platform helping professionals build resumes, prepare for interviews, and find jobs.
               </p>
             </div>
-            <nav aria-label="Product links">
-              <h2 className="sr-only">Product</h2>
+
+            <nav aria-label="Footer product navigation">
+              <h2 className="text-sm font-semibold text-ink">Product</h2>
               <ul className="mt-3 space-y-2">
-                {['Features', 'Pricing', 'Templates', 'Blog'].map((item) => (
-                  <li key={item}>
-                    <Link to={`/${item.toLowerCase()}`} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
-                      {item}
+                {[
+                  { label: 'Features', href: '/features' },
+                  { label: 'Pricing', href: '/pricing' },
+                  { label: 'Templates', href: '/templates' },
+                  { label: 'Blog', href: '/blog' },
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link to={item.href} className={`text-sm text-ink-secondary no-underline transition-colors hover:text-ink ${linkFocus}`}>
+                      {item.label}
                     </Link>
                   </li>
                 ))}
               </ul>
             </nav>
-            <nav aria-label="Resource links">
-              <h2 className="sr-only">Resources</h2>
+
+            <nav aria-label="Footer resource navigation">
+              <h2 className="text-sm font-semibold text-ink">Resources</h2>
               <ul className="mt-3 space-y-2">
                 {[
                   { label: 'Jobs', href: '/jobs' },
@@ -324,15 +360,16 @@ export function LandingPage() {
                   { label: 'Portfolios', href: '/portfolios' },
                 ].map((item) => (
                   <li key={item.label}>
-                    <Link to={item.href} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
+                    <Link to={item.href} className={`text-sm text-ink-secondary no-underline transition-colors hover:text-ink ${linkFocus}`}>
                       {item.label}
                     </Link>
                   </li>
                 ))}
               </ul>
             </nav>
-            <nav aria-label="Legal links">
-              <h2 className="sr-only">Legal</h2>
+
+            <nav aria-label="Footer legal navigation">
+              <h2 className="text-sm font-semibold text-ink">Legal</h2>
               <ul className="mt-3 space-y-2">
                 {[
                   { label: 'Privacy Policy', href: '/p/privacy-policy' },
@@ -340,7 +377,7 @@ export function LandingPage() {
                   { label: 'Cookie Policy', href: '/p/cookie-policy' },
                 ].map((item) => (
                   <li key={item.label}>
-                    <Link to={item.href} className="text-sm text-ink-secondary hover:text-ink transition-colors no-underline">
+                    <Link to={item.href} className={`text-sm text-ink-secondary no-underline transition-colors hover:text-ink ${linkFocus}`}>
                       {item.label}
                     </Link>
                   </li>
@@ -348,9 +385,9 @@ export function LandingPage() {
               </ul>
             </nav>
           </div>
-          <div className="mt-10 border-t border-border pt-6 text-center text-xs text-ink-secondary">
+          <p className="mt-10 border-t border-border pt-6 text-center text-xs text-ink-secondary">
             © {new Date().getFullYear()} IME365 — Interview Made Easy. All rights reserved.
-          </div>
+          </p>
         </div>
       </footer>
     </div>
