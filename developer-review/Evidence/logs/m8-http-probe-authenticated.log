@@ -1,0 +1,32 @@
+# M8 authenticated HTTP probe — 2026-10-29T07:46:19Z
+# identity: local HMAC test token (TEST_AUTH_HMAC_SECRET, NODE_ENV=development) — NOT Firebase
+# data: IN_MEMORY_REPOSITORY=1 — NOT MariaDB
+
+-- contract-gap paths that exist only in the client --
+SA  GET    /api/admin/operations/backup                   404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"84049e38-de57-4979-8ab6-75e4de90c5f1"}}
+SA  POST   /api/admin/operations/backup                   404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"76cb053d-e7fa-4dd6-95fe-ce756ec67147"}}
+SA  POST   /api/admin/operations/cache-clear              404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"d564d58d-5b61-4bf0-8ec3-035c14aeb1d7"}}
+SA  GET    /api/admin/queues                              404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"a715eb5b-c5ab-4815-af7a-9d942286936d"}}
+SA  POST   /api/admin/queues/dead-letter-queue/purge      404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"a82ef1f5-eeab-4736-884f-830e1c2eecf4"}}
+SA  POST   /api/admin/jobs/job-x/moderate                 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"9de887bb-55d2-4e05-b7bd-3814cfb47089"}}
+SA  POST   /api/admin/employer-applications/user-x/verify 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"822519b9-b21c-48df-93c9-4b70956be8d1"}}
+SA  POST   /api/admin/users/user-x/status                 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"79a175e6-bed2-4a7a-a5a6-3a16c775de8e"}}
+SA  GET    /api/platform/status                           404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"ebf702fe-6db6-47c3-9caa-e0a60ba7f385"}}
+SA  GET    /api/blog/posts                                404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"09ca4f35-537f-41c4-9d91-5e36a229a6de"}}
+
+-- the real operations the client should be calling --
+SA  GET    /api/admin/platform/status                     400  {"success":false,"code":"TENANT_ID_REQUIRED","error":"tenantId query parameter is required."}
+SA  GET    /api/platform/queues                           503  {"error":{"code":"QUEUE_QUERY_UNAVAILABLE","message":"Queue telemetry is unavailable.","requestId":"90cbe59d-fe44-4e44-9
+SA  PATCH  /api/admin/jobs/job-x                          404  {"success":false,"code":"NOT_FOUND","error":"Job not found."}
+SA  PATCH  /api/admin/users/audit_user                    500  {"success":false,"code":"app/invalid-credential","error":"Unable to update user.","requestId":"97b27b32-a997-48c2-9213-4
+SA  GET    /api/blog-data                                 200  {"success":true,"posts":[]}
+SA  GET    /api/enterprise/platform/tenants               404  {"error":{"code":"ENTERPRISE_DISABLED","message":"Enterprise tenancy is disabled for this deployment.","configurationSta
+
+-- public + candidate surfaces --
+US  GET    /api/jobs                                      404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"3c5d54fb-54d5-477a-b944-168265bd3ca5"}}
+US  GET    /api/jobs-data                                 200  {"success":true,"jobs":[]}
+US  GET    /api/notifications-data                        200  {"success":true,"notifications":[]}
+US  POST   /api/notify/email                              404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"45fff249-e645-4d77-8668-2dd6dc05043b"}}
+US  POST   /api/billing/validate-coupon                   404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"6e85d5ad-ba69-460e-9dbb-1477f93810ab"}}
+US  POST   /api/coupons/validate                          404  {"success":false,"valid":false,"error":"Coupon code \"ABC\" does not exist."}
+US  POST   /api/contact                                   503  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId":"f394c3a3

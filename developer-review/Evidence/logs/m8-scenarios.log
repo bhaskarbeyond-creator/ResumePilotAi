@@ -1,0 +1,41 @@
+# M8 scenario runner (HTTP legs) — 2026-10-29T07:46:48Z
+# identity: local HMAC test token; data: IN_MEMORY_REPOSITORY=1 (NOT MariaDB); no browser
+
+## R-05 resume save with a photo that exceeds the 256 KB JSON body budget
+POST /api/resumes/res-audit-01 (create/upsert small)       HTTP 200  {"success":true,"resume":{"title":"audit probe","template":"modern","content":{},"createdAt":"2026-10-29T07:46:48.077Z","updatedAt
+POST same with 2 KB photo (control)                        HTTP 200  {"success":true,"resume":{"title":"audit probe","template":"modern","content":{},"createdAt":"2026-10-29T07:46:48.077Z","updatedAt
+environment: line 6: /usr/bin/curl: Argument list too long
+POST same with ~400 KB base64 photo (5 MB advertised)      HTTP   {"success":true,"resume":{"title":"audit probe","template":"modern","content":{},"createdAt":"2026-10-29T07:46:48.077Z","updatedAt
+
+## R-06 DOCX export
+POST /api/export-docx                                      HTTP 503  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId":"a4034d5f-598f-44f9
+
+## R-07 support ticket lifecycle (API leg only)
+POST /api/support/tickets                                  HTTP 500  {"success":false,"code":"ECONNREFUSED","error":"connect ECONNREFUSED 127.0.0.1:3306","requestId":"695468a6-abee-411f-a3db-58bccaac
+   ticket id: <none>
+
+## R-04 queue console
+GET /api/platform/queues                                   HTTP 503  {"error":{"code":"QUEUE_QUERY_UNAVAILABLE","message":"Queue telemetry is unavailable.","requestId":"9b4faee1-57ff-40a2-857d-4b9b5f
+GET /api/platform/queues/summary                           HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"005ffb65-cd80-405a-be03-27e48cfb5e68"}}
+POST /api/platform/queues/purge (retired stub?)            HTTP 410  {"error":{"code":"DEAD_LETTER_PURGE_RETIRED","message":"Dead letters are retained for investigation and may not be bulk-deleted."}
+POST /api/platform/queues/retry (unknown job)              HTTP 500  {"error":{"code":"ECONNREFUSED","message":"Request failed","requestId":"4dbce2c2-7b33-4cfb-bde0-b1d8b2e5ca0e"}}
+
+## R-01/R-02 admin write parity
+GET /api/admin/employer-applications (list exists?)        HTTP 503  {"success":false,"code":"EMPLOYER_APPLICATIONS_UNAVAILABLE","error":"Employer applications are unavailable.","requestId":"22a301ef
+PATCH /api/admin/employer-applications/:uid                HTTP 404  {"success":false,"error":"Employer application not found."}
+POST .../:uid/verify (client path)                         HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"290850fb-0e87-4de6-99e0-6d796fa2b567"}}
+POST /api/admin/users/:uid/status (client path)            HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"ef113af8-f4a7-4a5f-b3ee-b7a8cd191c70"}}
+
+## R-03 backup / cache purge
+GET /api/platform/backup-status (read-only status)         HTTP 503  {"error":{"code":"BACKUP_STATUS_UNAVAILABLE","message":"Backup status is unavailable.","requestId":"1ef3f68d-78a5-4bdc-8832-548ea8
+POST /api/admin/operations/backup (client path)            HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"56374b67-5bfe-4b89-a8f2-a44afe1de8e3"}}
+POST /api/admin/operations/cache-clear (client path)       HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"9637db09-8bea-484c-bb4b-3b7cf7d62d8e"}}
+
+## R-10 coupons
+GET /api/coupons/active                                    HTTP 200  {"success":true,"coupons":[]}
+POST /api/coupons/validate SAVE20                          HTTP 404  {"success":false,"valid":false,"error":"Coupon code \"SAVE20\" does not exist."}
+POST /api/billing/validate-coupon (client path)            HTTP 404  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"eba977e5-7321-4a0b-88f8-a1ab79d95637"}}
+/bin/bash: line 8: ## R-05 (file bodies) — body budget ${:-}: bad substitution
+## R-05 (file bodies) — 120 KB control vs ~400 KB photo
+body-mid               HTTP 200  {"success":true,"resume":{"title":"audit probe","template":"modern","content":{},"createdAt":"2026-10-29T07:46:48.077Z","updatedAt":"2026-10-29T07:46:
+body-big               HTTP 413  {"error":{"code":"PAYLOAD_TOO_LARGE","message":"Request payload is too large","requestId":"790bf2ee-4ad1-4381-a993-988e54fe820c"}}

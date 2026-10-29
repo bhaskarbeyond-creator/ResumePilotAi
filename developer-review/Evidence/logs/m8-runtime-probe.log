@@ -1,0 +1,66 @@
+# M8 runtime probe — 2026-10-29T07:43:01Z (UTC, container clock)
+## revision
+a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9
+24
+
+## database server
+mariadb    ABSENT
+mysqld     ABSENT
+mariadbd   ABSENT
+mysql      ABSENT
+docker     ABSENT
+podman     ABSENT
+libaio:
+0
+
+## node/npm toolchain
+v22.22.3
+10.9.8
+Python 3.11.2
+
+## installed dependencies
+node_modules ABSENT (root)
+frontend/node_modules ABSENT
+
+## browser automation
+playwright browsers ABSENT
+system browsers ABSENT
+
+## outbound network (audit host allowlist)
+registry.npmjs.org       200
+pypi.org                 200
+github.com               200
+codeload.github.com      301
+playwright.azureedge.net 000
+UNREACHABLE
+cdn.playwright.dev       000
+UNREACHABLE
+mariadb.com              000
+UNREACHABLE
+
+## provider credentials
+0
+0 provider/credential env vars
+
+## attempt: can the backend boot at all?
+node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+
+Error: Cannot find module 'express'
+Require stack:
+- /home/user/ResumePilotAi/backend/index.js
+- /home/user/ResumePilotAi/[eval]
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+
+## attempt: test runner availability
+{
+  test: 'node scripts/run-tests-with-annotations.js',
+  'test:payments': 'node --test --test-concurrency=1 --test-force-exit test/payment-reconciliation.test.js test/payments.test.js test/payment-activation.test.js',
+  start: 'node index.js',
+  dev: 'node --watch index.js',
+  'test:enterprise': 'node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js'
+}

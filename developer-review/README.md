@@ -72,6 +72,76 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+## 3.0 Latest audit publication (Mandate 8, 2026-10-29) — **read this first**
+
+**Branch:** `arena/393531fe-resumepilotai` · **Audited revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`
+(parent `c292159`; the M7 publication `2def3e5` audited `8a6e03bb`) · **Publication series:** `d849137` (the package) → `8fce715` (records the SHA) → `dec42e3` (key-level counts,
+DISC-055) → `416fda3` (runtime artefact, secret-scan log) → `e3e8d6f` (provenance corrections). The series
+head is whichever commit last touched this file; recover it with
+`git log -1 --format=%H -- developer-review/README.md`, and `Evidence/logs/m8-toolchain.log` §0 lists every
+member with what it changed. Nothing in the series was force-pushed, reset or rewritten.
+
+**Verdict:** **`PARTIAL — BLOCKED`** — *not* COMPLETE. Audit work complete; runtime gate blocked on
+dependencies this environment cannot supply (MariaDB, a browser, provider credentials); one gate fails on
+the **product** (false-success sites), which this mandate is not authorised to fix. Production readiness is
+**NOT ESTABLISHED**. Six dimensions stay separate: audit completeness · static coverage · parity · test
+execution · runtime · production readiness.
+
+Start here:
+
+| Artifact | What it settles |
+|---|---|
+| [`M8-INDEPENDENT-ACCEPTANCE-REPORT.md`](M8-INDEPENDENT-ACCEPTANCE-REPORT.md) | gates A–K scored one by one, scope proof, verdict, blockers and next actions |
+| [`M8-REGISTRATION-COUNT-RECONCILIATION.md`](M8-REGISTRATION-COUNT-RECONCILIATION.md) | the `397` vs `413` question, closed arithmetically: **413 = 405 + 6 + 2**, **405 = 397 + 8** |
+| [`M8-PARITY-REVALIDATION.md`](M8-PARITY-REVALIDATION.md) | all 112 rows re-adjudicated at `a2ecb96`; three classifications moved, prior verdicts retained |
+| [`M8-SUBFEATURE-CLOSURE.md`](M8-SUBFEATURE-CLOSURE.md) | the 20 M7 leads closed `preserved` / `replaced` / `missing` with call→route→persistence→authz→test chains |
+| [`M8-RUNTIME-VERIFICATION.md`](M8-RUNTIME-VERIFICATION.md) | what was actually executed (backend suite, typecheck, 43 HTTP probes), what is blocked and the exact gate |
+| [`M8-VERIFIER-QUALITY-REVIEW.md`](M8-VERIFIER-QUALITY-REVIEW.md) | what each verifier check proves and, more importantly, what it does not |
+| [`Evidence/logs/m8-toolchain.log`](Evidence/logs/m8-toolchain.log) | every M8 command, raw exit code, tool versions and the reconciliation result |
+| [`DISCREPANCY-LOG.md`](DISCREPANCY-LOG.md) | **DISC-049 … DISC-055** added (53 distinct findings / 55 IDs): DISC-049 corrects an M7 provenance claim, DISC-054 a broken enterprise team chain, DISC-055 duplicated route blocks with divergent guards |
+
+**Current reported M8 results** (all measured at `a2ecb96`, none carried forward): **393** route call sites /
+**397** alias registrations / **393** unique `METHOD+path`; independent contract parser **405** after repair;
+agreement in scope **0** disagreements; reachability **156 / 10 / 27 / 11 / 2 / 176 / 11** (live **42.2 %**);
+parity **13 FULL / 51 PARTIAL / 28 MISSING / 0 STUB / 12 MOCK / 5 REPLACED / 3 UNVERIFIED = 112**;
+contract **212 sites → 190 matched / 8 mismatch / 14 no-operation**, **15** gap paths, **12** false-success
+sites across **7** paths; backend suite **1,315 / 1,269 pass / 46 fail** (exit 1, all DB-caused);
+`tsc -b` exit 0; runtime scenarios **4 PASS / 4 PARTIAL / 2 BLOCKED**. Verifiers: **61/61**, **20/20**, exit 0.
+
+**Three things M7 published that M8 does not repeat:** (1) `a7d08a2` is **not** byte-identical to `8a6e03bb`
+(264 files differ; **0** outside `developer-review/`) and `refs/audit-preserved/base-a7d08a2` does not exist
+(DISC-049); (2) the **413** was two different counting units plus 2 false positives and 6 duplicate alias
+literals, not a backend disagreement; (3) a "70 path-shape collisions" figure in an M8 draft could not be
+reproduced and is **withdrawn** — the measured value over the 393 operations is **0**.
+
+## 3.1 Mandate 7 publication pointer (2026-10-29) — superseded by §3.0
+
+**Publication commit:** [`2def3e5`](https://github.com/bhaskarbeyond-creator/ResumePilotAi/commit/2def3e524654e24fc9ebd658f0be78045aeb7ae1) on `arena/393531fe-resumepilotai`.
+**Audited source checkpoint:** `8a6e03bbc279cfb7e3a62519659fa3fe770ad1be` (the publication commit's parent).
+**Verdict:** `PARTIAL — INCOMPLETE`. The audit package was updated; no application files changed in Mandate 7.
+
+Start with these current Mandate 7 artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| [`M7-CAPABILITY-CLOSURE.md`](M7-CAPABILITY-CLOSURE.md) | 112 capability rows / 487 subfeature rows, adjudication status, residual leads and confirmed losses |
+| [`CLIENT-BACKEND-CONTRACT-REGISTER.md`](CLIENT-BACKEND-CONTRACT-REGISTER.md) | Independent client-to-backend contract trace, 212 call sites, 15 distinct gap paths / 22 sites and false-success analysis |
+| [`CAPABILITY-SUBFEATURE-REGISTER.md`](CAPABILITY-SUBFEATURE-REGISTER.md) | Machine-generated subfeature inventory and status |
+| [`RUNTIME-TEST-HARNESS-M7.md`](RUNTIME-TEST-HARNESS-M7.md) | R-01…R-10 runtime test specification; specified, **not executed** |
+| [`Evidence/logs/m7-toolchain.log`](Evidence/logs/m7-toolchain.log) | Captured M7 tool outputs, verification summaries and provenance/count-reconciliation notes |
+| [`Evidence/adjudications-m7.json`](Evidence/adjudications-m7.json) | Machine-readable M7 adjudications |
+| [`EVIDENCE-INDEX.md`](EVIDENCE-INDEX.md) | Evidence IDs and artifact map |
+| [`METRIC-DEFINITIONS.md`](METRIC-DEFINITIONS.md) | Metric definitions and revised denominators |
+| [`REPAIR-ACTION-PLAN.md`](REPAIR-ACTION-PLAN.md) | Prioritized repair phases, including contract retargeting before build-out |
+| [`FINAL-AUDIT-HANDOVER.md`](FINAL-AUDIT-HANDOVER.md) | Consolidated handover and remaining acceptance gates |
+
+**M7 results as published (superseded by §3.0; kept for the record):** 397 route registrations → 393 unique `METHOD + path` operations; reachability cross-check 393/393; client contract scan 190 matched, 8 mismatches, 14 with no operation; parity 12 FULL / 49 PARTIAL / 30 MISSING / 12 MOCK / 6 REPLACED / 3 UNVERIFIED. The verifier reports were 61/61 and 16/16 at that revision. These were source/static audit results, not proof of runtime behavior. **M8 re-measured every one of them; the parity mix moved to 13 / 51 / 28 / 0 / 12 / 5 / 3.**
+
+**Toolchain reconciliation caveat:** the captured independent client-contract output reports 413 backend registrations while the canonical reachability report records 397 registrations. The toolchain log preserves both observations and flags the 16-registration difference for source-level reconciliation; do not interpret 393/393 unique-operation agreement as proof that raw registration counts match.
+
+**Runtime remains blocked for this mandate:** no browser tests, MariaDB-backed tests or live-provider calls were executed. Do not promote the verdict or describe a workflow as runtime-verified until the harness has been executed in an environment with the required dependencies and credentials.
+
+
 > **Added 2026-10-29 (Mandate 7 — V7 capability closure + contract forensics, revision `8a6e03bb`):**
 > `M7-CAPABILITY-CLOSURE.md` (all 112 rows: 40 hand-adjudicated, 21 signal-clean, 10 M6 deep reads, 41 with
 > leads recorded, 10 rows / 20 items explicitly open; the 15 gap paths / 22 sites; the 12 false-success sites

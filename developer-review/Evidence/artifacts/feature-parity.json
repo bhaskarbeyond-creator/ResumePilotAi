@@ -1,7 +1,7 @@
 {
- "revision": "a7d08a2fa67b",
+ "revision": "a2ecb96d2b19",
  "inventoryRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
- "generatedAt": "2026-10-29T07:20:48.669Z",
+ "generatedAt": "2026-10-29T07:41:31.865Z",
  "vocabulary": [
   "FULL PARITY",
   "PARTIAL PARITY",
@@ -14,14 +14,14 @@
   "UNVERIFIED"
  ],
  "counts": {
-  "FULL PARITY": 12,
-  "PARTIAL PARITY": 49,
-  "MISSING": 30,
+  "FULL PARITY": 13,
+  "PARTIAL PARITY": 51,
+  "MISSING": 28,
   "STATIC STUB": 0,
   "MOCK / FABRICATED STATE": 12,
   "LOCAL-ONLY PERSISTENCE": 0,
   "INTENTIONAL RETIREMENT": 0,
-  "REPLACED BY EQUIVALENT": 6,
+  "REPLACED BY EQUIVALENT": 5,
   "UNVERIFIED": 3
  },
  "byDomain": {
@@ -29,8 +29,8 @@
    "total": 26,
    "byClassification": {
     "FULL PARITY": 0,
-    "PARTIAL PARITY": 9,
-    "MISSING": 6,
+    "PARTIAL PARITY": 10,
+    "MISSING": 5,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 11,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -56,9 +56,9 @@
   "C": {
    "total": 7,
    "byClassification": {
-    "FULL PARITY": 2,
+    "FULL PARITY": 3,
     "PARTIAL PARITY": 0,
-    "MISSING": 5,
+    "MISSING": 4,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -71,13 +71,13 @@
    "total": 15,
    "byClassification": {
     "FULL PARITY": 1,
-    "PARTIAL PARITY": 6,
+    "PARTIAL PARITY": 7,
     "MISSING": 7,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
     "INTENTIONAL RETIREMENT": 0,
-    "REPLACED BY EQUIVALENT": 1,
+    "REPLACED BY EQUIVALENT": 0,
     "UNVERIFIED": 0
    }
   },
@@ -386,24 +386,26 @@
    "id": "FP-A12",
    "domain": "A",
    "capability": "Platform tenant registry (list tenants, quotas, suspend)",
-   "classification": "MISSING",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/admin/tenants"
    ],
    "modernPaths": [
-    "frontend/src/components/admin/AdminModerationTab.tsx"
+    "frontend/src/components/enterprise/EnterprisePlatformTab.tsx",
+    "frontend/src/lib/enterprise-api.ts"
    ],
    "legacyFiles": 1,
    "legacyLines": 2106,
-   "modernFiles": 1,
-   "modernLines": 675,
+   "modernFiles": 2,
+   "modernLines": 864,
    "backend": "yes",
    "endpoints": [
     "/enterprise/platform/tenants",
-    "/enterprise/platform/tenants/{X}/suspend"
+    "/enterprise/platform/tenants/{X}/suspend",
+    "/enterprise/platform/tenants/{X}/reactivate"
    ],
-   "invoke": "no",
-   "evidence": "AdminModerationTab.tsx:389 renders companies/tenants sub-sections from DEFAULT_APPLICATIONS; no tenant list fetch"
+   "invoke": "yes",
+   "evidence": "EnterprisePlatformTab.tsx:46 enterpriseApi.getPlatformTenants(); enterprise-api.ts:602-613 list/suspend/reactivate; backend/routes/enterprise.js:608,621,630; service listPlatformTenants + setTenantLifecycleAsPlatform; backend/enterprise-test/enterprise-completeness.test.js:527-552 covers list, admin-denied and member-denied suspend, and the suspend->reactivate round trip"
   },
   {
    "id": "FP-A13",
@@ -1120,21 +1122,23 @@
    "id": "FP-C06",
    "domain": "C",
    "capability": "Portfolio template gallery with palettes",
-   "classification": "MISSING",
+   "classification": "FULL PARITY",
    "legacyPaths": [
     "src/components/PortfolioTemplates"
    ],
    "modernPaths": [
-    "frontend/src/components/portfolio"
+    "frontend/src/components/portfolio",
+    "frontend/src/lib/portfolio-document.ts",
+    "frontend/src/pages/portfolio/builder.tsx"
    ],
    "legacyFiles": 7,
    "legacyLines": 1822,
-   "modernFiles": 3,
-   "modernLines": 729,
+   "modernFiles": 5,
+   "modernLines": 1886,
    "backend": "n/a",
    "endpoints": [],
    "invoke": "n/a",
-   "evidence": "V7 hand read: the named legacy blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) have zero matches in frontend/src/components/portfolio or frontend/src/pages/portfolio. modern portfolio-view.tsx:33 PALETTES still supplies colour palettes, but the modular section library itself has no counterpart."
+   "evidence": "The legacy directory is exactly four template renderers plus a shared renderer: CreativeDark, Executive, ModernMinimal, PremiumTech (src/components/PortfolioTemplates/index.js). The modern tree carries the same four ids in PORTFOLIO_TEMPLATES (frontend/src/lib/portfolio-document.ts:17-22), the same four palette keys (frontend/src/components/portfolio/portfolio-view.tsx:33-38: modernMinimal, executive, creativeDark, premiumTech), a selectable picker that renders them (frontend/src/pages/portfolio/builder.tsx:541-546) and one renderer that applies the matching palette (:61). Legacy template ids written by older versions are mapped, not dropped (TEMPLATE_ALIASES, portfolio-document.ts:28-33)."
   },
   {
    "id": "FP-C07",
@@ -1295,7 +1299,7 @@
    "id": "FP-D07",
    "domain": "D",
    "capability": "Notification centre (bell, unread poller, routing)",
-   "classification": "REPLACED BY EQUIVALENT",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/cuba/M3NotificationCenter.jsx",
     "src/components/Dashboard/DashboardNotifications",
@@ -1317,7 +1321,7 @@
     "/notifications"
    ],
    "invoke": "yes",
-   "evidence": "modern bell in cuba-app-shell + dedicated notifications page + category mapping"
+   "evidence": "modern bell in cuba-app-shell + dedicated notifications page + category mapping; the poller half of the row has no modern twin (per-page refetchInterval only, no coalescing/backoff, no global unread badge)"
   },
   {
    "id": "FP-D08",

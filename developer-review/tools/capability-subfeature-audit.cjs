@@ -287,10 +287,22 @@ for (const r of rows) {
   }
 }
 
-// Pass 4 — apply the hand adjudications recorded in Evidence/adjudications-m7.json.
-let adjudications = { rows: {} };
-if (fs.existsSync(ADJ)) adjudications = JSON.parse(read(ADJ));
-const ADJ_KEYS = Object.keys(adjudications.rows || {});
+// Pass 4 — apply the hand adjudications recorded in Evidence/adjudications-m7.json and, for the
+// rows closed later, Evidence/adjudications-m8.json. M8 widened this from one file to an ordered
+// list rather than editing the M7 artefact, so the two rounds stay separable and the later verdict
+// wins only where it exists. A row keeps the round it was closed in (`adjudicatedIn`).
+const ADJ_FILES = [ADJ, path.join(DR, 'Evidence/adjudications-m8.json')];
+const adjudications = { rows: {} };
+const adjudicationSources = [];
+for (const file of ADJ_FILES) {
+  if (!fs.existsSync(file)) continue;
+  adjudicationSources.push(path.relative(ROOT, file));
+  const data = JSON.parse(read(file));
+  const round = /m8/.test(path.basename(file)) ? 'M8' : 'M7';
+  for (const [id, entry] of Object.entries(data.rows || {})) {
+    adjudications.rows[id] = { ...entry, adjudicatedIn: round };
+  }
+}
 for (const r of rows) {
   const a = (adjudications.rows || {})[r.id];
   if (a) {
@@ -305,7 +317,8 @@ const summary = {
   rows: rows.length,
   subfeatureRows: rows.reduce((n, r) => n + r.subfeatures.length, 0),
   byAuditStatus: rows.reduce((a, r) => { a[r.auditStatus] = (a[r.auditStatus] || 0) + 1; return a; }, {}),
-  adjudicationFile: fs.existsSync(ADJ) ? path.relative(ROOT, ADJ) : null,
+  adjudicationFile: adjudicationSources[0] || null,
+  adjudicationFiles: adjudicationSources,
   dispositionHistogram: rows.reduce((a, r) => {
     if (!r.adjudication) return a;
     a[r.adjudication.disposition] = (a[r.adjudication.disposition] || 0) + 1;
@@ -342,7 +355,7 @@ const AS_LABEL = {
   ABSENT_CLASS: 'a distinctive legacy class occurs nowhere in the modern tree',
   ACTION_DIFF: '≥6 legacy actions/labels have no modern counterpart in the row',
   EQUIVALENCE_LEAD: 'a class is absent from the row but present elsewhere, or 1–5 legacy actions are unaccounted for',
-  ADJUDICATED: 'leads read by hand in M7 and closed with a recorded disposition (see Evidence/adjudications-m7.json)',
+  ADJUDICATED: 'leads read by hand and closed with a recorded disposition (see Evidence/adjudications-m7.json and Evidence/adjudications-m8.json)',
   SIGNAL_CLEAN: 'every distinctive legacy class and action has a modern counterpart in the row',
 };
 for (const [k, v] of Object.entries(summary.byAuditStatus).sort((a, b) => b[1] - a[1])) push(`| \`${k}\` | ${AS_LABEL[k] || k} | ${v} |`);

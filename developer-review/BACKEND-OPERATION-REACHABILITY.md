@@ -1,12 +1,13 @@
 # Backend Operation Reachability Register
 
-**Authoritative revision:** `8a6e03bbc279cfb7e3a62519659fa3fe770ad1be` (register re-derived in V7; the previous stamp was `0adad00d`) — branch `arena/393531fe-resumepilotai`; `origin/main` = same; `origin/dev` = `ea7b7416…`, tree-identical)
+**Authoritative revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` (M8 re-derivation; counting units and the `/api` scope boundary made explicit — see `M8-REGISTRATION-COUNT-RECONCILIATION.md`). Previous stamps: `8a6e03bb` (V7), `0adad00d` (V4). Branch `arena/393531fe-resumepilotai`; `origin/main` = `0adad00d`. For application source, `a2ecb96` is tree-identical to `8a6e03bb` outside `developer-review/` (0 files differ).
 **Generator:** `developer-review/tools/backend-reachability.cjs`
 **Machine-readable register:** `Evidence/artifacts/backend-reachability.json` (393 records),
 `Evidence/artifacts/backend-operations.tsv` (tabular), `Evidence/logs/backend-reachability.log`
 **Independent cross-check:** `tools/reachability-crosscheck.cjs` — 393/393 agreements, 0 disagreements
 **Client-side contract check:** `tools/client-call-existence.cjs` — 229 call sites, 21 served by no operation, 17 distinct paths (DISC-025)
-**V7 status:** the register was re-derived at `8a6e03bb` after a receiver-resolution defect was found (§5, V7 row, DISC-041). Superseded counts are retained there; the register is authoritative as of `8a6e03bb`.
+**V7 status:** the register was re-derived at `8a6e03bb` after a receiver-resolution defect was found (§5, V7 row, DISC-041). Superseded counts are retained there.
+**M8 status:** the register's *counting units* were inconsistent (router matches counted call sites, `app.<verb>` matches counted path literals) and its `/api` scope boundary was undocumented. Both are fixed; the operation set itself did not change. The 397-vs-413 gap against the independent contract parser is reconciled row by row in `M8-REGISTRATION-COUNT-RECONCILIATION.md` (gate B). A second instrument defect was found and fixed in M8: the legacy call-site extractor could not see the legacy tree's generic helper `apiJson(` (84 call sites in 5 files), so 85 operations carried `legacyUiRefs: 0` and the reason "called only by tests, never by a client" — including `POST /contact`, which `src/services/api/platform.js:310` calls from the public contact form. **166 operations now carry legacy call evidence (was 82). No class changed, no operation was added or removed** — verified by an A/B run of the same tool with the pre-M8 regex, which reproduces 82 and a byte-identical class map (`Evidence/logs/m8-toolchain.log` §2.5); the widening only corrects the evidence column and the reason strings.
 **Supersedes:** the binary "consumed / not consumed" split in `tools/backend-ui-coverage.cjs` (kept, unmodified, for provenance)
 
 ---
@@ -39,11 +40,24 @@ mandate defines.
 
 | Unit | Value | Method |
 |---|---:|---|
-| Route **registrations** (`<router>.<verb>(…)` / `app.<all>(…)` call sites) | **397** | regex over `backend/routes/*.js` + `backend/index.js`, receiver identified by `express.Router()` declaration + `module.exports` alias, mount-prefix expanded |
-| Unique **METHOD + path** pairs after mount resolution and de-duplication | **393** | this is the operation register denominator |
-| Duplicate/overlapping registrations collapsed | **4** | 397 − 393. The V5 figure of 114 was an artefact of not de-duplicating a router mounted at the same prefix twice (`/api/platform`, index.js:522 and :3299) |
-| Handlers | **384** | 1 inline handler per unique operation; no shared handler serves two paths |
+| Route **call sites** — one `<router>.<verb>(…)` / `app.<verb>(…)` expression, counted once per (receiver, mount prefix) | **393** | regex over `backend/routes/*.js` + `backend/index.js`, receiver identified by `express.Router()` declaration + `module.exports` alias, mount-prefix expanded |
+| **Alias registrations** — one (call site, path literal, mount prefix) tuple | **397** | the same scan, counting each literal of an array-form registration |
+| Unique **METHOD + path** pairs after mount resolution, `/api` stripping and de-duplication | **393** | this is the operation register denominator |
+| Routes collapsed (aliases resolving to one operation) | **4** | 397 − 393. All four are array-form alias pairs, e.g. `app.get(['/v1/status','/api/v1/status'])` |
+| **non-/api routes** (counted as route literals) — real endpoints outside this register's scope (`app.<verb>` paths not under `/api`) | **14 literals across 12 call sites** | `/v1/chat/completions`, `/v1/messages`, `/v1/search`, `/v1/models`, `/v1/status`, `/llms.txt`, `/llms-full.txt`, `/sitemap.xml`, `/healthz`, `/readyz`, `/public/custom-pages.json`, `/custom-pages.json`, `/public/trusted-by.json`, `/trusted-by.json`. Six are compatibility aliases of an `/api` registration on the same line (so they add no new instance); eight are standalone. Counted and listed (`units.nonApiRoutes`, `nonApiRouteList`), deliberately excluded from the denominator |
+| Handlers | **393** | 1 inline handler per unique operation; no shared handler serves two paths |
 | Database operations | **not counted** | not enumerable from route declarations; see `DATABASE-INVENTORY.md` and §8 |
+
+> **M8 correction.** Until M8 this table reported "397 registrations, 4 duplicates" while the generator
+> incremented one counter once per *call site* for router files and once per *path literal* for
+> `app.<verb>` handlers — two different units in one number. The register's own log said
+> "route registrations: 397" and the independent contract parser said 413; the 16-row difference is now
+> itemised exactly — **413 = 405 + 6 + 2**: 405 = 397 matched alias registrations + 8 standalone non-`/api`
+> endpoints; 6 = the same handler registered as both `/x` and `/api/x` in one array (lines 2867, 3067,
+> 3136, 3226, 6537, 6748); 2 = `Promise.all([fetch('https://api.github.com/…')])` feeds at
+> `backend/index.js:7420`. The row-by-row table is in `M8-REGISTRATION-COUNT-RECONCILIATION.md`. The
+> 393-operation set was not affected: the two parsers agree on every in-scope instance (0 in-scope
+> differences, 0 operations only in one parser).
 
 Mount prefixes were resolved for all 393 operations (0 unresolved). Receivers are resolved through
 `module.exports`, so a module that exports two routers (`routes/support.js` → `userRouter` at

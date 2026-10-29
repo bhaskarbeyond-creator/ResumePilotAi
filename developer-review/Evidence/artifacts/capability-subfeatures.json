@@ -1,26 +1,30 @@
 {
-  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
-  "generatedAt": "2026-10-29T07:20:48.474Z",
+  "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+  "generatedAt": "2026-10-29T07:50:16.437Z",
   "rows": 112,
   "subfeatureRows": 487,
   "byAuditStatus": {
     "SIGNAL_CLEAN": 21,
-    "EQUIVALENCE_LEAD": 41,
-    "DEEP_READ_M6": 10,
-    "ADJUDICATED": 40
+    "EQUIVALENCE_LEAD": 33,
+    "DEEP_READ_M6": 8,
+    "ADJUDICATED": 50
   },
   "adjudicationFile": "developer-review/Evidence/adjudications-m7.json",
+  "adjudicationFiles": [
+    "developer-review/Evidence/adjudications-m7.json",
+    "developer-review/Evidence/adjudications-m8.json"
+  ],
   "dispositionHistogram": {
-    "NO_CHANGE": 24,
-    "SUBFEATURE_LOSS": 9,
-    "CONFIRMED_MISSING": 5,
-    "PARTIAL_EQUIVALENT": 1,
-    "RECLASSIFY_PARTIAL": 1
+    "NO_CHANGE": 26,
+    "SUBFEATURE_LOSS": 14,
+    "CONFIRMED_MISSING": 7,
+    "RECLASSIFY_PARTIAL": 2,
+    "PARTIAL_EQUIVALENT": 1
   },
   "rowsWithAbsentClass": 0,
   "rowsWithActionDiff": 50,
   "rowsWithAccountedOnly": 8,
-  "crossRowAccountedActions": 312,
+  "crossRowAccountedActions": 310,
   "attributionRule": "an action counts as a lead only if it appears in the legacy corpora of <= 2 rows",
   "absentClassHistogram": {},
   "capabilities": [
@@ -925,22 +929,23 @@
       "id": "FP-A12",
       "domain": "A",
       "capability": "Platform tenant registry (list tenants, quotas, suspend)",
-      "classification": "MISSING",
+      "classification": "PARTIAL PARITY",
       "backend": "yes",
       "legacyFiles": 1,
-      "modernFiles": 1,
+      "modernFiles": 2,
       "legacyPaths": [
         "src/components/admin/tenants"
       ],
       "modernPaths": [
-        "frontend/src/components/admin/AdminModerationTab.tsx"
+        "frontend/src/components/enterprise/EnterprisePlatformTab.tsx",
+        "frontend/src/lib/enterprise-api.ts"
       ],
       "subfeatures": [
         {
           "class": "table",
           "label": "tabular data",
           "legacy": 2,
-          "modern": 4,
+          "modern": 2,
           "appModern": 48,
           "verdict": "present"
         },
@@ -948,9 +953,9 @@
           "class": "search",
           "label": "search",
           "legacy": 8,
-          "modern": 0,
+          "modern": 5,
           "appModern": 180,
-          "verdict": "elsewhere-in-app"
+          "verdict": "present"
         },
         {
           "class": "filter",
@@ -964,25 +969,25 @@
           "class": "pagination",
           "label": "pagination / cursor / load-more",
           "legacy": 26,
-          "modern": 2,
+          "modern": 0,
           "appModern": 269,
-          "verdict": "present"
+          "verdict": "elsewhere-in-app"
         },
         {
           "class": "modal",
           "label": "dialog / drawer",
           "legacy": 5,
-          "modern": 7,
+          "modern": 0,
           "appModern": 307,
-          "verdict": "present"
+          "verdict": "elsewhere-in-app"
         },
         {
           "class": "json",
           "label": "JSON export",
           "legacy": 1,
-          "modern": 0,
+          "modern": 2,
           "appModern": 14,
-          "verdict": "elsewhere-in-app"
+          "verdict": "present"
         },
         {
           "class": "authz",
@@ -995,30 +1000,17 @@
       ],
       "absent": [],
       "elsewhere": [
-        "search",
-        "json",
+        "pagination",
+        "modal",
         "authz"
       ],
-      "risk": [
-        {
-          "class": "fixtures",
-          "label": "seeded fixture arrays",
-          "legacy": 0,
-          "modern": 2
-        },
-        {
-          "class": "fakeSuccess",
-          "label": "swallow-then-success",
-          "legacy": 0,
-          "modern": 3
-        }
-      ],
+      "risk": [],
       "legacyActions": {
         "handlers": 9,
         "labels": 20
       },
       "modernActions": {
-        "handlers": 4,
+        "handlers": 1,
         "labels": 1
       },
       "distinctiveActions": {
@@ -2448,7 +2440,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Order creation exists (axios POST /api/razorpay/create-order and /api/paypal/create-order at checkout-modal.tsx:346/348); the unaccounted handlers belong to the marketing pricing wizard's step navigation, which the modern public page implements inline.",
-        "verifiedBy": "frontend/src/pages/billing/checkout-modal.tsx:346-348"
+        "verifiedBy": "frontend/src/pages/billing/checkout-modal.tsx:346-348",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -2786,7 +2779,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "The lead names are covered by `lib/session-security.ts`, which performs `reauthenticateWithCredential` (`:112`) for step-up, and by the session-expiry flow that routes to /login. No missing action.",
-        "verifiedBy": "frontend/src/lib/session-security.ts:19,112; frontend/src/components/layout/app-shell.tsx:89"
+        "verifiedBy": "frontend/src/lib/session-security.ts:19,112; frontend/src/components/layout/app-shell.tsx:89",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -2943,7 +2937,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Directory, invitation and single-member removal exist. The two residual leads are real: there is no workspace-assignment action in the modern tab (`workspaces` is read from context at `EnterpriseUsersTab.tsx:61` and never assigned), and account status is edited through the member-edit dialog (`:126`) rather than the legacy per-row toggle, which is a UX difference, not a loss. Recorded loss: per-member workspace assignment.",
-        "verifiedBy": "frontend/src/components/enterprise/EnterpriseUsersTab.tsx:61,126"
+        "verifiedBy": "frontend/src/components/enterprise/EnterpriseUsersTab.tsx:61,126",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -3181,19 +3176,19 @@
         },
         {
           "action": "Close membership details",
-          "accountedBy": "FP-A25"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Current active workspace",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Effective permissions",
-          "accountedBy": "FP-D12"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Enter the verified user principal id",
-          "accountedBy": "FP-B01"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Export the current filtered member list",
@@ -3201,15 +3196,15 @@
         },
         {
           "action": "Filter members by role",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Filter members by status",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Resend invitation",
-          "accountedBy": "FP-B02"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Select all members",
@@ -3246,19 +3241,19 @@
         },
         {
           "action": "Close membership details",
-          "accountedBy": "FP-A25"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Current active workspace",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Effective permissions",
-          "accountedBy": "FP-D12"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Enter the verified user principal id",
-          "accountedBy": "FP-B01"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Export the current filtered member list",
@@ -3266,15 +3261,15 @@
         },
         {
           "action": "Filter members by role",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Filter members by status",
-          "accountedBy": "FP-A17"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Resend invitation",
-          "accountedBy": "FP-B02"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Select all members",
@@ -3288,7 +3283,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "MISSING stands. There is no bulk member action surface at all, so per-member partial-failure reporting has nothing to report through; the lead names are inherited from the legacy bulk-selection component.",
-        "verifiedBy": "grep for bulk/selectAll in frontend/src/components/enterprise/*.tsx (no bulk action handlers)"
+        "verifiedBy": "grep for bulk/selectAll in frontend/src/components/enterprise/*.tsx (no bulk action handlers)",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -3438,7 +3434,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Role deletion exists as `handleDeleteCustomRole` (`:280`); the lead is a rename, not a loss. Partial parity stands for the permission-matrix differences already recorded in M6.",
-        "verifiedBy": "frontend/src/components/enterprise/EnterpriseRolesTab.tsx:280"
+        "verifiedBy": "frontend/src/components/enterprise/EnterpriseRolesTab.tsx:280",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -3531,7 +3528,7 @@
         "handleRestore",
         "handleSaveLead"
       ],
-      "auditStatus": "DEEP_READ_M6",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -3562,7 +3559,33 @@
           "accountedBy": "app"
         }
       ],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "NO_CHANGE",
+        "verdict": "equivalent replacement (preserved, full chain)",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "handleSaveLead",
+        "summary": "The lead-assignment lead closes as preserved, not lost. The legacy tab PATCHed /api/enterprise/teams/{id} with leadPrincipalId; the modern tab does the same, through a typed client, against the same route, with the same persistence and an existing backend test.",
+        "chain": {
+          "call": "frontend/src/components/enterprise/EnterpriseTeamsTab.tsx:85-105 (create -> enterpriseApi.createTeam(tenant.id, name, leadPrincipalId, workspaceId); edit -> enterpriseApi.updateTeam(tenant.id, id, {name, leadPrincipalId}))",
+          "client": "frontend/src/lib/enterprise-api.ts:448-459 (createTeam POST /api/enterprise/teams, updateTeam PATCH /api/enterprise/teams/{teamId})",
+          "routeRegistration": "backend/routes/enterprise.js:684 (POST /teams) and :693 (PATCH /teams/:teamId), mounted at backend/index.js:521 (app.use('/api/enterprise', enterpriseRouter))",
+          "persistence": "backend/enterprise/tenantService.js:893-904 writes lead_principal_id (and resolves lead_email) for both create and update",
+          "authz": "both handlers require resolveTenantContext + requireAnyTenantPermission('workspace.manage','tenant.workspaces.manage') (backend/routes/enterprise.js:684,693); the UI gates the controls behind canManageTeams (frontend/src/components/enterprise/EnterpriseTeamsTab.tsx:228-247)",
+          "test": "backend/enterprise-test/enterprise-completeness.test.js:116-123 asserts leadPrincipalId round-trips"
+        },
+        "uiCoverage": "Lead input present at :297-307 (labelled 'Team Lead Principal ID / Email'), rendered in the card at :219, prefilled on edit at :235. The unaccounted-handler label was a naming artefact: modern code is hook-free inline submit, so no `handleSaveLead` symbol exists to match.",
+        "losses": [],
+        "verifiedBy": [
+          "frontend/src/components/enterprise/EnterpriseTeamsTab.tsx:85-105,219,235,297-307",
+          "frontend/src/lib/enterprise-api.ts:448-459",
+          "backend/enterprise/tenantService.js:893-904",
+          "backend/enterprise-test/enterprise-completeness.test.js:116-123"
+        ],
+        "evidenceLimit": "static only: no MariaDB was started, so the round-trip is asserted from source + existing test, not observed.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-B06",
@@ -3771,7 +3794,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Lead item 'Regulated' is a label string in the legacy tenant taxonomy, not an action. Suspend/reactivate call the live POST operations at `enterprise-api.ts:606/611`. FULL PARITY stands.",
-        "verifiedBy": "frontend/src/lib/enterprise-api.ts:603-615"
+        "verifiedBy": "frontend/src/lib/enterprise-api.ts:603-615",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -3925,7 +3949,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "`handleExportCsv` exists (`EnterpriseAuditTab.tsx:65,145`), so the export action is present. What the export contains is a separate, already-recorded defect: the tab renders a fabricated audit JSON (DISC-014/DISC-015), so the CSV serialises invented rows. No new loss; the lead is closed with a pointer, not a new finding.",
-        "verifiedBy": "frontend/src/components/enterprise/EnterpriseAuditTab.tsx:65,145"
+        "verifiedBy": "frontend/src/components/enterprise/EnterpriseAuditTab.tsx:65,145",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -4124,7 +4149,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Enterprise resume review has no DOCX/PDF export of its own: `grep -n 'docx'` in EnterpriseResumesTab.tsx and EnterpriseResumePdfModal.tsx returns 0, and the legacy row's per-candidate export (handleDocx) has no counterpart. Selection (`toggleSelectCandidate`) is a naming difference — the tab uses checkbox state — but the export is a real loss. Corroborates FP-F11's recorded 'no resume download from the candidate drawer'.",
-        "verifiedBy": "frontend/src/components/enterprise/EnterpriseResumesTab.tsx; frontend/src/components/enterprise/EnterpriseResumePdfModal.tsx"
+        "verifiedBy": "frontend/src/components/enterprise/EnterpriseResumesTab.tsx; frontend/src/components/enterprise/EnterpriseResumePdfModal.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -4602,7 +4628,7 @@
         },
         {
           "action": "Start a new portfolio",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         }
       ],
       "unaccountedHandlers": [
@@ -4665,13 +4691,14 @@
         },
         {
           "action": "Start a new portfolio",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         }
       ],
       "adjudication": {
         "disposition": "CONFIRMED_MISSING",
         "summary": "No Puck editor anywhere in the modern tree (0 hits for puck/Puck outside portfolio-document.ts comments). The modern portfolio builder composes from a canonical document model, not a block editor, so drag-and-drop free-form page composition is genuinely absent. Duplicate/load-template actions have no modern counterpart either.",
-        "verifiedBy": "grep -rl 'puck|Puck' frontend/src; frontend/src/pages/portfolio/builder.tsx:144-160"
+        "verifiedBy": "grep -rl 'puck|Puck' frontend/src; frontend/src/pages/portfolio/builder.tsx:144-160",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -4881,7 +4908,7 @@
         "handleResumeDownload",
         "toggleMobileMenu"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -4968,7 +4995,7 @@
         },
         {
           "action": "View Portfolio",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "View Resume",
@@ -5067,7 +5094,7 @@
         },
         {
           "action": "View Portfolio",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "View Resume",
@@ -5085,7 +5112,32 @@
           "action": "Your full name",
           "accountedBy": "FP-A01"
         }
-      ]
+      ],
+      "adjudication": {
+        "disposition": "CONFIRMED_MISSING",
+        "verdict": "missing (block library) with two preserved items and two subfeature losses",
+        "classificationBefore": "MISSING",
+        "classificationAfter": "MISSING",
+        "lead": "handleEmailClick, handleResumeDownload, label 'Twitter'",
+        "summary": "The 71-block modular portfolio library has no modern counterpart: the modern portfolio is one canonical-document renderer (PortfolioView) with palettes, not a library of 71 independently composable sections. Within that renderer, the e-mail CTA is preserved, the resume-download CTA is lost, and the Twitter social link is lost.",
+        "chain": {
+          "handleEmailClick": "PRESERVED — legacy src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx:121-133 validated the address and set window.location to mailto:; modern frontend/src/components/portfolio/portfolio-view.tsx:69 builds the same mailto: href through safeMailto() (frontend/src/lib/portfolio-document.ts, exported sanitizer), which rejects a non-e-mail value instead of emitting a dead link.",
+          "handleResumeDownload": "MISSING — legacy src/components/PortfolioBuilder/PortfolioComponents/About3.jsx:126-140 only accepted a same-origin /shared/<token> URL (regex ^\\/shared\\/[a-zA-Z0-9_-]+$) and downloaded the attached resume. No modern counterpart: portfolio-view.tsx renders heading/summary/skills/experience/education/projects, and grep for resumeUrl|/shared/|download in frontend/src/components/portfolio + frontend/src/pages/portfolio returns only source.resumeId/resumeTitle metadata (portfolio-document.ts:98,162,298), never a download control.",
+          "Twitter": "MISSING — legacy blocks rendered a Twitter/X social link; modern contact row builds exactly five entries (email, phone, website, linkedin, github) at portfolio-view.tsx:69-73, so a Twitter profile field has no surface and portfolio-document.ts:142/181/331 carries no twitter key."
+        },
+        "losses": [
+          "resume-download CTA on a published portfolio (legacy About3.jsx:126-140)",
+          "Twitter/X social link field and render target (legacy portfolio blocks)"
+        ],
+        "verifiedBy": [
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx:118-133",
+          "src/components/PortfolioBuilder/PortfolioComponents/About3.jsx:126-145",
+          "frontend/src/components/portfolio/portfolio-view.tsx:61-79",
+          "frontend/src/lib/portfolio-document.ts:67,98,142,181,298,331"
+        ],
+        "evidenceLimit": "static only; no browser run, so the rendered palette/section output was not observed.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-C03",
@@ -5260,7 +5312,7 @@
         },
         {
           "action": "Portfolio title",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Preview viewport",
@@ -5300,7 +5352,7 @@
         },
         {
           "action": "Portfolio title",
-          "accountedBy": "FP-A16"
+          "accountedBy": "FP-A12"
         },
         {
           "action": "Preview viewport",
@@ -5318,7 +5370,8 @@
       "adjudication": {
         "disposition": "CONFIRMED_MISSING",
         "summary": "WebCV Studio's layout ladder and template presets are not implemented; the modern builder starts from the canonical document and the shared 100-id template catalogue, which is a different mechanism (5 archetypes), not an equivalent studio.",
-        "verifiedBy": "frontend/src/pages/portfolio/builder.tsx:144-160, frontend/src/lib/template-catalog.ts"
+        "verifiedBy": "frontend/src/pages/portfolio/builder.tsx:144-160, frontend/src/lib/template-catalog.ts",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -5526,7 +5579,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Create/load/save/conflict-reload are real and better than legacy (optimistic revision + reload-on-conflict). Two legacy actions have no counterpart: duplicate an existing portfolio, and switch template after creation (the modern template is chosen at creation only).",
-        "verifiedBy": "frontend/src/pages/portfolio/builder.tsx:144-160,405-420,509-517; legacy src/components/PortfolioBuilder/PortfolioBuilder.jsx:784,1059"
+        "verifiedBy": "frontend/src/pages/portfolio/builder.tsx:144-160,405-420,509-517; legacy src/components/PortfolioBuilder/PortfolioBuilder.jsx:784,1059",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -5601,22 +5655,24 @@
       "id": "FP-C06",
       "domain": "C",
       "capability": "Portfolio template gallery with palettes",
-      "classification": "MISSING",
+      "classification": "FULL PARITY",
       "backend": "n/a",
       "legacyFiles": 7,
-      "modernFiles": 3,
+      "modernFiles": 5,
       "legacyPaths": [
         "src/components/PortfolioTemplates"
       ],
       "modernPaths": [
-        "frontend/src/components/portfolio"
+        "frontend/src/components/portfolio",
+        "frontend/src/lib/portfolio-document.ts",
+        "frontend/src/pages/portfolio/builder.tsx"
       ],
       "subfeatures": [
         {
           "class": "filter",
           "label": "filtering",
           "legacy": 44,
-          "modern": 9,
+          "modern": 24,
           "appModern": 435,
           "verdict": "present"
         },
@@ -5624,7 +5680,7 @@
           "class": "pagination",
           "label": "pagination / cursor / load-more",
           "legacy": 9,
-          "modern": 4,
+          "modern": 9,
           "appModern": 269,
           "verdict": "present"
         },
@@ -5632,7 +5688,7 @@
           "class": "modal",
           "label": "dialog / drawer",
           "legacy": 1,
-          "modern": 8,
+          "modern": 13,
           "appModern": 307,
           "verdict": "present"
         }
@@ -5645,8 +5701,8 @@
         "labels": 22
       },
       "modernActions": {
-        "handlers": 0,
-        "labels": 13
+        "handlers": 1,
+        "labels": 26
       },
       "distinctiveActions": {
         "handlers": 0,
@@ -5659,14 +5715,6 @@
             "academic",
             "credentials",
             "governance"
-          ]
-        },
-        {
-          "label": "Board & Professional Credentials",
-          "missing": [
-            "board",
-            "professional",
-            "credentials"
           ]
         },
         {
@@ -5710,14 +5758,6 @@
             "strategic",
             "competencies"
           ]
-        },
-        {
-          "label": "Technical Stack & Competencies",
-          "missing": [
-            "technical",
-            "stack",
-            "competencies"
-          ]
         }
       ],
       "lostHandlers": [],
@@ -5728,10 +5768,6 @@
         {
           "action": "Academic Credentials & Governance",
           "accountedBy": "FP-D03"
-        },
-        {
-          "action": "Board & Professional Credentials",
-          "accountedBy": "FP-A24"
         },
         {
           "action": "Distinctions & Milestones",
@@ -5756,10 +5792,6 @@
         {
           "action": "Strategic Competencies",
           "accountedBy": "FP-B09"
-        },
-        {
-          "action": "Technical Stack & Competencies",
-          "accountedBy": "FP-D03"
         }
       ],
       "unaccountedHandlers": [],
@@ -5775,10 +5807,6 @@
           "accountedBy": "FP-D03"
         },
         {
-          "action": "Board & Professional Credentials",
-          "accountedBy": "FP-A24"
-        },
-        {
           "action": "Endorsements",
           "accountedBy": "FP-D03"
         },
@@ -5789,16 +5817,13 @@
         {
           "action": "Strategic Competencies",
           "accountedBy": "FP-B09"
-        },
-        {
-          "action": "Technical Stack & Competencies",
-          "accountedBy": "FP-D03"
         }
       ],
       "adjudication": {
         "disposition": "CONFIRMED_MISSING",
         "summary": "The named modular blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) do not exist in the modern portfolio components (0 hits), which is the same finding as FP-C02: the 71-block library was replaced by a canonical document model with a fixed set of sections. Two rows, one cause; recorded separately because they are separate capability rows.",
-        "verifiedBy": "grep in frontend/src/components/portfolio + frontend/src/pages/portfolio → 0 hits"
+        "verifiedBy": "grep in frontend/src/components/portfolio + frontend/src/pages/portfolio → 0 hits",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -6034,7 +6059,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Snippet insertion and a 'new interview' action from the live panel have no counterpart (`grep -n 'snippet|newInterview'` in live-interview-panel.tsx and interview-coach.tsx → 0). The voice interview itself is present; the loss is limited to snippet reuse and restart, which corroborates the FP-D03 losses (export/print/download).",
-        "verifiedBy": "frontend/src/components/interview/live-interview-panel.tsx; frontend/src/pages/dashboard/interview-coach.tsx"
+        "verifiedBy": "frontend/src/components/interview/live-interview-panel.tsx; frontend/src/pages/dashboard/interview-coach.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -6325,7 +6351,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Question flow, live session and scoring exist. Lost: print/export of a finished interview, snippet insertion, and session download — the modern page has no download/export path at all (grep for download/export in interview-coach.tsx returns only option text).",
-        "verifiedBy": "frontend/src/pages/dashboard/interview-coach.tsx (no print/download/export); legacy src/components/Interview/*: handlePrint, exportInterview, downloadSlug"
+        "verifiedBy": "frontend/src/pages/dashboard/interview-coach.tsx (no print/download/export); legacy src/components/Interview/*: handlePrint, exportInterview, downloadSlug",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -6478,7 +6505,8 @@
       "adjudication": {
         "disposition": "CONFIRMED_MISSING",
         "summary": "No command palette: 0 hits for CommandPalette/cmdk in frontend/src and no Cmd/Ctrl+K binding anywhere (only Ctrl+S in two builders). This corroborates the M6 downgrade of FP-G01.",
-        "verifiedBy": "grep -rln 'CommandPalette|cmdk' frontend/src; grep for metaKey in layout + dashboard"
+        "verifiedBy": "grep -rln 'CommandPalette|cmdk' frontend/src; grep for metaKey in layout + dashboard",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -6597,7 +6625,7 @@
       "id": "FP-D07",
       "domain": "D",
       "capability": "Notification centre (bell, unread poller, routing)",
-      "classification": "REPLACED BY EQUIVALENT",
+      "classification": "PARTIAL PARITY",
       "backend": "yes",
       "legacyFiles": 4,
       "modernFiles": 4,
@@ -6665,7 +6693,7 @@
       "lostHandlers": [
         "runOnce"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -6679,7 +6707,34 @@
       ],
       "unaccountedLabels": [],
       "accountedHandlers": [],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "RECLASSIFY_PARTIAL",
+        "verdict": "preserved-with-limitations (centre replaced; live unread poller lost)",
+        "classificationBefore": "REPLACED BY EQUIVALENT",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "runOnce",
+        "summary": "The row title names three things — bell, unread poller, routing. Bell and routing are genuinely replaced by an equivalent (server-backed list + optimistic read/rollback + deep-link routing from notification type). The unread poller is NOT replaced: the coalesced 15s->300s single-flight poller that honoured Retry-After is gone, and no global unread message badge survives. Because a named part of the row has no modern counterpart, the row is PARTIAL PARITY, not REPLACED BY EQUIVALENT.",
+        "chain": {
+          "preserved": "frontend/src/pages/dashboard/notifications.tsx:119 (unread derived from server rows), :178-192 (mark-all-read guard); frontend/src/hooks/use-api-hooks.ts:532-539 (useNotifications, server truth) with :544-580 (optimistic patch, row-by-row rollback, invalidate on settle); frontend/src/lib/notification-display.ts:71 (type -> route mapping); frontend/src/components/layout/cuba-app-shell.tsx:323-329 + :1114 (bell with live count from the same query)",
+          "lost": "src/hooks/unreadMessagesPoller.js:1-30 documents the shared singleton that coalesced 4 subscribers onto ONE request per tick, with a 15s->30s->60s->120s->240s->300s backoff ladder and genuine Retry-After honouring. Modern has no shared poller (frontend/src/hooks/ contains only use-api-hooks.ts and use-restore-focus-when-idle.ts) and no global unread-message badge (no totalUnread consumer outside frontend/src/pages/dashboard/messages.tsx:153,294).",
+          "replacementCadence": "per-page polling only: frontend/src/pages/dashboard/messages.tsx:146 and frontend/src/components/messages/conversation-thread.tsx:54 use refetchInterval and explicitly return false once the query is in error state — i.e. poll-then-stop, no ladder, no Retry-After. useNotifications has staleTime 30_000 and no interval, so the bell count does not refresh on its own."
+        },
+        "losses": [
+          "coalesced single-flight unread poller with backoff ladder + Retry-After honour (src/hooks/unreadMessagesPoller.js)",
+          "global unread-message nav badge (legacy MessagesNavBadge + useUnreadMessages consumers)"
+        ],
+        "verifiedBy": [
+          "src/hooks/unreadMessagesPoller.js:1-30",
+          "frontend/src/hooks/use-api-hooks.ts:527-539",
+          "frontend/src/pages/dashboard/notifications.tsx:119,178-192",
+          "frontend/src/components/layout/cuba-app-shell.tsx:323-329,1114",
+          "frontend/src/pages/dashboard/messages.tsx:146-153",
+          "frontend/src/components/messages/conversation-thread.tsx:54"
+        ],
+        "evidenceLimit": "static only; request cadence was not observed in a browser (see M8-RUNTIME-VERIFICATION.md).",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-D08",
@@ -7015,7 +7070,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Dashboard home, onboarding and applied-job surfaces exist; most unaccounted handlers belong to sibling rows (interview, resume builder, settings). Genuinely lost: resend-verification and interview export/download, both recorded against FP-D03 and the auth row rather than here.",
-        "verifiedBy": "frontend/src/pages/dashboard/overview.tsx, applied-jobs.tsx, interview-coach.tsx"
+        "verifiedBy": "frontend/src/pages/dashboard/overview.tsx, applied-jobs.tsx, interview-coach.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -7201,7 +7257,7 @@
         "handleResize",
         "toggleNavGroup"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -7252,7 +7308,29 @@
           "action": "Privacy",
           "accountedBy": "FP-A16"
         }
-      ]
+      ],
+      "adjudication": {
+        "disposition": "NO_CHANGE",
+        "verdict": "equivalent replacement (mechanism change, same observable behaviour)",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "handleProfileUpdate, handleNotificationsUpdated, handleMobileToggle",
+        "summary": "All three leads are event-plumbing artefacts of the legacy dashboard library, each with a functional modern equivalent. Nothing user-visible is lost; the transport changed from custom window events to React Query cache writes and local component state.",
+        "chain": {
+          "handleProfileUpdate": "legacy src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:73-84 listened for window 'profileUpdated' to repaint the avatar. Modern writes the server response straight into the query cache: frontend/src/components/settings/profile-panel.tsx:156 (setQueryData after save) and :182 (newer revision wins), so every consumer of queryKeys.dashboard.profile re-renders without an event bus.",
+          "handleNotificationsUpdated": "legacy ProfileDisplay.jsx:232-241 re-counted on window 'notificationsUpdated'. Modern derives the count from the shared query (cuba-app-shell.tsx:323-329) and every notification mutation patches that same cache with optimistic rollback and a final invalidate (frontend/src/hooks/use-api-hooks.ts:544-580), so there is no event to handle.",
+          "handleMobileToggle": "legacy ProfileDisplay.jsx:243-247 called toggleSidebar() from the avatar menu. Modern owns the drawer state in the shell: frontend/src/components/layout/app-shell.tsx:70 (mobileMenuOpen) with open/close at :114,156,180,281; cuba-app-shell.tsx:273 mirrors it."
+        },
+        "losses": [],
+        "verifiedBy": [
+          "src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:73-84,232-247",
+          "frontend/src/components/settings/profile-panel.tsx:150-185",
+          "frontend/src/components/layout/app-shell.tsx:70,114,281",
+          "frontend/src/components/layout/cuba-app-shell.tsx:273,323-329"
+        ],
+        "evidenceLimit": "static only; no component test run.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-D13",
@@ -7336,7 +7414,7 @@
         "submitPrompt",
         "toggleSaved"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -7374,7 +7452,32 @@
           "accountedBy": "app"
         }
       ],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "SUBFEATURE_LOSS",
+        "verdict": "preserved-with-limitations (guidance routing preserved; payment-grace banner missing)",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "handleGuidanceSubmit, label 'Subscription renewal needs attention'",
+        "summary": "The free-text guidance box that classified a query into a builder section is gone as an input, but the routing vocabulary it produced is preserved as deep links. The strongest loss in this row is not the box: it is the dunning/grace banner, which has no modern counterpart at all.",
+        "chain": {
+          "handleGuidanceSubmit": "LIMITED — legacy src/components/Candidate/CandidateCareerAssistant.jsx:61-68 classified the query (skill|keyword -> skills, summary|profile -> summary, work|experience -> work-history, education -> education, else heading) and :147-151 navigated to /build-resume/<section>. Modern has no free-text classifier (frontend/src/pages/dashboard/ai-assistant.tsx:23-48 exposes three explicit tools: bullet, summary, skills), but the destination vocabulary survives verbatim: frontend/src/pages/dashboard/resume-builder.tsx:247-267 STEP_MAP maps heading|personal-info|contact, experience|work-history|work, education|academic, skills|abilities, summary|bio|executive-bio.",
+          "graceBanner": "MISSING — legacy src/components/Candidate/PaymentGraceBanner.jsx:30-38 rendered a role=status aria-live banner ('Subscription renewal needs attention', data-grace-until, data-days-left) from a billing grace notice. Modern: zero hits for grace|graceUntil|payment-grace across frontend/src (the only 'grace' matches are the words gracefully/graceful in comments), so a candidate in dunning gets no in-app signal."
+        },
+        "losses": [
+          "payment-grace / dunning banner with days-left and grace-until (legacy PaymentGraceBanner.jsx)",
+          "free-text intent classifier on the career-assistant box (equivalent explicit tools exist; destination deep links preserved)"
+        ],
+        "verifiedBy": [
+          "src/components/Candidate/CandidateCareerAssistant.jsx:61-68,147-151",
+          "src/components/Candidate/PaymentGraceBanner.jsx:30-38",
+          "frontend/src/pages/dashboard/ai-assistant.tsx:23-48,254",
+          "frontend/src/pages/dashboard/resume-builder.tsx:247-267",
+          "grep -rn 'grace|graceUntil|payment-grace' frontend/src"
+        ],
+        "evidenceLimit": "static only. Whether the backend still emits a grace notice payload was not executed against MariaDB.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-D14",
@@ -7472,7 +7575,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "MISSING stands and is positively confirmed: no dunning, grace-period or renewal banner exists; the only `renew` references are enterprise session renewal in `EnterpriseSecurityTab.tsx`.",
-        "verifiedBy": "grep -rln 'renew|Renew' frontend/src → only EnterpriseSecurityTab.tsx"
+        "verifiedBy": "grep -rln 'renew|Renew' frontend/src → only EnterpriseSecurityTab.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -7981,7 +8085,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "The builder is real and richer in places than legacy (autosave with snapshot, live ATS scoring, bullet impact analyzer at :2336-2370, import/parse). Lost: per-edit/AI undo history, add-custom-section, passive-opener fixer and quick-metric injection (all legacy BulletPointsEditor features), and an explicit 'complete resume' gate.",
-        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2336-2370,647-660,2600-2620; legacy src/components/Form/BulletPointsEditor.jsx:389-482"
+        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2336-2370,647-660,2600-2620; legacy src/components/Form/BulletPointsEditor.jsx:389-482",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -8478,7 +8583,8 @@
       "adjudication": {
         "disposition": "PARTIAL_EQUIVALENT",
         "summary": "Crop/zoom is absent (no crop UI, no canvas transform anywhere). Photo upload itself exists in the resume builder (base64 data URL, 5 MB guard) so the row's parent capability is not wholly missing — but the named capability (crop/zoom) is.",
-        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2600-2620"
+        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2600-2620",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -9445,7 +9551,8 @@
       "adjudication": {
         "disposition": "CONFIRMED_MISSING",
         "summary": "No QR generation anywhere (0 hits for qrcode/QRCode). MFA enrolment exists as a server-backed factor list in settings, but the QR enrolment artefact the legacy feature produced does not.",
-        "verifiedBy": "grep -rln 'qrcode|QRCode' frontend/src; frontend/src/components/settings/security-panel.tsx:189-196"
+        "verifiedBy": "grep -rln 'qrcode|QRCode' frontend/src; frontend/src/components/settings/security-panel.tsx:189-196",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -9976,7 +10083,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Every unaccounted action in this row is a resume-builder action inherited through the legacy scope `src/components/BuildResume` (the whole builder directory), including the share/publish flow itself: legacy handlePublishForReview is the publication toggle that the modern app implements in lib/share-publication.ts (:41/:52/:73) plus share-modal.tsx. The builder actions are adjudicated on FP-E01. The row's own capability — clipboard share link, publish, unpublish, public viewer — is present, honest about failure and server-backed, which is why FULL PARITY stands.",
-        "verifiedBy": "frontend/src/lib/share-publication.ts:41,52,73; frontend/src/components/ui/share-modal.tsx; legacy src/components/BuildResume/BuildResume.jsx:1060"
+        "verifiedBy": "frontend/src/lib/share-publication.ts:41,52,73; frontend/src/components/ui/share-modal.tsx; legacy src/components/BuildResume/BuildResume.jsx:1060",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -10110,7 +10218,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Lead item 'Telegram' is a template/label string, not an action. Cover-letter create/edit/export are present and reachable. FULL PARITY stands.",
-        "verifiedBy": "frontend/src/pages/dashboard/cover-letter-builder.tsx"
+        "verifiedBy": "frontend/src/pages/dashboard/cover-letter-builder.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -10371,7 +10480,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Verified statically, not left open. DOCX export is real and duplicated in two modern surfaces (resumes.tsx:497 and preview-modal.tsx:168 → POST /api/export-docx). PDF: there is no PDF route anywhere in backend/ (`grep -E '(app|router)\\.(get|post)\\('` over backend for 'pdf' returns nothing) and no headless-browser service (no puppeteer/chromium module). So the modern server-rendered export is DOCX-only — PARTIAL PARITY stands, and the lead is closed as a format loss rather than an unresolved question.",
-        "verifiedBy": "frontend/src/pages/dashboard/resumes.tsx:497; backend grep for pdf routes/services → 0"
+        "verifiedBy": "frontend/src/pages/dashboard/resumes.tsx:497; backend grep for pdf routes/services → 0",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -10585,7 +10695,8 @@
       "adjudication": {
         "disposition": "RECLASSIFY_PARTIAL",
         "summary": "The row was MISSING, but the modern builder ships a 'Bullet Polish' tab with a real-time impact analyzer (active verbs / metrics / outcomes, strength score with Strong/Moderate/Needs Metrics bands, progress bar) at resume-builder.tsx:2336-2390, plus power-verb insertion and an AI bullet copilot (components/resume/role-ai-copilot-modal.tsx, FormattingToolbar). What is absent is the per-bullet editor's drag-reorder, undo, passive-opener fixer and quick-metric injection. Behaviourally this is a narrower implementation, not an absence: PARTIAL PARITY.",
-        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2336-2390; frontend/src/components/ui/formatting-toolbar.tsx:118-180; frontend/src/components/resume/role-ai-copilot-modal.tsx:43-210"
+        "verifiedBy": "frontend/src/pages/dashboard/resume-builder.tsx:2336-2390; frontend/src/components/ui/formatting-toolbar.tsx:118-180; frontend/src/components/resume/role-ai-copilot-modal.tsx:43-210",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -11313,7 +11424,7 @@
         "handleOptionClick",
         "handlePlaceSelect"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -11332,7 +11443,36 @@
       ],
       "unaccountedLabels": [],
       "accountedHandlers": [],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "CONFIRMED_MISSING",
+        "verdict": "missing (map view + Places autocomplete), and the surviving text filters are dead",
+        "classificationBefore": "MISSING",
+        "classificationAfter": "MISSING",
+        "lead": "handlePlaceSelect, handleOptionClick",
+        "summary": "Map view and Google Places autocomplete are genuinely absent, and the replacement the modern portal offers does not work either: the public jobs page requests /api/jobs, which is not a registered operation, and the registered /api/jobs-data route ignores q/location/type entirely. So job discovery is not merely reduced, it cannot return filtered results.",
+        "chain": {
+          "legacy": "src/components/JobsListings/GoogleMapsProvider.jsx (loader) + src/components/JobsListings/LocationAutocomplete.jsx:1-40 (new google.maps.places.Autocomplete restricted to '(cities)', fields formatted_address/geometry/name/address_components) + src/components/JobsListings/SimpleLocationInput.jsx (fallback input). handlePlaceSelect consumed the place; handleOptionClick selected a suggestion.",
+          "modern": "frontend/src/pages/jobs/portal.tsx:61-81 holds searchQuery/locationFilter/typeFilter in local state, sets q/location/type on the query string, and calls get(`/jobs?...`). There is no map component anywhere: grep for google.maps|maps.googleapis|MapContainer|leaflet over frontend/src returns 0 hits.",
+          "routeGap": "api-client.ts baseURL is '/api', so the request is GET /api/jobs. The operation register contains /jobs/{X}/applications and /jobs-data{,/{X},/applications/list,/tracker} but no GET /jobs (Evidence/artifacts/backend-operations.tsv; M8 re-run unchanged) — the request 404s before any filter can apply.",
+          "filterGap": "Even the registered contract would not filter: backend/routes/jobsData.js:159-175 forwards req.query to repository.getJobs, and both implementations honour only publicOnly/status/employerId/limit — backend/repositories/MySQLRepository.js:1153-1176 builds the WHERE from those four and never reads q, location or type (InMemoryRepository.js:402-425 is the same shape)."
+        },
+        "losses": [
+          "map view of job listings",
+          "Google Places city autocomplete (handlePlaceSelect/handleOptionClick)",
+          "working text/location/type filtering on the public jobs page (client sends parameters no server reads, to a path no server registers)"
+        ],
+        "verifiedBy": [
+          "src/components/JobsListings/LocationAutocomplete.jsx:1-40",
+          "frontend/src/pages/jobs/portal.tsx:61-81,124",
+          "backend/routes/jobsData.js:159-175",
+          "backend/repositories/MySQLRepository.js:1153-1176",
+          "backend/repositories/InMemoryRepository.js:402-425",
+          "developer-review/Evidence/artifacts/backend-operations.tsv"
+        ],
+        "evidenceLimit": "static only. The 404 was not observed over HTTP; it follows from the registration set, which is why the row carries a contract gap as well as a parity gap.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-F08",
@@ -11451,7 +11591,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Regional hub pages exist and call /api/public/geo/regions/{kind}/{slug} (UI-REACHABLE); the unaccounted handlers belong to the main job board row (FP-F10).",
-        "verifiedBy": "frontend/src/pages/jobs/regional-hub.tsx:57-77"
+        "verifiedBy": "frontend/src/pages/jobs/regional-hub.tsx:57-77",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -11670,7 +11811,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Job delete (useDeleteJob), application status change (PATCH /job-applications/:id/status) and rejection reasons (CandidateReviewDrawer employerNotes) all exist; the remaining handlers are the employer portal's tab shell (FP-F01).",
-        "verifiedBy": "frontend/src/hooks/use-api-hooks.ts:297-310; frontend/src/components/employer/CandidateReviewDrawer.tsx:84,252"
+        "verifiedBy": "frontend/src/hooks/use-api-hooks.ts:297-310; frontend/src/components/employer/CandidateReviewDrawer.tsx:84,252",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -12416,7 +12558,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Real loss of filter depth. Legacy JobFilters offered ~15 industry categories, experience level (entry/mid/senior/executive), work mode (on-site/hybrid/remote) and 'Reset all'; the modern portal exposes only three job types (JOB_TYPES: All/Full-time/Part-time/Contract/Internship/Remote), a location text box and free-text search, with no reset and no paging. The listing fetch itself targets `/jobs`, which no backend operation serves (DISC-043), so the page surfaces an error rather than results.",
-        "verifiedBy": "frontend/src/pages/jobs/portal.tsx:54-81; legacy src/components/JobsListings/JobFilters.jsx:42, JobSearchBar.jsx:46"
+        "verifiedBy": "frontend/src/pages/jobs/portal.tsx:54-81; legacy src/components/JobsListings/JobFilters.jsx:42, JobSearchBar.jsx:46",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -12624,7 +12767,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Shell navigation is expressed as routes and `navigate()` calls rather than named click handlers (`app-shell.tsx:89` is the only imperative navigation; the nav itself renders router links). The two leads are legacy handler names, not lost actions. The previously recorded PARTIAL stands on the command palette absence (FP-D04).",
-        "verifiedBy": "frontend/src/components/layout/app-shell.tsx:66,89,304; frontend/src/app/router.tsx"
+        "verifiedBy": "frontend/src/components/layout/app-shell.tsx:66,89,304; frontend/src/app/router.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -13021,7 +13165,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Theme toggle, nav handling and the app shell exist (useTheme in app-shell.tsx); the copilot actions moved to the AI surfaces (FP-D04/D09 rows). REPLACED BY EQUIVALENT stands.",
-        "verifiedBy": "frontend/src/components/layout/app-shell.tsx:34,66,304"
+        "verifiedBy": "frontend/src/components/layout/app-shell.tsx:34,66,304",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -13183,7 +13328,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "MISSING stands for per-route metadata: only the public portfolio sets `document.title`; no helmet/title hook exists anywhere. Site-level title/description/logo editing does exist (`AdminSettingsTab.tsx:853-881`) but that is one metadata document, not per-route SEO with canonical and structured data.",
-        "verifiedBy": "grep for useDocumentTitle|Helmet|document.title in frontend/src; frontend/src/components/admin/AdminSettingsTab.tsx:853-881"
+        "verifiedBy": "grep for useDocumentTitle|Helmet|document.title in frontend/src; frontend/src/components/admin/AdminSettingsTab.tsx:853-881",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -13237,7 +13383,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "MISSING stands and is now positively confirmed: zero service-worker registrations anywhere (`grep -rn serviceWorker frontend/src` → 0). Lazy routes wrapped in Suspense plus an ErrorBoundary (`app/router.tsx`) is error handling for code-splitting, not an offline shell — a chunk that cannot be fetched still fails.",
-        "verifiedBy": "grep -rn 'serviceWorker\\|registerSW' frontend/src index.html; frontend/src/app/router.tsx (lazy + Suspense + ErrorBoundary)"
+        "verifiedBy": "grep -rn 'serviceWorker\\|registerSW' frontend/src index.html; frontend/src/app/router.tsx (lazy + Suspense + ErrorBoundary)",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -13414,7 +13561,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "The lead `handleResetPassword` has a modern equivalent: the reset-password page and its request flow under `pages/auth`. Partial parity stands on the already-recorded differences (forced password change).",
-        "verifiedBy": "frontend/src/pages/auth (reset-password page); grep handleResetPassword has no modern match because the handler is inlined"
+        "verifiedBy": "frontend/src/pages/auth (reset-password page); grep handleResetPassword has no modern match because the handler is inlined",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -13781,7 +13929,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "Confirmed loss of the rich authoring actions: the modern editor has a plain `excerpt` input (`pages/blog/editor.tsx:284-286`) and no insert-image, insert-link or auto-excerpt action anywhere in the file. This is the front-end half of DISC-039; the back-end half is that all of the editor's four requests target unregistered paths.",
-        "verifiedBy": "frontend/src/pages/blog/editor.tsx:284-286 (no image/link toolbar)"
+        "verifiedBy": "frontend/src/pages/blog/editor.tsx:284-286 (no image/link toolbar)",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -14054,7 +14203,8 @@
       "adjudication": {
         "disposition": "SUBFEATURE_LOSS",
         "summary": "The modern CMS page renders a hardcoded dictionary of five legal pages (CMS_PAGES) at pages/cms/index.tsx:145-200; there is no admin authoring, no language switching and no meta editing, all of which the legacy CMS had. Server-side page storage still exists (/public/custom-pages) but the UI no longer edits it.",
-        "verifiedBy": "frontend/src/pages/cms/index.tsx:1-150; backend public/custom-pages route"
+        "verifiedBy": "frontend/src/pages/cms/index.tsx:1-150; backend public/custom-pages route",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -14123,7 +14273,7 @@
       "lostHandlers": [
         "handleDismissSuccess"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -14137,7 +14287,35 @@
       ],
       "unaccountedLabels": [],
       "accountedHandlers": [],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "SUBFEATURE_LOSS",
+        "verdict": "missing (contact delivery) — modern form reports success without a request",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "handleDismissSuccess",
+        "summary": "The marketing contact form is now a false-success surface: it validates locally, then renders 'Message Received!' and 'we have logged your request' without issuing any request, while the backend still has a working, rate-limited, persisting POST /api/contact that nothing in the modern tree calls. The dismiss control that used to hide the success card was replaced by a static 'Back to Home' link.",
+        "chain": {
+          "legacy": "src/components/Contact/Contact.jsx:165-175 awaited addContactMessage(email,name,message), inspected result.success === false and threw, and only then set isSuccessShowed. src/services/api/platform.js:308-315 posts JSON to /api/contact. The dismiss handler is at Contact.jsx:189-191.",
+          "modern": "frontend/src/pages/cms/index.tsx:234-243: handleSubmit only checks email/message are non-empty and calls setSubmitted(true); no fetch, no api client, no error path. The success card at :288-300 then prints 'We have logged your request and our support desk will contact you at {email}'. The page is the routed /contact element (frontend/src/app/router.tsx:74).",
+          "backend": "backend/index.js:2360-2387 validates name/email/message bounds, persists through repo.saveContactMessage with ip/userAgent, returns 202; a honeypot field short-circuits to a generic 202. Rate limiting is mounted at :577. Nothing in the modern client reaches it, so the register classifies POST /contact UNREACHABLE ('called only by tests').",
+          "consequence": "A visitor who submits a genuine enquiry receives a confirmation for a message that was never stored or sent — the exact class of defect the audit calls false success."
+        },
+        "losses": [
+          "contact-message delivery/persistence from the public site (legacy Contact.jsx + services/api/platform.js)",
+          "per-field validation and first-invalid-field focus management (legacy DIR-031 implementation) — modern validates two fields only, silently",
+          "success-card dismiss control (replaced by a static link)"
+        ],
+        "verifiedBy": [
+          "src/components/Contact/Contact.jsx:165-175,189-191",
+          "src/services/api/platform.js:308-315",
+          "frontend/src/pages/cms/index.tsx:234-243,277-300",
+          "frontend/src/app/router.tsx:74",
+          "backend/index.js:2360-2387,577"
+        ],
+        "evidenceLimit": "static only, but this one is directly observable in code with no runtime dependency: there is no request-producing call in the submit handler.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-G12",
@@ -14227,7 +14405,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "MISSING stands: no consent banner, cookie preferences or privacy-choices modal exists (`grep -rn 'privacyChoices\\|cookieConsent'` → only an unrelated admin settings string).",
-        "verifiedBy": "grep -rn 'privacyChoices|PrivacyChoices|cookieConsent' frontend/src"
+        "verifiedBy": "grep -rn 'privacyChoices|PrivacyChoices|cookieConsent' frontend/src",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -14451,7 +14630,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "The utility library was replaced by a different set of modules; the unaccounted helpers are billing/document helpers that belong to the billing row (invoice download is client-generated at checkout-modal.tsx:356-390). No row-scope loss.",
-        "verifiedBy": "frontend/src/pages/billing/checkout-modal.tsx:356-390"
+        "verifiedBy": "frontend/src/pages/billing/checkout-modal.tsx:356-390",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -14886,7 +15066,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "The typed service layer exists (lib/enterprise-api.ts, lib/messages.ts, hooks/use-api-hooks.ts). The unaccounted create/delete helpers are endpoints of capabilities that are themselves missing (blog), which is recorded on those rows, not on the service layer.",
-        "verifiedBy": "frontend/src/lib/enterprise-api.ts, frontend/src/hooks/use-api-hooks.ts"
+        "verifiedBy": "frontend/src/lib/enterprise-api.ts, frontend/src/hooks/use-api-hooks.ts",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -15210,7 +15391,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "Both leads are equivalent behaviour, not losses: the job URL opens through a real anchor (`tracker-entry.tsx:87-89`), and stage movement is a native `<select>` (`:156-166`) with drag-and-drop on the board (`:35`), so no bespoke key handler is needed. FULL PARITY stands.",
-        "verifiedBy": "frontend/src/components/job-tracker/tracker-entry.tsx:87-89,156-166,35"
+        "verifiedBy": "frontend/src/components/job-tracker/tracker-entry.tsx:87-89,156-166,35",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -15276,7 +15458,7 @@
         "downloadTextFile",
         "removeHistoryEntry"
       ],
-      "auditStatus": "DEEP_READ_M6",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -15295,7 +15477,35 @@
       ],
       "unaccountedLabels": [],
       "accountedHandlers": [],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "SUBFEATURE_LOSS",
+        "verdict": "preserved-with-limitations (generation preserved; local history list/delete/export lost)",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "removeHistoryEntry, downloadTextFile",
+        "summary": "Question generation and the interview run itself were rebuilt server-side (stronger than legacy), but the per-device interview history with delete and text export has no modern counterpart; the only delete verb applies to an abandoned live session, and the only export in the coach area is an .ics calendar file on the job tracker — a different capability.",
+        "chain": {
+          "legacy": "src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:9 imports appendHistory/readHistory/removeHistoryEntry/clearAllHistory/downloadTextFile from ../../../utils/interviewCoach; :1202 deletes one history entry (setHistory(removeHistoryEntry(ownerUid, entry.id))) after a confirm; export used downloadTextFile.",
+          "modernGeneration": "frontend/src/lib/interview-coach.ts:5-11 defines POST /api/generate-interview, POST /api/live-interview/sessions, GET/POST .../:id{,/turns,/complete}, DELETE .../:id. Handlers exist at backend/routes/ai.js:1010,1037,1050,1076,1102 and are guarded by the route allowlist at ai.js:362-365.",
+          "modernDelete": "DELETE /api/live-interview/sessions/:id (ai.js:1102) abandons ONE live session by id. There is no list-my-sessions operation, so a candidate cannot see or delete history at all — deleting by id presupposes the id, which the UI only holds for the session it just ran.",
+          "modernExport": "The coach page has no download/blob/clipboard call (grep for Blob|download|clipboard in frontend/src/pages/dashboard/interview-coach.tsx returns 0). frontend/src/pages/dashboard/job-tracker.tsx:141-153 downloads an .ics calendar invite for a tracked job — not an interview transcript/report export."
+        },
+        "losses": [
+          "interview history list with per-entry delete (legacy removeHistoryEntry)",
+          "text export of an interview session/report (legacy downloadTextFile)",
+          "clear-all-history control (legacy clearAllHistory)"
+        ],
+        "verifiedBy": [
+          "src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:9,1202",
+          "frontend/src/lib/interview-coach.ts:5-11",
+          "backend/routes/ai.js:362-365,1010-1115",
+          "frontend/src/pages/dashboard/interview-coach.tsx (grep: no Blob/download/clipboard)",
+          "frontend/src/pages/dashboard/job-tracker.tsx:141-153"
+        ],
+        "evidenceLimit": "static only; no AI provider credentials, so session creation was never executed.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-G22",
@@ -15378,7 +15588,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "REPLACED BY EQUIVALENT holds. The lead is `createLocalAuth`, a legacy module scaffold name; the modern tree has real modules under src/lib and src/app instead. No user-facing action is involved.",
-        "verifiedBy": "frontend/src/lib, frontend/src/app"
+        "verifiedBy": "frontend/src/lib, frontend/src/app",
+        "adjudicatedIn": "M7"
       }
     },
     {
@@ -15431,7 +15642,7 @@
         "toggleAudio",
         "toggleVideo"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -15483,7 +15694,42 @@
           "accountedBy": "app"
         }
       ],
-      "accountedLabels": []
+      "accountedLabels": [],
+      "adjudication": {
+        "disposition": "SUBFEATURE_LOSS",
+        "verdict": "missing (five of seven cross-cutting hooks) with two replaced",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "createUnreadMessagesPoller, runOnce",
+        "summary": "The legacy hooks directory carried eleven cross-cutting hooks. Modern carries two. The unread/unread-notification hooks are superseded by React Query polling, and the confirm/prompt dialogs exist as per-surface dialogs, but there is no candidate-facing AI engine status, no AI token-usage indicator and no service-availability indicator, even though GET /api/service-availability still exists and now has no modern consumer.",
+        "chain": {
+          "legacyInventory": "src/hooks/: unreadMessagesPoller.js, useUnreadMessages.js, useUnreadNotifications.js, useAiEngineStatus.js, useAiTokenUsage.js, useServiceAvailability.js, useConfirmDialog.jsx, usePromptDialog.jsx, useInterviewMedia.js, useMetaManager.js, useOAuthSignIn.js",
+          "modernInventory": "frontend/src/hooks/: use-api-hooks.ts, use-restore-focus-when-idle.ts (two files).",
+          "replaced": "unread poller -> per-page refetchInterval (frontend/src/pages/dashboard/messages.tsx:146, conversation-thread.tsx:54) under React Query dedupe; confirm/prompt -> per-surface dialogs (frontend/src/components/applications/withdraw-dialog.tsx, frontend/src/components/job-tracker/tracker-delete-dialog.tsx) though one surface regressed to native confirm() at frontend/src/components/enterprise/EnterpriseRolesTab.tsx:281.",
+          "missingEngineStatus": "src/hooks/useAiEngineStatus.js:1-20 polled GET /api/service-availability every 120s and mapped the boolean projection to AI_STATUS, never synthesising 'ready'. The endpoint still exists (backend/index.js:5398) but grep for service-availability over frontend/src returns 0 hits: no modern surface shows AI/provider availability.",
+          "missingTokenUsage": "src/hooks/useAiTokenUsage.js:48 reads the caller's AI token budget. Modern has no candidate-side equivalent — the only token telemetry is tenant/admin scoped (frontend/src/components/enterprise/EnterpriseUsageTab.tsx:49, AdminAiSettingsTab quotas).",
+          "missingAvailability": "src/hooks/useServiceAvailability.js:24 has no modern counterpart; the nearest surface is the admin health console (frontend/src/components/admin/AdminOperationsTab.tsx:5-6), not a candidate-visible status."
+        },
+        "losses": [
+          "candidate-facing AI engine/provider status (legacy useAiEngineStatus over GET /api/service-availability)",
+          "candidate AI token-usage indicator (legacy useAiTokenUsage)",
+          "candidate-visible service availability (legacy useServiceAvailability)",
+          "shared unread coalescing/backoff poller (see FP-D07)",
+          "accessible confirm/prompt dialogs where a surface now uses native window.confirm (EnterpriseRolesTab.tsx:281)"
+        ],
+        "verifiedBy": [
+          "src/hooks/ (11 files)",
+          "frontend/src/hooks/ (2 files)",
+          "src/hooks/useAiEngineStatus.js:1-20",
+          "src/hooks/useAiTokenUsage.js:48",
+          "src/hooks/useServiceAvailability.js:24",
+          "backend/index.js:5398",
+          "frontend/src/components/enterprise/EnterpriseUsageTab.tsx:49",
+          "frontend/src/components/enterprise/EnterpriseRolesTab.tsx:281"
+        ],
+        "evidenceLimit": "static only; the availability projection's live payload was never fetched (no runtime).",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-G24",
@@ -15565,7 +15811,7 @@
         "createTicketDialogRef",
         "createTicketSubjectRef"
       ],
-      "auditStatus": "EQUIVALENCE_LEAD",
+      "auditStatus": "ADJUDICATED",
       "disposition": null,
       "lostHandlersDetailed": [
         {
@@ -15599,7 +15845,34 @@
           "action": "Close resume validation",
           "accountedBy": "FP-A24"
         }
-      ]
+      ],
+      "adjudication": {
+        "disposition": "SUBFEATURE_LOSS",
+        "verdict": "preserved-with-limitations (support surface preserved, modal accessibility lost)",
+        "classificationBefore": "PARTIAL PARITY",
+        "classificationAfter": "PARTIAL PARITY",
+        "lead": "createTicketButtonRef, createTicketDialogRef, createTicketSubjectRef",
+        "summary": "Ticket listing, creation and reply are preserved and now server-backed. What was dropped is the dialog contract the three refs existed to implement: initial focus on the subject field, Escape-to-close with an in-flight guard, body scroll lock, and focus restore to the opener. The modern modal is a hand-rolled div with role=dialog and aria-modal but no key handling at all, while the kit already ships an accessible Radix Dialog.",
+        "chain": {
+          "legacy": "src/components/Dashboard/DashboardSupport/DashboardSupport.jsx:127-133 declares createTicketButtonRef (opener), createTicketDialogRef (dialog), createTicketSubjectRef (first field); :191-202 sets body overflow hidden, focuses the subject on the next frame, traps Escape and refuses to close while isCreatingTicket; :831-834 binds the subject ref. Teardown restores the opener's focus.",
+          "modernSurface": "frontend/src/pages/dashboard/support.tsx:36 (ticket list query), :67-77 (create mutation), :79-85 (reply mutation), :51-58 (search/filter). Functionally a superset of legacy except for the dialog contract.",
+          "modernDialog": "frontend/src/pages/dashboard/support.tsx:353-372 renders <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"create-ticket-title\"> with an overlay click-to-close and a close button. grep for Escape, keydown and autoFocus in that file returns 0 each; there is no scroll lock and no focus restore.",
+          "availableButUnused": "frontend/src/components/ui/dialog.tsx:1-8 wraps @radix-ui/react-dialog (declared in frontend/package.json) with focus lock and Escape handling, so the accessible primitive exists and is simply not used on this surface."
+        },
+        "losses": [
+          "initial focus placement on the create-ticket subject field",
+          "Escape-to-close with in-flight guard",
+          "body scroll lock while the modal is open",
+          "focus return to the opener button on close"
+        ],
+        "verifiedBy": [
+          "src/components/Dashboard/DashboardSupport/DashboardSupport.jsx:127-133,191-202,831-834",
+          "frontend/src/pages/dashboard/support.tsx:36,51-58,67-85,353-372",
+          "frontend/src/components/ui/dialog.tsx:1-8"
+        ],
+        "evidenceLimit": "static only; keyboard behaviour was not exercised in a browser.",
+        "adjudicatedIn": "M8"
+      }
     },
     {
       "id": "FP-G25",
@@ -15712,7 +15985,8 @@
       "adjudication": {
         "disposition": "NO_CHANGE",
         "summary": "REPLACED BY EQUIVALENT holds: bootstrap is `main.tsx` + `app/router.tsx` with Suspense fallbacks and an ErrorBoundary; the leads (`handleChunkError`, `handleLanguageChanged`) are names for behaviour the router implements inline. Route-focus management remains unverified (U-G05), unchanged from M6.",
-        "verifiedBy": "frontend/src/main.tsx, frontend/src/app/router.tsx"
+        "verifiedBy": "frontend/src/main.tsx, frontend/src/app/router.tsx",
+        "adjudicatedIn": "M7"
       }
     },
     {

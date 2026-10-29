@@ -28,13 +28,13 @@ security compliance. It asserts *traceability*.
 | Capability rows | 112 | **112 (100 %)** | `FEATURE-PARITY-MATRIX.md`, `feature-parity.json` |
 | Backend operations (unique METHOD+path) | 393 | **393 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
 | Allegations | 48 | **48 (100 %)** | `ALLEGATION-RESOLUTION-REGISTER.md` |
-| Findings | 46 | **46 (100 %)** | `DISCREPANCY-LOG.md` (48 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
+| Findings | 53 | **53 (100 %)** | `DISCREPANCY-LOG.md` (55 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
 | Requirements | 65 | **65 (100 %)** | `REQUIREMENT-REGISTER.md` §P |
 | Environment gaps + a11y defects | 12 + 5 | **17 (100 %)** | `EG-REVALIDATION-REGISTER.md` |
-| **Total items** | **1,537** | **1,537** | — |
+| **Total items** | **1,544** | **1,544** | — |
 
-Arithmetic: 650 + 206 + 112 + 393 + 48 + 46 + 65 + 17 = **1,537**. (V5 shipped 1,496 and V6 1,523; the
-V7 step is reconciled line by line in §14.)
+Arithmetic: 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17 = **1,544**. (V5 shipped 1,496, V6 1,523 and V7
+1,537; each step is reconciled line by line in §14 and §15.)
 
 The aggregate moved twice, both times disclosed: V4 → 1,492 after the legacy baseline lost one file and
 one finding joined (DISC-023); V5 → 1,496 after three findings joined (DISC-024, DISC-025, DISC-026) and
@@ -281,7 +281,7 @@ labelled* is not fully present, which is what the `FULL PARITY` class means.
 
 ## 14. V7 amendment (`8a6e03bb`) — the operation register was wrong, so this table moved again
 
-The headline arithmetic is now **1,537** (650 + 206 + 112 + 393 + 48 + 46 + 65 + 17). Line-by-line:
+The headline arithmetic at V7 was **1,537** (650 + 206 + 112 + 393 + 48 + 46 + 65 + 17). Line-by-line:
 
 | Component | V6 | V7 | Δ | Cause |
 |---|---:|---:|---:|---|
@@ -308,3 +308,38 @@ Correspondingly, the parity axis is unchanged in its verdict (PARTIAL — INCOMP
 **Cross-reference:** the per-path consequences are in `M7-CAPABILITY-CLOSURE.md` §3, the corrected
 finding is `DISCREPANCY-LOG.md` DISC-041, and the retracted portion of DISC-025 is left visible with the
 six ticket rows struck through.
+
+---
+
+## 15. M8 amendment (`a2ecb96`) — seven findings joined, nothing else moved
+
+The headline arithmetic is now **1,544** = 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17. Only one component
+changed:
+
+| Component | V7 | M8 | Δ | Cause |
+|---|---:|---:|---:|---|
+| Legacy source files | 650 | **650** | 0 | unchanged (re-walked in M8) |
+| Modern source files | 206 | **206** | 0 | unchanged (re-walked in M8) |
+| Capability rows | 112 | **112** | 0 | unchanged; three classifications moved inside the 112 (`M8-PARITY-REVALIDATION.md`) |
+| Backend operations | 393 | **393** | 0 | unchanged; the counting *units* were repaired and reconciled (`M8-REGISTRATION-COUNT-RECONCILIATION.md`) |
+| Allegations | 48 | **48** | 0 | unchanged |
+| Findings | 46 | **53** | **+7** | DISC-049 … DISC-055 raised in M8; no merged stubs added |
+| Requirements | 65 | **65** | 0 | unchanged |
+| Environment gaps + a11y | 17 | **17** | 0 | unchanged |
+| **Total** | **1,537** | **1,544** | **+7** | seven findings only |
+
+As in V7, a rising total is not evidence of better coverage. M8's own conclusion is unchanged by this
+number: the verdict rests on the gates in `M8-INDEPENDENT-ACCEPTANCE-REPORT.md`, not on this sum.
+
+**Amendments to this section (same revision).** It first read "+5 / 1,542" because M8 had raised five
+findings; it then read "+6 / 1,543" and now reads "+7 / 1,544". The two later findings came from the work
+that follows a number to its end:
+
+- **DISC-054** — tracing `FP-B05`'s lead-assignment lead past the route and into the production registry
+  showed that `PATCH /api/enterprise/teams/:teamId` (and its archive and restore siblings) call registry
+  methods that `MySqlTenantRegistry` does not implement, and that `enterprise_teams` has no lead column.
+- **DISC-055** — reconciling why the independent parser counted 405 registrations for 399 distinct keys
+  showed four route blocks declared twice in `backend/routes/platform.js`, whose dead second copies include
+  a `payment-settings` guard that disagrees with the live one.
+
+The total moved for the same reason each time: one finding, one item, no double counting.

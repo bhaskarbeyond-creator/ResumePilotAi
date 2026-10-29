@@ -1,7 +1,10 @@
-revision                 : a7d08a2fa67b
-route registrations      : 397
-unique METHOD+path       : 393
-duplicate registrations  : 4
+revision                 : a2ecb96d2b19
+route call sites         : 393   (one <router|app>.<verb>(...) expression per receiver x mount prefix)
+alias registrations      : 397   (one per path literal: array-form aliases count separately)
+unique METHOD+path       : 393   <- operation register denominator
+collapsed aliases        : 4
+non-/api routes          : 14   (real endpoints outside this register's /api scope; excluded from the denominator)
+duplicate registrations  : 0
 
 reachability classes (numerator / denominator = unique METHOD+path):
   UI-REACHABLE              156  (39.7%)

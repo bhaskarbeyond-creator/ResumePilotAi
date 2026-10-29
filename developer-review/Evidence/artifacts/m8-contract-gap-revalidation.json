@@ -1,0 +1,752 @@
+{
+ "revision": "8fce71518d1dc957c3c8cefa9867445edb35f438",
+ "generatedAt": "2026-10-29T08:07:24.395Z",
+ "method": "Re-resolves each unresolved client call against the 393-operation register by exact contract, same path/other verb, same tail segment under another prefix, and non-/api endpoint shape. Candidate lists come from the register; the audit artifact is only compared against, never copied.",
+ "counts": {
+  "clientCallSites": 212,
+  "matched": 190,
+  "contractMismatch": 8,
+  "noRegisteredOperation": 14,
+  "unresolvedSites": 22,
+  "distinctGapShapes": 15,
+  "gapSites": 22,
+  "falseSuccessSites": 12,
+  "falseSuccessDistinctPaths": 11,
+  "falseSuccessSitesOnUnresolvedPaths": 8,
+  "falseSuccessUnresolvedShapes": 7,
+  "falseSuccessSitesOnMatchedPaths": 4,
+  "falseSuccessSitesOnMismatchPaths": 2,
+  "falseSuccessSitesOnNoOperationPaths": 6,
+  "swallowsWithoutSuccess": 9
+ },
+ "classificationHistogram": {
+  "AMBIGUOUS": 5,
+  "NO_OPERATION": 5,
+  "ANOTHER_CONTRACT": 5
+ },
+ "dispositionHistogram": {
+  "WRONG_URL_ADJUDICATED": 11,
+  "MISSING_BACKEND": 4
+ },
+ "falseSuccessPaths": [
+  "/blog/posts/{X}",
+  "/platform/operational-status/refresh",
+  "/admin/employer-applications/{X}/verify",
+  "/admin/jobs/{X}/moderate",
+  "/admin/operations/backup",
+  "/admin/operations/cache-clear",
+  "/admin/queues/dead-letter-queue/purge",
+  "/admin/users/{X}/status",
+  "/platform/role-view-audit",
+  "/admin/users/{X}/revoke-sessions",
+  "/admin/users"
+ ],
+ "gaps": [
+  {
+   "path": "/admin/employer-applications/{X}/verify",
+   "requestShape": "/admin/employer-applications/{X}/verify",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/employer-applications/{X}",
+    "reason": "the verification decision is a status transition on the application, not a /verify sub-resource",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:152",
+    "frontend/src/components/admin/AdminModerationTab.tsx:167"
+   ],
+   "siteCount": 2,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "AMBIGUOUS",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "PATCH /admin/employer-applications/{X}",
+    "why": "the verification decision is a status transition on the application, not a /verify sub-resource"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "POST /enterprise/storage/verify",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "POST /paypal/verify",
+     "reachability": "EXTERNAL-CALLER"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 2,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:152"
+   ]
+  },
+  {
+   "path": "/admin/jobs/{X}/moderate",
+   "requestShape": "/admin/jobs/{X}/moderate",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/jobs/{X}",
+    "reason": "moderation writes status/isFeatured on the job itself",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:184"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "NO_OPERATION",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "PATCH /admin/jobs/{X}",
+    "why": "moderation writes status/isFeatured on the job itself"
+   },
+   "notEquivalent": null,
+   "candidates": [],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:184"
+   ]
+  },
+  {
+   "path": "/admin/operations/backup",
+   "requestShape": "/admin/operations/backup",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "reason": "no registered operation shares the request tail",
+    "source": "structural"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:122"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "NO_OPERATION",
+   "disposition": "MISSING_BACKEND",
+   "missingBackend": true,
+   "equivalent": null,
+   "notEquivalent": null,
+   "candidates": [],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:122"
+   ]
+  },
+  {
+   "path": "/admin/operations/cache-clear",
+   "requestShape": "/admin/operations/cache-clear",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "reason": "no registered operation shares the request tail",
+    "source": "structural"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:136"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "NO_OPERATION",
+   "disposition": "MISSING_BACKEND",
+   "missingBackend": true,
+   "equivalent": null,
+   "notEquivalent": null,
+   "candidates": [],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:136"
+   ]
+  },
+  {
+   "path": "/admin/queues",
+   "requestShape": "/admin/queues",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /platform/queues",
+    "reason": "queue telemetry is served under /platform, not /admin",
+    "source": "hand read"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:138"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "ANOTHER_CONTRACT",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "GET /platform/queues",
+    "why": "queue telemetry is served under /platform, not /admin"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "GET /platform/queues",
+     "reachability": "UI-REACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/admin/queues/dead-letter-queue/purge",
+   "requestShape": "/admin/queues/dead-letter-queue/purge",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "reason": "that operation is a deliberate retirement stub answering 410 DEAD_LETTER_PURGE_RETIRED; a matching word is not a matching operation (runtime probe confirms 410)",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:204",
+    "frontend/src/components/admin/AdminQueuesTab.tsx:285"
+   ],
+   "siteCount": 2,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "ANOTHER_CONTRACT",
+   "disposition": "MISSING_BACKEND",
+   "missingBackend": true,
+   "equivalent": null,
+   "notEquivalent": {
+    "counterCandidate": "POST /platform/queues/purge",
+    "why": "that operation is a deliberate retirement stub answering 410 DEAD_LETTER_PURGE_RETIRED; a matching word is not a matching operation (runtime probe confirms 410)"
+   },
+   "candidates": [
+    {
+     "key": "POST /platform/queues/purge",
+     "reachability": "UNREACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 2,
+   "falseSuccessSites": 2,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:204",
+    "frontend/src/components/admin/AdminQueuesTab.tsx:285"
+   ]
+  },
+  {
+   "path": "/admin/queues/dead-letter-queue/retry",
+   "requestShape": "/admin/queues/dead-letter-queue/retry",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /platform/queues/retry",
+    "reason": "same retry operation, queue name in the body",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:186",
+    "frontend/src/components/admin/AdminQueuesTab.tsx:262"
+   ],
+   "siteCount": 2,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "ANOTHER_CONTRACT",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "POST /platform/queues/retry",
+    "why": "same retry operation, queue name in the body"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "POST /platform/queues/retry",
+     "reachability": "UI-REACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/admin/queues/{X}/retry",
+   "requestShape": "/admin/queues/{X}/retry",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /platform/queues/retry",
+    "reason": "retry takes a jobId in the body; there is no per-job queue route",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:173"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "ANOTHER_CONTRACT",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "POST /platform/queues/retry",
+    "why": "retry takes a jobId in the body; there is no per-job queue route"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "POST /platform/queues/retry",
+     "reachability": "UI-REACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/admin/users/{X}/status",
+   "requestShape": "/admin/users/{X}/status",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/users/{X}",
+    "reason": "suspension is a boolean field on the user record",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminUsersTab.tsx:206"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "auditCandidate": [
+    "PATCH /api/job-applications/:applicationId/status"
+   ],
+   "classification": "AMBIGUOUS",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "PATCH /admin/users/{X}",
+    "why": "suspension is a boolean field on the user record"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "GET /admin/platform/status",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "GET /enterprise/data-plane/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /enterprise/queue/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /enterprise/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /freellmapi/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "PATCH /job-applications/{X}/status",
+     "reachability": "INDIRECTLY-REACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminUsersTab.tsx:206"
+   ]
+  },
+  {
+   "path": "/billing/validate-coupon",
+   "requestShape": "/billing/validate-coupon",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /coupons/validate",
+    "reason": "server-side coupon validation with price recomputation; there is no /billing tree",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/pages/billing/checkout-modal.tsx:246"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "NO_OPERATION",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "POST /coupons/validate",
+    "why": "server-side coupon validation with price recomputation; there is no /billing tree"
+   },
+   "notEquivalent": null,
+   "candidates": [],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/blog/posts",
+   "requestShape": "/blog/posts",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /blog-data",
+    "reason": "the blog transport is /blog-data; /blog/posts has never existed server-side",
+    "source": "hand read"
+   },
+   "verbs": [
+    "GET",
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx:97",
+    "frontend/src/pages/blog/editor.tsx:149",
+    "frontend/src/pages/blog/index.tsx:46"
+   ],
+   "siteCount": 3,
+   "auditDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "auditCandidate": [
+    "GET /api/admin/blog/posts",
+    "GET /api/admin/blog/posts",
+    "GET /api/admin/blog/posts"
+   ],
+   "classification": "ANOTHER_CONTRACT",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "GET /blog-data",
+    "why": "the blog transport is /blog-data; /blog/posts has never existed server-side"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "GET /admin/blog/posts",
+     "reachability": "UNREACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/blog/posts/{X}",
+   "requestShape": "/blog/posts/{X}",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /blog-data/{X} | DELETE /blog-data/{X}",
+    "reason": "unchanged contract shape under the real transport",
+    "source": "hand read"
+   },
+   "verbs": [
+    "DELETE",
+    "GET",
+    "PUT"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx:126",
+    "frontend/src/pages/blog/editor.tsx:91",
+    "frontend/src/pages/blog/editor.tsx:147"
+   ],
+   "siteCount": 3,
+   "auditDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "auditCandidate": [
+    "PATCH /api/admin/blog/posts/:postId",
+    "PATCH /api/admin/blog/posts/:postId",
+    "PATCH /api/admin/blog/posts/:postId"
+   ],
+   "classification": "AMBIGUOUS",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "GET /blog-data/{X} | DELETE /blog-data/{X}",
+    "why": "unchanged contract shape under the real transport"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "DELETE /admin/ads/{X}",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "GET /admin/audit-logs/{X}",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "DELETE /admin/blog/categories/{X}",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "PATCH /admin/blog/categories/{X}",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "DELETE /admin/blog/posts/{X}",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "PATCH /admin/blog/posts/{X}",
+     "reachability": "UNREACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 1,
+   "falseSuccessSites": 1,
+   "falseSuccessWhere": [
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx:126"
+   ]
+  },
+  {
+   "path": "/jobs",
+   "requestShape": "/jobs",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /jobs-data",
+    "reason": "the public listing lives on the data route (mounted at backend/index.js:515)",
+    "source": "hand read"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/pages/jobs/portal.tsx:74"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "AMBIGUOUS",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "GET /jobs-data",
+    "why": "the public listing lives on the data route (mounted at backend/index.js:515)"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "GET /admin/jobs",
+     "reachability": "UNVERIFIED"
+    },
+    {
+     "key": "GET /employer/jobs",
+     "reachability": "INDIRECTLY-REACHABLE"
+    },
+    {
+     "key": "POST /employer/jobs",
+     "reachability": "INDIRECTLY-REACHABLE"
+    },
+    {
+     "key": "GET /enterprise/queue/jobs",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "POST /enterprise/queue/jobs",
+     "reachability": "UNREACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/notify/email",
+   "requestShape": "/notify/email",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "reason": "no email-sending operation exists; /notify/user-signup is a signup hook, not a send-email contract",
+    "source": "hand read"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/employer/CandidateReviewDrawer.tsx:159"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "auditCandidate": [],
+   "classification": "NO_OPERATION",
+   "disposition": "MISSING_BACKEND",
+   "missingBackend": true,
+   "equivalent": null,
+   "notEquivalent": {
+    "counterCandidate": null,
+    "why": "no email-sending operation exists; /notify/user-signup is a signup hook, not a send-email contract"
+   },
+   "candidates": [],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  },
+  {
+   "path": "/platform/status",
+   "requestShape": "/platform/status",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /admin/platform/status",
+    "reason": "the tenant-scoped status operation is admin-scoped; the public one is /service-availability",
+    "source": "hand read"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/lib/enterprise-api.ts:528"
+   ],
+   "siteCount": 1,
+   "auditDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "auditCandidate": [
+    "GET /api/admin/platform/status"
+   ],
+   "classification": "AMBIGUOUS",
+   "disposition": "WRONG_URL_ADJUDICATED",
+   "missingBackend": false,
+   "equivalent": {
+    "op": "GET /admin/platform/status",
+    "why": "the tenant-scoped status operation is admin-scoped; the public one is /service-availability"
+   },
+   "notEquivalent": null,
+   "candidates": [
+    {
+     "key": "GET /admin/platform/status",
+     "reachability": "UNREACHABLE"
+    },
+    {
+     "key": "GET /enterprise/data-plane/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /enterprise/queue/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /enterprise/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "GET /freellmapi/status",
+     "reachability": "UI-REACHABLE"
+    },
+    {
+     "key": "PATCH /job-applications/{X}/status",
+     "reachability": "INDIRECTLY-REACHABLE"
+    }
+   ],
+   "verbOnly": [],
+   "nonApiMatch": [],
+   "exactRegistered": [],
+   "swallowSites": 0,
+   "falseSuccessSites": 0,
+   "falseSuccessWhere": []
+  }
+ ],
+ "agreements": {
+  "gapSetMatchesAudit": true,
+  "everyGapHasCandidateOrNone": true
+ },
+ "note": "ANOTHER_CONTRACT is a repair shape (retarget the client), not a capability judgement: the operation may still be unauthorized, unimplemented or dead. That distinction is carried per workflow in the report."
+}

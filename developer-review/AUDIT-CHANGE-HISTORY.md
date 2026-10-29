@@ -162,3 +162,51 @@ document's citations changed.
 Nothing was deleted. Every superseded figure remains readable next to the evidence that replaced it, which
 is the standard this package has applied since V4 (`AUDIT-CHANGE-HISTORY.md` §1) and applies here to its own
 work.
+
+---
+
+## M8 — Mandate 8 (`a2ecb96`), 2026-10-29
+
+**Scope:** independent validation of the M7 package, count reconciliation and runtime closure. Application
+source unchanged — `git diff --stat a2ecb96 -- . ':(exclude)developer-review'` is empty (§9 scope proof in
+`M8-INDEPENDENT-ACCEPTANCE-REPORT.md`). The M7 package was treated as *unproven*: every number below was
+re-measured at `a2ecb96` before it was compared with what M7 published.
+
+### Tooling changed
+
+| Tool | Change | Why |
+|---|---|---|
+| `backend-reachability.cjs` | legacy call extractor also recognises `apiJson(` / `apiFetch(` | 84 call sites in 5 files were invisible, so 85 operations carried `legacyUiRefs: 0` and the reason "called only by tests" — including `POST /contact`, which the public form calls. After the fix **166** operations carry legacy evidence (was 82); class histogram **unchanged** |
+| `client-contract-audit.cjs` | receivers restricted to `app`, a declared `express.Router()`, or a `require()`-bound module; paths must start with `/`; alias literals collapsed by dedupe key | two defects: `Promise.all([fetch('https://api.github.com/…')])` parsed as route registrations (2), and `app.get(['/x','/api/x'])` counted twice (6). Published 413 → repaired **405** |
+| `m8-registration-reconciliation.cjs` | **new**: replays the *old* parser rules over current source, diffs the two parsers on `file\|line\|verb\|shape`, and derives the 16-row difference | gate B must be proved, not asserted; every term is computed per run, nothing pinned |
+| `m8-parity-revalidation.cjs` | **new**: adjudicates every one of the 112 rows against all seven sources | gate D independence |
+| `m8-contract-gap-revalidation.cjs` | **new**: re-derives site/mismatch/no-op/gap counts and dispositions | gate F re-derivation |
+| `capability-subfeature-audit.cjs` | merges `adjudications-m7.json` **and** `adjudications-m8.json` | M8 row-level dispositions must not overwrite M7's |
+| `verify-v4-reconciliation.py` | two M8 checks added (gap adjudications, parity revalidation); revision compared as a **prefix** | artefact stores a 12-char SHA; an equality check would fail on correct data. Still **20/20** |
+| `parity-matrix.cjs` | `FP-D07` → PARTIAL, `FP-A12` → PARTIAL, `FP-C06` → FULL, each with hand-read anchor evidence | three rows whose M7 classification did not survive independent re-reading |
+
+### Documents changed
+
+`M8-INDEPENDENT-ACCEPTANCE-REPORT.md`, `M8-REGISTRATION-COUNT-RECONCILIATION.md`, `M8-SUBFEATURE-CLOSURE.md`,
+`M8-PARITY-REVALIDATION.md`, `M8-RUNTIME-VERIFICATION.md`, `M8-VERIFIER-QUALITY-REVIEW.md` (all new) ·
+`DISCREPANCY-LOG.md` (DISC-049 … DISC-055; header 46 → **53 distinct / 55 IDs**) ·
+`V4-COVERAGE-RECONCILIATION.md` (findings 46 → 53, total 1,537 → **1,544**, new §15) ·
+`BACKEND-OPERATION-REACHABILITY.md` (M8 counting-unit correction) · `REPAIR-ACTION-PLAN.md` (Phase 7) ·
+`EVIDENCE-INDEX.md` (E-365 … E-372) · `README.md` · `HANDOVER.md` · `FINAL-AUDIT-HANDOVER.md` ·
+`FEATURE-PARITY-MATRIX.md` (regenerated) · `Evidence/logs/m8-*.log` (new) · `Evidence/artifacts/m8-*.json` (new).
+
+### Corrections to earlier conclusions
+
+| # | Earlier conclusion | M8 measurement | How the earlier text was treated |
+|---|---|---|---|
+| 1 | "`a7d08a2` was proven byte-identical to `8a6e03bb` for all 3,806 tracked files and was preserved at `refs/audit-preserved/base-a7d08a2`" (`M7-CAPABILITY-CLOSURE.md:7`, `FINAL-AUDIT-HANDOVER.md:152`) | `git diff a7d08a2 8a6e03bb` = **264 files** changed; **0** outside `developer-review/`; `a7d08a2` tracks **3,553** files; `git show-ref \| grep -i audit` = **no output** | published sentence kept; correction appended as a dated amendment and raised as **DISC-049**. Never restated as byte-identical; the ref was **not** created retroactively |
+| 2 | `feature-parity.json` revision = `a7d08a2fa67b` (M7 artefact) | that SHA is the *foreign* commit, stamped while the checkout was foreign, although the package says M7 audited `8a6e03bb` | artefact **regenerated** at `a2ecb96`; the stale stamp is recorded, not silently replaced |
+| 3 | "397 registrations, 4 duplicates" and contract parser "413" | two different counting units inside one number; the 16 are **2 false positives + 6 duplicate instances + 8 standalone non-`/api` endpoints**; **413 = 405 + 6 + 2**; in-scope disagreement **0** | both figures retained; unit definitions added; no published number moved (`156/10/27/11/2/176/11`, 393 stay as published) |
+| 4 | "6 alias double counts" / an M8 draft's "70 path-shape collisions" | duplicate instances = **6 alias pairs**, measured; path-shape collisions over the 393 operations = **0** (the register is already parameter-normalised) | the 70 figure is **withdrawn** in `M8-INDEPENDENT-ACCEPTANCE-REPORT.md` and `M8-REGISTRATION-COUNT-RECONCILIATION.md`; it could not be reproduced from any artefact |
+| 5 | `FP-D07`, `FP-A12` PARTIAL was accepted at M7 as FULL-adjacent; `FP-C06` MISSING | hand-read subfeature evidence at both revisions | three rows re-classified with the prior verdict preserved in `M8-PARITY-REVALIDATION.md` |
+| 6 | "No runtime execution was possible" (M7 §7) | backend really starts with `IN_MEMORY_REPOSITORY=1` and a local HMAC secret; 43 HTTP probes executed | re-labelled: **R-03 / R-05 / R-08 / R-09 PASS**, 4 PARTIAL, **2 still BLOCKED** (DB-backed, provider-backed). In-memory runs are **not** presented as MariaDB proof |
+| 7 | Verifier suite treated as a quality gate | the suite proves presence and arithmetic, **not** product truth: no re-derivation, floor thresholds, a literal `"176"` pin, vacuous `SUPPORTED` for endpoint-less FULL rows | weaknesses published in `M8-VERIFIER-QUALITY-REVIEW.md`; gate H scored PASS *with weaknesses*, not PASS clean |
+
+Nothing was deleted. The verdict remains **`PARTIAL — BLOCKED`**, and the M8 report keeps audit
+completeness, static coverage, parity, test execution, runtime and production readiness as separate
+dimensions rather than collapsing them into one number.

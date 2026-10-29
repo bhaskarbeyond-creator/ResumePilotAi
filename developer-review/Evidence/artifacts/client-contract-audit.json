@@ -1,12 +1,3659 @@
 {
-  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
-  "generatedAt": "2026-10-29T07:20:46.330Z",
+  "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+  "generatedAt": "2026-10-29T07:30:48.848Z",
   "clientFilesScanned": 204,
   "callSites": 212,
-  "backendRegistrationsParsed": 413,
+  "backendRegistrationsParsed": 405,
+  "backendRegistrations": [
+    {
+      "method": "POST",
+      "path": "/api/pay",
+      "raw": "/api/pay",
+      "file": "backend/index.js",
+      "line": 784,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders",
+      "raw": "/api/payment-orders",
+      "file": "backend/index.js",
+      "line": 805,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders/:orderId",
+      "raw": "/api/payment-orders/:orderId",
+      "file": "backend/index.js",
+      "line": 822,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/stripe-webhook",
+      "raw": "/api/stripe-webhook",
+      "file": "backend/index.js",
+      "line": 856,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/create-order",
+      "raw": "/api/paypal/create-order",
+      "file": "backend/index.js",
+      "line": 1074,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/verify",
+      "raw": "/api/paypal/verify",
+      "file": "backend/index.js",
+      "line": 1115,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/create-order",
+      "raw": "/api/razorpay/create-order",
+      "file": "backend/index.js",
+      "line": 1176,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/verify-payment",
+      "raw": "/api/razorpay/verify-payment",
+      "file": "backend/index.js",
+      "line": 1224,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/initiate-transaction",
+      "raw": "/api/paytm/initiate-transaction",
+      "file": "backend/index.js",
+      "line": 1328,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/verify-transaction",
+      "raw": "/api/paytm/verify-transaction",
+      "file": "backend/index.js",
+      "line": 1386,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/initiate",
+      "raw": "/api/phonepe/initiate",
+      "file": "backend/index.js",
+      "line": 1435,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/status",
+      "raw": "/api/phonepe/status",
+      "file": "backend/index.js",
+      "line": 1494,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/callback",
+      "raw": "/api/paytm/callback",
+      "file": "backend/index.js",
+      "line": 1538,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/callback",
+      "raw": "/api/phonepe/callback",
+      "file": "backend/index.js",
+      "line": 1554,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/subscription/preferences",
+      "raw": "/api/subscription/preferences",
+      "file": "backend/index.js",
+      "line": 1584,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/check",
+      "raw": "/api/check",
+      "file": "backend/index.js",
+      "line": 1597,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/:jobId/applications",
+      "raw": "/api/jobs/:jobId/applications",
+      "file": "backend/index.js",
+      "line": 1637,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/job-applications/:applicationId/status",
+      "raw": "/api/job-applications/:applicationId/status",
+      "file": "backend/index.js",
+      "line": 1687,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/:jobId/applications",
+      "raw": "/api/jobs/:jobId/applications",
+      "file": "backend/index.js",
+      "line": 1728,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+      "raw": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+      "file": "backend/index.js",
+      "line": 1748,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer-applications",
+      "raw": "/api/employer-applications",
+      "file": "backend/index.js",
+      "line": 1845,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/featured-companies",
+      "raw": "/api/public/featured-companies",
+      "file": "backend/index.js",
+      "line": 1863,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/companies",
+      "raw": "/api/employer/companies",
+      "file": "backend/index.js",
+      "line": 1896,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/companies",
+      "raw": "/api/employer/companies",
+      "file": "backend/index.js",
+      "line": 1916,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/companies/:companyId",
+      "raw": "/api/employer/companies/:companyId",
+      "file": "backend/index.js",
+      "line": 1928,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/companies/:companyId",
+      "raw": "/api/employer/companies/:companyId",
+      "file": "backend/index.js",
+      "line": 1945,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/jobs",
+      "raw": "/api/employer/jobs",
+      "file": "backend/index.js",
+      "line": 1963,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/jobs",
+      "raw": "/api/employer/jobs",
+      "file": "backend/index.js",
+      "line": 1973,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/jobs/:jobId",
+      "raw": "/api/employer/jobs/:jobId",
+      "file": "backend/index.js",
+      "line": 1992,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/jobs/:jobId",
+      "raw": "/api/employer/jobs/:jobId",
+      "file": "backend/index.js",
+      "line": 2025,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations",
+      "raw": "/api/messages/conversations",
+      "file": "backend/index.js",
+      "line": 2042,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/messages",
+      "raw": "/api/messages/conversations/:conversationId/messages",
+      "file": "backend/index.js",
+      "line": 2141,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/conversations/:conversationId/read",
+      "raw": "/api/messages/conversations/:conversationId/read",
+      "file": "backend/index.js",
+      "line": 2181,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/conversations",
+      "raw": "/api/messages/conversations",
+      "file": "backend/index.js",
+      "line": 2230,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/participant-profile",
+      "raw": "/api/messages/conversations/:conversationId/participant-profile",
+      "file": "backend/index.js",
+      "line": 2280,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/send",
+      "raw": "/api/messages/send",
+      "file": "backend/index.js",
+      "line": 2320,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact",
+      "raw": "/api/contact",
+      "file": "backend/index.js",
+      "line": 2360,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/export-render-data",
+      "raw": "/api/export-render-data",
+      "file": "backend/index.js",
+      "line": 2389,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/export",
+      "raw": "/api/export",
+      "file": "backend/index.js",
+      "line": 2420,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public-export",
+      "raw": "/api/public-export",
+      "file": "backend/index.js",
+      "line": 2420,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "raw": "/v1/chat/completions",
+      "file": "backend/index.js",
+      "line": 2867,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/messages",
+      "raw": "/v1/messages",
+      "file": "backend/index.js",
+      "line": 3067,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search",
+      "raw": "/v1/search",
+      "file": "backend/index.js",
+      "line": 3136,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/models",
+      "raw": "/v1/models",
+      "file": "backend/index.js",
+      "line": 3190,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/status",
+      "raw": "/v1/status",
+      "file": "backend/index.js",
+      "line": 3226,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/freellmapi/status",
+      "raw": "/api/freellmapi/status",
+      "file": "backend/index.js",
+      "line": 3261,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/freellmapi/metrics",
+      "raw": "/api/freellmapi/metrics",
+      "file": "backend/index.js",
+      "line": 3266,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai-fleet-health",
+      "raw": "/api/admin/ai-fleet-health",
+      "file": "backend/index.js",
+      "line": 3275,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-settings",
+      "raw": "/api/admin/payment-settings",
+      "file": "backend/index.js",
+      "line": 3303,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai-settings",
+      "raw": "/api/admin/ai-settings",
+      "file": "backend/index.js",
+      "line": 3321,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/categories",
+      "raw": "/api/admin/blog/categories",
+      "file": "backend/index.js",
+      "line": 3339,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "raw": "/api/admin/blog/categories/:categoryId",
+      "file": "backend/index.js",
+      "line": 3350,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "raw": "/api/admin/blog/categories/:categoryId",
+      "file": "backend/index.js",
+      "line": 3367,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/posts/:postId",
+      "raw": "/api/admin/blog/posts/:postId",
+      "file": "backend/index.js",
+      "line": 3388,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/posts/:postId",
+      "raw": "/api/admin/blog/posts/:postId",
+      "file": "backend/index.js",
+      "line": 3408,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/publish-due",
+      "raw": "/api/admin/blog/publish-due",
+      "file": "backend/index.js",
+      "line": 3424,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/health-summary",
+      "raw": "/api/admin/health-summary",
+      "file": "backend/index.js",
+      "line": 3446,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/system-health-settings",
+      "raw": "/api/admin/system-health-settings",
+      "file": "backend/index.js",
+      "line": 3487,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/settings",
+      "raw": "/api/admin/settings",
+      "file": "backend/index.js",
+      "line": 3788,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/settings/:category",
+      "raw": "/api/admin/settings/:category",
+      "file": "backend/index.js",
+      "line": 3825,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/settings/:category",
+      "raw": "/api/admin/settings/:category",
+      "file": "backend/index.js",
+      "line": 3855,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai-settings",
+      "raw": "/api/admin/ai-settings",
+      "file": "backend/index.js",
+      "line": 3996,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/test-provider",
+      "raw": "/api/admin/ai/test-provider",
+      "file": "backend/index.js",
+      "line": 4020,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "ALL",
+      "path": "/api/admin/ai/fetch-models",
+      "raw": "/api/admin/ai/fetch-models",
+      "file": "backend/index.js",
+      "line": 4033,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/quota-stats",
+      "raw": "/api/admin/ai/quota-stats",
+      "file": "backend/index.js",
+      "line": 4047,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/quota-limits",
+      "raw": "/api/admin/ai/quota-limits",
+      "file": "backend/index.js",
+      "line": 4094,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/reset-quota",
+      "raw": "/api/admin/ai/reset-quota",
+      "file": "backend/index.js",
+      "line": 4117,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/reset-state",
+      "raw": "/api/admin/ai/reset-state",
+      "file": "backend/index.js",
+      "line": 4147,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/routing-telemetry",
+      "raw": "/api/admin/ai/routing-telemetry",
+      "file": "backend/index.js",
+      "line": 4215,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment-settings",
+      "raw": "/api/admin/payment-settings",
+      "file": "backend/index.js",
+      "line": 4248,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/coupons",
+      "raw": "/api/admin/coupons",
+      "file": "backend/index.js",
+      "line": 4544,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/coupons/active",
+      "raw": "/api/coupons/active",
+      "file": "backend/index.js",
+      "line": 4568,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/coupons/validate",
+      "raw": "/api/coupons/validate",
+      "file": "backend/index.js",
+      "line": 4597,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/coupons",
+      "raw": "/api/admin/coupons",
+      "file": "backend/index.js",
+      "line": 4678,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/coupons/:code",
+      "raw": "/api/admin/coupons/:code",
+      "file": "backend/index.js",
+      "line": 4679,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/coupons/:code",
+      "raw": "/api/admin/coupons/:code",
+      "file": "backend/index.js",
+      "line": 4680,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/coupons/:code",
+      "raw": "/api/admin/coupons/:code",
+      "file": "backend/index.js",
+      "line": 4682,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment/test-provider",
+      "raw": "/api/admin/payment/test-provider",
+      "file": "backend/index.js",
+      "line": 4702,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/twilio-settings",
+      "raw": "/api/admin/twilio-settings",
+      "file": "backend/index.js",
+      "line": 4855,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/twilio-settings",
+      "raw": "/api/admin/twilio-settings",
+      "file": "backend/index.js",
+      "line": 4874,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/send-sms",
+      "raw": "/api/send-sms",
+      "file": "backend/index.js",
+      "line": 4971,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/llms.txt",
+      "raw": "/llms.txt",
+      "file": "backend/index.js",
+      "line": 5063,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/llms-full.txt",
+      "raw": "/llms-full.txt",
+      "file": "backend/index.js",
+      "line": 5064,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/sitemap.xml",
+      "raw": "/sitemap.xml",
+      "file": "backend/index.js",
+      "line": 5070,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/payment/razorpay-order",
+      "raw": "/api/payment/razorpay-order",
+      "file": "backend/index.js",
+      "line": 5092,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice/generate",
+      "raw": "/api/invoice/generate",
+      "file": "backend/index.js",
+      "line": 5101,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices",
+      "raw": "/api/invoices",
+      "file": "backend/index.js",
+      "line": 5131,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/:paymentOrderId",
+      "raw": "/api/invoices/:paymentOrderId",
+      "file": "backend/index.js",
+      "line": 5146,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice",
+      "raw": "/api/invoice",
+      "file": "backend/index.js",
+      "line": 5162,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/export-docx",
+      "raw": "/api/export-docx",
+      "file": "backend/index.js",
+      "line": 5167,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public-export-docx",
+      "raw": "/api/public-export-docx",
+      "file": "backend/index.js",
+      "line": 5238,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/rtl-font-config",
+      "raw": "/api/rtl-font-config",
+      "file": "backend/index.js",
+      "line": 5334,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-ai-cover-letter",
+      "raw": "/api/generate-ai-cover-letter",
+      "file": "backend/index.js",
+      "line": 5343,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/naukri",
+      "raw": "/api/jobs/naukri",
+      "file": "backend/index.js",
+      "line": 5386,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/service-availability",
+      "raw": "/api/service-availability",
+      "file": "backend/index.js",
+      "line": 5398,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/healthz",
+      "raw": "/healthz",
+      "file": "backend/index.js",
+      "line": 5466,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/healthz",
+      "raw": "/api/healthz",
+      "file": "backend/index.js",
+      "line": 5470,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "raw": "/api/health",
+      "file": "backend/index.js",
+      "line": 5474,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/databases",
+      "raw": "/api/health/databases",
+      "file": "backend/index.js",
+      "line": 5478,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/readyz",
+      "raw": "/readyz",
+      "file": "backend/index.js",
+      "line": 5528,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/readyz",
+      "raw": "/api/readyz",
+      "file": "backend/index.js",
+      "line": 5537,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/linkedin-scraper",
+      "raw": "/api/linkedin-scraper",
+      "file": "backend/index.js",
+      "line": 5870,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/user-signup",
+      "raw": "/api/notify/user-signup",
+      "file": "backend/index.js",
+      "line": 5896,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/firebase-service-account",
+      "raw": "/api/admin/firebase-service-account",
+      "file": "backend/index.js",
+      "line": 5907,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/firebase-service-account",
+      "raw": "/api/admin/firebase-service-account",
+      "file": "backend/index.js",
+      "line": 5924,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/custom-password-reset",
+      "raw": "/api/auth/custom-password-reset",
+      "file": "backend/index.js",
+      "line": 6036,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/send-verification-email",
+      "raw": "/api/auth/send-verification-email",
+      "file": "backend/index.js",
+      "line": 6073,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email-token",
+      "raw": "/api/auth/verify-email-token",
+      "file": "backend/index.js",
+      "line": 6100,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payments/refund",
+      "raw": "/api/admin/payments/refund",
+      "file": "backend/index.js",
+      "line": 6132,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/employer-applications",
+      "raw": "/api/admin/employer-applications",
+      "file": "backend/index.js",
+      "line": 6279,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/companies",
+      "raw": "/api/admin/companies",
+      "file": "backend/index.js",
+      "line": 6286,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/jobs",
+      "raw": "/api/admin/jobs",
+      "file": "backend/index.js",
+      "line": 6300,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/reviews",
+      "raw": "/api/admin/reviews",
+      "file": "backend/index.js",
+      "line": 6315,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ads",
+      "raw": "/api/admin/ads",
+      "file": "backend/index.js",
+      "line": 6324,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-orders",
+      "raw": "/api/admin/payment-orders",
+      "file": "backend/index.js",
+      "line": 6329,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/categories",
+      "raw": "/api/admin/blog/categories",
+      "file": "backend/index.js",
+      "line": 6419,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/posts",
+      "raw": "/api/admin/blog/posts",
+      "file": "backend/index.js",
+      "line": 6424,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/employer-applications/:uid",
+      "raw": "/api/admin/employer-applications/:uid",
+      "file": "backend/index.js",
+      "line": 6440,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ads",
+      "raw": "/api/admin/ads",
+      "file": "backend/index.js",
+      "line": 6486,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/ads/:adId",
+      "raw": "/api/admin/ads/:adId",
+      "file": "backend/index.js",
+      "line": 6503,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/public/custom-pages.json",
+      "raw": "/public/custom-pages.json",
+      "file": "backend/index.js",
+      "line": 6537,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/custom-pages",
+      "raw": "/api/public/custom-pages",
+      "file": "backend/index.js",
+      "line": 6537,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/custom-pages.json",
+      "raw": "/api/custom-pages.json",
+      "file": "backend/index.js",
+      "line": 6537,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/custom-pages/:slug",
+      "raw": "/api/public/custom-pages/:slug",
+      "file": "backend/index.js",
+      "line": 6595,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pages",
+      "raw": "/api/admin/pages",
+      "file": "backend/index.js",
+      "line": 6621,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/pages/:slug",
+      "raw": "/api/admin/pages/:slug",
+      "file": "backend/index.js",
+      "line": 6630,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/pages/:slug",
+      "raw": "/api/admin/pages/:slug",
+      "file": "backend/index.js",
+      "line": 6658,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/website-meta",
+      "raw": "/api/admin/website-meta",
+      "file": "backend/index.js",
+      "line": 6674,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/public/trusted-by.json",
+      "raw": "/public/trusted-by.json",
+      "file": "backend/index.js",
+      "line": 6748,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/trusted-by",
+      "raw": "/api/public/trusted-by",
+      "file": "backend/index.js",
+      "line": 6748,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/trusted-by.json",
+      "raw": "/api/trusted-by.json",
+      "file": "backend/index.js",
+      "line": 6748,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/trusted-by",
+      "raw": "/api/admin/trusted-by",
+      "file": "backend/index.js",
+      "line": 6763,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/trusted-by",
+      "raw": "/api/admin/trusted-by",
+      "file": "backend/index.js",
+      "line": 6772,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/trusted-by/:logoId",
+      "raw": "/api/admin/trusted-by/:logoId",
+      "file": "backend/index.js",
+      "line": 6786,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/trusted-by/:logoId",
+      "raw": "/api/admin/trusted-by/:logoId",
+      "file": "backend/index.js",
+      "line": 6804,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/reviews",
+      "raw": "/api/admin/reviews",
+      "file": "backend/index.js",
+      "line": 6820,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/reviews/:reviewId",
+      "raw": "/api/admin/reviews/:reviewId",
+      "file": "backend/index.js",
+      "line": 6844,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/companies/:companyId",
+      "raw": "/api/admin/companies/:companyId",
+      "file": "backend/index.js",
+      "line": 6860,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/jobs/:jobId",
+      "raw": "/api/admin/jobs/:jobId",
+      "file": "backend/index.js",
+      "line": 6886,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/jobs/:jobId",
+      "raw": "/api/admin/jobs/:jobId",
+      "file": "backend/index.js",
+      "line": 6910,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/export",
+      "raw": "/api/account/export",
+      "file": "backend/index.js",
+      "line": 6933,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/delete",
+      "raw": "/api/account/delete",
+      "file": "backend/index.js",
+      "line": 7038,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/delete-user",
+      "raw": "/api/admin/delete-user",
+      "file": "backend/index.js",
+      "line": 7066,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/purge-orphaned-auth",
+      "raw": "/api/auth/purge-orphaned-auth",
+      "file": "backend/index.js",
+      "line": 7066,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/set-user-password",
+      "raw": "/api/auth/set-user-password",
+      "file": "backend/index.js",
+      "line": 7157,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin",
+      "raw": "/api/auth/linkedin",
+      "file": "backend/index.js",
+      "line": 7371,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github",
+      "raw": "/api/auth/github",
+      "file": "backend/index.js",
+      "line": 7372,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/callback",
+      "raw": "/api/auth/linkedin/callback",
+      "file": "backend/index.js",
+      "line": 7374,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/callback",
+      "raw": "/api/auth/github/callback",
+      "file": "backend/index.js",
+      "line": 7405,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/oauth/exchange",
+      "raw": "/api/auth/oauth/exchange",
+      "file": "backend/index.js",
+      "line": 7441,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/preview-login",
+      "raw": "/api/auth/preview-login",
+      "file": "backend/index.js",
+      "line": 7474,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/test-credentials",
+      "raw": "/api/auth/linkedin/test-credentials",
+      "file": "backend/index.js",
+      "line": 7542,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/test-credentials",
+      "raw": "/api/auth/github/test-credentials",
+      "file": "backend/index.js",
+      "line": 7556,
+      "mountedAt": null,
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs",
+      "raw": "/audit-logs",
+      "file": "backend/routes/adminAudit.js",
+      "line": 14,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs/stats",
+      "raw": "/audit-logs/stats",
+      "file": "backend/routes/adminAudit.js",
+      "line": 49,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs/:id",
+      "raw": "/audit-logs/:id",
+      "file": "backend/routes/adminAudit.js",
+      "line": 90,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/platform/currency",
+      "raw": "/platform/currency",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 65,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/platform/currency",
+      "raw": "/platform/currency",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 73,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/subscriptions",
+      "raw": "/subscriptions",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 94,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/subscriptions/:uid/reconcile",
+      "raw": "/subscriptions/:uid/reconcile",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 186,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/entitlements",
+      "raw": "/ai/entitlements",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 287,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/platform/tenants/:tenantId/members",
+      "raw": "/platform/tenants/:tenantId/members",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 295,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/platform/tenants/:tenantId/members/:principalId",
+      "raw": "/platform/tenants/:tenantId/members/:principalId",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 338,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/members/:principalId",
+      "raw": "/platform/tenants/:tenantId/members/:principalId",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 352,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/commercials",
+      "raw": "/platform/tenants/:tenantId/commercials",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 369,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/ai-policy",
+      "raw": "/platform/tenants/:tenantId/ai-policy",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 392,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/platform/tenants/:tenantId/ai-keys/test",
+      "raw": "/platform/tenants/:tenantId/ai-keys/test",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 450,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/platform/status",
+      "raw": "/platform/status",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 533,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/operations/feature-flags",
+      "raw": "/operations/feature-flags",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 576,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/operations/feature-flags/:flagKey",
+      "raw": "/operations/feature-flags/:flagKey",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 588,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/operations/feature-flags/:flagKey",
+      "raw": "/operations/feature-flags/:flagKey",
+      "file": "backend/routes/adminPlatformOperations.js",
+      "line": 609,
+      "mountedAt": "/api/admin",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "raw": "/",
+      "file": "backend/routes/adminUsers.js",
+      "line": 101,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/bulk",
+      "raw": "/bulk",
+      "file": "backend/routes/adminUsers.js",
+      "line": 249,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users",
+      "raw": "/",
+      "file": "backend/routes/adminUsers.js",
+      "line": 312,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/details",
+      "raw": "/:uid/details",
+      "file": "backend/routes/adminUsers.js",
+      "line": 405,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:userId/audit",
+      "raw": "/:userId/audit",
+      "file": "backend/routes/adminUsers.js",
+      "line": 605,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid",
+      "raw": "/:uid",
+      "file": "backend/routes/adminUsers.js",
+      "line": 635,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/:uid",
+      "raw": "/:uid",
+      "file": "backend/routes/adminUsers.js",
+      "line": 673,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/tenants",
+      "raw": "/:uid/tenants",
+      "file": "backend/routes/adminUsers.js",
+      "line": 865,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:uid/tenants/:tenantId",
+      "raw": "/:uid/tenants/:tenantId",
+      "file": "backend/routes/adminUsers.js",
+      "line": 917,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "raw": "/:uid/ai-entitlement",
+      "file": "backend/routes/adminUsers.js",
+      "line": 937,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "raw": "/:uid/ai-entitlement",
+      "file": "backend/routes/adminUsers.js",
+      "line": 943,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "raw": "/:uid/ai-entitlement",
+      "file": "backend/routes/adminUsers.js",
+      "line": 965,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/ai-quota-reset",
+      "raw": "/:uid/ai-quota-reset",
+      "file": "backend/routes/adminUsers.js",
+      "line": 982,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/send-password-reset",
+      "raw": "/:uid/send-password-reset",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1000,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/password-reset",
+      "raw": "/:uid/password-reset",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1000,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/verify-email",
+      "raw": "/:uid/verify-email",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1037,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/revoke-sessions",
+      "raw": "/:uid/revoke-sessions",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1059,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/unenroll-mfa",
+      "raw": "/:uid/unenroll-mfa",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1079,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/export",
+      "raw": "/:uid/export",
+      "file": "backend/routes/adminUsers.js",
+      "line": 1101,
+      "mountedAt": "/api/admin/users",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai-usage",
+      "raw": "/ai-usage",
+      "file": "backend/routes/ai.js",
+      "line": 50,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-interview",
+      "raw": "/generate-interview",
+      "file": "backend/routes/ai.js",
+      "line": 808,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions",
+      "raw": "/live-interview/sessions",
+      "file": "backend/routes/ai.js",
+      "line": 1010,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-interview/sessions/:sessionId",
+      "raw": "/live-interview/sessions/:sessionId",
+      "file": "backend/routes/ai.js",
+      "line": 1037,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions/:sessionId/turns",
+      "raw": "/live-interview/sessions/:sessionId/turns",
+      "file": "backend/routes/ai.js",
+      "line": 1050,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions/:sessionId/complete",
+      "raw": "/live-interview/sessions/:sessionId/complete",
+      "file": "backend/routes/ai.js",
+      "line": 1076,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/live-interview/sessions/:sessionId",
+      "raw": "/live-interview/sessions/:sessionId",
+      "file": "backend/routes/ai.js",
+      "line": 1102,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/guide",
+      "raw": "/live-interview/guide",
+      "file": "backend/routes/ai.js",
+      "line": 1115,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/check-grammar",
+      "raw": "/check-grammar",
+      "file": "backend/routes/ai.js",
+      "line": 1204,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-content",
+      "raw": "/generate-content",
+      "file": "backend/routes/ai.js",
+      "line": 1249,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/parse-resume",
+      "raw": "/parse-resume",
+      "file": "backend/routes/ai.js",
+      "line": 1282,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data",
+      "raw": "/",
+      "file": "backend/routes/blogData.js",
+      "line": 35,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/categories",
+      "raw": "/categories",
+      "file": "backend/routes/blogData.js",
+      "line": 49,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/slug/:slug",
+      "raw": "/slug/:slug",
+      "file": "backend/routes/blogData.js",
+      "line": 74,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/blogData.js",
+      "line": 85,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/blog-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/blogData.js",
+      "line": 96,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/blog-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/blogData.js",
+      "line": 106,
+      "mountedAt": "/api/blog-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers",
+      "raw": "/",
+      "file": "backend/routes/covers.js",
+      "line": 16,
+      "mountedAt": "/api/covers",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers/:id",
+      "raw": "/:id",
+      "file": "backend/routes/covers.js",
+      "line": 26,
+      "mountedAt": "/api/covers",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/covers/:id",
+      "raw": "/:id",
+      "file": "backend/routes/covers.js",
+      "line": 37,
+      "mountedAt": "/api/covers",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/covers/:id",
+      "raw": "/:id",
+      "file": "backend/routes/covers.js",
+      "line": 47,
+      "mountedAt": "/api/covers",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings",
+      "raw": "/",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 40,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/sync-status",
+      "raw": "/sync-status",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 90,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/prune-outbox",
+      "raw": "/prune-outbox",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 93,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/conflicts",
+      "raw": "/conflicts",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 143,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/dead-letter",
+      "raw": "/dead-letter",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 145,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/retry-dead-letter",
+      "raw": "/retry-dead-letter",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 157,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/test-connection",
+      "raw": "/test-connection",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 162,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/initialize-schema",
+      "raw": "/initialize-schema",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 174,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings",
+      "raw": "/",
+      "file": "backend/routes/databaseAdmin.js",
+      "line": 187,
+      "mountedAt": "/api/admin/database-settings",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/circuit-breaker-status",
+      "raw": "/admin/circuit-breaker-status",
+      "file": "backend/routes/email.js",
+      "line": 1420,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/reset-circuit-breaker",
+      "raw": "/admin/reset-circuit-breaker",
+      "file": "backend/routes/email.js",
+      "line": 1433,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/save-template-customization",
+      "raw": "/admin/save-template-customization",
+      "file": "backend/routes/email.js",
+      "line": 1515,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/custom-templates",
+      "raw": "/admin/custom-templates",
+      "file": "backend/routes/email.js",
+      "line": 1516,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/test-connection",
+      "raw": "/admin/test-connection",
+      "file": "backend/routes/email.js",
+      "line": 1524,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/settings",
+      "raw": "/admin/settings",
+      "file": "backend/routes/email.js",
+      "line": 1662,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/deliverability",
+      "raw": "/admin/deliverability",
+      "file": "backend/routes/email.js",
+      "line": 1691,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/save-smtp",
+      "raw": "/admin/save-smtp",
+      "file": "backend/routes/email.js",
+      "line": 1829,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/test-imap",
+      "raw": "/admin/test-imap",
+      "file": "backend/routes/email.js",
+      "line": 1930,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/send-email",
+      "raw": "/send-email",
+      "file": "backend/routes/email.js",
+      "line": 1966,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/send-invoice-email",
+      "raw": "/send-invoice-email",
+      "file": "backend/routes/email.js",
+      "line": 2025,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/logs",
+      "raw": "/logs",
+      "file": "backend/routes/email.js",
+      "line": 2034,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/resend",
+      "raw": "/resend",
+      "file": "backend/routes/email.js",
+      "line": 2052,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/templates",
+      "raw": "/templates",
+      "file": "backend/routes/email.js",
+      "line": 2087,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/templates",
+      "raw": "/templates",
+      "file": "backend/routes/email.js",
+      "line": 2088,
+      "mountedAt": "/api/email",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/status",
+      "raw": "/status",
+      "file": "backend/routes/enterprise.js",
+      "line": 22,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/support-grants",
+      "raw": "/support-grants",
+      "file": "backend/routes/enterprise.js",
+      "line": 287,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/support-grants/:grantId/revoke",
+      "raw": "/support-grants/:grantId/revoke",
+      "file": "backend/routes/enterprise.js",
+      "line": 298,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/support-grants",
+      "raw": "/support-grants",
+      "file": "backend/routes/enterprise.js",
+      "line": 307,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/support/context",
+      "raw": "/support/context",
+      "file": "backend/routes/enterprise.js",
+      "line": 316,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/tenants",
+      "raw": "/tenants",
+      "file": "backend/routes/enterprise.js",
+      "line": 336,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/roles-matrix",
+      "raw": "/roles-matrix",
+      "file": "backend/routes/enterprise.js",
+      "line": 345,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/context",
+      "raw": "/context",
+      "file": "backend/routes/enterprise.js",
+      "line": 385,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/context",
+      "raw": "/context",
+      "file": "backend/routes/enterprise.js",
+      "line": 386,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/workspaces",
+      "raw": "/workspaces",
+      "file": "backend/routes/enterprise.js",
+      "line": 388,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces",
+      "raw": "/workspaces",
+      "file": "backend/routes/enterprise.js",
+      "line": 404,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/workspaces/:workspaceId",
+      "raw": "/workspaces/:workspaceId",
+      "file": "backend/routes/enterprise.js",
+      "line": 413,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/archive",
+      "raw": "/workspaces/:workspaceId/archive",
+      "file": "backend/routes/enterprise.js",
+      "line": 422,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/restore",
+      "raw": "/workspaces/:workspaceId/restore",
+      "file": "backend/routes/enterprise.js",
+      "line": 431,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/workspaces/:workspaceId/members",
+      "raw": "/workspaces/:workspaceId/members",
+      "file": "backend/routes/enterprise.js",
+      "line": 440,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/members",
+      "raw": "/workspaces/:workspaceId/members",
+      "file": "backend/routes/enterprise.js",
+      "line": 449,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/workspaces/:workspaceId/members/:principalId",
+      "raw": "/workspaces/:workspaceId/members/:principalId",
+      "file": "backend/routes/enterprise.js",
+      "line": 458,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/memberships",
+      "raw": "/memberships",
+      "file": "backend/routes/enterprise.js",
+      "line": 467,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/memberships",
+      "raw": "/memberships",
+      "file": "backend/routes/enterprise.js",
+      "line": 476,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/memberships/:principalId",
+      "raw": "/memberships/:principalId",
+      "file": "backend/routes/enterprise.js",
+      "line": 489,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/memberships/:principalId/invitation-resend",
+      "raw": "/memberships/:principalId/invitation-resend",
+      "file": "backend/routes/enterprise.js",
+      "line": 498,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/memberships/:principalId",
+      "raw": "/memberships/:principalId",
+      "file": "backend/routes/enterprise.js",
+      "line": 511,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts",
+      "raw": "/service-accounts",
+      "file": "backend/routes/enterprise.js",
+      "line": 520,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/service-accounts",
+      "raw": "/service-accounts",
+      "file": "backend/routes/enterprise.js",
+      "line": 538,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts/:serviceAccountId/revoke",
+      "raw": "/service-accounts/:serviceAccountId/revoke",
+      "file": "backend/routes/enterprise.js",
+      "line": 547,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts/:serviceAccountId/rotate",
+      "raw": "/service-accounts/:serviceAccountId/rotate",
+      "file": "backend/routes/enterprise.js",
+      "line": 556,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/tenants/:tenantId/reactivate",
+      "raw": "/tenants/:tenantId/reactivate",
+      "file": "backend/routes/enterprise.js",
+      "line": 574,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/tenant",
+      "raw": "/tenant",
+      "file": "backend/routes/enterprise.js",
+      "line": 585,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/data/export",
+      "raw": "/data/export",
+      "file": "backend/routes/enterprise.js",
+      "line": 594,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/platform/tenants",
+      "raw": "/platform/tenants",
+      "file": "backend/routes/enterprise.js",
+      "line": 608,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/platform/tenants/:tenantId/suspend",
+      "raw": "/platform/tenants/:tenantId/suspend",
+      "file": "backend/routes/enterprise.js",
+      "line": 621,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/platform/tenants/:tenantId/reactivate",
+      "raw": "/platform/tenants/:tenantId/reactivate",
+      "file": "backend/routes/enterprise.js",
+      "line": 630,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/lifecycle/suspend",
+      "raw": "/lifecycle/suspend",
+      "file": "backend/routes/enterprise.js",
+      "line": 639,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/audit",
+      "raw": "/audit",
+      "file": "backend/routes/enterprise.js",
+      "line": 648,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/teams",
+      "raw": "/teams",
+      "file": "backend/routes/enterprise.js",
+      "line": 671,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams",
+      "raw": "/teams",
+      "file": "backend/routes/enterprise.js",
+      "line": 684,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/teams/:teamId",
+      "raw": "/teams/:teamId",
+      "file": "backend/routes/enterprise.js",
+      "line": 693,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/archive",
+      "raw": "/teams/:teamId/archive",
+      "file": "backend/routes/enterprise.js",
+      "line": 702,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/restore",
+      "raw": "/teams/:teamId/restore",
+      "file": "backend/routes/enterprise.js",
+      "line": 711,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/teams/:teamId/members",
+      "raw": "/teams/:teamId/members",
+      "file": "backend/routes/enterprise.js",
+      "line": 720,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/members",
+      "raw": "/teams/:teamId/members",
+      "file": "backend/routes/enterprise.js",
+      "line": 729,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/teams/:teamId/members/:principalId",
+      "raw": "/teams/:teamId/members/:principalId",
+      "file": "backend/routes/enterprise.js",
+      "line": 738,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/configuration",
+      "raw": "/configuration",
+      "file": "backend/routes/enterprise.js",
+      "line": 747,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/configuration",
+      "raw": "/configuration",
+      "file": "backend/routes/enterprise.js",
+      "line": 756,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/ai/generate-content",
+      "raw": "/ai/generate-content",
+      "file": "backend/routes/enterprise.js",
+      "line": 765,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/ai/generate-interview",
+      "raw": "/ai/generate-interview",
+      "file": "backend/routes/enterprise.js",
+      "line": 817,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/usage/ai",
+      "raw": "/usage/ai",
+      "file": "backend/routes/enterprise.js",
+      "line": 881,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/usage/ai/events",
+      "raw": "/usage/ai/events",
+      "file": "backend/routes/enterprise.js",
+      "line": 890,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/resources",
+      "raw": "/resources",
+      "file": "backend/routes/enterprise.js",
+      "line": 899,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/resources",
+      "raw": "/resources",
+      "file": "backend/routes/enterprise.js",
+      "line": 911,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/resources/:resourceId",
+      "raw": "/resources/:resourceId",
+      "file": "backend/routes/enterprise.js",
+      "line": 920,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/resources/:resourceId",
+      "raw": "/resources/:resourceId",
+      "file": "backend/routes/enterprise.js",
+      "line": 930,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/resources/:resourceId",
+      "raw": "/resources/:resourceId",
+      "file": "backend/routes/enterprise.js",
+      "line": 940,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/observability/metrics",
+      "raw": "/observability/metrics",
+      "file": "backend/routes/enterprise.js",
+      "line": 950,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/data-plane/status",
+      "raw": "/data-plane/status",
+      "file": "backend/routes/enterprise.js",
+      "line": 963,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/queue/status",
+      "raw": "/queue/status",
+      "file": "backend/routes/enterprise.js",
+      "line": 994,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/queue/jobs",
+      "raw": "/queue/jobs",
+      "file": "backend/routes/enterprise.js",
+      "line": 1006,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/queue/jobs",
+      "raw": "/queue/jobs",
+      "file": "backend/routes/enterprise.js",
+      "line": 1017,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/queue/replay",
+      "raw": "/queue/replay",
+      "file": "backend/routes/enterprise.js",
+      "line": 1039,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/storage/token",
+      "raw": "/storage/token",
+      "file": "backend/routes/enterprise.js",
+      "line": 1051,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/storage/verify",
+      "raw": "/storage/verify",
+      "file": "backend/routes/enterprise.js",
+      "line": 1067,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/test-email",
+      "raw": "/test-email",
+      "file": "backend/routes/enterprise.js",
+      "line": 1082,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/tenants",
+      "raw": "/tenants",
+      "file": "backend/routes/enterprise.js",
+      "line": 1150,
+      "mountedAt": "/api/enterprise",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/m2m/context",
+      "raw": "/context",
+      "file": "backend/routes/enterpriseM2m.js",
+      "line": 22,
+      "mountedAt": "/api/enterprise/m2m",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data",
+      "raw": "/",
+      "file": "backend/routes/jobsData.js",
+      "line": 159,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/tracker",
+      "raw": "/tracker",
+      "file": "backend/routes/jobsData.js",
+      "line": 182,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/tracker",
+      "raw": "/tracker",
+      "file": "backend/routes/jobsData.js",
+      "line": 189,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs-data/tracker/:id",
+      "raw": "/tracker/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 200,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/tracker/:id",
+      "raw": "/tracker/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 216,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 229,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 245,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 264,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/applications/list",
+      "raw": "/applications/list",
+      "file": "backend/routes/jobsData.js",
+      "line": 363,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/applications/:id",
+      "raw": "/applications/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 402,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs-data/applications/:id",
+      "raw": "/applications/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 405,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/applications/:id",
+      "raw": "/applications/:id",
+      "file": "backend/routes/jobsData.js",
+      "line": 408,
+      "mountedAt": "/api/jobs-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/favourites",
+      "raw": "/favourites",
+      "file": "backend/routes/miscData.js",
+      "line": 87,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/favourites",
+      "raw": "/favourites",
+      "file": "backend/routes/miscData.js",
+      "line": 102,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/favourites/:itemId",
+      "raw": "/favourites/:itemId",
+      "file": "backend/routes/miscData.js",
+      "line": 119,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/favourites/:itemId/check",
+      "raw": "/favourites/:itemId/check",
+      "file": "backend/routes/miscData.js",
+      "line": 129,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/user-stats",
+      "raw": "/user-stats",
+      "file": "backend/routes/miscData.js",
+      "line": 151,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "raw": "/stats",
+      "file": "backend/routes/miscData.js",
+      "line": 205,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/stats/increment",
+      "raw": "/stats/increment",
+      "file": "backend/routes/miscData.js",
+      "line": 221,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/reviews",
+      "raw": "/reviews",
+      "file": "backend/routes/miscData.js",
+      "line": 246,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/phrases",
+      "raw": "/phrases",
+      "file": "backend/routes/miscData.js",
+      "line": 267,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/phrases",
+      "raw": "/phrases",
+      "file": "backend/routes/miscData.js",
+      "line": 278,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/phrases/:category",
+      "raw": "/phrases/:category",
+      "file": "backend/routes/miscData.js",
+      "line": 298,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/phrases/:category",
+      "raw": "/phrases/:category",
+      "file": "backend/routes/miscData.js",
+      "line": 309,
+      "mountedAt": "/api",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications-data",
+      "raw": "/",
+      "file": "backend/routes/notificationsData.js",
+      "line": 16,
+      "mountedAt": "/api/notifications-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/notificationsData.js",
+      "line": 27,
+      "mountedAt": "/api/notifications-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications-data/mark-all-read",
+      "raw": "/mark-all-read",
+      "file": "backend/routes/notificationsData.js",
+      "line": 52,
+      "mountedAt": "/api/notifications-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications-data/contact/list",
+      "raw": "/contact/list",
+      "file": "backend/routes/notificationsData.js",
+      "line": 66,
+      "mountedAt": "/api/notifications-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/version",
+      "raw": "/version",
+      "file": "backend/routes/platform.js",
+      "line": 207,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/public-config",
+      "raw": "/public-config",
+      "file": "backend/routes/platform.js",
+      "line": 227,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/health",
+      "raw": "/health",
+      "file": "backend/routes/platform.js",
+      "line": 263,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status",
+      "raw": "/operational-status",
+      "file": "backend/routes/platform.js",
+      "line": 287,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status/api-matrix",
+      "raw": "/operational-status/api-matrix",
+      "file": "backend/routes/platform.js",
+      "line": 305,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status/:serviceId",
+      "raw": "/operational-status/:serviceId",
+      "file": "backend/routes/platform.js",
+      "line": 317,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operational-status/:serviceId/test",
+      "raw": "/operational-status/:serviceId/test",
+      "file": "backend/routes/platform.js",
+      "line": 368,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operational-status/refresh",
+      "raw": "/operational-status/refresh",
+      "file": "backend/routes/platform.js",
+      "line": 403,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/overview",
+      "raw": "/overview",
+      "file": "backend/routes/platform.js",
+      "line": 431,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/queues",
+      "raw": "/queues",
+      "file": "backend/routes/platform.js",
+      "line": 465,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/queues/retry",
+      "raw": "/queues/retry",
+      "file": "backend/routes/platform.js",
+      "line": 504,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/queues/purge",
+      "raw": "/queues/purge",
+      "file": "backend/routes/platform.js",
+      "line": 543,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/maintenance",
+      "raw": "/maintenance",
+      "file": "backend/routes/platform.js",
+      "line": 547,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/maintenance",
+      "raw": "/maintenance",
+      "file": "backend/routes/platform.js",
+      "line": 576,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/command-center",
+      "raw": "/command-center",
+      "file": "backend/routes/platform.js",
+      "line": 621,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/security-events",
+      "raw": "/security-events",
+      "file": "backend/routes/platform.js",
+      "line": 789,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/encryption",
+      "raw": "/encryption",
+      "file": "backend/routes/platform.js",
+      "line": 836,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/observability",
+      "raw": "/observability",
+      "file": "backend/routes/platform.js",
+      "line": 860,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/backup-status",
+      "raw": "/backup-status",
+      "file": "backend/routes/platform.js",
+      "line": 876,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payments-health",
+      "raw": "/payments-health",
+      "file": "backend/routes/platform.js",
+      "line": 901,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/search",
+      "raw": "/search",
+      "file": "backend/routes/platform.js",
+      "line": 921,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/announcements",
+      "raw": "/announcements",
+      "file": "backend/routes/platform.js",
+      "line": 977,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/announcements",
+      "raw": "/announcements",
+      "file": "backend/routes/platform.js",
+      "line": 999,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/platform/announcements/:id",
+      "raw": "/announcements/:id",
+      "file": "backend/routes/platform.js",
+      "line": 1035,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/platform/announcements/:id",
+      "raw": "/announcements/:id",
+      "file": "backend/routes/platform.js",
+      "line": 1091,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/attention",
+      "raw": "/attention",
+      "file": "backend/routes/platform.js",
+      "line": 1229,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/health-indicator",
+      "raw": "/health-indicator",
+      "file": "backend/routes/platform.js",
+      "line": 1270,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/enterprise-queue",
+      "raw": "/enterprise-queue",
+      "file": "backend/routes/platform.js",
+      "line": 1289,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operators",
+      "raw": "/operators",
+      "file": "backend/routes/platform.js",
+      "line": 1304,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operators",
+      "raw": "/operators",
+      "file": "backend/routes/platform.js",
+      "line": 1342,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operators/:uid/revoke-sessions",
+      "raw": "/operators/:uid/revoke-sessions",
+      "file": "backend/routes/platform.js",
+      "line": 1402,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/tenants/:tenantId",
+      "raw": "/tenants/:tenantId",
+      "file": "backend/routes/platform.js",
+      "line": 1444,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/platform/tenants/:tenantId",
+      "raw": "/tenants/:tenantId",
+      "file": "backend/routes/platform.js",
+      "line": 1534,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/tenants/:tenantId/decommission",
+      "raw": "/tenants/:tenantId/decommission",
+      "file": "backend/routes/platform.js",
+      "line": 1547,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/tenants/garbage-collect",
+      "raw": "/tenants/garbage-collect",
+      "file": "backend/routes/platform.js",
+      "line": 1587,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/feature-flags",
+      "raw": "/feature-flags",
+      "file": "backend/routes/platform.js",
+      "line": 1637,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/platform/feature-flags/:flagKey",
+      "raw": "/feature-flags/:flagKey",
+      "file": "backend/routes/platform.js",
+      "line": 1646,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/configuration",
+      "raw": "/configuration",
+      "file": "backend/routes/platform.js",
+      "line": 1670,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-settings",
+      "raw": "/payment-settings",
+      "file": "backend/routes/platform.js",
+      "line": 1707,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-webhooks",
+      "raw": "/payment-webhooks",
+      "file": "backend/routes/platform.js",
+      "line": 1727,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/payment-webhooks/:eventId/replay",
+      "raw": "/payment-webhooks/:eventId/replay",
+      "file": "backend/routes/platform.js",
+      "line": 1809,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/configuration",
+      "raw": "/configuration",
+      "file": "backend/routes/platform.js",
+      "line": 1846,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-settings",
+      "raw": "/payment-settings",
+      "file": "backend/routes/platform.js",
+      "line": 1883,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-webhooks",
+      "raw": "/payment-webhooks",
+      "file": "backend/routes/platform.js",
+      "line": 1903,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/payment-webhooks/:eventId/replay",
+      "raw": "/payment-webhooks/:eventId/replay",
+      "file": "backend/routes/platform.js",
+      "line": 1985,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/role-view-audit",
+      "raw": "/role-view-audit",
+      "file": "backend/routes/platform.js",
+      "line": 2027,
+      "mountedAt": "/api/platform",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/public/:slug",
+      "raw": "/public/:slug",
+      "file": "backend/routes/portfolios.js",
+      "line": 38,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/public",
+      "raw": "/public",
+      "file": "backend/routes/portfolios.js",
+      "line": 51,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios",
+      "raw": "/",
+      "file": "backend/routes/portfolios.js",
+      "line": 63,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/slug-availability",
+      "raw": "/slug-availability",
+      "file": "backend/routes/portfolios.js",
+      "line": 82,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/:id",
+      "raw": "/:id",
+      "file": "backend/routes/portfolios.js",
+      "line": 104,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/portfolios/:id",
+      "raw": "/:id",
+      "file": "backend/routes/portfolios.js",
+      "line": 115,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/portfolios/:id",
+      "raw": "/:id",
+      "file": "backend/routes/portfolios.js",
+      "line": 137,
+      "mountedAt": "/api/portfolios",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/geo/regions",
+      "raw": "/geo/regions",
+      "file": "backend/routes/publicDiscovery.js",
+      "line": 66,
+      "mountedAt": "/api/public",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/geo/regions/:kind/:slug",
+      "raw": "/geo/regions/:kind/:slug",
+      "file": "backend/routes/publicDiscovery.js",
+      "line": 80,
+      "mountedAt": "/api/public",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/jobs/:jobId/og.png",
+      "raw": "/jobs/:jobId/og.png",
+      "file": "backend/routes/publicDiscovery.js",
+      "line": 108,
+      "mountedAt": "/api/public",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/blog/:slug/og.png",
+      "raw": "/blog/:slug/og.png",
+      "file": "backend/routes/publicDiscovery.js",
+      "line": 131,
+      "mountedAt": "/api/public",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes",
+      "raw": "/",
+      "file": "backend/routes/resumes.js",
+      "line": 21,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/public/:id",
+      "raw": "/public/:id",
+      "file": "backend/routes/resumes.js",
+      "line": 36,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/public/token/:token",
+      "raw": "/public/token/:token",
+      "file": "backend/routes/resumes.js",
+      "line": 56,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/:id",
+      "raw": "/:id",
+      "file": "backend/routes/resumes.js",
+      "line": 124,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id",
+      "raw": "/:id",
+      "file": "backend/routes/resumes.js",
+      "line": 156,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/resumes/:id",
+      "raw": "/:id",
+      "file": "backend/routes/resumes.js",
+      "line": 183,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id/publish",
+      "raw": "/:id/publish",
+      "file": "backend/routes/resumes.js",
+      "line": 197,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id/unpublish",
+      "raw": "/:id/unpublish",
+      "file": "backend/routes/resumes.js",
+      "line": 230,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/:id/publication",
+      "raw": "/:id/publication",
+      "file": "backend/routes/resumes.js",
+      "line": 243,
+      "mountedAt": "/api/resumes",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/tickets",
+      "raw": "/tickets",
+      "file": "backend/routes/support.js",
+      "line": 15,
+      "mountedAt": "/api/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/support/tickets",
+      "raw": "/tickets",
+      "file": "backend/routes/support.js",
+      "line": 30,
+      "mountedAt": "/api/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/support/tickets/:ticketId",
+      "raw": "/tickets/:ticketId",
+      "file": "backend/routes/support.js",
+      "line": 40,
+      "mountedAt": "/api/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/tickets/:ticketId/messages",
+      "raw": "/tickets/:ticketId/messages",
+      "file": "backend/routes/support.js",
+      "line": 54,
+      "mountedAt": "/api/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets",
+      "raw": "/tickets",
+      "file": "backend/routes/support.js",
+      "line": 71,
+      "mountedAt": "/api/admin/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets/:ticketId",
+      "raw": "/tickets/:ticketId",
+      "file": "backend/routes/support.js",
+      "line": 81,
+      "mountedAt": "/api/admin/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/tickets/:ticketId/messages",
+      "raw": "/tickets/:ticketId/messages",
+      "file": "backend/routes/support.js",
+      "line": 95,
+      "mountedAt": "/api/admin/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/support/tickets/:ticketId",
+      "raw": "/tickets/:ticketId",
+      "file": "backend/routes/support.js",
+      "line": 110,
+      "mountedAt": "/api/admin/support",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users-data/profile",
+      "raw": "/profile",
+      "file": "backend/routes/usersData.js",
+      "line": 25,
+      "mountedAt": "/api/users-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users-data/profile",
+      "raw": "/profile",
+      "file": "backend/routes/usersData.js",
+      "line": 40,
+      "mountedAt": "/api/users-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users-data/:id",
+      "raw": "/:id",
+      "file": "backend/routes/usersData.js",
+      "line": 119,
+      "mountedAt": "/api/users-data",
+      "unresolvedMount": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users-data/mfa/disable",
+      "raw": "/mfa/disable",
+      "file": "backend/routes/usersData.js",
+      "line": 149,
+      "mountedAt": "/api/users-data",
+      "unresolvedMount": false
+    }
+  ],
   "backendRegisterAgreement": {
     "registerOperations": 393,
-    "parsedRaw": 413,
+    "parsedRaw": 405,
     "parsedDistinct": 399,
     "shared": 393,
     "onlyInParser": [

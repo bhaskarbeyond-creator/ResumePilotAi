@@ -1,6 +1,6 @@
 # Capability Subfeature Register (Mandate 7)
 
-**Revision:** `a7d08a2fa67b44aefe4692405b470fa6b174d29f` · **Generated:** 2026-10-29T07:20:48.474Z (generator clock, UTC) · **Generator:** `developer-review/tools/capability-subfeature-audit.cjs`
+**Revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` · **Generated:** 2026-10-29T07:50:16.437Z (generator clock, UTC) · **Generator:** `developer-review/tools/capability-subfeature-audit.cjs`
 **Machine-checkable twin:** `Evidence/artifacts/capability-subfeatures.json`
 
 ## 1. Purpose and method
@@ -14,16 +14,16 @@ classification.
 
 | auditStatus | meaning | rows |
 |---|---|---:|
-| `EQUIVALENCE_LEAD` | a class is absent from the row but present elsewhere, or 1–5 legacy actions are unaccounted for | 41 |
-| `ADJUDICATED` | leads read by hand in M7 and closed with a recorded disposition (see Evidence/adjudications-m7.json) | 40 |
+| `ADJUDICATED` | leads read by hand and closed with a recorded disposition (see Evidence/adjudications-m7.json and Evidence/adjudications-m8.json) | 50 |
+| `EQUIVALENCE_LEAD` | a class is absent from the row but present elsewhere, or 1–5 legacy actions are unaccounted for | 33 |
 | `SIGNAL_CLEAN` | every distinctive legacy class and action has a modern counterpart in the row | 21 |
-| `DEEP_READ_M6` | read line-by-line in M6, with legacy→modern→backend→persistence tables | 10 |
+| `DEEP_READ_M6` | read line-by-line in M6, with legacy→modern→backend→persistence tables | 8 |
 | **total** | | **112** |
 
 Across the 112 rows the tool extracted **487** distinctive subfeature rows and found
 **50** rows still hold at least one unaccounted legacy action or label after
 cross-row accounting; **8** further rows looked divergent until the action was
-traced to another capability row, and **312** individual actions were
+traced to another capability row, and **310** individual actions were
 re-attributed that way.
 
 **Attribution rule:** an action counts as a lead only if it appears in the legacy corpora of <= 2 rows. Without it the numbers were dominated by broad legacy
@@ -181,19 +181,17 @@ _Integrity risk in modern files:_ `fixtures` ×2, `fakeSuccess` ×3
 
 #### `FP-A12` — Platform tenant registry (list tenants, quotas, suspend)
 
-**Classification:** `MISSING` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 1 / modern 1 · **actions:** legacy 9 handlers / 20 labels → modern 4 / 1
+**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 1 / modern 2 · **actions:** legacy 9 handlers / 20 labels → modern 1 / 1
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
-| tabular data | 2 | 4 | 48 | `present` |
-| search | 8 | 0 | 180 | `elsewhere-in-app` |
+| tabular data | 2 | 2 | 48 | `present` |
+| search | 8 | 5 | 180 | `present` |
 | filtering | 12 | 1 | 435 | `present` |
-| pagination / cursor / load-more | 26 | 2 | 269 | `present` |
-| dialog / drawer | 5 | 7 | 307 | `present` |
-| JSON export | 1 | 0 | 14 | `elsewhere-in-app` |
+| pagination / cursor / load-more | 26 | 0 | 269 | `elsewhere-in-app` |
+| dialog / drawer | 5 | 0 | 307 | `elsewhere-in-app` |
+| JSON export | 1 | 2 | 14 | `present` |
 | client-side authorization gate | 8 | 0 | 81 | `elsewhere-in-app` |
-
-_Integrity risk in modern files:_ `fixtures` ×2, `fakeSuccess` ×3
 
 #### `FP-A13` — Company management (verification, documents, quotas)
 
@@ -487,7 +485,7 @@ _Verified by:_ grep for bulk/selectAll in frontend/src/components/enterprise/*.t
 _Unaccounted legacy actions (leads):_ `handleToggleStatus()`, `handleWorkspaceAssign()`
 
 
-_Actions traced to another capability row (not losses):_ `handleInvite()`→FP-B02, `handleResendInvitation()`→app, "All roles"→FP-A01, "Click to retry invitation dispatch"→FP-A03, "Close membership details"→FP-A25, "Current active workspace"→FP-A17 … (14 total)
+_Actions traced to another capability row (not losses):_ `handleInvite()`→FP-B02, `handleResendInvitation()`→app, "All roles"→FP-A01, "Click to retry invitation dispatch"→FP-A03, "Close membership details"→FP-A12, "Current active workspace"→FP-A12 … (14 total)
 
 
 #### `FP-B04` — Roles & permissions matrix
@@ -516,7 +514,7 @@ _Actions traced to another capability row (not losses):_ `handleSaveRole()`→ap
 
 #### `FP-B05` — Teams + archive/restore
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `DEEP_READ_M6` · **backend:** yes · **files:** legacy 1 / modern 1 · **actions:** legacy 7 handlers / 8 labels → modern 3 / 2
+**Classification:** `PARTIAL PARITY` · **adjudication:** `NO_CHANGE` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 1 / modern 1 · **actions:** legacy 7 handlers / 8 labels → modern 3 / 2
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
@@ -526,6 +524,10 @@ _Actions traced to another capability row (not losses):_ `handleSaveRole()`→ap
 | dialog / drawer | 5 | 3 | 307 | `present` |
 | undo / restore | 2 | 0 | 19 | `elsewhere-in-app` |
 | client-side authorization gate | 10 | 2 | 81 | `present` |
+
+_Adjudication (M7, hand-read):_ The lead-assignment lead closes as preserved, not lost. The legacy tab PATCHed /api/enterprise/teams/{id} with leadPrincipalId; the modern tab does the same, through a typed client, against the same route, with the same persistence and an existing backend test.
+
+_Verified by:_ frontend/src/components/enterprise/EnterpriseTeamsTab.tsx:85-105,219,235,297-307,frontend/src/lib/enterprise-api.ts:448-459,backend/enterprise/tenantService.js:893-904,backend/enterprise-test/enterprise-completeness.test.js:116-123
 
 _Unaccounted legacy actions (leads):_ `handleSaveLead()`
 
@@ -675,13 +677,17 @@ _Actions traced to another capability row (not losses):_ `openTemplates()`→app
 
 #### `FP-C02` — 71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, …)
 
-**Classification:** `MISSING` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** no · **files:** legacy 72 / modern 0 · **actions:** legacy 3 handlers / 23 labels → modern 0 / 0
+**Classification:** `MISSING` · **adjudication:** `CONFIRMED_MISSING` · **auditStatus:** `ADJUDICATED` · **backend:** no · **files:** legacy 72 / modern 0 · **actions:** legacy 3 handlers / 23 labels → modern 0 / 0
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | filtering | 32 | 0 | 435 | `elsewhere-in-app` |
 | pagination / cursor / load-more | 46 | 0 | 269 | `elsewhere-in-app` |
 | chart / visualisation | 112 | 0 | 9 | `elsewhere-in-app` |
+
+_Adjudication (M7, hand-read):_ The 71-block modular portfolio library has no modern counterpart: the modern portfolio is one canonical-document renderer (PortfolioView) with palettes, not a library of 71 independently composable sections. Within that renderer, the e-mail CTA is preserved, the resume-download CTA is lost, and the Twitter social link is lost.
+
+_Verified by:_ src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx:118-133,src/components/PortfolioBuilder/PortfolioComponents/About3.jsx:126-145,frontend/src/components/portfolio/portfolio-view.tsx:61-79,frontend/src/lib/portfolio-document.ts:67,98,142,181,298,331
 
 _Unaccounted legacy actions (leads):_ `handleEmailClick()`, `handleResumeDownload()`, "Twitter"
 
@@ -708,7 +714,7 @@ _Verified by:_ frontend/src/pages/portfolio/builder.tsx:144-160, frontend/src/li
 _Unaccounted legacy actions (leads):_ `handleStartBlank()`, `handleSwitchTemplate()`, `handleUseResume()`, "Open full &#8599;"
 
 
-_Actions traced to another capability row (not losses):_ `saveTimer()`→app, "Configuration inspector (scrollable)"→FP-A03, "Live preview"→FP-A05, "Portfolio title"→FP-A16, "Preview viewport"→FP-D03
+_Actions traced to another capability row (not losses):_ `saveTimer()`→app, "Configuration inspector (scrollable)"→FP-A03, "Live preview"→FP-A05, "Portfolio title"→FP-A12, "Preview viewport"→FP-D03
 
 
 #### `FP-C04` — Editing portfolios created by the legacy editor
@@ -746,13 +752,13 @@ _Actions traced to another capability row (not losses):_ "Go Home"→FP-B01
 
 #### `FP-C06` — Portfolio template gallery with palettes
 
-**Classification:** `MISSING` · **adjudication:** `CONFIRMED_MISSING` · **auditStatus:** `ADJUDICATED` · **backend:** n/a · **files:** legacy 7 / modern 3 · **actions:** legacy 0 handlers / 22 labels → modern 0 / 13
+**Classification:** `FULL PARITY` · **adjudication:** `CONFIRMED_MISSING` · **auditStatus:** `ADJUDICATED` · **backend:** n/a · **files:** legacy 7 / modern 5 · **actions:** legacy 0 handlers / 22 labels → modern 1 / 26
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
-| filtering | 44 | 9 | 435 | `present` |
-| pagination / cursor / load-more | 9 | 4 | 269 | `present` |
-| dialog / drawer | 1 | 8 | 307 | `present` |
+| filtering | 44 | 24 | 435 | `present` |
+| pagination / cursor / load-more | 9 | 9 | 269 | `present` |
+| dialog / drawer | 1 | 13 | 307 | `present` |
 
 _Adjudication (M7, hand-read):_ The named modular blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) do not exist in the modern portfolio components (0 hits), which is the same finding as FP-C02: the 71-block library was replaced by a canonical document model with a fixed set of sections. Two rows, one cause; recorded separately because they are separate capability rows.
 
@@ -761,7 +767,7 @@ _Verified by:_ grep in frontend/src/components/portfolio + frontend/src/pages/po
 _Unaccounted legacy actions (leads):_ "Distinctions & Milestones", "Leadership & Career Trajectory", "Notes From Collaborators"
 
 
-_Actions traced to another capability row (not losses):_ "Academic Credentials & Governance"→FP-D03, "Board & Professional Credentials"→FP-A24, "Endorsements"→FP-D03, "Recommendations & Endorsements"→FP-D03
+_Actions traced to another capability row (not losses):_ "Academic Credentials & Governance"→FP-D03, "Endorsements"→FP-D03, "Recommendations & Endorsements"→FP-D03, "Strategic Competencies"→FP-B09
 
 
 #### `FP-C07` — Portfolio gallery / showcase
@@ -874,13 +880,17 @@ _Actions traced to another capability row (not losses):_ "AI career actions"→F
 
 #### `FP-D07` — Notification centre (bell, unread poller, routing)
 
-**Classification:** `REPLACED BY EQUIVALENT` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 4 / modern 4 · **actions:** legacy 4 handlers / 4 labels → modern 3 / 22
+**Classification:** `PARTIAL PARITY` · **adjudication:** `RECLASSIFY_PARTIAL` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 4 / modern 4 · **actions:** legacy 4 handlers / 4 labels → modern 3 / 22
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | filtering | 16 | 22 | 435 | `present` |
 | dialog / drawer | 2 | 1 | 307 | `present` |
 | JSON export | 2 | 1 | 14 | `present` |
+
+_Adjudication (M7, hand-read):_ The row title names three things — bell, unread poller, routing. Bell and routing are genuinely replaced by an equivalent (server-backed list + optimistic read/rollback + deep-link routing from notification type). The unread poller is NOT replaced: the coalesced 15s->300s single-flight poller that honoured Retry-After is gone, and no global unread message badge survives. Because a named part of the row has no modern counterpart, the row is PARTIAL PARITY, not REPLACED BY EQUIVALENT.
+
+_Verified by:_ src/hooks/unreadMessagesPoller.js:1-30,frontend/src/hooks/use-api-hooks.ts:527-539,frontend/src/pages/dashboard/notifications.tsx:119,178-192,frontend/src/components/layout/cuba-app-shell.tsx:323-329,1114,frontend/src/pages/dashboard/messages.tsx:146-153,frontend/src/components/messages/conversation-thread.tsx:54
 
 _Unaccounted legacy actions (leads):_ `runOnce()`
 
@@ -934,7 +944,7 @@ _Integrity risk in modern files:_ `clientStorage` ×1
 
 #### `FP-D12` — Dashboard-v2 element library (stats, activity, profile display, resumes/covers lists)
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 28 / modern 18 · **actions:** legacy 10 handlers / 23 labels → modern 68 / 266
+**Classification:** `PARTIAL PARITY` · **adjudication:** `NO_CHANGE` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 28 / modern 18 · **actions:** legacy 10 handlers / 23 labels → modern 68 / 266
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
@@ -946,6 +956,10 @@ _Integrity risk in modern files:_ `clientStorage` ×1
 | chart / visualisation | 4 | 3 | 9 | `present` |
 | client-side authorization gate | 12 | 10 | 81 | `present` |
 
+_Adjudication (M7, hand-read):_ All three leads are event-plumbing artefacts of the legacy dashboard library, each with a functional modern equivalent. Nothing user-visible is lost; the transport changed from custom window events to React Query cache writes and local component state.
+
+_Verified by:_ src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:73-84,232-247,frontend/src/components/settings/profile-panel.tsx:150-185,frontend/src/components/layout/app-shell.tsx:70,114,281,frontend/src/components/layout/cuba-app-shell.tsx:273,323-329
+
 _Unaccounted legacy actions (leads):_ `handleMobileToggle()`, `handleNotificationsUpdated()`, `handleProfileUpdate()`
 
 
@@ -956,7 +970,7 @@ _Integrity risk in modern files:_ `fakeSuccess` ×1, `clientStorage` ×10
 
 #### `FP-D13` — Candidate shell, AI career briefing, top job matches, executive rail, progress charts
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 16 / modern 2 · **actions:** legacy 4 handlers / 21 labels → modern 1 / 30
+**Classification:** `PARTIAL PARITY` · **adjudication:** `SUBFEATURE_LOSS` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 16 / modern 2 · **actions:** legacy 4 handlers / 21 labels → modern 1 / 30
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
@@ -964,6 +978,10 @@ _Integrity risk in modern files:_ `fakeSuccess` ×1, `clientStorage` ×10
 | pagination / cursor / load-more | 6 | 4 | 269 | `present` |
 | dialog / drawer | 1 | 0 | 307 | `elsewhere-in-app` |
 | chart / visualisation | 2 | 1 | 9 | `present` |
+
+_Adjudication (M7, hand-read):_ The free-text guidance box that classified a query into a builder section is gone as an input, but the routing vocabulary it produced is preserved as deep links. The strongest loss in this row is not the box: it is the dunning/grace banner, which has no modern counterpart at all.
+
+_Verified by:_ src/components/Candidate/CandidateCareerAssistant.jsx:61-68,147-151,src/components/Candidate/PaymentGraceBanner.jsx:30-38,frontend/src/pages/dashboard/ai-assistant.tsx:23-48,254,frontend/src/pages/dashboard/resume-builder.tsx:247-267,grep -rn 'grace|graceUntil|payment-grace' frontend/src
 
 _Unaccounted legacy actions (leads):_ `handleGuidanceSubmit()`, "Subscription renewal needs attention"
 
@@ -1373,11 +1391,15 @@ _Integrity risk in modern files:_ `fixtures` ×1
 
 #### `FP-F07` — Job discovery with map view and location autocomplete
 
-**Classification:** `MISSING` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** partial · **files:** legacy 3 / modern 1 · **actions:** legacy 4 handlers / 0 labels → modern 1 / 5
+**Classification:** `MISSING` · **adjudication:** `CONFIRMED_MISSING` · **auditStatus:** `ADJUDICATED` · **backend:** partial · **files:** legacy 3 / modern 1 · **actions:** legacy 4 handlers / 0 labels → modern 1 / 5
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | _no distinctive legacy subfeature class_ | 0 | 0 | 0 | `n/a` |
+
+_Adjudication (M7, hand-read):_ Map view and Google Places autocomplete are genuinely absent, and the replacement the modern portal offers does not work either: the public jobs page requests /api/jobs, which is not a registered operation, and the registered /api/jobs-data route ignores q/location/type entirely. So job discovery is not merely reduced, it cannot return filtered results.
+
+_Verified by:_ src/components/JobsListings/LocationAutocomplete.jsx:1-40,frontend/src/pages/jobs/portal.tsx:61-81,124,backend/routes/jobsData.js:159-175,backend/repositories/MySQLRepository.js:1153-1176,backend/repositories/InMemoryRepository.js:402-425,developer-review/Evidence/artifacts/backend-operations.tsv
 
 _Unaccounted legacy actions (leads):_ `handleOptionClick()`, `handlePlaceSelect()`
 
@@ -1645,13 +1667,17 @@ _Actions traced to another capability row (not losses):_ `handleScroll()`→app,
 
 #### `FP-G11` — Marketing site: welcome, features, FAQ, about, contact, legal
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** n/a · **files:** legacy 3 / modern 3 · **actions:** legacy 3 handlers / 6 labels → modern 2 / 21
+**Classification:** `PARTIAL PARITY` · **adjudication:** `SUBFEATURE_LOSS` · **auditStatus:** `ADJUDICATED` · **backend:** n/a · **files:** legacy 3 / modern 3 · **actions:** legacy 3 handlers / 6 labels → modern 2 / 21
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | filtering | 4 | 1 | 435 | `present` |
 | pagination / cursor / load-more | 3 | 0 | 269 | `elsewhere-in-app` |
 | dialog / drawer | 1 | 0 | 307 | `elsewhere-in-app` |
+
+_Adjudication (M7, hand-read):_ The marketing contact form is now a false-success surface: it validates locally, then renders 'Message Received!' and 'we have logged your request' without issuing any request, while the backend still has a working, rate-limited, persisting POST /api/contact that nothing in the modern tree calls. The dismiss control that used to hide the success card was replaced by a static 'Back to Home' link.
+
+_Verified by:_ src/components/Contact/Contact.jsx:165-175,189-191,src/services/api/platform.js:308-315,frontend/src/pages/cms/index.tsx:234-243,277-300,frontend/src/app/router.tsx:74,backend/index.js:2360-2387,577
 
 _Unaccounted legacy actions (leads):_ `handleDismissSuccess()`
 
@@ -1784,12 +1810,16 @@ _Actions traced to another capability row (not losses):_ `openCoverLetter()`→a
 
 #### `FP-G21` — AI interview coach / role-based question generation
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `DEEP_READ_M6` · **backend:** yes · **files:** legacy 2 / modern 1 · **actions:** legacy 2 handlers / 0 labels → modern 0 / 0
+**Classification:** `PARTIAL PARITY` · **adjudication:** `SUBFEATURE_LOSS` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 2 / modern 1 · **actions:** legacy 2 handlers / 0 labels → modern 0 / 0
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | filtering | 23 | 0 | 435 | `elsewhere-in-app` |
 | pagination / cursor / load-more | 1 | 0 | 269 | `elsewhere-in-app` |
+
+_Adjudication (M7, hand-read):_ Question generation and the interview run itself were rebuilt server-side (stronger than legacy), but the per-device interview history with delete and text export has no modern counterpart; the only delete verb applies to an abandoned live session, and the only export in the coach area is an .ics calendar file on the job tracker — a different capability.
+
+_Verified by:_ src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:9,1202,frontend/src/lib/interview-coach.ts:5-11,backend/routes/ai.js:362-365,1010-1115,frontend/src/pages/dashboard/interview-coach.tsx (grep: no Blob/download/clipboard),frontend/src/pages/dashboard/job-tracker.tsx:141-153
 
 _Unaccounted legacy actions (leads):_ `downloadTextFile()`, `removeHistoryEntry()`
 
@@ -1818,11 +1848,15 @@ _Integrity risk in modern files:_ `clientStorage` ×41
 
 #### `FP-G23` — Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs)
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 11 / modern 2 · **actions:** legacy 6 handlers / 0 labels → modern 0 / 0
+**Classification:** `PARTIAL PARITY` · **adjudication:** `SUBFEATURE_LOSS` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 11 / modern 2 · **actions:** legacy 6 handlers / 0 labels → modern 0 / 0
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
 | dialog / drawer | 16 | 0 | 307 | `elsewhere-in-app` |
+
+_Adjudication (M7, hand-read):_ The legacy hooks directory carried eleven cross-cutting hooks. Modern carries two. The unread/unread-notification hooks are superseded by React Query polling, and the confirm/prompt dialogs exist as per-surface dialogs, but there is no candidate-facing AI engine status, no AI token-usage indicator and no service-availability indicator, even though GET /api/service-availability still exists and now has no modern consumer.
+
+_Verified by:_ src/hooks/ (11 files),frontend/src/hooks/ (2 files),src/hooks/useAiEngineStatus.js:1-20,src/hooks/useAiTokenUsage.js:48,src/hooks/useServiceAvailability.js:24,backend/index.js:5398,frontend/src/components/enterprise/EnterpriseUsageTab.tsx:49,frontend/src/components/enterprise/EnterpriseRolesTab.tsx:281
 
 _Unaccounted legacy actions (leads):_ `createUnreadMessagesPoller()`, `runOnce()`
 
@@ -1832,7 +1866,7 @@ _Actions traced to another capability row (not losses):_ `handleConfirm()`→FP-
 
 #### `FP-G24` — In-app support surface and input validation modals
 
-**Classification:** `PARTIAL PARITY` · **auditStatus:** `EQUIVALENCE_LEAD` · **backend:** yes · **files:** legacy 3 / modern 5 · **actions:** legacy 8 handlers / 11 labels → modern 5 / 13
+**Classification:** `PARTIAL PARITY` · **adjudication:** `SUBFEATURE_LOSS` · **auditStatus:** `ADJUDICATED` · **backend:** yes · **files:** legacy 3 / modern 5 · **actions:** legacy 8 handlers / 11 labels → modern 5 / 13
 
 | subfeature class | legacy | modern (row) | modern (app) | verdict |
 |---|---:|---:|---:|---|
@@ -1840,6 +1874,10 @@ _Actions traced to another capability row (not losses):_ `handleConfirm()`→FP-
 | filtering | 8 | 17 | 435 | `present` |
 | pagination / cursor / load-more | 25 | 4 | 269 | `present` |
 | dialog / drawer | 8 | 2 | 307 | `present` |
+
+_Adjudication (M7, hand-read):_ Ticket listing, creation and reply are preserved and now server-backed. What was dropped is the dialog contract the three refs existed to implement: initial focus on the subject field, Escape-to-close with an in-flight guard, body scroll lock, and focus restore to the opener. The modern modal is a hand-rolled div with role=dialog and aria-modal but no key handling at all, while the kit already ships an accessible Radix Dialog.
+
+_Verified by:_ src/components/Dashboard/DashboardSupport/DashboardSupport.jsx:127-133,191-202,831-834,frontend/src/pages/dashboard/support.tsx:36,51-58,67-85,353-372,frontend/src/components/ui/dialog.tsx:1-8
 
 _Unaccounted legacy actions (leads):_ `createTicketButtonRef()`, `createTicketDialogRef()`, `createTicketSubjectRef()`
 

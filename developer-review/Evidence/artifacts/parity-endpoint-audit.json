@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-10-29T07:20:48.736Z",
-  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
-  "registerRevision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "generatedAt": "2026-10-29T07:41:33.883Z",
+  "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+  "registerRevision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
   "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
   "reachableClasses": [
     "UI-REACHABLE",
     "INDIRECTLY-REACHABLE",
     "EXTERNAL-CALLER"
   ],
-  "fullParityRows": 12,
+  "fullParityRows": 13,
   "tally": {
-    "SUPPORTED": 12
+    "SUPPORTED": 13
   },
   "rows": [
     {
@@ -191,6 +191,19 @@
       ],
       "counts": {
         "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-C06",
+      "capability": "Portfolio template gallery with palettes",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
         "unreachable": 0,
         "absent": 0,
         "ambiguous": 0
@@ -984,7 +997,7 @@
     {
       "id": "FP-A12",
       "capability": "Platform tenant registry (list tenants, quotas, suspend)",
-      "declaredInvoke": "no",
+      "declaredInvoke": "yes",
       "grade": "SUPPORTED",
       "endpoints": [
         {
@@ -1016,15 +1029,30 @@
             "OP-0186"
           ],
           "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/reactivate",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/reactivate",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0185"
+          ],
+          "reachable": true
         }
       ],
       "counts": {
-        "ok": 2,
+        "ok": 3,
         "unreachable": 0,
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "MISSING"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-A13",
@@ -2342,7 +2370,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "MISSING"
+      "classification": "FULL PARITY"
     },
     {
       "id": "FP-C07",
@@ -2565,7 +2593,7 @@
         "absent": 1,
         "ambiguous": 0
       },
-      "classification": "REPLACED BY EQUIVALENT"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-D08",
