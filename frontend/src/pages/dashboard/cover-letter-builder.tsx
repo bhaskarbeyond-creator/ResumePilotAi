@@ -68,6 +68,8 @@ type TextKey = Exclude<keyof CoverLetterRecord, 'id' | 'aiTone' | 'templateId' |
 type FieldErrors = Partial<Record<TextKey, string>>;
 
 const BODY_MAX = 20000;
+/** Quiet period before an edited, already-saved letter is written back. */
+export const AUTOSAVE_DELAY_MS = 2000;
 const PRINT_FRAME_ID = 'cover-letter-print-frame';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -197,7 +199,7 @@ function CoverLetterA4Paper({
                 <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
               ))
             ) : (
-              <p className="italic text-slate-400">Your letter text will appear here.</p>
+              <p className="italic text-slate-600">Your letter text will appear here.</p>
             )}
             <div className="pt-4 space-y-1">
               <p className="text-slate-600">Sincerely,</p>
@@ -247,7 +249,7 @@ function CoverLetterA4Paper({
                 <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
               ))
             ) : (
-              <p className="italic text-slate-400">Your letter text will appear here.</p>
+              <p className="italic text-slate-600">Your letter text will appear here.</p>
             )}
             <div className="pt-4 space-y-1">
               <p className="text-slate-600">Best regards,</p>
@@ -276,7 +278,7 @@ function CoverLetterA4Paper({
                   <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
                 ))
               ) : (
-                <p className="italic text-slate-400">Your letter text will appear here.</p>
+                <p className="italic text-slate-600">Your letter text will appear here.</p>
               )}
               <div className="pt-4 space-y-1">
                 <p className="text-slate-600">Sincerely,</p>
@@ -357,7 +359,7 @@ function CoverLetterA4Paper({
                 <p key={i} className="whitespace-pre-wrap leading-relaxed">{para}</p>
               ))
             ) : (
-              <p className="italic text-slate-400">Your letter text will appear here.</p>
+              <p className="italic text-slate-600">Your letter text will appear here.</p>
             )}
             <div className="pt-4 space-y-1">
               <p className="text-slate-600">Warm regards,</p>
@@ -391,6 +393,8 @@ export function CoverLetterBuilderPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<Notice>(null);
   const [saving, setSaving] = useState(false);
+  // Autosave state. `saved` is only ever set from a server confirmation.
+  const [autosave, setAutosave] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [generating, setGenerating] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [view, setView] = useState<'edit' | 'preview'>('edit');
@@ -401,6 +405,9 @@ export function CoverLetterBuilderPage() {
 
   /** Id of a new letter that was just saved and is already in state. */
   const justSavedIdRef = useRef<string | null>(null);
+  // Bumped on every write (manual or automatic): an older response can never
+  // overwrite a newer draft.
+  const writeSequence = useRef(0);
   const generateButtonRef = useRef<HTMLButtonElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const keepTextRef = useRef<HTMLButtonElement>(null);
@@ -505,10 +512,13 @@ export function CoverLetterBuilderPage() {
       return;
     }
     const sent = record;
+    const write = ++writeSequence.current;
     setSaving(true);
+    setAutosave('idle');
     setNotice(null);
     try {
       const saved = await saveCoverLetter(sent);
+      if (write !== writeSequence.current) return;
       setBaseline(snapshotOf(sent));
       setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
       setPersisted(true);
@@ -539,6 +549,37 @@ export function CoverLetterBuilderPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  // Autosave. It only runs for a letter the server already holds, so typing can
+  // never create records behind the candidate's back; a first save is always the
+  // explicit one. The write is debounced, sequenced, and never reported as saved
+  // until the server confirms it.
+  useEffect(() => {
+    if (phase !== 'ready' || !persisted || saving || !dirty) return;
+    if (Object.keys(validateForSave(record)).length > 0) return;
+    const timer = window.setTimeout(() => {
+      const sent = record;
+      const write = ++writeSequence.current;
+      setAutosave('saving');
+      void (async () => {
+        try {
+          const saved = await saveCoverLetter(sent);
+          if (write !== writeSequence.current) return;
+          setBaseline(snapshotOf(sent));
+          setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
+          setAutosave('saved');
+        } catch (error) {
+          if (write !== writeSequence.current) return;
+          setAutosave('failed');
+          setNotice({
+            tone: 'error',
+            text: `Autosave failed: ${normalizeError(error).message} Your draft is still here — press Save to try again.`,
+          });
+        }
+      })();
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [phase, persisted, saving, dirty, record]);
 
   const generate = async () => {
     setConfirmReplace(false);
@@ -758,13 +799,15 @@ export function CoverLetterBuilderPage() {
   const heading = record.jobTitle.trim() || record.companyName.trim()
     ? letterTitle(record)
     : persisted ? 'Untitled cover letter' : 'New cover letter';
-  const saveState = saving
+  const saveState = saving || autosave === 'saving'
     ? 'Saving…'
-    : dirty
-      ? 'Unsaved changes'
-      : persisted
-        ? `All changes saved · ${formatUpdated(lastSavedAt)}`
-        : 'Not saved yet';
+    : autosave === 'failed' && dirty
+      ? 'Autosave failed — these changes are not saved'
+      : dirty
+        ? persisted ? 'Unsaved changes · autosaving shortly' : 'Unsaved changes'
+        : persisted
+          ? `All changes saved${autosave === 'saved' ? ' (autosaved)' : ''} · ${formatUpdated(lastSavedAt)}`
+          : 'Not saved yet';
 
   return (
     <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
