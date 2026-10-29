@@ -51,6 +51,24 @@ function toSummary(row: Record<string, unknown>): ResumeSummary {
 const scoreTone = (score: number) => (score >= 80 ? 'text-success-700' : score >= 60 ? 'text-warning-700' : 'text-error-700');
 const barTone = (ratio: number) => (ratio >= 0.75 ? 'bg-success-600' : ratio >= 0.5 ? 'bg-warning-500' : 'bg-error-500');
 
+/** Same shape the API accepts for a resume id; anything else can never be one. */
+const RESUME_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+const RESUME_CONTENT_FIELDS = ['firstname', 'lastname', 'summary', 'skills', 'employments', 'educations', 'projects', 'certifications'] as const;
+
+/**
+ * True when a stored resume carries no content at all. A resume like this scores
+ * low because there is nothing to read — which is a different fact from a
+ * complete resume that scores low, and the page says which one it is.
+ */
+function isEmptyResume(row: Record<string, unknown>): boolean {
+  return RESUME_CONTENT_FIELDS.every((field) => {
+    const value = row[field];
+    if (Array.isArray(value)) return value.length === 0;
+    return typeof value !== 'string' || value.trim() === '';
+  });
+}
+
 export function ATSScorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedId = searchParams.get('resume');
@@ -60,7 +78,7 @@ export function ATSScorePage() {
   const [listError, setListError] = useState('');
   const [detail, setDetail] = useState<DetailState>({ status: 'idle' });
   const [jobDescription, setJobDescription] = useState('');
-  const [result, setResult] = useState<{ resumeId: string; title: string; value: AtsScoreResult } | null>(null);
+  const [result, setResult] = useState<{ resumeId: string; title: string; value: AtsScoreResult; emptyResume: boolean } | null>(null);
 
   const loadList = useCallback(async () => {
     setListState('loading');
@@ -78,13 +96,16 @@ export function ATSScorePage() {
     void loadList();
   }, [loadList]);
 
-  // The selection lives in the URL; default to the most recently updated resume.
+  // The selection lives in the URL; an id that is not a resume id, or not one of
+  // this account's resumes, is replaced by the most recently updated one.
+  const requestedIdValid = requestedId !== null && RESUME_ID.test(requestedId);
   const selectedId = useMemo(() => {
-    if (requestedId && resumes.some((resume) => resume.id === requestedId)) return requestedId;
+    if (requestedIdValid && resumes.some((resume) => resume.id === requestedId)) return requestedId as string;
     return resumes[0]?.id ?? '';
-  }, [requestedId, resumes]);
+  }, [requestedId, requestedIdValid, resumes]);
   const selected = resumes.find((resume) => resume.id === selectedId) ?? null;
-  const requestedMissing = listState === 'ready' && !!requestedId && !resumes.some((resume) => resume.id === requestedId);
+  const requestedInvalid = listState === 'ready' && requestedId !== null && !requestedIdValid;
+  const requestedMissing = listState === 'ready' && requestedIdValid && !resumes.some((resume) => resume.id === requestedId);
 
   const loadDetail = useCallback(async (id: string) => {
     setDetail({ status: 'loading' });
@@ -103,6 +124,15 @@ export function ATSScorePage() {
     else setDetail({ status: 'idle' });
   }, [selectedId, loadDetail]);
 
+  // Once the list is known, put the resume actually on screen into the URL so a
+  // reload or a shared link reopens the same one. `replace` keeps Back working.
+  useEffect(() => {
+    if (listState !== 'ready' || !selectedId || requestedId === selectedId) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('resume', selectedId);
+    setSearchParams(next, { replace: true });
+  }, [listState, selectedId, requestedId, searchParams, setSearchParams]);
+
   const selectResume = (id: string) => {
     const next = new URLSearchParams(searchParams);
     next.set('resume', id);
@@ -116,7 +146,7 @@ export function ATSScorePage() {
       setDetail({ status: 'error', message: 'This resume could not be scored.' });
       return;
     }
-    setResult({ resumeId: selected.id, title: selected.title, value });
+    setResult({ resumeId: selected.id, title: selected.title, value, emptyResume: isEmptyResume(detail.row) });
     window.requestAnimationFrame(() => document.getElementById('ats-results-heading')?.focus());
   };
 
@@ -158,6 +188,11 @@ export function ATSScorePage() {
             {requestedMissing && (
               <p role="status" className="rounded-lg border border-warning-200 bg-warning-50 p-2.5 text-xs text-warning-800">
                 The requested resume is not in your account. Showing your most recent resume instead.
+              </p>
+            )}
+            {requestedInvalid && (
+              <p role="status" className="rounded-lg border border-warning-200 bg-warning-50 p-2.5 text-xs text-warning-800">
+                That link did not include a valid resume identifier. Showing your most recent resume instead.
               </p>
             )}
             <div>
@@ -225,12 +260,14 @@ export function ATSScorePage() {
         </section>
       )}
 
-      {result && result.resumeId === selectedId && <AtsResults title={result.title} resumeId={result.resumeId} result={result.value} />}
+      {result && result.resumeId === selectedId && (
+        <AtsResults title={result.title} resumeId={result.resumeId} result={result.value} emptyResume={result.emptyResume} />
+      )}
     </div>
   );
 }
 
-function AtsResults({ title, resumeId, result }: { title: string; resumeId: string; result: AtsScoreResult }) {
+function AtsResults({ title, resumeId, result, emptyResume }: { title: string; resumeId: string; result: AtsScoreResult; emptyResume: boolean }) {
   const jd = result.jdMatch;
   return (
     <section aria-labelledby="ats-results-heading" className="space-y-6">
@@ -240,10 +277,15 @@ function AtsResults({ title, resumeId, result }: { title: string; resumeId: stri
         </h2>
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           <p className="flex items-baseline gap-2">
-            <span className={cn('text-5xl font-extrabold tabular-nums', scoreTone(result.totalScore))} data-testid="ats-total-score">
+            <span
+              className={cn('text-5xl font-extrabold tabular-nums', scoreTone(result.totalScore))}
+              data-testid="ats-total-score"
+              role="img"
+              aria-label={`IME365 ATS readiness score: ${result.totalScore} out of 100. ${result.status.label}.`}
+            >
               {result.totalScore}%
             </span>
-            <span className="text-sm text-ink-muted">ATS readiness</span>
+            <span className="text-sm text-ink-muted" aria-hidden="true">ATS readiness</span>
           </p>
           <div className="flex flex-wrap gap-2 sm:ml-auto">
             <span className="rounded-full border border-border bg-canvas px-3 py-1 text-xs font-semibold text-ink" data-testid="ats-status">
@@ -256,6 +298,12 @@ function AtsResults({ title, resumeId, result }: { title: string; resumeId: stri
             )}
           </div>
         </div>
+        {emptyResume && (
+          <p role="status" className="mt-3 rounded-lg border border-warning-200 bg-warning-50 p-2.5 text-xs text-warning-800">
+            This resume has no content yet, so the score reflects missing sections rather than weak writing. Add contact details,
+            a summary and your experience, then check again.
+          </p>
+        )}
         {result.language.nonEnglish && (
           <p className="mt-3 text-xs text-ink-muted">Non-English content detected: English-specific checks such as action verbs are not penalised.</p>
         )}

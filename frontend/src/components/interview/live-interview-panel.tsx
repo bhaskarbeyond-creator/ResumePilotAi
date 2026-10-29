@@ -4,7 +4,7 @@
  * evaluations, completion and the report; this component only renders what the
  * server returns and never substitutes canned questions, feedback or scores.
  */
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -112,62 +112,85 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
   const answerHelpId = useId();
   const answerErrorId = useId();
   const hintsId = useId();
+  const voiceNoticeId = useId();
 
-  // Voice Interview Mode State (DISC-038)
-  const capabilities = useMemo(() => getVoiceCapabilities(), []);
+  // Voice Interview Mode State (DISC-038). Capabilities are re-detected when the
+  // page becomes visible again, because they depend on a real browser API.
+  const [capabilities, setCapabilities] = useState(() => getVoiceCapabilities());
   const [isRecording, setIsRecording] = useState(false);
+  const [interim, setInterim] = useState('');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0);
+  const [hasAudioSignal, setHasAudioSignal] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const voiceRecorderRef = useRef<VoiceInterviewRecorder | null>(null);
 
-  // Initialize voice recorder
+  // Initialize voice recorder. Everything it captures is released on unmount.
   useEffect(() => {
     const recorder = new VoiceInterviewRecorder(
       (transcript) => {
-        setAnswer((prev) => {
-          if (!prev) return transcript;
-          return `${prev.trim()} ${transcript}`.trim();
-        });
+        setAnswer((prev) => (prev ? `${prev.trim()} ${transcript}`.trim() : transcript));
         setAnswerError('');
+        setInterim('');
       },
-      (vol) => setAudioVolume(vol),
-      (err) => setVoiceNotice(err)
+      (volume) => setAudioVolume(volume),
+      (message) => setVoiceNotice(message),
+      {
+        onInterim: (text) => setInterim(text),
+        onListeningChange: (listening) => {
+          setIsRecording(listening);
+          setHasAudioSignal(listening && recorder.hasAudioSignal);
+          if (!listening) setInterim('');
+        },
+      },
     );
     voiceRecorderRef.current = recorder;
 
+    const refreshCapabilities = () => {
+      if (document.visibilityState === 'visible') setCapabilities(getVoiceCapabilities());
+    };
+    document.addEventListener('visibilitychange', refreshCapabilities);
+
     return () => {
-      recorder.stopListening();
-      recorder.stopSpeaking();
+      document.removeEventListener('visibilitychange', refreshCapabilities);
+      recorder.dispose();
+      voiceRecorderRef.current = null;
     };
   }, []);
 
   const handleToggleVoice = async () => {
-    if (!voiceRecorderRef.current) return;
+    const recorder = voiceRecorderRef.current;
+    if (!recorder) return;
     setVoiceNotice(null);
     if (isRecording) {
-      voiceRecorderRef.current.stopListening();
+      recorder.stopListening();
       setIsRecording(false);
-    } else {
-      const ok = await voiceRecorderRef.current.startListening();
-      if (ok) {
-        setIsRecording(true);
-      }
+      setInterim('');
+      return;
     }
+    // Playback and dictation at once would let the interviewer's voice be
+    // transcribed as the candidate's answer.
+    if (isPlayingAudio) {
+      recorder.stopSpeaking();
+      setIsPlayingAudio(false);
+    }
+    const started = await recorder.startListening();
+    setIsRecording(started);
+    setHasAudioSignal(started && recorder.hasAudioSignal);
   };
 
   const handleSpeakQuestion = () => {
-    if (!voiceRecorderRef.current) return;
+    const recorder = voiceRecorderRef.current;
+    if (!recorder) return;
     if (isPlayingAudio) {
-      voiceRecorderRef.current.stopSpeaking();
+      recorder.stopSpeaking();
       setIsPlayingAudio(false);
-    } else {
-      const textToSpeak = `${session.interviewer.message ? session.interviewer.message + '. ' : ''}${session.interviewer.question}`;
-      setIsPlayingAudio(true);
-      voiceRecorderRef.current.speakQuestion(textToSpeak, () => {
-        setIsPlayingAudio(false);
-      });
+      return;
     }
+    const textToSpeak = `${session.interviewer.message ? `${session.interviewer.message}. ` : ''}${session.interviewer.question}`;
+    const started = recorder.speak(textToSpeak, () => setIsPlayingAudio(false));
+    setIsPlayingAudio(started);
+    if (started) setVoiceNotice(null);
   };
 
   const closed = liveInterviewClosed(session);
@@ -176,7 +199,9 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
   const config = session.configuration;
   const previousTurnId = useRef(session.interviewer.turnId);
 
-  // A new question (or a reloaded session) starts with an empty answer box.
+  // A new question (or a reloaded session) starts with an empty answer box and
+  // no capture running: a dictation session never carries over to the next
+  // question (its transcript would be appended to the wrong answer).
   useEffect(() => {
     if (previousTurnId.current === session.interviewer.turnId) return;
     previousTurnId.current = session.interviewer.turnId;
@@ -187,6 +212,9 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
       voiceRecorderRef.current.stopSpeaking();
     }
     setIsRecording(false);
+    setInterim('');
+    setHasAudioSignal(false);
+    setAudioVolume(0);
     setIsPlayingAudio(false);
     setShowHints(false);
     questionRef.current?.focus();
@@ -418,18 +446,19 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
                     variant="ghost"
                     size="sm"
                     onClick={handleSpeakQuestion}
-                    className="h-7 text-xs px-2 gap-1.5 text-brand-700 hover:text-brand-800 font-semibold"
-                    title={isPlayingAudio ? 'Stop voice playback' : 'Listen to interviewer voice'}
+                    aria-pressed={isPlayingAudio}
+                    className="h-7 gap-1.5 px-2 text-xs font-semibold text-brand-700 hover:text-brand-800"
+                    title={isPlayingAudio ? 'Stop reading the question aloud' : 'Read the question aloud'}
                   >
                     {isPlayingAudio ? (
                       <>
-                        <VolumeX className="size-3.5 text-rose-600 animate-pulse" />
-                        <span className="text-rose-600">Stop Voice</span>
+                        <VolumeX className="size-3.5 text-rose-600 motion-safe:animate-pulse" aria-hidden="true" />
+                        <span className="text-rose-600">Stop voice</span>
                       </>
                     ) : (
                       <>
-                        <Volume2 className="size-3.5" />
-                        <span>Listen to Question</span>
+                        <Volume2 className="size-3.5" aria-hidden="true" />
+                        <span>Listen to question</span>
                       </>
                     )}
                   </Button>
@@ -467,21 +496,27 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
                 <label htmlFor={answerId} className="block text-sm font-semibold text-ink">Your answer</label>
                 
                 {/* Voice Input Toolbar (DISC-038) */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {isRecording && (
-                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-pulse">
-                      <Radio className="size-3 animate-spin" />
+                    <div className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                      <Radio className="size-3" aria-hidden="true" />
                       <span>Listening</span>
-                      {/* Audio waveform activity bars */}
-                      <div className="flex items-end gap-0.5 h-3 ml-1">
-                        {[0.4, 0.8, 1.0, 0.6, 0.3].map((factor, i) => (
-                          <span
-                            key={i}
-                            className="w-1 bg-rose-600 rounded-full transition-all duration-75"
-                            style={{ height: `${Math.max(3, Math.min(12, Math.round((audioVolume * factor) / 8)))}px` }}
-                          />
-                        ))}
-                      </div>
+                      {hasAudioSignal ? (
+                        <>
+                          <span className="sr-only">Microphone activity</span>
+                          <div className="ml-1 flex h-3 items-end gap-0.5" aria-hidden="true">
+                            {[0.4, 0.8, 1, 0.6, 0.3].map((factor, index) => (
+                              <span
+                                key={index}
+                                className="w-1 rounded-full bg-rose-600 transition-[height] duration-75 motion-reduce:transition-none"
+                                style={{ height: `${Math.max(3, Math.min(12, Math.round((audioVolume * factor) / 8)))}px` }}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="ml-1 font-medium text-rose-600">level unavailable</span>
+                      )}
                     </div>
                   )}
                   {capabilities.speechRecognition ? (
@@ -489,23 +524,40 @@ export function LiveInterviewPanel({ session, onSessionChange, onLeave }: LiveIn
                       type="button"
                       variant={isRecording ? 'destructive' : 'outline'}
                       size="sm"
-                      onClick={handleToggleVoice}
-                      className="h-7 text-xs px-2.5 gap-1.5 font-semibold"
-                      title={isRecording ? 'Stop voice dictation' : 'Speak your answer using microphone'}
+                      onClick={() => void handleToggleVoice()}
+                      disabled={busy !== null}
+                      aria-pressed={isRecording}
+                      aria-describedby={voiceNotice ? voiceNoticeId : undefined}
+                      className="h-7 gap-1.5 px-2.5 text-xs font-semibold"
+                      title={isRecording ? 'Stop voice dictation' : 'Speak your answer using the microphone'}
                     >
-                      {isRecording ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-brand-600" />}
-                      <span>{isRecording ? 'Stop Mic' : 'Voice Answer'}</span>
+                      {isRecording ? <MicOff className="size-3.5" aria-hidden="true" /> : <Mic className="size-3.5 text-brand-600" aria-hidden="true" />}
+                      <span>{isRecording ? 'Stop mic' : 'Voice answer'}</span>
                     </Button>
                   ) : (
-                    <span className="text-[11px] text-ink-muted">Voice dictation requires Web Speech API</span>
+                    <span className="text-[11px] text-ink-muted">
+                      {capabilities.speechRecognitionReason ?? 'Voice dictation is not available in this browser.'}
+                    </span>
                   )}
                 </div>
               </div>
 
+              {isRecording && interim && (
+                <p aria-live="off" className="text-xs italic text-ink-muted">
+                  Hearing: “{interim}”
+                </p>
+              )}
+
               {voiceNotice && (
-                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center justify-between gap-2">
-                  <span>{voiceNotice}</span>
-                  <button type="button" onClick={() => setVoiceNotice(null)} className="text-xs font-bold underline">Dismiss</button>
+                <div id={voiceNoticeId} className="flex items-start justify-between gap-2 rounded-xl border border-warning-200 bg-warning-50 p-2.5 text-xs font-medium text-warning-800">
+                  <span className="min-w-0 break-words">{voiceNotice}</span>
+                  <button
+                    type="button"
+                    onClick={() => setVoiceNotice(null)}
+                    className="shrink-0 rounded text-xs font-bold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               )}
 

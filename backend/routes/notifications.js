@@ -13,6 +13,9 @@ const ALLOWED_ROLES = new Set(['EMPLOYER', 'ADMIN', 'SUPER_ADMIN']);
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_MESSAGE_LENGTH = 5000;
 const DEFAULT_TEMPLATE = 'custom_message';
+// Template ids land in audit metadata, so they are restricted to a small,
+// log-safe alphabet instead of accepting arbitrary client text.
+const TEMPLATE_PATTERN = /^[A-Za-z0-9_.:-]{1,64}$/;
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -63,9 +66,11 @@ async function recordNotificationAudit(repository, { actorUid, actorEmail, actio
       ...(messageId ? { messageId } : {}),
       ...(error ? { error: String(error) } : {}),
     },
-  }).catch(_error => {
-    // Audit failures must never turn a successful dispatch into an error, and
-    // must never mask a mailer failure either.
+  }).catch(auditError => {
+    // An audit failure must never turn a successful dispatch into an error, and
+    // must never mask a mailer failure either. It is still recorded server-side
+    // by code only: the recipient address and message body stay out of logs.
+    console.error('[Candidate notify] audit write failed', { code: auditError?.code || auditError?.name || 'ERROR' });
   });
 }
 
@@ -81,15 +86,17 @@ async function notifyHandler(req, res) {
   const recipientEmail = String(body.recipientEmail || body.to || '').trim();
   const subject = String(body.subject || '').trim();
   const message = String(body.message || body.body || '').trim();
-  const template = typeof body.template === 'string' && body.template.trim().length > 0
+  const requestedTemplate = typeof body.template === 'string' && body.template.trim().length > 0
     ? body.template.trim()
     : DEFAULT_TEMPLATE;
+  const template = TEMPLATE_PATTERN.test(requestedTemplate) ? requestedTemplate : null;
 
   const invalid = [];
   if (!candidateId) invalid.push('candidateId');
   if (!recipientEmail || !EMAIL_REGEX.test(recipientEmail)) invalid.push('recipientEmail');
   if (!subject || subject.length > MAX_SUBJECT_LENGTH) invalid.push('subject');
   if (!message || message.length > MAX_MESSAGE_LENGTH) invalid.push('message');
+  if (!template) invalid.push('template');
   if (invalid.length > 0) {
     return fail(res, 400, 'INVALID_NOTIFICATION_PAYLOAD', `Missing or invalid fields: ${invalid.join(', ')}`);
   }

@@ -347,14 +347,59 @@ export function InterviewCoachPage() {
     return () => controller.abort();
   }, [uid]);
 
-  /* ─── Timers (mock + CBT) ─── */
+  /* ─── Timers (mock + CBT) ───
+   * The countdown is derived from an absolute deadline, not from counting ticks:
+   * a throttled background tab, a slow frame or a suspended laptop can delay
+   * the interval, and a decrementing counter would then report time that has
+   * already passed. `deadlineRef` holds the epoch ms at which time runs out;
+   * `remainingRef` holds the frozen value while paused.
+   */
+  const deadlineRef = useRef<number | null>(null);
+  const remainingRef = useRef(0);
+
+  const armCountdown = useCallback((seconds: number | null) => {
+    const total = Math.max(0, Math.round(seconds ?? 0));
+    remainingRef.current = total;
+    deadlineRef.current = total > 0 ? Date.now() + total * 1000 : null;
+    setTimeRemaining(total);
+  }, []);
+
   const timerRunning = phase === 'active' && !paused && ((mode === 'mock' && practice !== null) || (mode === 'cbt' && exam !== null));
 
   useEffect(() => {
     if (!timerRunning) return;
-    const id = window.setInterval(() => setTimeRemaining((seconds) => Math.max(0, seconds - 1)), 1000);
+    // Resuming re-arms the deadline from the frozen remaining seconds.
+    if (deadlineRef.current === null) {
+      if (remainingRef.current <= 0) return;
+      deadlineRef.current = Date.now() + remainingRef.current * 1000;
+    }
+    const tick = () => {
+      const deadline = deadlineRef.current;
+      if (deadline === null) return;
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      remainingRef.current = remaining;
+      setTimeRemaining(remaining);
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
   }, [timerRunning]);
+
+  /** Pause freezes the remaining seconds; resume re-arms the deadline. */
+  const togglePause = useCallback(() => {
+    if (paused) {
+      setPaused(false);
+      return;
+    }
+    const deadline = deadlineRef.current;
+    if (deadline !== null) {
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      remainingRef.current = remaining;
+      setTimeRemaining(remaining);
+    }
+    deadlineRef.current = null;
+    setPaused(true);
+  }, [paused]);
 
   const finishPractice = useCallback((timedOut: boolean) => {
     setPractice((previous) => previous && {
@@ -390,7 +435,7 @@ export function InterviewCoachPage() {
     setLiveSession(null);
     setStartError(null);
     setPaused(false);
-    setTimeRemaining(0);
+    armCountdown(0);
   };
 
   const chooseMode = (next: InterviewMode) => {
@@ -411,14 +456,14 @@ export function InterviewCoachPage() {
     const questions = PRACTICE_BANK[topic].slice(0, effectivePracticeCount);
     const seconds = practiceMode === 'mock' ? duration * 60 : null;
     setPractice({ mode: practiceMode, topicId: topic, role: trimmedRole, questions, answers: questions.map(() => ''), index: 0, startedAt: Date.now(), durationSeconds: seconds, timeUsed: null, timedOut: false });
-    setTimeRemaining(seconds ?? 0);
+    armCountdown(seconds);
     setPaused(false);
     setPhase('active');
   };
 
   const beginExam = (topic: InterviewTopicId, questions: ExamQuestion[], source: ExamState['source'], title: string) => {
     setExam({ topicId: topic, role: trimmedRole, source, title, questions, index: 0, durationSeconds: duration * 60, timeUsed: null, timedOut: false });
-    setTimeRemaining(duration * 60);
+    armCountdown(duration * 60);
     setStartError(null);
     setPhase('active');
   };
@@ -502,7 +547,7 @@ export function InterviewCoachPage() {
         state={practice}
         timeRemaining={timeRemaining}
         paused={paused}
-        onTogglePause={() => setPaused((value) => !value)}
+        onTogglePause={togglePause}
         onAnswerChange={(index, value) => setPractice((previous) => previous && { ...previous, answers: previous.answers.map((answer, i) => (i === index ? value : answer)) })}
         onNavigate={(index) => setPractice((previous) => previous && { ...previous, index: Math.max(0, Math.min(previous.questions.length - 1, index)) })}
         onFinish={() => finishPractice(false)}
@@ -531,7 +576,7 @@ export function InterviewCoachPage() {
         state={practice}
         onRestart={() => {
           setPractice({ ...practice, answers: practice.questions.map(() => ''), index: 0, startedAt: Date.now(), timeUsed: null, timedOut: false });
-          setTimeRemaining(practice.durationSeconds ?? 0);
+          armCountdown(practice.durationSeconds);
           setPaused(false);
           setPhase('active');
         }}
@@ -546,7 +591,7 @@ export function InterviewCoachPage() {
         state={exam}
         onRetake={() => {
           setExam({ ...exam, questions: exam.questions.map((question) => ({ ...question, selectedIndex: null, flagged: false })), index: 0, timeUsed: null, timedOut: false });
-          setTimeRemaining(exam.durationSeconds);
+          armCountdown(exam.durationSeconds);
           setPhase('active');
         }}
         onNewSession={backToModes}

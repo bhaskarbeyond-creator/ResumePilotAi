@@ -10,7 +10,7 @@
  * and never shows as a result. Tools without a backend operation (interview
  * answers, LinkedIn pitches) are not offered.
  */
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, ClipboardCopy, FileText, History, ListChecks, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -101,15 +101,32 @@ function inputLabel(tool: ToolId, form: FormState): string {
 
 const resultText = (outcome: ResultOutcome) => (outcome.kind === 'text' ? outcome.text : outcome.skills.map((skill) => skill.name).join('\n'));
 
+/** The two outcomes a candidate can edit and copy. */
+const isUsable = (value: AiOutcome | null): value is ResultOutcome => value !== null && (value.kind === 'text' || value.kind === 'skills');
+
 export function AIAssistantPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const toolParam = searchParams.get('tool');
   const toolId: ToolId = isToolId(toolParam) ? toolParam : 'bullet';
   const tool = TOOLS.find((item) => item.id === toolId) ?? TOOLS[0];
 
+  // An unknown ?tool= value is not silently kept in the address bar: the page
+  // shows the default tool and the URL is corrected to match it.
+  const unknownTool = toolParam !== null && !isToolId(toolParam);
+  useEffect(() => {
+    if (!unknownTool) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('tool');
+    setSearchParams(next, { replace: true });
+  }, [unknownTool, searchParams, setSearchParams]);
+
   const [form, setForm] = useState<FormState>({ bullet: '', role: '', notes: '', skills: '', tone: 'balanced' });
   const [fieldError, setFieldError] = useState<{ field: FieldKey; message: string } | null>(null);
   const [outcome, setOutcome] = useState<{ tool: ToolId; value: AiOutcome } | null>(null);
+  /** The last successful result for the current tool, kept when a later attempt fails. */
+  const [lastSuccess, setLastSuccess] = useState<{ tool: ToolId; value: ResultOutcome } | null>(null);
+  /** The editable copy of the current result. Copy never reads the model output directly. */
+  const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'done' | 'failed'>('idle');
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -118,6 +135,13 @@ export function AIAssistantPage() {
   useRestoreFocusWhenIdle(busy, generateRef);
 
   const visible = outcome && outcome.tool === toolId ? outcome.value : null;
+  /** What the result panel shows: this attempt when it worked, else the previous good one. */
+  const shown: ResultOutcome | null = isUsable(visible)
+    ? visible
+    : lastSuccess && lastSuccess.tool === toolId
+      ? lastSuccess.value
+      : null;
+  const showStaleNote = !isUsable(visible) && shown !== null;
 
   const update = (field: keyof FormState, value: string) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -145,12 +169,13 @@ export function AIAssistantPage() {
     }
     setFieldError(null);
     setCopyState('idle');
-    setOutcome(null);
     setBusy(true);
     try {
       const value = await runContentOperation(tool.operation, payloadFor(toolId, form));
       setOutcome({ tool: toolId, value });
-      if (value.kind === 'text' || value.kind === 'skills') {
+      if (isUsable(value)) {
+        setLastSuccess({ tool: toolId, value });
+        setDraft(resultText(value));
         const id = ++historyId.current;
         const item: HistoryItem = {
           id,
@@ -168,9 +193,11 @@ export function AIAssistantPage() {
 
   const copy = async (value: string) => {
     try {
+      if (!navigator.clipboard?.writeText) throw new Error('The clipboard API is unavailable.');
       await navigator.clipboard.writeText(value);
       setCopyState('done');
     } catch {
+      // Truthful failure: nothing was written to the clipboard.
       setCopyState('failed');
     }
   };
@@ -347,27 +374,69 @@ export function AIAssistantPage() {
               )}
             </div>
 
-            {!busy && !visible && (
+            {!busy && !shown && (
               <p className="mt-3 text-sm text-ink-muted">Results appear here. They are suggestions to review, not final text.</p>
             )}
 
-            {visible?.kind === 'text' && (
+            {shown?.kind === 'text' && (
               <div className="mt-3">
-                <p className="whitespace-pre-wrap break-words rounded-xl border border-border bg-canvas p-4 text-sm leading-relaxed text-ink" data-testid="ai-result-text">
-                  {visible.text}
+                <label htmlFor="ai-draft" className="mb-1 block text-xs font-medium text-ink">Your editable version</label>
+                <Textarea
+                  id="ai-draft"
+                  data-testid="ai-result-text"
+                  value={draft}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setCopyState('idle');
+                  }}
+                  rows={6}
+                  maxLength={4000}
+                  className="resize-y"
+                  aria-describedby="ai-draft-hint"
+                />
+                <p id="ai-draft-hint" className="mt-1 text-xs text-ink-muted">
+                  Edit any wording here. Copy takes exactly what is in this box; check that every number and claim is true before you use it.
                 </p>
               </div>
             )}
 
-            {visible?.kind === 'skills' && (
+            {shown?.kind === 'skills' && (
               <ul className="mt-3 space-y-2" aria-label="Suggested skills">
-                {visible.skills.map((skill) => (
+                {shown.skills.map((skill) => (
                   <li key={skill.name} className="rounded-lg border border-border bg-canvas px-3 py-2 text-sm">
                     <span className="font-medium text-ink">{skill.name}</span>
                     {skill.basis && <span className="mt-0.5 block text-xs text-ink-muted">Why: {skill.basis}</span>}
                   </li>
                 ))}
               </ul>
+            )}
+
+            {shown?.kind === 'skills' && (
+              <div className="mt-3">
+                <label htmlFor="ai-draft" className="mb-1 block text-xs font-medium text-ink">Skills to copy (one per line)</label>
+                <Textarea
+                  id="ai-draft"
+                  data-testid="ai-result-text"
+                  value={draft}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setCopyState('idle');
+                  }}
+                  rows={4}
+                  maxLength={2000}
+                  className="resize-y"
+                  aria-describedby="ai-draft-hint"
+                />
+                <p id="ai-draft-hint" className="mt-1 text-xs text-ink-muted">
+                  Remove anything you cannot do yet, and add skills to your resume yourself — nothing is saved automatically.
+                </p>
+              </div>
+            )}
+
+            {showStaleNote && (
+              <p className="mt-3 rounded-lg border border-border bg-canvas p-2.5 text-xs text-ink-secondary">
+                The result below is your previous one and has not changed.
+              </p>
             )}
 
             {visible?.kind === 'questions' && (
@@ -379,12 +448,12 @@ export function AIAssistantPage() {
               </div>
             )}
 
-            {(visible?.kind === 'text' || visible?.kind === 'skills') && (
+            {shown && (
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <Button variant="outline" size="sm" onClick={() => void copy(resultText(visible))}>
+                <Button variant="outline" size="sm" onClick={() => void copy(draft)} disabled={!draft.trim()}>
                   <ClipboardCopy aria-hidden="true" /> Copy
                 </Button>
-                <span aria-live="polite" className="text-xs text-ink-muted">
+                <span role="status" aria-live="polite" className="text-xs text-ink-muted">
                   {copyState === 'done' ? 'Copied to the clipboard.' : copyState === 'failed' ? 'Copy failed. Select the text and copy it manually.' : ''}
                 </span>
               </div>
@@ -414,6 +483,9 @@ export function AIAssistantPage() {
                       onClick={() => {
                         selectTool(item.tool);
                         setOutcome({ tool: item.tool, value: item.outcome });
+                        setLastSuccess({ tool: item.tool, value: item.outcome });
+                        setDraft(resultText(item.outcome));
+                        setCopyState('idle');
                       }}
                       className="w-full rounded-lg border border-border px-3 py-2 text-left text-sm hover:bg-canvas focus-visible:outline-2 focus-visible:outline-brand-500"
                     >

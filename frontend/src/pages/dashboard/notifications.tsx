@@ -12,17 +12,278 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { AlertCircle, Bell, CheckCheck, Loader2, RotateCcw, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useMarkAllNotificationsRead, useNotifications, useSetNotificationRead } from '@/hooks/use-api-hooks';
-import { toNotificationsError, type NotificationItem, type NotificationsApiError } from '@/lib/notifications';
+import { queryKeys, useMarkAllNotificationsRead, useNotifications, useSetNotificationRead } from '@/hooks/use-api-hooks';
+import { apiClient } from '@/lib/api-client';
+import {
+  NotificationsApiError,
+  toNotification,
+  toNotificationsError,
+  type NotificationItem,
+} from '@/lib/notifications';
 import { matchesSearch } from '@/lib/notification-display';
 import { NotificationRow } from '@/components/notifications/notification-row';
 
 const PAGE_SIZE = 20;
 type Filter = 'all' | 'unread';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * DISC-053 — one coalesced unread-notification poller for the whole app.
+ *
+ * The feed is polled by exactly ONE loop, owned by this module and shared by
+ * every surface that subscribes to it (the notifications page and the shell's
+ * bell read the same React Query cache entry, so one poll keeps both honest).
+ *
+ * Timing policy (documented, and enforced by the tests):
+ *  - healthy: every 15 s;
+ *  - after a failure: 15 s, 30 s, 60 s, then 60 s (the ladder below);
+ *  - a valid 429/503 `Retry-After` (delta-seconds or HTTP-date) replaces the
+ *    ladder for that attempt, and is never shortened — waiting longer than the
+ *    server asked is allowed, retrying sooner is not. A floor of 1 s keeps a
+ *    `Retry-After: 0` from becoming a tight loop;
+ *  - the timer is dropped while the document is hidden and one catch-up read
+ *    runs when the tab becomes visible again;
+ *  - a request is never issued while another is in flight.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** Cadence while the endpoint is healthy. */
+export const POLL_INTERVAL_MS = 15_000;
+/** Documented backoff ladder for consecutive failures. */
+export const POLL_BACKOFF_LADDER_MS: readonly number[] = [15_000, 30_000, 60_000];
+/** Floor for any scheduled delay, so no server instruction can spin the loop. */
+export const POLL_MIN_DELAY_MS = 1_000;
+
+/**
+ * Parse a `Retry-After` header into milliseconds from `nowMs`.
+ * Returns null when the header is absent or not a valid delta-seconds/HTTP-date,
+ * so the caller falls back to the exponential ladder.
+ */
+export function parseRetryAfterMs(header: string | null | undefined, nowMs: number = Date.now()): number | null {
+  if (typeof header !== 'string') return null;
+  const raw = header.trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    return Number.isFinite(seconds) ? seconds * 1000 : null;
+  }
+  const at = Date.parse(raw);
+  if (!Number.isFinite(at)) return null;
+  return Math.max(0, at - nowMs);
+}
+
+/** Delay before the next attempt: honour `Retry-After`, else walk the ladder. */
+export function pollDelayMs(failures: number, retryAfterMs: number | null): number {
+  const safe = (ms: number) => Math.max(POLL_MIN_DELAY_MS, ms);
+  if (retryAfterMs !== null && Number.isFinite(retryAfterMs)) return safe(retryAfterMs);
+  if (failures <= 0) return safe(POLL_INTERVAL_MS);
+  const step = POLL_BACKOFF_LADDER_MS[Math.min(failures - 1, POLL_BACKOFF_LADDER_MS.length - 1)];
+  return safe(step);
+}
+
+export interface NotificationPollerSnapshot {
+  /** A loop is scheduled (the page is mounted and the tab is visible). */
+  running: boolean;
+  /** Consecutive failed attempts; reset by the first success. */
+  failures: number;
+  /** Delay that was used for the pending attempt. */
+  nextDelayMs: number;
+  /** Epoch ms of the last successful read, or null before the first one. */
+  lastSuccessAt: number | null;
+  /** Message of the last failed attempt, or null after a success. */
+  lastError: string | null;
+  /** No timer is armed because the document is hidden. */
+  paused: boolean;
+}
+
+function retryAfterHeader(error: unknown): string | null {
+  if (!axios.isAxiosError(error)) return null;
+  const headers = error.response?.headers as unknown;
+  if (!headers) return null;
+  const raw = typeof (headers as { get?: unknown }).get === 'function'
+    ? (headers as { get: (name: string) => unknown }).get('retry-after')
+    : (headers as Record<string, unknown>)['retry-after'];
+  if (raw === undefined || raw === null) return null;
+  return typeof raw === 'string' ? raw : String(raw);
+}
+
+type PollerListener = (snapshot: NotificationPollerSnapshot) => void;
+
+class UnreadNotificationPoller {
+  private listeners = new Set<PollerListener>();
+  private client: QueryClient | null = null;
+  private timer: number | null = null;
+  private abort: AbortController | null = null;
+  private inFlight = false;
+  private running = false;
+  private visibilityBound = false;
+  private failures = 0;
+  private nextDelayMs = POLL_INTERVAL_MS;
+  private lastSuccessAt: number | null = null;
+  private lastError: string | null = null;
+  private paused = false;
+
+  public snapshot(): NotificationPollerSnapshot {
+    return {
+      running: this.running,
+      failures: this.failures,
+      nextDelayMs: this.nextDelayMs,
+      lastSuccessAt: this.lastSuccessAt,
+      lastError: this.lastError,
+      paused: this.paused,
+    };
+  }
+
+  /**
+   * Attach a consumer. The first subscriber starts the single loop; the last
+   * unsubscribe stops it, so nothing polls after the page goes away.
+   */
+  public subscribe(client: QueryClient, listener: PollerListener): () => void {
+    this.client = client;
+    this.listeners.add(listener);
+    listener(this.snapshot());
+    if (!this.running) this.start();
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) this.stop();
+    };
+  }
+
+  /** Read now (used by "Try again"); the pending timer is replaced, not doubled. */
+  public refreshNow(): void {
+    if (!this.running) {
+      if (this.listeners.size > 0) this.start();
+      return;
+    }
+    this.clearTimer();
+    void this.tick();
+  }
+
+  /** Stop the loop, abort a pending request and drop the visibility listener. */
+  public stop(): void {
+    this.running = false;
+    this.clearTimer();
+    const controller = this.abort;
+    this.abort = null;
+    this.inFlight = false;
+    controller?.abort();
+    this.unbindVisibility();
+    this.paused = false;
+    this.emit();
+  }
+
+  private start(): void {
+    if (this.running) return;
+    this.running = true;
+    this.bindVisibility();
+    this.paused = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    this.emit();
+    if (this.paused) return;
+    this.schedule(this.nextDelayMs);
+  }
+
+  private emit(): void {
+    const snapshot = this.snapshot();
+    this.listeners.forEach((listener) => listener(snapshot));
+  }
+
+  private schedule(delayMs: number): void {
+    if (!this.running || typeof window === 'undefined') return;
+    this.clearTimer();
+    this.nextDelayMs = Math.max(POLL_MIN_DELAY_MS, delayMs);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      void this.tick();
+    }, this.nextDelayMs);
+  }
+
+  private clearTimer(): void {
+    if (this.timer === null) return;
+    window.clearTimeout(this.timer);
+    this.timer = null;
+  }
+
+  private async tick(): Promise<void> {
+    if (!this.running) return;
+    // Overlapping requests are never issued: a tick that finds a request in
+    // flight simply reschedules after it (the `finally` below reschedules).
+    if (this.inFlight) return;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      this.paused = true;
+      this.clearTimer();
+      this.emit();
+      return;
+    }
+    this.inFlight = true;
+    const controller = new AbortController();
+    this.abort = controller;
+    try {
+      const response = await apiClient.get<{ notifications?: unknown }>('/notifications-data', { signal: controller.signal });
+      const payload = response.data?.notifications;
+      if (!Array.isArray(payload)) {
+        throw new NotificationsApiError(0, 'CONTRACT', 'The server returned notifications in a form this page cannot read.');
+      }
+      const rows = payload.map(toNotification);
+      this.client?.setQueryData(queryKeys.dashboard.notifications, rows);
+      this.failures = 0;
+      this.lastError = null;
+      this.lastSuccessAt = Date.now();
+      this.nextDelayMs = pollDelayMs(0, null);
+    } catch (error) {
+      if (controller.signal.aborted) return; // stopped on purpose; nothing to report
+      this.failures += 1;
+      this.lastError = toNotificationsError(error).message;
+      // parseRetryAfterMs returns null for a missing/invalid header, which is
+      // exactly when the exponential ladder applies.
+      this.nextDelayMs = pollDelayMs(this.failures, parseRetryAfterMs(retryAfterHeader(error)));
+    } finally {
+      if (this.abort === controller) this.abort = null;
+      this.inFlight = false;
+      if (this.running) {
+        this.emit();
+        this.schedule(this.nextDelayMs);
+      }
+    }
+  }
+
+  private readonly onVisibilityChange = (): void => {
+    if (typeof document === 'undefined' || !this.running) return;
+    if (document.visibilityState === 'visible') {
+      if (!this.paused) return;
+      this.paused = false;
+      // One catch-up read instead of replaying every missed interval.
+      this.clearTimer();
+      void this.tick();
+      return;
+    }
+    this.paused = true;
+    this.clearTimer();
+    this.emit();
+  };
+
+  private bindVisibility(): void {
+    if (this.visibilityBound || typeof document === 'undefined') return;
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityBound = true;
+  }
+
+  private unbindVisibility(): void {
+    if (!this.visibilityBound || typeof document === 'undefined') return;
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityBound = false;
+  }
+}
+
+const notificationPoller = new UnreadNotificationPoller();
+
+/** The single, module-wide poller. Every surface shares this instance. */
+export function getNotificationPoller(): UnreadNotificationPoller {
+  return notificationPoller;
+}
 
 const linkClass = 'inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline dark:text-brand-300';
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
@@ -88,6 +349,12 @@ const EMPTY: ReadonlySet<string> = new Set();
 export function NotificationsPage() {
   const { data, error, isPending, isFetching, refetch } = useNotifications();
   const items = useMemo(() => data ?? [], [data]);
+  const queryClient = useQueryClient();
+  const poller = getNotificationPoller();
+  const [pollerState, setPollerState] = useState<NotificationPollerSnapshot>(() => poller.snapshot());
+  // One subscription per mounted page; the module-wide loop starts with the
+  // first subscriber and is cleaned up with the last one.
+  useEffect(() => poller.subscribe(queryClient, setPollerState), [poller, queryClient]);
   const { mutateAsync: saveRead } = useSetNotificationRead();
   const { mutateAsync: saveAllRead } = useMarkAllNotificationsRead();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,9 +436,14 @@ export function NotificationsPage() {
   const followRow = useCallback((item: NotificationItem) => {
     if (item.read || pendingRef.current.has(item.id) || markingAllRef.current) return;
     // Opening the page a row points to counts as reading it. The write outlives
-    // this page; if it fails, the hook restores the row to unread and refetches,
-    // so the row is still unread when the user comes back.
-    saveRead({ id: item.id, read: true }).catch(() => undefined);
+    // this page; the hook restores the row to unread if it fails, and the
+    // failure is reported here instead of being swallowed.
+    void saveRead({ id: item.id, read: true }).catch((caught: unknown) => {
+      const failure = toNotificationsError(caught);
+      setActionError(failure.notFound
+        ? `“${item.title}” no longer exists, so it was removed from the list.`
+        : `Couldn’t mark “${item.title}” as read. ${failure.message}`);
+    });
   }, [saveRead]);
 
   const markAllRead = useCallback(async () => {
@@ -194,8 +466,13 @@ export function NotificationsPage() {
   const retry = useCallback(async () => {
     if (isFetching) return;
     const result = await refetch();
-    if (result.isSuccess) headingRef.current?.focus();
-  }, [isFetching, refetch]);
+    // A failed read also resets/re-arms the poller immediately rather than
+    // leaving the user waiting out a backoff step they did not ask for.
+    if (result.isSuccess) {
+      poller.refreshNow();
+      headingRef.current?.focus();
+    }
+  }, [isFetching, refetch, poller]);
 
   const showMore = () => {
     const next = Math.min(filtered.length, visibleCount + PAGE_SIZE);
@@ -211,6 +488,9 @@ export function NotificationsPage() {
 
   const loadError = error && !data ? error : null;
   const refreshError = error && data ? error : null;
+  // A failed background poll is reported only when the list itself rendered;
+  // otherwise the load error above already explains the empty page.
+  const pollFailure = data && pollerState.lastError && !loadError ? pollerState.lastError : null;
   const markAllUnavailable = unreadCount === 0 || markingAll || pendingIds.size > 0;
 
   let content: React.ReactNode;
@@ -298,6 +578,21 @@ export function NotificationsPage() {
             </div>
           )}
         </div>
+
+        {pollFailure && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200"
+            data-testid="notifications-poll-error"
+          >
+            <p className="min-w-0 flex-1 break-words">
+              Couldn’t check for new notifications, so this list may be out of date. {pollFailure}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => poller.refreshNow()}>
+              <RotateCcw aria-hidden="true" /> Check now
+            </Button>
+          </div>
+        )}
 
         {refreshError && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200">
