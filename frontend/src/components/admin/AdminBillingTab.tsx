@@ -21,7 +21,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { get, post } from '@/lib/api-client';
+import { get, post, normalizeError } from '@/lib/api-client';
+import { AdminInvoicesExplorer } from '@/components/admin/AdminInvoicesExplorer';
 import {
   RefreshCw,
   Search,
@@ -103,6 +104,7 @@ export function AdminBillingTab() {
   const [refundReason, setRefundReason] = useState('');
   const [refundProcessing, setRefundProcessing] = useState(false);
   const [refundSuccessMessage, setRefundSuccessMessage] = useState<string | null>(null);
+  const [refundErrorMessage, setRefundErrorMessage] = useState<string | null>(null);
 
   const fetchSubscriptions = useCallback(async () => {
     try {
@@ -218,6 +220,7 @@ export function AdminBillingTab() {
     e.preventDefault();
     if (!refundConfirmOrder) return;
     setRefundProcessing(true);
+    setRefundErrorMessage(null);
     try {
       // Reconcile user account to ensure gateway sync
       if (refundConfirmOrder.uid) {
@@ -235,8 +238,7 @@ export function AdminBillingTab() {
         fetchSubscriptions();
       }, 1800);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to process refund.';
-      alert(msg);
+      setRefundErrorMessage(normalizeError(err).message);
     } finally {
       setRefundProcessing(false);
     }
@@ -422,6 +424,7 @@ export function AdminBillingTab() {
         <div className="flex items-center gap-3">
           {/* Status Filter */}
           <select
+            aria-label="Filter subscriptions by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="text-xs font-bold text-ink bg-white dark:bg-neutral-900 border border-border rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-brand-500"
@@ -641,6 +644,9 @@ export function AdminBillingTab() {
         )}
       </Card>
 
+      {/* ─── Administrative Tax Invoices Explorer (GET /api/admin/billing/invoices) ─── */}
+      <AdminInvoicesExplorer />
+
       {/* ─── Order Inspection Dialog ─── */}
       <Dialog open={Boolean(inspectedOrder)} onOpenChange={(open) => !open && setInspectedOrder(null)}>
         <DialogContent className="max-w-md p-6">
@@ -736,6 +742,11 @@ export function AdminBillingTab() {
             </div>
           ) : (
             <form onSubmit={handleProcessRefund} className="space-y-4 pt-2 text-xs">
+              {refundErrorMessage && (
+                <div role="alert" className="p-3 rounded-xl bg-error-50 border border-error-200 text-error-800 text-xs">
+                  {refundErrorMessage}
+                </div>
+              )}
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
                 <p className="font-bold">Authoritative Action Notice:</p>
                 <p className="mt-0.5">

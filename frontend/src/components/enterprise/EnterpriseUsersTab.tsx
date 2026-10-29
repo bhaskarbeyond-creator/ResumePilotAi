@@ -19,11 +19,8 @@ import {
   AlertCircle,
   UserCheck,
   Building,
-  Key,
-  Sparkles,
-  Lock,
-  RotateCcw,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,10 +28,19 @@ import { Input } from '@/components/ui/input';
 import { useEnterprise } from './EnterpriseContext';
 import { HelpTooltip } from './HelpTooltip';
 import { EnterpriseConfirmModal } from './EnterpriseConfirmModal';
+import { WorkspaceSeatQuotaCard } from './WorkspaceSeatQuotaCard';
+import { InviteTeammateDialog } from './InviteTeammateDialog';
 import {
   enterpriseApi,
   type EnterpriseMembership,
 } from '@/lib/enterprise-api';
+import {
+  type SeatQuota,
+  type InviteMemberResult,
+  canCallerAssignOwnerRole,
+  fetchSeatQuota,
+  normalizeError,
+} from '@/lib/enterprise-seats';
 import { cn } from '@/lib/utils';
 
 export const ROLE_HIERARCHY: Record<string, { level: number; title: string; badge: string; color: string; desc: string }> = {
@@ -58,26 +64,34 @@ export interface EnterpriseUsersTabProps {
 }
 
 export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: EnterpriseUsersTabProps) {
-  const { tenant, workspaces, hasPermission } = useEnterprise();
+  const { tenant, workspaces, roles, hasPermission } = useEnterprise();
   const [members, setMembers] = useState<EnterpriseMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
+  // Seat quota telemetry (GET /api/enterprise/members/seats)
+  const [seatQuota, setSeatQuota] = useState<SeatQuota | null>(null);
+  const [seatLoading, setSeatLoading] = useState(true);
+  const [seatError, setSeatError] = useState<string | null>(null);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'INVITED'>(
-    (initialStatus && STATUS_FILTERS.includes(initialStatus as any)) ? (initialStatus as any) : 'ALL'
+    initialStatus && (STATUS_FILTERS as readonly string[]).includes(initialStatus)
+      ? (initialStatus as 'ALL' | 'ACTIVE' | 'SUSPENDED' | 'INVITED')
+      : 'ALL',
   );
   const [roleFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Invite Modal
-  const [showInviteModal, setShowInviteModal] = useState(autoOpenInvite);
-  const [inviteEmail, setInviteEmail] = useState('');
+  // Invite Teammate Modal (POST /api/enterprise/members/invite)
+  const [showInviteTeammateDialog, setShowInviteTeammateDialog] = useState(autoOpenInvite);
+
+  // Direct Principal Provisioning Modal
+  const [showDirectModal, setShowDirectModal] = useState(false);
   const [invitePrincipalId, setInvitePrincipalId] = useState('');
   const [inviteRole, setInviteRole] = useState('MEMBER');
   const [inviteWorkspaceId, setInviteWorkspaceId] = useState('');
-  const [inviteMode, setInviteMode] = useState<'INVITE' | 'DIRECT'>('INVITE');
   const [busyInvite, setBusyInvite] = useState(false);
 
   // Action Confirmation Modal
@@ -90,30 +104,29 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
   const [edit360WorkspaceId, setEdit360WorkspaceId] = useState('');
   const [edit360Status, setEdit360Status] = useState<'ACTIVE' | 'SUSPENDED' | 'INVITED'>('ACTIVE');
   const [busySave360, setBusySave360] = useState(false);
-  const [securityActionMsg, setSecurityActionMsg] = useState<string | null>(null);
   const [customRoles, setCustomRoles] = useState<Record<string, { label?: string; description?: string }>>({});
 
   const canManageMembers = hasPermission('tenant.members.manage');
+  const canAssignOwner = useMemo(() => canCallerAssignOwnerRole(roles), [roles]);
 
-  // Escape key handler
+  // Escape key handler for custom dialogs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (member360Target) setMember360Target(null);
-        else if (showInviteModal) setShowInviteModal(false);
+        else if (showDirectModal) setShowDirectModal(false);
         else if (deleteTarget) setDeleteTarget(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [member360Target, showInviteModal, deleteTarget]);
+  }, [member360Target, showDirectModal, deleteTarget]);
 
   const openMember360 = (m: EnterpriseMembership) => {
     setMember360Target(m);
     setEdit360Role((m.roles || [])[0] || 'MEMBER');
     setEdit360WorkspaceId(m.workspaceId || '');
     setEdit360Status(m.status);
-    setSecurityActionMsg(null);
   };
 
   const handleSave360 = async () => {
@@ -136,15 +149,23 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
     }
   };
 
-  const handleRevokeSessions = () => {
-    setSecurityActionMsg('✓ All active refresh tokens revoked. The member must authenticate again.');
-    setTimeout(() => setSecurityActionMsg(null), 3500);
-  };
-
-  const handleReset2FA = () => {
-    setSecurityActionMsg('✓ 2FA enrollment revoked. The member will be prompted to re-enroll upon next sign-in.');
-    setTimeout(() => setSecurityActionMsg(null), 3500);
-  };
+  const loadSeatQuota = useCallback(async (signal?: AbortSignal) => {
+    setSeatLoading(true);
+    setSeatError(null);
+    try {
+      const quota = await fetchSeatQuota(tenant?.id, signal);
+      if (!signal?.aborted) {
+        setSeatQuota(quota);
+      }
+    } catch (err: unknown) {
+      if (signal?.aborted) return;
+      setSeatError(normalizeError(err).message);
+    } finally {
+      if (!signal?.aborted) {
+        setSeatLoading(false);
+      }
+    }
+  }, [tenant?.id]);
 
   const loadMembers = useCallback(async () => {
     if (!tenant?.id) {
@@ -170,8 +191,14 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
   }, [tenant?.id]);
 
   useEffect(() => {
-    loadMembers();
+    void loadMembers();
   }, [loadMembers]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadSeatQuota(controller.signal);
+    return () => controller.abort();
+  }, [loadSeatQuota]);
 
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
@@ -192,15 +219,24 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
     return counts;
   }, [members]);
 
-  const handleInviteSubmit = async (e: React.FormEvent) => {
+  const handleTeammateInvited = useCallback(
+    async (result: InviteMemberResult) => {
+      setNotification(
+        result.deliveryQueued
+          ? `Invitation request accepted for ${result.email} (${result.role}). Email delivery has been queued.`
+          : `Invitation sent to ${result.email} (${result.role}).`,
+      );
+      window.setTimeout(() => setNotification(null), 5000);
+      await Promise.all([loadMembers(), loadSeatQuota()]);
+    },
+    [loadMembers, loadSeatQuota],
+  );
+
+  const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenant?.id || busyInvite) return;
 
-    if (inviteMode === 'INVITE' && !inviteEmail.trim()) {
-      setError('Please provide an invitation email address.');
-      return;
-    }
-    if (inviteMode === 'DIRECT' && !invitePrincipalId.trim()) {
+    if (!invitePrincipalId.trim()) {
       setError('Please provide a Firebase Principal ID.');
       return;
     }
@@ -210,21 +246,19 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
 
     try {
       await enterpriseApi.createMembership(tenant.id, {
-        invitationEmail: inviteMode === 'INVITE' ? inviteEmail.trim() : undefined,
-        principalId: inviteMode === 'DIRECT' ? invitePrincipalId.trim() : undefined,
+        principalId: invitePrincipalId.trim(),
         roles: [inviteRole],
         workspaceId: inviteWorkspaceId || undefined,
-        status: inviteMode === 'INVITE' ? 'INVITED' : 'ACTIVE',
+        status: 'ACTIVE',
       });
 
-      setShowInviteModal(false);
-      setInviteEmail('');
+      setShowDirectModal(false);
       setInvitePrincipalId('');
       setInviteRole('MEMBER');
       setInviteWorkspaceId('');
-      setNotification(`Successfully ${inviteMode === 'INVITE' ? 'dispatched invitation to' : 'provisioned access for'} teammate.`);
-      setTimeout(() => setNotification(null), 3500);
-      await loadMembers();
+      setNotification('Successfully provisioned direct access for teammate.');
+      window.setTimeout(() => setNotification(null), 3500);
+      await Promise.all([loadMembers(), loadSeatQuota()]);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create membership');
     } finally {
@@ -239,7 +273,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
       await enterpriseApi.updateMembership(tenant.id, member.principalId, { status: nextStatus });
       setNotification(`Member status updated to ${nextStatus}.`);
       setTimeout(() => setNotification(null), 3500);
-      await loadMembers();
+      await Promise.all([loadMembers(), loadSeatQuota()]);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update member status');
     }
@@ -264,7 +298,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
       setDeleteTarget(null);
       setNotification('Enterprise membership revoked successfully.');
       setTimeout(() => setNotification(null), 3500);
-      await loadMembers();
+      await Promise.all([loadMembers(), loadSeatQuota()]);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to revoke membership');
     } finally {
@@ -298,17 +332,51 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
     <div className="space-y-5">
       {/* ─── Notification & Error alerts ─── */}
       {notification && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-          <Check className="size-4 shrink-0" />
-          {notification}
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"
+        >
+          <Check className="size-4 shrink-0" aria-hidden="true" />
+          <span>{notification}</span>
         </div>
       )}
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2">
-          <AlertCircle className="size-4 shrink-0" />
-          {error}
+        <div
+          role="alert"
+          className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={() => void loadMembers()}>
+            <RefreshCw className="size-3.5" aria-hidden="true" />
+            Retry
+          </Button>
         </div>
       )}
+
+      {/* ─── Workspace Seat Quota Gauge (GET /api/enterprise/members/seats) ─── */}
+      <WorkspaceSeatQuotaCard
+        quota={seatQuota}
+        loading={seatLoading}
+        error={seatError}
+        onRetry={() => void loadSeatQuota()}
+        actionSlot={
+          canManageMembers ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowInviteTeammateDialog(true)}
+              className="text-xs font-bold"
+            >
+              <UserPlus className="size-3.5" aria-hidden="true" />
+              Invite Teammate
+            </Button>
+          ) : null
+        }
+      />
 
       {/* ─── Top Control Toolbar ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface-raised/60 backdrop-blur-md border border-edge rounded-xl p-3 shadow-xs">
@@ -359,14 +427,26 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
           </Button>
 
           {canManageMembers && (
-            <Button
-              size="sm"
-              onClick={() => setShowInviteModal(true)}
-              className="text-xs font-bold"
-            >
-              <UserPlus className="size-3.5 mr-1.5" />
-              Invite Member
-            </Button>
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowDirectModal(true)}
+                className="text-xs"
+              >
+                Direct Principal ID
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowInviteTeammateDialog(true)}
+                className="text-xs font-bold"
+              >
+                <UserPlus className="size-3.5 mr-1.5" aria-hidden="true" />
+                Invite Teammate
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -571,13 +651,6 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
 
             {/* Modal Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
-              {securityActionMsg && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-                  <Check className="size-4 shrink-0" />
-                  <span>{securityActionMsg}</span>
-                </div>
-              )}
-
               {/* Role Delegation & Permissions */}
               <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
                 <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
@@ -658,52 +731,6 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                   ))}
                 </div>
               </div>
-
-              {/* AI Token Quota & Consumption Meter */}
-              <div className="p-4 rounded-2xl border border-edge bg-surface-raised/40 space-y-2.5">
-                <div className="flex items-center justify-between text-xs font-bold text-ink">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="size-3.5 text-accent" />
-                    AI Token Quota & Consumption
-                  </span>
-                  <span className="font-mono text-accent">14,200 / 50,000</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-canvas-soft overflow-hidden">
-                  <div className="h-full bg-accent rounded-full" style={{ width: '28.4%' }} />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-ink-muted">
-                  <span>Usage this billing cycle: 28.4%</span>
-                  <span>Monthly reset in 12 days</span>
-                </div>
-              </div>
-
-              {/* Security & Access Controls */}
-              <div className="space-y-2 p-4 rounded-2xl border border-edge bg-canvas-soft">
-                <label className="font-bold text-ink block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <Key className="size-3.5 text-accent" />
-                  Security & Session Safeguards
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRevokeSessions}
-                    className="text-xs h-8 gap-1.5"
-                  >
-                    <Lock className="size-3 text-rose-500" />
-                    Revoke Active Sessions
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleReset2FA}
-                    className="text-xs h-8 gap-1.5"
-                  >
-                    <RotateCcw className="size-3 text-amber-500" />
-                    Force 2FA Reset
-                  </Button>
-                </div>
-              </div>
             </div>
 
             {/* Modal Footer */}
@@ -730,13 +757,25 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
       )}
 
 
-      {/* ─── Invite Member Modal ─── */}
-      {showInviteModal && (
+      {/* ─── Invite Teammate Modal (POST /api/enterprise/members/invite) ─── */}
+      <InviteTeammateDialog
+        open={showInviteTeammateDialog}
+        onOpenChange={setShowInviteTeammateDialog}
+        tenantId={tenant?.id}
+        canAssignOwner={canAssignOwner}
+        onInvited={handleTeammateInvited}
+        onSeatLimitConflict={() => void loadSeatQuota()}
+        onReviewInvites={() => setStatusFilter('INVITED')}
+      />
+
+      {/* ─── Direct Principal Provisioning Modal ─── */}
+      {showDirectModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
-          onClick={() => !busyInvite && setShowInviteModal(false)}
+          aria-labelledby="direct-principal-modal-title"
+          onClick={() => !busyInvite && setShowDirectModal(false)}
         >
           <div
             className="w-full max-w-md rounded-2xl bg-surface-raised border border-edge shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
@@ -745,85 +784,50 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
             <div className="flex items-center justify-between p-5 border-b border-edge bg-surface/50">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-xl bg-accent-soft flex items-center justify-center text-accent">
-                  <UserPlus className="size-5" />
+                  <UserPlus className="size-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-ink">
-                    Provision Enterprise Member
+                  <h3 id="direct-principal-modal-title" className="text-base font-bold text-ink">
+                    Provision Direct Principal ID
                   </h3>
-                  <p className="text-xs text-ink-muted">Issue invitation or grant direct access.</p>
+                  <p className="text-xs text-ink-muted">Grant direct access to a verified Firebase UID.</p>
                 </div>
               </div>
               <button
                 type="button"
+                aria-label="Close modal"
                 className="p-1.5 text-ink-muted hover:text-ink rounded-lg"
-                onClick={() => setShowInviteModal(false)}
+                onClick={() => setShowDirectModal(false)}
                 disabled={busyInvite}
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleInviteSubmit} className="p-6 space-y-4 text-xs">
-              {/* Mode Toggle */}
-              <div className="flex rounded-lg border border-edge p-0.5 bg-surface">
-                <button
-                  type="button"
-                  onClick={() => setInviteMode('INVITE')}
-                  className={cn(
-                    'flex-1 py-1.5 text-center font-bold rounded-md transition-colors',
-                    inviteMode === 'INVITE' ? 'bg-accent text-white shadow-2xs' : 'text-ink-muted hover:text-ink',
-                  )}
-                >
-                  Email Invitation
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInviteMode('DIRECT')}
-                  className={cn(
-                    'flex-1 py-1.5 text-center font-bold rounded-md transition-colors',
-                    inviteMode === 'DIRECT' ? 'bg-accent text-white shadow-2xs' : 'text-ink-muted hover:text-ink',
-                  )}
-                >
-                  Direct Principal ID
-                </button>
+            <form onSubmit={handleDirectSubmit} className="p-6 space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label htmlFor="direct-principal-uid" className="font-bold text-ink block">
+                  Firebase Principal ID (UID)
+                </label>
+                <Input
+                  id="direct-principal-uid"
+                  required
+                  value={invitePrincipalId}
+                  onChange={(e) => setInvitePrincipalId(e.target.value)}
+                  placeholder="e.g. fire-uid-12345"
+                  className="h-9 text-xs font-mono"
+                />
+                <p className="text-[11px] text-ink-muted">
+                  Directly binds access to an existing Firebase identity.
+                </p>
               </div>
 
-              {inviteMode === 'INVITE' ? (
-                <div className="space-y-1.5">
-                  <label className="font-bold text-ink block">Work Email Address</label>
-                  <Input
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="teammate@company.com"
-                    className="h-9 text-xs"
-                  />
-                  <p className="text-[11px] text-ink-muted">
-                    An email invitation will be dispatched with sign-in instructions.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="font-bold text-ink block">Firebase Principal ID (UID)</label>
-                  <Input
-                    required
-                    value={invitePrincipalId}
-                    onChange={(e) => setInvitePrincipalId(e.target.value)}
-                    placeholder="e.g. fire-uid-12345"
-                    className="h-9 text-xs font-mono"
-                  />
-                  <p className="text-[11px] text-ink-muted">
-                    Directly binds access to an existing Firebase identity.
-                  </p>
-                </div>
-              )}
-
-              {/* Role Selection */}
               <div className="space-y-1.5">
-                <label className="font-bold text-ink block">Role Authorization</label>
+                <label htmlFor="direct-principal-role" className="font-bold text-ink block">
+                  Role Authorization
+                </label>
                 <select
+                  id="direct-principal-role"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
@@ -831,8 +835,8 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                   <optgroup label="Standard Roles">
                     <option value="TENANT_ADMIN">Administrator (Full Tenant Governance)</option>
                     <option value="WORKSPACE_MANAGER">Workspace Manager (Department Lead)</option>
-                    <option value="BILLING_ADMIN">Billing Admin (Usage & Subscriptions)</option>
-                    <option value="MEMBER">Enterprise Member (Draft & AI Generation)</option>
+                    <option value="BILLING_ADMIN">Billing Admin (Usage &amp; Subscriptions)</option>
+                    <option value="MEMBER">Enterprise Member (Draft &amp; AI Generation)</option>
                     <option value="VIEWER">Read-Only Viewer (Inspect Only)</option>
                   </optgroup>
                   {Object.keys(customRoles).length > 0 && (
@@ -847,10 +851,12 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                 </select>
               </div>
 
-              {/* Department Workspace Assignment */}
               <div className="space-y-1.5">
-                <label className="font-bold text-ink block">Department Workspace (Optional)</label>
+                <label htmlFor="direct-principal-workspace" className="font-bold text-ink block">
+                  Department Workspace (Optional)
+                </label>
                 <select
+                  id="direct-principal-workspace"
                   value={inviteWorkspaceId}
                   onChange={(e) => setInviteWorkspaceId(e.target.value)}
                   className="w-full h-9 px-3 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent"
@@ -869,7 +875,7 @@ export function EnterpriseUsersTab({ initialStatus, autoOpenInvite = false }: En
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowInviteModal(false)}
+                  onClick={() => setShowDirectModal(false)}
                   disabled={busyInvite}
                 >
                   Cancel

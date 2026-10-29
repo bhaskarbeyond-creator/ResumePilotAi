@@ -13,6 +13,7 @@
  */
 
 import { auth } from '@/lib/firebase';
+import { readPreviewSession } from '@/lib/preview-session';
 import { resolveActiveTenantId, setActiveTenantId } from '@/lib/tenant-context';
 
 export interface EnterpriseError extends Error {
@@ -231,7 +232,10 @@ const inFlightRequests = new Map<string, Promise<unknown>>();
 let singleFlightRefresh: Promise<string | null> | null = null;
 async function getAuthToken(forceRefresh = false): Promise<string | null> {
   const user = auth.currentUser;
-  if (!user) return null;
+  if (!user) {
+    const preview = readPreviewSession();
+    return preview?.token ?? null;
+  }
   if (forceRefresh) {
     if (singleFlightRefresh) return singleFlightRefresh;
     singleFlightRefresh = user.getIdToken(true).finally(() => {

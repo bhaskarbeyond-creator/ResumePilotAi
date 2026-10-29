@@ -19,20 +19,30 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Check, Copy, ExternalLink, Eye, Globe, Loader2, Pencil, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, CheckCircle2, Clock, Copy, ExternalLink, Eye, Globe, Link2, Loader2, Pencil, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortfolioView } from '@/components/portfolio/portfolio-view';
 import { EntryListEditor, TextAreaField, TextField } from '@/components/portfolio/portfolio-editor-fields';
-import { ConfirmDialog, CreatePortfolioDialog, PublishDialog, type CreatePortfolioInput } from '@/components/portfolio/portfolio-dialogs';
+import {
+  ConfirmDialog,
+  CreatePortfolioDialog,
+  CustomDomainDialog,
+  PublishDialog,
+  type CreatePortfolioInput,
+} from '@/components/portfolio/portfolio-dialogs';
 import {
   deletePortfolio,
+  extractStoredCustomDomain,
   getPortfolio,
   getResumeRecord,
   listPortfolios,
   mintPortfolioId,
   publicPortfolioUrl,
+  publishPortfolioSlug,
   savePortfolio,
   toPortfolioError,
+  unpublishPortfolioById,
+  type CustomDomainConfig,
   type PortfolioApiError,
   type StoredPortfolio,
 } from '@/lib/portfolio';
@@ -295,7 +305,7 @@ type EditorState =
   | { status: 'not-found' }
   | { status: 'error'; error: PortfolioApiError };
 
-type VisibilityDialog = null | 'publish' | 'republish' | 'unpublish';
+type VisibilityDialog = null | 'publish' | 'unpublish' | 'custom-domain';
 
 const snapshot = (title: string, canonical: PortfolioCanonical) => JSON.stringify({ title, canonical });
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
@@ -303,6 +313,7 @@ const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
   const [state, setState] = useState<EditorState>({ status: 'loading' });
   const [stored, setStored] = useState<StoredPortfolio | null>(null);
+  const [customDomainConfig, setCustomDomainConfig] = useState<CustomDomainConfig | null>(null);
   const [title, setTitle] = useState('');
   const [titleError, setTitleError] = useState('');
   const [canonical, setCanonical] = useState<PortfolioCanonical>(() => emptyCanonical());
@@ -316,6 +327,7 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
   const [copied, setCopied] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const visibilityButtonRef = useRef<HTMLButtonElement>(null);
+  const domainButtonRef = useRef<HTMLButtonElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
 
   const apply = useCallback((portfolio: StoredPortfolio) => {
@@ -324,6 +336,10 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
     setTitle(portfolio.title ?? '');
     setCanonical(next);
     setSavedSnapshot(snapshot(portfolio.title ?? '', next));
+    const storedDomain = extractStoredCustomDomain(portfolio);
+    if (storedDomain) {
+      setCustomDomainConfig(storedDomain);
+    }
   }, []);
 
   const load = useCallback((signal?: AbortSignal) => {
@@ -393,26 +409,96 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
     }
   };
 
-  const changeVisibility = async (isPublished: boolean, slugBase?: string) => {
+  const handlePublishSlug = async (slug: string) => {
+    if (!stored || saving) return;
     setDialogError(null);
     setSaving(true);
-    const error = await persist(isPublished, slugBase);
-    setSaving(false);
-    if (!error) {
-      setDialog(null);
-      setAnnouncement(isPublished ? 'Your portfolio is published.' : 'Your portfolio is unpublished. Its address stays reserved for it.');
-      return;
+
+    if (dirty && editable) {
+      const draftSaveError = await persist(stored.isPublished);
+      if (draftSaveError) {
+        setSaving(false);
+        if (!title.trim()) {
+          setDialog(null);
+          return;
+        }
+        setDialogError(
+          draftSaveError.conflict
+            ? 'This portfolio was changed in another tab or on another device. Cancel, reload the latest version, then try again.'
+            : draftSaveError.message,
+        );
+        return;
+      }
     }
-    if (!title.trim()) {
+
+    try {
+      const result = await publishPortfolioSlug(stored.id, slug);
+      setStored((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...result.portfolio,
+              slug: result.slug ?? slug,
+              isPublished: result.isPublished,
+              publishedAt: result.publishedAt ?? prev.publishedAt,
+            }
+          : prev,
+      );
       setDialog(null);
-      return;
+      setAnnouncement('Your portfolio is published.');
+    } catch (cause) {
+      const error = toPortfolioError(cause);
+      if (error.moduleDisabled) {
+        setState({ status: 'disabled' });
+        return;
+      }
+      setDialogError(
+        error.slugConflict
+          ? `The URL slug “${slug}” is already claimed. Please choose another slug.`
+          : error.conflict
+            ? 'This portfolio was changed in another tab or on another device. Cancel, reload the latest version, then try again.'
+            : error.message,
+      );
+    } finally {
+      setSaving(false);
     }
-    setDialogError(error.conflict
-      ? 'This portfolio was changed in another tab or on another device. Cancel, reload the latest version, then try again.'
-      : error.code === 'PORTFOLIO_SLUG_CONFLICT'
-        ? 'That address was taken a moment ago. Choose a different one.'
-        : error.message);
   };
+
+  const handleUnpublishPortfolio = async () => {
+    if (!stored || saving) return;
+    setDialogError(null);
+    setSaving(true);
+
+    try {
+      const result = await unpublishPortfolioById(stored.id, stored.slug);
+      setStored((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...result.portfolio,
+              slug: result.slug,
+              isPublished: result.isPublished,
+            }
+          : prev,
+      );
+      setDialog(null);
+      setAnnouncement('Your portfolio has been unpublished.');
+    } catch (cause) {
+      const error = toPortfolioError(cause);
+      if (error.moduleDisabled) {
+        setState({ status: 'disabled' });
+        return;
+      }
+      setDialogError(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const refreshPortfolioRecord = useCallback(async () => {
+    const fresh = await getPortfolio(portfolioId);
+    apply(fresh);
+  }, [apply, portfolioId]);
 
   const copyLink = async (url: string) => {
     try {
@@ -473,6 +559,26 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-ink break-words">{stored.title || 'Untitled portfolio'}</h1>
             <StatusBadge published={stored.isPublished} />
+            {customDomainConfig && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                  customDomainConfig.status === 'VERIFIED'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-amber-200 bg-amber-50 text-amber-900',
+                )}
+              >
+                {customDomainConfig.status === 'VERIFIED' ? (
+                  <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                )}
+                <span>
+                  {customDomainConfig.domain} ·{' '}
+                  {customDomainConfig.status === 'VERIFIED' ? 'Verified' : 'Pending verification'}
+                </span>
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-sm text-ink-secondary" aria-live="polite">{editable ? (dirty ? 'Unsaved changes' : 'All changes saved') : 'Built with the earlier page editor'}</p>
           {url && (
@@ -481,7 +587,7 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
                 {url}<ExternalLink className="size-3.5 shrink-0" aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span>
               </a>
               <Button size="xs" variant="outline" onClick={() => void copyLink(url)}>
-                {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} {copied ? 'Copied' : 'Copy link'}
+                {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />} {copied ? 'Copied' : 'Copy URL'}
               </Button>
             </p>
           )}
@@ -493,11 +599,23 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
               <Button size="sm" variant={mode === 'preview' ? 'secondary' : 'ghost'} aria-pressed={mode === 'preview'} onClick={() => setMode('preview')}><Eye aria-hidden="true" /> Preview</Button>
             </div>
           )}
+          <Button
+            ref={domainButtonRef}
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setDialogError(null);
+              setDialog('custom-domain');
+            }}
+            disabled={saving}
+          >
+            <Link2 aria-hidden="true" /> Custom Domain
+          </Button>
           {editable && <Button size="sm" variant="outline" onClick={() => void save()} loading={saving && dialog === null} disabled={!dirty || saving}><Save aria-hidden="true" /> Save</Button>}
           {stored.isPublished ? (
-            <Button ref={visibilityButtonRef} size="sm" variant="outline" onClick={() => { setDialogError(null); setDialog('unpublish'); }} disabled={saving}>Unpublish</Button>
+            <Button ref={visibilityButtonRef} size="sm" variant="outline" onClick={() => { setDialogError(null); setDialog('unpublish'); }} disabled={saving}>Unpublish Portfolio</Button>
           ) : (
-            <Button ref={visibilityButtonRef} size="sm" onClick={() => { setDialogError(null); setDialog(stored.slug ? 'republish' : 'publish'); }} disabled={saving}><Globe aria-hidden="true" /> Publish</Button>
+            <Button ref={visibilityButtonRef} size="sm" onClick={() => { setDialogError(null); setDialog('publish'); }} disabled={saving}><Globe aria-hidden="true" /> Publish</Button>
           )}
         </div>
       </header>
@@ -655,37 +773,39 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
         open={dialog === 'publish'}
         portfolioId={stored.id}
         defaultBase={displayName(canonical) || title}
+        initialSlug={stored.slug}
         busy={saving}
         error={dialogError}
-        onPublish={(base) => void changeVisibility(true, base)}
+        onPublish={(slug) => void handlePublishSlug(slug)}
         onClose={() => setDialog(null)}
         returnFocusRef={visibilityButtonRef}
       />
-      <ConfirmDialog
-        open={dialog === 'republish'}
-        title="Publish again?"
-        description={<p>Your portfolio will be visible again at {stored.slug ? publicPortfolioUrl(stored.slug) : ''}{dirty ? ', including your unsaved changes' : ''}.</p>}
-        confirmLabel="Publish"
-        busy={saving}
-        error={dialogError}
-        onConfirm={() => void changeVisibility(true)}
+      <CustomDomainDialog
+        open={dialog === 'custom-domain'}
+        portfolioId={stored.id}
+        initialConfig={customDomainConfig}
+        onConfigUpdated={(cfg) => {
+          setCustomDomainConfig(cfg);
+          setAnnouncement(`Custom domain ${cfg.domain} registered. Pending DNS TXT verification.`);
+        }}
+        onRefreshPortfolio={refreshPortfolioRecord}
         onClose={() => setDialog(null)}
-        returnFocusRef={visibilityButtonRef}
+        returnFocusRef={domainButtonRef}
       />
       <ConfirmDialog
         open={dialog === 'unpublish'}
         title="Unpublish this portfolio?"
         description={
           <>
-            <p>Visitors will no longer see it{url ? ` at ${url}` : ''}, and it leaves the public portfolio list. A copy a browser already cached can take a few minutes to clear.</p>
-            <p>The address stays reserved, so you can publish it again later.{dirty ? ' Your unsaved changes are saved too.' : ''}</p>
+            <p>Your public portfolio{url ? ` at ${url}` : ''} will no longer be accessible to visitors.</p>
+            <p>Your URL slug stays preserved unless removed by the server, so you can publish it again whenever you are ready.</p>
           </>
         }
-        confirmLabel="Unpublish"
+        confirmLabel="Unpublish Portfolio"
         destructive
         busy={saving}
         error={dialogError}
-        onConfirm={() => void changeVisibility(false)}
+        onConfirm={() => void handleUnpublishPortfolio()}
         onClose={() => setDialog(null)}
         returnFocusRef={visibilityButtonRef}
       />
