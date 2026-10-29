@@ -1256,6 +1256,7 @@ test.describe('Router mounting evidence', () => {
     setRepositoryForTests(createRepository(db));
     delete require.cache[require.resolve('../index')];
     const app = require('../index');
+    app.set('firebaseAdmin', createFirebaseAdmin(db));
 
     const status = await request(app).get('/api/admin/operations/system-status').set(bearer('super'));
     assert.equal(status.status, 200, 'GET /api/admin/operations/system-status must be served by the router');
