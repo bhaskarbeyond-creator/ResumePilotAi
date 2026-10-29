@@ -1,6 +1,6 @@
 # Client ↔ Backend Contract Register (Mandate 7)
 
-**Revision:** `a7d08a2fa67b44aefe4692405b470fa6b174d29f` · **Generated:** 2026-10-29T07:20:46.330Z (generator clock, UTC) · **Generator:** `developer-review/tools/client-contract-audit.cjs`
+**Revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` · **Generated:** 2026-10-29T07:30:48.848Z (generator clock, UTC) · **Generator:** `developer-review/tools/client-contract-audit.cjs`
 **Machine-checkable twin:** `Evidence/artifacts/client-contract-audit.json`
 
 ## 1. Method (independent of the V5/V6 inventory)
@@ -9,7 +9,7 @@ The tool re-derives both sides from source:
 
 1. **Backend** — every `app.<verb>(path)` and every `router.<verb>(path)` is parsed from `backend/**/*.js`,
    and router-file routes are joined to their mount prefix by resolving the `require()` that binds the
-   router identifier in `backend/index.js`. This yields **413** registrations and is compared
+   router identifier in `backend/index.js`. This yields **405** registrations and is compared
    with the canonical register (393 operations) so any divergence is printed rather than hidden.
 2. **Client** — every `get/post/patch/put/del/delete/fetch/axios.*/enterpriseRequest/request` call with a
    literal or template-literal URL is captured, with `${…}` segments normalised to `{X}` and query strings

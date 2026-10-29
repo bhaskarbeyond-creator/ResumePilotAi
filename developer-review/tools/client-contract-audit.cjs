@@ -124,15 +124,31 @@ for (const abs of backendFiles(BACKEND)) {
     for (const prefix of prefixes) rawMounts.push({ prefix, identifier: m[2], file: rel });
   }
 
-  // <receiver>.<verb>('/path') for any receiver identifier, including the array form
+  // <receiver>.<verb>('/path') for router-like receivers only, including the array form.
+  //
+  // M8 repair: this loop previously accepted ANY identifier as a router. That made
+  // `Promise.all([fetch('https://api.github.com/user', …), …])` parse as two POST/GET registrations of
+  // an absolute URL, and it made every `.map(...)`/`.filter(...)`-style array literal a candidate. The
+  // receiver must now be one of:
+  //   - `app`
+  //   - an identifier declared in this file as `express.Router()`
+  //   - an identifier bound by `require()` to a module inside backend/
+  // and the path literal must start with `/` (a route path is never an absolute URL).
+  const declaredRouters = new Set(
+    [...text.matchAll(/const\s+([A-Za-z0-9_$]+)\s*=\s*express\.Router\(\s*\)/g)].map((x) => x[1]),
+  );
+  const fileBindings = MODULE_REQUIRES.get(rel) || new Map();
+  const routerLike = (name) => name === 'app' || declaredRouters.has(name) || fileBindings.has(name);
+
   const re = /\b([A-Za-z0-9_$]+)\.(get|post|put|patch|delete|all|head|options)\(\s*(\[[^\]]*\]|['"`][^'"`]+['"`])/g;
   let m;
   while ((m = re.exec(text))) {
+    if (!routerLike(m[1])) continue;
     const line = text.slice(0, m.index).split('\n').length;
     const paths = [...m[3].matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
     for (const raw of paths) {
-      // `.get('q')` style option lookups on Maps/URLSearchParams are not routes: require '/' or 'http'
-      if (!/^\/|^http/.test(raw)) continue;
+      // `.get('q')` option lookups are not routes, and a route path is never an absolute URL
+      if (!raw.startsWith('/')) continue;
       routes.push({ receiver: m[1], method: m[2].toUpperCase(), raw, file: rel, line });
     }
   }
@@ -165,20 +181,34 @@ function prefixesForReceiver(file, receiver) {
   return [...new Set(out)];
 }
 
+// M8: `ops` are registration INSTANCES. Two alias literals on one call site that resolve to the same
+// effective path (e.g. `app.get(['/api/v1/status', '/v1/status'])`) are one registration, not two. The
+// previous version emitted both, which is where 6 of the 16-registration gap came from.
 const ops = [];
+const seenInstance = new Set();
+function pushOp(op) {
+  // The dedupe key uses the /api-stripped comparison shape: `['/api/v1/status','/v1/status']` is one
+  // handler registered under two aliases, and counting it twice inflated this tool's registration total
+  // (6 of the 16-registration gap against the canonical register). The raw path is preserved on the row.
+  const shapeKey = op.path.replace(/^\/api(?=\/)/, '');
+  const key = `${op.file}|${op.line}|${op.method}|${shapeKey}|${op.mountedAt || ''}`;
+  if (seenInstance.has(key)) return;
+  seenInstance.add(key);
+  ops.push(op);
+}
 for (const r of routes) {
   if (r.receiver === 'app') {
-    ops.push({ method: r.method, path: (r.raw.replace(/\/$/, '')) || '/', file: r.file, line: r.line, raw: r.raw });
+    pushOp({ method: r.method, path: (r.raw.replace(/\/$/, '')) || '/', file: r.file, line: r.line, raw: r.raw });
     continue;
   }
   const prefixes = prefixesForReceiver(r.file, r.receiver);
   if (!prefixes.length) {
-    ops.push({ method: r.method, path: (r.raw.replace(/\/$/, '')) || '/', file: r.file, line: r.line, raw: r.raw, unresolvedMount: true });
+    pushOp({ method: r.method, path: (r.raw.replace(/\/$/, '')) || '/', file: r.file, line: r.line, raw: r.raw, unresolvedMount: true });
     continue;
   }
   for (const prefix of prefixes) {
     const full = r.raw.startsWith(prefix) ? r.raw : prefix + (r.raw.startsWith('/') ? r.raw : `/${r.raw}`);
-    ops.push({ method: r.method, path: full.replace(/\/$/, '') || '/', file: r.file, line: r.line, raw: r.raw, mountedAt: prefix });
+    pushOp({ method: r.method, path: full.replace(/\/$/, '') || '/', file: r.file, line: r.line, raw: r.raw, mountedAt: prefix });
   }
 }
 
@@ -322,6 +352,18 @@ const result = {
   clientFilesScanned: files.length,
   callSites: calls.length,
   backendRegistrationsParsed: ops.length,
+  // M8: the full registration list is emitted so the 397-vs-413 question can be reconciled row by row
+  // instead of by assertion. Each entry carries source file:line, the raw literal and the mount prefix
+  // that produced the effective path.
+  backendRegistrations: ops.map((o) => ({
+    method: o.method,
+    path: o.path,
+    raw: o.raw,
+    file: o.file,
+    line: o.line,
+    mountedAt: o.mountedAt || null,
+    unresolvedMount: Boolean(o.unresolvedMount),
+  })),
   backendRegisterAgreement: (() => {
     // The canonical register records paths relative to the /api base; this parser keeps the full path.
     const norm = (m, p) => `${m} ${shape(p).replace(/^\/api(?=\/)/, '')}`;

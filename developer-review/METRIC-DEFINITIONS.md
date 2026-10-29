@@ -333,16 +333,58 @@ own numerator/denominator, per the rule at the top of this document; **no compos
 
 ## MV8 — Parity mix (never aggregated)
 
-| Class | Count | Meaning |
-|---|---:|---|
-| `FULL PARITY` | **12** | endpoint- and reachability-supported; 12/12 `SUPPORTED` by `parity-endpoint-audit.json` |
-| `PARTIAL PARITY` | **49** | capability present, scope reduced (subfeature losses recorded per row) |
-| `MISSING` | **30** | no working implementation |
-| `MOCK / FABRICATED STATE` | **12** | a surface renders state the server never produced |
-| `REPLACED BY EQUIVALENT` | **6** | mechanism replaced, outcome preserved |
-| `UNVERIFIED` | **3** | insufficient evidence either way |
-| `INTENTIONAL RETIREMENT` | **0** | no documented retirement decision exists for any row |
+**M8 re-measurement at `a2ecb96`** (the V7 figures are kept below as the prior published state):
+
+| Class | M8 count | Prior (V7) | Meaning |
+|---|---:|---:|---|
+| `FULL PARITY` | **13** | 12 | endpoint- and reachability-supported; 13/13 `SUPPORTED` by `parity-endpoint-audit.json` |
+| `PARTIAL PARITY` | **51** | 49 | capability present, scope reduced (subfeature losses recorded per row) |
+| `MISSING` | **28** | 30 | no working implementation |
+| `STUB` | **0** | — | a retired stub answering `410`/`501`; reported explicitly so it can never be mistaken for MISSING |
+| `MOCK / FABRICATED STATE` | **12** | 12 | a surface renders state the server never produced |
+| `REPLACED BY EQUIVALENT` | **5** | 6 | mechanism replaced, outcome preserved |
+| `UNVERIFIED` | **3** | 3 | insufficient evidence either way |
+| `INTENTIONAL RETIREMENT` | **0** | 0 | no documented retirement decision exists for any row |
+
+The three moves are anchored, not inferred: `FP-D07` → PARTIAL (the bell and its popover survive; the shared
+coalesced poller, the backoff ladder and the unread badge do not — **DISC-053**), `FP-A12` → PARTIAL,
+`FP-C06` → FULL. Prior verdicts are preserved row by row in `M8-PARITY-REVALIDATION.md`.
 
 **No percentage is derived from this table.** Summing six different verdict kinds into an "audit score" is
 the one arithmetic this package forbids; `12/112` is not "11 % parity" and `12 + 49 + 30` is not "91 rows
 fine", because `PARTIAL` and `MOCK` are not degrees of the same thing.
+
+## MV9 — Registration counting units (M8)
+
+Registering a route is one event; describing it takes three numbers, and conflating them is what produced
+the `397` vs `413` confusion (**DISC-049**'s sibling defect, closed in `M8-REGISTRATION-COUNT-RECONCILIATION.md`).
+
+| Unit | Definition | M8 value |
+|---|---|---:|
+| Route call site | one `<router>.<verb>(…)` / `app.<verb>(…)` expression | **393** |
+| Alias registration | one (call site, path literal, mount prefix) tuple; `['/a','/b']` is 1 call site, 2 registrations | **397** |
+| Unique `METHOD+path` | after mount resolution, `/api` stripping and `:param` → `{X}` normalisation, de-duplicated — the operation register | **393** |
+| Independent contract-parser instances | what `client-contract-audit.cjs` counts after repair | **405** |
+| Duplicate alias instances | one handler registered as both `/x` and `/api/x` on one line | **6** |
+| False positives | non-route text the old parser accepted | **2** |
+| Standalone non-`/api` endpoints | real endpoints outside the register's declared scope | **8** |
+
+Identity, recomputed every run: **413 = 405 + 6 + 2** and **405 = 397 + 8**. Path-shape collisions after a
+*second* parameter collapse over the 393 operations: **0** (the register is already normalised) — the "70"
+figure an M8 draft cited is **withdrawn**.
+
+## MV10 — Runtime execution state (M8)
+
+| Dimension | State | Evidence |
+|---|---|---|
+| Backend test suite | **executed** — 1,315 discovered / 1,269 pass / 46 fail / 0 skipped, exit 1, all 46 DB-caused | `Evidence/logs/m8-backend-suite.log` |
+| Frontend typecheck | **executed** — `npx tsc -b` exit 0 (0-byte log = no diagnostics) | `Evidence/logs/m8-frontend-typecheck.log` |
+| HTTP probing | **executed** — 18 unauthenticated + 25 authenticated probes against a real Express process | `m8-http-probe*.log` |
+| Payload boundary (R-05) | **executed** — 120 KB → `200`, ~400 KB → `413 PAYLOAD_TOO_LARGE` | `m8-scenarios.log` |
+| MariaDB-backed behaviour | **blocked** — no server, no client library obtainable | `M8-RUNTIME-VERIFICATION.md` §5 |
+| Browser / Playwright | **blocked** — no browser binary, CDN unreachable | §4 |
+| Live provider calls | **blocked** — no credentials | §4 |
+
+**No score is derived.** "Executed" here means an assertion was observed against a running process; it does
+not mean the run was representative of production, because the repository was in-memory and the DB-backed
+paths returned `500`/`503` by design.

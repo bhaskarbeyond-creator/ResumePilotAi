@@ -1,10 +1,13 @@
 {
- "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
- "generatedAt": "2026-10-29T07:20:23.943Z",
+ "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+ "generatedAt": "2026-10-29T08:04:19.054Z",
  "units": {
-  "routeRegistrations": 397,
+  "routeCallSites": 393,
+  "aliasRegistrations": 397,
   "uniqueMethodPath": 393,
-  "duplicateRegistrations": 4,
+  "nonApiRoutes": 14,
+  "routeRegistrations": 393,
+  "duplicateRegistrations": 0,
   "handlers": 393,
   "databaseOperations": null,
   "databaseOperationsNote": "not counted: database operations are not enumerable from route declarations; see DATABASE-INVENTORY.md"
@@ -18,6 +21,4064 @@
   "UNREACHABLE": 176,
   "UNVERIFIED": 11
  },
+ "registrations": [
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminAudit.js",
+   "line": 14,
+   "method": "GET",
+   "raw": "/audit-logs",
+   "prefix": "/api/admin",
+   "effective": "/admin/audit-logs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminAudit.js",
+   "line": 49,
+   "method": "GET",
+   "raw": "/audit-logs/stats",
+   "prefix": "/api/admin",
+   "effective": "/admin/audit-logs/stats"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminAudit.js",
+   "line": 90,
+   "method": "GET",
+   "raw": "/audit-logs/:id",
+   "prefix": "/api/admin",
+   "effective": "/admin/audit-logs/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 65,
+   "method": "GET",
+   "raw": "/platform/currency",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/currency"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 73,
+   "method": "PUT",
+   "raw": "/platform/currency",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/currency"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 94,
+   "method": "GET",
+   "raw": "/subscriptions",
+   "prefix": "/api/admin",
+   "effective": "/admin/subscriptions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 186,
+   "method": "POST",
+   "raw": "/subscriptions/:uid/reconcile",
+   "prefix": "/api/admin",
+   "effective": "/admin/subscriptions/{X}/reconcile"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 287,
+   "method": "GET",
+   "raw": "/ai/entitlements",
+   "prefix": "/api/admin",
+   "effective": "/admin/ai/entitlements"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 295,
+   "method": "POST",
+   "raw": "/platform/tenants/:tenantId/members",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/members"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 338,
+   "method": "DELETE",
+   "raw": "/platform/tenants/:tenantId/members/:principalId",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/members/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 352,
+   "method": "PATCH",
+   "raw": "/platform/tenants/:tenantId/members/:principalId",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/members/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 369,
+   "method": "PATCH",
+   "raw": "/platform/tenants/:tenantId/commercials",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/commercials"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 392,
+   "method": "PATCH",
+   "raw": "/platform/tenants/:tenantId/ai-policy",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/ai-policy"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 450,
+   "method": "POST",
+   "raw": "/platform/tenants/:tenantId/ai-keys/test",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/tenants/{X}/ai-keys/test"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 533,
+   "method": "GET",
+   "raw": "/platform/status",
+   "prefix": "/api/admin",
+   "effective": "/admin/platform/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 576,
+   "method": "GET",
+   "raw": "/operations/feature-flags",
+   "prefix": "/api/admin",
+   "effective": "/admin/operations/feature-flags"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 588,
+   "method": "GET",
+   "raw": "/operations/feature-flags/:flagKey",
+   "prefix": "/api/admin",
+   "effective": "/admin/operations/feature-flags/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminPlatformOperations.js",
+   "line": 609,
+   "method": "PUT",
+   "raw": "/operations/feature-flags/:flagKey",
+   "prefix": "/api/admin",
+   "effective": "/admin/operations/feature-flags/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 101,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 249,
+   "method": "POST",
+   "raw": "/bulk",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/bulk"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 312,
+   "method": "POST",
+   "raw": "/",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 405,
+   "method": "GET",
+   "raw": "/:uid/details",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/details"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 605,
+   "method": "GET",
+   "raw": "/:userId/audit",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/audit"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 635,
+   "method": "GET",
+   "raw": "/:uid",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 673,
+   "method": "PATCH",
+   "raw": "/:uid",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 865,
+   "method": "POST",
+   "raw": "/:uid/tenants",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/tenants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 917,
+   "method": "DELETE",
+   "raw": "/:uid/tenants/:tenantId",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/tenants/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 937,
+   "method": "GET",
+   "raw": "/:uid/ai-entitlement",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/ai-entitlement"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 943,
+   "method": "PUT",
+   "raw": "/:uid/ai-entitlement",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/ai-entitlement"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 965,
+   "method": "DELETE",
+   "raw": "/:uid/ai-entitlement",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/ai-entitlement"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 982,
+   "method": "POST",
+   "raw": "/:uid/ai-quota-reset",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/ai-quota-reset"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1000,
+   "method": "POST",
+   "raw": "/:uid/send-password-reset",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/send-password-reset"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1000,
+   "method": "POST",
+   "raw": "/:uid/password-reset",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/password-reset"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1037,
+   "method": "POST",
+   "raw": "/:uid/verify-email",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/verify-email"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1059,
+   "method": "POST",
+   "raw": "/:uid/revoke-sessions",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/revoke-sessions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1079,
+   "method": "POST",
+   "raw": "/:uid/unenroll-mfa",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/unenroll-mfa"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/adminUsers.js",
+   "line": 1101,
+   "method": "GET",
+   "raw": "/:uid/export",
+   "prefix": "/api/admin/users",
+   "effective": "/admin/users/{X}/export"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 50,
+   "method": "GET",
+   "raw": "/ai-usage",
+   "prefix": "/api",
+   "effective": "/ai-usage"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 808,
+   "method": "POST",
+   "raw": "/generate-interview",
+   "prefix": "/api",
+   "effective": "/generate-interview"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1010,
+   "method": "POST",
+   "raw": "/live-interview/sessions",
+   "prefix": "/api",
+   "effective": "/live-interview/sessions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1037,
+   "method": "GET",
+   "raw": "/live-interview/sessions/:sessionId",
+   "prefix": "/api",
+   "effective": "/live-interview/sessions/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1050,
+   "method": "POST",
+   "raw": "/live-interview/sessions/:sessionId/turns",
+   "prefix": "/api",
+   "effective": "/live-interview/sessions/{X}/turns"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1076,
+   "method": "POST",
+   "raw": "/live-interview/sessions/:sessionId/complete",
+   "prefix": "/api",
+   "effective": "/live-interview/sessions/{X}/complete"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1102,
+   "method": "DELETE",
+   "raw": "/live-interview/sessions/:sessionId",
+   "prefix": "/api",
+   "effective": "/live-interview/sessions/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1115,
+   "method": "POST",
+   "raw": "/live-interview/guide",
+   "prefix": "/api",
+   "effective": "/live-interview/guide"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1204,
+   "method": "POST",
+   "raw": "/check-grammar",
+   "prefix": "/api",
+   "effective": "/check-grammar"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1249,
+   "method": "POST",
+   "raw": "/generate-content",
+   "prefix": "/api",
+   "effective": "/generate-content"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/ai.js",
+   "line": 1282,
+   "method": "POST",
+   "raw": "/parse-resume",
+   "prefix": "/api",
+   "effective": "/parse-resume"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 35,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 49,
+   "method": "GET",
+   "raw": "/categories",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data/categories"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 74,
+   "method": "GET",
+   "raw": "/slug/:slug",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data/slug/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 85,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 96,
+   "method": "POST",
+   "raw": "/:id",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/blogData.js",
+   "line": 106,
+   "method": "DELETE",
+   "raw": "/:id",
+   "prefix": "/api/blog-data",
+   "effective": "/blog-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/covers.js",
+   "line": 16,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/covers",
+   "effective": "/covers"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/covers.js",
+   "line": 26,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/covers",
+   "effective": "/covers/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/covers.js",
+   "line": 37,
+   "method": "POST",
+   "raw": "/:id",
+   "prefix": "/api/covers",
+   "effective": "/covers/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/covers.js",
+   "line": 47,
+   "method": "DELETE",
+   "raw": "/:id",
+   "prefix": "/api/covers",
+   "effective": "/covers/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 40,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 90,
+   "method": "GET",
+   "raw": "/sync-status",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/sync-status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 93,
+   "method": "POST",
+   "raw": "/prune-outbox",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/prune-outbox"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 143,
+   "method": "GET",
+   "raw": "/conflicts",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/conflicts"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 145,
+   "method": "GET",
+   "raw": "/dead-letter",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/dead-letter"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 157,
+   "method": "POST",
+   "raw": "/retry-dead-letter",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/retry-dead-letter"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 162,
+   "method": "POST",
+   "raw": "/test-connection",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/test-connection"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 174,
+   "method": "POST",
+   "raw": "/initialize-schema",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings/initialize-schema"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/databaseAdmin.js",
+   "line": 187,
+   "method": "POST",
+   "raw": "/",
+   "prefix": "/api/admin/database-settings",
+   "effective": "/admin/database-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1420,
+   "method": "GET",
+   "raw": "/admin/circuit-breaker-status",
+   "prefix": "/api/email",
+   "effective": "/email/admin/circuit-breaker-status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1433,
+   "method": "POST",
+   "raw": "/admin/reset-circuit-breaker",
+   "prefix": "/api/email",
+   "effective": "/email/admin/reset-circuit-breaker"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1515,
+   "method": "POST",
+   "raw": "/admin/save-template-customization",
+   "prefix": "/api/email",
+   "effective": "/email/admin/save-template-customization"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1516,
+   "method": "GET",
+   "raw": "/admin/custom-templates",
+   "prefix": "/api/email",
+   "effective": "/email/admin/custom-templates"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1524,
+   "method": "POST",
+   "raw": "/admin/test-connection",
+   "prefix": "/api/email",
+   "effective": "/email/admin/test-connection"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1662,
+   "method": "GET",
+   "raw": "/admin/settings",
+   "prefix": "/api/email",
+   "effective": "/email/admin/settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1691,
+   "method": "GET",
+   "raw": "/admin/deliverability",
+   "prefix": "/api/email",
+   "effective": "/email/admin/deliverability"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1829,
+   "method": "POST",
+   "raw": "/admin/save-smtp",
+   "prefix": "/api/email",
+   "effective": "/email/admin/save-smtp"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1930,
+   "method": "POST",
+   "raw": "/admin/test-imap",
+   "prefix": "/api/email",
+   "effective": "/email/admin/test-imap"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 1966,
+   "method": "POST",
+   "raw": "/send-email",
+   "prefix": "/api/email",
+   "effective": "/email/send-email"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 2025,
+   "method": "POST",
+   "raw": "/send-invoice-email",
+   "prefix": "/api/email",
+   "effective": "/email/send-invoice-email"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 2034,
+   "method": "GET",
+   "raw": "/logs",
+   "prefix": "/api/email",
+   "effective": "/email/logs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 2052,
+   "method": "POST",
+   "raw": "/resend",
+   "prefix": "/api/email",
+   "effective": "/email/resend"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 2087,
+   "method": "GET",
+   "raw": "/templates",
+   "prefix": "/api/email",
+   "effective": "/email/templates"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/email.js",
+   "line": 2088,
+   "method": "POST",
+   "raw": "/templates",
+   "prefix": "/api/email",
+   "effective": "/email/templates"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 22,
+   "method": "GET",
+   "raw": "/status",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 287,
+   "method": "POST",
+   "raw": "/support-grants",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/support-grants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 298,
+   "method": "POST",
+   "raw": "/support-grants/:grantId/revoke",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/support-grants/{X}/revoke"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 307,
+   "method": "GET",
+   "raw": "/support-grants",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/support-grants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 316,
+   "method": "GET",
+   "raw": "/support/context",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/support/context"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 336,
+   "method": "GET",
+   "raw": "/tenants",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/tenants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 345,
+   "method": "GET",
+   "raw": "/roles-matrix",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/roles-matrix"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 385,
+   "method": "GET",
+   "raw": "/context",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/context"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 386,
+   "method": "POST",
+   "raw": "/context",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/context"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 388,
+   "method": "GET",
+   "raw": "/workspaces",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 404,
+   "method": "POST",
+   "raw": "/workspaces",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 413,
+   "method": "PATCH",
+   "raw": "/workspaces/:workspaceId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 422,
+   "method": "POST",
+   "raw": "/workspaces/:workspaceId/archive",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}/archive"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 431,
+   "method": "POST",
+   "raw": "/workspaces/:workspaceId/restore",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}/restore"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 440,
+   "method": "GET",
+   "raw": "/workspaces/:workspaceId/members",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}/members"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 449,
+   "method": "POST",
+   "raw": "/workspaces/:workspaceId/members",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}/members"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 458,
+   "method": "DELETE",
+   "raw": "/workspaces/:workspaceId/members/:principalId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/workspaces/{X}/members/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 467,
+   "method": "GET",
+   "raw": "/memberships",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/memberships"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 476,
+   "method": "POST",
+   "raw": "/memberships",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/memberships"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 489,
+   "method": "PATCH",
+   "raw": "/memberships/:principalId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/memberships/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 498,
+   "method": "POST",
+   "raw": "/memberships/:principalId/invitation-resend",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/memberships/{X}/invitation-resend"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 511,
+   "method": "DELETE",
+   "raw": "/memberships/:principalId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/memberships/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 520,
+   "method": "POST",
+   "raw": "/service-accounts",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/service-accounts"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 538,
+   "method": "GET",
+   "raw": "/service-accounts",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/service-accounts"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 547,
+   "method": "POST",
+   "raw": "/service-accounts/:serviceAccountId/revoke",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/service-accounts/{X}/revoke"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 556,
+   "method": "POST",
+   "raw": "/service-accounts/:serviceAccountId/rotate",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/service-accounts/{X}/rotate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 574,
+   "method": "POST",
+   "raw": "/tenants/:tenantId/reactivate",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/tenants/{X}/reactivate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 585,
+   "method": "PATCH",
+   "raw": "/tenant",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/tenant"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 594,
+   "method": "GET",
+   "raw": "/data/export",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/data/export"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 608,
+   "method": "GET",
+   "raw": "/platform/tenants",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/platform/tenants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 621,
+   "method": "POST",
+   "raw": "/platform/tenants/:tenantId/suspend",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/platform/tenants/{X}/suspend"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 630,
+   "method": "POST",
+   "raw": "/platform/tenants/:tenantId/reactivate",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/platform/tenants/{X}/reactivate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 639,
+   "method": "POST",
+   "raw": "/lifecycle/suspend",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/lifecycle/suspend"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 648,
+   "method": "GET",
+   "raw": "/audit",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/audit"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 671,
+   "method": "GET",
+   "raw": "/teams",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 684,
+   "method": "POST",
+   "raw": "/teams",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 693,
+   "method": "PATCH",
+   "raw": "/teams/:teamId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 702,
+   "method": "POST",
+   "raw": "/teams/:teamId/archive",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}/archive"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 711,
+   "method": "POST",
+   "raw": "/teams/:teamId/restore",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}/restore"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 720,
+   "method": "GET",
+   "raw": "/teams/:teamId/members",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}/members"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 729,
+   "method": "POST",
+   "raw": "/teams/:teamId/members",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}/members"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 738,
+   "method": "DELETE",
+   "raw": "/teams/:teamId/members/:principalId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/teams/{X}/members/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 747,
+   "method": "GET",
+   "raw": "/configuration",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/configuration"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 756,
+   "method": "PATCH",
+   "raw": "/configuration",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/configuration"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 765,
+   "method": "POST",
+   "raw": "/ai/generate-content",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/ai/generate-content"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 817,
+   "method": "POST",
+   "raw": "/ai/generate-interview",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/ai/generate-interview"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 881,
+   "method": "GET",
+   "raw": "/usage/ai",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/usage/ai"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 890,
+   "method": "GET",
+   "raw": "/usage/ai/events",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/usage/ai/events"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 899,
+   "method": "GET",
+   "raw": "/resources",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/resources"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 911,
+   "method": "POST",
+   "raw": "/resources",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/resources"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 920,
+   "method": "GET",
+   "raw": "/resources/:resourceId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/resources/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 930,
+   "method": "PATCH",
+   "raw": "/resources/:resourceId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/resources/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 940,
+   "method": "DELETE",
+   "raw": "/resources/:resourceId",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/resources/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 950,
+   "method": "GET",
+   "raw": "/observability/metrics",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/observability/metrics"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 963,
+   "method": "GET",
+   "raw": "/data-plane/status",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/data-plane/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 994,
+   "method": "GET",
+   "raw": "/queue/status",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/queue/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1006,
+   "method": "GET",
+   "raw": "/queue/jobs",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/queue/jobs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1017,
+   "method": "POST",
+   "raw": "/queue/jobs",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/queue/jobs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1039,
+   "method": "POST",
+   "raw": "/queue/replay",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/queue/replay"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1051,
+   "method": "POST",
+   "raw": "/storage/token",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/storage/token"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1067,
+   "method": "POST",
+   "raw": "/storage/verify",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/storage/verify"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1082,
+   "method": "POST",
+   "raw": "/test-email",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/test-email"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterprise.js",
+   "line": 1150,
+   "method": "POST",
+   "raw": "/tenants",
+   "prefix": "/api/enterprise",
+   "effective": "/enterprise/tenants"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/enterpriseM2m.js",
+   "line": 22,
+   "method": "GET",
+   "raw": "/context",
+   "prefix": "/api/enterprise/m2m",
+   "effective": "/enterprise/m2m/context"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 159,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 182,
+   "method": "GET",
+   "raw": "/tracker",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/tracker"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 189,
+   "method": "POST",
+   "raw": "/tracker",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/tracker"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 200,
+   "method": "PATCH",
+   "raw": "/tracker/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/tracker/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 216,
+   "method": "DELETE",
+   "raw": "/tracker/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/tracker/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 229,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 245,
+   "method": "POST",
+   "raw": "/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 264,
+   "method": "DELETE",
+   "raw": "/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 363,
+   "method": "GET",
+   "raw": "/applications/list",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/applications/list"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 402,
+   "method": "POST",
+   "raw": "/applications/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/applications/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 405,
+   "method": "PATCH",
+   "raw": "/applications/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/applications/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/jobsData.js",
+   "line": 408,
+   "method": "DELETE",
+   "raw": "/applications/:id",
+   "prefix": "/api/jobs-data",
+   "effective": "/jobs-data/applications/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 87,
+   "method": "GET",
+   "raw": "/favourites",
+   "prefix": "/api",
+   "effective": "/favourites"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 102,
+   "method": "POST",
+   "raw": "/favourites",
+   "prefix": "/api",
+   "effective": "/favourites"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 119,
+   "method": "DELETE",
+   "raw": "/favourites/:itemId",
+   "prefix": "/api",
+   "effective": "/favourites/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 129,
+   "method": "GET",
+   "raw": "/favourites/:itemId/check",
+   "prefix": "/api",
+   "effective": "/favourites/{X}/check"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 151,
+   "method": "GET",
+   "raw": "/user-stats",
+   "prefix": "/api",
+   "effective": "/user-stats"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 205,
+   "method": "GET",
+   "raw": "/stats",
+   "prefix": "/api",
+   "effective": "/stats"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 221,
+   "method": "POST",
+   "raw": "/stats/increment",
+   "prefix": "/api",
+   "effective": "/stats/increment"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 246,
+   "method": "GET",
+   "raw": "/reviews",
+   "prefix": "/api",
+   "effective": "/reviews"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 267,
+   "method": "GET",
+   "raw": "/phrases",
+   "prefix": "/api",
+   "effective": "/phrases"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 278,
+   "method": "POST",
+   "raw": "/phrases",
+   "prefix": "/api",
+   "effective": "/phrases"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 298,
+   "method": "GET",
+   "raw": "/phrases/:category",
+   "prefix": "/api",
+   "effective": "/phrases/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/miscData.js",
+   "line": 309,
+   "method": "DELETE",
+   "raw": "/phrases/:category",
+   "prefix": "/api",
+   "effective": "/phrases/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/notificationsData.js",
+   "line": 16,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/notifications-data",
+   "effective": "/notifications-data"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/notificationsData.js",
+   "line": 27,
+   "method": "PATCH",
+   "raw": "/:id",
+   "prefix": "/api/notifications-data",
+   "effective": "/notifications-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/notificationsData.js",
+   "line": 52,
+   "method": "POST",
+   "raw": "/mark-all-read",
+   "prefix": "/api/notifications-data",
+   "effective": "/notifications-data/mark-all-read"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/notificationsData.js",
+   "line": 66,
+   "method": "GET",
+   "raw": "/contact/list",
+   "prefix": "/api/notifications-data",
+   "effective": "/notifications-data/contact/list"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 207,
+   "method": "GET",
+   "raw": "/version",
+   "prefix": "/api/platform",
+   "effective": "/platform/version"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 227,
+   "method": "GET",
+   "raw": "/public-config",
+   "prefix": "/api/platform",
+   "effective": "/platform/public-config"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 263,
+   "method": "GET",
+   "raw": "/health",
+   "prefix": "/api/platform",
+   "effective": "/platform/health"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 287,
+   "method": "GET",
+   "raw": "/operational-status",
+   "prefix": "/api/platform",
+   "effective": "/platform/operational-status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 305,
+   "method": "GET",
+   "raw": "/operational-status/api-matrix",
+   "prefix": "/api/platform",
+   "effective": "/platform/operational-status/api-matrix"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 317,
+   "method": "GET",
+   "raw": "/operational-status/:serviceId",
+   "prefix": "/api/platform",
+   "effective": "/platform/operational-status/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 368,
+   "method": "POST",
+   "raw": "/operational-status/:serviceId/test",
+   "prefix": "/api/platform",
+   "effective": "/platform/operational-status/{X}/test"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 403,
+   "method": "POST",
+   "raw": "/operational-status/refresh",
+   "prefix": "/api/platform",
+   "effective": "/platform/operational-status/refresh"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 431,
+   "method": "GET",
+   "raw": "/overview",
+   "prefix": "/api/platform",
+   "effective": "/platform/overview"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 465,
+   "method": "GET",
+   "raw": "/queues",
+   "prefix": "/api/platform",
+   "effective": "/platform/queues"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 504,
+   "method": "POST",
+   "raw": "/queues/retry",
+   "prefix": "/api/platform",
+   "effective": "/platform/queues/retry"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 543,
+   "method": "POST",
+   "raw": "/queues/purge",
+   "prefix": "/api/platform",
+   "effective": "/platform/queues/purge"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 547,
+   "method": "GET",
+   "raw": "/maintenance",
+   "prefix": "/api/platform",
+   "effective": "/platform/maintenance"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 576,
+   "method": "POST",
+   "raw": "/maintenance",
+   "prefix": "/api/platform",
+   "effective": "/platform/maintenance"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 621,
+   "method": "GET",
+   "raw": "/command-center",
+   "prefix": "/api/platform",
+   "effective": "/platform/command-center"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 789,
+   "method": "GET",
+   "raw": "/security-events",
+   "prefix": "/api/platform",
+   "effective": "/platform/security-events"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 836,
+   "method": "GET",
+   "raw": "/encryption",
+   "prefix": "/api/platform",
+   "effective": "/platform/encryption"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 860,
+   "method": "GET",
+   "raw": "/observability",
+   "prefix": "/api/platform",
+   "effective": "/platform/observability"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 876,
+   "method": "GET",
+   "raw": "/backup-status",
+   "prefix": "/api/platform",
+   "effective": "/platform/backup-status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 901,
+   "method": "GET",
+   "raw": "/payments-health",
+   "prefix": "/api/platform",
+   "effective": "/platform/payments-health"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 921,
+   "method": "GET",
+   "raw": "/search",
+   "prefix": "/api/platform",
+   "effective": "/platform/search"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 977,
+   "method": "GET",
+   "raw": "/announcements",
+   "prefix": "/api/platform",
+   "effective": "/platform/announcements"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 999,
+   "method": "POST",
+   "raw": "/announcements",
+   "prefix": "/api/platform",
+   "effective": "/platform/announcements"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1035,
+   "method": "PATCH",
+   "raw": "/announcements/:id",
+   "prefix": "/api/platform",
+   "effective": "/platform/announcements/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1091,
+   "method": "DELETE",
+   "raw": "/announcements/:id",
+   "prefix": "/api/platform",
+   "effective": "/platform/announcements/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1229,
+   "method": "GET",
+   "raw": "/attention",
+   "prefix": "/api/platform",
+   "effective": "/platform/attention"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1270,
+   "method": "GET",
+   "raw": "/health-indicator",
+   "prefix": "/api/platform",
+   "effective": "/platform/health-indicator"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1289,
+   "method": "GET",
+   "raw": "/enterprise-queue",
+   "prefix": "/api/platform",
+   "effective": "/platform/enterprise-queue"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1304,
+   "method": "GET",
+   "raw": "/operators",
+   "prefix": "/api/platform",
+   "effective": "/platform/operators"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1342,
+   "method": "POST",
+   "raw": "/operators",
+   "prefix": "/api/platform",
+   "effective": "/platform/operators"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1402,
+   "method": "POST",
+   "raw": "/operators/:uid/revoke-sessions",
+   "prefix": "/api/platform",
+   "effective": "/platform/operators/{X}/revoke-sessions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1444,
+   "method": "GET",
+   "raw": "/tenants/:tenantId",
+   "prefix": "/api/platform",
+   "effective": "/platform/tenants/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1534,
+   "method": "PATCH",
+   "raw": "/tenants/:tenantId",
+   "prefix": "/api/platform",
+   "effective": "/platform/tenants/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1547,
+   "method": "POST",
+   "raw": "/tenants/:tenantId/decommission",
+   "prefix": "/api/platform",
+   "effective": "/platform/tenants/{X}/decommission"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1587,
+   "method": "POST",
+   "raw": "/tenants/garbage-collect",
+   "prefix": "/api/platform",
+   "effective": "/platform/tenants/garbage-collect"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1637,
+   "method": "GET",
+   "raw": "/feature-flags",
+   "prefix": "/api/platform",
+   "effective": "/platform/feature-flags"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1646,
+   "method": "PUT",
+   "raw": "/feature-flags/:flagKey",
+   "prefix": "/api/platform",
+   "effective": "/platform/feature-flags/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1670,
+   "method": "GET",
+   "raw": "/configuration",
+   "prefix": "/api/platform",
+   "effective": "/platform/configuration"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1707,
+   "method": "GET",
+   "raw": "/payment-settings",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1727,
+   "method": "GET",
+   "raw": "/payment-webhooks",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-webhooks"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1809,
+   "method": "POST",
+   "raw": "/payment-webhooks/:eventId/replay",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-webhooks/{X}/replay"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1846,
+   "method": "GET",
+   "raw": "/configuration",
+   "prefix": "/api/platform",
+   "effective": "/platform/configuration"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1883,
+   "method": "GET",
+   "raw": "/payment-settings",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1903,
+   "method": "GET",
+   "raw": "/payment-webhooks",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-webhooks"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 1985,
+   "method": "POST",
+   "raw": "/payment-webhooks/:eventId/replay",
+   "prefix": "/api/platform",
+   "effective": "/platform/payment-webhooks/{X}/replay"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/platform.js",
+   "line": 2027,
+   "method": "POST",
+   "raw": "/role-view-audit",
+   "prefix": "/api/platform",
+   "effective": "/platform/role-view-audit"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 38,
+   "method": "GET",
+   "raw": "/public/:slug",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/public/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 51,
+   "method": "GET",
+   "raw": "/public",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/public"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 63,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 82,
+   "method": "GET",
+   "raw": "/slug-availability",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/slug-availability"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 104,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 115,
+   "method": "POST",
+   "raw": "/:id",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/portfolios.js",
+   "line": 137,
+   "method": "DELETE",
+   "raw": "/:id",
+   "prefix": "/api/portfolios",
+   "effective": "/portfolios/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/publicDiscovery.js",
+   "line": 66,
+   "method": "GET",
+   "raw": "/geo/regions",
+   "prefix": "/api/public",
+   "effective": "/public/geo/regions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/publicDiscovery.js",
+   "line": 80,
+   "method": "GET",
+   "raw": "/geo/regions/:kind/:slug",
+   "prefix": "/api/public",
+   "effective": "/public/geo/regions/{X}/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/publicDiscovery.js",
+   "line": 108,
+   "method": "GET",
+   "raw": "/jobs/:jobId/og.png",
+   "prefix": "/api/public",
+   "effective": "/public/jobs/{X}/og.png"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/publicDiscovery.js",
+   "line": 131,
+   "method": "GET",
+   "raw": "/blog/:slug/og.png",
+   "prefix": "/api/public",
+   "effective": "/public/blog/{X}/og.png"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 21,
+   "method": "GET",
+   "raw": "/",
+   "prefix": "/api/resumes",
+   "effective": "/resumes"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 36,
+   "method": "GET",
+   "raw": "/public/:id",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/public/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 56,
+   "method": "GET",
+   "raw": "/public/token/:token",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/public/token/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 124,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 156,
+   "method": "POST",
+   "raw": "/:id",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 183,
+   "method": "DELETE",
+   "raw": "/:id",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 197,
+   "method": "POST",
+   "raw": "/:id/publish",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}/publish"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 230,
+   "method": "POST",
+   "raw": "/:id/unpublish",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}/unpublish"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/resumes.js",
+   "line": 243,
+   "method": "GET",
+   "raw": "/:id/publication",
+   "prefix": "/api/resumes",
+   "effective": "/resumes/{X}/publication"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "userRouter",
+   "file": "backend/routes/support.js",
+   "line": 15,
+   "method": "POST",
+   "raw": "/tickets",
+   "prefix": "/api/support",
+   "effective": "/support/tickets"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "userRouter",
+   "file": "backend/routes/support.js",
+   "line": 30,
+   "method": "GET",
+   "raw": "/tickets",
+   "prefix": "/api/support",
+   "effective": "/support/tickets"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "userRouter",
+   "file": "backend/routes/support.js",
+   "line": 40,
+   "method": "GET",
+   "raw": "/tickets/:ticketId",
+   "prefix": "/api/support",
+   "effective": "/support/tickets/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "userRouter",
+   "file": "backend/routes/support.js",
+   "line": 54,
+   "method": "POST",
+   "raw": "/tickets/:ticketId/messages",
+   "prefix": "/api/support",
+   "effective": "/support/tickets/{X}/messages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "adminRouter",
+   "file": "backend/routes/support.js",
+   "line": 71,
+   "method": "GET",
+   "raw": "/tickets",
+   "prefix": "/api/admin/support",
+   "effective": "/admin/support/tickets"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "adminRouter",
+   "file": "backend/routes/support.js",
+   "line": 81,
+   "method": "GET",
+   "raw": "/tickets/:ticketId",
+   "prefix": "/api/admin/support",
+   "effective": "/admin/support/tickets/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "adminRouter",
+   "file": "backend/routes/support.js",
+   "line": 95,
+   "method": "POST",
+   "raw": "/tickets/:ticketId/messages",
+   "prefix": "/api/admin/support",
+   "effective": "/admin/support/tickets/{X}/messages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "adminRouter",
+   "file": "backend/routes/support.js",
+   "line": 110,
+   "method": "PATCH",
+   "raw": "/tickets/:ticketId",
+   "prefix": "/api/admin/support",
+   "effective": "/admin/support/tickets/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/usersData.js",
+   "line": 25,
+   "method": "GET",
+   "raw": "/profile",
+   "prefix": "/api/users-data",
+   "effective": "/users-data/profile"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/usersData.js",
+   "line": 40,
+   "method": "POST",
+   "raw": "/profile",
+   "prefix": "/api/users-data",
+   "effective": "/users-data/profile"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/usersData.js",
+   "line": 119,
+   "method": "GET",
+   "raw": "/:id",
+   "prefix": "/api/users-data",
+   "effective": "/users-data/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "router",
+   "file": "backend/routes/usersData.js",
+   "line": 149,
+   "method": "POST",
+   "raw": "/mfa/disable",
+   "prefix": "/api/users-data",
+   "effective": "/users-data/mfa/disable"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 784,
+   "method": "POST",
+   "raw": "/api/pay",
+   "prefix": null,
+   "effective": "/pay"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 805,
+   "method": "GET",
+   "raw": "/api/payment-orders",
+   "prefix": null,
+   "effective": "/payment-orders"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 822,
+   "method": "GET",
+   "raw": "/api/payment-orders/:orderId",
+   "prefix": null,
+   "effective": "/payment-orders/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 856,
+   "method": "POST",
+   "raw": "/api/stripe-webhook",
+   "prefix": null,
+   "effective": "/stripe-webhook"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1074,
+   "method": "POST",
+   "raw": "/api/paypal/create-order",
+   "prefix": null,
+   "effective": "/paypal/create-order"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1115,
+   "method": "POST",
+   "raw": "/api/paypal/verify",
+   "prefix": null,
+   "effective": "/paypal/verify"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1176,
+   "method": "POST",
+   "raw": "/api/razorpay/create-order",
+   "prefix": null,
+   "effective": "/razorpay/create-order"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1224,
+   "method": "POST",
+   "raw": "/api/razorpay/verify-payment",
+   "prefix": null,
+   "effective": "/razorpay/verify-payment"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1328,
+   "method": "POST",
+   "raw": "/api/paytm/initiate-transaction",
+   "prefix": null,
+   "effective": "/paytm/initiate-transaction"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1386,
+   "method": "POST",
+   "raw": "/api/paytm/verify-transaction",
+   "prefix": null,
+   "effective": "/paytm/verify-transaction"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1435,
+   "method": "POST",
+   "raw": "/api/phonepe/initiate",
+   "prefix": null,
+   "effective": "/phonepe/initiate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1494,
+   "method": "POST",
+   "raw": "/api/phonepe/status",
+   "prefix": null,
+   "effective": "/phonepe/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1538,
+   "method": "POST",
+   "raw": "/api/paytm/callback",
+   "prefix": null,
+   "effective": "/paytm/callback"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1554,
+   "method": "POST",
+   "raw": "/api/phonepe/callback",
+   "prefix": null,
+   "effective": "/phonepe/callback"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1584,
+   "method": "POST",
+   "raw": "/api/subscription/preferences",
+   "prefix": null,
+   "effective": "/subscription/preferences"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1597,
+   "method": "POST",
+   "raw": "/api/check",
+   "prefix": null,
+   "effective": "/check"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1637,
+   "method": "POST",
+   "raw": "/api/jobs/:jobId/applications",
+   "prefix": null,
+   "effective": "/jobs/{X}/applications"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1687,
+   "method": "PATCH",
+   "raw": "/api/job-applications/:applicationId/status",
+   "prefix": null,
+   "effective": "/job-applications/{X}/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1728,
+   "method": "GET",
+   "raw": "/api/jobs/:jobId/applications",
+   "prefix": null,
+   "effective": "/jobs/{X}/applications"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1748,
+   "method": "GET",
+   "raw": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+   "prefix": null,
+   "effective": "/employer/jobs/{X}/applications/{X}/resume"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1845,
+   "method": "POST",
+   "raw": "/api/employer-applications",
+   "prefix": null,
+   "effective": "/employer-applications"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1863,
+   "method": "GET",
+   "raw": "/api/public/featured-companies",
+   "prefix": null,
+   "effective": "/public/featured-companies"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1896,
+   "method": "GET",
+   "raw": "/api/employer/companies",
+   "prefix": null,
+   "effective": "/employer/companies"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1916,
+   "method": "POST",
+   "raw": "/api/employer/companies",
+   "prefix": null,
+   "effective": "/employer/companies"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1928,
+   "method": "PATCH",
+   "raw": "/api/employer/companies/:companyId",
+   "prefix": null,
+   "effective": "/employer/companies/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1945,
+   "method": "DELETE",
+   "raw": "/api/employer/companies/:companyId",
+   "prefix": null,
+   "effective": "/employer/companies/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1963,
+   "method": "GET",
+   "raw": "/api/employer/jobs",
+   "prefix": null,
+   "effective": "/employer/jobs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1973,
+   "method": "POST",
+   "raw": "/api/employer/jobs",
+   "prefix": null,
+   "effective": "/employer/jobs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 1992,
+   "method": "PATCH",
+   "raw": "/api/employer/jobs/:jobId",
+   "prefix": null,
+   "effective": "/employer/jobs/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2025,
+   "method": "DELETE",
+   "raw": "/api/employer/jobs/:jobId",
+   "prefix": null,
+   "effective": "/employer/jobs/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2042,
+   "method": "GET",
+   "raw": "/api/messages/conversations",
+   "prefix": null,
+   "effective": "/messages/conversations"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2141,
+   "method": "GET",
+   "raw": "/api/messages/conversations/:conversationId/messages",
+   "prefix": null,
+   "effective": "/messages/conversations/{X}/messages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2181,
+   "method": "POST",
+   "raw": "/api/messages/conversations/:conversationId/read",
+   "prefix": null,
+   "effective": "/messages/conversations/{X}/read"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2230,
+   "method": "POST",
+   "raw": "/api/messages/conversations",
+   "prefix": null,
+   "effective": "/messages/conversations"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2280,
+   "method": "GET",
+   "raw": "/api/messages/conversations/:conversationId/participant-profile",
+   "prefix": null,
+   "effective": "/messages/conversations/{X}/participant-profile"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2320,
+   "method": "POST",
+   "raw": "/api/messages/send",
+   "prefix": null,
+   "effective": "/messages/send"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2360,
+   "method": "POST",
+   "raw": "/api/contact",
+   "prefix": null,
+   "effective": "/contact"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2389,
+   "method": "GET",
+   "raw": "/api/export-render-data",
+   "prefix": null,
+   "effective": "/export-render-data"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2420,
+   "method": "POST",
+   "raw": "/api/export",
+   "prefix": null,
+   "effective": "/export"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2420,
+   "method": "POST",
+   "raw": "/api/public-export",
+   "prefix": null,
+   "effective": "/public-export"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 2867,
+   "method": "POST",
+   "raw": "/api/v1/chat/completions",
+   "prefix": null,
+   "effective": "/v1/chat/completions"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3067,
+   "method": "POST",
+   "raw": "/api/v1/messages",
+   "prefix": null,
+   "effective": "/v1/messages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3136,
+   "method": "POST",
+   "raw": "/api/v1/search",
+   "prefix": null,
+   "effective": "/v1/search"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3226,
+   "method": "GET",
+   "raw": "/api/v1/status",
+   "prefix": null,
+   "effective": "/v1/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3261,
+   "method": "GET",
+   "raw": "/api/freellmapi/status",
+   "prefix": null,
+   "effective": "/freellmapi/status"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3266,
+   "method": "GET",
+   "raw": "/api/freellmapi/metrics",
+   "prefix": null,
+   "effective": "/freellmapi/metrics"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3275,
+   "method": "GET",
+   "raw": "/api/admin/ai-fleet-health",
+   "prefix": null,
+   "effective": "/admin/ai-fleet-health"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3303,
+   "method": "GET",
+   "raw": "/api/admin/payment-settings",
+   "prefix": null,
+   "effective": "/admin/payment-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3321,
+   "method": "GET",
+   "raw": "/api/admin/ai-settings",
+   "prefix": null,
+   "effective": "/admin/ai-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3339,
+   "method": "POST",
+   "raw": "/api/admin/blog/categories",
+   "prefix": null,
+   "effective": "/admin/blog/categories"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3350,
+   "method": "PATCH",
+   "raw": "/api/admin/blog/categories/:categoryId",
+   "prefix": null,
+   "effective": "/admin/blog/categories/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3367,
+   "method": "DELETE",
+   "raw": "/api/admin/blog/categories/:categoryId",
+   "prefix": null,
+   "effective": "/admin/blog/categories/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3388,
+   "method": "PATCH",
+   "raw": "/api/admin/blog/posts/:postId",
+   "prefix": null,
+   "effective": "/admin/blog/posts/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3408,
+   "method": "DELETE",
+   "raw": "/api/admin/blog/posts/:postId",
+   "prefix": null,
+   "effective": "/admin/blog/posts/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3424,
+   "method": "POST",
+   "raw": "/api/admin/blog/publish-due",
+   "prefix": null,
+   "effective": "/admin/blog/publish-due"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3446,
+   "method": "GET",
+   "raw": "/api/admin/health-summary",
+   "prefix": null,
+   "effective": "/admin/health-summary"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3487,
+   "method": "POST",
+   "raw": "/api/admin/system-health-settings",
+   "prefix": null,
+   "effective": "/admin/system-health-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3788,
+   "method": "GET",
+   "raw": "/api/admin/settings",
+   "prefix": null,
+   "effective": "/admin/settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3825,
+   "method": "GET",
+   "raw": "/api/admin/settings/:category",
+   "prefix": null,
+   "effective": "/admin/settings/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3855,
+   "method": "POST",
+   "raw": "/api/admin/settings/:category",
+   "prefix": null,
+   "effective": "/admin/settings/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 3996,
+   "method": "POST",
+   "raw": "/api/admin/ai-settings",
+   "prefix": null,
+   "effective": "/admin/ai-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4020,
+   "method": "POST",
+   "raw": "/api/admin/ai/test-provider",
+   "prefix": null,
+   "effective": "/admin/ai/test-provider"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4033,
+   "method": "ALL",
+   "raw": "/api/admin/ai/fetch-models",
+   "prefix": null,
+   "effective": "/admin/ai/fetch-models"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4047,
+   "method": "GET",
+   "raw": "/api/admin/ai/quota-stats",
+   "prefix": null,
+   "effective": "/admin/ai/quota-stats"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4094,
+   "method": "POST",
+   "raw": "/api/admin/ai/quota-limits",
+   "prefix": null,
+   "effective": "/admin/ai/quota-limits"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4117,
+   "method": "POST",
+   "raw": "/api/admin/ai/reset-quota",
+   "prefix": null,
+   "effective": "/admin/ai/reset-quota"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4147,
+   "method": "POST",
+   "raw": "/api/admin/ai/reset-state",
+   "prefix": null,
+   "effective": "/admin/ai/reset-state"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4215,
+   "method": "GET",
+   "raw": "/api/admin/ai/routing-telemetry",
+   "prefix": null,
+   "effective": "/admin/ai/routing-telemetry"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4248,
+   "method": "POST",
+   "raw": "/api/admin/payment-settings",
+   "prefix": null,
+   "effective": "/admin/payment-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4544,
+   "method": "GET",
+   "raw": "/api/admin/coupons",
+   "prefix": null,
+   "effective": "/admin/coupons"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4568,
+   "method": "GET",
+   "raw": "/api/coupons/active",
+   "prefix": null,
+   "effective": "/coupons/active"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4597,
+   "method": "POST",
+   "raw": "/api/coupons/validate",
+   "prefix": null,
+   "effective": "/coupons/validate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4678,
+   "method": "POST",
+   "raw": "/api/admin/coupons",
+   "prefix": null,
+   "effective": "/admin/coupons"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4679,
+   "method": "POST",
+   "raw": "/api/admin/coupons/:code",
+   "prefix": null,
+   "effective": "/admin/coupons/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4680,
+   "method": "PUT",
+   "raw": "/api/admin/coupons/:code",
+   "prefix": null,
+   "effective": "/admin/coupons/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4682,
+   "method": "DELETE",
+   "raw": "/api/admin/coupons/:code",
+   "prefix": null,
+   "effective": "/admin/coupons/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4702,
+   "method": "POST",
+   "raw": "/api/admin/payment/test-provider",
+   "prefix": null,
+   "effective": "/admin/payment/test-provider"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4855,
+   "method": "GET",
+   "raw": "/api/admin/twilio-settings",
+   "prefix": null,
+   "effective": "/admin/twilio-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4874,
+   "method": "POST",
+   "raw": "/api/admin/twilio-settings",
+   "prefix": null,
+   "effective": "/admin/twilio-settings"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 4971,
+   "method": "POST",
+   "raw": "/api/send-sms",
+   "prefix": null,
+   "effective": "/send-sms"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5092,
+   "method": "POST",
+   "raw": "/api/payment/razorpay-order",
+   "prefix": null,
+   "effective": "/payment/razorpay-order"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5101,
+   "method": "POST",
+   "raw": "/api/invoice/generate",
+   "prefix": null,
+   "effective": "/invoice/generate"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5131,
+   "method": "GET",
+   "raw": "/api/invoices",
+   "prefix": null,
+   "effective": "/invoices"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5146,
+   "method": "GET",
+   "raw": "/api/invoices/:paymentOrderId",
+   "prefix": null,
+   "effective": "/invoices/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5162,
+   "method": "POST",
+   "raw": "/api/invoice",
+   "prefix": null,
+   "effective": "/invoice"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5167,
+   "method": "POST",
+   "raw": "/api/export-docx",
+   "prefix": null,
+   "effective": "/export-docx"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5238,
+   "method": "POST",
+   "raw": "/api/public-export-docx",
+   "prefix": null,
+   "effective": "/public-export-docx"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5334,
+   "method": "GET",
+   "raw": "/api/rtl-font-config",
+   "prefix": null,
+   "effective": "/rtl-font-config"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5343,
+   "method": "POST",
+   "raw": "/api/generate-ai-cover-letter",
+   "prefix": null,
+   "effective": "/generate-ai-cover-letter"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5386,
+   "method": "POST",
+   "raw": "/api/jobs/naukri",
+   "prefix": null,
+   "effective": "/jobs/naukri"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5398,
+   "method": "GET",
+   "raw": "/api/service-availability",
+   "prefix": null,
+   "effective": "/service-availability"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5470,
+   "method": "GET",
+   "raw": "/api/healthz",
+   "prefix": null,
+   "effective": "/healthz"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5474,
+   "method": "GET",
+   "raw": "/api/health",
+   "prefix": null,
+   "effective": "/health"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5478,
+   "method": "GET",
+   "raw": "/api/health/databases",
+   "prefix": null,
+   "effective": "/health/databases"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5537,
+   "method": "GET",
+   "raw": "/api/readyz",
+   "prefix": null,
+   "effective": "/readyz"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5870,
+   "method": "GET",
+   "raw": "/api/linkedin-scraper",
+   "prefix": null,
+   "effective": "/linkedin-scraper"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5896,
+   "method": "POST",
+   "raw": "/api/notify/user-signup",
+   "prefix": null,
+   "effective": "/notify/user-signup"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5907,
+   "method": "GET",
+   "raw": "/api/admin/firebase-service-account",
+   "prefix": null,
+   "effective": "/admin/firebase-service-account"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 5924,
+   "method": "POST",
+   "raw": "/api/admin/firebase-service-account",
+   "prefix": null,
+   "effective": "/admin/firebase-service-account"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6036,
+   "method": "POST",
+   "raw": "/api/auth/custom-password-reset",
+   "prefix": null,
+   "effective": "/auth/custom-password-reset"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6073,
+   "method": "POST",
+   "raw": "/api/auth/send-verification-email",
+   "prefix": null,
+   "effective": "/auth/send-verification-email"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6100,
+   "method": "POST",
+   "raw": "/api/auth/verify-email-token",
+   "prefix": null,
+   "effective": "/auth/verify-email-token"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6132,
+   "method": "POST",
+   "raw": "/api/admin/payments/refund",
+   "prefix": null,
+   "effective": "/admin/payments/refund"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6279,
+   "method": "GET",
+   "raw": "/api/admin/employer-applications",
+   "prefix": null,
+   "effective": "/admin/employer-applications"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6286,
+   "method": "GET",
+   "raw": "/api/admin/companies",
+   "prefix": null,
+   "effective": "/admin/companies"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6300,
+   "method": "GET",
+   "raw": "/api/admin/jobs",
+   "prefix": null,
+   "effective": "/admin/jobs"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6315,
+   "method": "GET",
+   "raw": "/api/admin/reviews",
+   "prefix": null,
+   "effective": "/admin/reviews"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6324,
+   "method": "GET",
+   "raw": "/api/admin/ads",
+   "prefix": null,
+   "effective": "/admin/ads"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6329,
+   "method": "GET",
+   "raw": "/api/admin/payment-orders",
+   "prefix": null,
+   "effective": "/admin/payment-orders"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6419,
+   "method": "GET",
+   "raw": "/api/admin/blog/categories",
+   "prefix": null,
+   "effective": "/admin/blog/categories"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6424,
+   "method": "GET",
+   "raw": "/api/admin/blog/posts",
+   "prefix": null,
+   "effective": "/admin/blog/posts"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6440,
+   "method": "PATCH",
+   "raw": "/api/admin/employer-applications/:uid",
+   "prefix": null,
+   "effective": "/admin/employer-applications/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6486,
+   "method": "POST",
+   "raw": "/api/admin/ads",
+   "prefix": null,
+   "effective": "/admin/ads"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6503,
+   "method": "DELETE",
+   "raw": "/api/admin/ads/:adId",
+   "prefix": null,
+   "effective": "/admin/ads/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6537,
+   "method": "GET",
+   "raw": "/api/public/custom-pages",
+   "prefix": null,
+   "effective": "/public/custom-pages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6537,
+   "method": "GET",
+   "raw": "/api/custom-pages.json",
+   "prefix": null,
+   "effective": "/custom-pages.json"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6595,
+   "method": "GET",
+   "raw": "/api/public/custom-pages/:slug",
+   "prefix": null,
+   "effective": "/public/custom-pages/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6621,
+   "method": "GET",
+   "raw": "/api/admin/pages",
+   "prefix": null,
+   "effective": "/admin/pages"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6630,
+   "method": "PUT",
+   "raw": "/api/admin/pages/:slug",
+   "prefix": null,
+   "effective": "/admin/pages/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6658,
+   "method": "DELETE",
+   "raw": "/api/admin/pages/:slug",
+   "prefix": null,
+   "effective": "/admin/pages/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6674,
+   "method": "POST",
+   "raw": "/api/admin/website-meta",
+   "prefix": null,
+   "effective": "/admin/website-meta"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6748,
+   "method": "GET",
+   "raw": "/api/public/trusted-by",
+   "prefix": null,
+   "effective": "/public/trusted-by"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6748,
+   "method": "GET",
+   "raw": "/api/trusted-by.json",
+   "prefix": null,
+   "effective": "/trusted-by.json"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6763,
+   "method": "GET",
+   "raw": "/api/admin/trusted-by",
+   "prefix": null,
+   "effective": "/admin/trusted-by"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6772,
+   "method": "POST",
+   "raw": "/api/admin/trusted-by",
+   "prefix": null,
+   "effective": "/admin/trusted-by"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6786,
+   "method": "PATCH",
+   "raw": "/api/admin/trusted-by/:logoId",
+   "prefix": null,
+   "effective": "/admin/trusted-by/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6804,
+   "method": "DELETE",
+   "raw": "/api/admin/trusted-by/:logoId",
+   "prefix": null,
+   "effective": "/admin/trusted-by/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6820,
+   "method": "POST",
+   "raw": "/api/admin/reviews",
+   "prefix": null,
+   "effective": "/admin/reviews"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6844,
+   "method": "DELETE",
+   "raw": "/api/admin/reviews/:reviewId",
+   "prefix": null,
+   "effective": "/admin/reviews/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6860,
+   "method": "PATCH",
+   "raw": "/api/admin/companies/:companyId",
+   "prefix": null,
+   "effective": "/admin/companies/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6886,
+   "method": "PATCH",
+   "raw": "/api/admin/jobs/:jobId",
+   "prefix": null,
+   "effective": "/admin/jobs/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6910,
+   "method": "DELETE",
+   "raw": "/api/admin/jobs/:jobId",
+   "prefix": null,
+   "effective": "/admin/jobs/{X}"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 6933,
+   "method": "POST",
+   "raw": "/api/account/export",
+   "prefix": null,
+   "effective": "/account/export"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7038,
+   "method": "POST",
+   "raw": "/api/account/delete",
+   "prefix": null,
+   "effective": "/account/delete"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7066,
+   "method": "POST",
+   "raw": "/api/admin/delete-user",
+   "prefix": null,
+   "effective": "/admin/delete-user"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7066,
+   "method": "POST",
+   "raw": "/api/auth/purge-orphaned-auth",
+   "prefix": null,
+   "effective": "/auth/purge-orphaned-auth"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7157,
+   "method": "POST",
+   "raw": "/api/auth/set-user-password",
+   "prefix": null,
+   "effective": "/auth/set-user-password"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7371,
+   "method": "GET",
+   "raw": "/api/auth/linkedin",
+   "prefix": null,
+   "effective": "/auth/linkedin"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7372,
+   "method": "GET",
+   "raw": "/api/auth/github",
+   "prefix": null,
+   "effective": "/auth/github"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7374,
+   "method": "GET",
+   "raw": "/api/auth/linkedin/callback",
+   "prefix": null,
+   "effective": "/auth/linkedin/callback"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7405,
+   "method": "GET",
+   "raw": "/api/auth/github/callback",
+   "prefix": null,
+   "effective": "/auth/github/callback"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7441,
+   "method": "POST",
+   "raw": "/api/auth/oauth/exchange",
+   "prefix": null,
+   "effective": "/auth/oauth/exchange"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7474,
+   "method": "POST",
+   "raw": "/api/auth/preview-login",
+   "prefix": null,
+   "effective": "/auth/preview-login"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7542,
+   "method": "GET",
+   "raw": "/api/auth/linkedin/test-credentials",
+   "prefix": null,
+   "effective": "/auth/linkedin/test-credentials"
+  },
+  {
+   "parser": "reachability",
+   "receiver": "app",
+   "file": "backend/index.js",
+   "line": 7556,
+   "method": "GET",
+   "raw": "/api/auth/github/test-credentials",
+   "prefix": null,
+   "effective": "/auth/github/test-credentials"
+  }
+ ],
+ "nonApiRouteList": [
+  {
+   "method": "POST",
+   "path": "/v1/chat/completions",
+   "file": "backend/index.js",
+   "line": 2867
+  },
+  {
+   "method": "POST",
+   "path": "/v1/messages",
+   "file": "backend/index.js",
+   "line": 3067
+  },
+  {
+   "method": "POST",
+   "path": "/v1/search",
+   "file": "backend/index.js",
+   "line": 3136
+  },
+  {
+   "method": "GET",
+   "path": "/v1/models",
+   "file": "backend/index.js",
+   "line": 3190
+  },
+  {
+   "method": "GET",
+   "path": "/v1/status",
+   "file": "backend/index.js",
+   "line": 3226
+  },
+  {
+   "method": "GET",
+   "path": "/llms.txt",
+   "file": "backend/index.js",
+   "line": 5063
+  },
+  {
+   "method": "GET",
+   "path": "/llms-full.txt",
+   "file": "backend/index.js",
+   "line": 5064
+  },
+  {
+   "method": "GET",
+   "path": "/sitemap.xml",
+   "file": "backend/index.js",
+   "line": 5070
+  },
+  {
+   "method": "GET",
+   "path": "/healthz",
+   "file": "backend/index.js",
+   "line": 5466
+  },
+  {
+   "method": "GET",
+   "path": "/readyz",
+   "file": "backend/index.js",
+   "line": 5528
+  },
+  {
+   "method": "GET",
+   "path": "/public/custom-pages.json",
+   "file": "backend/index.js",
+   "line": 6537
+  },
+  {
+   "method": "GET",
+   "path": "/custom-pages.json",
+   "file": "backend/index.js",
+   "line": 6537
+  },
+  {
+   "method": "GET",
+   "path": "/public/trusted-by.json",
+   "file": "backend/index.js",
+   "line": 6748
+  },
+  {
+   "method": "GET",
+   "path": "/trusted-by.json",
+   "file": "backend/index.js",
+   "line": 6748
+  }
+ ],
  "total": 393,
  "percentages": {
   "UI-REACHABLE": 39.7,
@@ -65,7 +4126,7 @@
     "frontend/src/lib/account-settings.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
@@ -82,14 +4143,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0004",
@@ -99,14 +4160,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/routes.integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0005",
@@ -386,12 +4447,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0021",
@@ -401,12 +4462,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0022",
@@ -1006,7 +5067,7 @@
     "frontend/src/components/admin/AdminSettingsTab.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/payment-settings-rbac.test.js"
    ],
@@ -1025,7 +5086,7 @@
     "frontend/src/components/admin/AdminSettingsTab.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/payment-settings-rbac.test.js"
    ],
@@ -1286,7 +5347,7 @@
     "frontend/src/components/admin/AdminSettingsTab.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js",
     "backend/test/routes.integration.test.js"
@@ -1306,7 +5367,7 @@
     "frontend/src/components/admin/AdminSettingsTab.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js",
     "backend/test/routes.integration.test.js"
@@ -2100,14 +6161,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/forensic-data-lineage.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0127",
@@ -2117,12 +6178,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 2 file(s); no modern client does"
   },
   {
    "id": "OP-0128",
@@ -2132,12 +6193,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 2 file(s); no modern client does"
   },
   {
    "id": "OP-0129",
@@ -2147,12 +6208,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 2 file(s); no modern client does"
   },
   {
    "id": "OP-0130",
@@ -2162,12 +6223,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0131",
@@ -2177,12 +6238,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 2 file(s); no modern client does"
   },
   {
    "id": "OP-0132",
@@ -2226,7 +6287,7 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js",
     "backend/test/routes.integration.test.js"
@@ -2234,7 +6295,7 @@
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0135",
@@ -2277,7 +6338,7 @@
     "frontend/src/pages/dashboard/overview.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/cover-letters.spec.ts"
    ],
@@ -2296,7 +6357,7 @@
     "frontend/src/lib/cover-letters.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/cover-letters.spec.ts"
    ],
@@ -2315,7 +6376,7 @@
     "frontend/src/lib/cover-letters.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/cover-letters.spec.ts"
    ],
@@ -2334,7 +6395,7 @@
     "frontend/src/lib/cover-letters.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/cover-letters.spec.ts"
    ],
@@ -2625,7 +6686,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -2643,7 +6704,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -2694,7 +6755,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/routes.integration.test.js"
    ],
@@ -2713,7 +6774,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/routes.integration.test.js"
    ],
@@ -2770,7 +6831,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "INDIRECTLY-REACHABLE",
@@ -4120,7 +8181,7 @@
     "frontend/src/pages/dashboard/overview.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/favourites.spec.ts",
     "backend/test/favourites-candidate-api.test.js",
@@ -4142,7 +8203,7 @@
     "frontend/src/pages/dashboard/overview.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/favourites.spec.ts",
     "backend/test/favourites-candidate-api.test.js",
@@ -4164,7 +8225,7 @@
     "frontend/src/pages/dashboard/overview.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/favourites.spec.ts",
     "backend/test/favourites-candidate-api.test.js",
@@ -4183,14 +8244,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/favourites-candidate-api.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0238",
@@ -4377,12 +8438,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "mentioned only as display metadata in modern code; never called"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0249",
@@ -4449,7 +8510,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/arrange-applications.ts",
@@ -4471,7 +8532,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/arrange-applications.ts",
@@ -4493,7 +8554,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/arrange-applications.ts",
@@ -4515,7 +8576,7 @@
     "frontend/src/lib/applications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "backend/test/job-applications-candidate-api.test.js"
@@ -4535,7 +8596,7 @@
     "frontend/src/lib/applications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "backend/test/job-applications-candidate-api.test.js"
@@ -4555,7 +8616,7 @@
     "frontend/src/lib/applications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "backend/test/job-applications-candidate-api.test.js"
@@ -4575,7 +8636,7 @@
     "frontend/src/lib/applications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "backend/test/job-applications-candidate-api.test.js"
@@ -4595,7 +8656,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
@@ -4617,7 +8678,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
@@ -4639,7 +8700,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
@@ -4661,7 +8722,7 @@
     "frontend/src/lib/job-tracker.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/candidate-dashboard.spec.ts",
@@ -4684,7 +8745,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/arrange-applications.ts",
@@ -4706,7 +8767,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/arrange-applications.ts",
@@ -4876,7 +8937,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/messages.spec.ts",
     "backend/test/mariadb-query-budget.test.js"
@@ -4896,7 +8957,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/messages.spec.ts",
     "backend/test/mariadb-query-budget.test.js"
@@ -4916,7 +8977,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4933,7 +8994,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4950,7 +9011,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -4967,7 +9028,7 @@
     "frontend/src/lib/messages.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/messages.spec.ts",
     "backend/test/routes.integration.test.js"
@@ -4987,7 +9048,7 @@
     "frontend/src/lib/notifications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 3,
    "testRefs": [
     "frontend/tests/candidate/arrange-applications.ts",
     "frontend/tests/candidate/notifications.spec.ts"
@@ -5007,7 +9068,7 @@
     "frontend/src/lib/notifications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/notifications.spec.ts"
    ],
@@ -5024,14 +9085,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/forensic-data-lineage.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0282",
@@ -5043,7 +9104,7 @@
     "frontend/src/lib/notifications.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/notifications.spec.ts"
    ],
@@ -5116,12 +9177,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0287",
@@ -5287,14 +9348,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0298",
@@ -5304,14 +9365,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0299",
@@ -5321,12 +9382,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0300",
@@ -5336,12 +9397,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "no call site anywhere outside its defining route file"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0301",
@@ -5871,7 +9932,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 1,
+   "legacyUiRefs": 2,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
@@ -6072,7 +10133,7 @@
     "frontend/src/lib/portfolio.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/portfolio.spec.ts",
     "backend/test/portfolio-routes.test.js"
@@ -6092,7 +10153,7 @@
     "frontend/src/lib/portfolio.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/portfolio.spec.ts",
     "backend/test/master-configuration-control.test.js",
@@ -6113,7 +10174,7 @@
     "frontend/src/lib/portfolio.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/portfolio.spec.ts",
     "backend/test/master-configuration-control.test.js",
@@ -6134,7 +10195,7 @@
     "frontend/src/lib/portfolio.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/portfolio.spec.ts",
     "backend/test/master-configuration-control.test.js",
@@ -6172,7 +10233,7 @@
     "frontend/src/lib/portfolio.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/portfolio.spec.ts",
     "backend/test/portfolio-routes.test.js"
@@ -6269,7 +10330,7 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "EXTERNAL-CALLER",
@@ -6348,7 +10409,7 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "EXTERNAL-CALLER",
@@ -6424,7 +10485,7 @@
     "frontend/src/pages/dashboard/resumes.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/ats-scoring.spec.ts",
     "backend/test/dir008-resume-crud.test.js",
@@ -6449,7 +10510,7 @@
     "frontend/src/pages/export/cv-renderer.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/ats-scoring.spec.ts",
@@ -6475,7 +10536,7 @@
     "frontend/src/pages/export/cv-renderer.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/ats-scoring.spec.ts",
@@ -6501,7 +10562,7 @@
     "frontend/src/pages/export/cv-renderer.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/applied-jobs.spec.ts",
     "frontend/tests/candidate/ats-scoring.spec.ts",
@@ -6523,7 +10584,7 @@
     "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
@@ -6542,7 +10603,7 @@
     "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
@@ -6561,7 +10622,7 @@
     "frontend/src/lib/share-publication.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UI-REACHABLE",
@@ -6576,7 +10637,7 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/adversarial-certification.test.js",
     "backend/test/cross-app-download-share-audit.test.js",
@@ -6647,12 +10708,12 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": true,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "mentioned only as display metadata in modern code; never called"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0375",
@@ -6677,14 +10738,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0377",
@@ -6694,14 +10755,14 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "backend/test/mariadb-only-integration.test.js"
    ],
    "mentionedOnlyInModern": false,
    "reachability": "UNREACHABLE",
    "rule": "R6",
-   "reason": "called only by tests, never by a client"
+   "reason": "legacy UI called it in 1 file(s); no modern client does"
   },
   {
    "id": "OP-0378",
@@ -6745,7 +10806,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "INDIRECTLY-REACHABLE",
@@ -6762,7 +10823,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "INDIRECTLY-REACHABLE",
@@ -6777,7 +10838,7 @@
    "alsoDefinedIn": [],
    "modernUiRefs": [],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "UNVERIFIED",
@@ -6794,7 +10855,7 @@
     "frontend/src/hooks/use-api-hooks.ts"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [],
    "mentionedOnlyInModern": false,
    "reachability": "INDIRECTLY-REACHABLE",
@@ -6826,7 +10887,7 @@
     "frontend/src/pages/dashboard/overview.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/ats-scoring.spec.ts"
    ],
@@ -6850,7 +10911,7 @@
     "frontend/src/pages/dashboard/resume-builder.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 2,
    "testRefs": [
     "frontend/tests/candidate/ats-scoring.spec.ts",
     "frontend/tests/candidate/auth.setup.ts",
@@ -6896,7 +10957,7 @@
     "frontend/src/pages/dashboard/resume-builder.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/ats-scoring.spec.ts",
     "frontend/tests/candidate/auth.setup.ts",
@@ -6923,7 +10984,7 @@
     "frontend/src/pages/dashboard/resume-builder.tsx"
    ],
    "backendRefs": [],
-   "legacyUiRefs": 0,
+   "legacyUiRefs": 1,
    "testRefs": [
     "frontend/tests/candidate/ats-scoring.spec.ts",
     "frontend/tests/candidate/auth.setup.ts",

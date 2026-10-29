@@ -410,3 +410,37 @@ Phase 6 is done when: `client-contract-audit.cjs` reports **0** `successAfter` s
 fixture constant; and every retargeted control has a Playwright spec asserting its failure path (the R-specs
 in `RUNTIME-TEST-HARNESS-M7.md` are the starting point). No application change was made by this audit; the
 phase is a specification for whoever is authorised to edit the product.
+
+---
+
+## Phase 7 — M8 additions (`a2ecb96`): four product repairs and one provenance repair
+
+Added by Mandate 8 after independently re-reading the M7 evidence. Every row below is a **specification**;
+no application file was touched by this audit. Rows are numbered separately from Phase 6 so that the two
+never collide, and each cites the discrepancy it closes.
+
+| # | Priority | Action | Exact site | Closes |
+|---|---|---|---|---|
+| R-A8-01 | **P1** | POST the enquiry to `/api/contact` and render the success card only on `202`; render the server's error text on 4xx/5xx; keep the honeypot field | `frontend/src/pages/cms/index.tsx:234-243` (handler), success card `:288-300`; backend contract `backend/index.js:2360-2387` | DISC-050 |
+| R-A8-02 | **P1** | Point the jobs page at `/api/jobs-data`, **and** add `q` / `location` / `type` predicates in the repository (parameterised) — or delete the controls and say so | `frontend/src/pages/jobs/portal.tsx:61-81`; `backend/routes/jobsData.js:159-172`; `MySQLRepository.js:1153-1176`, `InMemoryRepository.js:402-425` | DISC-051 |
+| R-A8-03 | **P2** | Replace the hand-rolled create-ticket modal with the existing `Dialog` primitive (focus trap, Escape, scroll lock, focus return) or hand-implement all four | `frontend/src/pages/dashboard/support.tsx:353-372`; primitive at `frontend/src/components/ui/dialog.tsx:1-8` | DISC-052 |
+| R-A8-04 | **P3** | Reinstate one shared unread query with a coalesced interval and a backoff ladder that honours `Retry-After`; derive the nav badge from it; never treat a failed poll as "stop polling" | `frontend/src/hooks/use-api-hooks.ts:532-539`; `pages/dashboard/messages.tsx:146`, `components/dashboard/conversation-thread.tsx:54`; legacy design `src/hooks/unreadMessagesPoller.js:1-30` | DISC-053 |
+| R-A8-05 | **P3** (audit-internal, not product) | Restore a real preservation mechanism for the foreign base if one is still wanted — create the ref **and** date it, or delete the claim from the package | `M7-CAPABILITY-CLOSURE.md:7`, `FINAL-AUDIT-HANDOVER.md:152`; measured state in `DISCREPANCY-LOG.md` DISC-049 | DISC-049 |
+| R-A8-06 | **P1** | Implement `updateTeam` / `archiveTeam` / `restoreTeam` on `MySqlTenantRegistry` (tenant-scoped `WHERE`), add `leadPrincipalId` + `status` to `enterprise_teams` in a new forward migration, pass `leadPrincipalId` through `createTeam`, and add one regression test that runs against the MySQL registry (or a shared contract both registries satisfy) so the double can no longer mask the gap | `backend/enterprise/mysqlTenantRegistry.js` (missing three methods, cf. `:1472-1482` createTeam), `backend/enterprise/tenantService.js:890-932`, `backend/routes/enterprise.js:693-718`, `backend/database/migrations/001_baseline.sql:823-831`, test double `backend/test/helpers/inMemoryTenantRegistry.js:580` | DISC-054 |
+
+**Note on R-A8-05:** this is the only row that is *about the audit* rather than the product. It is listed
+because leaving a false provenance claim in a package whose purpose is to be trusted is itself a defect.
+The ref was **not** created by M8: creating it now would misrepresent when it existed.
+
+**Sequencing:** R-A8-01 and R-A8-02 are the two P1s and both are small — one request plus one retarget, and
+one repository predicate set. They belong with Phase 6.1/6.2 rather than after it, because both are
+*false-success* defects of the same class. R-A8-03 reuses a dependency that is already installed
+(`@radix-ui/react-dialog`), so its cost is a rewrite of one component body. R-A8-04 is the only one that
+needs design work: cadence, backoff and badge ownership have to be decided once, centrally.
+
+**Acceptance for Phase 7.** With the backend running: one submitted contact enquiry produces exactly one
+`POST /api/contact` and one stored row, and the success card appears only after the `202`; a jobs filter
+changes the **server** result set (verified in the request log, not visually); the ticket modal closes on
+Escape when idle but not mid-submit, traps Tab, and returns focus to its opener; an unread count arriving
+while the user is on `/dashboard` updates the badge without a navigation, and a simulated `429` with
+`Retry-After: 60` delays the next poll by 60 s instead of stopping it.

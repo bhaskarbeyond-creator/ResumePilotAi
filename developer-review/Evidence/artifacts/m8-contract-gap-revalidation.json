@@ -1,0 +1,406 @@
+{
+ "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+ "generatedAt": "2026-10-29T07:51:33.194Z",
+ "method": "Takes the unresolved client call sites from client-contract-audit.json, normalises each to a METHOD-agnostic shape, and re-resolves it against the 393-operation register by exact shape, sibling shape (same segment count, dynamic segments either side) and prefix relationship. False-success is a property of the call site (failure swallowed AND success shown), not of the route.",
+ "counts": {
+  "clientCallSites": 212,
+  "matched": 190,
+  "contractMismatch": 8,
+  "unresolvedSites": 22,
+  "distinctGapPaths": 15,
+  "gapsWithFalseSuccess": 7,
+  "falseSuccessSites": 12
+ },
+ "classes": {
+  "WRONG_URL": 11,
+  "MISSING_BACKEND": 4
+ },
+ "gaps": [
+  {
+   "path": "/admin/employer-applications/{X}/verify",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/employer-applications/:uid with { status: approved|rejected, expectedStatus, reason }",
+    "evidence": "backend/index.js:6440-6475 (optimistic concurrency 409 ADMIN_TARGET_CHANGED, self-review block, audit action EMPLOYER_APPLICATION_REVIEWED)",
+    "limitation": "client sends POST {decision}; the operation is PATCH with {status}"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:152",
+    "frontend/src/components/admin/AdminModerationTab.tsx:167"
+   ],
+   "siteCount": 2,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/jobs/{X}/moderate",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/jobs/:jobId with exactly one of { status } or { isFeatured }",
+    "evidence": "backend/index.js:6886-6908 (status allow-list active|pending|inactive|archived, resilientMutations.moderateJob, 409 on stale expectedStatus)",
+    "limitation": "one change per request; the client posts a moderation action, not a status patch"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminModerationTab.tsx:184"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/operations/backup",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "evidence": "register has GET /platform/backup-status (read-only, UNREACHABLE); no backup-trigger operation exists",
+    "limitation": "status can be read; the backup cannot be started through the API"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:122"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "MISSING_BACKEND",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/operations/cache-clear",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "evidence": "no operation whose path contains cache or purge-cache exists in the register",
+    "limitation": "no operation exists at any shape or scope"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx:136"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "MISSING_BACKEND",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/queues",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /platform/queues",
+    "evidence": "backend/routes/platform.js:465 GET /queues, mounted under /api/platform; UI-REACHABLE from the admin console",
+    "limitation": "admin console and client disagree on the namespace"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:138"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/queues/dead-letter-queue/purge",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "evidence": "backend/routes/platform.js:543 POST /queues/purge is a RETIRED stub that answers 410 GONE; it looks like an equivalent operation in the register but executes nothing",
+    "limitation": "no purge exists at any shape: the one route that matches the word is deliberately dead"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:204",
+    "frontend/src/components/admin/AdminQueuesTab.tsx:285"
+   ],
+   "siteCount": 2,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "MISSING_BACKEND",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/queues/dead-letter-queue/retry",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /platform/queues/retry { jobId, queue: \"notification\" }",
+    "evidence": "backend/routes/platform.js:504-511",
+    "limitation": "no bulk retry exists"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:186",
+    "frontend/src/components/admin/AdminQueuesTab.tsx:262"
+   ],
+   "siteCount": 2,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/queues/{X}/retry",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /platform/queues/retry { jobId, queue: \"notification\" }",
+    "evidence": "backend/routes/platform.js:504-520 (single notification dead-letter job only)",
+    "limitation": "the client retries a whole queue; the server retries one job and rejects any queue but notification"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx:173"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/admin/users/{X}/status",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "PATCH /admin/users/:uid with { suspended: boolean, expectedSuspended }",
+    "evidence": "backend/routes/adminUsers.js:673-710 (role/suspended/membership branches, permission check for account status)",
+    "limitation": "client posts a status verb; the operation is PATCH with a boolean field and a CAS expectation"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminUsersTab.tsx:206"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/billing/validate-coupon",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "POST /coupons/validate",
+    "evidence": "backend/index.js:4597 (registered GET /coupons/active and POST /coupons/validate; both UNREACHABLE from modern code)",
+    "limitation": "coupon validation is unreachable from any client, so the discount workflow is dead even under the correct URL"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/pages/billing/checkout-modal.tsx:246"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/blog/posts",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /blog-data (public list) / POST /admin/blog/posts (authoring)",
+    "evidence": "backend/routes/blogData.js:35-47 (public list with publishedOnly), mounted /api/blog-data at backend/index.js:517",
+    "limitation": "read and write do not live under one contract; the admin surface uses /admin/blog/posts"
+   },
+   "verbs": [
+    "GET",
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx:97",
+    "frontend/src/pages/blog/editor.tsx:149",
+    "frontend/src/pages/blog/index.tsx:46"
+   ],
+   "siteCount": 3,
+   "parserDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/blog/posts/{X}",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /blog-data/:id (read), PATCH /admin/blog/posts/:id (edit), DELETE /admin/blog/posts/:id (delete)",
+    "evidence": "backend/routes/blogData.js:85-105 (read); backend/index.js:3388 PATCH /api/admin/blog/posts/:postId and :3408 DELETE (edit/delete)",
+    "limitation": "the modern editor calls PUT where the server has PATCH, and no route accepts the editor payload"
+   },
+   "verbs": [
+    "DELETE",
+    "GET",
+    "PUT"
+   ],
+   "sites": [
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx:126",
+    "frontend/src/pages/blog/editor.tsx:91",
+    "frontend/src/pages/blog/editor.tsx:147"
+   ],
+   "siteCount": 3,
+   "parserDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "swallowsFailure": true,
+   "claimsSuccessOnFailure": true,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/jobs",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /jobs-data",
+    "evidence": "backend/routes/jobsData.js:159 (public-only projection) mounted at /api/jobs-data (backend/index.js:515)",
+    "limitation": "even under the right URL the repository honours only publicOnly/status/employerId/limit, so q/location/type are ignored (FP-F07)"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/pages/jobs/portal.tsx:74"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/notify/email",
+   "adjudicated": {
+    "class": "MISSING_BACKEND",
+    "equivalent": null,
+    "evidence": "register has only POST /notify/user-signup; no generic transactional-email operation exists",
+    "limitation": "no operation exists at any shape or scope"
+   },
+   "verbs": [
+    "POST"
+   ],
+   "sites": [
+    "frontend/src/components/employer/CandidateReviewDrawer.tsx:159"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "NO_REGISTERED_OPERATION"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "MISSING_BACKEND",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  },
+  {
+   "path": "/platform/status",
+   "adjudicated": {
+    "class": "WRONG_URL",
+    "equivalent": "GET /admin/platform/status (admin scope, requirePermission system.config.read + recent admin auth) and GET /service-availability (public boolean projection)",
+    "evidence": "backend/routes/adminPlatformOperations.js:533 (mounted at /api/admin, backend/index.js:6927) and backend/index.js:5398 (public availability)",
+    "limitation": "the client asks the public namespace for an admin-only projection"
+   },
+   "verbs": [
+    "GET"
+   ],
+   "sites": [
+    "frontend/src/lib/enterprise-api.ts:528"
+   ],
+   "siteCount": 1,
+   "parserDisposition": [
+    "REGISTERED_WITH_CONTRACT_MISMATCH"
+   ],
+   "swallowsFailure": false,
+   "claimsSuccessOnFailure": false,
+   "disposition": "WRONG_URL",
+   "siblingOperations": [],
+   "prefixOperations": [],
+   "exactOperations": []
+  }
+ ],
+ "note": "MISSING_BACKEND means no operation at any compatible shape. It does not by itself prove the workflow is impossible: the capability may exist under a different contract (see siblingOperations) or the call may be dead code. Each such judgement is carried in the workflow traces of M8-INDEPENDENT-ACCEPTANCE-REPORT.md."
+}

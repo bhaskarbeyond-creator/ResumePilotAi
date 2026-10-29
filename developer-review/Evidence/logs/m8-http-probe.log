@@ -1,0 +1,24 @@
+# M8 HTTP runtime probe — 2026-10-29T07:45:48Z
+# server: backend/index.js, NODE_ENV=development, IN_MEMORY_REPOSITORY=1, PORT=5061 (NOT MariaDB)
+revision: a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9
+
+GET    /healthz                                             200  {"status":"ok","identityProviderConfigured":true,"firebaseAdminConfigured":true,"firestoreDataPlane":"REMOVED"
+GET    /readyz                                              503  {"status":"not_ready","authoritativeDatabase":"MARIADB","checks":{"mysql":{"status":"UNAVAILABLE","error":"con
+GET    /api/service-availability                            200  {"success":true,"checkedAt":"2026-10-29T07:45:48.709Z","auth":{"github":false,"linkedin":false},"payments":{"s
+GET    /api/jobs                                            401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"67f05a17-f311-4bfa-8170-ab36
+GET    /api/jobs-data                                       200  {"success":true,"jobs":[]}
+GET    /api/blog/posts                                      401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"626dedf6-75d2-4609-aa6b-a22c
+GET    /api/blog-data                                       200  {"success":true,"posts":[]}
+GET    /api/platform/status                                 401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"4ea4f6b0-3753-4c6f-9768-df11
+GET    /api/admin/platform/status                           401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"684fed20-6662-4773-956d-9e7f
+GET    /api/admin/queues                                    401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"7a7c47a6-6d0d-4ec5-b4ae-8c23
+GET    /api/platform/queues                                 401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"c8e2be24-3d7a-4ec4-ab8a-59fe
+POST   /api/admin/operations/backup                         401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"7727a23e-56be-46bb-851a-6ca7
+POST   /api/admin/operations/cache-clear                    401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"d539c0d6-3535-4e8e-97d6-2aa6
+POST   /api/billing/validate-coupon                         401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"5f0242a7-7ca2-4cc7-ab9b-b6da
+POST   /api/coupons/validate                                400  {"success":false,"valid":false,"error":"Invalid coupon code format. Must be 3-32 characters."}
+POST   /api/contact                                         503  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+POST   /api/notify/email                                    401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"ab215989-b4cb-4335-8345-64eb
+POST   /api/live-interview/sessions                         401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"1138a52c-8ee5-4355-be31-91f1
+GET    /api/notifications-data                              401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"ccd40995-3eef-423f-9e88-6b30
+GET    /api/enterprise/platform/tenants                     401  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"f45dd0ac-843c-47cd-a5ba-160a

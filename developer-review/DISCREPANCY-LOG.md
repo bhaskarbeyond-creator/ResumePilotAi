@@ -13,6 +13,15 @@ Candidates that remain **plausible but unproven** live in
 > DISC-026 records admin controls that report success after swallowing a failed write. No V4 entry was
 > deleted; DISC-016 keeps its published numbers and is now annotated as superseded by DISC-024.
 
+> **Update 2026-10-29 (Mandate 8 — independent audit validation, revision `a2ecb96`).** Five entries added
+> (DISC-049 … DISC-054). DISC-049 corrects the M7 provenance claim: `a7d08a2` is **not** byte-identical to
+> `8a6e03bb` (264 files differ, all under `developer-review/`; 0 outside) and the ref the package says
+> preserves it does not exist. DISC-050 … DISC-053 are product findings that M7's row-level work surfaced
+> only in part: the contact form reports success without a request, the public jobs page requests an
+> operation that does not exist, the create-ticket modal lost its keyboard contract, and the shared unread
+> poller/badge are gone. No earlier entry was deleted or renumbered; the three rows whose *classification*
+> changed (FP-D07, FP-A12, FP-C06) are documented in `M8-PARITY-REVALIDATION.md` with their prior verdicts.
+
 > **Update 2026-10-29 (Mandate 6 — V6 feature-depth forensic re-audit, revision `a5835ff6`).** Fourteen entries
 > added (DISC-027 … DISC-040) and five existing rows were **reclassified on new evidence**, never deleted:
 > `FP-B05`, `FP-B08`, `FP-E02`, `FP-F02`, `FP-F06` and `FP-G01` moved `FULL PARITY` → `PARTIAL PARITY`, and
@@ -21,8 +30,9 @@ Candidates that remain **plausible but unproven** live in
 > workflows cannot succeed — while showing success messages (DISC-027). The V6 subfeature evidence, the 10-check
 > detector output and its adjudicated false positives are in `FEATURE-DEPTH-EVIDENCE-REGISTER.md`.
 
-Total confirmed findings in this log: **46** (48 IDs: DISC-001 … DISC-048, of which DISC-042 and DISC-046
-are merged into DISC-030 and labelled as stubs). DISC-027 … DISC-040 were raised by V6 at revision
+Total confirmed findings in this log: **52** (54 IDs: DISC-001 … DISC-054, of which DISC-042 and DISC-046
+are merged into DISC-030 and labelled as stubs). DISC-049 … DISC-054 were raised by Mandate 8 at
+`a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`. DISC-027 … DISC-040 were raised by V6 at revision
 `a5835ff6`; DISC-041 and DISC-043 … DISC-048 by V7 at `8a6e03bb`; earlier entries keep their published
 numbers and reasoning, with V7 revisions appended in place (DISC-025, DISC-026, DISC-029). DISC-019 … DISC-022 were
 raised by the V4 coverage-reconciliation mandate at revision `0adad00`; DISC-001 … DISC-018 are
@@ -2088,3 +2098,117 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **Closure** | Not met; runtime confirmation outstanding |
 | **Confidence** | Medium-High — the two limits and the code path are read directly; the exact failure status is inferred, not observed |
 | **First raised** | Mandate 7, revision `8a6e03bb` |
+
+## [DISC-049] M7's provenance claim is false in two ways, and the ref it says preserves the foreign commit does not exist
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-049` |
+| **Feature** | Audit package provenance (no application behaviour affected) |
+| **Severity** | P3 — Medium. Nothing is lost; a published provenance claim is wrong, and a promised preservation mechanism is absent |
+| **Raised by** | Mandate 8 §2 at revision `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` |
+| **Published claim** | `M7-CAPABILITY-CLOSURE.md:7` and `FINAL-AUDIT-HANDOVER.md:152`: the foreign commit `a7d08a2` "was proven byte-identical to `8a6e03bb` for all 3,806 tracked files and was preserved at `refs/audit-preserved/base-a7d08a2`" |
+| **Measurement 1 — identity** | `git diff a7d08a2 8a6e03bb` → **264 files changed, 103,955 insertions(+), 22 deletions(-)**. The claim of byte-identity is false. What *is* true, and is the substantively important half: **0 files differ outside `developer-review/`**, so the application tree is identical and every metric measured on the app is unaffected |
+| **Measurement 2 — file count** | `git ls-tree -r --name-only a7d08a2 \| wc -l` → **3,553**, not 3,806 (3,806 is the count at `8a6e03bb`; 3,816 at `a2ecb96`) |
+| **Measurement 3 — preservation ref** | `git show-ref \| grep -i audit` → **no output**. `refs/audit-preserved/base-a7d08a2` does not exist in this repository. `git rev-parse a7d08a2` still resolves the commit object, so no evidence was destroyed, but the mechanism the package promises is not in place |
+| **Measurement 4 — topology** | `git merge-base --is-ancestor a7d08a2 HEAD` → false; `git rev-list --count HEAD..a7d08a2` = 1, `a7d08a2..HEAD` = 12. `a7d08a2` is a divergent commit, not an ancestor |
+| **Consequence in the artefacts** | `Evidence/artifacts/feature-parity.json` carried `revision: "a7d08a2fa67b"` — the generator stamped `HEAD` while the checkout was the foreign commit, although the package says M7 audited `8a6e03bb`. The application tree being identical is why no metric moved; the stamp was still wrong. Regenerated in M8 at `a2ecb96` |
+| **Why it matters** | A reader is told (a) two different trees are identical when 264 of their files differ, and (b) a preservation guarantee that is not implemented. Both are exactly the class of claim an audit exists to prevent |
+| **Correction applied** | M7's sentences are **left in place as published** and the correction is appended as a dated M8 amendment in `FINAL-AUDIT-HANDOVER.md` and this entry. No published number was rewritten; every M8 artefact carries `a2ecb96` |
+| **Closure** | Documentation corrected; the missing ref is recorded rather than fabricated. Not "fixed" by creating the ref retroactively — that would misrepresent when it existed |
+
+## [DISC-050] The public contact form reports success without sending a request
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-050` |
+| **Feature** | FP-G11 marketing site — contact form |
+| **Severity** | P1 — Critical. A visitor's enquiry is discarded while the UI states it was received; the business consequence is a lost lead and a false statement to the customer |
+| **Legacy path:line** | `src/components/Contact/Contact.jsx:165-175` awaited `addContactMessage(...)`, threw when `result.success === false`, and only then set `isSuccessShowed`; the request is `src/services/api/platform.js:308-315` → `POST /api/contact` |
+| **Modern path:line** | `frontend/src/pages/cms/index.tsx:234-243` (`handleSubmit` validates two fields and calls `setSubmitted(true)`; no request), success card at `:288-300` ("We have logged your request and our support desk will contact you at …"); route `/contact` at `frontend/src/app/router.tsx:74` |
+| **Backend dependency** | `POST /api/contact` (`backend/index.js:2360-2387`): validates bounds, persists through `repo.saveContactMessage` with ip/userAgent, returns 202, honeypot short-circuit, rate limiter mounted at `:577`. Registered and reachable from no modern client |
+| **Persistence / authorization** | public, rate-limited; persistence exists and is unreached |
+| **Reproduction** | static: grep for any `post(`/`fetch(` in `frontend/src/pages/cms/index.tsx` → 0. Runtime (M8, in-memory repository): `POST /api/contact` → `503 RATE_LIMIT_UNAVAILABLE` in a DB-less environment, so the endpoint exists; the form still never calls it |
+| **Evidence levels** | L1 (static) + L2 (HTTP execution of the endpoint, not of the form) |
+| **Affected workflow** | Public contact / lead capture |
+| **Impact** | Unlike every other false-success site in this log, there is not even a failed request to swallow: the handler is `setSubmitted(true)`. The user cannot distinguish success from silence, and the backend that would have stored the message is never contacted |
+| **Remediation spec** | POST `{name,email,message}` to `/api/contact`; render the success card only on `202`; render the server's error text on 4xx/5xx; keep the honeypot field |
+| **Regression acceptance** | With the backend running, a submitted enquiry produces exactly one `POST /api/contact` and one stored row, and the success card appears only after the 202; with the backend unreachable the card does not appear and an error is shown |
+| **Closure** | Not met |
+
+## [DISC-051] The public jobs page requests an operation that does not exist, and its filters are ignored even on the operation that does
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-051` |
+| **Feature** | FP-F07 / FP-F10 job discovery |
+| **Severity** | P1 — Critical. The public job board cannot list or filter jobs |
+| **Modern path:line** | `frontend/src/pages/jobs/portal.tsx:61-81` builds `q`, `location`, `type` and calls `get(\`/jobs?…\`)`; `api-client.ts` baseURL is `/api`, so the request is `GET /api/jobs` |
+| **Backend dependencies** | No `GET /api/jobs` exists (393-operation register; 0 matches). The listing lives at `GET /api/jobs-data` (`backend/routes/jobsData.js:159`, mounted at `backend/index.js:515`) |
+| **Second defect — filters** | `routes/jobsData.js:161-172` forwards `req.query` to `repository.getJobs`, and both implementations read only `publicOnly`, `status`, `employerId`, `limit` (`MySQLRepository.js:1153-1176`; `InMemoryRepository.js:402-425`). `q`, `location` and `type` are silently dropped, so even after fixing the URL the page would list unfiltered results while the UI shows an active filter |
+| **Reproduction** | Runtime at `a2ecb96` (`Evidence/logs/m8-http-probe-authenticated.log`): `GET /api/jobs` → `404 {"code":"NOT_FOUND","message":"API route not found"}`; `GET /api/jobs-data` → `200 {"jobs":[]}`. Static: `grep -n "location\\|type" backend/repositories/MySQLRepository.js` in `getJobs` → no predicate |
+| **Evidence levels** | L1 (static) + L3 (HTTP runtime, in-memory repository) |
+| **Affected workflow** | Public job discovery, employer job visibility |
+| **Impact** | The page an unauthenticated visitor lands on cannot produce data. The error path renders an error state, so this is a broken page rather than a fabricated one — but the "All jobs / location / type" controls promise filtering that no layer implements |
+| **Remediation spec** | Point the page at `/jobs-data`; add `q`/`location`/`type` predicates in the repository (parameterised), or remove the controls and say so |
+| **Regression acceptance** | With three active and one draft job seeded, `/jobs` shows exactly three; applying a location filter changes the result set server-side; the request in the network log is `/api/jobs-data` |
+| **Closure** | Not met |
+
+## [DISC-052] The create-ticket modal has no focus trap, no Escape handling, no scroll lock and no focus return
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-052` |
+| **Feature** | FP-G24 candidate support surface |
+| **Severity** | P2 — High. Keyboard and screen-reader users cannot dismiss the dialog with Escape and lose their place when it closes |
+| **Legacy path:line** | `src/components/Dashboard/DashboardSupport/DashboardSupport.jsx:127-133` (opener/dialog/subject refs), `:191-202` (scroll lock, initial focus on the subject field, Escape with an in-flight guard), `:831-834` (subject ref bound), teardown returns focus to the opener |
+| **Modern path:line** | `frontend/src/pages/dashboard/support.tsx:353-372` — `<div role="dialog" aria-modal="true" aria-labelledby="create-ticket-title">` with an overlay click-to-close and a close button. `grep -c "Escape\\|keydown\\|autoFocus"` in that file → **0** each |
+| **Available primitive, unused** | `frontend/src/components/ui/dialog.tsx:1-8` wraps `@radix-ui/react-dialog` (declared in `frontend/package.json`) with focus lock and Escape handling |
+| **Reproduction** | static: open the file at `:353-372`; there is no key handler, no `document.body.style.overflow` write, no `ref`, no focus restore path |
+| **Evidence levels** | L1 (static). Not exercised with a keyboard: no browser in the audit environment |
+| **Affected workflow** | Creating a support ticket with a keyboard |
+| **Impact** | Tab focus can leave the dialog and reach the page behind it; Escape does nothing; the page behind scrolls under the modal; closing drops focus to the document start. Two of these are WCAG 2.1 AA failures (2.1.2 No Keyboard Trap is not violated — rather 2.4.3 Focus Order and 2.1.1 Keyboard are) |
+| **Remediation spec** | Render this modal with the existing `Dialog` primitive; if it must stay hand-rolled, add initial focus, a `keydown` Escape handler with an in-flight guard, `overflow:hidden` on open, and focus restore on close |
+| **Regression acceptance** | Keyboard-only: open, Escape closes when not submitting and does not close mid-submit; Tab cycles inside; focus returns to the opener; the page behind does not scroll |
+| **Closure** | Not met |
+
+## [DISC-053] The shared unread-message poller and the global unread badge are gone; what replaced them stops polling on error
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-053` |
+| **Feature** | FP-D07 notification centre / FP-G23 cross-cutting hooks |
+| **Severity** | P3 — Medium. No data is wrong, but message arrival is no longer signalled app-wide, and error handling regressed from a backoff ladder to stopping |
+| **Legacy path:line** | `src/hooks/unreadMessagesPoller.js:1-30` — singleton coalescing four subscribers onto one request per tick, 15 s → 30 s → 60 s → 120 s → 240 s → 300 s ladder, genuine `Retry-After` honouring, reset to 15 s on success; consumers `CubaCandidateShell.jsx:170`, `MessagesNavBadge.jsx:74`, `ProfileDisplay.jsx:34`, `EmployerSidebar.jsx:194` |
+| **Modern path:line** | `frontend/src/hooks/` contains only `use-api-hooks.ts` and `use-restore-focus-when-idle.ts`. Notifications use `useNotifications()` with `staleTime: 30_000` and **no interval** (`use-api-hooks.ts:532-539`); the only periodic polling is per page: `messages.tsx:146` and `conversation-thread.tsx:54`, both `refetchInterval: (query) => (query.state.status === 'error' ? false : …)` |
+| **Behavioural delta** | (a) no global unread-message badge: the only `totalUnread` consumer is the messages page itself (`messages.tsx:153,294`); (b) the bell count does not refresh on its own; (c) after one failed poll a page stops polling entirely instead of backing off and retrying |
+| **Reproduction** | static: `ls frontend/src/hooks/`; `grep -rn "totalUnread" frontend/src --include=*.tsx` → messages page only; read the two `refetchInterval` closures |
+| **Evidence levels** | L1 (static). Request cadence was not observed: no browser |
+| **Affected workflow** | Message awareness from any page other than `/dashboard/messages` |
+| **Impact** | A candidate sitting on the dashboard never learns a message arrived; a transient network error silences polling until a manual refetch, which is the opposite of the legacy design that existed specifically to fix a quota storm (DIR-054) |
+| **Remediation spec** | One shared query with a coalesced interval and a backoff ladder that honours `Retry-After`; derive a nav badge from it; never conflate "error" with "stop polling" |
+| **Regression acceptance** | Two components on one page produce one request per tick; a 429 with `Retry-After: 60` delays the next attempt by 60 s; the badge updates without visiting the messages page |
+| **Closure** | Not met |
+
+## [DISC-054] Three team-management operations have no production implementation, and team leads have nowhere to be stored
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-054` |
+| **Feature** | FP-B05 enterprise workspaces & squads |
+| **Severity** | P1 — Critical for enterprise administrators. Editing a team, archiving it or restoring it cannot succeed against the production registry, and a designated team lead is silently discarded on create |
+| **Raised by** | Mandate 8 §4 at revision `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` (opened as a "lead" being closed, and refuted by tracing past the route) |
+| **Surface** | `frontend/src/components/enterprise/EnterpriseTeamsTab.tsx:80-114` (`handleSubmit`), `:235` (edit form loads `t.leadPrincipalId`), `:302` (lead input); `frontend/src/lib/enterprise-api.ts:448-459` (create/update calls) |
+| **Routes** | `backend/routes/enterprise.js:684` `POST /api/enterprise/teams`; `:693` `PATCH /api/enterprise/teams/:teamId`; `:702` `POST …/:teamId/archive`; `:711` `POST …/:teamId/restore` — all registered and permission-guarded (`workspace.manage`), all reachable, none retired |
+| **The break** | `backend/enterprise/tenantService.js:890-932` forwards to `this.registry.updateTeam`, `this.registry.archiveTeam`, `this.registry.restoreTeam`. The production registry is `MySqlTenantRegistry` (`tenantService.js:7` imports it; `:1343` constructs it as the default; `index.js` wires no other), and it implements **none of the three methods**. Only `backend/test/helpers/inMemoryTenantRegistry.js:580` does |
+| **Consequence at runtime** | `TypeError: this.registry.updateTeam is not a function` → caught by each route → `503` with `TENANT_TEAM_UPDATE_FAILED` / `TENANT_TEAM_ARCHIVE_FAILED` / `TENANT_TEAM_RESTORE_FAILED`. The UI surfaces the error honestly (`EnterpriseTeamsTab.tsx:109-111`), so this is a broken capability, not a fabricated success |
+| **Second defect — schema** | `enterprise_teams` (`backend/database/migrations/001_baseline.sql:823-831`) has columns `id, tenantId, workspaceId, name, description` — **no lead column and no status column**. `MySqlTenantRegistry.createTeam` (`:1472-1482`) inserts exactly those five. So `leadPrincipalId` sent on create is dropped without error, and `t.leadPrincipalId` is always `undefined`, which is why the tab renders `Lead: Unassigned` next to every team |
+| **Why the test suite is green** | `backend/enterprise-test/enterprise-completeness.test.js:116-139` asserts that a lead can be set, is rejected for an outsider and can be cleared — but `:40` constructs `InMemoryTenantRegistry`, which implements `updateTeam` and stores the field. A passing test against a double is evidence about the double |
+| **Reproduction (static)** | (1) `grep -n "async updateTeam\|async archiveTeam\|async restoreTeam" backend/enterprise/mysqlTenantRegistry.js` → no output; same grep on `backend/test/helpers/inMemoryTenantRegistry.js` → three hits. (2) `grep -rn "lead_principal_id\|leadPrincipalId" backend --include=*.sql` → no output. (3) `grep -n "leadPrincipalId" backend/test/helpers/inMemoryTenantRegistry.js` → present |
+| **Evidence levels** | L1 (static). Not executed: requires the MariaDB-backed registry path, which is blocked in this environment (§5, `M8-RUNTIME-VERIFICATION.md`). The predicted `503` is therefore stated as predicted, not observed |
+| **Affected workflow** | Enterprise team administration: rename/lead-assign, archive, restore |
+| **Impact** | An enterprise administrator can create a squad but never rename it, never change its lead, never archive it and never restore it. Because create also drops the lead, the lead field is effectively write-only decoration. No data is corrupted — the operations fail closed |
+| **Remediation spec** | Implement `updateTeam` / `archiveTeam` / `restoreTeam` on `MySqlTenantRegistry` with tenant-scoped `WHERE` clauses; add `leadPrincipalId` and a `status` (or `archivedAt`) column to `enterprise_teams` in a new forward migration; pass `leadPrincipalId` through `createTeam`; add one regression test that runs against the MySQL registry (or against a shared behavioural contract both registries must satisfy) so the double can no longer mask the gap |
+| **Regression acceptance** | With MariaDB: create a team with a lead → `GET /teams` returns that lead; `PATCH` renames and re-leads it; `archive` then `restore` round-trips the status; the completeness suite passes when pointed at the MySQL registry, and fails if `updateTeam` is removed |
+| **Closure** | Not met |
+

@@ -350,3 +350,49 @@ earlier "routes present" result as feature-completeness.**
 `LEGACY-MODERN-FEATURE-INVENTORY.md` (domains + allegations) → `FEATURE-PARITY-MATRIX.md`
 (109 verdicts + backend trace) → `DISCREPANCY-LOG.md` DISC-013…DISC-018 → `REPAIR-ACTION-PLAN.md`
 Phase 5 (remediation order).
+
+---
+
+## 13. M8 amendment — independent validation of this package (2026-10-29, `a2ecb96`)
+
+This section is written for the reader who has just been handed the package. It does not replace §1–§12;
+it tells you which of their numbers survived an independent check and which did not.
+
+**Audited revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`. **Branch:** `arena/393531fe-resumepilotai`.
+**Verdict:** **`PARTIAL — BLOCKED`** (supersedes the `PARTIAL — INCOMPLETE` label used in §13 and §12.4 —
+same blockers, sharper classification: the audit work is complete, the *runtime* is what is blocked, and one
+gate fails on the product).
+
+### 13.1 Three published claims that did not survive
+
+| Claim, and where it was published | What M8 measured | What the package says now |
+|---|---|---|
+| "`a7d08a2` was proven byte-identical to `8a6e03bb` for all 3,806 tracked files and preserved at `refs/audit-preserved/base-a7d08a2`" — `M7-CAPABILITY-CLOSURE.md:7`, `FINAL-AUDIT-HANDOVER.md` §13 | **264 files differ** (0 outside `developer-review/`); `a7d08a2` tracks **3,553** files; the ref **does not exist** | the sentences are kept as published and **corrected in a dated amendment**; raised as **DISC-049**. The app tree really is identical, so no metric moved |
+| "397 registrations, 4 duplicates" vs "413 backend registrations" — `BACKEND-OPERATION-REACHABILITY.md`, `README.md` §3.1 | two different counting units in one number; the 16 are **2 false positives + 6 duplicate alias instances + 8 standalone non-`/api` endpoints**; **413 = 405 + 6 + 2**; **0** in-scope disagreements | both figures retained, units defined, instruments repaired, **expected values untouched** (`M8-REGISTRATION-COUNT-RECONCILIATION.md`) |
+| "Runtime remains blocked: nothing was executed" — §3.1 of `README.md`, `M7-CAPABILITY-CLOSURE.md` | the backend **does** start with `IN_MEMORY_REPOSITORY=1`; **43 HTTP probes** and the full backend suite executed; **4 scenarios PASS**, 4 PARTIAL, 2 still BLOCKED | now split into *executed* and *blocked* with per-scenario evidence (`M8-RUNTIME-VERIFICATION.md`). In-memory runs are **not** offered as MariaDB proof |
+
+### 13.2 What a new reader should trust, in order
+
+1. `M8-INDEPENDENT-ACCEPTANCE-REPORT.md` — gates A–K, verdict, blockers. If you read one file, read this.
+2. `DISCREPANCY-LOG.md` — **52 distinct findings / 54 IDs**; DISC-050, DISC-051 and DISC-054 are the three P1s a
+   product owner must see (contact enquiries silently discarded; the public jobs page requests a route that
+   does not exist and its filters are ignored even where it does).
+3. `REPAIR-ACTION-PLAN.md` — Phase 7 (R-A8-01 … R-A8-05) sits alongside Phase 6; the first two rows are
+   small and both are false-success defects.
+4. `M8-VERIFIER-QUALITY-REVIEW.md` — read this **before** quoting any verifier result as assurance. The
+   suites pass (`61/61`, `20/20`), but they prove presence and arithmetic, not product truth.
+
+### 13.3 What is still open, stated without hedging
+
+- **Runtime**: no browser binary, no MariaDB, no provider credentials, no reachable package CDN. Six of the
+  ten R-scenarios still cannot be completed. Production readiness remains **NOT ESTABLISHED**.
+- **Product**: 12 false-success sites across 7 paths, 4 of them with no backend capability at all. M8 was
+  an audit mandate; **it made no application change**, and repairs remain authorised work for someone else.
+- **Audit**: the missing preservation ref (DISC-049) is recorded, not fabricated. If the base commit matters
+  to you, create the ref deliberately and date it.
+
+### 13.4 Reproof
+
+`developer-review/Evidence/logs/m8-toolchain.log` records every command, its raw exit code, the tool
+versions and the reconciliation result for this amendment. The verification suites are re-runnable as-is;
+`git diff --name-only a2ecb96 -- . ':(exclude)developer-review'` is empty.

@@ -1,8 +1,8 @@
 op_id	method	path	reachability	rule	reason	modern_refs	legacy_refs	test_refs	defined_in
 OP-0001	POST	/account/delete	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
-OP-0002	POST	/account/export	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
-OP-0003	GET	/admin/ads	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
-OP-0004	POST	/admin/ads	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
+OP-0002	POST	/account/export	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/index.js
+OP-0003	GET	/admin/ads	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/index.js
+OP-0004	POST	/admin/ads	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/index.js
 OP-0005	DELETE	/admin/ads/{X}	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0006	GET	/admin/ai-fleet-health	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0007	GET	/admin/ai-settings	UI-REACHABLE	R1	called from 1 modern source file(s)	2	1	4	backend/index.js
@@ -18,8 +18,8 @@ OP-0016	POST	/admin/ai/test-provider	UI-REACHABLE	R1	called from 1 modern source
 OP-0017	GET	/admin/audit-logs	UNREACHABLE	R2	only dead hook(s) useAdminAuditLogs call it — 0 consumers	1	0	1	backend/routes/adminAudit.js
 OP-0018	GET	/admin/audit-logs/{X}	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/adminAudit.js
 OP-0019	GET	/admin/audit-logs/stats	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/adminAudit.js
-OP-0020	GET	/admin/blog/categories	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
-OP-0021	POST	/admin/blog/categories	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
+OP-0020	GET	/admin/blog/categories	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
+OP-0021	POST	/admin/blog/categories	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0022	DELETE	/admin/blog/categories/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0023	PATCH	/admin/blog/categories/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0024	GET	/admin/blog/posts	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
@@ -58,8 +58,8 @@ OP-0056	GET	/admin/pages	UNREACHABLE	R6	no call site anywhere outside its defini
 OP-0057	DELETE	/admin/pages/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0058	PUT	/admin/pages/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0059	GET	/admin/payment-orders	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
-OP-0060	GET	/admin/payment-settings	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
-OP-0061	POST	/admin/payment-settings	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
+OP-0060	GET	/admin/payment-settings	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/index.js
+OP-0061	POST	/admin/payment-settings	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/index.js
 OP-0062	POST	/admin/payment/test-provider	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
 OP-0063	POST	/admin/payments/refund	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0064	GET	/admin/platform/currency	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/adminPlatformOperations.js
@@ -75,8 +75,8 @@ OP-0073	GET	/admin/reviews	UNREACHABLE	R6	called only by tests, never by a clien
 OP-0074	POST	/admin/reviews	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0075	DELETE	/admin/reviews/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0076	GET	/admin/settings	UNVERIFIED	R7	no direct call site, but a child path (/admin/settings/modules) is called from modern code; parent reachability not determinable statically	0	0	4	backend/index.js
-OP-0077	GET	/admin/settings/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
-OP-0078	POST	/admin/settings/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
+OP-0077	GET	/admin/settings/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/index.js
+OP-0078	POST	/admin/settings/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/index.js
 OP-0079	GET	/admin/subscriptions	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/adminPlatformOperations.js
 OP-0080	POST	/admin/subscriptions/{X}/reconcile	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/adminPlatformOperations.js
 OP-0081	GET	/admin/support/tickets	UI-REACHABLE	R1	called from 1 modern source file(s)	2	0	1	backend/routes/support.js
@@ -124,21 +124,21 @@ OP-0122	POST	/auth/purge-orphaned-auth	UNREACHABLE	R6	no call site anywhere outs
 OP-0123	POST	/auth/send-verification-email	UNREACHABLE	R6	legacy UI called it in 3 file(s); no modern client does	0	3	1	backend/index.js
 OP-0124	POST	/auth/set-user-password	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0125	POST	/auth/verify-email-token	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
-OP-0126	GET	/blog-data	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/blogData.js
-OP-0127	DELETE	/blog-data/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/blogData.js
-OP-0128	GET	/blog-data/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/blogData.js
-OP-0129	POST	/blog-data/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/blogData.js
-OP-0130	GET	/blog-data/categories	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/blogData.js
-OP-0131	GET	/blog-data/slug/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/blogData.js
+OP-0126	GET	/blog-data	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/blogData.js
+OP-0127	DELETE	/blog-data/{X}	UNREACHABLE	R6	legacy UI called it in 2 file(s); no modern client does	0	2	0	backend/routes/blogData.js
+OP-0128	GET	/blog-data/{X}	UNREACHABLE	R6	legacy UI called it in 2 file(s); no modern client does	0	2	0	backend/routes/blogData.js
+OP-0129	POST	/blog-data/{X}	UNREACHABLE	R6	legacy UI called it in 2 file(s); no modern client does	0	2	0	backend/routes/blogData.js
+OP-0130	GET	/blog-data/categories	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/blogData.js
+OP-0131	GET	/blog-data/slug/{X}	UNREACHABLE	R6	legacy UI called it in 2 file(s); no modern client does	0	2	0	backend/routes/blogData.js
 OP-0132	POST	/check	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0133	POST	/check-grammar	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/routes/ai.js
-OP-0134	POST	/contact	UNREACHABLE	R6	called only by tests, never by a client	0	0	2	backend/index.js
+OP-0134	POST	/contact	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	2	backend/index.js
 OP-0135	GET	/coupons/active	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0136	POST	/coupons/validate	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
-OP-0137	GET	/covers	UI-REACHABLE	R1	called from 2 modern source file(s)	2	0	1	backend/routes/covers.js
-OP-0138	DELETE	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/covers.js
-OP-0139	GET	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/covers.js
-OP-0140	POST	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/covers.js
+OP-0137	GET	/covers	UI-REACHABLE	R1	called from 2 modern source file(s)	2	1	1	backend/routes/covers.js
+OP-0138	DELETE	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	1	backend/routes/covers.js
+OP-0139	GET	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	1	backend/routes/covers.js
+OP-0140	POST	/covers/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	1	backend/routes/covers.js
 OP-0141	GET	/custom-pages.json	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
 OP-0142	GET	/email/admin/circuit-breaker-status	SERVER-ONLY	R4	router module reused in-process by backend/services/emailNotifier.js	0	0	0	backend/routes/email.js
 OP-0143	GET	/email/admin/custom-templates	SERVER-ONLY	R4	router module reused in-process by backend/services/emailNotifier.js	0	0	0	backend/routes/email.js
@@ -156,15 +156,15 @@ OP-0154	POST	/email/send-invoice-email	SERVER-ONLY	R4	router module reused in-pr
 OP-0155	GET	/email/templates	SERVER-ONLY	R4	router module reused in-process by backend/services/emailNotifier.js	0	0	0	backend/routes/email.js
 OP-0156	POST	/email/templates	SERVER-ONLY	R4	router module reused in-process by backend/services/emailNotifier.js	0	0	0	backend/routes/email.js
 OP-0157	POST	/employer-applications	UNREACHABLE	R6	mentioned only as display metadata in modern code; never called	0	0	0	backend/index.js
-OP-0158	GET	/employer/companies	UI-REACHABLE	R1	called from 1 modern source file(s)	2	0	0	backend/index.js
-OP-0159	POST	/employer/companies	UI-REACHABLE	R1	called from 1 modern source file(s)	2	0	0	backend/index.js
+OP-0158	GET	/employer/companies	UI-REACHABLE	R1	called from 1 modern source file(s)	2	1	0	backend/index.js
+OP-0159	POST	/employer/companies	UI-REACHABLE	R1	called from 1 modern source file(s)	2	1	0	backend/index.js
 OP-0160	DELETE	/employer/companies/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
 OP-0161	PATCH	/employer/companies/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
-OP-0162	GET	/employer/jobs	INDIRECTLY-REACHABLE	R2	reached through hook(s) useJobs, useCreateJob with consumer(s)	1	0	1	backend/index.js
-OP-0163	POST	/employer/jobs	INDIRECTLY-REACHABLE	R2	reached through hook(s) useJobs, useCreateJob with consumer(s)	1	0	1	backend/index.js
+OP-0162	GET	/employer/jobs	INDIRECTLY-REACHABLE	R2	reached through hook(s) useJobs, useCreateJob with consumer(s)	1	1	1	backend/index.js
+OP-0163	POST	/employer/jobs	INDIRECTLY-REACHABLE	R2	reached through hook(s) useJobs, useCreateJob with consumer(s)	1	1	1	backend/index.js
 OP-0164	DELETE	/employer/jobs/{X}	INDIRECTLY-REACHABLE	R2	reached through hook(s) useUpdateJob with consumer(s)	1	0	1	backend/index.js
 OP-0165	PATCH	/employer/jobs/{X}	INDIRECTLY-REACHABLE	R2	reached through hook(s) useUpdateJob with consumer(s)	1	0	1	backend/index.js
-OP-0166	GET	/employer/jobs/{X}/applications/{X}/resume	INDIRECTLY-REACHABLE	R2	reached through hook(s) useApplicationResume with consumer(s)	1	0	0	backend/index.js
+OP-0166	GET	/employer/jobs/{X}/applications/{X}/resume	INDIRECTLY-REACHABLE	R2	reached through hook(s) useApplicationResume with consumer(s)	1	1	0	backend/index.js
 OP-0167	POST	/enterprise/ai/generate-content	UNREACHABLE	R6	called only by tests, never by a client	0	0	3	backend/routes/enterprise.js
 OP-0168	POST	/enterprise/ai/generate-interview	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/enterprise.js
 OP-0169	GET	/enterprise/audit	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/routes/enterprise.js
@@ -232,10 +232,10 @@ OP-0230	POST	/enterprise/workspaces/{X}/restore	UI-REACHABLE	R1	called from 1 mo
 OP-0231	POST	/export	UNREACHABLE	R6	called only by tests, never by a client	0	0	4	backend/index.js
 OP-0232	POST	/export-docx	UI-REACHABLE	R1	called from 4 modern source file(s)	4	0	4	backend/index.js
 OP-0233	GET	/export-render-data	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
-OP-0234	GET	/favourites	UI-REACHABLE	R1	called from 2 modern source file(s)	2	0	3	backend/routes/miscData.js
-OP-0235	POST	/favourites	UI-REACHABLE	R1	called from 2 modern source file(s)	2	0	3	backend/routes/miscData.js
-OP-0236	DELETE	/favourites/{X}	UI-REACHABLE	R1	called from 2 modern source file(s)	2	0	3	backend/routes/miscData.js
-OP-0237	GET	/favourites/{X}/check	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/miscData.js
+OP-0234	GET	/favourites	UI-REACHABLE	R1	called from 2 modern source file(s)	2	1	3	backend/routes/miscData.js
+OP-0235	POST	/favourites	UI-REACHABLE	R1	called from 2 modern source file(s)	2	1	3	backend/routes/miscData.js
+OP-0236	DELETE	/favourites/{X}	UI-REACHABLE	R1	called from 2 modern source file(s)	2	1	3	backend/routes/miscData.js
+OP-0237	GET	/favourites/{X}/check	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/miscData.js
 OP-0238	GET	/freellmapi/metrics	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
 OP-0239	GET	/freellmapi/status	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
 OP-0240	POST	/generate-ai-cover-letter	UI-REACHABLE	R1	called from 2 modern source file(s)	2	0	0	backend/index.js
@@ -246,23 +246,23 @@ OP-0244	GET	/health/databases	UNREACHABLE	R6	no call site anywhere outside its d
 OP-0245	GET	/healthz	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	1	2	backend/index.js
 OP-0246	POST	/invoice	UNREACHABLE	R6	mentioned only as display metadata in modern code; never called	0	0	0	backend/index.js
 OP-0247	POST	/invoice/generate	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
-OP-0248	GET	/invoices	UNREACHABLE	R6	mentioned only as display metadata in modern code; never called	0	0	0	backend/index.js
+OP-0248	GET	/invoices	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0249	GET	/invoices/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0250	PATCH	/job-applications/{X}/status	INDIRECTLY-REACHABLE	R2	reached through hook(s) useUpdateApplicationStatus with consumer(s)	1	0	2	backend/index.js
 OP-0251	GET	/jobs-data	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/jobsData.js
-OP-0252	DELETE	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0253	GET	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0254	POST	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0255	DELETE	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/jobsData.js
-OP-0256	PATCH	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/jobsData.js
-OP-0257	POST	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/jobsData.js
-OP-0258	GET	/jobs-data/applications/list	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/jobsData.js
-OP-0259	GET	/jobs-data/tracker	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0260	POST	/jobs-data/tracker	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0261	DELETE	/jobs-data/tracker/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0262	PATCH	/jobs-data/tracker/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	4	backend/routes/jobsData.js
-OP-0263	GET	/jobs/{X}/applications	UI-REACHABLE	R1	called from 1 modern source file(s)	2	0	3	backend/index.js
-OP-0264	POST	/jobs/{X}/applications	UI-REACHABLE	R1	called from 1 modern source file(s)	2	0	3	backend/index.js
+OP-0252	DELETE	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	4	backend/routes/jobsData.js
+OP-0253	GET	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	4	backend/routes/jobsData.js
+OP-0254	POST	/jobs-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	4	backend/routes/jobsData.js
+OP-0255	DELETE	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/routes/jobsData.js
+OP-0256	PATCH	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/routes/jobsData.js
+OP-0257	POST	/jobs-data/applications/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/routes/jobsData.js
+OP-0258	GET	/jobs-data/applications/list	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/routes/jobsData.js
+OP-0259	GET	/jobs-data/tracker	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	4	backend/routes/jobsData.js
+OP-0260	POST	/jobs-data/tracker	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	4	backend/routes/jobsData.js
+OP-0261	DELETE	/jobs-data/tracker/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	4	backend/routes/jobsData.js
+OP-0262	PATCH	/jobs-data/tracker/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	4	backend/routes/jobsData.js
+OP-0263	GET	/jobs/{X}/applications	UI-REACHABLE	R1	called from 1 modern source file(s)	2	1	3	backend/index.js
+OP-0264	POST	/jobs/{X}/applications	UI-REACHABLE	R1	called from 1 modern source file(s)	2	1	3	backend/index.js
 OP-0265	POST	/jobs/naukri	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0266	GET	/linkedin-scraper	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0267	POST	/live-interview/guide	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/ai.js
@@ -271,20 +271,20 @@ OP-0269	DELETE	/live-interview/sessions/{X}	UI-REACHABLE	R1	called from 1 modern
 OP-0270	GET	/live-interview/sessions/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/ai.js
 OP-0271	POST	/live-interview/sessions/{X}/complete	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/ai.js
 OP-0272	POST	/live-interview/sessions/{X}/turns	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/ai.js
-OP-0273	GET	/messages/conversations	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
-OP-0274	POST	/messages/conversations	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
-OP-0275	GET	/messages/conversations/{X}/messages	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
-OP-0276	GET	/messages/conversations/{X}/participant-profile	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
-OP-0277	POST	/messages/conversations/{X}/read	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
-OP-0278	POST	/messages/send	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/index.js
-OP-0279	GET	/notifications-data	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/notificationsData.js
-OP-0280	PATCH	/notifications-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/notificationsData.js
-OP-0281	GET	/notifications-data/contact/list	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/notificationsData.js
-OP-0282	POST	/notifications-data/mark-all-read	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/notificationsData.js
+OP-0273	GET	/messages/conversations	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/index.js
+OP-0274	POST	/messages/conversations	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/index.js
+OP-0275	GET	/messages/conversations/{X}/messages	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	0	backend/index.js
+OP-0276	GET	/messages/conversations/{X}/participant-profile	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	0	backend/index.js
+OP-0277	POST	/messages/conversations/{X}/read	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	0	backend/index.js
+OP-0278	POST	/messages/send	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/index.js
+OP-0279	GET	/notifications-data	UI-REACHABLE	R1	called from 1 modern source file(s)	1	3	2	backend/routes/notificationsData.js
+OP-0280	PATCH	/notifications-data/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	1	backend/routes/notificationsData.js
+OP-0281	GET	/notifications-data/contact/list	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/notificationsData.js
+OP-0282	POST	/notifications-data/mark-all-read	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	1	backend/routes/notificationsData.js
 OP-0283	POST	/notify/user-signup	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0284	POST	/parse-resume	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/routes/ai.js
 OP-0285	POST	/pay	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
-OP-0286	GET	/payment-orders	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
+OP-0286	GET	/payment-orders	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0287	GET	/payment-orders/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0288	POST	/payment/razorpay-order	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0289	POST	/paypal/create-order	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/index.js
@@ -295,10 +295,10 @@ OP-0293	POST	/paytm/verify-transaction	EXTERNAL-CALLER	R3	provider webhook/callb
 OP-0294	POST	/phonepe/callback	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
 OP-0295	POST	/phonepe/initiate	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
 OP-0296	POST	/phonepe/status	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
-OP-0297	GET	/phrases	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/miscData.js
-OP-0298	POST	/phrases	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/miscData.js
-OP-0299	DELETE	/phrases/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/miscData.js
-OP-0300	GET	/phrases/{X}	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/miscData.js
+OP-0297	GET	/phrases	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/miscData.js
+OP-0298	POST	/phrases	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/miscData.js
+OP-0299	DELETE	/phrases/{X}	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/miscData.js
+OP-0300	GET	/phrases/{X}	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/miscData.js
 OP-0301	GET	/platform/announcements	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/platform.js
 OP-0302	POST	/platform/announcements	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/platform.js
 OP-0303	DELETE	/platform/announcements/{X}	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/platform.js
@@ -329,7 +329,7 @@ OP-0327	GET	/platform/payment-settings	UNREACHABLE	R6	called only by tests, neve
 OP-0328	GET	/platform/payment-webhooks	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/platform.js
 OP-0329	POST	/platform/payment-webhooks/{X}/replay	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/platform.js
 OP-0330	GET	/platform/payments-health	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/platform.js
-OP-0331	GET	/platform/public-config	INDIRECTLY-REACHABLE	R2	reached through hook(s) usePlatformStats with consumer(s)	1	1	1	backend/routes/platform.js
+OP-0331	GET	/platform/public-config	INDIRECTLY-REACHABLE	R2	reached through hook(s) usePlatformStats with consumer(s)	1	2	1	backend/routes/platform.js
 OP-0332	GET	/platform/queues	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/platform.js
 OP-0333	POST	/platform/queues/purge	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/routes/platform.js
 OP-0334	POST	/platform/queues/retry	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	0	backend/routes/platform.js
@@ -341,53 +341,53 @@ OP-0339	PATCH	/platform/tenants/{X}	UNREACHABLE	R6	no call site anywhere outside
 OP-0340	POST	/platform/tenants/{X}/decommission	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/platform.js
 OP-0341	POST	/platform/tenants/garbage-collect	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/routes/platform.js
 OP-0342	GET	/platform/version	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/platform.js
-OP-0343	GET	/portfolios	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/portfolios.js
-OP-0344	DELETE	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	3	backend/routes/portfolios.js
-OP-0345	GET	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	3	backend/routes/portfolios.js
-OP-0346	POST	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	3	backend/routes/portfolios.js
+OP-0343	GET	/portfolios	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	2	backend/routes/portfolios.js
+OP-0344	DELETE	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	3	backend/routes/portfolios.js
+OP-0345	GET	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	3	backend/routes/portfolios.js
+OP-0346	POST	/portfolios/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	2	3	backend/routes/portfolios.js
 OP-0347	GET	/portfolios/public	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/routes/portfolios.js
-OP-0348	GET	/portfolios/public/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	2	backend/routes/portfolios.js
+OP-0348	GET	/portfolios/public/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	2	backend/routes/portfolios.js
 OP-0349	GET	/portfolios/slug-availability	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/routes/portfolios.js
 OP-0350	POST	/public-export	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
 OP-0351	POST	/public-export-docx	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
 OP-0352	GET	/public/blog/{X}/og.png	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/routes/publicDiscovery.js
 OP-0353	GET	/public/custom-pages	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	1	0	backend/index.js
-OP-0354	GET	/public/custom-pages/{X}	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
+OP-0354	GET	/public/custom-pages/{X}	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	1	0	backend/index.js
 OP-0355	GET	/public/featured-companies	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
 OP-0356	GET	/public/geo/regions	UNVERIFIED	R7	no direct call site, but a child path (/public/geo/regions/{X}/{X}) is called from modern code; parent reachability not determinable statically	0	0	1	backend/routes/publicDiscovery.js
 OP-0357	GET	/public/geo/regions/{X}/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/routes/publicDiscovery.js
 OP-0358	GET	/public/jobs/{X}/og.png	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/routes/publicDiscovery.js
-OP-0359	GET	/public/trusted-by	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
+OP-0359	GET	/public/trusted-by	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	2	0	backend/index.js
 OP-0360	POST	/razorpay/create-order	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/index.js
 OP-0361	POST	/razorpay/verify-payment	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	1	backend/index.js
 OP-0362	GET	/readyz	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	2	backend/index.js
-OP-0363	GET	/resumes	UI-REACHABLE	R1	called from 6 modern source file(s)	6	0	3	backend/routes/resumes.js
-OP-0364	DELETE	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	0	4	backend/routes/resumes.js
-OP-0365	GET	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	0	4	backend/routes/resumes.js
-OP-0366	POST	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	0	4	backend/routes/resumes.js
-OP-0367	GET	/resumes/{X}/publication	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/resumes.js
-OP-0368	POST	/resumes/{X}/publish	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/resumes.js
-OP-0369	POST	/resumes/{X}/unpublish	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	0	backend/routes/resumes.js
-OP-0370	GET	/resumes/public/{X}	UNVERIFIED	R7	a shape-compatible call (/resumes/{X}/publication in frontend/src/lib/share-publication.ts) may construct this path at runtime	0	0	4	backend/routes/resumes.js
+OP-0363	GET	/resumes	UI-REACHABLE	R1	called from 6 modern source file(s)	6	1	3	backend/routes/resumes.js
+OP-0364	DELETE	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	1	4	backend/routes/resumes.js
+OP-0365	GET	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	1	4	backend/routes/resumes.js
+OP-0366	POST	/resumes/{X}	UI-REACHABLE	R1	called from 5 modern source file(s)	5	1	4	backend/routes/resumes.js
+OP-0367	GET	/resumes/{X}/publication	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/resumes.js
+OP-0368	POST	/resumes/{X}/publish	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/resumes.js
+OP-0369	POST	/resumes/{X}/unpublish	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	0	backend/routes/resumes.js
+OP-0370	GET	/resumes/public/{X}	UNVERIFIED	R7	a shape-compatible call (/resumes/{X}/publication in frontend/src/lib/share-publication.ts) may construct this path at runtime	0	1	4	backend/routes/resumes.js
 OP-0371	GET	/resumes/public/token/{X}	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/resumes.js
 OP-0372	GET	/reviews	UNREACHABLE	R6	mentioned only as display metadata in modern code; never called	0	0	0	backend/routes/miscData.js
 OP-0373	GET	/rtl-font-config	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/index.js
-OP-0374	POST	/send-sms	UNREACHABLE	R6	mentioned only as display metadata in modern code; never called	0	0	0	backend/index.js
+OP-0374	POST	/send-sms	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
 OP-0375	GET	/service-availability	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	0	backend/index.js
-OP-0376	GET	/stats	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/miscData.js
-OP-0377	POST	/stats/increment	UNREACHABLE	R6	called only by tests, never by a client	0	0	1	backend/routes/miscData.js
+OP-0376	GET	/stats	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/miscData.js
+OP-0377	POST	/stats/increment	UNREACHABLE	R6	legacy UI called it in 1 file(s); no modern client does	0	1	1	backend/routes/miscData.js
 OP-0378	POST	/stripe-webhook	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	1	backend/index.js
 OP-0379	POST	/subscription/preferences	UNREACHABLE	R6	no call site anywhere outside its defining route file	0	0	0	backend/index.js
-OP-0380	GET	/support/tickets	INDIRECTLY-REACHABLE	R2	reached through hook(s) useDashboardSupportTickets, useCreateSupportTicket with consumer(s)	1	0	0	backend/routes/support.js
-OP-0381	POST	/support/tickets	INDIRECTLY-REACHABLE	R2	reached through hook(s) useDashboardSupportTickets, useCreateSupportTicket with consumer(s)	1	0	0	backend/routes/support.js
-OP-0382	GET	/support/tickets/{X}	UNVERIFIED	R7	no direct call site, but a child path (/support/tickets/{X}/messages) is called from modern code; parent reachability not determinable statically	0	0	0	backend/routes/support.js
-OP-0383	POST	/support/tickets/{X}/messages	INDIRECTLY-REACHABLE	R2	reached through hook(s) useReplyToSupportTicket with consumer(s)	1	0	0	backend/routes/support.js
+OP-0380	GET	/support/tickets	INDIRECTLY-REACHABLE	R2	reached through hook(s) useDashboardSupportTickets, useCreateSupportTicket with consumer(s)	1	1	0	backend/routes/support.js
+OP-0381	POST	/support/tickets	INDIRECTLY-REACHABLE	R2	reached through hook(s) useDashboardSupportTickets, useCreateSupportTicket with consumer(s)	1	1	0	backend/routes/support.js
+OP-0382	GET	/support/tickets/{X}	UNVERIFIED	R7	no direct call site, but a child path (/support/tickets/{X}/messages) is called from modern code; parent reachability not determinable statically	0	1	0	backend/routes/support.js
+OP-0383	POST	/support/tickets/{X}/messages	INDIRECTLY-REACHABLE	R2	reached through hook(s) useReplyToSupportTicket with consumer(s)	1	1	0	backend/routes/support.js
 OP-0384	GET	/trusted-by.json	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	0	backend/index.js
-OP-0385	GET	/user-stats	UI-REACHABLE	R1	called from 1 modern source file(s)	1	0	1	backend/routes/miscData.js
-OP-0386	GET	/users-data/{X}	UI-REACHABLE	R1	called from 7 modern source file(s)	6	0	4	backend/routes/usersData.js
+OP-0385	GET	/user-stats	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/miscData.js
+OP-0386	GET	/users-data/{X}	UI-REACHABLE	R1	called from 7 modern source file(s)	6	2	4	backend/routes/usersData.js
 OP-0387	POST	/users-data/mfa/disable	UI-REACHABLE	R1	called from 1 modern source file(s)	1	1	1	backend/routes/usersData.js
-OP-0388	GET	/users-data/profile	UI-REACHABLE	R1	called from 7 modern source file(s)	6	0	4	backend/routes/usersData.js
-OP-0389	POST	/users-data/profile	UI-REACHABLE	R1	called from 7 modern source file(s)	6	0	4	backend/routes/usersData.js
+OP-0388	GET	/users-data/profile	UI-REACHABLE	R1	called from 7 modern source file(s)	6	1	4	backend/routes/usersData.js
+OP-0389	POST	/users-data/profile	UI-REACHABLE	R1	called from 7 modern source file(s)	6	1	4	backend/routes/usersData.js
 OP-0390	POST	/v1/chat/completions	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	3	backend/index.js
 OP-0391	POST	/v1/messages	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	1	backend/index.js
 OP-0392	POST	/v1/search	EXTERNAL-CALLER	R3	provider webhook/callback/M2M/agent-API/OG-image/health-probe surface	0	0	1	backend/index.js

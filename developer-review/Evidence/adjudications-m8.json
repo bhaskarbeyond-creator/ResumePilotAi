@@ -1,0 +1,432 @@
+{
+ "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+ "generatedFor": "Mandate 8 \u00a74 \u2014 close the 20 leads in FP-B05, FP-C02, FP-D07, FP-D12, FP-D13, FP-F07, FP-G11, FP-G21, FP-G23, FP-G24",
+ "dispositionVocabulary": {
+  "PRESERVED": "the capability exists in the modern tree with the same effect; chain traced to persistence",
+  "EQUIVALENT REPLACEMENT": "different mechanism, same outcome; the mechanism difference is stated",
+  "MISSING": "no modern implementation at any contract; not closed by symbol similarity",
+  "INTENTIONAL_RETIREMENT": "requires decision evidence; none found for any M8 lead",
+  "UNRESOLVED": "insufficient evidence either way"
+ },
+ "rows": {
+  "FP-B05": {
+   "capability": "Enterprise workspaces & squads (incl. lead assignment)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "handleSaveLead / handleCreateTeam / handleRestore",
+     "legacyAnchor": "src/enterprise/components/EnterpriseTeamsTab.jsx:262-274 (edit mode writes team.lead via save)",
+     "modernSearch": "grep -n \"lead\" frontend/src/components/enterprise/EnterpriseTeamsTab.tsx \u2192 :40 leadPrincipalId state, :91/:98 sent on create/update, :219 `Lead: \u2026`, :235 loaded, :302 input; then the whole chain was followed to the registry, not just the call site",
+     "disposition": "MISSING",
+     "dispositionRaw": "MISSING (persistence absent, not merely UI absent)",
+     "qualifier": "the UI sends the field and reports errors honestly; the storage layer cannot accept it and three team verbs have no production implementation",
+     "chain": {
+      "call": "EnterpriseTeamsTab.tsx:91 (create) / :98 (update) \u2192 frontend/src/lib/enterprise-api.ts createTeam/updateTeam",
+      "route": "POST /api/enterprise/teams (backend/routes/enterprise.js:684) and PATCH /api/enterprise/teams/:teamId (:693), plus POST \u2026/archive (:702) and POST \u2026/restore (:711) \u2014 all permission-guarded and registered",
+      "persistence": "*** broken end of the chain ***: tenantService.updateTeam/archiveTeam/restoreTeam call this.registry.updateTeam/archiveTeam/restoreTeam (tenantService.js:890-932). The production registry is MySqlTenantRegistry (tenantService.js:7; the only registry wired by index.js) and it implements **none of the three** \u2014 only backend/test/helpers/inMemoryTenantRegistry.js:580+ does. enterprise_teams (backend/database/migrations/001_baseline.sql:823-831) has no lead column and no status column, so even the create path silently drops leadPrincipalId",
+      "authorization": "requireAnyTenantPermission('workspace.manage','tenant.workspaces.manage') on all four verbs; scope asserts in tenantService",
+      "test": "backend/enterprise-test/enterprise-completeness.test.js:116-139 asserts lead set/clear and passes \u2014 because it constructs InMemoryTenantRegistry at :40. A mock pass is evidence about the mock"
+     },
+     "note": "This lead does NOT close as preserved. The call exists, the route exists, the test is green, and the capability still cannot work in production: with the MySQL registry the three verbs throw TypeError('\u2026is not a function') and the route's catch turns that into 503 TENANT_TEAM_*_FAILED. Raised as DISC-054."
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged classification, new subfeature loss recorded)",
+   "resultReason": "Workspace/member management works; team create works; team update/archive/restore and lead assignment do not (production registry gaps + missing columns)."
+  },
+  "FP-C02": {
+   "capability": "Portfolio section library / modular blocks",
+   "priorClassification": "MISSING",
+   "leads": [
+    {
+     "lead": "handleEmailClick",
+     "legacyAnchor": "src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx:121-133 (`mailto:` composed and opened)",
+     "modernSearch": "grep -n \"mailto\" frontend/src/components/portfolio/portfolio-view.tsx \u2192 :69-73 safeMailto() used by every template CTA",
+     "disposition": "PRESERVED",
+     "chain": {
+      "call": "portfolio-view.tsx:69-73 mailto CTA",
+      "route": "none (mailto: URI, no request)",
+      "persistence": "n/a \u2014 address comes from the portfolio document (frontend/src/lib/portfolio-document.ts:67 contact.email)",
+      "authorization": "n/a \u2014 public share page",
+      "test": "frontend/src/components/portfolio/__tests__/portfolio-view.test.tsx (renders mailto href)"
+     },
+     "note": "Preserved by replacement: `mailto:` is still emitted, with a guard so an unset address cannot produce a broken link.",
+     "dispositionRaw": "PRESERVED"
+    },
+    {
+     "lead": "handleResumeDownload",
+     "legacyAnchor": "src/components/PortfolioBuilder/PortfolioComponents/About3.jsx:126-140 (`/shared/{id}` resume download)",
+     "modernSearch": "grep -rn \"resume\" frontend/src/components/portfolio/portfolio-view.tsx \u2192 no download control; grep -rn \"download\" frontend/src/lib/portfolio-document.ts \u2192 none",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "no call site",
+      "route": "n/a \u2014 the legacy control requested /shared/{id} which the modern API does not serve",
+      "persistence": "n/a",
+      "authorization": "n/a",
+      "test": "no test asserts a download control"
+     },
+     "note": "A real subfeature loss, recorded rather than argued away: a public portfolio cannot hand out the owner's resume.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "toggleMobileMenu (portfolio chrome) + 'Twitter' label",
+     "legacyAnchor": "src/components/PortfolioBuilder/PortfolioComponents/{Hero4,About3}.jsx mobile menu + Twitter link",
+     "modernSearch": "portfolio-view.tsx renders the document without site chrome by design; no social links other than email",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none",
+      "route": "n/a",
+      "persistence": "n/a",
+      "authorization": "n/a",
+      "test": "none"
+     },
+     "note": "No documented decision retires portfolio-site chrome, so this is NOT classified as an intentional retirement (the package's rule: a retirement needs decision evidence).",
+     "dispositionRaw": "INTENTIONAL_RETIREMENT (no decision evidence) \u2192 treated as MISSING",
+     "qualifier": "would be INTENTIONAL_RETIREMENT only with decision evidence; none exists"
+    }
+   ],
+   "result": "MISSING (unchanged)",
+   "resultReason": "The email CTA survives; the resume-download control and the site chrome do not. Two named subfeature losses, one preserved lead."
+  },
+  "FP-D07": {
+   "capability": "Notification centre (bell, unread polling, routing)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "runOnce / createUnreadMessagesPoller (shared coalesced poller with backoff ladder)",
+     "legacyAnchor": "src/hooks/unreadMessagesPoller.js:1-30 and :44-71 \u2014 one request per tick shared by four subscribers, 15/30/60/120/240/300 s ladder, Retry-After honoured, reset on success",
+     "modernSearch": "ls frontend/src/hooks \u2192 only use-api-hooks.ts, use-restore-focus-when-idle.ts; grep -rn \"setInterval\\|refetchInterval\" frontend/src \u2192 per-page only: pages/dashboard/messages.tsx:146 and components/dashboard/conversation-thread.tsx:54",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "notifications page and shell consume useNotifications() (hooks/use-api-hooks.ts:527-539) with staleTime 30 s and **no** interval",
+      "route": "GET/DELETE /notifications and /notifications/read-all via @/lib/notifications (register: backend/routes/notifications.js)",
+      "persistence": "notifications table, optimistic read with rollback (use-api-hooks.ts:532-539)",
+      "authorization": "authenticated user, scoped to own rows",
+      "test": "frontend/src/hooks/__tests__ (optimistic read); no test for polling cadence"
+     },
+     "note": "Coalescing, the backoff ladder and Retry-After handling have no modern counterpart; one failed poll stops the only per-page poller (a `query.state.status === 'error' ? false` closure), which is the opposite of the legacy design.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "Global unread badge (MessagesNavBadge)",
+     "legacyAnchor": "src/components/Dashboard/MessagesNavBadge.jsx \u2014 nav-count badge fed by the shared poller",
+     "modernSearch": "grep -rn \"totalUnread\" frontend/src --include=*.tsx \u2192 pages/dashboard/messages.tsx:153,294 only",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none outside the messages page",
+      "route": "GET /messages/unread-count exists and is used only there",
+      "persistence": "messages table",
+      "authorization": "authenticated owner",
+      "test": "none"
+     },
+     "note": "A candidate sitting on any other dashboard page is never told a message arrived. Raised as DISC-053.",
+     "dispositionRaw": "MISSING"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged) \u2014 an earlier M8 draft proposed REPLACED BY EQUIVALENT and it did not survive",
+   "resultReason": "The centre itself (bell, popover with 5 items, /dashboard/notifications list, optimistic read, routing) is a genuine equivalent replacement. The polling contract is not: live refresh and the badge are gone."
+  },
+  "FP-D12": {
+   "capability": "Dashboard shared state / cross-component events",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "handleProfileUpdate + handleNotificationsUpdated (custom window events)",
+     "legacyAnchor": "src/components/Dashboard/ProfileDisplay.jsx:73-84 dispatch 'profileUpdated'; :232-241,243-247 dispatch 'notificationsUpdated' on success",
+     "modernSearch": "grep -rn \"addEventListener\\|queryClient.setQueryData\" frontend/src/pages/dashboard frontend/src/components/layout \u2192 cache writes replace events: components/settings/profile-panel.tsx:156,182 setQueryData for profile; hooks/use-api-hooks.ts:565-580 invalidate the notifications key",
+     "disposition": "EQUIVALENT_REPLACEMENT",
+     "chain": {
+      "call": "profile edit submit \u2192 useUpdateProfile mutation (use-api-hooks.ts)",
+      "route": "PATCH /profile (backend/index.js)",
+      "persistence": "users/profile tables via repository",
+      "authorization": "authenticated user, own row",
+      "test": "frontend/src/hooks/__tests__ cache-update assertions"
+     },
+     "note": "A shared cache is strictly better than stringly-typed window events: no missed listener, no manual teardown. Equivalent outcome, different mechanism.",
+     "dispositionRaw": "EQUIVALENT REPLACEMENT"
+    },
+    {
+     "lead": "handleMobileToggle / toggleNavGroup",
+     "legacyAnchor": "src/components/Dashboard/{Sidebar,Header}.jsx \u2014 sidebar open state + nav group collapse",
+     "modernSearch": "frontend/src/components/layout/app-shell.tsx:70 (mobileMenuOpen state) + per-group disclosure in the shell",
+     "disposition": "PRESERVED",
+     "chain": {
+      "call": "app-shell.tsx:70 \u2192 toggle handlers in the same file",
+      "route": "none (local UI state)",
+      "persistence": "n/a",
+      "authorization": "n/a",
+      "test": "component test for mobile menu"
+     },
+     "note": "Mobile menu and nav-group disclosure both present.",
+     "dispositionRaw": "PRESERVED"
+    },
+    {
+     "lead": "handleResize",
+     "legacyAnchor": "src/components/Dashboard/Header.jsx \u2014 window resize listener",
+     "modernSearch": "no resize listener in the modern shell; responsive layout is CSS-only",
+     "disposition": "EQUIVALENT_REPLACEMENT",
+     "chain": {
+      "call": "n/a",
+      "route": "n/a",
+      "persistence": "n/a",
+      "authorization": "n/a",
+      "test": "none"
+     },
+     "note": "A resize listener used to drive JS layout state; the modern shell uses media queries, which do not need one. No behavioural loss.",
+     "dispositionRaw": "EQUIVALENT REPLACEMENT"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "Losses in this row are Privacy-page presence and the shared-event debounce, not the leads M7 listed."
+  },
+  "FP-D13": {
+   "capability": "Career assistant guidance (role guidance, grace banner)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "handleGuidanceSubmit (guidance classifier)",
+     "legacyAnchor": "src/components/Candidate/CandidateCareerAssistant.jsx:61-68 + :147-151 \u2014 keyword classifier routes free text to a destination",
+     "modernSearch": "frontend/src/pages/dashboard/ai-assistant.tsx:23-48 quick prompts + :254 submitPrompt \u2192 api.post('/career/assistant/chat'); pages/dashboard/resume-builder.tsx:247-267 STEP_MAP (deep-link \u2192 step) covers the routing half",
+     "disposition": "EQUIVALENT_REPLACEMENT",
+     "chain": {
+      "call": "ai-assistant.tsx:254",
+      "route": "POST /api/career/assistant/chat (register; auth boundary backend/index.js:417-477)",
+      "persistence": "conversation rows (career assistant history)",
+      "authorization": "authenticated candidate",
+      "test": "backend/test \u2014 assistant route tests"
+     },
+     "note": "Keyword classification is replaced by a model call plus explicit deep links. The limitation is that there is no offline fallback: with no AI provider the guidance path fails instead of degrading to a keyword route.",
+     "dispositionRaw": "EQUIVALENT REPLACEMENT (with a limitation)",
+     "qualifier": "no offline fallback: guidance fails without a provider"
+    },
+    {
+     "lead": "'Subscription renewal needs attention' (PaymentGraceBanner)",
+     "legacyAnchor": "src/components/Candidate/PaymentGraceBanner.jsx:30-38 \u2014 dunning/grace banner driven by subscription status",
+     "modernSearch": "grep -rn \"grace\\|past_due\\|dunning\" frontend/src \u2192 no candidate billing-status surface; enterprise billing tab is tenant-scoped only",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none",
+      "route": "no candidate-side billing-status operation consumed by the browser",
+      "persistence": "subscription status exists server-side",
+      "authorization": "n/a",
+      "test": "none"
+     },
+     "note": "Payment problems are now silent to the candidate. Named loss, carried forward.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "toggleSaved (saved guidance snippets)",
+     "legacyAnchor": "src/components/Candidate/CandidateCareerAssistant.jsx \u2014 saved/unsaved toggle",
+     "modernSearch": "no saved-snippet store in frontend/src; ai-assistant.tsx has no save control",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none",
+      "route": "none",
+      "persistence": "none",
+      "authorization": "n/a",
+      "test": "none"
+     },
+     "note": "Small but real: guidance cannot be kept.",
+     "dispositionRaw": "MISSING"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "One lead replaced (with the no-provider limitation stated), two confirmed missing."
+  },
+  "FP-F07": {
+   "capability": "Job discovery & filtering map/location surface",
+   "priorClassification": "MISSING",
+   "leads": [
+    {
+     "lead": "handlePlaceSelect / handleOptionClick (Google Places autocomplete + map)",
+     "legacyAnchor": "src/components/JobsListings/GoogleMapsProvider.jsx, LocationAutocomplete.jsx:1-40, SimpleLocationInput.jsx, JobMap.jsx",
+     "modernSearch": "grep -rn \"google.maps\\|places\\|autocomplete\" frontend/src \u2192 0 hits; frontend/src/pages/jobs/portal.tsx:61-81 builds q/location/type text inputs and fetches",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "portal.tsx:61-75 \u2014 get('/jobs?\u2026')",
+      "route": "**no registered operation**: GET /jobs does not exist (393-operation register; 0 matches). The listing is GET /jobs-data (backend/routes/jobsData.js:159, mounted index.js:515)",
+      "persistence": "jobs table via repository.getJobs (MySQLRepository.js:1153-1176, InMemoryRepository.js:402-425)",
+      "authorization": "public-only projection",
+      "test": "no client test asserts the jobs request"
+     },
+     "note": "This is the row where a broken contract compounds a missing feature: the page cannot list jobs at all, and the two text filters would be dropped by the repository even if the URL were fixed (only publicOnly/status/employerId/limit are read). Raised as DISC-051.",
+     "dispositionRaw": "MISSING"
+    }
+   ],
+   "result": "MISSING (unchanged)",
+   "resultReason": "Map/autocomplete absent, and the replacement listing path is broken end to end. Runtime at a2ecb96: /api/jobs 404, /api/jobs-data 200."
+  },
+  "FP-G11": {
+   "capability": "Marketing site: contact / lead capture",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "handleDismissSuccess (success state with dismissal)",
+     "legacyAnchor": "src/components/Contact/Contact.jsx:189-191 \u2014 success card with a dismiss handler after a resolved POST",
+     "modernSearch": "frontend/src/pages/cms/index.tsx:288-300 \u2014 success card rendered from `submitted` state, no request; no dismiss handler",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "cms/index.tsx:234-243 handleSubmit \u2192 setSubmitted(true) with **no** HTTP call",
+      "route": "POST /api/contact exists (backend/index.js:2360-2387), rate limiter mounted at :577",
+      "persistence": "repo.saveContactMessage with ip/userAgent (reached by no client)",
+      "authorization": "public + rate-limited + honeypot",
+      "test": "backend/test contact tests exist; no frontend test asserts a request"
+     },
+     "note": "The dismiss control is the smaller half of this finding. The larger half is that the enquiry is discarded while the UI says it was received \u2014 DISC-050, the only false-success site with no failed request to swallow.",
+     "dispositionRaw": "MISSING (and worse than a dismissal loss)",
+     "qualifier": "the success card is shown without any request being sent (DISC-050)"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "The page exists and looks complete; the one thing it must do \u2014 deliver the message \u2014 it does not do."
+  },
+  "FP-G21": {
+   "capability": "AI interview coach (role-based question generation and assessment)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "downloadTextFile (session export)",
+     "legacyAnchor": "src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:9,1202 \u2014 history export via downloadTextFile",
+     "modernSearch": "grep -rn \"downloadTextFile\\|Blob(\" frontend/src \u2192 only job-tracker ICS export (pages/dashboard/job-tracker.tsx:141-153)",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none for interview sessions",
+      "route": "no export operation",
+      "persistence": "sessions are server-side rows (assessment + attempt)",
+      "authorization": "owner",
+      "test": "none"
+     },
+     "note": "The job tracker can export a calendar file, which is a different capability and cannot be counted as the interview export.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "removeHistoryEntry (delete a past session)",
+     "legacyAnchor": "src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx \u2014 history row delete",
+     "modernSearch": "frontend/src/lib/interview-coach.ts:5-11 lists POST /generate-interview, /generate-questions, /evaluate-answer, /start-interview, /abandon-interview; no history list, no delete",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none",
+      "route": "no history listing operation",
+      "persistence": "interview_sessions rows persist",
+      "authorization": "owner",
+      "test": "none"
+     },
+     "note": "Sessions persist but are unreachable to the candidate: no history view exists to delete from.",
+     "dispositionRaw": "MISSING"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "Question generation and live scoring are preserved (server-authoritative); the history surface that M7 flagged is confirmed absent."
+  },
+  "FP-G23": {
+   "capability": "Cross-cutting client hooks (pollers, dialogs, media, token/engine status)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "createUnreadMessagesPoller / runOnce / handleError",
+     "legacyAnchor": "src/hooks/unreadMessagesPoller.js:1-30 (singleton, ladder, Retry-After), error handler reschedules",
+     "modernSearch": "ls frontend/src/hooks \u2192 2 hooks; per-page refetchInterval only (messages.tsx:146, conversation-thread.tsx:54); no coalescing, no ladder",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none (no shared hook)",
+      "route": "GET /messages/unread-count exists",
+      "persistence": "messages table",
+      "authorization": "owner",
+      "test": "none for cadence"
+     },
+     "note": "Same evidence as DISC-053, recorded here because the hook layer is this row's subject.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "handleConfirm (useConfirmDialog / usePromptDialog)",
+     "legacyAnchor": "src/hooks/useConfirmDialog.js, usePromptDialog.js \u2014 promise-returning confirm/prompt used across the dashboard",
+     "modernSearch": "grep -rn \"ConfirmDialog\" frontend/src \u2192 components/portfolio/portfolio-dialogs.tsx:41 (with returnFocusRef), admin AI settings ClearKeyConfirmDialog/QuotaResetConfirmDialog (Radix AlertDialog), per-surface dialogs (e.g. withdraw-dialog, tracker-delete-dialog)",
+     "disposition": "EQUIVALENT_REPLACEMENT",
+     "chain": {
+      "call": "per-surface dialog components",
+      "route": "n/a",
+      "persistence": "n/a",
+      "authorization": "n/a",
+      "test": "component tests per dialog"
+     },
+     "note": "No single hook; the outcome (a confirm step before a destructive action, with focus return) is present. One surface still uses the native window.confirm (components/enterprise/EnterpriseRolesTab.tsx:281), which is an accessibility regression rather than a missing capability.",
+     "dispositionRaw": "EQUIVALENT REPLACEMENT"
+    },
+    {
+     "lead": "toggleAudio / toggleVideo (media controls)",
+     "legacyAnchor": "src/components/Interview/VideoCall.jsx (getUserMedia toggles)",
+     "modernSearch": "grep -rn \"getUserMedia\\|MediaRecorder\" frontend/src \u2192 0 hits",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "none",
+      "route": "none",
+      "persistence": "none",
+      "authorization": "n/a",
+      "test": "none"
+     },
+     "note": "Voice/video interview controls are absent, consistent with the audio-API census in the V6 register.",
+     "dispositionRaw": "MISSING"
+    },
+    {
+     "lead": "token / engine / service-availability status hooks",
+     "legacyAnchor": "src/hooks/useAiTokenUsage.js, useAiEngineStatus.js, useServiceAvailability.js",
+     "modernSearch": "frontend/src/hooks/use-api-hooks.ts:451-475 useSystemHealth() (admin) reads /platform/operational-status and \u2014 note \u2014 falls back to **six hardcoded 'healthy' service rows** when the payload lacks `checks`/`services`",
+     "disposition": "MIXED",
+     "chain": {
+      "call": "useSystemHealth (admin console only)",
+      "route": "GET /platform/operational-status",
+      "persistence": "read-only",
+      "authorization": "admin",
+      "test": "none asserts the absence of the fixture fallback"
+     },
+     "note": "The candidate-facing token budget and maintenance notice are gone. Separately, the fallback at :466-473 renders invented service rows if the endpoint returns an unexpected shape \u2014 recorded here and raised for the false-state inventory, not silently accepted as a replacement.",
+     "dispositionRaw": "EQUIVALENT REPLACEMENT (admin) / MISSING (candidate) with a fabrication caveat",
+     "qualifier": "admin equivalent; candidate-facing token/maintenance status missing; replacement renders 6 hardcoded 'healthy' rows when the payload shape is unexpected"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "Two leads replaced, two missing, one replacement that carries a fabrication risk of its own."
+  },
+  "FP-G24": {
+   "capability": "Candidate support surface (tickets)",
+   "priorClassification": "PARTIAL PARITY",
+   "leads": [
+    {
+     "lead": "createTicketButtonRef / createTicketDialogRef / createTicketSubjectRef",
+     "legacyAnchor": "src/components/Dashboard/DashboardSupport/DashboardSupport.jsx:127-133 (refs), :191-202 (scroll lock, initial focus on subject, Escape with in-flight guard), :831-834 (subject ref bound), teardown returns focus to the opener",
+     "modernSearch": "frontend/src/pages/dashboard/support.tsx:353-372 \u2014 <div role=\"dialog\" aria-modal=\"true\"> with overlay click-to-close and a close button; grep -c \"Escape\\|keydown\\|autoFocus\" \u2192 0; no body overflow write; no ref",
+     "disposition": "MISSING",
+     "chain": {
+      "call": "support.tsx create-ticket form \u2192 POST /support/tickets (use-api-hooks.ts:599)",
+      "route": "routes/support.js userRouter (mounted twice; register lines)",
+      "persistence": "supportTickets table via services/supportTickets.js",
+      "authorization": "authenticated candidate, own tickets",
+      "test": "backend support tests; no keyboard test"
+     },
+     "note": "The ticket workflow is preserved; its keyboard/AT contract is not, although frontend/src/components/ui/dialog.tsx:1-8 already wraps Radix Dialog with focus lock and Escape. Raised as DISC-052.",
+     "dispositionRaw": "MISSING (behavioural contract)",
+     "qualifier": "workflow preserved, keyboard/AT contract lost (DISC-052)"
+    }
+   ],
+   "result": "PARTIAL PARITY (unchanged)",
+   "resultReason": "Creation, listing, replies and status filters all work; the modal's accessibility contract is the loss."
+  }
+ },
+ "totals": {
+  "rowsAdjudicated": 10,
+  "leadsAdjudicated": 21,
+  "m7OpenItemsCovered": 20,
+  "dispositions": {
+   "MISSING": 14,
+   "PRESERVED": 2,
+   "EQUIVALENT_REPLACEMENT": 4,
+   "MIXED": 1
+  },
+  "classificationsChanged": 0,
+  "openLeadsRemaining": 0,
+  "newFindingsRaised": [
+   "DISC-054"
+  ],
+  "note": "21 lead judgements cover the 20 items M7 left open; the extra is FP-C02 portfolio-site chrome. One lead that an earlier M8 draft marked PRESERVED (FP-B05 handleSaveLead) was downgraded to MISSING after tracing it past the route into the registry and the schema \u2014 the test that covers it runs against an in-memory double."
+ },
+ "note": "No lead was closed because a symbol or a similar name exists in the modern tree: each disposition carries the call\u2192route\u2192persistence\u2192authz\u2192test chain, and two leads that an earlier M8 draft called replaced (interview export, candidate token usage) are recorded as missing."
+}

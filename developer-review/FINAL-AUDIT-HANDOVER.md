@@ -203,3 +203,95 @@ requests fail or are never sent, and in three cases the server-side capability d
 | What exactly is wrong, with severity and remediation? | `DISCREPANCY-LOG.md` DISC-041 … DISC-048 |
 | What must be run to move the verdict? | `RUNTIME-TEST-HARNESS-M7.md` R-01 … R-10 |
 | How were the numbers produced? | `M7-CAPABILITY-CLOSURE.md` §11 + `Evidence/logs/m7-toolchain.log` |
+
+---
+
+## 14. M8 amendment (`a2ecb96`) — independent validation, count reconciliation and runtime closure
+
+**Audited revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` (parent `c292159`; branch
+`arena/393531fe-resumepilotai`). **Comparison base:** `origin/main` = `0adad00d`; M7 audited `8a6e03bb`.
+**Application source changes in M8: 0** — every modified path is under `developer-review/`; §14.5 states
+the three commands that prove it.
+
+### 14.1 A published provenance claim from §13 is false — corrected here, not rewritten above
+
+§13 opens by saying a foreign commit `a7d08a2` was "proven byte-identical to `8a6e03bb` across all 3,806
+tracked files, and preserved at `refs/audit-preserved/base-a7d08a2`". Both halves are wrong, and the
+sentence above is left exactly as published so the correction can be audited against it (**DISC-049**):
+
+| Claim | Measurement at `a2ecb96` | Result |
+|---|---|---|
+| byte-identical for all 3,806 tracked files | `git diff a7d08a2 8a6e03bb --stat` → **264 files changed**, 103,955 insertions, 22 deletions | **false**. What survives, and it is the part that matters: **0 files differ outside `developer-review/`**, so the application tree *is* identical and no metric measured on the app is affected |
+| 3,806 tracked files at that commit | `git ls-tree -r --name-only a7d08a2 \| wc -l` → **3,553** (3,806 is the count at `8a6e03bb`; 3,816 at `a2ecb96`) | **false** |
+| preserved at `refs/audit-preserved/base-a7d08a2` | `git show-ref \| grep -i audit` → **no output** | **the ref does not exist**. The commit object still resolves (`git rev-parse a7d08a2`), so nothing was destroyed — but the promised mechanism is absent, and M8 did **not** create it retroactively, because that would misrepresent when it existed |
+| the parity artefact was stamped for the M7 audit | `Evidence/artifacts/feature-parity.json` carried `"revision": "a7d08a2fa67b"` — the *foreign* commit, while the package says M7 audited `8a6e03bb` | stale stamp; artefact **regenerated** at `a2ecb96` |
+
+This is the class of error an audit exists to prevent, so it is recorded as a finding rather than a typo.
+
+### 14.2 The `397` vs `413` question is closed arithmetically
+
+M7 left the difference "flagged for reconciliation". M8 replayed the **old** parser rules over current
+source and diffed both parsers instance by instance: **413 = 405 + 6 + 2**.
+**405** = 397 alias registrations + 8 standalone non-`/api` endpoints; **6** = one handler registered as
+both `/x` and `/api/x` on one line (`backend/index.js:2867`, `3067`, `3136`, `3226`, `6537`, `6748`);
+**2** = `Promise.all([fetch('https://api.github.com/…')])` at `backend/index.js:7419` parsed as routes.
+In-scope disagreements between the two parsers: **0**, in both directions. The operation register
+(**393**) did not move, and no expected value was edited — the *instruments* were repaired.
+Detail: `M8-REGISTRATION-COUNT-RECONCILIATION.md`.
+
+### 14.3 What changed, and what did not
+
+| Quantity | M7 (`8a6e03bb`) | **M8 (`a2ecb96`)** | Cause |
+|---|---:|---:|---|
+| Route registrations / unique operations | 397 / 393 | **397 / 393** | unchanged |
+| Independent contract parser | 413 | **405** | 2 false positives + 6 duplicate alias literals removed from the parser, not from the backend |
+| Reachability (UI / indirect / external / server-only / unexposed / unreachable / unverified) | 156 / 10 / 27 / 11 / 2 / 176 / 11 | **156 / 10 / 27 / 11 / 2 / 176 / 11** | 166 operations now carry legacy evidence (was 82) after the `apiJson(`/`apiFetch(` extractor repair — **no class moved** |
+| Parity mix | 12 / 49 / 30 / 12 / 6 / 3 | **13 / 51 / 28 / 0 / 12 / 5 / 3** (FULL / PARTIAL / MISSING / **STUB** / MOCK / REPLACED / UNVERIFIED) | three rows re-classified with anchors: `FP-D07` → PARTIAL, `FP-A12` → PARTIAL, `FP-C06` → FULL; the STUB label is now reported explicitly and holds **0** rows |
+| Open subfeature leads | 10 rows / 20 items | **0 rows / 0 items** (ADJUDICATED 50 / EQUIVALENCE_LEAD 33 / SIGNAL_CLEAN 21 / DEEP_READ_M6 8) | 20 leads closed with call→route→persistence→authz→test chains |
+| Contract | 212 sites → 190 / 8 / 14; 15 gap paths; 12 false-success sites | **same**, re-derived independently; gaps dispositioned **WRONG_URL 11 / MISSING_BACKEND 4** | `/admin/queues/dead-letter-queue/purge` reclassified: the "matching" `POST /platform/queues/purge` is a deliberate **410 GONE** stub |
+| Findings | 46 distinct / 48 IDs | **52 distinct / 54 IDs** | DISC-049 … DISC-054; coverage arithmetic **1,537 → 1,543** |
+| Runtime | 0 executed | **executed, partially**: suite 1,315 / 1,269 pass / 46 fail; `tsc -b` exit 0; **43 HTTP probes**; 4 scenarios PASS, 4 PARTIAL, 2 BLOCKED | backend really starts with `IN_MEMORY_REPOSITORY=1` and a local HMAC secret |
+
+### 14.4 The three corrections a reader must not miss
+
+1. **`POST /api/contact` is called by nobody in the modern app.** The marketing contact form
+   (`frontend/src/pages/cms/index.tsx:234-243`) validates two fields and calls `setSubmitted(true)` — no
+   request at all — while showing "We have logged your request". The backend handler
+   (`backend/index.js:2360-2387`) exists, is rate-limited and persists; it is simply never reached
+   (**DISC-050**). This is the only false-success site in the package with *no failed request to swallow*.
+2. **The public jobs page requests `/api/jobs`, which does not exist** — the listing is `/api/jobs-data` —
+   and even there `q`, `location` and `type` are dropped by both repositories (`getJobs` reads only
+   `publicOnly`, `status`, `employerId`, `limit`). Runtime confirmed: `/api/jobs` → `404 NOT_FOUND`,
+   `/api/jobs-data` → `200` (**DISC-051**).
+3. **`/admin/queues/dead-letter-queue/purge` has no backend**, and the operation that looked like its
+   match is retired on purpose. A word match is not an operation match; M7's `WRONG_URL` reading (inherited
+   from V7) was too generous.
+
+Two smaller ones are recorded with the same rigour: the create-ticket modal lost its focus trap, Escape
+handling, scroll lock and focus return while the Radix `Dialog` primitive sits unused in the same tree
+(**DISC-052**), and the shared unread-message poller and global unread badge are gone, replaced by per-page
+polling that **stops entirely** after one failed request instead of backing off (**DISC-053**).
+
+### 14.5 Scope proof — 0 application changes
+
+```
+$ git diff --name-only a2ecb96 -- . ':(exclude)developer-review'      # → empty
+$ git status --porcelain | grep -v '^.. developer-review/'           # → empty
+$ git diff --stat 2def3e5 a2ecb96 -- . ':(exclude)developer-review'  # → empty
+```
+
+No application source, dependency manifest, lockfile, schema, migration, deployment or CI file was
+written at any point in M8. Two `node_modules` trees were installed (346 + 280 packages,
+both gitignored) to *execute* tests, with `--ignore-scripts`; nothing from them is committed.
+
+### 14.6 Verdict
+
+**`PARTIAL — BLOCKED`** — a different label from §13's `PARTIAL — INCOMPLETE`, and deliberately so. The
+audit work the mandate asked for was completed (nothing is *incomplete* about the audit); what remains is
+**environmentally blocked**: no MariaDB, no browser binary, no provider credentials, no reachable package
+CDN. Gate F additionally **fails on the product** (12 false-success sites across 7 paths), which this
+mandate is not authorised to repair. Production readiness: **NOT ESTABLISHED**, unchanged.
+
+The gate-by-gate scoring, the runtime evidence and the verifier-quality caveats are in
+`M8-INDEPENDENT-ACCEPTANCE-REPORT.md`; the commands, versions and raw exit codes are in
+`Evidence/logs/m8-toolchain.log`.

@@ -1,0 +1,4223 @@
+{
+ "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
+ "generatedAt": "2026-10-29T07:51:33.456Z",
+ "method": "Derived independently of each row classification: existence of cited paths, presence of a call site (not a mention) in cited modern files, resolution of every declared endpoint against the reachability register, reachability of those endpoints, existence of a write behind the defining route file, overlap with known client contract gaps.",
+ "counts": {
+  "rows": 112,
+  "atParity": 18,
+  "absent": 28,
+  "withFlags": 1,
+  "contradictoryAtParity": 1,
+  "absentButModernCalls": 4
+ },
+ "flagHistogram": {
+  "COMPONENT_VS_WORKFLOW": 1
+ },
+ "rows": [
+  {
+   "id": "FP-A01",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/stats"
+   ],
+   "unregistered": [
+    "/platform/stats"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A02",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 0,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/stats"
+   ],
+   "unregistered": [
+    "/platform/stats"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A03",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminHealthTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/operational-status"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/operational-status",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A04",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 0,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminHealthTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/operational-status"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/operational-status",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A05",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/admin/audit-logs",
+    "/platform/security-events"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/audit-logs",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/adminAudit.js"
+    },
+    {
+     "endpoint": "/platform/security-events",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /admin/audit-logs",
+    "GET /platform/security-events"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/adminAudit.js",
+     "write": false
+    },
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A06",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/operators",
+    "/platform/operators/{X}/revoke-sessions"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/operators",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/operators",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/operators/{X}/revoke-sessions",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /platform/operators",
+    "POST /platform/operators",
+    "POST /platform/operators/{X}/revoke-sessions"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A07",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A08",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 6,
+   "endpoints": [
+    "/platform/announcements"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/announcements",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/announcements",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /platform/announcements",
+    "POST /platform/announcements"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A09",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 4,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/phrases",
+    "/admin/reviews",
+    "/admin/trusted-by",
+    "/admin/pages",
+    "/public/trusted-by",
+    "/public/custom-pages"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/phrases",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/miscData.js"
+    },
+    {
+     "endpoint": "/phrases",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/miscData.js"
+    },
+    {
+     "endpoint": "/admin/reviews",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/reviews",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/trusted-by",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/trusted-by",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/pages",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/public/trusted-by",
+     "method": "GET",
+     "reachability": "EXTERNAL-CALLER",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/public/custom-pages",
+     "method": "GET",
+     "reachability": "EXTERNAL-CALLER",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /phrases",
+    "POST /phrases",
+    "GET /admin/reviews",
+    "POST /admin/reviews",
+    "GET /admin/trusted-by",
+    "POST /admin/trusted-by",
+    "GET /admin/pages"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/miscData.js",
+     "write": true
+    },
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A10",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/platform/attention"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/attention",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /platform/attention"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A11",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminModerationTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/admin/employer-applications/{X}/verify",
+    "/admin/jobs/{X}/moderate"
+   ],
+   "unregistered": [
+    "/admin/employer-applications/{X}/verify",
+    "/admin/jobs/{X}/moderate"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A12",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/tenant-context.ts"
+   ],
+   "clientCallFileCount": 2,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/platform/tenants",
+    "/enterprise/platform/tenants/{X}/suspend",
+    "/enterprise/platform/tenants/{X}/reactivate"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/platform/tenants",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/platform/tenants/{X}/suspend",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/platform/tenants/{X}/reactivate",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A13",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminModerationTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/admin/employer-applications/{X}/verify"
+   ],
+   "unregistered": [
+    "/admin/employer-applications/{X}/verify"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A14",
+   "classification": "MISSING",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 2,
+   "endpoints": [
+    "/admin/coupons"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/coupons",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/coupons",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /admin/coupons",
+    "POST /admin/coupons"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A15",
+   "classification": "MISSING",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 2,
+   "endpoints": [
+    "/admin/payments/refund",
+    "/invoices",
+    "/payment-orders"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/payments/refund",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/invoices",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/payment-orders",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "POST /admin/payments/refund",
+    "GET /invoices",
+    "GET /payment-orders"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A16",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+    "frontend/src/components/admin/AdminSettingsTab.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 2,
+   "endpoints": [
+    "/email/admin/settings",
+    "/email/admin/save-smtp",
+    "/email/admin/test-connection",
+    "/email/admin/deliverability"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/email/admin/settings",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/email.js"
+    },
+    {
+     "endpoint": "/email/admin/save-smtp",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/email.js"
+    },
+    {
+     "endpoint": "/email/admin/test-connection",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/email.js"
+    },
+    {
+     "endpoint": "/email/admin/deliverability",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/email.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/email.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A17",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminUsersTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/admin/users",
+    "/admin/users/{X}/revoke-sessions"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/users",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/adminUsers.js"
+    },
+    {
+     "endpoint": "/admin/users",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/adminUsers.js"
+    },
+    {
+     "endpoint": "/admin/users/{X}/revoke-sessions",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/adminUsers.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/adminUsers.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A18",
+   "classification": "MISSING",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A19",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminHelpDeskTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 6,
+   "endpoints": [
+    "/admin/support/tickets",
+    "/admin/support/tickets/{X}/messages"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/support/tickets",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/support.js"
+    },
+    {
+     "endpoint": "/admin/support/tickets/{X}/messages",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/support.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/support.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A20",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 4,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminQueuesTab.tsx",
+    "frontend/src/components/admin/AdminOperationsTab.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/platform/queues",
+    "/platform/queues/retry",
+    "/admin/operations/feature-flags"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/queues",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/queues/retry",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/admin/operations/feature-flags",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/adminPlatformOperations.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /admin/operations/feature-flags"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    },
+    {
+     "file": "backend/routes/adminPlatformOperations.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A21",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminSettingsTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 2,
+   "endpoints": [
+    "/platform/feature-flags",
+    "/platform/maintenance",
+    "/platform/encryption",
+    "/platform/backup-status"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/platform/feature-flags",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/maintenance",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/maintenance",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/encryption",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    },
+    {
+     "endpoint": "/platform/backup-status",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /platform/feature-flags",
+    "GET /platform/maintenance",
+    "POST /platform/maintenance",
+    "GET /platform/encryption",
+    "GET /platform/backup-status"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A22",
+   "classification": "MISSING",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/admin/audit-logs",
+    "/admin/audit-logs/stats"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/audit-logs",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/adminAudit.js"
+    },
+    {
+     "endpoint": "/admin/audit-logs/stats",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/adminAudit.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /admin/audit-logs",
+    "GET /admin/audit-logs/stats"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/adminAudit.js",
+     "write": false
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A23",
+   "classification": "MISSING",
+   "domain": "A",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A24",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/billing/checkout-modal.tsx",
+    "frontend/src/pages/billing/checkout-modal.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [
+    "frontend/src/pages/billing/checkout-modal.tsx"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/paypal/create-order",
+    "/razorpay/create-order",
+    "/coupons/validate"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/paypal/create-order",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/razorpay/create-order",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/coupons/validate",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "POST /coupons/validate"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A25",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+    "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts",
+    "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts"
+   ],
+   "modernCallFileCount": 3,
+   "clientCallFiles": [
+    "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+    "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts"
+   ],
+   "clientCallFileCount": 4,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/admin/ai-settings",
+    "/admin/ai/test-provider",
+    "/admin/ai/quota-stats",
+    "/admin/ai/reset-quota",
+    "/admin/ai/fetch-models"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/admin/ai-settings",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai-settings",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai/test-provider",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai/quota-stats",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai/reset-quota",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai/fetch-models",
+     "method": "ALL",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "ALL /admin/ai/fetch-models"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-A26",
+   "classification": "PARTIAL PARITY",
+   "domain": "A",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/admin/settings/modules"
+   ],
+   "unregistered": [
+    "/admin/settings/modules"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B01",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 8,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/tenant-context.ts"
+   ],
+   "clientCallFileCount": 2,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/context"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/context",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/context",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B02",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/memberships"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/memberships",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/memberships",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B03",
+   "classification": "MISSING",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B04",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/roles"
+   ],
+   "unregistered": [
+    "/enterprise/roles"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B05",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/teams",
+    "/enterprise/teams/{X}/archive",
+    "/enterprise/teams/{X}/restore",
+    "/enterprise/teams/{X}/members",
+    "/enterprise/teams/{X}/members/{X}"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/teams",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams/{X}/archive",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams/{X}/restore",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams/{X}/members",
+     "method": "GET",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams/{X}/members",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams/{X}/members/{X}",
+     "method": "DELETE",
+     "reachability": "UNREACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [
+    "GET /enterprise/teams/{X}/members",
+    "POST /enterprise/teams/{X}/members",
+    "DELETE /enterprise/teams/{X}/members/{X}"
+   ],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B06",
+   "classification": "FULL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/workspaces",
+    "/enterprise/workspaces/{X}/archive",
+    "/enterprise/workspaces/{X}/restore"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/workspaces",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/workspaces",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/workspaces/{X}/archive",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/workspaces/{X}/restore",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B07",
+   "classification": "FULL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/platform/tenants",
+    "/enterprise/platform/tenants/{X}/suspend",
+    "/enterprise/platform/tenants/{X}/reactivate"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/platform/tenants",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/platform/tenants/{X}/suspend",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/platform/tenants/{X}/reactivate",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B08",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/audit"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/audit",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B09",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/enterprise/resumes"
+   ],
+   "unregistered": [
+    "/enterprise/resumes"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B10",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 3,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 2,
+   "endpoints": [
+    "/enterprise/usage/ai/events",
+    "/admin/ai/quota-stats",
+    "/admin/ai/reset-quota"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/enterprise/usage/ai/events",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/admin/ai/quota-stats",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/admin/ai/reset-quota",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    },
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-B11",
+   "classification": "PARTIAL PARITY",
+   "domain": "B",
+   "legacyPaths": 7,
+   "modernPaths": 8,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/enterprise-api.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 6,
+   "endpoints": [
+    "/enterprise/usage",
+    "/enterprise/email",
+    "/enterprise/settings"
+   ],
+   "unregistered": [
+    "/enterprise/usage",
+    "/enterprise/email",
+    "/enterprise/settings"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C01",
+   "classification": "MISSING",
+   "domain": "C",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/portfolios"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/portfolios",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/portfolios.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C02",
+   "classification": "MISSING",
+   "domain": "C",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C03",
+   "classification": "MISSING",
+   "domain": "C",
+   "legacyPaths": 6,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C04",
+   "classification": "MISSING",
+   "domain": "C",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/portfolios/{X}"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/portfolios.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C05",
+   "classification": "FULL PARITY",
+   "domain": "C",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/portfolios/public/{X}",
+    "/portfolios/slug-availability",
+    "/portfolios/{X}"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/portfolios/public/{X}",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/slug-availability",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    },
+    {
+     "endpoint": "/portfolios/{X}",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/portfolios.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C06",
+   "classification": "FULL PARITY",
+   "domain": "C",
+   "legacyPaths": 1,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-C07",
+   "classification": "FULL PARITY",
+   "domain": "C",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/portfolios/public"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/portfolios/public",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/portfolios.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/portfolios.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D01",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/interview-coach.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/turns"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/live-interview/sessions",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    },
+    {
+     "endpoint": "/live-interview/sessions/{X}/turns",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/ai.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D02",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D03",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/ats-score.tsx",
+    "frontend/src/pages/dashboard/overview.tsx",
+    "frontend/src/pages/dashboard/resume-builder.tsx",
+    "frontend/src/pages/dashboard/resumes.tsx"
+   ],
+   "modernCallFileCount": 4,
+   "clientCallFiles": [
+    "frontend/src/lib/interview-coach.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/portfolio.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/lib/messages.ts"
+   ],
+   "clientCallFileCount": 10,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/complete"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/live-interview/sessions",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    },
+    {
+     "endpoint": "/live-interview/sessions/{X}/complete",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/ai.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D04",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 5,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D05",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 3,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/ai/generate-summary",
+    "/ai/generate-interview"
+   ],
+   "unregistered": [
+    "/ai/generate-summary",
+    "/ai/generate-interview"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D06",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D07",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 4,
+   "modernPaths": 4,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/layout/cuba-app-shell.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts",
+    "frontend/src/lib/notifications.ts",
+    "frontend/src/lib/messages.ts"
+   ],
+   "clientCallFileCount": 3,
+   "legacyCallFileCount": 3,
+   "endpoints": [
+    "/notifications"
+   ],
+   "unregistered": [
+    "/notifications"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D08",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D09",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 15,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/overview.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/portfolio.ts",
+    "frontend/src/lib/account-settings.ts",
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 5,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/jobs/applications",
+    "/dashboard"
+   ],
+   "unregistered": [
+    "/jobs/applications",
+    "/dashboard"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D10",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D12",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 9,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/ats-score.tsx",
+    "frontend/src/pages/dashboard/overview.tsx",
+    "frontend/src/pages/dashboard/resume-builder.tsx",
+    "frontend/src/pages/dashboard/resumes.tsx",
+    "frontend/src/components/layout/cuba-app-shell.tsx"
+   ],
+   "modernCallFileCount": 5,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/portfolio.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/lib/interview-coach.ts",
+    "frontend/src/lib/messages.ts"
+   ],
+   "clientCallFileCount": 10,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/dashboard",
+    "/resumes",
+    "/cover-letters"
+   ],
+   "unregistered": [
+    "/dashboard",
+    "/cover-letters"
+   ],
+   "resolved": [
+    {
+     "endpoint": "/resumes",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/resumes.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D13",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/overview.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/ai/generate-summary",
+    "/jobs/search"
+   ],
+   "unregistered": [
+    "/ai/generate-summary",
+    "/jobs/search"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D14",
+   "classification": "MISSING",
+   "domain": "D",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D15",
+   "classification": "FULL PARITY",
+   "domain": "D",
+   "legacyPaths": 1,
+   "modernPaths": 4,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/favourites.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/favourites.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/favourites"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/favourites",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/miscData.js"
+    },
+    {
+     "endpoint": "/favourites",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/miscData.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/miscData.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-D11",
+   "classification": "PARTIAL PARITY",
+   "domain": "D",
+   "legacyPaths": 3,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/messages.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/messages.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/messages"
+   ],
+   "unregistered": [
+    "/messages"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E01",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 4,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/resume-builder.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/resumes",
+    "/users/ai/generate-summary"
+   ],
+   "unregistered": [
+    "/users/ai/generate-summary"
+   ],
+   "resolved": [
+    {
+     "endpoint": "/resumes",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/resumes.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E02",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E03",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E04",
+   "classification": "FULL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/ats-score.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E05",
+   "classification": "UNVERIFIED",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/ats-score.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E06",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/resume-builder.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/resumes/X (PATCH, photo field)"
+   ],
+   "unregistered": [
+    "/resumes/X (PATCH, photo field)"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E07",
+   "classification": "MISSING",
+   "domain": "E",
+   "legacyPaths": 3,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/auth/2fa/setup"
+   ],
+   "unregistered": [
+    "/auth/2fa/setup"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E08",
+   "classification": "FULL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/share-publication.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/share-publication.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/resumes/{X}/publication",
+    "/resumes/{X}/publish",
+    "/resumes/{X}/unpublish"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/resumes/{X}/publication",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    },
+    {
+     "endpoint": "/resumes/{X}/publish",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    },
+    {
+     "endpoint": "/resumes/{X}/unpublish",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/resumes.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E09",
+   "classification": "FULL PARITY",
+   "domain": "E",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/cover-letters.ts"
+   ],
+   "clientCallFileCount": 2,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/covers",
+    "/covers/{X}",
+    "/generate-ai-cover-letter"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/covers",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/covers.js"
+    },
+    {
+     "endpoint": "/covers/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/covers.js"
+    },
+    {
+     "endpoint": "/covers/{X}",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/covers.js"
+    },
+    {
+     "endpoint": "/covers/{X}",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/covers.js"
+    },
+    {
+     "endpoint": "/generate-ai-cover-letter",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/covers.js",
+     "write": true
+    },
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E16",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/export",
+    "/export-docx",
+    "/export-render-data"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/export",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/export-docx",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/export-render-data",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "POST /export"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E17",
+   "classification": "FULL PARITY",
+   "domain": "E",
+   "legacyPaths": 5,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/export/cv-renderer.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/share-publication.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/resumes/{X}"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/resumes/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    },
+    {
+     "endpoint": "/resumes/{X}",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    },
+    {
+     "endpoint": "/resumes/{X}",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/resumes.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/resumes.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E11",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/ui/preview-modal.tsx",
+    "frontend/src/pages/dashboard/resumes.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/export-docx"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/export-docx",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E12",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 3,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/ui/preview-modal.tsx",
+    "frontend/src/pages/dashboard/resumes.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/export",
+    "/public-export"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/export",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/public-export",
+     "method": "POST",
+     "reachability": "UNREACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [
+    "POST /export",
+    "POST /public-export"
+   ],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E13",
+   "classification": "FULL PARITY",
+   "domain": "E",
+   "legacyPaths": 1,
+   "modernPaths": 4,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": [
+    "COMPONENT_VS_WORKFLOW"
+   ]
+  },
+  {
+   "id": "FP-E14",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 2,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/dashboard/resume-builder.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E15",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/share-publication.ts",
+    "frontend/src/pages/billing/checkout-modal.tsx"
+   ],
+   "clientCallFileCount": 2,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/billing/plans"
+   ],
+   "unregistered": [
+    "/billing/plans"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-E10",
+   "classification": "PARTIAL PARITY",
+   "domain": "E",
+   "legacyPaths": 2,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/ai-content.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/check-grammar",
+    "/parse-resume"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/check-grammar",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    },
+    {
+     "endpoint": "/parse-resume",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/ai.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F01",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/employer"
+   ],
+   "unregistered": [
+    "/employer"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F02",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/employer/CandidateReviewDrawer.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs/{X}/applications"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/jobs/{X}/applications",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/jobs/{X}/applications",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F03",
+   "classification": "MOCK / FABRICATED STATE",
+   "domain": "F",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/messages"
+   ],
+   "unregistered": [
+    "/messages"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F04",
+   "classification": "MISSING",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F05",
+   "classification": "FULL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/employer/jobs",
+    "/employer/jobs/{X}"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/employer/jobs",
+     "method": "GET",
+     "reachability": "INDIRECTLY-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/jobs",
+     "method": "POST",
+     "reachability": "INDIRECTLY-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/jobs/{X}",
+     "method": "DELETE",
+     "reachability": "INDIRECTLY-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/jobs/{X}",
+     "method": "PATCH",
+     "reachability": "INDIRECTLY-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F06",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/employer/CompanyProfile.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/employer/companies",
+    "/employer/companies/{X}",
+    "/enterprise/teams",
+    "/enterprise/memberships"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/employer/companies",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/companies",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/companies/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/employer/companies/{X}",
+     "method": "PATCH",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/enterprise/teams",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/teams",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/memberships",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    },
+    {
+     "endpoint": "/enterprise/memberships",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/enterprise.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    },
+    {
+     "file": "backend/routes/enterprise.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F07",
+   "classification": "MISSING",
+   "domain": "F",
+   "legacyPaths": 3,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/jobs/portal.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs/search"
+   ],
+   "unregistered": [
+    "/jobs/search"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F08",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/jobs/regional-hub.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs"
+   ],
+   "unregistered": [
+    "/jobs"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F11",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 1,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+    "frontend/src/components/employer/CompanyProfile.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts"
+   ],
+   "clientCallFileCount": 3,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/employer/company",
+    "/jobs/{X}",
+    "/job-applications/{X}/status"
+   ],
+   "unregistered": [
+    "/employer/company",
+    "/jobs/{X}"
+   ],
+   "resolved": [
+    {
+     "endpoint": "/job-applications/{X}/status",
+     "method": "PATCH",
+     "reachability": "INDIRECTLY-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F10",
+   "classification": "PARTIAL PARITY",
+   "domain": "F",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/jobs/portal.tsx",
+    "frontend/src/components/jobs/job-application-modal.tsx"
+   ],
+   "modernCallFileCount": 2,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs/search",
+    "/jobs/{X}"
+   ],
+   "unregistered": [
+    "/jobs/search",
+    "/jobs/{X}"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-F09",
+   "classification": "UNVERIFIED",
+   "domain": "F",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G01",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/layout/cuba-app-shell.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G02",
+   "classification": "REPLACED BY EQUIVALENT",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/ui/preview-modal.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/share-publication.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G03",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G04",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G05",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G06",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G07",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/components/admin/AdminOperationsTab.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G08",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/auth/login.tsx"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 3,
+   "endpoints": [
+    "/auth/login",
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "unregistered": [
+    "/auth/login",
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G09",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/blog/editor.tsx",
+    "frontend/src/pages/blog/index.tsx",
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx"
+   ],
+   "modernCallFileCount": 3,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G10",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/public/custom-pages"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/public/custom-pages",
+     "method": "GET",
+     "reachability": "EXTERNAL-CALLER",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G11",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 3,
+   "modernPaths": 3,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/share-publication.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G12",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G13",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/billing/plans"
+   ],
+   "unregistered": [
+    "/billing/plans"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G15",
+   "classification": "REPLACED BY EQUIVALENT",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/account-settings.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/favourites.ts"
+   ],
+   "modernCallFileCount": 14,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/lib/tenant-context.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/lib/messages.ts",
+    "frontend/src/lib/notifications.ts"
+   ],
+   "clientCallFileCount": 8,
+   "legacyCallFileCount": 2,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G16",
+   "classification": "REPLACED BY EQUIVALENT",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 4,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/messages.ts",
+    "frontend/src/lib/cover-letters.ts"
+   ],
+   "modernCallFileCount": 3,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/lib/tenant-context.ts",
+    "frontend/src/lib/job-tracker.ts"
+   ],
+   "clientCallFileCount": 3,
+   "legacyCallFileCount": 10,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G17",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 3,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs/search"
+   ],
+   "unregistered": [
+    "/jobs/search"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G18",
+   "classification": "MISSING",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G19",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/pages/auth/login.tsx",
+    "frontend/src/pages/dashboard/ats-score.tsx",
+    "frontend/src/pages/dashboard/overview.tsx",
+    "frontend/src/pages/dashboard/resume-builder.tsx",
+    "frontend/src/pages/dashboard/resumes.tsx"
+   ],
+   "modernCallFileCount": 5,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/portfolio.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/lib/interview-coach.ts"
+   ],
+   "clientCallFileCount": 11,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "unregistered": [
+    "/auth/2fa/setup",
+    "/auth/2fa/send-sms"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G20",
+   "classification": "FULL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 4,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/portfolio.ts"
+   ],
+   "clientCallFileCount": 3,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/jobs-data/tracker",
+    "/jobs-data/tracker/{X}",
+    "/jobs/{X}/applications"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/jobs-data/tracker",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/jobsData.js"
+    },
+    {
+     "endpoint": "/jobs-data/tracker",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/jobsData.js"
+    },
+    {
+     "endpoint": "/jobs-data/tracker/{X}",
+     "method": "DELETE",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/jobsData.js"
+    },
+    {
+     "endpoint": "/jobs-data/tracker/{X}",
+     "method": "PATCH",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/jobsData.js"
+    },
+    {
+     "endpoint": "/jobs/{X}/applications",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    },
+    {
+     "endpoint": "/jobs/{X}/applications",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/index.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/jobsData.js",
+     "write": true
+    },
+    {
+     "file": "backend/index.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G21",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 2,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/interview-coach.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "/generate-interview",
+    "/live-interview/sessions",
+    "/live-interview/sessions/{X}/turns"
+   ],
+   "unregistered": [],
+   "resolved": [
+    {
+     "endpoint": "/generate-interview",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    },
+    {
+     "endpoint": "/live-interview/sessions",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    },
+    {
+     "endpoint": "/live-interview/sessions/{X}/turns",
+     "method": "POST",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/ai.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/ai.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G22",
+   "classification": "REPLACED BY EQUIVALENT",
+   "domain": "G",
+   "legacyPaths": 3,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/lib/account-settings.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/cover-letters.ts",
+    "frontend/src/lib/enterprise-api.ts",
+    "frontend/src/lib/favourites.ts"
+   ],
+   "modernCallFileCount": 14,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts",
+    "frontend/src/lib/tenant-context.ts",
+    "frontend/src/lib/applications.ts",
+    "frontend/src/lib/job-tracker.ts",
+    "frontend/src/lib/ai-content.ts",
+    "frontend/src/lib/favourites.ts",
+    "frontend/src/lib/messages.ts",
+    "frontend/src/lib/notifications.ts"
+   ],
+   "clientCallFileCount": 8,
+   "legacyCallFileCount": 1,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G23",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 1,
+   "modernPaths": 1,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts"
+   ],
+   "modernCallFileCount": 1,
+   "clientCallFiles": [
+    "frontend/src/lib/notifications.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [
+    "/notifications",
+    "/platform/operational-status"
+   ],
+   "unregistered": [
+    "/notifications"
+   ],
+   "resolved": [
+    {
+     "endpoint": "/platform/operational-status",
+     "method": "GET",
+     "reachability": "UI-REACHABLE",
+     "file": "backend/routes/platform.js"
+    }
+   ],
+   "deadEndpoints": [],
+   "writes": [
+    {
+     "file": "backend/routes/platform.js",
+     "write": true
+    }
+   ],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G24",
+   "classification": "PARTIAL PARITY",
+   "domain": "G",
+   "legacyPaths": 3,
+   "modernPaths": 2,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/hooks/use-api-hooks.ts",
+    "frontend/src/lib/messages.ts"
+   ],
+   "clientCallFileCount": 2,
+   "legacyCallFileCount": 0,
+   "endpoints": [
+    "GET /support/tickets",
+    "POST /support/tickets",
+    "GET /support/tickets/X",
+    "POST /support/tickets/X/messages",
+    "GET /admin/support/tickets",
+    "GET /admin/support/tickets/X",
+    "POST /admin/support/tickets/X/messages",
+    "PATCH /admin/support/tickets/X"
+   ],
+   "unregistered": [
+    "GET /support/tickets",
+    "POST /support/tickets",
+    "GET /support/tickets/X",
+    "POST /support/tickets/X/messages",
+    "GET /admin/support/tickets",
+    "GET /admin/support/tickets/X",
+    "POST /admin/support/tickets/X/messages",
+    "PATCH /admin/support/tickets/X"
+   ],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G25",
+   "classification": "REPLACED BY EQUIVALENT",
+   "domain": "G",
+   "legacyPaths": 4,
+   "modernPaths": 7,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [
+    "frontend/src/lib/preview-session.ts"
+   ],
+   "clientCallFileCount": 1,
+   "legacyCallFileCount": 1,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  },
+  {
+   "id": "FP-G14",
+   "classification": "UNVERIFIED",
+   "domain": "G",
+   "legacyPaths": 3,
+   "modernPaths": 0,
+   "missingLegacy": [],
+   "missingModern": [],
+   "modernCallFiles": [],
+   "modernCallFileCount": 0,
+   "clientCallFiles": [],
+   "clientCallFileCount": 0,
+   "legacyCallFileCount": 0,
+   "endpoints": [],
+   "unregistered": [],
+   "resolved": [],
+   "deadEndpoints": [],
+   "writes": [],
+   "gapOverlap": [],
+   "flags": []
+  }
+ ],
+ "contradictions": [
+  {
+   "id": "FP-E13",
+   "classification": "FULL PARITY",
+   "flags": [
+    "COMPONENT_VS_WORKFLOW"
+   ]
+  }
+ ],
+ "absentWithModernWork": [
+  {
+   "id": "FP-C04",
+   "classification": "MISSING",
+   "modernCallFiles": []
+  },
+  {
+   "id": "FP-D01",
+   "classification": "MISSING",
+   "modernCallFiles": []
+  },
+  {
+   "id": "FP-F07",
+   "classification": "MISSING",
+   "modernCallFiles": [
+    "frontend/src/pages/jobs/portal.tsx"
+   ]
+  },
+  {
+   "id": "FP-G09",
+   "classification": "MISSING",
+   "modernCallFiles": [
+    "frontend/src/pages/blog/editor.tsx",
+    "frontend/src/pages/blog/index.tsx",
+    "frontend/src/components/admin/AdminBlogManagementTab.tsx"
+   ]
+  }
+ ]
+}

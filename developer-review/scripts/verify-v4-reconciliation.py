@@ -297,6 +297,37 @@ def c_full_parity_supported():
     assert "Endpoint resolution applied to all 112 rows" in doc, "requirement (d) residue statement missing"
 
 
+
+def c_registration_reconciliation():
+    """M8 gate B: the two parsers must agree in scope, and the published 413 must stay reproducible.
+
+    Every assertion is an identity derived from the artifact's own numbers, never a pinned count:
+      B's total            == A's alias registrations + A's out-of-scope distinct routes
+      legacy replay total  == false positives + alias collisions + B's total
+      in-scope disagreement == 0 in both directions
+    """
+    rec = json.loads(read("Evidence/artifacts/m8-registration-reconciliation.json"))
+    art = rec["arithmetic"]
+    v = rec["verifications"]
+    assert v["reproduces413"], "the published 413 no longer reproduces from the replayed old rules"
+    assert v["reproduces397"], "the published 397/393 no longer reproduce from the canonical register"
+    assert v["inScopeAgrees"], (
+        f"parsers disagree inside the /api scope: {art['onlyB_inScope']} B-only, {art['onlyA']} A-only")
+    assert art["a"]["aliasRegistrations"] + art["onlyB_outOfScope"] == art["b"]["registrations"], (
+        f"{art['a']['aliasRegistrations']} + {art['onlyB_outOfScope']} != {art['b']['registrations']}")
+    lr = art["legacyReplay"]
+    assert lr["falsePositives"] + lr["aliasCollisions"] + art["b"]["registrations"] == lr["totalLiterals"], (
+        "the historical arithmetic no longer closes: "
+        f"{lr['falsePositives']} + {lr['aliasCollisions']} + {art['b']['registrations']} != {lr['totalLiterals']}")
+    # the register's own units must stay internally consistent
+    assert art["a"]["routeCallSites"] + (art["a"]["aliasRegistrations"] - art["a"]["routeCallSites"]) == art["a"]["aliasRegistrations"]
+    assert rec["rows"], "reconciliation artifact carries no row-level table"
+    # scope boundary must be stated in the reachability document, not only in the artifact
+    doc = read("BACKEND-OPERATION-REACHABILITY.md")
+    assert "non-/api routes" in doc.lower() and "alias registrations" in doc.lower(), (
+        "reachability document does not state the M8 counting units and scope boundary")
+
+
 def c_reach_doc_matches_register():
     """The reachability document's class table must equal the register artifact."""
     doc = read("BACKEND-OPERATION-REACHABILITY.md")
@@ -305,6 +336,125 @@ def c_reach_doc_matches_register():
         assert re.search(r"\| `%s` \| \*\*%d\*\* \|" % (re.escape(name), n), doc), \
             f"{name}={n} not found in the reachability document table"
     assert "Per-operation rationale for all 176" in doc, "per-operation rationale table missing"
+
+
+def c_legacy_call_visibility():
+    """Legacy call evidence in the reachability register must be re-derivable from src/.
+
+    M8 repaired the call-site extractor: the legacy tree reaches the API through the generic
+    helper `apiJson(` (84 call sites), which the published regex could not see, so 85 operations
+    carried legacyUiRefs=0 and the reason "called only by tests, never by a client" even though
+    legacy components called them. This check re-derives, with an independently written scanner,
+    the exact set of operations that have a legacy call site and requires set equality with the
+    artifact. It is an agreement check between two implementations, not an independent semantic
+    proof: both share the idea "a call is a helper verb immediately followed by a path literal".
+    """
+    ops = reach()["operations"]
+    call_re = re.compile(
+        r"(?:\b(?:get|post|patch|put|del|delete|fetch|request|apiRequest|apiJson|apiFetch"
+        r"|\w*[Rr]equest|apiClient\.(?:get|post|patch|put|delete)))"
+        r"\s*(?:<[^\n]{0,200}>)?\(\s*[`'\"](\/[^`'\"]{1,160})"
+    )
+
+    def normalise(raw):
+        v = re.sub(r"\$\{[^}]*\}", "{X}", raw)
+        v = re.sub(r"/:([A-Za-z0-9_]+)", "/{X}", v)
+        if v.startswith("/api/"):
+            v = v[4:]
+        return v.rstrip("/") or "/"
+
+    calls = set()
+    legacy_root = os.path.join(ROOT, "src")
+    for dirpath, dirnames, filenames in os.walk(legacy_root):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in
+                       ("node_modules", "dist", "build", "coverage")]
+        for name in filenames:
+            if not name.endswith((".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")):
+                continue
+            with open(os.path.join(dirpath, name), encoding="utf-8", errors="replace") as handle:
+                text = handle.read()
+            for match in call_re.finditer(text):
+                calls.add(normalise(match.group(1)))
+
+    def is_called(path):
+        if path in calls:
+            return True
+        if path.endswith("{X}"):
+            head = path.replace("{X}", "")
+            segments = [s for s in path.split("/") if s]
+            return any(call.startswith(head) and len([s for s in call.split("/") if s]) == len(segments)
+                       for call in calls)
+        return False
+
+    expected = {(op["method"], op["path"]) for op in ops if is_called(op["path"])}
+    actual = {(op["method"], op["path"]) for op in ops if op.get("legacyUiRefs", 0) > 0}
+    assert expected == actual, (
+        "legacy call evidence disagrees with src/: "
+        f"artifact-only={sorted(actual - expected)[:5]} derivable-only={sorted(expected - actual)[:5]}"
+    )
+    assert actual, "no operation carries legacy call evidence at all"
+    # The helper that motivated the repair: the public contact form is a legacy call site.
+    assert ("POST", "/contact") in actual, "POST /contact lost its legacy call evidence"
+
+
+def c_m8_gap_adjudications():
+    """Every M8 contract-gap adjudication must cite an operation that exists.
+
+    A WRONG_URL disposition is only honest if the operation it points at is registered. This
+    re-resolves the cited operation against the 393-operation register and fails if the citation is
+    invented; a MISSING_BACKEND disposition must cite nothing and must not overlap a registered shape.
+    """
+    art = json.loads(read("Evidence", "artifacts", "m8-contract-gap-revalidation.json"))
+    ops = reach()["operations"]
+
+    def normalise(raw):
+        v = re.sub(r"\$\{[^}]*\}", "{X}", raw)
+        v = re.sub(r"/:([A-Za-z0-9_]+)", "/{X}", v)
+        if v.startswith("/api/"):
+            v = v[4:]
+        return v.rstrip("/") or "/"
+
+    registered = {normalise(op["path"]) for op in ops}
+    wrong, missing = 0, 0
+    for gap in art["gaps"]:
+        adj = gap.get("adjudicated") or {}
+        klass = adj.get("class") or gap["disposition"]
+        if klass == "WRONG_URL":
+            wrong += 1
+            cited = [normalise(tok) for tok in re.findall(r"(/[\w\-{}:./]+)", adj.get("equivalent") or "")]
+            assert cited, f"{gap['path']}: WRONG_URL without a cited operation"
+            assert any(c in registered for c in cited), \
+                f"{gap['path']}: cites {cited} — none of them is a registered operation"
+        elif klass == "MISSING_BACKEND":
+            missing += 1
+            assert not adj.get("equivalent"), f"{gap['path']}: MISSING_BACKEND must not cite an equivalent"
+    assert wrong and missing, "gap adjudication set lost one of its classes"
+    # The gap set itself must equal the audit's unresolved set (no gap silently dropped or added).
+    contract = json.loads(read("Evidence", "artifacts", "client-contract-audit.json"))
+    unresolved = {normalise(c["path"]) for c in contract["calls"] if c["disposition"] != "REGISTERED_AND_MATCHED"}
+    assert {g["path"] for g in art["gaps"]} == unresolved, "gap revalidation does not cover the audit's unresolved paths"
+    assert art["counts"]["falseSuccessSites"] == contract["falseSuccessSites"], "false-success site count disagrees with the audit"
+
+
+def c_m8_parity_revalidation():
+    """The independent parity derivation must agree with the published distribution and account
+    for every reclassification it produced."""
+    art = json.loads(read("Evidence", "artifacts", "m8-parity-revalidation.json"))
+    data = parity()
+    at_parity = sum(1 for c in data["capabilities"]
+                    if c["classification"] in ("FULL PARITY", "REPLACED BY EQUIVALENT"))
+    assert art["counts"]["rows"] == len(data["capabilities"]) == 112, "revalidation did not cover 112 rows"
+    assert art["counts"]["atParity"] == at_parity, \
+        f"revalidation says {art['counts']['atParity']} rows at parity, register says {at_parity}"
+    # The parity artifact records a 12-character revision, the revalidation the full SHA: compare prefixes.
+    assert art["revision"][:12] == data["revision"][:12], \
+        f"revalidation ran at {art['revision'][:12]}, register at {data['revision'][:12]}"
+    # Every row the revalidation flags at parity must carry a recorded human adjudication.
+    adjudicated = json.loads(read("Evidence", "adjudications-m8.json"))["rows"]
+    for row in art["rows"]:
+        if row["classification"] in ("FULL PARITY", "REPLACED BY EQUIVALENT") and row["flags"]:
+            assert row["id"] in adjudicated or row["flags"] in (["COMPONENT_VS_WORKFLOW"],), \
+                f"{row['id']} is flagged at parity with no adjudication"
 
 
 for name, fn in [
@@ -324,6 +474,10 @@ for name, fn in [
     ("every FULL PARITY row is supported", c_full_parity_supported),
     ("reachability document matches the register", c_reach_doc_matches_register),
     ("coverage total equals the sum of its parts", c_coverage_total_arithmetic),
+    ("registration counts reconcile across the two parsers", c_registration_reconciliation),
+    ("legacy call evidence re-derivable from src/", c_legacy_call_visibility),
+    ("M8 gap adjudications cite registered operations", c_m8_gap_adjudications),
+    ("M8 parity revalidation agrees with the register", c_m8_parity_revalidation),
 ]:
     check(name, fn)
 

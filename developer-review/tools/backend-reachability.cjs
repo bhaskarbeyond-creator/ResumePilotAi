@@ -7,11 +7,22 @@
  * because an operation that no browser calls is not automatically orphaned (webhooks,
  * scheduled jobs, M2M clients, health probes).
  *
- * Counting units are kept separate and reported separately:
- *   - route REGISTRATIONS   : literal `router.<verb>(...)` / `app.<verb>(...)` call sites
- *   - unique METHOD+path    : after mount-prefix resolution, normalisation and de-dup
+ * Counting units are kept separate and reported separately. M8 defines them so that two independent
+ * parsers can be compared without arguing about what a "registration" is:
+ *   - route CALL SITES      : one `router.<verb>(...)` / `app.<verb>(...)` expression, counted once per
+ *                             (receiver, mount prefix) expansion. An array of aliases is ONE call site.
+ *   - ALIAS REGISTRATIONS   : one (call site, path literal, mount prefix) tuple. `['/a','/b']` is 1 call
+ *                             site and 2 alias registrations.
+ *   - unique METHOD+path    : after mount-prefix resolution, normalisation and de-dup -> the operation
+ *                             register denominator
  *   - handlers              : distinct (file, verb, path) handlers — 1 per unique operation here
  *   - DB operations         : NOT counted (see report §limitations)
+ *   - non-/api routes       : `app.<verb>` paths that are not under `/api`. These are real HTTP endpoints
+ *                             (`/healthz`, `/readyz`, `/llms.txt`, `/sitemap.xml`, `/v1/models`, the two
+ *                             public JSON aliases) but they are OUTSIDE the register's stated `/api`
+ *                             scope, so they are counted and listed separately rather than silently
+ *                             dropped (M8 §2: this scope boundary is the 8-registration half of the
+ *                             historical 397-vs-413 gap).
  *
  * Rules, evaluated in order, first match wins (documented in the report):
  *   R1 UI-REACHABLE          path referenced from frontend/src outside the dead-hook file
@@ -98,8 +109,13 @@ function normalise(p) {
   return (v.replace(/\/+/g, '/').replace(/(.)\/$/, '$1') || '/');
 }
 
-let registrations = 0;
+let registrations = 0;          // call sites x mount-prefix expansions
+let aliasRegistrations = 0;     // call sites x path literals x mount-prefix expansions
+const nonApiRoutes = [];        // app.<verb> registrations outside the /api surface (counted, not classed)
 const operations = [];
+// M8: every accepted registration instance is recorded so the 397-vs-413 difference against the
+// independent contract parser can be reconciled instance by instance instead of asserted.
+const registrationLog = [];
 
 // V7: a router object is not always named `router`. backend/routes/support.js defines
 // `userRouter` and `adminRouter` and exports both, mounted at /api/support and /api/admin/support.
@@ -153,11 +169,14 @@ for (const file of routeFiles) {
       const re = new RegExp(`\\b${receiver.replace(/\$/g, '\\$')}\\.(get|post|put|patch|delete|options|head|all)\\(\\s*(\\[[^\\]]*\\]|'[^']*'|\"[^\"]*\"|\`[^\`]*\`)`, 'g');
       for (const m of src.matchAll(re)) {
         registrations += 1;
+        const line = src.slice(0, m.index).split('\n').length;
         const literals = m[2].match(/['"`]([^'"`]+)['"`]/g) || [];
+        aliasRegistrations += literals.length;
         for (const lit of literals) {
           const routePath = lit.slice(1, -1);
           const full = prefix ? `${prefix}${routePath === '/' ? '' : routePath}` : routePath;
           operations.push({ method: m[1].toUpperCase(), path: normalise(full), file: rel, mounted: Boolean(prefix) });
+          registrationLog.push({ parser: 'reachability', receiver, file: rel, line, method: m[1].toUpperCase(), raw: routePath, prefix: prefix || null, effective: normalise(full) });
         }
       }
     }
@@ -169,10 +188,21 @@ unresolvedRouterFiles = [...new Set(unresolvedRouterFiles)];
 // V5: `app.all('/api/admin/ai/fetch-models', …)` is a real registration; omitting `all`
 // made a live super-admin endpoint look missing.
 for (const m of idx.matchAll(/\bapp\.(get|post|put|patch|delete|all)\(\s*(\[[^\]]*\]|'[^']*'|"[^"]*")/g)) {
-  for (const lit of (m[2].match(/['"]([^'"]+)['"]/g) || [])) {
-    const routePath = lit.slice(1, -1);
-    if (!routePath.startsWith('/api')) continue;
-    registrations += 1;
+  const line = idx.slice(0, m.index).split('\n').length;
+  const lits = (m[2].match(/['"]([^'"]+)['"]/g) || []).map((l) => l.slice(1, -1));
+  // `app.get('tenantService')` is a config accessor, not a route: a route path always starts with '/'
+  const routeLits = lits.filter((l) => l.startsWith('/'));
+  if (!routeLits.length) continue;
+  const apiLits = routeLits.filter((l) => l.startsWith('/api'));
+  const outside = routeLits.filter((l) => !l.startsWith('/api'));
+  // Aliases outside the register's /api scope are real endpoints (or deliberate compatibility aliases of
+  // one): they are counted and listed, never silently dropped, and never mixed into the /api denominator.
+  for (const routePath of outside) nonApiRoutes.push({ method: m[1].toUpperCase(), path: routePath, file: 'backend/index.js', line });
+  if (!apiLits.length) continue;
+  registrations += 1;
+  aliasRegistrations += apiLits.length;
+  for (const routePath of apiLits) {
+    registrationLog.push({ parser: 'reachability', receiver: 'app', file: 'backend/index.js', line, method: m[1].toUpperCase(), raw: routePath, prefix: null, effective: normalise(routePath) });
     operations.push({ method: m[1].toUpperCase(), path: normalise(routePath), file: 'backend/index.js', mounted: true });
   }
 }
@@ -193,7 +223,13 @@ const uniq = [...byKey.values()].sort((a, b) => a.path.localeCompare(b.path) || 
 // caller must appear in call context — `get(`/`post(`/`fetch(`/`apiClient.get(` etc.
 // V5: `enterpriseRequest(` (46 call sites in frontend/src/lib/enterprise-api.ts) was invisible to
 // this regex, so every enterprise surface it drives was classified UNREACHABLE.
-const CALL_SITE_RE = /(?:\b(?:get|post|patch|put|del|delete|fetch|request|apiRequest|\w*[Rr]equest|apiClient\.(?:get|post|patch|put|delete)))\s*(?:<[^\n]{0,200}?>)?\(\s*(?:[`'"])(\/[^`'"]{1,160})/g;
+// M8: `apiJson(` is the legacy tree's generic JSON helper (84 call sites across 5 files;
+// `src/services/api/platform.js:310` posts the public contact form to /api/contact). It matched
+// none of the alternatives below, so those call sites read as "never called" and put a wrong
+// reason on several operations. Widening the extractor can only add evidence to the legacy
+// column - the final R6 branch reports the same class either way - and the class histogram is
+// asserted unchanged after this repair.
+const CALL_SITE_RE = /(?:\b(?:get|post|patch|put|del|delete|fetch|request|apiRequest|apiJson|apiFetch|\w*[Rr]equest|apiClient\.(?:get|post|patch|put|delete)))\s*(?:<[^\n]{0,200}?>)?\(\s*(?:[`'"])(\/[^`'"]{1,160})/g;
 
 function normaliseClientPath(raw) {
   let v = raw.replace(/\$\{[^}]*\}/g, '{X}').replace(/\/:([A-Za-z0-9_]+)/g, '/{X}');
@@ -491,14 +527,19 @@ const payload = {
   revision: require('child_process').execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim(),
   generatedAt: new Date().toISOString(),
   units: {
-    routeRegistrations: registrations,
+    routeCallSites: registrations,
+    aliasRegistrations,
     uniqueMethodPath: uniq.length,
+    nonApiRoutes: nonApiRoutes.length,
+    routeRegistrations: registrations,
     duplicateRegistrations: registrations - uniq.length,
     handlers: uniq.length,
     databaseOperations: null,
     databaseOperationsNote: 'not counted: database operations are not enumerable from route declarations; see DATABASE-INVENTORY.md',
   },
   classes: counts,
+  registrations: registrationLog,
+  nonApiRouteList: nonApiRoutes,
   total: rows.length,
   percentages: Object.fromEntries(CLASSES.map(c => [c, rows.length ? +(100 * counts[c] / rows.length).toFixed(1) : 0])),
   rules: {
@@ -525,8 +566,11 @@ fs.writeFileSync(path.join(DR, 'Evidence', 'artifacts', 'backend-operations.tsv'
 
 const lines = [
   `revision                 : ${payload.revision.slice(0, 12)}`,
-  `route registrations      : ${registrations}`,
-  `unique METHOD+path       : ${uniq.length}`,
+  `route call sites         : ${registrations}   (one <router|app>.<verb>(...) expression per receiver x mount prefix)`,
+  `alias registrations      : ${aliasRegistrations}   (one per path literal: array-form aliases count separately)`,
+  `unique METHOD+path       : ${uniq.length}   <- operation register denominator`,
+  `collapsed aliases        : ${aliasRegistrations - uniq.length}`,
+  `non-/api routes          : ${nonApiRoutes.length}   (real endpoints outside this register's /api scope; excluded from the denominator)`,
   `duplicate registrations  : ${registrations - uniq.length}`,
   '',
   'reachability classes (numerator / denominator = unique METHOD+path):',

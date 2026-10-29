@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Audit revision:** `a7d08a2fa67b` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-29 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
+**Audit revision:** `a2ecb96d2b19` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-29 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
 **Machine-checkable twin:** `Evidence/artifacts/feature-parity.json` (consumed by `scripts/verify-audit-package.sh`)
 **Inventory basis:** `LEGACY-MODERN-FEATURE-INVENTORY.md` / `Evidence/artifacts/legacy-modern-inventory.json`
 
@@ -30,19 +30,19 @@ implementation omits it") is respected literally. Undocumented removal is still 
 
 | Classification | Capabilities |
 |---|---:|
-| FULL PARITY | 12 |
-| PARTIAL PARITY | 49 |
-| MISSING | 30 |
+| FULL PARITY | 13 |
+| PARTIAL PARITY | 51 |
+| MISSING | 28 |
 | STATIC STUB | 0 |
 | MOCK / FABRICATED STATE | 12 |
 | LOCAL-ONLY PERSISTENCE | 0 |
 | INTENTIONAL RETIREMENT | 0 |
-| REPLACED BY EQUIVALENT | 6 |
+| REPLACED BY EQUIVALENT | 5 |
 | UNVERIFIED | 3 |
 | **Total** | **112** |
 
 Aggregate verdict: of 112 capabilities, **18 are at parity** 
-(FULL + REPLACED BY EQUIVALENT), **49 partial**, **42 missing or fabricated**, and **3 UNVERIFIED**.
+(FULL + REPLACED BY EQUIVALENT), **51 partial**, **40 missing or fabricated**, and **3 UNVERIFIED**.
 
 The four figures sum to 112; the UNVERIFIED row is reported separately rather than folded into either side, because "not established" is not a synonym for "present" or "absent".
 
@@ -50,10 +50,10 @@ The four figures sum to 112; the UNVERIFIED row is reported separately rather th
 
 | Domain | Capabilities | FULL | REPLACED | PARTIAL | MISSING | FABRICATED | STUB | LOCAL-ONLY | UNVERIFIED |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| A — Super Admin / platform operations | 26 | 0 | 0 | 9 | 6 | 11 | 0 | 0 | 0 |
+| A — Super Admin / platform operations | 26 | 0 | 0 | 10 | 5 | 11 | 0 | 0 | 0 |
 | B — Enterprise talent cloud | 11 | 2 | 0 | 8 | 1 | 0 | 0 | 0 | 0 |
-| C — Portfolio / Puck / WebCV | 7 | 2 | 0 | 0 | 5 | 0 | 0 | 0 | 0 |
-| D — Candidate experience, voice interview, HUD, palette | 15 | 1 | 1 | 6 | 7 | 0 | 0 | 0 | 0 |
+| C — Portfolio / Puck / WebCV | 7 | 3 | 0 | 0 | 4 | 0 | 0 | 0 | 0 |
+| D — Candidate experience, voice interview, HUD, palette | 15 | 1 | 0 | 7 | 7 | 0 | 0 | 0 | 0 |
 | E — Resume builder, ATS, templates, share | 17 | 5 | 0 | 10 | 1 | 0 | 0 | 0 | 1 |
 | F — Employer, pipelines, messaging, onboarding, job discovery | 11 | 1 | 0 | 6 | 2 | 1 | 0 | 0 | 1 |
 | G — Remaining legacy components (shared infra & content) | 25 | 1 | 5 | 10 | 8 | 0 | 0 | 0 | 1 |
@@ -79,7 +79,7 @@ capability has no backend surface by design (pure client feature).
 | FP-A09 | Marketing content: phrases, reviews, trusted-by logos, landing pages | MOCK / FABRICATED STATE | yes | yes | partial | no | compatible | no | no | no |
 | FP-A10 | At-risk attention inbox / platform insights | MOCK / FABRICATED STATE | yes | yes | partial | no | compatible | no | no | no |
 | FP-A11 | Employer application + job posting moderation | MOCK / FABRICATED STATE | yes | yes | partial | no | compatible | no | no | partial |
-| FP-A12 | Platform tenant registry (list tenants, quotas, suspend) | MISSING | yes | yes | partial | no | compatible | no | n/a | partial |
+| FP-A12 | Platform tenant registry (list tenants, quotas, suspend) | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | yes | yes |
 | FP-A13 | Company management (verification, documents, quotas) | MOCK / FABRICATED STATE | partial | yes | partial | partial | compatible | no | no | no |
 | FP-A14 | Coupon / promo-code administration | MISSING | yes | yes | partial | no | compatible | n/a | n/a | partial |
 | FP-A15 | Refunds, invoices, payment orders administration | MISSING | yes | yes | partial | no | compatible | n/a | n/a | partial |
@@ -107,14 +107,13 @@ capability has no backend surface by design (pure client feature).
 | FP-C02 | 71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, …) | MISSING | no | — | partial | no | — | n/a | n/a | no |
 | FP-C03 | WebCV Studio (layout ladder, template presets, template utils) | MISSING | partial | yes | partial | no | compatible | n/a | n/a | no |
 | FP-C04 | Editing portfolios created by the legacy editor | MISSING | yes | yes | partial | yes | compatible | yes | partial | no |
-| FP-C06 | Portfolio template gallery with palettes | MISSING | n/a | — | — | n/a | compatible | n/a | n/a | no |
 | FP-D01 | Live voice interview (TTS question delivery + pacing) | MISSING | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D02 | Microphone capture + live audio waveform | MISSING | n/a | — | — | no | compatible | n/a | n/a | no |
 | FP-D03 | Interview session UI (question flow, transcript, scoring) | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D04 | Candidate command palette (⌘K) with fuzzy entity search | MISSING | partial | yes | partial | no | compatible | n/a | n/a | no |
 | FP-D05 | Copilot assistant (mascot, prompt builder, action registry) | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D06 | Candidate HUD overlay | MISSING | n/a | — | — | no | compatible | n/a | n/a | no |
-| FP-D07 | Notification centre (bell, unread poller, routing) | REPLACED BY EQUIVALENT | yes | yes | partial | yes | compatible | yes | partial | partial |
+| FP-D07 | Notification centre (bell, unread poller, routing) | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D08 | User-selectable UI density | MISSING | n/a | — | — | no | compatible | n/a | n/a | no |
 | FP-D09 | Candidate dashboard home, next-steps onboarding, applied-jobs tracker | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D10 | Guided "next steps" onboarding checklist | MISSING | n/a | — | — | no | compatible | n/a | n/a | no |
@@ -191,7 +190,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-A09` | Marketing content: phrases, reviews, trusted-by logos, landing pages | 4 / 1,127 | 1 / 457 | **MOCK / FABRICATED STATE** | AdminContentMarketingTab.tsx 456 lines / 0 API refs; INITIAL_PHRASES 5, INITIAL_REVIEWS 3, INITIAL_TRUSTED 5, INITIAL_PAGES 3 (:40-150) |
 | `FP-A10` | At-risk attention inbox / platform insights | 1 / 131 | 1 / 170 | **MOCK / FABRICATED STATE** | AdminAttentionTab.tsx 169 lines, 0 api refs, DEFAULT_SIGNALS :31, refresh does not fetch |
 | `FP-A11` | Employer application + job posting moderation | 2 / 1,186 | 1 / 675 | **MOCK / FABRICATED STATE** | AdminModerationTab.tsx:152/167 POST /admin/employer-applications/{id}/verify and :184 POST /admin/jobs/{id}/moderate - NEITHER path is registered; the backend serves PATCH /admin/employer-applications/{uid} (backend/index.js:6440) and moderation via resilientMutations only (index.js:6875/6899), never these shapes. Each call sits inside .catch(() => {}) and is followed by local state mutation plus a success message (:155-160, :169-176, :187-193). The list is seeded from DEFAULT_APPLICATIONS/DEFAULT_JOBS (:58-111) and never re-fetched. |
-| `FP-A12` | Platform tenant registry (list tenants, quotas, suspend) | 1 / 2,106 | 1 / 675 | **MISSING** | AdminModerationTab.tsx:389 renders companies/tenants sub-sections from DEFAULT_APPLICATIONS; no tenant list fetch |
+| `FP-A12` | Platform tenant registry (list tenants, quotas, suspend) | 1 / 2,106 | 2 / 864 | **PARTIAL PARITY** | EnterprisePlatformTab.tsx:46 enterpriseApi.getPlatformTenants(); enterprise-api.ts:602-613 list/suspend/reactivate; backend/routes/enterprise.js:608,621,630; service listPlatformTenants + setTenantLifecycleAsPlatform; backend/enterprise-test/enterprise-completeness.test.js:527-552 covers list, admin-denied and member-denied suspend, and the suspend->reactivate round trip |
 | `FP-A13` | Company management (verification, documents, quotas) | 1 / 642 | 1 / 675 | **MOCK / FABRICATED STATE** | companies sub-section (:389) renders seeded application objects; no company entity endpoint used |
 | `FP-A14` | Coupon / promo-code administration | 35 / 14,191 | 0 / 0 | **MISSING** | no admin coupon surface in frontend/src; only a feature-flag toggle (AdminSettingsTab.tsx:334) and a checkout promo field |
 | `FP-A15` | Refunds, invoices, payment orders administration | 35 / 14,191 | 0 / 0 | **MISSING** | frontend/src contains only `payment_refunded: billing` in lib/notification-display.ts |
@@ -232,7 +231,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-C03` | WebCV Studio (layout ladder, template presets, template utils) | 6 / 2,325 | 0 / 0 | **MISSING** | WebCvStudio 856 lines + presets 683 + utils 427; modern offers a 6-entry PORTFOLIO_TEMPLATES gallery |
 | `FP-C04` | Editing portfolios created by the legacy editor | 1 / 1,743 | 2 / 1,157 | **MISSING** | builder.tsx:347 `const editable = stored ? isWebCvDocument(stored) : false;`, :477 "Built with the earlier page editor", :490-533 save/preview gated; isWebCvDocument() portfolio-document.ts:412 rejects block content |
 | `FP-C05` | Public portfolio rendering + slug availability + publish | 1 / 308 | 6 / 1,725 | **FULL PARITY** | public-portfolio.tsx sets document.title; canonical document model |
-| `FP-C06` | Portfolio template gallery with palettes | 7 / 1,822 | 3 / 729 | **MISSING** | V7 hand read: the named legacy blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) have zero matches in frontend/src/components/portfolio or frontend/src/pages/portfolio. modern portfolio-view.tsx:33 PALETTES still supplies colour palettes, but the modular section library itself has no counterpart. |
+| `FP-C06` | Portfolio template gallery with palettes | 7 / 1,822 | 5 / 1,886 | **FULL PARITY** | The legacy directory is exactly four template renderers plus a shared renderer: CreativeDark, Executive, ModernMinimal, PremiumTech (src/components/PortfolioTemplates/index.js). The modern tree carries the same four ids in PORTFOLIO_TEMPLATES (frontend/src/lib/portfolio-document.ts:17-22), the same four palette keys (frontend/src/components/portfolio/portfolio-view.tsx:33-38: modernMinimal, executive, creativeDark, premiumTech), a selectable picker that renders them (frontend/src/pages/portfolio/builder.tsx:541-546) and one renderer that applies the matching palette (:61). Legacy template ids written by older versions are mapped, not dropped (TEMPLATE_ALIASES, portfolio-document.ts:28-33). |
 | `FP-C07` | Portfolio gallery / showcase | 1 / 239 | 2 / 355 | **FULL PARITY** | legacy routed at src/main.jsx:575 -> /portfolios; modern routed at frontend/src/app/router.tsx:99 -> /portfolios. Search over title/description/tags, template filter, result count, loading skeleton, error+retry, empty state all present; modern adds URL-persisted ?q=/?template= and honest error surfacing |
 
 ### D — Candidate experience, voice interview, HUD, palette
@@ -245,7 +244,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-D04` | Candidate command palette (⌘K) with fuzzy entity search | 5 / 1,376 | 0 / 0 | **MISSING** | 1,527 legacy lines across palette + entity search + fuzzyRank; 0 modern ⌘K/palette handlers |
 | `FP-D05` | Copilot assistant (mascot, prompt builder, action registry) | 3 / 545 | 1 / 571 | **PARTIAL PARITY** | mascot (72 lines) and copilotActions registry (265 lines) have no modern counterpart |
 | `FP-D06` | Candidate HUD overlay | 1 / 47 | 0 / 0 | **MISSING** | CubaHud.jsx 46 lines; no modern HUD component |
-| `FP-D07` | Notification centre (bell, unread poller, routing) | 4 / 1,143 | 4 / 1,913 | **REPLACED BY EQUIVALENT** | modern bell in cuba-app-shell + dedicated notifications page + category mapping |
+| `FP-D07` | Notification centre (bell, unread poller, routing) | 4 / 1,143 | 4 / 1,913 | **PARTIAL PARITY** | modern bell in cuba-app-shell + dedicated notifications page + category mapping; the poller half of the row has no modern twin (per-page refetchInterval only, no coalescing/backoff, no global unread badge) |
 | `FP-D08` | User-selectable UI density | 1 / 69 | 0 / 0 | **MISSING** | CubaDensityProvider.jsx 68 lines; modern "density" occurrences are all resume-layout tokens |
 | `FP-D09` | Candidate dashboard home, next-steps onboarding, applied-jobs tracker | 16 / 7,098 | 7 / 2,626 | **PARTIAL PARITY** | 3 legacy areas map to 2 modern pages; onboarding checklist dropped (FP-D10) |
 | `FP-D10` | Guided "next steps" onboarding checklist | 1 / 125 | 0 / 0 | **MISSING** | modern mentions onboarding once in overview.tsx; no checklist component |
@@ -334,7 +333,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-A07`** — No backend support either: the capability was never implemented end-to-end, in either tree.
 - **`FP-A09`** — Trusted-by seeds name real partner brands. Public reader endpoints exist and are unused by this tab.
 - **`FP-A11`** — V6 correction (RA-47): the moderation queue is a fixture and both decisions target unregistered routes, so neither the list nor the actions are real. PARTIAL -> MOCK.
-- **`FP-A12`** — Enterprise-side tenant management exists (FP-B06); the platform-level registry UI does not.
+- **`FP-A12`** — M8 re-decision (was MISSING, anchored on AdminModerationTab.tsx:389 fixtures). The fixture surface is real and stays recorded as DISC-030/FP-A20, but it is not the only modern implementation and not the capability: a platform-level tenant registry with suspend/reactivate exists, is wired end to end and is tested. What is still missing is quota display and any registry rendering inside the admin console. The M7 note ("Enterprise-side tenant management exists (FP-B06); the platform-level registry UI does not") was correct about the enterprise-side tab and wrong about the platform-level surface.
 - **`FP-A14`** — Backend CRUD exists; nothing in the modern UI can create or list a coupon.
 - **`FP-A15`** — Monetisation-critical. Backend endpoints exist and are unreachable from the modern app.
 - **`FP-A16`** — V6 (RA-40): the tab title and this row both claim SMTP/IMAP plus templates; only SMTP survives in the UI. The previously declared /admin/settings/email and /admin/email-templates were never registered paths, so the V4 endpoint list was wrong in both directions.
@@ -355,13 +354,13 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-C01`** — Removal is undocumented: no ADR, no changelog entry, no migration note in the repo. Classified MISSING, not INTENTIONAL RETIREMENT, because intent is unevidenced.
 - **`FP-C02`** — Replaced by a constrained schema, which is a deliberate architectural choice for the *new* flow — but existing block content has no path into it (FP-C04).
 - **`FP-C04`** — Read-only dead end for every pre-existing portfolio. This is the concrete user-visible loss from C01-C03.
-- **`FP-C06`** — V7 correction from PARTIAL PARITY to MISSING: the palette half survives, the section-library half does not, and the row is the library. Same root cause as FP-C02 (71-block library replaced by a canonical document model).
+- **`FP-C06`** — M8 re-decision (was MISSING, and before that PARTIAL). The V7 hand read judged the row against the named legacy BLOCKS (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators); those blocks belong to the 71-block library row FP-C02, not to this row, whose legacy path is the four-template renderer directory. 4/4 templates and 4/4 palettes survive with matching ids. Caveat carried forward: there is no separate template-browsing gallery page, and this row still has no backend operation, so its FULL support is structural, not endpoint-verified.
 - **`FP-C07`** — V4 RECLASSIFIED from UNVERIFIED. The earlier note said "no route in main.jsx referenced it either" — that was wrong: main.jsx:575 routes it. Capability preserved; only the legacy static theme preview PNGs are replaced by palette rendering (see FP-C06).
 - **`FP-D01`** — Browser-only in legacy, so no backend prerequisite. Cheapest high-value restoration in the package.
 - **`FP-D02`** — Backend stores transcript turns only; audio was never persisted in either tree.
 - **`FP-D05`** — Task-scoped copilots replaced a global assistant.
 - **`FP-D06`** — Small surface (46 lines); low remediation cost.
-- **`FP-D07`** — Refutes the "notification centre was dropped" reading; implementation differs, capability retained.
+- **`FP-D07`** — M8 re-decision (was REPLACED BY EQUIVALENT). The bell and the routing are genuinely equivalent; the row title also names the unread poller, and that poller is not replaced — src/hooks/unreadMessagesPoller.js was a coalesced single-flight 15s->300s ladder that honoured Retry-After, replaced by per-page refetchInterval that stops on error. Under the looser reading (poller = infrastructure, not capability) the row would stay REPLACED BY EQUIVALENT and the at-parity total would be 18 instead of 17; the stricter reading is taken and both figures are published.
 - **`FP-D08`** — Low severity: a11y/comfort preference, not workflow.
 - **`FP-D14`** — Billing-adjacent: a lapsed user gets no in-app dunning notice in the modern app.
 - **`FP-D11`** — Entitlement gating (MessagesModuleGate) has no modern equivalent -> message module access is no longer gated client-side.
