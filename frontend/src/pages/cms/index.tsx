@@ -10,7 +10,8 @@
  * - Contact Us (/contact, /p/contact-us)
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { submitContact } from './contact-request';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -238,10 +239,25 @@ export function ContactPage() {
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const inFlight = useRef(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !message) return;
-    setSubmitted(true);
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSending(true);
+    setError('');
+    try {
+      await submitContact({ name, email, subject, message });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Your request could not be confirmed.');
+    } finally {
+      inFlight.current = false;
+      setSending(false);
+    }
   };
 
   return (
@@ -288,8 +304,8 @@ export function ContactPage() {
                 </div>
                 <h2 className="text-xl font-bold text-ink">Message Received!</h2>
                 <p className="text-xs text-ink-muted max-w-md mx-auto">
-                  Thank you for reaching out. We have logged your request and our support desk will contact you at{' '}
-                  <strong className="text-ink">{email}</strong> shortly.
+                  Thank you for reaching out. Your message was accepted for review. You provided the email address{' '}
+                  <strong className="text-ink">{email}</strong>.
                 </p>
                 <Button size="sm" asChild className="mt-4">
                   <Link to="/">Back to Home</Link>
@@ -344,10 +360,11 @@ export function ContactPage() {
                   />
                 </div>
 
+                {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
                 <div className="pt-2">
-                  <Button type="submit" className="w-full font-semibold text-xs flex items-center justify-center gap-2">
+                  <Button type="submit" disabled={sending} className="w-full font-semibold text-xs flex items-center justify-center gap-2">
                     <Send className="size-3.5" />
-                    Send Message
+                    {sending ? 'Sending…' : 'Send Message'}
                   </Button>
                 </div>
               </form>
