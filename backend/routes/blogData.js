@@ -1,6 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
-const { requirePermission } = require('../security/auth');
+const { requirePermission, permissionsFor } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -11,6 +11,17 @@ router.use((req, res, next) => {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
+
+// Drafts are visible only to authenticated editorial operators. Public read
+// endpoints must not trust a caller-supplied publishedOnly flag or repository.
+function canReadDrafts(req) {
+    if (!req.user?.uid) return false;
+    const permissions = permissionsFor(req.user);
+    return ['*', 'system.config.write', 'blog.write', 'blog_management', 'content.manage'].some(p => permissions.has(p));
+}
+function isPublished(post) {
+    return post?.published === true || post?.published === 1;
+}
 
 // Normalization helper for consistent frontend consumption
 function normalizePostPayload(p) {
@@ -34,11 +45,12 @@ function normalizePostPayload(p) {
 // GET /api/blog-data - List blog posts (Public read)
 router.get('/', async (req, res) => {
     try {
+        const publicOnly = !canReadDrafts(req) || req.query.publishedOnly === 'true';
         const posts = await req.repository.getBlogPosts({
-            publishedOnly: req.query.publishedOnly === 'true',
+            publishedOnly: publicOnly,
             limit: req.query.limit,
         });
-        const normalized = (posts || []).map(normalizePostPayload);
+        const normalized = (posts || []).filter(post => !publicOnly || isPublished(post)).map(normalizePostPayload);
         return res.json({ success: true, posts: normalized });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch blog posts' });
@@ -48,7 +60,9 @@ router.get('/', async (req, res) => {
 // GET /api/blog-data/categories - List blog categories (Public read)
 router.get('/categories', async (req, res) => {
     try {
-        const posts = await req.repository.getBlogPosts({});
+        const publicOnly = !canReadDrafts(req);
+        const allPosts = await req.repository.getBlogPosts({ publishedOnly: publicOnly });
+        const posts = publicOnly ? (allPosts || []).filter(isPublished) : allPosts;
         const categoryMap = new Map();
         for (const p of posts || []) {
             const catName = p.category || 'General';
@@ -66,7 +80,7 @@ router.get('/categories', async (req, res) => {
         }
         return res.json({ success: true, categories: Array.from(categoryMap.values()) });
     } catch (_err) {
-        return res.json({ success: true, categories: [] });
+        return res.status(503).json({ success: false, error: 'Blog categories are unavailable.' });
     }
 });
 
@@ -74,7 +88,7 @@ router.get('/categories', async (req, res) => {
 router.get('/slug/:slug', async (req, res) => {
     try {
         const post = await req.repository.getBlogPostBySlug(req.params.slug);
-        if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+        if (!post || (!isPublished(post) && !canReadDrafts(req))) return res.status(404).json({ success: false, error: 'Post not found' });
         return res.json({ success: true, post: normalizePostPayload(post) });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch blog post' });
@@ -85,7 +99,7 @@ router.get('/slug/:slug', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const post = await req.repository.getBlogPostById(req.params.id);
-        if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+        if (!post || (!isPublished(post) && !canReadDrafts(req))) return res.status(404).json({ success: false, error: 'Post not found' });
         return res.json({ success: true, post: normalizePostPayload(post) });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch blog post' });
