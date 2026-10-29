@@ -71,6 +71,33 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
   outside this engagement's write boundary.
 
 ## 3. Deliverables in this package
+## 3.1 Mandate 7 publication pointer (2026-10-29)
+
+**Publication commit:** [`2def3e5`](https://github.com/bhaskarbeyond-creator/ResumePilotAi/commit/2def3e524654e24fc9ebd658f0be78045aeb7ae1) on `arena/393531fe-resumepilotai`.
+**Audited source checkpoint:** `8a6e03bbc279cfb7e3a62519659fa3fe770ad1be` (the publication commit's parent).
+**Verdict:** `PARTIAL — INCOMPLETE`. The audit package was updated; no application files changed in Mandate 7.
+
+Start with these current Mandate 7 artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| [`M7-CAPABILITY-CLOSURE.md`](M7-CAPABILITY-CLOSURE.md) | 112 capability rows / 487 subfeature rows, adjudication status, residual leads and confirmed losses |
+| [`CLIENT-BACKEND-CONTRACT-REGISTER.md`](CLIENT-BACKEND-CONTRACT-REGISTER.md) | Independent client-to-backend contract trace, 212 call sites, 15 distinct gap paths / 22 sites and false-success analysis |
+| [`CAPABILITY-SUBFEATURE-REGISTER.md`](CAPABILITY-SUBFEATURE-REGISTER.md) | Machine-generated subfeature inventory and status |
+| [`RUNTIME-TEST-HARNESS-M7.md`](RUNTIME-TEST-HARNESS-M7.md) | R-01…R-10 runtime test specification; specified, **not executed** |
+| [`Evidence/logs/m7-toolchain.log`](Evidence/logs/m7-toolchain.log) | Captured M7 tool outputs, verification summaries and provenance/count-reconciliation notes |
+| [`Evidence/adjudications-m7.json`](Evidence/adjudications-m7.json) | Machine-readable M7 adjudications |
+| [`EVIDENCE-INDEX.md`](EVIDENCE-INDEX.md) | Evidence IDs and artifact map |
+| [`METRIC-DEFINITIONS.md`](METRIC-DEFINITIONS.md) | Metric definitions and revised denominators |
+| [`REPAIR-ACTION-PLAN.md`](REPAIR-ACTION-PLAN.md) | Prioritized repair phases, including contract retargeting before build-out |
+| [`FINAL-AUDIT-HANDOVER.md`](FINAL-AUDIT-HANDOVER.md) | Consolidated handover and remaining acceptance gates |
+
+**Current reported M7 results:** 397 route registrations → 393 unique `METHOD + path` operations; reachability cross-check 393/393; client contract scan 190 matched, 8 mismatches, 14 with no operation; parity 12 FULL / 49 PARTIAL / 30 MISSING / 12 MOCK / 6 REPLACED / 3 UNVERIFIED. The verifier reports are 61/61 and 16/16. These are source/static audit results, not proof of runtime behavior.
+
+**Toolchain reconciliation caveat:** the captured independent client-contract output reports 413 backend registrations while the canonical reachability report records 397 registrations. The toolchain log preserves both observations and flags the 16-registration difference for source-level reconciliation; do not interpret 393/393 unique-operation agreement as proof that raw registration counts match.
+
+**Runtime remains blocked for this mandate:** no browser tests, MariaDB-backed tests or live-provider calls were executed. Do not promote the verdict or describe a workflow as runtime-verified until the harness has been executed in an environment with the required dependencies and credentials.
+
 
 > **Added 2026-10-29 (Mandate 7 — V7 capability closure + contract forensics, revision `8a6e03bb`):**
 > `M7-CAPABILITY-CLOSURE.md` (all 112 rows: 40 hand-adjudicated, 21 signal-clean, 10 M6 deep reads, 41 with
