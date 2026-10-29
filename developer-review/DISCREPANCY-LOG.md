@@ -2117,6 +2117,34 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **Correction applied** | M7's sentences are **left in place as published** and the correction is appended as a dated M8 amendment in `FINAL-AUDIT-HANDOVER.md` and this entry. No published number was rewritten; every M8 artefact carries `a2ecb96` |
 | **Closure** | Documentation corrected; the missing ref is recorded rather than fabricated. Not "fixed" by creating the ref retroactively — that would misrepresent when it existed |
 
+### Measurement addendum to DISC-049 (same mandate, later in the session)
+
+Two further measurements, both of which make the finding sharper rather than weaker.
+
+**A. The condition recurred, and it is not hypothetical.** The working copy used for M8 was re-cloned
+between two turns; the restored repository carried the branch pointer at the **foreign commit
+`a7d08a2`**, not at the pushed tip `a0bb09a`. That is exactly the condition that produced M7's stale
+`a7d08a2fa67b` stamp in `feature-parity.json`: a tool that stamps `HEAD` while the checkout sits on
+the wrong commit produces a true-looking, false provenance line. Nothing was lost — the pushed tip was
+fetched and the branch moved back to it — but the recurrence is the evidence that this is a live
+failure mode of the audit instrument, not one bad afternoon.
+
+**B. The scope measurement needs `core.quotePath=false`, and the naive form gives the opposite answer.**
+
+| Command | Result |
+|---|---|
+| `git diff --name-only a7d08a2 8a6e03bb \| grep -v '^developer-review/' \| wc -l` | **100** |
+| `git -c core.quotePath=false diff --name-only a7d08a2 8a6e03bb \| grep -v '^developer-review/' \| wc -l` | **0** |
+
+The 100 are all inside `developer-review/`: Playwright artefact directories whose names contain an
+en-dash, which git escapes as `\342\200\224` inside double quotes — so a quoted path no longer
+starts with `developer-review/` and passes the filter. The conclusion in the row above (**0 files
+differ outside the audit directory**) stands; the *method* stated for it does not, and is corrected
+here. Every scope proof in this package now uses `-c core.quotePath=false`, and `README.md`,
+`M8-INDEPENDENT-ACCEPTANCE-REPORT.md` §9 and `m8-toolchain.log` §1.5/§1.7 all carry the corrected
+command. A reviewer running the naive form would conclude the audit had rewritten 100 application
+files; §1.7 of the toolchain log says so in as many words.
+
 ## [DISC-050] The public contact form reports success without sending a request
 
 | Field | Value |

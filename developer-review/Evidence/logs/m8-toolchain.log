@@ -36,6 +36,21 @@ commits             listed rather than folded in, so a reader can see what chang
                     The head at the time this line was written is dec42e3.
                     Every number in §2-§5 below is the post-correction value; the corrections
                     themselves are described in §3.2 and in the documents' dated amendments.
+
+                    Two further facts about this sandbox, recorded because a provenance record
+                    that hides its own instability is worthless:
+                    (a) The working copy was re-cloned between two turns of this mandate. The
+                        restored repository carried the branch pointer at the FOREIGN commit
+                        a7d08a2, not at the pushed tip — the same condition that produced M7's
+                        stale a7d08a2fa67b artefact stamp (DISC-049). Nothing was lost: the pushed
+                        tip a0bb09a was fetched and the branch was moved back to it.
+                    (b) One commit made in that window therefore had the correct tree but the
+                        wrong parent (a7d08a2). It was NEVER pushed. It was replaced by a commit
+                        on top of a0bb09a whose tree is byte-identical (212d785acc75), and the
+                        local pointer moved with `git reset --soft`. No published history was
+                        rewritten, reset or force-pushed; `git reflog` on this clone still shows
+                        both entries for anyone who wants to check.
+                    Head at the time of this line: 416fda3 (416fda31935f476f70da5f3ff606ae4afdebeef7).
 counts of the       tracked files at audited revision: see §1.6 (re-derived, not carried over)
 working tree        clean outside developer-review/ (§6)
 
@@ -78,10 +93,27 @@ working tree        clean outside developer-review/ (§6)
     $ git show-ref | grep -i audit       -> (no output)   refs/audit-preserved/base-a7d08a2
                                                           DOES NOT EXIST in this repository
     $ git diff a7d08a2 8a6e03bb --stat   -> 264 files changed, 103,955 insertions(+), 22 deletions(-)
-    $ git diff --name-only a7d08a2 8a6e03bb | grep -v '^developer-review/' | wc -l
+    $ git -c core.quotePath=false diff --name-only a7d08a2 8a6e03bb \
+          | grep -v '^developer-review/' | wc -l
                                          -> 0         (the application tree IS identical; the
                                                        package's claim of tree-wide byte identity
                                                        is not — see DISC-049)
+    WARNING, measured in this session: the same command WITHOUT -c core.quotePath=false
+    returns 100, because 100 of the 264 paths carry a non-ASCII character and git prints them
+    quoted, so they no longer start with `developer-review/`. The naive form is not a scope
+    proof. See §1.7.
+
+1.7 The quoted-path trap (found the hard way, recorded because it invalidates a whole class of
+    scope claims)
+    $ git diff --name-only a7d08a2 8a6e03bb | grep -v '^developer-review/' | wc -l     -> 100
+    $ git -c core.quotePath=false diff --name-only a7d08a2 8a6e03bb \
+          | grep -v '^developer-review/' | wc -l                                       -> 0
+    The 100 are all inside developer-review/; they are Playwright artefact directories whose
+    names contain an en-dash, which git escapes as \342\200\224 inside double quotes. Nothing
+    outside the audit directory differs. Every scope statement in this package therefore uses
+    -c core.quotePath=false, and the README/acceptance-report scope proofs were re-run that way.
+    A reviewer who runs the naive form will conclude the audit changed 100 application files.
+    It did not.
 
 1.6 Re-derived inventory at the audited revision (the verifier recomputes both trees)
     legacy src/  : 650 files / 193,310 lines / 153 endpoints

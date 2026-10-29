@@ -15,7 +15,7 @@ absent database, an absent browser and absent provider credentials, each measure
 
 | § | Requirement | Outcome | Where |
 |---|---|---|---|
-| §2 | Provenance | ff-only to `a2ecb96`; remote/branch/HEAD/parent/tree recorded; **M7's "byte-identical" claim falsified** and corrected; the ref M7 said preserved does not exist | §2, DISC-049 |
+| §2 | Provenance | ff-only to `a2ecb96`; remote/branch/HEAD/parent/tree recorded; **M7's "byte-identical" claim falsified** and corrected; the ref M7 said preserved does not exist; the same wrong-checkout condition recurred in this sandbox and is recorded, not hidden | §2, DISC-049 + addendum |
 | §3 | P0 registration reconciliation first | **Proved**: 413 = 405 + 6 + 2 and 405 = 399 + 6 = (393 + 6) + 6; two instruments repaired; 393 operations unchanged; in-scope disagreement 0/0; the exercise exposed **DISC-055** (four route blocks declared twice) | `M8-REGISTRATION-COUNT-RECONCILIATION.md` |
 | §4 | P0 20 residual leads | **All 20 adjudicated** (21 lead judgements), 0 unresolved: 14 missing / 4 equivalent / 2 preserved / 1 mixed; 0 row classifications changed; **1 new P1 raised** (DISC-054) | `M8-SUBFEATURE-CLOSURE.md`, `Evidence/adjudications-m8.json` |
 | §5 | P0 all 112 parity rows | 112 revalidated by independent derivation; 8 flagged rows read; **3 classifications changed** with evidence | `M8-PARITY-REVALIDATION.md` |
@@ -64,6 +64,15 @@ Measured at this revision:
 
 Recorded as **DISC-049** (P3, documentation/provenance integrity, not a product defect). The M7
 sentences are left in place as published; the correction is appended, not overwritten.
+
+**The condition recurred, and it is recorded rather than tidied away.** Between two turns of this
+mandate the sandbox re-cloned the repository and left the branch pointer on the **foreign commit
+`a7d08a2`** instead of the pushed tip — precisely the situation that produced M7's stale
+`a7d08a2fa67b` stamp. It was detected because a commit landed on the wrong parent; that commit had the
+correct tree, was never pushed, and was replaced by one on the pushed tip with a byte-identical tree
+(`212d785acc75`). No published history was rewritten. Two consequences are now permanent in the
+package: every scope statement uses `git -c core.quotePath=false` (§9, and DISC-049 addendum B), and
+the toolchain log §0 states the incident instead of presenting a clean provenance story.
 
 **Authoritative revision per metric.** Every artefact regenerated in M8 carries `a2ecb96`:
 `backend-reachability.json`, `client-contract-audit.json`, `capability-subfeatures.json`,
@@ -314,8 +323,8 @@ value was moved.
 
 ## 9. Scope proof — 0 application changes (gate J)
 
-Run at `a2ecb96` in this working tree, with `core.quotePath=false` so that non-ASCII paths cannot
-hide inside quoted output:
+Re-run at `416fda3` (`416fda31935f476f70da5f3ff606ae4afdebeef7`), i.e. on the published state, with `core.quotePath=false` so that
+non-ASCII paths cannot hide inside quoted output:
 
 ```
 $ git -c core.quotePath=false diff --name-only 8a6e03bb HEAD | grep -v '^developer-review/' | wc -l
@@ -332,6 +341,12 @@ $ git diff --stat HEAD -- src backend frontend frontend/index.html package.json 
 
 For scale: the same comparison against `8a6e03bb` lists **36 changed paths**, and every one of them is
 under `developer-review/`.
+
+**Why `core.quotePath=false` is in every command above.** Without it the same three commands give
+`100`, because 100 of the 264 paths between `a7d08a2` and `8a6e03bb` carry a non-ASCII character and git
+prints them quoted (`"...\\342\\200\\224..."`), so they stop matching `^developer-review/`. The
+files are all inside the audit directory; a naive scope check would report 100 application files
+changed. Measured and documented in `DISCREPANCY-LOG.md` DISC-049 addendum B and `m8-toolchain.log` §1.7.
 
 Every modified and new path in this mandate is under `developer-review/`. `node_modules` installed for
 the test runs is git-ignored and excluded from the produced patches; `package.json` and both
