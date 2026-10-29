@@ -106,6 +106,18 @@ Start here:
 | [`M8A-RUNTIME-VERIFICATION.md`](M8A-RUNTIME-VERIFICATION.md) | what was executed (7 probes), what was blocked and why, and the 401-vs-404 correction |
 | [`M8A-METHOD-QUALITY-REVIEW.md`](M8A-METHOD-QUALITY-REVIEW.md) | dossier defects, register measurement defects, and this mandate's own four self-corrections |
 | [`M8B-FORENSIC-CLOSURE-REPORT.md`](M8B-FORENSIC-CLOSURE-REPORT.md) | gates A–L, verdict `PARTIAL — BLOCKED`, and the finding that matters most |
+### Mandate 8C — final forensic closure (audit-only)
+
+| Document | Contents |
+|---|---|
+| [`M8C-FINAL-FORENSIC-CLOSURE-REPORT.md`](M8C-FINAL-FORENSIC-CLOSURE-REPORT.md) | the ten required items, verdict `PARTIAL — INCOMPLETE` |
+| [`M8C-INTEGRITY-VERIFIER-FAILURE-ANALYSIS.md`](M8C-INTEGRITY-VERIFIER-FAILURE-ANALYSIS.md) | 5 verifier failures → 12/12, each with a rationale and a fixture |
+| [`M8C-SHARED-CORPUS-RECONSTRUCTION.md`](M8C-SHARED-CORPUS-RECONSTRUCTION.md) | 19 shared-corpus rows across 7 corpora; 41 still unreconstructed |
+| [`M8C-CAPABILITY-DENOMINATOR-RECONCILIATION.md`](M8C-CAPABILITY-DENOMINATOR-RECONCILIATION.md) | 112 accepted + 5 proposed = 117; 11.1% and 15.4% reconciled |
+| [`M8C-FILE-INVENTORY-RECONCILIATION.md`](M8C-FILE-INVENTORY-RECONCILIATION.md) | 650 vs 651 resolved: one excluded test file |
+| [`M8C-RUNTIME-LOCAL-EXECUTION-MANIFEST.md`](M8C-RUNTIME-LOCAL-EXECUTION-MANIFEST.md) | 35 probes / 23 test cases / 11 contract defects, counted separately |
+| [`M8C-REGISTER-AND-EVIDENCE-DELTA.md`](M8C-REGISTER-AND-EVIDENCE-DELTA.md) | published delta; history not rewritten |
+| [`M8C-METHOD-LIMITATIONS.md`](M8C-METHOD-LIMITATIONS.md) | ten separate measures; no combined percentage |
 | [`M8B-FP-A14-FP-A15-RECONSTRUCTION.md`](M8B-FP-A14-FP-A15-RECONSTRUCTION.md) | cause proven by experiment; both rows independently reconstructed; 8 shared corpora |
 | [`M8B-VERIFIER-INDEPENDENT-VALIDATION.md`](M8B-VERIFIER-INDEPENDENT-VALIDATION.md) | before/after verifier behaviour and 8 corrupted fixtures, each rejected for the right reason |
 | [`M8B-RUNTIME-CLOSURE-MATRIX.md`](M8B-RUNTIME-CLOSURE-MATRIX.md) | 23 runtime rows: 8 PASS, 1 FAIL, 12 BLOCKED, 2 N/A, with exact prerequisites |

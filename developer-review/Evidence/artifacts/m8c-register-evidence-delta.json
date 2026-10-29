@@ -1,0 +1,152 @@
+{
+  "artifact": "m8c-register-evidence-delta",
+  "mandate": "M8C section 8",
+  "generatedBy": "developer-review/tools/m8c-register-delta.py",
+  "policy": "Immutable inputs (feature-parity.json, capability-subfeatures.json, DISCREPANCY-LOG.md rows, FEATURE-PARITY-MATRIX.md) are NOT rewritten. Corrections live in Evidence/artifacts/m8c-*.json and every superseded statement is listed here with the artifact that supersedes it.",
+  "findings": {
+    "idsInLog": 56,
+    "duplicateIds": [],
+    "mergedDuplicates": [
+      {
+        "finding": "DISC-042",
+        "mergedInto": "DISC-030"
+      },
+      {
+        "finding": "DISC-046",
+        "mergedInto": "DISC-030"
+      }
+    ],
+    "distinctFindings": 54,
+    "reconciliation": "56 log entries, 2 of which are merge aliases -> 54 distinct findings",
+    "citingEvidencePath": 13,
+    "unresolvedCitedPaths": []
+  },
+  "rows": {
+    "total": 112,
+    "withoutEvidence": [],
+    "classifications": {
+      "PARTIAL PARITY": 51,
+      "MOCK / FABRICATED STATE": 12,
+      "MISSING": 28,
+      "FULL PARITY": 13,
+      "UNVERIFIED": 3,
+      "REPLACED BY EQUIVALENT": 5
+    }
+  },
+  "revisionDrift": {
+    "registerRevision": "a2ecb96d2b19",
+    "auditedRevision": "69a3ed4",
+    "stale": true,
+    "consequence": "row-level file/line citations were captured at the register revision; they are re-resolved against the audited tree by verifier C02, and any row whose paths no longer resolve fails that check"
+  },
+  "overlay": {
+    "rowsDeclared": 62,
+    "scopeCounts": {
+      "capability-scoped": 16,
+      "legitimate-share": 2,
+      "no-corpus": 2,
+      "directory-unreconstructed": 41,
+      "nested-corpus-explained": 1
+    },
+    "artifactDistributionStaleDeclared": 19,
+    "requiresCorrection": [
+      "FP-C04"
+    ],
+    "notScoped": [
+      "FP-A01",
+      "FP-A03",
+      "FP-A05",
+      "FP-A06",
+      "FP-A07",
+      "FP-A09",
+      "FP-A10",
+      "FP-A11",
+      "FP-A12",
+      "FP-A13",
+      "FP-A17",
+      "FP-A18",
+      "FP-A20",
+      "FP-A22",
+      "FP-A23",
+      "FP-A24",
+      "FP-C02",
+      "FP-C05",
+      "FP-C06",
+      "FP-C07",
+      "FP-D03",
+      "FP-D12",
+      "FP-D13",
+      "FP-D15",
+      "FP-E01",
+      "FP-E08",
+      "FP-E09",
+      "FP-E16",
+      "FP-E13",
+      "FP-F08",
+      "FP-F11",
+      "FP-F10",
+      "FP-G02",
+      "FP-G07",
+      "FP-G09",
+      "FP-G10",
+      "FP-G11",
+      "FP-G15",
+      "FP-G22",
+      "FP-G23",
+      "FP-G24"
+    ]
+  },
+  "supersededStatements": [
+    {
+      "statement": "parity is 11.1%",
+      "denominator": "13/117 (112 accepted + 5 proposals)",
+      "supersededBy": "13/112 = 11.61% strict FULL parity over accepted rows",
+      "evidence": "Evidence/artifacts/m8c-capability-ledger.json measure M-01/M-07"
+    },
+    {
+      "statement": "full-plus-replaced is 15.4%",
+      "denominator": "18/117 (mixed universe)",
+      "supersededBy": "18/112 = 16.07% over accepted rows",
+      "evidence": "Evidence/artifacts/m8c-capability-ledger.json measure M-02/M-06"
+    },
+    {
+      "statement": "legacy attribution is 650/650",
+      "denominator": "measured files",
+      "supersededBy": "attribution reaches all 651 raw code files only because directory-scoped corpora recurse, and one corpus includes a test file. Completeness is trivial, not point-level.",
+      "evidence": "Evidence/artifacts/m8c-file-inventory.json mapping"
+    },
+    {
+      "statement": "16 shared-corpus rows",
+      "denominator": "rows whose corpus is shared",
+      "supersededBy": "19 rows share a corpus: grouping by identical declared corpus gave 18, grouping by identical STORED DISTRIBUTION exposed FP-F09 as a 19th",
+      "evidence": "Evidence/artifacts/m8c-corpus-scoping.json (row FP-F09)"
+    },
+    {
+      "statement": "the integrity verifier passes 61/61, so the register is sound",
+      "denominator": "package checks",
+      "supersededBy": "package checks passed while the register still measured 19 capabilities over shared directories",
+      "evidence": "Evidence/logs/m8c-baseline/EXITCODES.txt"
+    }
+  ],
+  "claimsDowngraded": [
+    {
+      "claim": "M8 claim 5 (helper-verb call sites are wired)",
+      "from": "OVERSTATED",
+      "to": "downgraded in M8B",
+      "evidence": "M8B-FORENSIC-CLOSURE-REPORT.md"
+    },
+    {
+      "claim": "DISC-056 is a product defect",
+      "from": "product defect",
+      "to": "test-double defect (InMemoryRepository ignores query options)",
+      "evidence": "DISCREPANCY-LOG.md DISC-056 evidence citation"
+    }
+  ],
+  "handPinnedValues": [
+    {
+      "location": "scripts/verify-v4-reconciliation.py:338",
+      "value": 176,
+      "status": "pinned expectation, not derived; left unchanged because changing an expected value to make a check green is prohibited"
+    }
+  ]
+}
