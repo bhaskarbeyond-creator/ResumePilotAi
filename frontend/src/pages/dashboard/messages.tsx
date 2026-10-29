@@ -114,13 +114,17 @@ function EmptyInbox() {
   );
 }
 
-function NotAvailable({ onBack, headingRef }: { onBack: () => void; headingRef: React.Ref<HTMLHeadingElement> }) {
+function NotAvailable({ onBack, headingRef, invalid }: { onBack: () => void; headingRef: React.Ref<HTMLHeadingElement>; invalid: boolean }) {
   return (
     <section aria-labelledby="conversation-missing-heading" className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-10 text-center">
       <h2 id="conversation-missing-heading" ref={headingRef} tabIndex={-1} className="text-base font-semibold text-ink focus:outline-none">
         This conversation isn’t available
       </h2>
-      <p className="max-w-sm text-sm text-ink-secondary">It may have been removed, or the link belongs to a different account.</p>
+      <p className="max-w-sm text-sm text-ink-secondary">
+        {invalid
+          ? 'The link does not contain a valid conversation id. Choose a conversation from the list instead.'
+          : 'It may have been removed, or the link belongs to a different account.'}
+      </p>
       <Button className="mt-2" variant="outline" size="sm" onClick={onBack}>Back to conversations</Button>
     </section>
   );
@@ -174,7 +178,11 @@ export function MessagesPage() {
     if (profileModuleOff) setModuleOff(true);
   }, [profileModuleOff]);
 
+  const requestedValid = requestedId === null || isConversationId(requestedId);
   const selected = isConversationId(requestedId) ? conversations.find((item) => item.id === requestedId) ?? null : null;
+  // An id that is not a conversation id can never open, and neither can one the
+  // caller is not a participant of: both answer with the same unavailable state.
+  const invalidRequested = requestedId !== null && !requestedValid;
   const missing = requestedId !== null && !disabled && list.isSuccess && !selected;
   const threadOpen = Boolean(selected || missing);
 
@@ -272,7 +280,7 @@ export function MessagesPage() {
                 headingRef={headingRef}
               />
             ) : missing ? (
-              <NotAvailable onBack={closeConversation} headingRef={missingHeadingRef} />
+              <NotAvailable onBack={closeConversation} headingRef={missingHeadingRef} invalid={invalidRequested} />
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
                 <MessageSquare className="size-8 text-ink-muted" aria-hidden="true" />
