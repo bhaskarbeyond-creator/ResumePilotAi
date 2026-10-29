@@ -14,6 +14,50 @@ const INTERVIEW_ROUNDS = new Set([
 ]);
 const INTERVIEW_FORMATS = new Set(['Video', 'In-Person', 'Phone']);
 
+// The five candidate tracker columns. These are the candidate's personal
+// workflow and are never written back to the employer's application decision.
+const TRACKER_COLUMNS = Object.freeze(['wishlist', 'applied', 'interview', 'offer', 'rejected']);
+
+/**
+ * The employer-owned application lifecycle the candidate sees, mapped from the
+ * values the apply workflow and the employer console actually store in
+ * `applications.status` (a free-form VARCHAR; the workflow writes pending,
+ * interview, accepted, rejected). Unknown stored values are reported as UNKNOWN
+ * rather than being guessed into a lifecycle stage.
+ */
+const APPLICATION_LIFECYCLE = Object.freeze({
+    pending: 'APPLIED',
+    applied: 'APPLIED',
+    submitted: 'APPLIED',
+    reviewing: 'REVIEWING',
+    in_review: 'REVIEWING',
+    interview: 'INTERVIEW_SCHEDULED',
+    interview_scheduled: 'INTERVIEW_SCHEDULED',
+    rejected: 'REJECTED',
+    declined: 'REJECTED',
+    accepted: 'OFFERED',
+    offered: 'OFFERED',
+});
+
+function lifecycleStatusFor(status) {
+    const key = String(status || '').trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(APPLICATION_LIFECYCLE, key)
+        ? APPLICATION_LIFECYCLE[key]
+        : 'UNKNOWN';
+}
+
+/**
+ * Every candidate-owned resource below is owner-scoped and requires a verified
+ * identity. backend/index.js already authenticates /api/jobs-data, but the
+ * owner-scoped routes must fail closed if they are ever mounted elsewhere.
+ */
+function requireCandidate(req, res, next) {
+    if (!req.user?.uid) {
+        return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Authentication required' });
+    }
+    return next();
+}
+
 function normalizeTrackerInput(input = {}, { partial = false } = {}) {
     const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
     // Notes may span lines: line breaks are kept, other control characters removed.
@@ -179,14 +223,14 @@ router.get('/', async (req, res) => {
 
 // Job tracker is a distinct owner-scoped MariaDB resource. It must never be
 // conflated with submitted job applications.
-router.get('/tracker', async (req, res) => {
+router.get('/tracker', requireCandidate, async (req, res) => {
     try {
         const jobs = await req.repository.getTrackedJobs(req.user.uid);
-        return res.json({ success: true, jobs });
+        return res.json({ success: true, jobs, columns: TRACKER_COLUMNS });
     } catch (error) { return replyTrackerError(res, error); }
 });
 
-router.post('/tracker', async (req, res) => {
+router.post('/tracker', requireCandidate, async (req, res) => {
     try {
         const job = await req.repository.createTrackedJob(
             req.user.uid,
@@ -197,7 +241,7 @@ router.post('/tracker', async (req, res) => {
     } catch (error) { return replyTrackerError(res, error); }
 });
 
-router.patch('/tracker/:id', async (req, res) => {
+router.patch('/tracker/:id', requireCandidate, async (req, res) => {
     try {
         const expectedRevision = Number(req.body?.expectedRevision);
         if (!Number.isInteger(expectedRevision) || expectedRevision < 1) {
@@ -213,7 +257,7 @@ router.patch('/tracker/:id', async (req, res) => {
     } catch (error) { return replyTrackerError(res, error); }
 });
 
-router.delete('/tracker/:id', async (req, res) => {
+router.delete('/tracker/:id', requireCandidate, async (req, res) => {
     try {
         const expectedRevision = Number(req.body?.expectedRevision);
         if (!Number.isInteger(expectedRevision) || expectedRevision < 1) {
@@ -360,7 +404,7 @@ function applicantContactUpdate(body) {
 }
 
 // GET /api/jobs-data/applications/list - My applications (owner-scoped; zero-trust)
-router.get('/applications/list', async (req, res) => {
+router.get('/applications/list', requireCandidate, async (req, res) => {
     try {
         // The current user's own applications; applicantId is never client-controlled.
         const rows = await req.repository.getApplicantApplications({ applicantId: req.user.uid });
@@ -399,13 +443,13 @@ async function updateOwnApplication(req, res) {
 
 // POST /api/jobs-data/applications/:id - Update my application (owner-scoped). It
 // no longer creates one: a missing id is 404, another applicant's is 403.
-router.post('/applications/:id', updateOwnApplication);
+router.post('/applications/:id', requireCandidate, updateOwnApplication);
 
 // PATCH /api/jobs-data/applications/:id - Update my application (owner-scoped)
-router.patch('/applications/:id', updateOwnApplication);
+router.patch('/applications/:id', requireCandidate, updateOwnApplication);
 
 // DELETE /api/jobs-data/applications/:id - Remove my application (owner-scoped)
-router.delete('/applications/:id', async (req, res) => {
+router.delete('/applications/:id', requireCandidate, async (req, res) => {
     try {
         const existing = await req.repository.getApplication(req.params.id);
         if (!existing) return res.status(404).json({ success: false, error: 'Application not found' });
@@ -420,4 +464,10 @@ router.delete('/applications/:id', async (req, res) => {
 });
 
 // isPubliclyVisibleJob: the favourites list (routes/miscData.js) applies the same rule as GET /:id.
-module.exports = { jobsDataRouter: router, isPubliclyVisibleJob };
+module.exports = {
+    jobsDataRouter: router,
+    isPubliclyVisibleJob,
+    lifecycleStatusFor,
+    TRACKER_COLUMNS,
+    APPLICATION_LIFECYCLE,
+};

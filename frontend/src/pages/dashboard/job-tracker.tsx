@@ -124,9 +124,19 @@ export function JobTrackerPage() {
         setNotice({ tone: 'error', text: `${describe(job)} is no longer in your tracker. It may have been removed in another tab or device.` });
       } else if (kind === 'conflict') {
         setJobs((current) => current.map((item) => (item.id === job.id ? job : item)));
-        setNotice({ tone: 'error', text: `${describe(job)} was changed in another tab or device, so it wasn’t moved. Its latest version is shown; try again.` });
-        await reload().catch(() => undefined);
         pendingFocus.current = focusAfterMove;
+        // Reloading the conflicting row is the only way to show its real state.
+        // If that reload also fails the candidate is told the board is stale —
+        // the failure is never swallowed.
+        try {
+          await reload();
+          setNotice({ tone: 'error', text: `${describe(job)} was changed in another tab or device, so it wasn’t moved. Its latest version is shown; try again.` });
+        } catch {
+          setNotice({
+            tone: 'error',
+            text: `${describe(job)} was changed in another tab or device, so it wasn’t moved, and the latest version could not be loaded. Refresh the page to see the current state.`,
+          });
+        }
       } else {
         setJobs((current) => current.map((item) => (item.id === job.id ? job : item)));
         pendingFocus.current = focusAfterMove;
@@ -402,8 +412,19 @@ export function JobTrackerPage() {
           onOpenChange={(open) => { if (!open) setRemoval((current) => (current ? { ...current, open: false } : current)); }}
           onCloseAutoFocus={restoreFocus}
           onConflict={async (job) => {
-            const latest = await reload().catch(() => null);
-            return latest?.find((item) => item.id === job.id) ?? null;
+            // Returning null tells the dialog the job is already gone, which must
+            // only be claimed when the reload actually succeeded. A failed reload
+            // returns the card unchanged, so nothing is reported as deleted.
+            try {
+              const latest = await reload();
+              return latest.find((item) => item.id === job.id) ?? null;
+            } catch {
+              setNotice({
+                tone: 'error',
+                text: `${describe(job)} was changed in another tab or device, and its latest version could not be loaded. Refresh the page before removing it.`,
+              });
+              return job;
+            }
           }}
           onDeleted={(job, alreadyGone) => {
             const index = visible.findIndex((item) => item.id === job.id);
