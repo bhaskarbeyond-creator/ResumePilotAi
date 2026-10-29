@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils';
 import { normalizeResumeToDocument } from '@/lib/resume-view-model';
 import { tryGetTemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
+import { EmployerInterviewSlotPanel } from '@/components/employer/EmployerInterviewSlotPanel';
 import { post } from '@/lib/api-client';
 import {
   useApplicationResume,
@@ -345,7 +346,7 @@ export function CandidateReviewDrawer({
                       ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
                       : currentStatus === 'rejected'
                       ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
-                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                      : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30'
                   )}
                 >
                   {currentStatus}
@@ -440,15 +441,18 @@ export function CandidateReviewDrawer({
             <label className="block text-xs font-semibold text-ink">
               Recruiter Evaluation Score
             </label>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" role="group" aria-label="Recruiter evaluation score">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
+                  aria-label={`Rate ${star} of 5 stars`}
+                  aria-pressed={star === rating}
                   onClick={() => setRating(star)}
                   className="p-1 text-amber-500 hover:scale-110 transition-transform"
                 >
                   <Star
+                    aria-hidden="true"
                     className={cn(
                       'size-5',
                       star <= rating ? 'fill-amber-500' : 'stroke-ink-muted fill-none'
@@ -558,10 +562,19 @@ export function CandidateReviewDrawer({
             )}
           </div>
 
+          {/* Employer Interview Slot Manager & Candidate Booking Widget */}
+          <EmployerInterviewSlotPanel
+            applicationId={application.id}
+            candidateName={application.applicantName}
+            onBookingConfirmed={() => {
+              onStatusUpdated?.();
+            }}
+          />
+
           {/* Internal Notes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
+              <label htmlFor="candidate-internal-notes" className="text-xs font-semibold text-ink flex items-center gap-1.5">
                 <span>Hiring Team Notes</span>
                 <span className="text-[10px] text-ink-muted font-normal">
                   (Internal only)
@@ -578,6 +591,7 @@ export function CandidateReviewDrawer({
               </Button>
             </div>
             <Textarea
+              id="candidate-internal-notes"
               rows={3}
               placeholder="Record interviewer impressions, compensation discussions, or follow-up milestones..."
               value={notes}
@@ -604,7 +618,7 @@ export function CandidateReviewDrawer({
                   onClick={() => handleTransitionClick(action.status)}
                   className={cn(
                     'text-xs font-semibold',
-                    action.tone === 'emerald' && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                    action.tone === 'emerald' && 'bg-emerald-700 hover:bg-emerald-800 text-white',
                     action.tone === 'accent' && 'bg-accent hover:bg-accent/90 text-white'
                   )}
                 >
