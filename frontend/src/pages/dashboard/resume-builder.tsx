@@ -33,6 +33,7 @@ import { bucketForScore, bucketTone } from '@/lib/resume-metrics';
 import { resumeQualityScore, scoreResume } from '@/lib/resume-score';
 import { applyMasterProfile, describeMasterSync } from '@/lib/master-profile';
 import { cn } from '@/lib/utils';
+import { compressHeadshot, validateImageFile } from '@/lib/image-compression';
 import { PreviewModal } from '@/components/ui/preview-modal';
 import { ShareModal } from '@/components/ui/share-modal';
 import {
@@ -49,9 +50,7 @@ import { RoleAiCopilotModal } from '@/components/resume/role-ai-copilot-modal';
 import { AiRecommendationModal, type RecommendationItem } from '@/components/resume/ai-recommendation-modal';
 import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
-import type { ParsedResumeData } from '@/lib/ai-content';
 import { TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
-import { compressProfilePhoto } from '@/lib/image-compression';
 import {
   User,
   Briefcase,
@@ -2603,17 +2602,20 @@ function HeadingStep({
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setPhotoError(null);
-    if (file.size > 15 * 1024 * 1024) {
-      setPhotoError('Photo must be under 15MB');
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setPhotoError(validationError);
       return;
     }
+
     try {
       setCompressingPhoto(true);
-      const compressed = await compressProfilePhoto(file);
-      update('photo', compressed);
+      const compressed = await compressHeadshot(file);
+      update('photo', compressed.dataUrl);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to compress photo';
+      const msg = err instanceof Error ? err.message : 'Failed to compress photo. Please try a different image.';
       setPhotoError(msg);
     } finally {
       setCompressingPhoto(false);

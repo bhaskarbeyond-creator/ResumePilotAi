@@ -156,7 +156,6 @@ export function CandidateReviewDrawer({
     e.preventDefault();
     if (!messageSubject.trim() || !messageBody.trim() || messageSending) return;
 
-    setMessageSending(true);
     setMessageError(null);
     try {
       const candidateId = application.id || application.applicantId;
@@ -198,8 +197,10 @@ export function CandidateReviewDrawer({
         setMessageSubject('');
         setMessageBody('');
       }, 1500);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to send communication to candidate.';
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error?.message ||
+        (err instanceof Error ? err.message : 'Failed to send message. Please try again.');
       setMessageError(msg);
     } finally {
       setMessageSending(false);
@@ -782,6 +783,12 @@ export function CandidateReviewDrawer({
                   />
                 </div>
 
+                {messageError && (
+                  <div className="p-2.5 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-medium flex items-center gap-2">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>{messageError}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-edge">
                   <Button
                     type="button"
