@@ -20,7 +20,7 @@ value was moved to make a check pass.**
 | `verify-audit-package.sh` | **61 / 61 PASS** | mostly existence and text-presence; 10 substantive checks |
 | `verify-v4-reconciliation.py` | **20 / 20 PASS** | derived from repository + artefacts; 3 checks added in M8 |
 | `verify-parity.py` (`totals`, `matrix-ids`, `coverage`, `ids`, and the rest) | **PASS**, silent on success | well-formedness and arithmetic inside the parity register |
-| `scan-secrets.py` | see `Evidence/logs/m8-secret-scan.log` | pattern scan of the audit directory only |
+| `scan-secrets.py` | **PASS** (captured in `Evidence/logs/m8-secret-scan.log`) | pattern scan of the audit directory only |
 
 Passing all three is **not** an acceptance statement. Section 6 lists what the suite cannot see.
 
@@ -66,10 +66,11 @@ Checks that re-derive from source rather than re-reading an artefact:
 | operation register matches its TSV | parse both | two renderings of one truth | truth |
 | client call existence artifact reconciles | arithmetic | 229 = served + unserved | parser recall |
 | every FULL PARITY row is supported | `parity-endpoint-audit.json` | no FULL row cites an absent endpoint | **see weakness 1** |
-| coverage total equals the sum of its parts | arithmetic | 1,537 | that components are distinct work |
+| coverage total equals the sum of its parts | arithmetic over the registers (currently **1,544**) | the published total equals its components | that the components are distinct work |
 | registration counts reconcile across the two parsers | replays legacy rules | the 413/397/393 story | that either parser sees every route |
 | **legacy call evidence re-derivable from `src/`** (M8) | independent python scanner over `src/` | 166 operations with legacy evidence are exactly the ones `src/` calls | shared "helper-then-literal" assumption |
 | **M8 gap adjudications cite registered operations** (M8) | re-resolves every `WRONG_URL` citation against the register | no invented equivalent; `MISSING_BACKEND` cites nothing; gap set equals the audit's unresolved set | that the cited operation is the *right* alternative |
+| **M8 gap set reproduces the audit's unresolved set** (M8) | gap shapes vs `client-contract-audit.json` | nothing silently dropped or added; false-success counts agree | that the audit's scanner found every call site |
 | **M8 parity revalidation agrees with the register** (M8) | compares independent derivation to published distribution | coverage of 112 rows, revision currency, flagged-at-parity rows adjudicated | that unflagged rows were read |
 
 **Weaknesses confirmed in M8 (all recorded, none worked around):**

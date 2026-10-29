@@ -1,0 +1,281 @@
+{
+ "revision": "a0bb09aa0ebeb7af367f4c54fc65458878dd588f",
+ "generatedAt": "2026-10-29T08:10:19+00:00",
+ "environment": {
+  "process": "node backend/index.js on port 5061",
+  "repository": "IN_MEMORY_REPOSITORY=1 (substitute: NOT MariaDB)",
+  "identity": "local HMAC test token minted in-process (no external IdP)",
+  "browser": "none (no binary; CDN unreachable)",
+  "providers": "none (no credentials)",
+  "database": "none (no MariaDB server, no client library obtainable)",
+  "revision": "a0bb09aa0ebeb7af367f4c54fc65458878dd588f"
+ },
+ "summary": {
+  "total": 10,
+  "PASS": [
+   "R-03",
+   "R-05",
+   "R-08",
+   "R-09"
+  ],
+  "PARTIAL": [
+   "R-01",
+   "R-02",
+   "R-04",
+   "R-10"
+  ],
+  "BLOCKED": [
+   "R-06",
+   "R-07"
+  ],
+  "endToEndVerified": 0,
+  "note": "No scenario reached a durable store, so none is reported end to end. PASS means the specific assertion in this environment held (usually a negative: something that should not claim success did not), not that the workflow works."
+ },
+ "scenarios": [
+  {
+   "id": "R-01",
+   "scenario": "Moderation approval persists",
+   "status": "PARTIAL",
+   "commands": [
+    "curl -s -o /dev/null -w '%{http_code}' -X POST $B/api/admin/employer-applications/<uid>/verify  (client path)",
+    "curl -s -X PATCH $B/api/admin/employer-applications/<uid> -d '{\"status\":\"APPROVED\"}'  (real path)"
+   ],
+   "observed": [
+    "POST \u2026/verify -> 404 {\"code\":\"NOT_FOUND\",\"message\":\"API route not found\"}",
+    "PATCH \u2026/<uid> -> 404 {\"error\":\"Employer application not found.\"} (route exists, no row)",
+    "GET \u2026/employer-applications -> 503 EMPLOYER_APPLICATIONS_UNAVAILABLE (repository unavailable)"
+   ],
+   "assertions": {
+    "clientPathIsNotFound": true,
+    "realPathAnswersAtAll": true,
+    "persistenceObserved": false,
+    "authzExercised": false
+   },
+   "blockedBy": "MariaDB absent (persistence leg) and no browser (UI leg)",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log",
+    "Evidence/logs/m8-http-probe-authenticated.log"
+   ]
+  },
+  {
+   "id": "R-02",
+   "scenario": "Suspend via the real contract",
+   "status": "PARTIAL",
+   "commands": [
+    "curl -X POST $B/api/admin/users/<uid>/status  (client path)",
+    "curl -X PATCH $B/api/admin/users/<uid> -d '{\"suspended\":true}'  (real path)"
+   ],
+   "observed": [
+    "client path -> 404 route-not-found",
+    "real path -> 500 {\"code\":\"app/invalid-credential\"} \u2014 Firebase Admin SDK absent, so the disable leg cannot run"
+   ],
+   "assertions": {
+    "clientPathIsNotFound": true,
+    "realPathReachedHandler": true,
+    "accountDisabled": false
+   },
+   "blockedBy": "Firebase Admin credentials absent; MariaDB absent",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log",
+    "Evidence/logs/m8-http-probe-authenticated.log"
+   ]
+  },
+  {
+   "id": "R-03",
+   "scenario": "Backup / cache-clear do not claim success",
+   "status": "PASS",
+   "commands": [
+    "curl -X POST $B/api/admin/operations/backup",
+    "curl -X POST $B/api/admin/operations/cache-clear",
+    "curl $B/api/platform/backup-status"
+   ],
+   "observed": [
+    "both client controls -> 404 route-not-found",
+    "backup-status -> 503 BACKUP_STATUS_UNAVAILABLE"
+   ],
+   "assertions": {
+    "noBackupOperation": true,
+    "noCachePurgeOperation": true,
+    "noFalseSuccessFromServer": true
+   },
+   "blockedBy": null,
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-04",
+   "scenario": "Dead-letter retry / purge policy",
+   "status": "PARTIAL",
+   "commands": [
+    "curl $B/api/platform/queues",
+    "curl -X POST $B/api/platform/queues/purge",
+    "curl -X POST $B/api/platform/queues/retry"
+   ],
+   "observed": [
+    "GET queues -> 503 QUEUE_QUERY_UNAVAILABLE",
+    "POST purge -> 410 DEAD_LETTER_PURGE_RETIRED (by design)",
+    "POST retry -> 500 ECONNREFUSED 3306"
+   ],
+   "assertions": {
+    "retirementObserved": true,
+    "queueDataObserved": false,
+    "retrySucceeded": false
+   },
+   "blockedBy": "MariaDB absent (queue telemetry + retry)",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-05",
+   "scenario": "Resume photo within the 256 KB body budget",
+   "status": "PASS",
+   "commands": [
+    "curl -X POST $B/api/resumes/<id> --data-binary @body-120k.json",
+    "curl -X POST $B/api/resumes/<id> --data-binary @body-400k.json"
+   ],
+   "observed": [
+    "120 KB body -> 200",
+    "~400 KB body -> 413 {\"code\":\"PAYLOAD_TOO_LARGE\"}",
+    "an earlier inline `curl -d` attempt died with 'Argument list too long' and produced no status \u2014 recorded, not read as 200"
+   ],
+   "assertions": {
+    "smallBodyAccepted": true,
+    "largeBodyRejected": true,
+    "statusCodeObserved": true,
+    "clientCapMatches": false
+   },
+   "blockedBy": null,
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-06",
+   "scenario": "Server-rendered DOCX export",
+   "status": "BLOCKED",
+   "commands": [
+    "curl -X POST $B/api/export-docx"
+   ],
+   "observed": [
+    "503 RATE_LIMIT_UNAVAILABLE \u2014 admission control needs the DB; the handler was never reached"
+   ],
+   "assertions": {
+    "handlerReached": false,
+    "documentProduced": false
+   },
+   "blockedBy": "MariaDB absent (rate-limit/admission store)",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-07",
+   "scenario": "Support ticket lifecycle end to end",
+   "status": "BLOCKED",
+   "commands": [
+    "curl -X POST $B/api/support/tickets",
+    "curl $B/api/support/tickets"
+   ],
+   "observed": [
+    "500 {\"code\":\"ECONNREFUSED\",\"error\":\"connect ECONNREFUSED 127.0.0.1:3306\"} \u2014 services/supportTickets bypasses the in-memory repository"
+   ],
+   "assertions": {
+    "routeExists": true,
+    "ticketCreated": false,
+    "listed": false
+   },
+   "blockedBy": "MariaDB absent; the service does not use the repository abstraction",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-08",
+   "scenario": "Job board can list jobs",
+   "status": "PASS",
+   "commands": [
+    "curl $B/api/jobs",
+    "curl $B/api/jobs-data"
+   ],
+   "observed": [
+    "GET /api/jobs -> 404 route-not-found (the page's request)",
+    "GET /api/jobs-data -> 200 {\"jobs\":[]}"
+   ],
+   "assertions": {
+    "clientPathIsNotFound": true,
+    "realListingAnswers": true,
+    "filteringVerified": false
+   },
+   "blockedBy": null,
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log",
+    "Evidence/logs/m8-http-probe-authenticated.log"
+   ]
+  },
+  {
+   "id": "R-09",
+   "scenario": "No email is silently claimed",
+   "status": "PASS",
+   "commands": [
+    "curl -X POST $B/api/notify/email -d '{...}'"
+   ],
+   "observed": [
+    "404 route-not-found: no generic email operation exists, so no path can claim a send"
+   ],
+   "assertions": {
+    "operationAbsent": true,
+    "noFalseSuccessPossible": true
+   },
+   "blockedBy": null,
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  },
+  {
+   "id": "R-10",
+   "scenario": "Coupon validation and price integrity",
+   "status": "PARTIAL",
+   "commands": [
+    "curl -X POST $B/api/coupons/validate -d '{\"code\":\"SAVE20\"}'",
+    "curl -X POST $B/api/billing/validate-coupon -d '{\"code\":\"SAVE20\"}'",
+    "curl $B/api/coupons/active"
+   ],
+   "observed": [
+    "/api/coupons/validate -> 404 {\"valid\":false,\"error\":\"Coupon code \\\"SAVE20\\\" does not exist.\"} (route works; code unknown because no DB)",
+    "/api/billing/validate-coupon -> 404 route-not-found (client path)",
+    "/api/coupons/active -> 200 []"
+   ],
+   "assertions": {
+    "realRouteAnswers": true,
+    "clientRouteIsNotFound": true,
+    "priceIntegrityVerified": false
+   },
+   "blockedBy": "MariaDB absent (coupon rows); payment provider credentials absent (order leg)",
+   "evidence": [
+    "Evidence/logs/m8-scenarios.log"
+   ]
+  }
+ ],
+ "crossCutting": {
+  "falseSuccessPathsObserved": [
+   "/admin/operations/backup",
+   "/admin/operations/cache-clear",
+   "/admin/queues/dead-letter-queue/purge",
+   "/admin/jobs/<id>/moderate",
+   "/admin/users/<uid>/status",
+   "/admin/employer-applications/<uid>/verify"
+  ],
+  "falseSuccessNote": "the client shows a success state for these calls; the server never answers 2xx for the client's path, and in two cases the path does not exist at all",
+  "bodyBudget": {
+   "advertisedClientCapMB": 5,
+   "serverLimit": "256kb",
+   "measured": "120 KB accepted, ~400 KB rejected 413"
+  },
+  "providerCallsMade": 0,
+  "browserAssertionsMade": 0,
+  "migrationsRun": 0
+ },
+ "generatedAtSource": "HEAD commit timestamp (git show -s --format=%cI HEAD) \u2014 not a hand-written clock"
+}

@@ -117,6 +117,11 @@ mismatch is now observed, not computed.
 
 ## 3. R-01 … R-10 status
 
+**Machine-readable twin:** `Evidence/artifacts/m8-scenarios.json` — per scenario: revision, environment
+(substitutions named), commands, verbatim observations, the assertions that held and those that did not,
+what blocked it, and which log carries the raw output. Prose below is the same information for a human
+reader; if the two ever disagree, the artifact is the record and the prose is the defect.
+
 | ID | Scenario | Status in M8 | What was actually observed |
 |---|---|---|---|
 | R-01 | Moderation approval persists | **PARTIAL — runtime (API leg)** | `POST …/verify` → 404 route-not-found; `PATCH …/:uid` → 404 "Employer application not found" (route exists). The persistence leg needs MariaDB. Browser leg not run. |
