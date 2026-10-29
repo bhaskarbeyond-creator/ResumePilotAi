@@ -27,6 +27,15 @@ publication commit  d849137 (full: see below). The M8 package - all six M8 docum
                         git log -1 --format=%H -- developer-review/Evidence/logs/m8-toolchain.log
                     and the publication commit's own SHA from the commit that introduced this file:
                         git log --format=%H --diff-filter=A -- developer-review/Evidence/logs/m8-toolchain.log
+post-publication    Two follow-up commits carry corrections made after the first publication, and are
+commits             listed rather than folded in, so a reader can see what changed when:
+                      d849137  the M8 package (six documents, four artefacts, three tools, six logs)
+                      8fce715  README + this log: record the publication SHA
+                      dec42e3  key-level count reconciliation; DISC-055 (duplicated route blocks);
+                               false-success counted per call site (12 sites / 11 paths + 1 undetectable)
+                    The head at the time this line was written is dec42e3.
+                    Every number in §2-§5 below is the post-correction value; the corrections
+                    themselves are described in §3.2 and in the documents' dated amendments.
 counts of the       tracked files at audited revision: see §1.6 (re-derived, not carried over)
 working tree        clean outside developer-review/ (§6)
 
