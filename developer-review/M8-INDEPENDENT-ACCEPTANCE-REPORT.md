@@ -403,6 +403,8 @@ Six dimensions, kept separate:
 | M8 adjudications | `developer-review/Evidence/adjudications-m8.json` |
 | Parity revalidation artefact | `developer-review/Evidence/artifacts/m8-parity-revalidation.json` |
 | Gap revalidation artefact | `developer-review/Evidence/artifacts/m8-contract-gap-revalidation.json` |
+| Scenario register (per R-01…R-10) | `developer-review/Evidence/artifacts/m8-scenarios.json` |
+| Secret scan | `developer-review/Evidence/logs/m8-secret-scan.log` |
 | Toolchain log | `developer-review/Evidence/logs/m8-toolchain.log` |
 | Runtime probe / suite / typecheck / HTTP / scenarios | `developer-review/Evidence/logs/m8-{runtime-probe,backend-suite,frontend-typecheck,http-probe,http-probe-authenticated,scenarios}.log` |
 | Tools added | `tools/m8-registration-reconciliation.cjs`, `tools/m8-parity-revalidation.cjs`, `tools/m8-contract-gap-revalidation.cjs` |
