@@ -341,13 +341,14 @@
       },
       "existingFindingIds": [],
       "proposedRegisterAction": "NEW_ROW",
-      "proposedNewId": "FP-G22",
+      "proposedNewId": "FP-G26",
       "relatedFinding": "FS-M8A-02",
       "confidence": "HIGH",
       "limitations": "no runtime form submission was executed (no browser); conclusion rests on the literal absence of any network call in the handler",
       "runtimeRepro": "BLOCKED",
       "reason": "a fully functional validated persisting endpoint exists and the modern form silently reports success without calling it",
-      "runtimeNote": "handler unreachable: admission fails closed without a rate-limit store; B1 backend half remains BLOCKED"
+      "runtimeNote": "handler unreachable: admission fails closed without a rate-limit store; B1 backend half remains BLOCKED",
+      "idCollisionCorrection": "M8A proposed FP-G22, which already exists for a different capability in CAPABILITY-SUBFEATURE-REGISTER.md. Corrected to FP-G26 by M8B (see M8B-FORENSIC-CLOSURE-REPORT.md section 5)."
     },
     {
       "id": "B2",
@@ -987,11 +988,12 @@
       },
       "existingFindingIds": [],
       "proposedRegisterAction": "NEW_ROW",
-      "proposedNewId": "FP-G23",
+      "proposedNewId": "FP-G27",
       "confidence": "HIGH",
       "limitations": "formatting semantics (bold/italic) are client-side; whether any server-side sanitizer would preserve rich markup was not traced",
       "runtimeRepro": "BLOCKED",
-      "reason": "a Lexical rich-text editor used for cover-letter paragraphs became a plain textarea, and the dependency itself was removed"
+      "reason": "a Lexical rich-text editor used for cover-letter paragraphs became a plain textarea, and the dependency itself was removed",
+      "idCollisionCorrection": "M8A proposed FP-G23, which already exists for a different capability in CAPABILITY-SUBFEATURE-REGISTER.md. Corrected to FP-G27 by M8B (see M8B-FORENSIC-CLOSURE-REPORT.md section 5)."
     },
     {
       "id": "D5",
@@ -1067,8 +1069,8 @@
       "FP-A27 (A1 Master Profile)",
       "FP-A28 (A2 resume<->profile sync)",
       "FP-A29 (A3 candidate billing console)",
-      "FP-G22 (B1 contact false success)",
-      "FP-G23 (D4 cover-letter rich text)"
+      "FP-G26 (B1 contact false success)",
+      "FP-G27 (D4 cover-letter rich text)"
     ],
     "CORRECT_EXISTING": [
       "FP-G19",
@@ -1104,5 +1106,13 @@
   "verdictReason": "all 16 claims are adjudicated from source with three-layer evidence, but zero of 16 could be exercised at runtime because no database, provider credential or browser automation is available in this environment; gates G and the runtime half of C/D remain outstanding",
   "applicationFilesModified": 0,
   "runtimePartial": 2,
-  "runtimeNote": "2 claims (B2, B3) obtained backend route-level runtime evidence under in-memory repository mode; 0 claims obtained end-to-end or browser-level proof; the in-memory repository is NOT MariaDB and is not presented as production evidence"
+  "runtimeNote": "2 claims (B2, B3) obtained backend route-level runtime evidence under in-memory repository mode; 0 claims obtained end-to-end or browser-level proof; the in-memory repository is NOT MariaDB and is not presented as production evidence",
+  "m8bCorrections": {
+    "idCollisions": {
+      "FP-G22": "FP-G26",
+      "FP-G23": "FP-G27"
+    },
+    "reason": "both proposed ids already exist for different capabilities; reissuing them would have merged two unrelated findings",
+    "correctedBy": "M8B"
+  }
 }

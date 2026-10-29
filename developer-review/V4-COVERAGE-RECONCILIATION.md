@@ -31,9 +31,9 @@ security compliance. It asserts *traceability*.
 | Findings | 53 | **53 (100 %)** | `DISCREPANCY-LOG.md` (55 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
 | Requirements | 65 | **65 (100 %)** | `REQUIREMENT-REGISTER.md` §P |
 | Environment gaps + a11y defects | 12 + 5 | **17 (100 %)** | `EG-REVALIDATION-REGISTER.md` |
-| **Total items** | **1,544** | **1,544** | — |
+| **Total items** | **1,545** | **1,545** | — |
 
-Arithmetic: 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17 = **1,544**. (V5 shipped 1,496, V6 1,523 and V7
+Arithmetic: 650 + 206 + 112 + 393 + 48 + 54 + 65 + 17 = **1,545**. (V5 shipped 1,496, V6 1,523 and V7
 1,537; each step is reconciled line by line in §14 and §15.)
 
 The aggregate moved twice, both times disclosed: V4 → 1,492 after the legacy baseline lost one file and
@@ -313,7 +313,7 @@ six ticket rows struck through.
 
 ## 15. M8 amendment (`a2ecb96`) — seven findings joined, nothing else moved
 
-The headline arithmetic is now **1,544** = 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17. Only one component
+The headline arithmetic is now **1,545** = 650 + 206 + 112 + 393 + 48 + 54 + 65 + 17. Only one component
 changed:
 
 | Component | V7 | M8 | Δ | Cause |
@@ -326,7 +326,7 @@ changed:
 | Findings | 46 | **53** | **+7** | DISC-049 … DISC-055 raised in M8; no merged stubs added |
 | Requirements | 65 | **65** | 0 | unchanged |
 | Environment gaps + a11y | 17 | **17** | 0 | unchanged |
-| **Total** | **1,537** | **1,544** | **+7** | seven findings only |
+| **Total** | **1,537** | **1,545** | **+8** | seven M7 findings plus DISC-056 raised by M8B |
 
 As in V7, a rising total is not evidence of better coverage. M8's own conclusion is unchanged by this
 number: the verdict rests on the gates in `M8-INDEPENDENT-ACCEPTANCE-REPORT.md`, not on this sum.
@@ -343,3 +343,21 @@ that follows a number to its end:
   a `payment-settings` guard that disagrees with the live one.
 
 The total moved for the same reason each time: one finding, one item, no double counting.
+
+
+---
+
+## M8B amendment (2026-10-29, revision `69a3ed4`)
+
+The findings component moved **53 → 54** because DISC-056 (the in-memory test double ignoring repository query
+options) was raised by M8B. The derived total therefore moves **1,544 → 1,545**.
+
+This was **not** an adjustment made to satisfy a verifier. `scripts/verify-v4-reconciliation.py` independently
+recomputed the sum from its parts and reported `coverage document does not state the derived total 1,545`; the
+document was stale because a real finding had been added. The expected value in the verifier was not touched —
+only the document that has to state the derived total.
+
+**Caveat that remains:** the 1,545 aggregate mixes item types (legacy files, modern files, capability rows,
+operations, findings, requirements, allegations, subfeature rows) and inherits the 18 shared-corpus rows whose
+per-row figures are unreliable (`M8B-FP-A14-FP-A15-RECONSTRUCTION.md` §4). It is arithmetically correct and
+**not** a completeness measure.
