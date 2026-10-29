@@ -4,10 +4,6 @@
     "expected": "(known real defects)",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C10 verification-evidence"
     ],
     "verdict": "BASELINE_REPRODUCES"
@@ -17,10 +13,7 @@
     "expected": "C11 unique-rows",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
       "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C07 exact-totals",
       "C10 verification-evidence",
       "C11 unique-rows"
@@ -35,10 +28,6 @@
     "exit": 1,
     "failed": [
       "C02 paths-resolve",
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C10 verification-evidence"
     ],
     "caught": true,
@@ -51,10 +40,6 @@
     "exit": 1,
     "failed": [
       "C02 paths-resolve",
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C10 verification-evidence"
     ],
     "caught": true,
@@ -66,9 +51,6 @@
     "expected": "C06 full-evidence",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
       "C06 full-evidence",
       "C07 exact-totals",
       "C10 verification-evidence"
@@ -82,10 +64,6 @@
     "expected": "C07 exact-totals",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C07 exact-totals",
       "C10 verification-evidence"
     ],
@@ -98,10 +76,6 @@
     "expected": "C10 verification-evidence",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
-      "C06 full-evidence",
       "C09 finding-ids",
       "C10 verification-evidence"
     ],
@@ -114,9 +88,6 @@
     "expected": "C06 full-evidence",
     "exit": 1,
     "failed": [
-      "C03 corpus-scope",
-      "C04 duplicate-corpus",
-      "C05 duplicate-dist",
       "C06 full-evidence",
       "C10 verification-evidence"
     ],
@@ -126,17 +97,78 @@
   },
   {
     "fixture": "f8_duplicated_measurement_table",
-    "expected": "C05 duplicate-dist",
+    "expected": "C12 artifact-staleness",
+    "exit": 1,
+    "failed": [
+      "C03 corpus-scope",
+      "C05 duplicate-dist",
+      "C10 verification-evidence",
+      "C12 artifact-staleness"
+    ],
+    "caught": true,
+    "reason": "stored distribution duplicates another row's and no artifactDistributionStale declaration explains it",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f9_duplicate_corpus_undeclared",
+    "expected": "C04 duplicate-corpus",
     "exit": 1,
     "failed": [
       "C03 corpus-scope",
       "C04 duplicate-corpus",
+      "C10 verification-evidence"
+    ],
+    "caught": true,
+    "reason": "2 rows share one corpus without sharedCorpusJustification",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f10_share_without_justification",
+    "expected": "C05 duplicate-dist",
+    "exit": 1,
+    "failed": [
+      "C04 duplicate-corpus",
       "C05 duplicate-dist",
+      "C10 verification-evidence"
+    ],
+    "caught": true,
+    "reason": "identical non-trivial distribution across different rows, with no member declaring the sharing",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f11_clientonly_rationale_removed",
+    "expected": "C06 full-evidence",
+    "exit": 1,
+    "failed": [
       "C06 full-evidence",
       "C10 verification-evidence"
     ],
     "caught": true,
-    "reason": "identical non-trivial distribution across different rows",
+    "reason": "FULL row graded without any endpoint and without clientOnly rationale",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f12_scoped_corpus_duplicated",
+    "expected": "C04 duplicate-corpus",
+    "exit": 1,
+    "failed": [
+      "C04 duplicate-corpus",
+      "C10 verification-evidence"
+    ],
+    "caught": true,
+    "reason": "2 rows share one corpus without sharedCorpusJustification",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f13_overlay_classes_duplicated",
+    "expected": "C05 duplicate-dist",
+    "exit": 1,
+    "failed": [
+      "C05 duplicate-dist",
+      "C10 verification-evidence"
+    ],
+    "caught": true,
+    "reason": "identical non-trivial distribution across different rows, with no member declaring the sharing",
     "verdict": "REJECTED_CORRECTLY"
   }
 ]

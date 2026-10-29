@@ -1,0 +1,977 @@
+{
+  "artifact": "m8c-runtime-manifest",
+  "mandate": "M8C section 9",
+  "generatedBy": "developer-review/tools/m8c-runtime-manifest.py",
+  "sourceRevision": "69a3ed4",
+  "environment": {
+    "runtime": "Node backend started locally against InMemoryRepository unless stated",
+    "database": "MariaDB NOT available in the audit sandbox (ECONNREFUSED 127.0.0.1:3306)",
+    "browser": "Playwright/Chromium NOT available",
+    "providers": "Firebase / Razorpay / PayPal credentials NOT available",
+    "consequence": "every browser-level and provider-level claim below is BLOCKED, not passed"
+  },
+  "probePathCaveat": "The probe artifact stores normalised paths (concrete ids replaced by {id}), so a probe is mapped to a contract path by template shape. No probe in this set addresses any of the 11 client paths below, which is why all 11 remain BLOCKED rather than inferred.",
+  "method": "Test cases are parsed from the verification-status table rather than retyped, so the manifest cannot drift from the recorded judgements. Probes come from the machine-readable probe artifact. The 11 contract defects are enumerated from the contract revalidation artifact, one test each. Blocked tests stay blocked; nothing in this environment was upgraded by inference.",
+  "tallies": {
+    "probes": {
+      "total": 35,
+      "5xx": 11,
+      "4xx": 18,
+      "2xx": 5,
+      "skipped": 1
+    },
+    "testCases": {
+      "total": 23,
+      "PASS": 8,
+      "FAIL": 1,
+      "BLOCKED": 12,
+      "NOT APPLICABLE": 2
+    },
+    "contractDefects": {
+      "total": 11,
+      "PASS": 0,
+      "FAIL": 0,
+      "BLOCKED": 11,
+      "NOT APPLICABLE": 0
+    },
+    "neverSum": "These three collections answer different questions and are never added together. No combined runtime pass rate is published.",
+    "passDefinition": {
+      "testCase": "the judgement recorded in M8B-RUNTIME-CLOSURE-MATRIX.md",
+      "contractDefect": "PASS means the alleged defect was CONFIRMED by an executed request \u2014 not that the product works",
+      "probe": "no probe is ever a pass; a probe is evidence about routing"
+    }
+  },
+  "testCases": [
+    {
+      "id": "T2",
+      "label": "contact backend validation",
+      "area": "B1",
+      "kind": "integration",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "all four payloads (valid, short, bad email, honeypot) \u2192 `503 RATE_LIMIT_UNAVAILABLE`. Server stderr: `[Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306`. Admission fails **closed** by design (`security/abuse.js:108`), so the handler is never reached"
+    },
+    {
+      "id": "T2-UI",
+      "label": "contact form submits",
+      "area": "B1",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "no browser; the fabricated success is a client-side `setSubmitted(true)` with no fetch (`pages/cms/index.tsx:240-244`)"
+    },
+    {
+      "id": "T3",
+      "label": "queue telemetry + fallbacks",
+      "area": "D2",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`GET /api/platform/queues` \u2192 **503 `QUEUE_QUERY_UNAVAILABLE`** (the exact state in which the UI keeps its fabricated baseline); `GET /api/admin/queues` \u2192 **404** (the client's own fallback URL does not exist); `POST /api/platform/queues/purge` \u2192 **410 `DEAD_LETTER_PURGE_RETIRED`**"
+    },
+    {
+      "id": "T3-UI",
+      "label": "queue console shows fabricated SES trace",
+      "area": "D2",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "requires rendering; the display logic (`AdminQueuesTab.tsx:114-115,154-156`) is static-proven only"
+    },
+    {
+      "id": "T4",
+      "label": "CMS published slug",
+      "area": "B2",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`PUT /api/admin/pages/m8b-probe-page` `{pagecontent,status:'published',expectedRevision:0}` \u2192 **200** `revision:1`; `GET /api/public/custom-pages/m8b-probe-page` \u2192 **200** with the published content"
+    },
+    {
+      "id": "T4b",
+      "label": "CMS unknown slug",
+      "area": "B2",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`GET /api/public/custom-pages/m8b-nonexistent-slug` \u2192 **404 `CUSTOM_PAGE_NOT_FOUND`**"
+    },
+    {
+      "id": "T4c",
+      "label": "CMS unpublished visibility",
+      "area": "B2",
+      "kind": "integration",
+      "status": "NOT APPLICABLE",
+      "statusDetail": "NOT APPLICABLE to the product",
+      "qualifier": null,
+      "recordedEvidence": "after `status:'unpublished'` the public route still returned 200. **Cause is a test-double defect:** `MySQLRepository.getCustomPageBySlug` correctly applies `AND published = 1` (`MySQLRepository.js:1814-1819`); `InMemoryRepository.getCustomPageBySlug(slug)` ignores its options argument entirely (`InMemoryRepository.js:734`). Recorded as a harness finding, **not** a product defect"
+    },
+    {
+      "id": "T4-UI",
+      "label": "CMS renderer fetches published pages",
+      "area": "B2",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "the renderer performs no fetch at all (`pages/cms/index.tsx:38,148`); no browser available"
+    },
+    {
+      "id": "T5",
+      "label": "blog reader routes",
+      "area": "B3",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`GET /api/blog/posts` \u2192 **404 `API route not found`** *with a valid admin identity*, and **401** anonymously \u2014 so the 404 is confirmed and M8A's demotion of the cause can be reversed. `GET /api/blog-data` \u2192 **200**. `GET /api/blog-data/slug/m8b-missing-post` \u2192 **404 \"Post not found\"**"
+    },
+    {
+      "id": "T5-UI",
+      "label": "blog reader empty state",
+      "area": "B3",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "the swallowed-error empty state is client-side (`pages/blog/index.tsx:47-50`)"
+    },
+    {
+      "id": "T6",
+      "label": "profile persistence",
+      "area": "A1, A2",
+      "kind": "integration",
+      "status": "FAIL",
+      "statusDetail": "FAIL",
+      "qualifier": null,
+      "recordedEvidence": "`POST /api/users-data/profile {firstname,lastname,occupation,summary,expectedRevision:0}` \u2192 **409 `STALE_WRITE` \"Revision conflict\"**, while `GET` \u2192 **404 `PROFILE_NOT_FOUND`** and a retry reports `remoteRevision: 0, remoteProfile: null`. A create at revision 0 conflicts with a profile the read path says does not exist"
+    },
+    {
+      "id": "T7",
+      "label": "billing console backend",
+      "area": "A3",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS (backend) / n/a (UI)",
+      "qualifier": "PASS (backend) / n/a (UI)",
+      "recordedEvidence": "`GET /api/payment-orders` \u2192 **200** `{orders:[],source:\"MARIADB_PAYMENT_ORDERS\"}`; `POST /api/coupons/validate` with a fake code \u2192 **404 \"does not exist\"** \u2014 server validation is strict, so the fail-open is **client-side only**; `GET /api/invoices` \u2192 **503 `ECONNREFUSED`** (needs the DB)"
+    },
+    {
+      "id": "T7-UI",
+      "label": "billing console availability",
+      "area": "A3",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "`/dashboard/billing` and `/dashboard/plans` redirect to the public pricing page (`router.tsx:201-203,223`); no browser to confirm"
+    },
+    {
+      "id": "T8",
+      "label": "TOTP enrolment exist?",
+      "area": "A4",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`POST /api/users-data/mfa/enroll` \u2192 **404 `API route not found`**. Repo-wide source search finds **no** enrolment/setup/TOTP route anywhere in `backend/`. Enrolment is absent **server-side**, not merely in the UI"
+    },
+    {
+      "id": "T8b",
+      "label": "factor disable",
+      "area": "A4",
+      "kind": "integration",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "`POST /api/users-data/mfa/disable` \u2192 **503 `IDENTITY_DIRECTORY_UNAVAILABLE`**; server log shows Firebase `app/invalid-credential` (no Google credentials). The route is wired and audit-logged; the identity provider is missing"
+    },
+    {
+      "id": "T9",
+      "label": "team membership",
+      "area": "C1",
+      "kind": "integration",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "`GET /api/enterprise/teams` and `.../teams/m8b-team/members` \u2192 **404 `ENTERPRISE_DISABLED`** (\"disabled for this deployment\"). Requires tenant provisioning + a config state this environment cannot set"
+    },
+    {
+      "id": "T10",
+      "label": "employer messaging persistence",
+      "area": "C3",
+      "kind": "integration",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "`GET /api/messages/conversations` \u2192 **403 `MODULE_DISABLED`**; `POST /api/messages/conversations` \u2192 **503 `RATE_LIMIT_UNAVAILABLE`**. Gated on `public_config.modules.enableMessagesModule === true`; `POST /api/admin/settings/public_config` rejects the payload shape (`400 Unsupported settings category or payload`)"
+    },
+    {
+      "id": "T11",
+      "label": "admin financial authz",
+      "area": "D1",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`POST /api/admin/payments/refund` \u2192 **403 `FORBIDDEN`** for a non-admin identity, **400 `INVALID_PAYMENT_ORDER`** for SUPER_ADMIN (route reachable, input validated). `GET /api/admin/payment-orders` \u2192 **503** `Payment ledger is unavailable` (DB)"
+    },
+    {
+      "id": "T14",
+      "label": "checkout rejection path",
+      "area": "A3",
+      "kind": "integration",
+      "status": "PASS",
+      "statusDetail": "PASS",
+      "qualifier": null,
+      "recordedEvidence": "`POST /api/pay` \u2192 **400 `INVALID_PLAN`**; `POST /api/razorpay/create-order` \u2192 **400 `CLIENT_PAYMENT_IDENTITY_REJECTED`** (\"Payment ownership and amounts are server-controlled\"); `POST /api/paypal/create-order` \u2192 **503 `PAYMENT_CONFIGURATION_UNAVAILABLE`**. The server **rejects** rather than fabricating, so FS-M8A-01's fabrication is confined to the client"
+    },
+    {
+      "id": "T15",
+      "label": "interview voice",
+      "area": "D5",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "needs microphone permission and a real browser; repo-wide search finds 0 media/speech APIs in `frontend/src`"
+    },
+    {
+      "id": "T16",
+      "label": "blog / cover-letter editors",
+      "area": "D3, D4",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "authoring surfaces are client-side"
+    },
+    {
+      "id": "T17",
+      "label": "marketing interactivity",
+      "area": "B4",
+      "kind": "browser e2e",
+      "status": "BLOCKED",
+      "statusDetail": "BLOCKED",
+      "qualifier": null,
+      "recordedEvidence": "`landing.tsx` has 0 `useState`; absence of interactivity is a client-side property"
+    },
+    {
+      "id": "C2",
+      "label": "SIEM export",
+      "area": "C2",
+      "kind": "integration",
+      "status": "NOT APPLICABLE",
+      "statusDetail": "NOT APPLICABLE",
+      "qualifier": null,
+      "recordedEvidence": "claim falsified at source; nothing to execute"
+    }
+  ],
+  "probes": [
+    {
+      "id": "RT-P-T2a",
+      "probe": "T2a",
+      "label": "valid payload",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"29ab4772-8794-4ae7-beaf-cb4fcc6d81c0\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T2b",
+      "probe": "T2b",
+      "label": "message too short",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"5d0e3269-569b-47aa-996b-73c47e24c105\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T2c",
+      "probe": "T2c",
+      "label": "malformed email",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"f867b62b-9bc0-4191-a92d-2e08769563db\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T2d",
+      "probe": "T2d",
+      "label": "honeypot populated",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"26e83d59-f7b5-43de-ab79-fdcb312f49b8\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T3a",
+      "probe": "T3a",
+      "label": "real queue route",
+      "method": "GET",
+      "path": "/api/{id}/queues",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"QUEUE_QUERY_UNAVAILABLE\",\"message\":\"Queue telemetry is unavailable.\",\"requestId\":\"6c27df72-8eb5-4934-96e3-7cddad072393\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T3b",
+      "probe": "T3b",
+      "label": "client fallback URL",
+      "method": "GET",
+      "path": "/api/admin/queues",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"66fc82e8-99ac-498e-b039-6b3df7a32358\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T3c",
+      "probe": "T3c",
+      "label": "retired purge",
+      "method": "POST",
+      "path": "/api/{id}/queues/purge",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 410,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"DEAD_LETTER_PURGE_RETIRED\",\"message\":\"Dead letters are retained for investigation and may not be bulk-deleted.\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T4a",
+      "probe": "T4a",
+      "label": "public list",
+      "method": "GET",
+      "path": "/api/public/{id}",
+      "identity": "ANONYMOUS",
+      "httpStatus": 200,
+      "statusClass": "2xx",
+      "body": "{\"success\":true,\"pages\":[{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pageco",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T4b",
+      "probe": "T4b",
+      "label": "unknown slug",
+      "method": "GET",
+      "path": "/api/public/{id}/{id}",
+      "identity": "ANONYMOUS",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"CUSTOM_PAGE_NOT_FOUND\",\"error\":\"Page not found.\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T4c",
+      "probe": "T4c",
+      "label": "admin publish (PUT)",
+      "method": "PUT",
+      "path": "/api/admin/pages/{id}",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 400,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"CUSTOM_PAGE_SAVE_FAILED\",\"error\":\"Page content is required and must be smaller than 500 KB.\",\"requestId\":\"5c3c928a-c465-48ec-964f-cb885",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T4d",
+      "probe": "T4d",
+      "label": "published slug read",
+      "method": "GET",
+      "path": "/api/public/{id}/{id}",
+      "identity": "ANONYMOUS",
+      "httpStatus": 200,
+      "statusClass": "2xx",
+      "body": "{\"success\":true,\"page\":{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pagecont",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T4e",
+      "probe": "T4e",
+      "label": "admin list",
+      "method": "GET",
+      "path": "/api/admin/pages",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 200,
+      "statusClass": "2xx",
+      "body": "{\"success\":true,\"pages\":[{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pageco",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T5a",
+      "probe": "T5a",
+      "label": "route the client calls",
+      "method": "GET",
+      "path": "/api/blog/posts",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"74e573fc-b891-45cf-a187-06474c20b6c5\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T5b",
+      "probe": "T5b",
+      "label": "route the client calls (anonymous)",
+      "method": "GET",
+      "path": "/api/blog/posts",
+      "identity": "ANONYMOUS",
+      "httpStatus": 401,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"AUTH_REQUIRED\",\"message\":\"Authentication required\",\"requestId\":\"e9cd0120-5bc0-4160-a9d4-d905f2bacf02\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T5c",
+      "probe": "T5c",
+      "label": "real list",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "ANONYMOUS",
+      "httpStatus": 200,
+      "statusClass": "2xx",
+      "body": "{\"success\":true,\"posts\":[]}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T5d",
+      "probe": "T5d",
+      "label": "real slug (missing)",
+      "method": "GET",
+      "path": "/api/{id}/slug/{id}",
+      "identity": "ANONYMOUS",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"error\":\"Post not found\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T6a",
+      "probe": "T6a",
+      "label": "write profile",
+      "method": "POST",
+      "path": "/api/{id}/profile",
+      "identity": "USER(probe-user)",
+      "httpStatus": 400,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"PROFILE_REVISION_REQUIRED\",\"error\":\"A non-negative expectedRevision is required.\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T6b",
+      "probe": "T6b",
+      "label": "read profile back",
+      "method": "GET",
+      "path": "/api/{id}/profile",
+      "identity": "USER(probe-user)",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"PROFILE_NOT_FOUND\",\"error\":\"Profile not found\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T7a",
+      "probe": "T7a",
+      "label": "transaction history",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 200,
+      "statusClass": "2xx",
+      "body": "{\"success\":true,\"orders\":[],\"source\":\"MARIADB_PAYMENT_ORDERS\",\"count\":0}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T7b",
+      "probe": "T7b",
+      "label": "invoice list",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Invoice history is unavailable.\",\"requestId\":\"c8055cc8-65bd-4935-aa4d-0de74ac3fed2\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T7c",
+      "probe": "T7c",
+      "label": "coupon validation",
+      "method": "POST",
+      "path": "/api/coupons/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"valid\":false,\"error\":\"Coupon code \\\"M8B-NOT-A-REAL-CODE\\\" does not exist.\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T8a",
+      "probe": "T8a",
+      "label": "mfa disable (no factor)",
+      "method": "POST",
+      "path": "/api/{id}/mfa/disable",
+      "identity": "USER(probe-user)",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"success\":false,\"code\":\"IDENTITY_DIRECTORY_UNAVAILABLE\",\"error\":\"The identity service is unavailable, so two-factor authentication was not confirmed as changed",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T8b",
+      "probe": "T8b",
+      "label": "mfa enrol endpoint probe",
+      "method": "POST",
+      "path": "/api/{id}/mfa/enroll",
+      "identity": "USER(probe-user)",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"d423dd2f-9f7b-47ca-8921-469b49fc0987\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T9a",
+      "probe": "T9a",
+      "label": "teams list",
+      "method": "GET",
+      "path": "/api/{id}/teams",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"ENTERPRISE_DISABLED\",\"message\":\"Enterprise tenancy is disabled for this deployment.\",\"configurationState\":\"DISABLED\",\"requestId\":\"1314c027-7b0",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T9b",
+      "probe": "T9b",
+      "label": "team members",
+      "method": "GET",
+      "path": "/api/{id}/teams/{id}/members",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 404,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"ENTERPRISE_DISABLED\",\"message\":\"Enterprise tenancy is disabled for this deployment.\",\"configurationState\":\"DISABLED\",\"requestId\":\"47e617fb-dee",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T10a",
+      "probe": "T10a",
+      "label": "create conversation",
+      "method": "POST",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"b8147047-ec1e-4878-ab5a-aa07fd3921ba\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T10b-e",
+      "probe": "T10b-e",
+      "label": "conversation id not returned; dependent probes skipped",
+      "method": null,
+      "path": null,
+      "identity": null,
+      "httpStatus": -2,
+      "statusClass": "skipped",
+      "body": "",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T10f",
+      "probe": "T10f",
+      "label": "conversation list",
+      "method": "GET",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 403,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"MODULE_DISABLED\",\"error\":\"Messaging module is disabled by administrator.\",\"requestId\":\"2da9b93d-1859-441a-a53e-48a3aa38489c\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T11a",
+      "probe": "T11a",
+      "label": "admin payment orders",
+      "method": "GET",
+      "path": "/api/admin/{id}",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Payment ledger is unavailable.\",\"requestId\":\"11d82b4b-5b65-4541-a9a5-4c3919f3dbb6\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T11b",
+      "probe": "T11b",
+      "label": "refund without recent step-up auth",
+      "method": "POST",
+      "path": "/api/admin/{id}/refund",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 400,
+      "statusClass": "4xx",
+      "body": "{\"success\":false,\"code\":\"INVALID_PAYMENT_ORDER\",\"error\":\"Valid payment order is required.\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T11c",
+      "probe": "T11c",
+      "label": "refund as non-admin",
+      "method": "POST",
+      "path": "/api/admin/{id}/refund",
+      "identity": "USER(probe-user)",
+      "httpStatus": 403,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permission\",\"requestId\":\"8a8d5644-ac11-4341-982a-e2fdbe5928cd\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T11d",
+      "probe": "T11d",
+      "label": "invoice generate",
+      "method": "POST",
+      "path": "/api/invoice/{id}",
+      "identity": "SUPER_ADMIN",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Unable to generate the invoice.\",\"requestId\":\"436b9ab9-2e4f-4200-83a4-fb8b9c710a2d\"}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T14a",
+      "probe": "T14a",
+      "label": "pay with no order",
+      "method": "POST",
+      "path": "/api/pay",
+      "identity": "USER(probe-user)",
+      "httpStatus": 400,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"INVALID_PLAN\",\"message\":\"Unable to create payment\",\"requestId\":\"a32cd814-69b4-45b8-9e85-9cfdc5a12533\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T14b",
+      "probe": "T14b",
+      "label": "razorpay create-order unconfigured",
+      "method": "POST",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 400,
+      "statusClass": "4xx",
+      "body": "{\"error\":{\"code\":\"CLIENT_PAYMENT_IDENTITY_REJECTED\",\"message\":\"Payment ownership and amounts are server-controlled\",\"requestId\":\"8dff1d81-65dd-41a7-a6fb-d67b7b1",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    },
+    {
+      "id": "RT-P-T14c",
+      "probe": "T14c",
+      "label": "paypal create-order unconfigured",
+      "method": "POST",
+      "path": "/api/paypal/{id}",
+      "identity": "USER(probe-user)",
+      "httpStatus": 503,
+      "statusClass": "5xx",
+      "body": "{\"error\":{\"code\":\"PAYMENT_CONFIGURATION_UNAVAILABLE\",\"message\":\"Unable to create PayPal order\",\"requestId\":\"3ec0baac-e482-498b-ae42-191cf5467f1e\"}}",
+      "evidenceClass": "route wiring / in-process behaviour only \u2014 NOT browser correctness",
+      "countsAsPass": false
+    }
+  ],
+  "contractDefects": [
+    {
+      "id": "RT-C-01",
+      "path": "/blog/posts/{X}",
+      "classification": "AMBIGUOUS",
+      "sites": 3,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-02",
+      "path": "/platform/operational-status/refresh",
+      "classification": "NOT_IN_GAP_SET (false-success site whose URL resolves, or was unresolved, in the contract revalidation; it is not one of the 15 gap shapes)",
+      "sites": null,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-03",
+      "path": "/admin/employer-applications/{X}/verify",
+      "classification": "AMBIGUOUS",
+      "sites": 2,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-04",
+      "path": "/admin/jobs/{X}/moderate",
+      "classification": "NO_OPERATION",
+      "sites": 1,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-05",
+      "path": "/admin/operations/backup",
+      "classification": "NO_OPERATION",
+      "sites": 1,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-06",
+      "path": "/admin/operations/cache-clear",
+      "classification": "NO_OPERATION",
+      "sites": 1,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-07",
+      "path": "/admin/queues/dead-letter-queue/purge",
+      "classification": "ANOTHER_CONTRACT",
+      "sites": 2,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-08",
+      "path": "/admin/users/{X}/status",
+      "classification": "AMBIGUOUS",
+      "sites": 1,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-09",
+      "path": "/platform/role-view-audit",
+      "classification": "NOT_IN_GAP_SET (false-success site whose URL resolves, or was unresolved, in the contract revalidation; it is not one of the 15 gap shapes)",
+      "sites": null,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-10",
+      "path": "/admin/users/{X}/revoke-sessions",
+      "classification": "NOT_IN_GAP_SET (false-success site whose URL resolves, or was unresolved, in the contract revalidation; it is not one of the 15 gap shapes)",
+      "sites": null,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    },
+    {
+      "id": "RT-C-11",
+      "path": "/admin/users",
+      "classification": "NOT_IN_GAP_SET (false-success site whose URL resolves, or was unresolved, in the contract revalidation; it is not one of the 15 gap shapes)",
+      "sites": null,
+      "probes": [],
+      "status": "BLOCKED",
+      "basis": "no executed request for this path; the defect is proven statically (client posts to a path with no registered operation) but the browser-level reproduction needs the dev server plus a signed-in session",
+      "expected": "client must receive a 4xx it does not swallow AND must not render a success state",
+      "evidenceToCapture": "response status + body for the client's exact URL, plus a screenshot/DOM diff showing the success state is suppressed"
+    }
+  ],
+  "requiredDomains": [
+    {
+      "domain": "payment rejection / fail-closed",
+      "testCases": {
+        "T14": "PASS"
+      },
+      "domainStatus": "PASS",
+      "missingTestCases": []
+    },
+    {
+      "domain": "contact form",
+      "testCases": {
+        "T2": "BLOCKED",
+        "T2-UI": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "admin queue telemetry + fabricated errors",
+      "testCases": {
+        "T3": "PASS",
+        "T3-UI": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "CMS create/publish/public read authz",
+      "testCases": {
+        "T4": "PASS",
+        "T4b": "PASS",
+        "T4c": "NOT APPLICABLE",
+        "T4-UI": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "blog routing + error states",
+      "testCases": {
+        "T5": "PASS",
+        "T5-UI": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "profile sync / persistence",
+      "testCases": {
+        "T6": "FAIL"
+      },
+      "domainStatus": "FAIL",
+      "missingTestCases": []
+    },
+    {
+      "domain": "billing / subscriptions",
+      "testCases": {
+        "T7": "PASS",
+        "T7-UI": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "MFA enrol + QR + recovery",
+      "testCases": {
+        "T8": "PASS",
+        "T8b": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "enterprise team UI / permission gates",
+      "testCases": {
+        "T9": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "employer messaging",
+      "testCases": {
+        "T10": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "admin financial settings",
+      "testCases": {
+        "T11": "PASS"
+      },
+      "domainStatus": "PASS",
+      "missingTestCases": []
+    },
+    {
+      "domain": "rich-text editor",
+      "testCases": {
+        "T16": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    },
+    {
+      "domain": "interview voice / media",
+      "testCases": {
+        "T15": "BLOCKED"
+      },
+      "domainStatus": "BLOCKED",
+      "missingTestCases": []
+    }
+  ],
+  "blockedPrerequisites": {
+    "MariaDB": "start a disposable MariaDB on 127.0.0.1:3306, run migrations there, point DB_HOST/DB_USER/DB_PASSWORD at it; unblocks T6/T7/T11/T8b persistence legs",
+    "browser": "install Playwright Chromium and run the dev server; unblocks every -UI case",
+    "Firebase": "supply identity credentials (or run the emulator) to unblock T8b",
+    "payment providers": "sandbox keys only; no real charge may be made",
+    "messaging": "requires public_config.modules.enableMessagesModule=true, which the settings route rejects in this build (400)"
+  }
+}

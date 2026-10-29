@@ -1,0 +1,22 @@
+PASS: capability totals reconcile
+PASS: every cited path exists on disk
+PASS: both trees fully attributed
+PASS: reachability classes are the seven and sum to the total
+PASS: reachability document matches its JSON
+PASS: finding/allegation IDs are consistent
+PASS: all V4 artifacts present
+PASS: no FULL PARITY row without a modern anchor
+PASS: no glob-style paths in the register
+PASS: legacy/modern counts recomputed from the filesystem
+PASS: operation register matches its TSV
+PASS: every dispositioned category enumerates
+PASS: client call existence artifact reconciles
+PASS: every FULL PARITY row is supported
+PASS: reachability document matches the register
+PASS: coverage total equals the sum of its parts
+PASS: registration counts reconcile across the two parsers
+PASS: legacy call evidence re-derivable from src/
+PASS: M8 gap adjudications cite registered operations
+PASS: M8 parity revalidation agrees with the register
+--- Summary ---
+PASS: 20  FAIL: 0

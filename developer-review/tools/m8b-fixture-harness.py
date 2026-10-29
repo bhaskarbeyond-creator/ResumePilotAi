@@ -33,7 +33,8 @@ DR = os.path.join(ROOT, "developer-review")
 TOOL = os.path.join(DR, "tools", "m8b-integrity-verify.py")
 FIXROOT = os.path.join(DR, "Evidence", "fixtures", "m8b")
 
-ARTIFACTS = ("feature-parity.json", "parity-endpoint-audit.json", "capability-subfeatures.json")
+ARTIFACTS = ("feature-parity.json", "parity-endpoint-audit.json", "capability-subfeatures.json",
+             "m8c-corpus-scoping.json")
 DOCS = ("DISCREPANCY-LOG.md", "EVIDENCE-INDEX.md")
 
 
@@ -157,14 +158,96 @@ def f7_full_row_without_implementation(dst):
 
 
 def f8_duplicated_measurement_table(dst):
-    """Two different capabilities carry the same non-trivial subfeature distribution."""
-    p = "Evidence/artifacts/capability-subfeatures.json"
-    d = load(dst, p)
+    """A row's STORED distribution is made identical to another row's without any declaration
+    -> C12 must fire. This is the check that stops the overlay from hiding a stale artifact."""
+    subs_p = "Evidence/artifacts/capability-subfeatures.json"
+    ov_p = "Evidence/artifacts/m8c-corpus-scoping.json"
+    d, o = load(dst, subs_p), load(dst, ov_p)
     rows = d["capabilities"]
-    src = max(rows, key=lambda r: sum((c.get("legacy") or 0) for c in (r.get("subfeatures") or [])))
-    dst_row = next(r for r in rows if r is not src and r["id"] != src["id"])
+    src = next(r for r in rows if r["id"] == "FP-A01")
+    dst_row = next(r for r in rows if r["id"] == "FP-A03")
     dst_row["subfeatures"] = copy.deepcopy(src["subfeatures"])
+    if not src["subfeatures"]:
+        raise SystemExit("f8 precondition: FP-A01 carries no subfeatures to copy")
+    o["rows"].pop("FP-A01", None)
+    o["rows"].pop("FP-A03", None)   # no artifactDistributionStale declaration survives
+    save(dst, subs_p, d)
+    save(dst, ov_p, o)
+    return "C12 artifact-staleness"
+
+
+def f9_duplicate_corpus_undeclared(dst):
+    """Two rows with NON-EMPTY corpora point at the same paths/files/lines with no overlay entry
+    at all -> C04 must fire. Proves the justification mechanism is not a blanket exemption."""
+    p = "Evidence/artifacts/feature-parity.json"
+    d = load(dst, p)
+    a = next(r for r in d["capabilities"] if r["id"] == "FP-A01")
+    b = next(r for r in d["capabilities"] if r["id"] == "FP-A05")
+    b["legacyPaths"] = list(a["legacyPaths"])
+    b["legacyFiles"] = a["legacyFiles"]
+    b["legacyLines"] = a["legacyLines"]
     save(dst, p, d)
+    o = load(dst, "Evidence/artifacts/m8c-corpus-scoping.json")
+    o["rows"].pop("FP-A01", None)
+    o["rows"].pop("FP-A05", None)
+    save(dst, "Evidence/artifacts/m8c-corpus-scoping.json", o)
+    return "C04 duplicate-corpus"
+
+
+def f10_share_without_justification(dst):
+    """Strip the justification from EVERY member of the legitimate-share group -> C05 must fire.
+    A justification is a property of the relationship, so removing one side only would leave the
+    group documented; the fixture removes the whole declaration."""
+    p = "Evidence/artifacts/m8c-corpus-scoping.json"
+    o = load(dst, p)
+    victims = [k for k, v in o["rows"].items() if v.get("corpusScope") == "legitimate-share"]
+    if len(victims) < 2:
+        raise SystemExit("f10 precondition: expected a two-row legitimate-share group")
+    for k in victims:
+        o["rows"][k]["sharedCorpusJustification"] = ""
+    save(dst, p, o)
+    return "C05 duplicate-dist"
+
+
+def f11_clientonly_rationale_removed(dst):
+    """Delete the clientOnly rationales -> the endpoint-less FULL rows must fail again.
+    Proves C06 is not passing because of a hardcoded exemption list."""
+    p = "Evidence/artifacts/m8c-corpus-scoping.json"
+    o = load(dst, p)
+    o["clientOnly"] = {}
+    save(dst, p, o)
+    return "C06 full-evidence"
+
+
+def f12_scoped_corpus_duplicated(dst):
+    """Give two capability-scoped rows the SAME scoped file count and line count -> C04 must fire
+    even though both declare corpusScope. Proves scoping is a fact to be checked, not a flag."""
+    p = "Evidence/artifacts/m8c-corpus-scoping.json"
+    o = load(dst, p)
+    scoped = [k for k, v in o["rows"].items() if v.get("corpusScope") == "capability-scoped"]
+    a, b = scoped[0], scoped[1]
+    o["rows"][b]["capabilityScoped"]["files"] = o["rows"][a]["capabilityScoped"]["files"]
+    o["rows"][b]["capabilityScoped"]["lines"] = o["rows"][a]["capabilityScoped"]["lines"]
+    o["rows"][b]["capabilityScoped"]["paths"] = list(o["rows"][a]["capabilityScoped"]["paths"])
+    save(dst, p, o)
+    return "C04 duplicate-corpus"
+
+
+def f13_overlay_classes_duplicated(dst):
+    """Two OVERLAY-scoped class maps are made identical with no justification -> C05 must fire on
+    the effective (overlay) distributions, not only on the stored artifact ones."""
+    p = "Evidence/artifacts/m8c-corpus-scoping.json"
+    o = load(dst, p)
+    scoped = [k for k, v in o["rows"].items()
+              if v.get("corpusScope") == "capability-scoped" and (v.get("capabilityScoped") or {}).get("classes")
+              and not v.get("sharedCorpusJustification")]
+    a, b = scoped[0], scoped[1]
+    o["rows"][b]["capabilityScoped"]["classes"] = dict(o["rows"][a]["capabilityScoped"]["classes"])
+    o["rows"][b].pop("sharedCorpusJustification", None)
+    o["rows"][b].pop("nestedCorpusJustification", None)
+    o["rows"][a].pop("sharedCorpusJustification", None)
+    o["rows"][a].pop("nestedCorpusJustification", None)
+    save(dst, p, o)
     return "C05 duplicate-dist"
 
 
@@ -177,6 +260,11 @@ FIXTURES = [
     ("f6_unresolved_marked_closed", f6_unresolved_marked_closed),
     ("f7_full_row_without_implementation", f7_full_row_without_implementation),
     ("f8_duplicated_measurement_table", f8_duplicated_measurement_table),
+    ("f9_duplicate_corpus_undeclared", f9_duplicate_corpus_undeclared),
+    ("f10_share_without_justification", f10_share_without_justification),
+    ("f11_clientonly_rationale_removed", f11_clientonly_rationale_removed),
+    ("f12_scoped_corpus_duplicated", f12_scoped_corpus_duplicated),
+    ("f13_overlay_classes_duplicated", f13_overlay_classes_duplicated),
 ]
 
 

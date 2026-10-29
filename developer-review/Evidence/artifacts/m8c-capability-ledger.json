@@ -1,0 +1,368 @@
+{
+  "artifact": "m8c-capability-ledger",
+  "mandate": "M8C section 5",
+  "generatedBy": "developer-review/tools/m8c-capability-ledger.py",
+  "sourceRevision": "69a3ed4",
+  "sourceSha256": {
+    "feature-parity.json": "e451b5f1e448cdfff7893daff9671908385ede04345febbda07848aa9ee10f7e",
+    "capability-subfeatures.json": "30bd9bb7e87062441075bd0910cc48cc32b84231aeadf29cf24a8861eea19a3a",
+    "M8A-omission-challenge.json": "ac69d35a76ad67e3fef3a6a15dcc7d17a00b220aaa99bac0fbd620a9a36c59e5",
+    "m8c-corpus-scoping.json": "b024cadd8a217c96d7aff201e9953d9c89fa53cfce63df85b99ec9b7e7c1dbe9"
+  },
+  "method": "Every count below is computed from the machine-readable rows, not copied from a report. Categories are mutually exclusive: a row counts in exactly one class. Multi-attribute properties (shared corpus, capability-scoped measurement) are reported in separate fields and are never added to a classification total.",
+  "accepted": {
+    "count": 112,
+    "inclusionRule": "rows present in Evidence/artifacts/feature-parity.json",
+    "byClass": {
+      "FULL PARITY": 13,
+      "PARTIAL PARITY": 51,
+      "MISSING": 28,
+      "MOCK / FABRICATED STATE": 12,
+      "REPLACED BY EQUIVALENT": 5,
+      "UNVERIFIED": 3
+    },
+    "sumCheck": 112,
+    "rowsByClass": {
+      "FULL PARITY": [
+        "FP-B06",
+        "FP-B07",
+        "FP-C05",
+        "FP-C06",
+        "FP-C07",
+        "FP-D15",
+        "FP-E04",
+        "FP-E08",
+        "FP-E09",
+        "FP-E17",
+        "FP-E13",
+        "FP-F05",
+        "FP-G20"
+      ],
+      "PARTIAL PARITY": [
+        "FP-A01",
+        "FP-A03",
+        "FP-A12",
+        "FP-A16",
+        "FP-A17",
+        "FP-A20",
+        "FP-A21",
+        "FP-A24",
+        "FP-A25",
+        "FP-A26",
+        "FP-B01",
+        "FP-B02",
+        "FP-B04",
+        "FP-B05",
+        "FP-B08",
+        "FP-B09",
+        "FP-B10",
+        "FP-B11",
+        "FP-D03",
+        "FP-D05",
+        "FP-D07",
+        "FP-D09",
+        "FP-D12",
+        "FP-D13",
+        "FP-D11",
+        "FP-E01",
+        "FP-E02",
+        "FP-E03",
+        "FP-E06",
+        "FP-E16",
+        "FP-E11",
+        "FP-E12",
+        "FP-E14",
+        "FP-E15",
+        "FP-E10",
+        "FP-F01",
+        "FP-F02",
+        "FP-F06",
+        "FP-F08",
+        "FP-F11",
+        "FP-F10",
+        "FP-G01",
+        "FP-G07",
+        "FP-G08",
+        "FP-G10",
+        "FP-G11",
+        "FP-G13",
+        "FP-G19",
+        "FP-G21",
+        "FP-G23",
+        "FP-G24"
+      ],
+      "MISSING": [
+        "FP-A14",
+        "FP-A15",
+        "FP-A18",
+        "FP-A22",
+        "FP-A23",
+        "FP-B03",
+        "FP-C01",
+        "FP-C02",
+        "FP-C03",
+        "FP-C04",
+        "FP-D01",
+        "FP-D02",
+        "FP-D04",
+        "FP-D06",
+        "FP-D08",
+        "FP-D10",
+        "FP-D14",
+        "FP-E07",
+        "FP-F04",
+        "FP-F07",
+        "FP-G03",
+        "FP-G04",
+        "FP-G05",
+        "FP-G06",
+        "FP-G09",
+        "FP-G12",
+        "FP-G17",
+        "FP-G18"
+      ],
+      "MOCK / FABRICATED STATE": [
+        "FP-A02",
+        "FP-A04",
+        "FP-A05",
+        "FP-A06",
+        "FP-A07",
+        "FP-A08",
+        "FP-A09",
+        "FP-A10",
+        "FP-A11",
+        "FP-A13",
+        "FP-A19",
+        "FP-F03"
+      ],
+      "REPLACED BY EQUIVALENT": [
+        "FP-G02",
+        "FP-G15",
+        "FP-G16",
+        "FP-G22",
+        "FP-G25"
+      ],
+      "UNVERIFIED": [
+        "FP-E05",
+        "FP-F09",
+        "FP-G14"
+      ]
+    },
+    "unknownClasses": [],
+    "duplicateIds": []
+  },
+  "proposedNotAccepted": {
+    "count": 5,
+    "inclusionRule": "M8A claims whose proposedRegisterAction is NEW_ROW and whose proposed id is absent from the register",
+    "rows": [
+      {
+        "proposalId": "A1",
+        "proposedNewId": "FP-A27",
+        "title": "Master Profile 11-section career repository with ATS gap computation and actionable tips",
+        "dispositionScaleValue": 2,
+        "registerAction": "NEW_ROW",
+        "acceptance": "NOT_ACCEPTED",
+        "acceptanceReason": "A proposal is not a register row: it has not been given a declared corpus, endpoints, subfeature classes or a parity classification under the register's own method.",
+        "presentInRegister": false
+      },
+      {
+        "proposalId": "A2",
+        "proposedNewId": "FP-A28",
+        "title": "Bidirectional resume <-> profile sync with per-field selection and conflict behaviour",
+        "dispositionScaleValue": 2,
+        "registerAction": "NEW_ROW",
+        "acceptance": "NOT_ACCEPTED",
+        "acceptanceReason": "A proposal is not a register row: it has not been given a declared corpus, endpoints, subfeature classes or a parity classification under the register's own method.",
+        "presentInRegister": false
+      },
+      {
+        "proposalId": "A3",
+        "proposedNewId": "FP-A29",
+        "title": "Candidate billing / subscription console (plan display, coupon validation, transaction history, invoice/receipt, upgrade/downgrade/cancel)",
+        "dispositionScaleValue": 2,
+        "registerAction": "NEW_ROW",
+        "acceptance": "NOT_ACCEPTED",
+        "acceptanceReason": "A proposal is not a register row: it has not been given a declared corpus, endpoints, subfeature classes or a parity classification under the register's own method.",
+        "presentInRegister": false
+      },
+      {
+        "proposalId": "B1",
+        "proposedNewId": "FP-G26",
+        "title": "Contact form false success",
+        "dispositionScaleValue": 3,
+        "registerAction": "NEW_ROW",
+        "acceptance": "NOT_ACCEPTED",
+        "acceptanceReason": "A proposal is not a register row: it has not been given a declared corpus, endpoints, subfeature classes or a parity classification under the register's own method.",
+        "presentInRegister": false
+      },
+      {
+        "proposalId": "D4",
+        "proposedNewId": "FP-G27",
+        "title": "Cover-letter editor richness (Lexical -> modern modal; raw text is not rich text)",
+        "dispositionScaleValue": 1,
+        "registerAction": "NEW_ROW",
+        "acceptance": "NOT_ACCEPTED",
+        "acceptanceReason": "A proposal is not a register row: it has not been given a declared corpus, endpoints, subfeature classes or a parity classification under the register's own method.",
+        "presentInRegister": false
+      }
+    ],
+    "acceptedAmongProposals": []
+  },
+  "rejectedDuplicates": {
+    "count": 0,
+    "note": "No capability row was rejected as a duplicate of another capability. Separately, two FINDINGS are duplicates and are marked as merged in the discrepancy log (DISC-042 and DISC-046 into DISC-030); findings and capabilities are different universes and are never summed."
+  },
+  "unverified": {
+    "count": 3,
+    "inclusionRule": "register rows whose classification is UNVERIFIED",
+    "ids": [
+      "FP-E05",
+      "FP-F09",
+      "FP-G14"
+    ]
+  },
+  "historicalOnly": {
+    "count": 4,
+    "snapshots": [
+      {
+        "label": "V2 register (superseded)",
+        "rows": 109,
+        "full": 25,
+        "source": "EVIDENCE-INDEX.md E-327",
+        "status": "HISTORICAL_ONLY"
+      },
+      {
+        "label": "V6 re-measurement (superseded)",
+        "rows": 112,
+        "full": 12,
+        "source": "EVIDENCE-INDEX.md E-350",
+        "status": "HISTORICAL_ONLY"
+      },
+      {
+        "label": "V7 re-measurement (superseded)",
+        "rows": 112,
+        "full": 12,
+        "source": "EVIDENCE-INDEX.md E-362",
+        "status": "HISTORICAL_ONLY"
+      },
+      {
+        "label": "M8 revalidation (superseded)",
+        "rows": 112,
+        "full": 13,
+        "source": "EVIDENCE-INDEX.md E-368",
+        "status": "HISTORICAL_ONLY"
+      },
+      {
+        "label": "M8C current register",
+        "rows": 112,
+        "full": 13,
+        "source": "Evidence/artifacts/feature-parity.json",
+        "status": "CURRENT"
+      }
+    ]
+  },
+  "denominators": {
+    "accepted": 112,
+    "unverified": 3,
+    "verifiedOnly": 109,
+    "proposed": 5,
+    "mixedUniverse": 117
+  },
+  "measures": [
+    {
+      "id": "M-01",
+      "measure": "strict FULL parity",
+      "numerator": 13,
+      "denominator": 112,
+      "denominatorRule": "the 112 rows present in the current register",
+      "pct": 11.61,
+      "legitimate": true
+    },
+    {
+      "id": "M-02",
+      "measure": "FULL + REPLACED (functionality present, differently implemented)",
+      "numerator": 18,
+      "denominator": 112,
+      "denominatorRule": "the 112 rows present in the current register",
+      "pct": 16.07,
+      "legitimate": true
+    },
+    {
+      "id": "M-03",
+      "measure": "any implementation at all (FULL + PARTIAL + REPLACED)",
+      "numerator": 69,
+      "denominator": 112,
+      "denominatorRule": "the 112 rows present in the current register",
+      "pct": 61.61,
+      "legitimate": true
+    },
+    {
+      "id": "M-04",
+      "measure": "missing or fabricated",
+      "numerator": 40,
+      "denominator": 112,
+      "denominatorRule": "the 112 rows present in the current register",
+      "pct": 35.71,
+      "legitimate": true
+    },
+    {
+      "id": "M-05",
+      "measure": "strict FULL parity, excluding rows the register itself calls UNVERIFIED",
+      "numerator": 13,
+      "denominator": 109,
+      "denominatorRule": "112 accepted rows minus 3 UNVERIFIED rows; a row whose status is unknown cannot be counted as a miss or a hit",
+      "pct": 11.93,
+      "legitimate": true
+    },
+    {
+      "id": "M-06",
+      "measure": "full + replaced over the 117 mixed universe",
+      "numerator": 18,
+      "denominator": 117,
+      "denominatorRule": "112 accepted rows PLUS 5 unaccepted proposals",
+      "pct": 15.38,
+      "legitimate": false,
+      "whyNotLegitimate": "mixes accepted register rows with proposals nobody accepted; this is the denominator behind the published 15.4%"
+    },
+    {
+      "id": "M-07",
+      "measure": "strict FULL parity over the 117 mixed universe",
+      "numerator": 13,
+      "denominator": 117,
+      "denominatorRule": "112 accepted rows PLUS 5 unaccepted proposals",
+      "pct": 11.11,
+      "legitimate": false,
+      "whyNotLegitimate": "this is the denominator behind the published 11.1%"
+    }
+  ],
+  "publishedPercentagesReconciled": [
+    {
+      "quotedAs": "11.1%",
+      "value": 11.1,
+      "reproduces": 11.11,
+      "reproducedBy": "M-07 (13/117)",
+      "acceptedOnlyEquivalent": 11.61,
+      "verdict": "REPRODUCIBLE BUT ON A REJECTED DENOMINATOR"
+    },
+    {
+      "quotedAs": "15.4%",
+      "value": 15.4,
+      "reproduces": 15.38,
+      "reproducedBy": "M-06 (18/117)",
+      "acceptedOnlyEquivalent": 16.07,
+      "verdict": "REPRODUCIBLE BUT ON A REJECTED DENOMINATOR"
+    }
+  ],
+  "crossChecks": {
+    "sharedCorpusRows": {
+      "count": 62,
+      "countedByColumn": "capabilityScoped (not by classification)",
+      "note": "The 19 shared-corpus rows are a SUBSET of the 112 and are distributed across several classification classes. They are a measurement property, not a class, so adding them to a distribution would double-count."
+    },
+    "rowsDoNotSumTo177": {
+      "total": 117,
+      "note": "112 + 5 = 117; only the 112 are accepted"
+    }
+  },
+  "consistent": true
+}

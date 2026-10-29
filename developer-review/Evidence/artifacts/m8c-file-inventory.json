@@ -1,0 +1,760 @@
+{
+  "artifact": "m8c-file-inventory",
+  "mandate": "M8C section 6",
+  "generatedBy": "developer-review/tools/m8c-file-inventory.py",
+  "sourceRevision": "69a3ed4",
+  "method": "Enumerated from the git tree at the audited revision, not from the working copy, so deleted-but-tracked and untracked-but-present files cannot distort the answer. Scope rule: the audit excludes test/spec files. Three quantities are kept separate: inventoried (raw), measured (in scope), mapped (reached by a capability corpus).",
+  "legacy": {
+    "inventoried": 651,
+    "measured": 650,
+    "testFilesExcluded": [
+      "src/components/welcome/App.test.js"
+    ],
+    "extensions": [
+      ".js",
+      ".jsx"
+    ],
+    "lines": 192710
+  },
+  "modern": {
+    "inventoried": 206,
+    "measured": 206,
+    "testFilesExcluded": [],
+    "extensions": [
+      ".ts",
+      ".tsx"
+    ]
+  },
+  "mapping": {
+    "mappedDistinct": 651,
+    "neverMapped": [],
+    "registerReferencesTestFiles": [
+      "src/components/welcome/App.test.js"
+    ],
+    "note": "'650/650 attributed' is true only in the trivial sense that directory-scoped corpora recurse over every file in the directory. It is not evidence of point-level mapping, and it coexists with a 1.86x duplication of measured volume. The register's union reaches all 651 raw code files precisely because some corpora are whole directories AND one corpus includes the test file."
+  },
+  "reconciliation": {
+    "rawCodeFiles": 651,
+    "measuredFiles": 650,
+    "mappedDistinctFiles": 651,
+    "perRowSumDedupedWithinRow": 1213,
+    "inflationFactor": 1.866,
+    "differenceExplainedBy": [
+      {
+        "file": "src/components/welcome/App.test.js",
+        "reason": "test file excluded by the audit's own scope rule; it is not a lost, renamed or case-variant file"
+      }
+    ],
+    "rawNotInMeasured": [
+      "src/components/welcome/App.test.js"
+    ],
+    "measuredNotInMapped": [],
+    "rawNotInMapped": [],
+    "registerReferencesTestFiles": [
+      "src/components/welcome/App.test.js"
+    ],
+    "testFilesNotReferenced": [],
+    "symlinks": {
+      "legacy": 0,
+      "modern": 0,
+      "note": "git ls-tree reports symlinks with mode 120000; the enumeration used names only, so symlink presence was checked separately and found zero under both trees"
+    },
+    "caseCollisions": [],
+    "publishedCounts": {
+      "legacyFiles": 650,
+      "modernFiles": 206
+    },
+    "agreesWithPublished": true
+  },
+  "perRow": {
+    "FP-A01": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A02": {
+      "resolved": 0,
+      "pathKinds": {}
+    },
+    "FP-A03": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A04": {
+      "resolved": 0,
+      "pathKinds": {}
+    },
+    "FP-A05": {
+      "resolved": 2,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-A06": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A07": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A08": {
+      "resolved": 68,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A09": {
+      "resolved": 4,
+      "pathKinds": {
+        "dir": 4
+      }
+    },
+    "FP-A10": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A11": {
+      "resolved": 2,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-A12": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A13": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A14": {
+      "resolved": 35,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A15": {
+      "resolved": 35,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A16": {
+      "resolved": 35,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A17": {
+      "resolved": 4,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-A18": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A19": {
+      "resolved": 68,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A20": {
+      "resolved": 5,
+      "pathKinds": {
+        "dir": 4
+      }
+    },
+    "FP-A21": {
+      "resolved": 35,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A22": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A23": {
+      "resolved": 2,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-A24": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-A25": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-A26": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 1,
+        "dir": 1
+      }
+    },
+    "FP-B01": {
+      "resolved": 8,
+      "pathKinds": {
+        "file": 8
+      }
+    },
+    "FP-B02": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B03": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B04": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B05": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B06": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B07": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B08": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-B09": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-B10": {
+      "resolved": 3,
+      "pathKinds": {
+        "file": 3
+      }
+    },
+    "FP-B11": {
+      "resolved": 7,
+      "pathKinds": {
+        "file": 7
+      }
+    },
+    "FP-C01": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-C02": {
+      "resolved": 72,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-C03": {
+      "resolved": 6,
+      "pathKinds": {
+        "file": 6
+      }
+    },
+    "FP-C04": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-C05": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-C06": {
+      "resolved": 7,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-C07": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-D01": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-D02": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-D03": {
+      "resolved": 6,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-D04": {
+      "resolved": 5,
+      "pathKinds": {
+        "file": 4,
+        "dir": 1
+      }
+    },
+    "FP-D05": {
+      "resolved": 3,
+      "pathKinds": {
+        "file": 3
+      }
+    },
+    "FP-D06": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-D07": {
+      "resolved": 4,
+      "pathKinds": {
+        "file": 3,
+        "dir": 1
+      }
+    },
+    "FP-D08": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-D09": {
+      "resolved": 16,
+      "pathKinds": {
+        "dir": 14,
+        "file": 1
+      }
+    },
+    "FP-D10": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-D12": {
+      "resolved": 28,
+      "pathKinds": {
+        "dir": 9
+      }
+    },
+    "FP-D13": {
+      "resolved": 16,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-D14": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-D15": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-D11": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 1,
+        "file": 2
+      }
+    },
+    "FP-E01": {
+      "resolved": 61,
+      "pathKinds": {
+        "dir": 4
+      }
+    },
+    "FP-E02": {
+      "resolved": 73,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-E03": {
+      "resolved": 73,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-E04": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-E05": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-E06": {
+      "resolved": 20,
+      "pathKinds": {
+        "file": 1,
+        "dir": 1
+      }
+    },
+    "FP-E07": {
+      "resolved": 5,
+      "pathKinds": {
+        "file": 2,
+        "dir": 1
+      }
+    },
+    "FP-E08": {
+      "resolved": 36,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-E09": {
+      "resolved": 74,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-E16": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-E17": {
+      "resolved": 5,
+      "pathKinds": {
+        "file": 4,
+        "dir": 1
+      }
+    },
+    "FP-E11": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-E12": {
+      "resolved": 3,
+      "pathKinds": {
+        "file": 3
+      }
+    },
+    "FP-E13": {
+      "resolved": 23,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-E14": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-E15": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-E10": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-F01": {
+      "resolved": 12,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F02": {
+      "resolved": 12,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F03": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-F04": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-F05": {
+      "resolved": 12,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F06": {
+      "resolved": 12,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F07": {
+      "resolved": 3,
+      "pathKinds": {
+        "file": 2,
+        "dir": 1
+      }
+    },
+    "FP-F08": {
+      "resolved": 4,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F11": {
+      "resolved": 7,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-F10": {
+      "resolved": 21,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-F09": {
+      "resolved": 13,
+      "pathKinds": {
+        "dir": 1,
+        "file": 1
+      }
+    },
+    "FP-G01": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G02": {
+      "resolved": 52,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-G03": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1,
+        "dir": 1
+      }
+    },
+    "FP-G04": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-G05": {
+      "resolved": 4,
+      "pathKinds": {
+        "file": 1,
+        "dir": 1
+      }
+    },
+    "FP-G06": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G07": {
+      "resolved": 1,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-G08": {
+      "resolved": 6,
+      "pathKinds": {
+        "dir": 1,
+        "file": 1
+      }
+    },
+    "FP-G09": {
+      "resolved": 7,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-G10": {
+      "resolved": 17,
+      "pathKinds": {
+        "dir": 2
+      }
+    },
+    "FP-G11": {
+      "resolved": 4,
+      "pathKinds": {
+        "dir": 3
+      }
+    },
+    "FP-G12": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-G13": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G15": {
+      "resolved": 43,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-G16": {
+      "resolved": 23,
+      "pathKinds": {
+        "dir": 1,
+        "file": 1
+      }
+    },
+    "FP-G17": {
+      "resolved": 3,
+      "pathKinds": {
+        "file": 3
+      }
+    },
+    "FP-G18": {
+      "resolved": 1,
+      "pathKinds": {
+        "file": 1
+      }
+    },
+    "FP-G19": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G20": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G21": {
+      "resolved": 2,
+      "pathKinds": {
+        "file": 2
+      }
+    },
+    "FP-G22": {
+      "resolved": 7,
+      "pathKinds": {
+        "dir": 3
+      }
+    },
+    "FP-G23": {
+      "resolved": 11,
+      "pathKinds": {
+        "dir": 1
+      }
+    },
+    "FP-G24": {
+      "resolved": 3,
+      "pathKinds": {
+        "dir": 3
+      }
+    },
+    "FP-G25": {
+      "resolved": 4,
+      "pathKinds": {
+        "file": 3,
+        "dir": 1
+      }
+    },
+    "FP-G14": {
+      "resolved": 5,
+      "pathKinds": {
+        "dir": 2,
+        "file": 1
+      }
+    }
+  },
+  "pathKindTotals": {
+    "dir": 114,
+    "file": 112
+  },
+  "resolved": true
+}

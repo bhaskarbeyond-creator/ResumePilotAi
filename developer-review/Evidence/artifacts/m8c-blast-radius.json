@@ -1,0 +1,3660 @@
+{
+  "artifact": "m8c-blast-radius",
+  "mandate": "M8C section 7",
+  "generatedBy": "developer-review/tools/m8c-blast-radius.py",
+  "sourceRevision": "69a3ed4",
+  "method": "Per row: declared paths classified as file/dir/glob/missing; a directory path resolved recursively over the scope-corrected legacy tree (.js/.jsx, tests excluded). Volume is compared with any capability-scoped measurement in the M8C overlay. Impact verdicts are CORRECTED / SUPPORTED / UNRESOLVED; a legitimate shared corpus is SUPPORTED, not condemned.",
+  "totals": {
+    "rowsWithCorpus": 110,
+    "bareDirectoryRows": 53,
+    "rowsWithAnyDirectory": 69,
+    "rowsWithMixedPaths": 16,
+    "distinctGroups": 60,
+    "perRowResolvedSum": 1212,
+    "distinctMeasuredFiles": 650,
+    "inflationFactor": 1.865,
+    "bareRowVerdicts": {
+      "UNRESOLVED": 41,
+      "CORRECTED": 10,
+      "SUPPORTED": 2
+    }
+  },
+  "groups": [
+    {
+      "group": "DIR:src/components/EmployerPortal",
+      "rowCount": 5,
+      "rows": [
+        "FP-F01",
+        "FP-F02",
+        "FP-F05",
+        "FP-F06",
+        "FP-F09"
+      ],
+      "resolvedFiles": 12,
+      "dispositions": [
+        "capability-scoped"
+      ],
+      "verdicts": [
+        "CORRECTED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/settings",
+      "rowCount": 4,
+      "rows": [
+        "FP-A14",
+        "FP-A15",
+        "FP-A16",
+        "FP-A21"
+      ],
+      "resolvedFiles": 35,
+      "dispositions": [
+        "capability-scoped"
+      ],
+      "verdicts": [
+        "CORRECTED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin",
+      "rowCount": 2,
+      "rows": [
+        "FP-A08",
+        "FP-A19"
+      ],
+      "resolvedFiles": 68,
+      "dispositions": [
+        "capability-scoped"
+      ],
+      "verdicts": [
+        "CORRECTED"
+      ]
+    },
+    {
+      "group": "DIR:src/cv-templates",
+      "rowCount": 2,
+      "rows": [
+        "FP-E02",
+        "FP-E03"
+      ],
+      "resolvedFiles": 73,
+      "dispositions": [
+        "legitimate-share"
+      ],
+      "verdicts": [
+        "SUPPORTED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Actions+src/components/Boards+src/components/BuildResume+src/components/Form",
+      "rowCount": 1,
+      "rows": [
+        "FP-E01"
+      ],
+      "resolvedFiles": 61,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/AppShell+src/components/Dashboard/CoversList+src/components/Dashboard/DashboardPortfolios+src/components/Dashboard/DashboardSearch+src/components/Dashboard/ProfileDisplay+src/components/Dashboard/ResumesList+src/components/Dashboard/SettingsDropdown+src/components/Dashboard2+src/components/common",
+      "rowCount": 1,
+      "rows": [
+        "FP-D12"
+      ],
+      "resolvedFiles": 28,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/AppliedJobs+src/components/Dashboard/CoverCard+src/components/Dashboard/DasboardActions+src/components/Dashboard/DashbaordJobMatching+src/components/Dashboard/DashboardFavourites+src/components/Dashboard/DashboardHomepage+src/components/Dashboard/DashboardMain+src/components/Dashboard/DashboardPagination+src/components/Dashboard/DashboardResumes+src/components/Dashboard/ProfileDropdown+src/components/Dashboard/ResumeCard+src/components/Dashboard/Settings+src/components/Dashboard/ShareModal+src/components/Dashboard/stats",
+      "rowCount": 1,
+      "rows": [
+        "FP-D09"
+      ],
+      "resolvedFiles": 16,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/AutoComplete",
+      "rowCount": 1,
+      "rows": [
+        "FP-F07"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Billing+src/components/Billing/Plans",
+      "rowCount": 1,
+      "rows": [
+        "FP-A24"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Blog+src/components/admin/blogManagement",
+      "rowCount": 1,
+      "rows": [
+        "FP-G09"
+      ],
+      "resolvedFiles": 7,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/BuildResume",
+      "rowCount": 1,
+      "rows": [
+        "FP-E08"
+      ],
+      "resolvedFiles": 36,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/BuildResume/steps",
+      "rowCount": 1,
+      "rows": [
+        "FP-E06"
+      ],
+      "resolvedFiles": 20,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Candidate",
+      "rowCount": 1,
+      "rows": [
+        "FP-D13"
+      ],
+      "resolvedFiles": 16,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Candidate/command",
+      "rowCount": 1,
+      "rows": [
+        "FP-D04"
+      ],
+      "resolvedFiles": 5,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Contact+src/components/Features+src/components/welcome",
+      "rowCount": 1,
+      "rows": [
+        "FP-G11"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/CoverLetter+src/cv-templates",
+      "rowCount": 1,
+      "rows": [
+        "FP-E09"
+      ],
+      "resolvedFiles": 74,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/CustomPage+src/components/Marketing",
+      "rowCount": 1,
+      "rows": [
+        "FP-G10"
+      ],
+      "resolvedFiles": 17,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardFavourites",
+      "rowCount": 1,
+      "rows": [
+        "FP-D15"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardInterviews",
+      "rowCount": 1,
+      "rows": [
+        "FP-D03"
+      ],
+      "resolvedFiles": 6,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardMessages",
+      "rowCount": 1,
+      "rows": [
+        "FP-D11"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardNotifications",
+      "rowCount": 1,
+      "rows": [
+        "FP-D07"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardSettings",
+      "rowCount": 1,
+      "rows": [
+        "FP-E07"
+      ],
+      "resolvedFiles": 5,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/DashboardSupport+src/components/Dashboard/DashboardToast+src/components/Dashboard/ValidationModal",
+      "rowCount": 1,
+      "rows": [
+        "FP-G24"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Dashboard/EmployerDashboard",
+      "rowCount": 1,
+      "rows": [
+        "FP-F11"
+      ],
+      "resolvedFiles": 7,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Exporter",
+      "rowCount": 1,
+      "rows": [
+        "FP-E16"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Front+src/components/initailisation",
+      "rowCount": 1,
+      "rows": [
+        "FP-G14"
+      ],
+      "resolvedFiles": 5,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/JobsLanding",
+      "rowCount": 1,
+      "rows": [
+        "FP-F08"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/JobsLanding+src/components/JobsListings",
+      "rowCount": 1,
+      "rows": [
+        "FP-F10"
+      ],
+      "resolvedFiles": 21,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/MetaManager",
+      "rowCount": 1,
+      "rows": [
+        "FP-G05"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/PortfolioBuilder/PortfolioComponents",
+      "rowCount": 1,
+      "rows": [
+        "FP-C02"
+      ],
+      "resolvedFiles": 72,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/PortfolioGallery",
+      "rowCount": 1,
+      "rows": [
+        "FP-C07"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/PortfolioTemplates",
+      "rowCount": 1,
+      "rows": [
+        "FP-C06"
+      ],
+      "resolvedFiles": 7,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/PublicPortfolio",
+      "rowCount": 1,
+      "rows": [
+        "FP-C05"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/PublicResume",
+      "rowCount": 1,
+      "rows": [
+        "FP-E17"
+      ],
+      "resolvedFiles": 5,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Spinner",
+      "rowCount": 1,
+      "rows": [
+        "FP-G25"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/Toasts",
+      "rowCount": 1,
+      "rows": [
+        "FP-G07"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/TrustedBy+src/components/admin/landingPages+src/components/admin/phrases+src/components/admin/reviews",
+      "rowCount": 1,
+      "rows": [
+        "FP-A09"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/attention",
+      "rowCount": 1,
+      "rows": [
+        "FP-A10"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/audit",
+      "rowCount": 1,
+      "rows": [
+        "FP-A22"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/audit+src/components/admin/security",
+      "rowCount": 1,
+      "rows": [
+        "FP-A05"
+      ],
+      "resolvedFiles": 2,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/command",
+      "rowCount": 1,
+      "rows": [
+        "FP-A23"
+      ],
+      "resolvedFiles": 2,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/command+src/components/admin/operations+src/components/admin/queues+src/components/admin/sidebar",
+      "rowCount": 1,
+      "rows": [
+        "FP-A20"
+      ],
+      "resolvedFiles": 5,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/companyManagement",
+      "rowCount": 1,
+      "rows": [
+        "FP-A13"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/dashboard",
+      "rowCount": 1,
+      "rows": [
+        "FP-A01"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/employerApplications+src/components/admin/jobsManager",
+      "rowCount": 1,
+      "rows": [
+        "FP-A11"
+      ],
+      "resolvedFiles": 2,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/health",
+      "rowCount": 1,
+      "rows": [
+        "FP-A03"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/operators",
+      "rowCount": 1,
+      "rows": [
+        "FP-A06"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/security",
+      "rowCount": 1,
+      "rows": [
+        "FP-A07"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/sidebar",
+      "rowCount": 1,
+      "rows": [
+        "FP-A26"
+      ],
+      "resolvedFiles": 2,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/tenants",
+      "rowCount": 1,
+      "rows": [
+        "FP-A12"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/userEdit+src/components/admin/usersManager",
+      "rowCount": 1,
+      "rows": [
+        "FP-A17"
+      ],
+      "resolvedFiles": 4,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/admin/usersManager",
+      "rowCount": 1,
+      "rows": [
+        "FP-A18"
+      ],
+      "resolvedFiles": 3,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/auth",
+      "rowCount": 1,
+      "rows": [
+        "FP-G08"
+      ],
+      "resolvedFiles": 6,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/components/cuba",
+      "rowCount": 1,
+      "rows": [
+        "FP-G02"
+      ],
+      "resolvedFiles": 52,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/conf+src/context+src/models",
+      "rowCount": 1,
+      "rows": [
+        "FP-G22"
+      ],
+      "resolvedFiles": 7,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/engine/hybrid",
+      "rowCount": 1,
+      "rows": [
+        "FP-E13"
+      ],
+      "resolvedFiles": 23,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/hooks",
+      "rowCount": 1,
+      "rows": [
+        "FP-G23"
+      ],
+      "resolvedFiles": 11,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/locales",
+      "rowCount": 1,
+      "rows": [
+        "FP-G03"
+      ],
+      "resolvedFiles": 1,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/services",
+      "rowCount": 1,
+      "rows": [
+        "FP-G16"
+      ],
+      "resolvedFiles": 23,
+      "dispositions": [
+        "UNDECLARED"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    },
+    {
+      "group": "DIR:src/utils",
+      "rowCount": 1,
+      "rows": [
+        "FP-G15"
+      ],
+      "resolvedFiles": 43,
+      "dispositions": [
+        "directory-unreconstructed"
+      ],
+      "verdicts": [
+        "UNRESOLVED"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "id": "FP-A01",
+      "title": "Platform KPI dashboard (users, resumes, applications, AI generations, storage)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/dashboard"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 507,
+      "publishedFiles": 1,
+      "publishedLines": 508,
+      "group": "DIR:src/components/admin/dashboard",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A03",
+      "title": "Subsystem health catalogue (28 services, latency, remediation hints)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/health"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 879,
+      "publishedFiles": 3,
+      "publishedLines": 882,
+      "group": "DIR:src/components/admin/health",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A05",
+      "title": "Security event stream / audit viewer",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/audit",
+        "src/components/admin/security"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 2,
+      "resolvedLines": 760,
+      "publishedFiles": 2,
+      "publishedLines": 762,
+      "group": "DIR:src/components/admin/audit+src/components/admin/security",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A06",
+      "title": "Operator roster + force-revoke sessions",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/operators"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 769,
+      "publishedFiles": 1,
+      "publishedLines": 770,
+      "group": "DIR:src/components/admin/operators",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A07",
+      "title": "IP blocklist / deny rules",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/security"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 362,
+      "publishedFiles": 1,
+      "publishedLines": 363,
+      "group": "DIR:src/components/admin/security",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A08",
+      "title": "Platform announcements publisher",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 68,
+      "resolvedLines": 29786,
+      "publishedFiles": 68,
+      "publishedLines": 29850,
+      "group": "DIR:src/components/admin",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 333,
+        "paths": [
+          "src/components/admin/operations/PlatformOperations.jsx"
+        ]
+      },
+      "volumeInflation": 68.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A09",
+      "title": "Marketing content: phrases, reviews, trusted-by logos, landing pages",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/phrases",
+        "src/components/admin/reviews",
+        "src/components/admin/TrustedBy",
+        "src/components/admin/landingPages"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 4,
+      "resolvedLines": 1123,
+      "publishedFiles": 4,
+      "publishedLines": 1127,
+      "group": "DIR:src/components/admin/TrustedBy+src/components/admin/landingPages+src/components/admin/phrases+src/components/admin/reviews",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A10",
+      "title": "At-risk attention inbox / platform insights",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/attention"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 130,
+      "publishedFiles": 1,
+      "publishedLines": 131,
+      "group": "DIR:src/components/admin/attention",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A11",
+      "title": "Employer application + job posting moderation",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/employerApplications",
+        "src/components/admin/jobsManager"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 2,
+      "resolvedLines": 1184,
+      "publishedFiles": 2,
+      "publishedLines": 1186,
+      "group": "DIR:src/components/admin/employerApplications+src/components/admin/jobsManager",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A12",
+      "title": "Platform tenant registry (list tenants, quotas, suspend)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/tenants"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 2105,
+      "publishedFiles": 1,
+      "publishedLines": 2106,
+      "group": "DIR:src/components/admin/tenants",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A13",
+      "title": "Company management (verification, documents, quotas)",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin/companyManagement"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 641,
+      "publishedFiles": 1,
+      "publishedLines": 642,
+      "group": "DIR:src/components/admin/companyManagement",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A14",
+      "title": "Coupon / promo-code administration",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/admin/settings"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 35,
+      "resolvedLines": 14158,
+      "publishedFiles": 35,
+      "publishedLines": 14191,
+      "group": "DIR:src/components/admin/settings",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 288,
+        "paths": [
+          "src/components/admin/settings/subscriptionsSettings.jsx"
+        ]
+      },
+      "volumeInflation": 35.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A15",
+      "title": "Refunds, invoices, payment orders administration",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/admin/settings"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 35,
+      "resolvedLines": 14158,
+      "publishedFiles": 35,
+      "publishedLines": 14191,
+      "group": "DIR:src/components/admin/settings",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 314,
+        "paths": [
+          "src/components/admin/settings/subscriptionsSettings.jsx"
+        ]
+      },
+      "volumeInflation": 35.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A16",
+      "title": "SMTP/IMAP + transactional email template settings",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/settings"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 35,
+      "resolvedLines": 14158,
+      "publishedFiles": 35,
+      "publishedLines": 14191,
+      "group": "DIR:src/components/admin/settings",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 2,
+        "lines": 2092,
+        "paths": [
+          "src/components/admin/settings/EmailSmtpSettings.jsx",
+          "src/components/admin/settings/TwilioSmsSettings.jsx"
+        ]
+      },
+      "volumeInflation": 17.5,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A17",
+      "title": "User manager, User360 drawer, session revoke",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/usersManager",
+        "src/components/admin/userEdit"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 4,
+      "resolvedLines": 3239,
+      "publishedFiles": 4,
+      "publishedLines": 3243,
+      "group": "DIR:src/components/admin/userEdit+src/components/admin/usersManager",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A18",
+      "title": "Bulk user operations (multi-select, bulk role change, bulk removal)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/admin/usersManager"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 2770,
+      "publishedFiles": 3,
+      "publishedLines": 2773,
+      "group": "DIR:src/components/admin/usersManager",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A19",
+      "title": "Support / help-desk tickets",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/admin"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 68,
+      "resolvedLines": 29786,
+      "publishedFiles": 68,
+      "publishedLines": 29850,
+      "group": "DIR:src/components/admin",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 273,
+        "paths": [
+          "src/components/admin/HelpDesk.jsx"
+        ]
+      },
+      "volumeInflation": 68.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A20",
+      "title": "Job queues, DLQ, outbox, cache, backups (operations console)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/queues",
+        "src/components/admin/operations",
+        "src/components/admin/command",
+        "src/components/admin/sidebar"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 5,
+      "resolvedLines": 1630,
+      "publishedFiles": 5,
+      "publishedLines": 1634,
+      "group": "DIR:src/components/admin/command+src/components/admin/operations+src/components/admin/queues+src/components/admin/sidebar",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A21",
+      "title": "Platform settings, feature flags, maintenance, encryption/backup status",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/settings"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 35,
+      "resolvedLines": 14158,
+      "publishedFiles": 35,
+      "publishedLines": 14191,
+      "group": "DIR:src/components/admin/settings",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 8,
+        "lines": 1552,
+        "paths": [
+          "src/components/admin/settings/FeatureFlagsSettings.jsx",
+          "src/components/admin/settings/PlatformConfigSettings.jsx",
+          "src/components/admin/settings/ModulesSettings.jsx",
+          "src/components/admin/settings/SecurityLimitsSettings.jsx",
+          "src/components/admin/settings/SystemHealthSettings.jsx",
+          "src/components/admin/settings/DatabaseSettings.jsx",
+          "src/components/admin/settings/StorageSettings.jsx",
+          "src/components/admin/settings/PlatformCurrencySettings.jsx"
+        ]
+      },
+      "volumeInflation": 4.38,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-A22",
+      "title": "Dedicated audit-log browser with filters and export",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/admin/audit"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 398,
+      "publishedFiles": 1,
+      "publishedLines": 399,
+      "group": "DIR:src/components/admin/audit",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A23",
+      "title": "Admin command palette + entity search",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/admin/command"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 2,
+      "resolvedLines": 381,
+      "publishedFiles": 2,
+      "publishedLines": 382,
+      "group": "DIR:src/components/admin/command",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A24",
+      "title": "Public pricing, plan comparison and checkout",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Billing/Plans",
+        "src/components/Billing"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 3853,
+      "publishedFiles": 3,
+      "publishedLines": 3856,
+      "group": "DIR:src/components/Billing+src/components/Billing/Plans",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-A25",
+      "title": "AI provider / gateway administration (provider CRUD, key pool, quotas, discovery, playground, unified gateway)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/settings/AiSettings.jsx",
+        "src/services/adminAiSettings.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1657,
+      "publishedFiles": 2,
+      "publishedLines": 1658,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-A26",
+      "title": "Admin console shell and tab routing",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/admin/Admin.jsx",
+        "src/components/admin/sidebar"
+      ],
+      "pathTypes": [
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1540,
+      "publishedFiles": 2,
+      "publishedLines": 1542,
+      "group": "DIR:src/components/admin/sidebar",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B01",
+      "title": "Enterprise console shell + context switching",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/EnterpriseConsole.jsx",
+        "src/enterprise/EnterprisePortalCuba.jsx",
+        "src/enterprise/EnterpriseContextSwitchers.jsx",
+        "src/enterprise/EnterpriseContext.jsx",
+        "src/enterprise/orgRouteState.js",
+        "src/enterprise/useTenantApi.jsx",
+        "src/enterprise/enterpriseHelpers.js",
+        "src/enterprise/components/HelpTooltip.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 8,
+      "resolvedLines": 1892,
+      "publishedFiles": 8,
+      "publishedLines": 1898,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B02",
+      "title": "Member directory, invitations, single-member removal, CSV export",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseUsersTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 972,
+      "publishedFiles": 1,
+      "publishedLines": 973,
+      "group": null,
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 756,
+        "paths": [
+          "src/enterprise/components/EnterpriseUsersTab.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-B03",
+      "title": "Bulk member actions with per-member partial-failure reporting",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseUsersTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 972,
+      "publishedFiles": 1,
+      "publishedLines": 973,
+      "group": null,
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 70,
+        "paths": [
+          "src/enterprise/components/EnterpriseUsersTab.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-B04",
+      "title": "Roles & permissions matrix",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseRolesTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 740,
+      "publishedFiles": 1,
+      "publishedLines": 741,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B05",
+      "title": "Teams + archive/restore",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseTeamsTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 598,
+      "publishedFiles": 1,
+      "publishedLines": 599,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B06",
+      "title": "Workspaces + archive/restore",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseWorkspacesTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 560,
+      "publishedFiles": 1,
+      "publishedLines": 561,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B07",
+      "title": "Tenant lifecycle (suspend / reactivate) from the enterprise platform tab",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterprisePlatformTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 323,
+      "publishedFiles": 1,
+      "publishedLines": 324,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B08",
+      "title": "Enterprise audit trail with CSV export",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseAuditTab.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 549,
+      "publishedFiles": 1,
+      "publishedLines": 550,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B09",
+      "title": "Enterprise resumes + PDF rendering",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseResumesTab.jsx",
+        "src/enterprise/components/EnterpriseResumePdfModal.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1721,
+      "publishedFiles": 2,
+      "publishedLines": 1723,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B10",
+      "title": "AI quota rings + enterprise AI controls",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/AiQuotaRing.jsx",
+        "src/enterprise/components/EnterpriseAiTab.jsx",
+        "src/enterprise/quotaRing.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 527,
+      "publishedFiles": 3,
+      "publishedLines": 530,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-B11",
+      "title": "Usage, email, security, support, settings tabs",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/enterprise/components/EnterpriseUsageTab.jsx",
+        "src/enterprise/components/EnterpriseEmailTab.jsx",
+        "src/enterprise/components/EnterpriseSecurityTab.jsx",
+        "src/enterprise/components/EnterpriseSupportTab.jsx",
+        "src/enterprise/components/EnterpriseSettingsTab.jsx",
+        "src/enterprise/components/EnterpriseOverviewTab.jsx",
+        "src/enterprise/components/EnterpriseConfirmModal.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 7,
+      "resolvedLines": 2888,
+      "publishedFiles": 7,
+      "publishedLines": 2895,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-C01",
+      "title": "Puck-based drag-and-drop portfolio page editor",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/PortfolioBuilder/LegacyPuckEditor.jsx",
+        "src/components/PortfolioBuilder/PortfolioBuilder.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1787,
+      "publishedFiles": 2,
+      "publishedLines": 1789,
+      "group": null,
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 2,
+        "lines": 1789,
+        "paths": [
+          "src/components/PortfolioBuilder/LegacyPuckEditor.jsx",
+          "src/components/PortfolioBuilder/PortfolioBuilder.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-C02",
+      "title": "71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, \u2026)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/PortfolioBuilder/PortfolioComponents"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 72,
+      "resolvedLines": 17944,
+      "publishedFiles": 72,
+      "publishedLines": 18016,
+      "group": "DIR:src/components/PortfolioBuilder/PortfolioComponents",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-C03",
+      "title": "WebCV Studio (layout ladder, template presets, template utils)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/PortfolioBuilder/WebCvStudio.jsx",
+        "src/components/PortfolioBuilder/TemplatePresets.js",
+        "src/components/PortfolioBuilder/templateUtils.js",
+        "src/components/PortfolioBuilder/CreateWebCvDialog.jsx",
+        "src/components/PortfolioBuilder/TemplateSelector.jsx",
+        "src/components/PortfolioBuilder/portfolioSanitization.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file",
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 6,
+      "resolvedLines": 2319,
+      "publishedFiles": 6,
+      "publishedLines": 2325,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-C04",
+      "title": "Editing portfolios created by the legacy editor",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/PortfolioBuilder/PortfolioBuilder.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 1742,
+      "publishedFiles": 1,
+      "publishedLines": 1743,
+      "group": null,
+      "corpusScope": "nested-corpus-explained",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 1743,
+        "paths": [
+          "src/components/PortfolioBuilder/PortfolioBuilder.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "scope to a sub-region of the shared file before citing subfeatures"
+    },
+    {
+      "id": "FP-C05",
+      "title": "Public portfolio rendering + slug availability + publish",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/PublicPortfolio"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 307,
+      "publishedFiles": 1,
+      "publishedLines": 308,
+      "group": "DIR:src/components/PublicPortfolio",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-C06",
+      "title": "Portfolio template gallery with palettes",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/PortfolioTemplates"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 7,
+      "resolvedLines": 1815,
+      "publishedFiles": 7,
+      "publishedLines": 1822,
+      "group": "DIR:src/components/PortfolioTemplates",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-C07",
+      "title": "Portfolio gallery / showcase",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/PortfolioGallery"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 238,
+      "publishedFiles": 1,
+      "publishedLines": 239,
+      "group": "DIR:src/components/PortfolioGallery",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-D01",
+      "title": "Live voice interview (TTS question delivery + pacing)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardInterviews/LiveVoiceEngine.js",
+        "src/components/Dashboard/DashboardInterviews/LiveInterviewSession.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1924,
+      "publishedFiles": 2,
+      "publishedLines": 1926,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D02",
+      "title": "Microphone capture + live audio waveform",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardInterviews/LiveAudioWaveform.jsx",
+        "src/hooks/useInterviewMedia.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 508,
+      "publishedFiles": 2,
+      "publishedLines": 510,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D03",
+      "title": "Interview session UI (question flow, transcript, scoring)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardInterviews"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 6,
+      "resolvedLines": 5817,
+      "publishedFiles": 6,
+      "publishedLines": 5823,
+      "group": "DIR:src/components/Dashboard/DashboardInterviews",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-D04",
+      "title": "Candidate command palette (\u2318K) with fuzzy entity search",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/cuba/CubaCommandPalette.jsx",
+        "src/components/Candidate/command",
+        "src/components/cuba/fuzzyRank.js",
+        "src/components/cuba/portalCommands.js",
+        "src/components/cuba/copilotActions.js"
+      ],
+      "pathTypes": [
+        "file",
+        "dir",
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 5,
+      "resolvedLines": 1372,
+      "publishedFiles": 5,
+      "publishedLines": 1376,
+      "group": "DIR:src/components/Candidate/command",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D05",
+      "title": "Copilot assistant (mascot, prompt builder, action registry)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/cuba/CubaCopilotMascot.jsx",
+        "src/components/cuba/copilotPrompt.js",
+        "src/components/cuba/copilotActions.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 542,
+      "publishedFiles": 3,
+      "publishedLines": 545,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D06",
+      "title": "Candidate HUD overlay",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/cuba/CubaHud.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 46,
+      "publishedFiles": 1,
+      "publishedLines": 47,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D07",
+      "title": "Notification centre (bell, unread poller, routing)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/cuba/M3NotificationCenter.jsx",
+        "src/components/Dashboard/DashboardNotifications",
+        "src/hooks/unreadMessagesPoller.js",
+        "src/hooks/useUnreadMessages.js"
+      ],
+      "pathTypes": [
+        "file",
+        "dir",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 4,
+      "resolvedLines": 1140,
+      "publishedFiles": 4,
+      "publishedLines": 1143,
+      "group": "DIR:src/components/Dashboard/DashboardNotifications",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D08",
+      "title": "User-selectable UI density",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/cuba/CubaDensityProvider.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 68,
+      "publishedFiles": 1,
+      "publishedLines": 69,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D09",
+      "title": "Candidate dashboard home, next-steps onboarding, applied-jobs tracker",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardHomepage",
+        "src/components/Dashboard/Settings",
+        "src/components/Dashboard/DashboardMain",
+        "src/components/Dashboard/DashbaordJobMatching",
+        "src/components/Dashboard/DashboardFavourites",
+        "src/components/Dashboard/DashboardPagination",
+        "src/components/Dashboard/DashboardResumes",
+        "src/components/Dashboard/DasboardActions",
+        "src/components/Dashboard/ResumeCard",
+        "src/components/Dashboard/CoverCard",
+        "src/components/Dashboard/ProfileDropdown",
+        "src/components/Dashboard/stats",
+        "src/components/Dashboard/ShareModal",
+        "src/components/Candidate/CubaNextSteps.jsx",
+        "src/components/AppliedJobs"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 16,
+      "resolvedLines": 7084,
+      "publishedFiles": 16,
+      "publishedLines": 7098,
+      "group": "DIR:src/components/AppliedJobs+src/components/Dashboard/CoverCard+src/components/Dashboard/DasboardActions+src/components/Dashboard/DashbaordJobMatching+src/components/Dashboard/DashboardFavourites+src/components/Dashboard/DashboardHomepage+src/components/Dashboard/DashboardMain+src/components/Dashboard/DashboardPagination+src/components/Dashboard/DashboardResumes+src/components/Dashboard/ProfileDropdown+src/components/Dashboard/ResumeCard+src/components/Dashboard/Settings+src/components/Dashboard/ShareModal+src/components/Dashboard/stats",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D10",
+      "title": "Guided \"next steps\" onboarding checklist",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/Candidate/CubaNextSteps.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 124,
+      "publishedFiles": 1,
+      "publishedLines": 125,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D12",
+      "title": "Dashboard-v2 element library (stats, activity, profile display, resumes/covers lists)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard2",
+        "src/components/Dashboard/ResumesList",
+        "src/components/Dashboard/CoversList",
+        "src/components/Dashboard/ProfileDisplay",
+        "src/components/Dashboard/SettingsDropdown",
+        "src/components/Dashboard/DashboardSearch",
+        "src/components/Dashboard/DashboardPortfolios",
+        "src/components/AppShell",
+        "src/components/common"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 28,
+      "resolvedLines": 3362,
+      "publishedFiles": 28,
+      "publishedLines": 3390,
+      "group": "DIR:src/components/AppShell+src/components/Dashboard/CoversList+src/components/Dashboard/DashboardPortfolios+src/components/Dashboard/DashboardSearch+src/components/Dashboard/ProfileDisplay+src/components/Dashboard/ResumesList+src/components/Dashboard/SettingsDropdown+src/components/Dashboard2+src/components/common",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-D13",
+      "title": "Candidate shell, AI career briefing, top job matches, executive rail, progress charts",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Candidate"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 16,
+      "resolvedLines": 2906,
+      "publishedFiles": 16,
+      "publishedLines": 2920,
+      "group": "DIR:src/components/Candidate",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-D14",
+      "title": "Payment grace-period / dunning banner",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/Candidate/PaymentGraceBanner.jsx",
+        "src/components/Candidate/gracePeriodNotice.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 138,
+      "publishedFiles": 2,
+      "publishedLines": 138,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-D15",
+      "title": "Saved jobs / favourites",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardFavourites"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 401,
+      "publishedFiles": 1,
+      "publishedLines": 402,
+      "group": "DIR:src/components/Dashboard/DashboardFavourites",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-D11",
+      "title": "Candidate\u21c4employer messaging",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardMessages",
+        "src/components/cuba/MessagesModuleGate.jsx",
+        "src/components/cuba/MessagesNavBadge.jsx"
+      ],
+      "pathTypes": [
+        "dir",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 865,
+      "publishedFiles": 3,
+      "publishedLines": 867,
+      "group": "DIR:src/components/Dashboard/DashboardMessages",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E01",
+      "title": "Guided multi-step resume builder (Form/Boards/Actions steps)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/BuildResume",
+        "src/components/Form",
+        "src/components/Boards",
+        "src/components/Actions"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 61,
+      "resolvedLines": 25183,
+      "publishedFiles": 61,
+      "publishedLines": 25243,
+      "group": "DIR:src/components/Actions+src/components/Boards+src/components/BuildResume+src/components/Form",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-E02",
+      "title": "Template catalogue volume (51 legacy cv dirs)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/cv-templates"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 73,
+      "resolvedLines": 13921,
+      "publishedFiles": 73,
+      "publishedLines": 13985,
+      "group": "DIR:src/cv-templates",
+      "corpusScope": "legitimate-share",
+      "capabilityScoped": {
+        "files": 73,
+        "lines": 13985,
+        "paths": [
+          "src/cv-templates"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "SUPPORTED",
+      "recommendedAction": "keep the directory corpus; record that the measurement describes shared reuse"
+    },
+    {
+      "id": "FP-E03",
+      "title": "Structurally distinct template layouts (design diversity)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/cv-templates"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 73,
+      "resolvedLines": 13921,
+      "publishedFiles": 73,
+      "publishedLines": 13985,
+      "group": "DIR:src/cv-templates",
+      "corpusScope": "legitimate-share",
+      "capabilityScoped": {
+        "files": 73,
+        "lines": 13985,
+        "paths": [
+          "src/cv-templates"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "SUPPORTED",
+      "recommendedAction": "keep the directory corpus; record that the measurement describes shared reuse"
+    },
+    {
+      "id": "FP-E04",
+      "title": "ATS score with per-section breakdown and job-description targeting",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/BuildResume/AtsScoreMeter.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 348,
+      "publishedFiles": 1,
+      "publishedLines": 349,
+      "group": null,
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 242,
+        "paths": [
+          "src/components/BuildResume/AtsScoreMeter.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-E05",
+      "title": "Server-side ATS audit (authoritative score from backend)",
+      "classification": "UNVERIFIED",
+      "declaredPaths": [
+        "src/components/BuildResume/AtsScoreMeter.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 348,
+      "publishedFiles": 1,
+      "publishedLines": 349,
+      "group": null,
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 14,
+        "paths": [
+          "src/components/BuildResume/AtsScoreMeter.jsx"
+        ]
+      },
+      "volumeInflation": 1.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-E06",
+      "title": "Profile photo crop / zoom",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardSettings/ImageCropModal.jsx",
+        "src/components/BuildResume/steps"
+      ],
+      "pathTypes": [
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 20,
+      "resolvedLines": 10104,
+      "publishedFiles": 20,
+      "publishedLines": 10124,
+      "group": "DIR:src/components/BuildResume/steps",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E07",
+      "title": "QR code generation for shares / MFA enrolment",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/services/mfaService.js",
+        "src/utils/totpHelper.js",
+        "src/components/Dashboard/DashboardSettings"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 5,
+      "resolvedLines": 7403,
+      "publishedFiles": 5,
+      "publishedLines": 7408,
+      "group": "DIR:src/components/Dashboard/DashboardSettings",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E08",
+      "title": "Public share links / share modal",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/BuildResume"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 36,
+      "resolvedLines": 16906,
+      "publishedFiles": 36,
+      "publishedLines": 16941,
+      "group": "DIR:src/components/BuildResume",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-E09",
+      "title": "Cover letters",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/CoverLetter",
+        "src/cv-templates"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 74,
+      "resolvedLines": 15768,
+      "publishedFiles": 74,
+      "publishedLines": 15832,
+      "group": "DIR:src/components/CoverLetter+src/cv-templates",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-E16",
+      "title": "Export access guard (plan-gated export routes)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Exporter"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 176,
+      "publishedFiles": 3,
+      "publishedLines": 179,
+      "group": "DIR:src/components/Exporter",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-E17",
+      "title": "Document rendering surface (page composer, template renderer, public resume)",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/ResumePageComposer.jsx",
+        "src/components/TemplateRenderer.jsx",
+        "src/components/PublicResume",
+        "src/components/cv-templates/index.jsx",
+        "src/cv-templates/templateUtils.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "dir",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 5,
+      "resolvedLines": 1270,
+      "publishedFiles": 5,
+      "publishedLines": 1274,
+      "group": "DIR:src/components/PublicResume",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E11",
+      "title": "DOCX export with ZIP magic-byte validation",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/docxDownload.js"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 122,
+      "publishedFiles": 1,
+      "publishedLines": 123,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E12",
+      "title": "Server-rendered PDF export",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/pdfDownload.js",
+        "src/utils/exportDownloader.js",
+        "src/utils/printSurface.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 369,
+      "publishedFiles": 3,
+      "publishedLines": 372,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E13",
+      "title": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/engine/hybrid"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 23,
+      "resolvedLines": 3059,
+      "publishedFiles": 23,
+      "publishedLines": 3082,
+      "group": "DIR:src/engine/hybrid",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-E14",
+      "title": "Bullet-point quality/health cards and role health checks",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/bulletQuality.js",
+        "src/components/Form/BulletPointsEditor.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1469,
+      "publishedFiles": 2,
+      "publishedLines": 1471,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E15",
+      "title": "Free-tier watermark + export entitlement gating",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/watermarkEntitlement.js",
+        "src/utils/subscriptionUtils.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 208,
+      "publishedFiles": 2,
+      "publishedLines": 210,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-E10",
+      "title": "AI writing aids (grammar check, summary, import)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/BuildResume/ResumeImportModal.jsx",
+        "src/components/BuildResume/SyncProfileModal.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 994,
+      "publishedFiles": 2,
+      "publishedLines": 995,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-F01",
+      "title": "Employer portal shell with tabbed workspace",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/EmployerPortal"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 12,
+      "resolvedLines": 2088,
+      "publishedFiles": 12,
+      "publishedLines": 2100,
+      "group": "DIR:src/components/EmployerPortal",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 6,
+        "lines": 987,
+        "paths": [
+          "src/components/EmployerPortal/EmployerPortal.jsx",
+          "src/components/EmployerPortal/EmployerPortalCuba.jsx",
+          "src/components/EmployerPortal/EmployerSidebar.jsx",
+          "src/components/EmployerPortal/EmployerStates.jsx",
+          "src/components/EmployerPortal/useEmployerWorkspace.js",
+          "src/components/EmployerPortal/EmployerOverview.jsx"
+        ]
+      },
+      "volumeInflation": 2.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-F02",
+      "title": "Applicant pipeline (kanban + list, stage transitions)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/EmployerPortal"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 12,
+      "resolvedLines": 2088,
+      "publishedFiles": 12,
+      "publishedLines": 2100,
+      "group": "DIR:src/components/EmployerPortal",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 752,
+        "paths": [
+          "src/components/EmployerPortal/EmployerApplicantPipeline.jsx"
+        ]
+      },
+      "volumeInflation": 12.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-F03",
+      "title": "Employer candidate messaging / send-message dialog",
+      "classification": "MOCK / FABRICATED STATE",
+      "declaredPaths": [
+        "src/components/EmployerPortal/EmployerCandidateMessages.jsx",
+        "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 140,
+      "publishedFiles": 2,
+      "publishedLines": 142,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-F04",
+      "title": "Employer onboarding wizard",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/EmployerPortal/EmployerOnboarding.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 135,
+      "publishedFiles": 1,
+      "publishedLines": 136,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-F05",
+      "title": "Job creation / requisition editor",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/EmployerPortal"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 12,
+      "resolvedLines": 2088,
+      "publishedFiles": 12,
+      "publishedLines": 2100,
+      "group": "DIR:src/components/EmployerPortal",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 3,
+        "lines": 1461,
+        "paths": [
+          "src/components/EmployerPortal/EmployerJobPostings.jsx",
+          "src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx",
+          "src/components/Dashboard/EmployerDashboard/EditJobModal.jsx"
+        ]
+      },
+      "volumeInflation": 4.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-F06",
+      "title": "Company profile + team seats",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/EmployerPortal"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 12,
+      "resolvedLines": 2088,
+      "publishedFiles": 12,
+      "publishedLines": 2100,
+      "group": "DIR:src/components/EmployerPortal",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 4,
+        "lines": 1331,
+        "paths": [
+          "src/components/EmployerPortal/EmployerCompanyProfile.jsx",
+          "src/components/EmployerPortal/EmployerHiringPreferences.jsx",
+          "src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx",
+          "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx"
+        ]
+      },
+      "volumeInflation": 3.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-F07",
+      "title": "Job discovery with map view and location autocomplete",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/JobsListings/GoogleMapsProvider.jsx",
+        "src/components/JobsListings/LocationAutocomplete.jsx",
+        "src/components/AutoComplete"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 299,
+      "publishedFiles": 3,
+      "publishedLines": 302,
+      "group": "DIR:src/components/AutoComplete",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-F08",
+      "title": "Regional job hubs / landing pages",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/JobsLanding"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 4,
+      "resolvedLines": 897,
+      "publishedFiles": 4,
+      "publishedLines": 901,
+      "group": "DIR:src/components/JobsLanding",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-F11",
+      "title": "Employer dashboard: companies management, job editing, application modals, rejection reasons",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/EmployerDashboard"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 7,
+      "resolvedLines": 3387,
+      "publishedFiles": 7,
+      "publishedLines": 3394,
+      "group": "DIR:src/components/Dashboard/EmployerDashboard",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-F10",
+      "title": "Job listing browse/filter UI (beyond maps and autocomplete)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/JobsListings",
+        "src/components/JobsLanding"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 21,
+      "resolvedLines": 7797,
+      "publishedFiles": 21,
+      "publishedLines": 7818,
+      "group": "DIR:src/components/JobsLanding+src/components/JobsListings",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-F09",
+      "title": "Employer dashboard analytics",
+      "classification": "UNVERIFIED",
+      "declaredPaths": [
+        "src/components/EmployerPortal",
+        "src/components/Analytics.jsx"
+      ],
+      "pathTypes": [
+        "dir",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 13,
+      "resolvedLines": 2098,
+      "publishedFiles": 13,
+      "publishedLines": 2111,
+      "group": "DIR:src/components/EmployerPortal",
+      "corpusScope": "capability-scoped",
+      "capabilityScoped": {
+        "files": 1,
+        "lines": 174,
+        "paths": [
+          "src/components/EmployerPortal/EmployerOverview.jsx"
+        ]
+      },
+      "volumeInflation": 13.0,
+      "publishedMeasurement": "CORRECTED",
+      "recommendedAction": "keep the capability-scoped corpus already recorded in the M8C overlay"
+    },
+    {
+      "id": "FP-G01",
+      "title": "Cuba application shell (nav, header, popovers, a11y)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/cuba/CubaAppShell.jsx",
+        "src/components/cuba/CubaPortalShell.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1139,
+      "publishedFiles": 2,
+      "publishedLines": 1141,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G02",
+      "title": "Cuba design-system primitives (30 components)",
+      "classification": "REPLACED BY EQUIVALENT",
+      "declaredPaths": [
+        "src/components/cuba"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 52,
+      "resolvedLines": 7119,
+      "publishedFiles": 52,
+      "publishedLines": 7164,
+      "group": "DIR:src/components/cuba",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G03",
+      "title": "Internationalisation (16 locales, ~1,011 translation keys)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/i18n.js",
+        "src/locales"
+      ],
+      "pathTypes": [
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 43,
+      "publishedFiles": 1,
+      "publishedLines": 44,
+      "group": "DIR:src/locales",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G04",
+      "title": "Product analytics (GA4 / gtag)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/GA4Provider.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 54,
+      "publishedFiles": 1,
+      "publishedLines": 55,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G05",
+      "title": "Per-route SEO metadata (title, description, canonical, structured data)",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/RouteSeo.jsx",
+        "src/components/MetaManager"
+      ],
+      "pathTypes": [
+        "file",
+        "dir"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 4,
+      "resolvedLines": 601,
+      "publishedFiles": 4,
+      "publishedLines": 604,
+      "group": "DIR:src/components/MetaManager",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G06",
+      "title": "Service worker / offline shell",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/serviceWorker.js",
+        "src/bootstrap.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 47,
+      "publishedFiles": 2,
+      "publishedLines": 49,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G07",
+      "title": "Toast / notification feedback primitives",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Toasts"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 1,
+      "resolvedLines": 131,
+      "publishedFiles": 1,
+      "publishedLines": 132,
+      "group": "DIR:src/components/Toasts",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G08",
+      "title": "Auth flows: OAuth sign-in, 2FA, forced password change",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/auth",
+        "src/hooks/useOAuthSignIn.js"
+      ],
+      "pathTypes": [
+        "dir",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 6,
+      "resolvedLines": 1725,
+      "publishedFiles": 6,
+      "publishedLines": 1727,
+      "group": "DIR:src/components/auth",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G09",
+      "title": "Blog authoring + public blog",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/Blog",
+        "src/components/admin/blogManagement"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 7,
+      "resolvedLines": 3911,
+      "publishedFiles": 7,
+      "publishedLines": 3915,
+      "group": "DIR:src/components/Blog+src/components/admin/blogManagement",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G10",
+      "title": "CMS custom pages / landing page rendering",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/CustomPage",
+        "src/components/Marketing"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 17,
+      "resolvedLines": 3970,
+      "publishedFiles": 17,
+      "publishedLines": 3985,
+      "group": "DIR:src/components/CustomPage+src/components/Marketing",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G11",
+      "title": "Marketing site: welcome, features, FAQ, about, contact, legal",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/welcome",
+        "src/components/Features",
+        "src/components/Contact"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 2591,
+      "publishedFiles": 3,
+      "publishedLines": 2592,
+      "group": "DIR:src/components/Contact+src/components/Features+src/components/welcome",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G12",
+      "title": "Privacy consent banner + cookie policy surface",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/components/PrivacyConsentBanner.jsx"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 87,
+      "publishedFiles": 1,
+      "publishedLines": 88,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G13",
+      "title": "Entitlements / plan-gating data model",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/data/entitlements.js",
+        "src/components/cuba/MessagesModuleGate.jsx"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 140,
+      "publishedFiles": 2,
+      "publishedLines": 142,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G15",
+      "title": "Shared utility library (42 modules: formatting, validation, download, OAuth resolvers, print)",
+      "classification": "REPLACED BY EQUIVALENT",
+      "declaredPaths": [
+        "src/utils"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 43,
+      "resolvedLines": 9628,
+      "publishedFiles": 43,
+      "publishedLines": 9669,
+      "group": "DIR:src/utils",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G16",
+      "title": "Typed API service layer (client, resumes, covers, jobs, portfolios, blog, platform, users, databaseAdmin)",
+      "classification": "REPLACED BY EQUIVALENT",
+      "declaredPaths": [
+        "src/services",
+        "src/enterprise/enterpriseApi.js"
+      ],
+      "pathTypes": [
+        "dir",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 23,
+      "resolvedLines": 5665,
+      "publishedFiles": 23,
+      "publishedLines": 5686,
+      "group": "DIR:src/services",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G17",
+      "title": "Geo / location datasets, autocomplete directories, job-location helpers",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/services/api/geo.js",
+        "src/utils/autocompleteDirectories.js",
+        "src/utils/locationHelper.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 3,
+      "resolvedLines": 2096,
+      "publishedFiles": 3,
+      "publishedLines": 2099,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G18",
+      "title": "Structured data / JSON-LD for public pages",
+      "classification": "MISSING",
+      "declaredPaths": [
+        "src/services/seo/structuredData.js"
+      ],
+      "pathTypes": [
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 1,
+      "resolvedLines": 178,
+      "publishedFiles": 1,
+      "publishedLines": 179,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G19",
+      "title": "TOTP / MFA secret provisioning helpers",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/totpHelper.js",
+        "src/services/mfaService.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 229,
+      "publishedFiles": 2,
+      "publishedLines": 231,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G20",
+      "title": "Job application tracker",
+      "classification": "FULL PARITY",
+      "declaredPaths": [
+        "src/components/AppliedJobs/JobTracker.jsx",
+        "src/utils/jobTracker.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 1353,
+      "publishedFiles": 2,
+      "publishedLines": 1355,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G21",
+      "title": "AI interview coach / role-based question generation",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/utils/interviewCoach.js",
+        "src/utils/roleInterviewGenerator.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 2,
+      "resolvedLines": 857,
+      "publishedFiles": 2,
+      "publishedLines": 859,
+      "group": null,
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G22",
+      "title": "Data models, runtime conf and React context scaffolding",
+      "classification": "REPLACED BY EQUIVALENT",
+      "declaredPaths": [
+        "src/models",
+        "src/conf",
+        "src/context"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 7,
+      "resolvedLines": 340,
+      "publishedFiles": 7,
+      "publishedLines": 344,
+      "group": "DIR:src/conf+src/context+src/models",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G23",
+      "title": "Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs)",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/hooks"
+      ],
+      "pathTypes": [
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 11,
+      "resolvedLines": 1421,
+      "publishedFiles": 11,
+      "publishedLines": 1431,
+      "group": "DIR:src/hooks",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G24",
+      "title": "In-app support surface and input validation modals",
+      "classification": "PARTIAL PARITY",
+      "declaredPaths": [
+        "src/components/Dashboard/DashboardSupport",
+        "src/components/Dashboard/ValidationModal",
+        "src/components/Dashboard/DashboardToast"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "dir"
+      ],
+      "bareDirectory": true,
+      "resolvedFiles": 3,
+      "resolvedLines": 1417,
+      "publishedFiles": 3,
+      "publishedLines": 1420,
+      "group": "DIR:src/components/Dashboard/DashboardSupport+src/components/Dashboard/DashboardToast+src/components/Dashboard/ValidationModal",
+      "corpusScope": "directory-unreconstructed",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "reconstruct before the row's volume or subfeature counts are cited"
+    },
+    {
+      "id": "FP-G25",
+      "title": "App bootstrap, route focus management, global spinner",
+      "classification": "REPLACED BY EQUIVALENT",
+      "declaredPaths": [
+        "src/main.jsx",
+        "src/components/RouteFocus.jsx",
+        "src/components/Spinner",
+        "src/bootstrap.js"
+      ],
+      "pathTypes": [
+        "file",
+        "file",
+        "dir",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 4,
+      "resolvedLines": 736,
+      "publishedFiles": 4,
+      "publishedLines": 740,
+      "group": "DIR:src/components/Spinner",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    },
+    {
+      "id": "FP-G14",
+      "title": "Misc legacy orphans (Front, initailisation, Analytics, variables.scss)",
+      "classification": "UNVERIFIED",
+      "declaredPaths": [
+        "src/components/Front",
+        "src/components/initailisation",
+        "src/components/Analytics.jsx"
+      ],
+      "pathTypes": [
+        "dir",
+        "dir",
+        "file"
+      ],
+      "bareDirectory": false,
+      "resolvedFiles": 5,
+      "resolvedLines": 105,
+      "publishedFiles": 5,
+      "publishedLines": 108,
+      "group": "DIR:src/components/Front+src/components/initailisation",
+      "corpusScope": "UNDECLARED",
+      "capabilityScoped": null,
+      "volumeInflation": null,
+      "publishedMeasurement": "UNRESOLVED",
+      "recommendedAction": "record a disposition before the row is cited"
+    }
+  ]
+}

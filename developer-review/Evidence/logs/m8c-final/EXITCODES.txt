@@ -1,0 +1,6 @@
+# M8C post-correction tool run — 2026-10-29T11:07:03Z
+# HEAD 160cab19c1f3a3d5fa8805ffdc8289907d5f7b6e
+integrity exit=0
+fixtures exit=0
+audit-package exit=0
+v4-reconciliation exit=0
