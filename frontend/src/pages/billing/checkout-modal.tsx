@@ -39,6 +39,7 @@ import {
   Building,
 } from 'lucide-react';
 import axios from 'axios';
+import { parseCouponResponse } from './coupon-contract';
 
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR';
 
@@ -176,9 +177,9 @@ export function CheckoutModal({
   const [cardCvc, setCardCvc] = useState('');
 
   // Execution & Status State
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [completedOrder, setCompletedOrder] = useState<{
+  const [completedOrder] = useState<{
     orderId: string;
     invoiceNumber: string;
     date: string;
@@ -242,29 +243,11 @@ export function CheckoutModal({
     setCouponError('');
 
     try {
-      // Try backend endpoint first
-      const res = await axios.post('/api/billing/validate-coupon', { code }).catch(() => null);
-      if (res?.data?.valid && res.data.discountPercent) {
-        setAppliedCoupon({ code, percent: Number(res.data.discountPercent) });
-        setCouponCode('');
-        setValidatingCoupon(false);
-        return;
-      }
-
-      // Built-in verified promo codes
-      if (code === 'SAVE20') {
-        setAppliedCoupon({ code, percent: 20 });
-      } else if (code === 'WELCOME50') {
-        setAppliedCoupon({ code, percent: 50 });
-      } else if (code === 'PROMO10') {
-        setAppliedCoupon({ code, percent: 10 });
-      } else if (code === 'LAUNCH100') {
-        setAppliedCoupon({ code, percent: 100 });
-      } else {
-        setCouponError(`Coupon code "${code}" is invalid or expired.`);
-      }
+      const res = await axios.post('/api/coupons/validate', { code });
+      setAppliedCoupon(parseCouponResponse(res.data, code));
+      setCouponCode('');
     } catch {
-      setCouponError('Unable to validate coupon. Please try again.');
+      setCouponError('Coupon could not be validated. Please check the code and try again.');
     } finally {
       setValidatingCoupon(false);
     }
@@ -297,79 +280,10 @@ export function CheckoutModal({
     return true;
   };
 
-  // Execute Payment
-  const handleExecutePayment = async () => {
-    if (grandTotal > 0 && paymentMethod === 'card') {
-      if (!cardNumber || cardNumber.replace(/\s/g, '').length < 15) {
-        setErrorMessage('Please enter a valid card number.');
-        return;
-      }
-      if (!cardExpiry || !cardExpiry.includes('/')) {
-        setErrorMessage('Please enter card expiry in MM/YY format.');
-        return;
-      }
-      if (!cardCvc || cardCvc.length < 3) {
-        setErrorMessage('Please enter a valid CVC code.');
-        return;
-      }
-    }
-
-    setIsProcessing(true);
-    setErrorMessage('');
-
-    try {
-      const orderPayload = {
-        planId: selectedPlanId,
-        billingCycle,
-        currency,
-        amount: grandTotal,
-        couponCode: appliedCoupon?.code || null,
-        billingDetails: {
-          fullName,
-          email,
-          address,
-          city,
-          state,
-          country,
-          postalCode,
-          taxId,
-        },
-        paymentMethod,
-      };
-
-      // Call live backend checkout API or generate authoritative confirmation
-      let paymentRes = null;
-      try {
-        if (paymentMethod === 'card') {
-          paymentRes = await axios.post('/api/pay', orderPayload);
-        } else if (paymentMethod === 'razorpay') {
-          paymentRes = await axios.post('/api/razorpay/create-order', orderPayload);
-        } else {
-          paymentRes = await axios.post('/api/paypal/create-order', orderPayload);
-        }
-      } catch {
-        // Safe graceful fallback for standalone headless test runs
-        console.warn('Backend payment endpoint returned fallback, generating client order confirmation.');
-      }
-
-      const generatedOrderId = paymentRes?.data?.orderId || `ORD-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
-      const generatedInvoice = paymentRes?.data?.invoiceNumber || `INV-2026-${Math.floor(Math.random() * 89999 + 10000)}`;
-
-      setCompletedOrder({
-        orderId: generatedOrderId,
-        invoiceNumber: generatedInvoice,
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-        amount: formatMoney(grandTotal),
-        planName: plan.name,
-      });
-
-      setCheckoutStep(3);
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } }; message?: string };
-      setErrorMessage(error.response?.data?.error || error.message || 'Payment processing failed. Please check your credentials.');
-    } finally {
-      setIsProcessing(false);
-    }
+  // The provider flows below do not yet collect a verified settlement result.
+  // Fail closed rather than creating an order or fabricating a paid receipt.
+  const handleExecutePayment = () => {
+    setErrorMessage('Online payment is currently unavailable. This attempt did not submit a payment.');
   };
 
   const handleDownloadInvoice = () => {
@@ -734,7 +648,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
                       <Input
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="Enter Promo Code (e.g. SAVE20)"
+                        placeholder="Enter Promo Code"
                         className="text-xs uppercase font-mono"
                       />
                       <Button
@@ -750,22 +664,7 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
 
                   {couponError && <p className="text-xs text-error-600 font-medium">{couponError}</p>}
 
-                  {/* Quick Pills */}
-                  {!appliedCoupon && (
-                    <div className="flex items-center gap-2 flex-wrap pt-1">
-                      <span className="text-[11px] text-ink-muted">Quick Codes:</span>
-                      {['SAVE20', 'WELCOME50', 'PROMO10'].map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => handleApplyCoupon(chip)}
-                          className="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors cursor-pointer"
-                        >
-                          {chip}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -1031,11 +930,11 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
               <Button
                 size="sm"
                 onClick={() => {
-                  if (validateStep1()) setCheckoutStep(2);
+                  if (validateStep1()) handleExecutePayment();
                 }}
                 className="text-xs font-bold gap-1.5"
               >
-                Review & Payment <ArrowRight className="size-3.5" />
+                Check Payment Availability <ArrowRight className="size-3.5" />
               </Button>
             ) : (
               <Button

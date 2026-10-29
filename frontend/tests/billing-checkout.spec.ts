@@ -58,18 +58,15 @@ test.describe('Billing & Checkout Engine Parity (DIR-002)', () => {
   });
 
   test('Promo coupon engine validates and applies discount', async ({ page }) => {
+    await page.route('**/api/coupons/validate', async route => {
+      expect(route.request().postDataJSON()).toEqual({ code: 'SAVE20' });
+      await route.fulfill({ status: 200, json: { success: true, valid: true, coupon: { code: 'SAVE20', discount: 20 } } });
+    });
     await page.goto('/pricing', { waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /Start 7-Day Free Trial/i }).click();
-
     const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    // Click quick coupon SAVE20
-    const save20Pill = dialog.getByRole('button', { name: 'SAVE20' });
-    await expect(save20Pill).toBeVisible();
-    await save20Pill.click();
-
-    // Verify coupon applied banner
+    await dialog.getByPlaceholder('Enter Promo Code').fill('SAVE20');
+    await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
     await expect(dialog.getByText(/Coupon Applied: SAVE20/i)).toBeVisible();
   });
 
