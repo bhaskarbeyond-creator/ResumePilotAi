@@ -173,7 +173,7 @@ export function AdminUsersTab() {
   const loadUsers = async () => {
     try {
       const res = await get<{ users?: AdminUserRecord[] }>('/admin/users');
-      if (res?.users && Array.isArray(res.users) && res.users.length > 0) {
+      if (res?.users && Array.isArray(res.users)) {
         setUsers(res.users);
       }
     } catch {
@@ -184,7 +184,7 @@ export function AdminUsersTab() {
   };
 
   useEffect(() => {
-    loadUsers();
+    void loadUsers();
   }, []);
 
   // Sync edit states when selecting user
@@ -206,7 +206,7 @@ export function AdminUsersTab() {
       await post(`/admin/users/${user.id}/status`, {
         status: nextStatus,
         reason: suspensionReason.trim() || undefined,
-      }).catch(() => {});
+      });
 
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u))
@@ -220,8 +220,9 @@ export function AdminUsersTab() {
       setShowSuspendInput(false);
       setSuspensionReason('');
       setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setActionSuccess(`Failed to update user status: ${err?.message || 'Error'}`);
+      setTimeout(() => setActionSuccess(null), 4000);
     }
   };
 

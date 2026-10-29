@@ -310,6 +310,8 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     const raceRepo = new MySQLRepository();
     const realPool = database.getPool();
     raceRepo._getPool = () => ({
+      query(...args) { return realPool.query(...args); },
+      execute(...args) { return realPool.execute(...args); },
       async getConnection() {
         const conn = await realPool.getConnection();
         try { await conn.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED'); }

@@ -1,6 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
-const { requirePermission, permissionsFor } = require('../security/auth');
+const { requireAuth, requirePermission, permissionsFor } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -95,6 +95,83 @@ router.get('/slug/:slug', async (req, res) => {
     }
 });
 
+// Administrative & Editor REST Aliases (/posts, /posts/:id)
+router.get('/posts', async (req, res) => {
+    try {
+        const publicOnly = !canReadDrafts(req) || req.query.publishedOnly === 'true';
+        const posts = await req.repository.getBlogPosts({
+            publishedOnly: publicOnly,
+            limit: req.query.limit,
+        });
+        const normalized = (posts || []).filter(post => !publicOnly || isPublished(post)).map(normalizePostPayload);
+        return res.json({ success: true, posts: normalized });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to fetch blog posts' });
+    }
+});
+
+router.get('/posts/:id', async (req, res) => {
+    try {
+        let post = await req.repository.getBlogPostById(req.params.id);
+        if (!post) {
+            post = await req.repository.getBlogPostBySlug(req.params.id);
+        }
+        if (!post || (!isPublished(post) && !canReadDrafts(req))) {
+            return res.status(404).json({ success: false, error: 'Post not found' });
+        }
+        return res.json({ success: true, post: normalizePostPayload(post) });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to fetch blog post' });
+    }
+});
+
+router.post('/posts', requireAuth, requirePermission(['system.config.write', 'blog.write', 'blog_management', 'content.manage']), async (req, res) => {
+    try {
+        const postId = req.body?.id || req.body?.slug || `post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const payload = {
+            ...req.body,
+            id: postId,
+            published: req.body?.status === 'published' || req.body?.published === true || req.body?.published === 1,
+            updatedAt: new Date().toISOString(),
+        };
+        const saved = await req.repository.saveBlogPost(postId, payload);
+        return res.status(201).json({ success: true, post: normalizePostPayload(saved) });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to create blog post' });
+    }
+});
+
+router.put('/posts/:id', requireAuth, requirePermission(['system.config.write', 'blog.write', 'blog_management', 'content.manage']), async (req, res) => {
+    try {
+        const payload = {
+            ...req.body,
+            id: req.params.id,
+            published: req.body?.status === 'published' || req.body?.published === true || req.body?.published === 1,
+            updatedAt: new Date().toISOString(),
+        };
+        const saved = await req.repository.saveBlogPost(req.params.id, payload);
+        return res.json({ success: true, post: normalizePostPayload(saved) });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to update blog post' });
+    }
+});
+
+router.delete('/posts/:id', requireAuth, requirePermission(['system.config.write', 'blog.write', 'blog_management', 'content.manage']), async (req, res) => {
+    try {
+        let expectedRevision = req.body?.expectedRevision ?? req.query?.expectedRevision;
+        if (!expectedRevision) {
+            const current = await req.repository.getBlogPostById(req.params.id);
+            if (!current) return res.status(404).json({ success: false, error: 'Post not found' });
+            expectedRevision = current.revision || 1;
+        }
+        await req.repository.deleteBlogPost(req.params.id, expectedRevision);
+        return res.json({ success: true });
+    } catch (err) {
+        const status = err.status || (err.code === 'REVISION_REQUIRED' ? 400 : err.code === 'CAS_CONFLICT' ? 409 : 500);
+        return res.status(status).json({ success: false, error: err.message || 'Failed to delete blog post' });
+    }
+});
+
 // GET /api/blog-data/:id - Post by ID (Public read / Author read)
 router.get('/:id', async (req, res) => {
     try {
@@ -129,4 +206,5 @@ router.delete('/:id', requirePermission(['system.config.write', 'blog.write', 'b
 });
 
 module.exports = { blogDataRouter: router };
+
 

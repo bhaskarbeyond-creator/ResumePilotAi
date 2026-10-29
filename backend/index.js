@@ -434,13 +434,14 @@ const publicApiPaths = new Set([
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
     '/blog-data', '/blog-data/categories', '/jobs-data',
+    '/blog', '/blog/posts', '/jobs',
     '/paytm/callback', '/phonepe/callback',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
     '/stats', '/reviews', '/phrases', '/portfolios/public',
-    '/coupons/active', '/coupons/validate'
+    '/coupons/active', '/coupons/validate', '/billing/validate-coupon'
 ]);
 function isPublicApiPath(pathname) {
-    if (pathname.startsWith('/jobs-data/tracker')) return false;
+    if (pathname.startsWith('/jobs-data/tracker') || pathname.startsWith('/jobs/tracker')) return false;
     if (pathname.startsWith('/v1/')) return true;
     return publicApiPaths.has(pathname)
         || /^\/resumes\/public\/[a-zA-Z0-9_-]+$/i.test(pathname)
@@ -448,7 +449,9 @@ function isPublicApiPath(pathname) {
         // authorization proof; the route still enforces published-only state.
         || /^\/resumes\/public\/token\/v1\.[A-Za-z0-9_-]{1,160}\.[A-Za-z0-9_-]{22}$/.test(pathname)
         || /^\/blog-data\/slug\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/i.test(pathname)
+        || /^\/blog\/posts\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
+        || /^\/jobs\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
         || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname)
@@ -513,8 +516,10 @@ app.use('/api/portfolios', portfoliosRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/support', supportUserRouter);
 app.use('/api/jobs-data', jobsDataRouter);
+app.use('/api/jobs', jobsDataRouter);
 app.use('/api/public', publicDiscoveryRouter);
 app.use('/api/blog-data', blogDataRouter);
+app.use('/api/blog', blogDataRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
 app.use('/api/enterprise/m2m', enterpriseM2mRouter);
@@ -4594,7 +4599,7 @@ app.get('/api/coupons/active', async (_req, res) => {
 });
 
 // Authoritative public coupon validation endpoint (MariaDB authoritative)
-app.post('/api/coupons/validate', async (req, res) => {
+const handleValidateCouponRoute = async (req, res) => {
     const code = String(req.body?.code || '').trim().toUpperCase();
     const uid = req.user?.uid || req.body?.uid || null;
     if (!code || !/^[A-Z0-9_-]{3,32}$/.test(code)) {
@@ -4639,7 +4644,10 @@ app.post('/api/coupons/validate', async (req, res) => {
     } catch (error) {
         return res.status(500).json({ success: false, valid: false, error: error.message });
     }
-});
+};
+
+app.post('/api/coupons/validate', handleValidateCouponRoute);
+app.post('/api/billing/validate-coupon', handleValidateCouponRoute);
 
 const handleSaveCouponRoute = async (req, res) => {
     const code = String(req.body?.code || req.params?.code || '').trim().toUpperCase();
@@ -6437,16 +6445,22 @@ app.get('/api/admin/blog/posts', async (req, res) => {
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_POSTS_UNAVAILABLE', error: 'Blog posts are unavailable.', requestId: res.locals.requestId }); }
 });
 
-app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
+async function handleReviewEmployerApplication(req, res) {
     const uid = String(req.params.uid || '');
-    const status = String(req.body.status || '').toLowerCase();
+    const decision = String(req.body.decision || '').toLowerCase();
+    const rawStatus = String(req.body.status || '').toLowerCase();
+    const status = (decision === 'approved' || rawStatus === 'approved')
+        ? 'approved'
+        : (decision === 'rejected' || rawStatus === 'rejected')
+            ? 'rejected'
+            : rawStatus;
     const expectedStatus = req.body.expectedStatus === undefined ? null : String(req.body.expectedStatus).toLowerCase();
     const reason = String(req.body.reason || '').trim().slice(0, 500);
     if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !['approved', 'rejected', 'active'].includes(status)
         || (expectedStatus !== null && !['pending', 'approved', 'rejected', 'active'].includes(expectedStatus))) {
         return res.status(400).json({ success: false, error: 'Valid application, user, and status are required.' });
     }
-    if (uid === req.user.uid) return res.status(400).json({ success: false, error: 'Administrators cannot review their own employer application.' });
+    if (uid === req.user?.uid) return res.status(400).json({ success: false, error: 'Administrators cannot review their own employer application.' });
     try {
         const repo = resilientMutations.repoFor();
         const application = await (typeof repo.getDocument === 'function' ? repo.getDocument('employer_applications', uid) : null);
@@ -6463,17 +6477,20 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
         }
         await resilientMutations.updateDocument({
             entityType: 'employer_applications', id: uid,
-            expectedRevision: application.revision, patch: { status, ...(reason ? { rejectionReason: reason } : {}), reviewedBy: req.user.uid, reviewedAt: new Date().toISOString() },
-            actorUid: req.user.uid, requestId: res.locals.requestId, action: 'EMPLOYER_APPLICATION_REVIEWED',
+            expectedRevision: application.revision, patch: { status, ...(reason ? { rejectionReason: reason } : {}), reviewedBy: req.user?.uid, reviewedAt: new Date().toISOString() },
+            actorUid: req.user?.uid, requestId: res.locals?.requestId, action: 'EMPLOYER_APPLICATION_REVIEWED',
         });
         const user = await repo.getUser(uid).catch(() => null);
         if (user) await repo.saveUser(uid, { ...user, isEmployer: enabled, employerApplicationStatus: status });
-        return res.json({ success: true, status, employer: enabled });
+        return res.json({ success: true, status, decision: status.toUpperCase(), employer: enabled, application: { id: uid, status } });
     } catch (error) {
         console.error('[Employer review]', error.message);
         return res.status(error.code === 'auth/user-not-found' ? 404 : (error.status || 500)).json({ success: false, error: 'Unable to review employer application.' });
     }
-});
+}
+
+app.patch('/api/admin/employer-applications/:uid', handleReviewEmployerApplication);
+app.post('/api/admin/employer-applications/:uid/verify', handleReviewEmployerApplication);
 
 function safePublicUrl(value) {
     const raw = String(value || '').trim().slice(0, 2048);
@@ -6907,6 +6924,24 @@ app.patch('/api/admin/jobs/:jobId', async (req, res) => {
     }
 });
 
+app.post('/api/admin/jobs/:jobId/moderate', async (req, res) => {
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
+    const isSpam = Boolean(req.body.isSpam);
+    const targetStatus = isSpam || req.body.status === 'flagged' ? 'inactive' : 'active';
+    try {
+        const patch = { status: targetStatus, isSpam, updatedAt: new Date().toISOString() };
+        const result = await resilientMutations.moderateJob({
+            jobId, expectedStatus: req.body.expectedStatus,
+            patch, actorUid: req.user?.uid, requestId: res.locals?.requestId,
+        });
+        return res.json({ success: true, jobId, status: targetStatus, isSpam, ...result });
+    } catch (error) {
+        const responseStatus = error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : (error.status || 500);
+        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to moderate job.' : error.message });
+    }
+});
+
 app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     const jobId = String(req.params.jobId || '');
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
@@ -6925,6 +6960,7 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
 app.use('/api/admin/support', supportAdminRouter);
 app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin', adminPlatformOperationsRouter);
+app.get('/api/platform/status', (req, res, next) => adminPlatformOperationsRouter(req, res, next));
 // Durable account deletion removes the subject's personal content and credentials,
 // tombstones employer listings so other applicants retain their application history,
 // and preserves only the explicitly reported statutory/security record classes.

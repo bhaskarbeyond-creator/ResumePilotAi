@@ -21,6 +21,7 @@ import {
   Sparkles,
   Globe,
   CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 
 interface BlogPostData {
@@ -83,6 +84,7 @@ export function BlogEditorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
@@ -137,9 +139,12 @@ export function BlogEditorPage() {
   const handleSave = async (statusOverride?: 'draft' | 'published') => {
     setSaving(true);
     setSavedSuccess(false);
+    setSaveError(null);
+    const targetStatus = statusOverride || postData.status;
     const payload = {
       ...postData,
-      status: statusOverride || postData.status,
+      status: targetStatus,
+      published: targetStatus === 'published',
     };
 
     try {
@@ -150,10 +155,9 @@ export function BlogEditorPage() {
       }
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
-    } catch {
-      // In demo or test mode, simulate success
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to save blog post.');
+      setTimeout(() => setSaveError(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -198,6 +202,13 @@ export function BlogEditorPage() {
             <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-[fade-in_200ms_ease-out]">
               <CheckCircle className="size-4" />
               Saved
+            </span>
+          )}
+
+          {saveError && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-rose-600 dark:text-rose-400 animate-[fade-in_200ms_ease-out]">
+              <AlertCircle className="size-4" />
+              {saveError}
             </span>
           )}
 

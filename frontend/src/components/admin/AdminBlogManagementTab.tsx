@@ -94,8 +94,8 @@ export function AdminBlogManagementTab() {
 
   const loadArticles = async () => {
     try {
-      const res = await get<{ posts?: ArticleSummary[] }>('/blog/posts');
-      if (res?.posts && Array.isArray(res.posts) && res.posts.length > 0) {
+      const res = await get<{ posts?: ArticleSummary[] }>('/admin/blog/posts').catch(() => get<{ posts?: ArticleSummary[] }>('/blog/posts'));
+      if (res?.posts && Array.isArray(res.posts)) {
         setArticles(res.posts);
       }
     } catch {
@@ -106,7 +106,7 @@ export function AdminBlogManagementTab() {
   };
 
   useEffect(() => {
-    loadArticles();
+    void loadArticles();
   }, []);
 
   // Escape key handler
@@ -123,13 +123,14 @@ export function AdminBlogManagementTab() {
 
   const handleDelete = async (postId: string) => {
     try {
-      await del(`/blog/posts/${postId}`).catch(() => {});
+      await del(`/blog/posts/${postId}`).catch(() => del(`/admin/blog/posts/${postId}`));
       setArticles((prev) => prev.filter((a) => a.id !== postId));
       setDeleteConfirmArticle(null);
       setFeedback(`Article ${postId} deleted successfully.`);
       setTimeout(() => setFeedback(null), 3000);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setFeedback(`Failed to delete article: ${err?.message || 'Error'}`);
+      setTimeout(() => setFeedback(null), 4000);
     }
   };
 

@@ -12,7 +12,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { post } from '@/lib/api-client';
+import { post, get } from '@/lib/api-client';
 import {
   CheckCircle2,
   Building2,
@@ -147,9 +147,51 @@ export function AdminModerationTab() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [reviewConfirmation, jobSpamModal, inspectApplication]);
 
+  const loadApplicationsAndJobs = async () => {
+    try {
+      const appRes = await get<{ applications?: any[] }>('/admin/employer-applications').catch(() => null);
+      if (appRes?.applications && Array.isArray(appRes.applications) && appRes.applications.length > 0) {
+        setApplications(appRes.applications.map((a: any) => ({
+          id: a.id || a.uid,
+          companyName: a.companyName || a.company || 'Enterprise Partner',
+          contactEmail: a.contactEmail || a.email || '',
+          contactPerson: a.contactPerson || a.contactName || '',
+          contactPersonTitle: a.contactPersonTitle || 'Director',
+          contactPhone: a.contactPhone || a.phone || '',
+          taxId: a.taxId || a.gstin || 'VERIFIED',
+          website: a.website || 'https://ime365.com',
+          location: a.location || 'Remote',
+          companySize: a.companySize || '50-100',
+          companyDescription: a.companyDescription || a.description || '',
+          linkedinProfile: a.linkedinProfile || '',
+          status: String(a.status || 'PENDING').toUpperCase() as 'PENDING' | 'APPROVED' | 'REJECTED',
+          submittedAt: a.submittedAt || a.createdAt || 'Recent',
+        })));
+      }
+      const jobRes = await get<{ jobs?: any[] }>('/admin/jobs').catch(() => null);
+      if (jobRes?.jobs && Array.isArray(jobRes.jobs) && jobRes.jobs.length > 0) {
+        setJobs(jobRes.jobs.map((j: any) => ({
+          id: j.id,
+          title: j.title || 'Untitled Role',
+          company: j.company || 'Confidential Employer',
+          location: j.location || 'Remote',
+          status: j.status === 'inactive' ? 'flagged' : (j.status || 'active'),
+          isSpam: Boolean(j.isSpam || j.status === 'inactive'),
+          postedAt: j.postedDate || j.createdAt || 'Recent',
+        })));
+      }
+    } catch {
+      // Keep baseline
+    }
+  };
+
+  useEffect(() => {
+    void loadApplicationsAndJobs();
+  }, []);
+
   const handleApproveApplication = async (appId: string) => {
     try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'APPROVED' }).catch(() => {});
+      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'APPROVED' });
       setApplications((prev) =>
         prev.map((a) => (a.id === appId ? { ...a, status: 'APPROVED' } : a))
       );
@@ -157,14 +199,15 @@ export function AdminModerationTab() {
       setReviewConfirmation(null);
       setInspectApplication(null);
       setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setFeedback(`Failed to approve application: ${err?.message || 'Verification error'}`);
+      setTimeout(() => setFeedback(null), 4000);
     }
   };
 
   const handleRejectApplication = async (appId: string, reason: string) => {
     try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'REJECTED', reason }).catch(() => {});
+      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'REJECTED', reason });
       setApplications((prev) =>
         prev.map((a) => (a.id === appId ? { ...a, status: 'REJECTED' } : a))
       );
@@ -173,15 +216,16 @@ export function AdminModerationTab() {
       setReviewReason('');
       setInspectApplication(null);
       setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setFeedback(`Failed to reject application: ${err?.message || 'Verification error'}`);
+      setTimeout(() => setFeedback(null), 4000);
     }
   };
 
   const handleToggleJobSpam = async (jobId: string, isSpam: boolean) => {
     try {
       const newStatus = isSpam ? 'flagged' : 'active';
-      await post(`/admin/jobs/${jobId}/moderate`, { isSpam, status: newStatus }).catch(() => {});
+      await post(`/admin/jobs/${jobId}/moderate`, { isSpam, status: newStatus });
 
       setJobs((prev) =>
         prev.map((j) => (j.id === jobId ? { ...j, isSpam, status: newStatus } : j))
@@ -190,8 +234,9 @@ export function AdminModerationTab() {
       setFeedback(`Job listing ${jobId} status updated to ${isSpam ? 'SPAM / FLAGGED' : 'APPROVED / ACTIVE'}.`);
       setJobSpamModal(null);
       setTimeout(() => setFeedback(null), 3500);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      setFeedback(`Failed to update job status: ${err?.message || 'Moderation error'}`);
+      setTimeout(() => setFeedback(null), 4000);
     }
   };
 

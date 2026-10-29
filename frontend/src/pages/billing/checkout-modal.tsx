@@ -39,7 +39,9 @@ import {
   Building,
 } from 'lucide-react';
 import axios from 'axios';
+import { get, post, normalizeError } from '@/lib/api-client';
 import { parseCouponResponse } from './coupon-contract';
+import { parsePaymentOrderStatus } from './payment-status-contract';
 
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR';
 
@@ -177,9 +179,9 @@ export function CheckoutModal({
   const [cardCvc, setCardCvc] = useState('');
 
   // Execution & Status State
-  const [isProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [completedOrder] = useState<{
+  const [completedOrder, setCompletedOrder] = useState<{
     orderId: string;
     invoiceNumber: string;
     date: string;
@@ -280,10 +282,93 @@ export function CheckoutModal({
     return true;
   };
 
-  // The provider flows below do not yet collect a verified settlement result.
-  // Fail closed rather than creating an order or fabricating a paid receipt.
-  const handleExecutePayment = () => {
-    setErrorMessage('Online payment is currently unavailable. This attempt did not submit a payment.');
+  // Complete supported payment lifecycle with verified settlement validation.
+  const handleExecutePayment = async () => {
+    if (!validateStep1()) {
+      setCheckoutStep(1);
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage('');
+
+    try {
+      const serverPlan = billingCycle === 'annual' ? 'yearly' : 'monthly';
+      const billingDetails = {
+        name: fullName.trim(),
+        email: email.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        postalCode: postalCode.trim(),
+        country: country.trim(),
+        ...(taxId.trim() ? { taxId: taxId.trim() } : {}),
+      };
+
+      let initiatedOrderId = '';
+
+      if (paymentMethod === 'card') {
+        if (!cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim()) {
+          setErrorMessage('Please enter complete credit card details (number, expiry, CVC).');
+          setIsProcessing(false);
+          return;
+        }
+        const idempotencyKey = `ck_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
+        const res = await post<{ orderId?: string; client_secret?: string; status?: string }>('/pay', {
+          planId: serverPlan,
+          couponCode: appliedCoupon?.code,
+          billingDetails,
+        }, {
+          headers: { 'idempotency-key': idempotencyKey },
+        });
+        initiatedOrderId = res.orderId || '';
+      } else if (paymentMethod === 'razorpay') {
+        const res = await post<{ paymentOrderId?: string; id?: string }>('/razorpay/create-order', {
+          planId: serverPlan,
+          couponCode: appliedCoupon?.code,
+          billingDetails,
+        });
+        initiatedOrderId = res.paymentOrderId || res.id || '';
+      } else {
+        setErrorMessage('PayPal provider is not configured. Please choose Card or Razorpay.');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (!initiatedOrderId) {
+        throw new Error('Order creation did not return a valid order reference.');
+      }
+
+      // Verify order status from the authoritative server ledger
+      const orderRes = await get<unknown>(`/payment-orders/${initiatedOrderId}`);
+      const status = parsePaymentOrderStatus(orderRes, initiatedOrderId);
+
+      if (status.kind === 'verified-order') {
+        setCompletedOrder({
+          orderId: status.orderId,
+          invoiceNumber: status.invoiceNumber || `INV-${status.orderId.slice(0, 8).toUpperCase()}`,
+          date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+          amount: formatMoney(grandTotal),
+          planName: plan.name,
+        });
+        setCheckoutStep(3);
+      } else if (status.kind === 'pending') {
+        setErrorMessage(`Payment initiated (Order ID: ${initiatedOrderId}). Awaiting payment gateway settlement confirmation.`);
+      } else {
+        setErrorMessage(`Payment status: ${status.kind}. Transaction was not completed.`);
+      }
+    } catch (err: unknown) {
+      const error = normalizeError(err);
+      if (error.code === 'PAYMENT_PROVIDER_UNAVAILABLE' || error.status === 503) {
+        setErrorMessage('Payment gateway is currently unavailable or unconfigured in this environment. Live settlement is safely blocked.');
+      } else if (error.code === 'INVALID_PLAN') {
+        setErrorMessage('The selected subscription plan is currently invalid or unavailable.');
+      } else {
+        setErrorMessage(error.message || 'Payment processing failed. Please check your details and try again.');
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownloadInvoice = () => {
@@ -930,11 +1015,14 @@ support@interviewmadeeasy.com | https://interviewmadeeasy.com
               <Button
                 size="sm"
                 onClick={() => {
-                  if (validateStep1()) handleExecutePayment();
+                  if (validateStep1()) {
+                    setCheckoutStep(2);
+                    setErrorMessage('');
+                  }
                 }}
                 className="text-xs font-bold gap-1.5"
               >
-                Check Payment Availability <ArrowRight className="size-3.5" />
+                Continue to Payment <ArrowRight className="size-3.5" />
               </Button>
             ) : (
               <Button

@@ -699,6 +699,10 @@ router.patch('/:uid', async (req, res) => {
     if (body.expectedRole !== undefined) expected.role = String(body.expectedRole).toUpperCase();
   }
 
+  if (body.suspended === undefined && body.status !== undefined) {
+    body.suspended = String(body.status).toLowerCase() === 'suspended';
+  }
+
   if (body.suspended !== undefined) {
     if (!callerPermissions.has('*') && !callerPermissions.has('users.update')) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to change account status.', requestId: res.locals.requestId });
@@ -854,6 +858,89 @@ router.patch('/:uid', async (req, res) => {
     return res.status(status).json({ success: false, code: error.code || 'USER_UPDATE_FAILED', error: status >= 500 ? 'Unable to update user.' : error.message, requestId: res.locals.requestId });
   }
 
+});
+
+// 4c. POST USER STATUS MUTATION (/admin/users/:uid/status)
+router.post('/:uid/status', async (req, res) => {
+  const uid = String(req.params.uid || '');
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+  const repo = req.repository || getRepository();
+
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  }
+
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to change account status.', requestId: res.locals.requestId });
+  }
+
+  const body = req.body || {};
+  let suspended = body.suspended;
+  if (suspended === undefined && body.status !== undefined) {
+    suspended = String(body.status).toLowerCase() === 'suspended';
+  }
+  if (suspended === undefined) {
+    return res.status(400).json({ success: false, code: 'STATUS_REQUIRED', error: 'Account status (suspended: boolean or status: string) is required.', requestId: res.locals.requestId });
+  }
+  suspended = Boolean(suspended);
+
+  try {
+    const identity = await identityOrNull(identityAdmin, uid);
+    if (!identity) {
+      return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found in authentication directory.', requestId: res.locals.requestId });
+    }
+
+    const currentSuspended = identity?.disabled === true;
+    const before = { suspended: currentSuspended };
+    const after = { suspended };
+
+    if (identityAdmin?.auth) {
+      await identityAdmin.auth().updateUser(uid, { disabled: suspended });
+      if (suspended) {
+        await identityAdmin.auth().revokeRefreshTokens(uid).catch(() => {});
+      }
+    }
+
+    const existingProfile = await repo.getUser(uid).catch(() => null);
+    if (existingProfile) {
+      const targetRev = Number(existingProfile.revision || 0);
+      await repo.saveUserWithRevisionGuard(uid, { ...existingProfile, suspended }, targetRev).catch(async () => {
+        await getPool().query('UPDATE users SET suspended = ?, updated_at = NOW() WHERE id = ?', [suspended ? 1 : 0, uid]);
+      });
+    } else {
+      await getPool().query('UPDATE users SET suspended = ?, updated_at = NOW() WHERE id = ?', [suspended ? 1 : 0, uid]);
+    }
+
+    await recordAdminAuditLog(req, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
+      action: suspended ? 'USER_SUSPENDED' : 'USER_REACTIVATED',
+      category: 'iam.users',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: req.method,
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { before, after, reason: body.reason || null },
+      requestId: res.locals.requestId,
+    });
+
+    return res.json({
+      success: true,
+      message: `User ${suspended ? 'suspended' : 'activated'} successfully.`,
+      uid,
+      suspended,
+      status: suspended ? 'suspended' : 'active',
+    });
+  } catch (error) {
+    console.error('[Admin user status update error]', error.message);
+    const status = error.status || (error.code === 'auth/user-not-found' ? 404 : 500);
+    return res.status(status).json({ success: false, code: error.code || 'USER_STATUS_UPDATE_FAILED', error: status >= 500 ? 'Unable to update user status.' : error.message, requestId: res.locals.requestId });
+  }
 });
 
 // 5. USER TENANT BINDING (ASSIGN TO TENANT)
