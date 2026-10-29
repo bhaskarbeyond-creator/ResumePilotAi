@@ -26,14 +26,15 @@ security compliance. It asserts *traceability*.
 | Legacy source files | 650 | **650 (100 %)** | `legacy-file-inventory.tsv`, `feature-parity.json` |
 | Modern source files | 206 | **206 (100 %)** | `feature-parity.json` |
 | Capability rows | 112 | **112 (100 %)** | `FEATURE-PARITY-MATRIX.md`, `feature-parity.json` |
-| Backend operations (unique METHOD+path) | 385 | **385 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
-| Allegations | 35 | **35 (100 %)** | `ALLEGATION-RESOLUTION-REGISTER.md` |
-| Findings | 26 | **26 (100 %)** | `DISCREPANCY-LOG.md` |
+| Backend operations (unique METHOD+path) | 393 | **393 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
+| Allegations | 48 | **48 (100 %)** | `ALLEGATION-RESOLUTION-REGISTER.md` |
+| Findings | 46 | **46 (100 %)** | `DISCREPANCY-LOG.md` (48 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
 | Requirements | 65 | **65 (100 %)** | `REQUIREMENT-REGISTER.md` §P |
 | Environment gaps + a11y defects | 12 + 5 | **17 (100 %)** | `EG-REVALIDATION-REGISTER.md` |
-| **Total items** | **1,496** | **1,496** | — |
+| **Total items** | **1,537** | **1,537** | — |
 
-Arithmetic: 650 + 206 + 112 + 385 + 35 + 26 + 65 + 17 = **1,496**.
+Arithmetic: 650 + 206 + 112 + 393 + 48 + 46 + 65 + 17 = **1,537**. (V5 shipped 1,496 and V6 1,523; the
+V7 step is reconciled line by line in §14.)
 
 The aggregate moved twice, both times disclosed: V4 → 1,492 after the legacy baseline lost one file and
 one finding joined (DISC-023); V5 → 1,496 after three findings joined (DISC-024, DISC-025, DISC-026) and
@@ -275,3 +276,35 @@ pass or a collapse.
 (team lifecycle, audit read + CSV, 100 rendering ids, the pipeline and stage transitions, company profile,
 navigation and a11y affordances, text interview practice). The demotion states that the *capability as
 labelled* is not fully present, which is what the `FULL PARITY` class means.
+
+---
+
+## 14. V7 amendment (`8a6e03bb`) — the operation register was wrong, so this table moved again
+
+The headline arithmetic is now **1,537** (650 + 206 + 112 + 393 + 48 + 46 + 65 + 17). Line-by-line:
+
+| Component | V6 | V7 | Δ | Cause |
+|---|---:|---:|---:|---|
+| Legacy source files | 650 | **650** | 0 | unchanged |
+| Modern source files | 206 | **206** | 0 | unchanged |
+| Capability rows | 112 | **112** | 0 | unchanged |
+| Backend operations | 385 | **393** | **+8** | the register never scanned `routes/support.js` (routers named `userRouter`/`adminRouter`, two mount prefixes) — DISC-041 |
+| Allegations | 48 | **48** | 0 | unchanged |
+| Findings | 40 | **46** | **+6 net** | +8 raised (DISC-041…DISC-048), −2 merged into DISC-030 (DISC-042, DISC-046). The log holds 48 IDs; the two stubs are labelled and not counted twice |
+| Requirements | 65 | **65** | 0 | unchanged |
+| Environment gaps + a11y | 17 | **17** | 0 | unchanged |
+| **Total** | **1,523** | **1,537** | **+14** | +8 operations, +6 findings |
+
+Two rows in §1 were also stale *before* V7 and are corrected here rather than silently: the allegations
+count had been carried as 35 and the findings count as 26 since V5, although V6 had already raised both
+(§13 reports 48 and 40). The §1 table now agrees with the registers it cites.
+
+**What the +8 does and does not mean.** It is not new backend work: those eight ticket operations existed
+in `backend/routes/support.js` all along and the audit's scanner missed them. The lesson is the same one
+§13 records — a total that moves is evidence that the *enumeration* moved, not that the product did.
+Correspondingly, the parity axis is unchanged in its verdict (PARTIAL — INCOMPLETE) and M19 rises from
+39.5 % to 42.2 % purely because a denominator that was missing eight served operations now includes them.
+
+**Cross-reference:** the per-path consequences are in `M7-CAPABILITY-CLOSURE.md` §3, the corrected
+finding is `DISCREPANCY-LOG.md` DISC-041, and the retracted portion of DISC-025 is left visible with the
+six ticket rows struck through.

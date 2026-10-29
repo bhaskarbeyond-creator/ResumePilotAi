@@ -72,6 +72,19 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+> **Added 2026-10-29 (Mandate 7 — V7 capability closure + contract forensics, revision `8a6e03bb`):**
+> `M7-CAPABILITY-CLOSURE.md` (all 112 rows: 40 hand-adjudicated, 21 signal-clean, 10 M6 deep reads, 41 with
+> leads recorded, 10 rows / 20 items explicitly open; the 15 gap paths / 22 sites; the 12 false-success sites
+> traced click → request → response → state → notification; the 46 distinct findings; coverage arithmetic);
+> `CLIENT-BACKEND-CONTRACT-REGISTER.md` + `tools/client-contract-audit.cjs` (an **independent** backend parser
+> and client scanner — the disagreement between it and the canonical register exposed DISC-041);
+> `CAPABILITY-SUBFEATURE-REGISTER.md` + `tools/capability-subfeature-audit.cjs`; `RUNTIME-TEST-HARNESS-M7.md`
+> (R-01 … R-10, **specified not executed**); `Evidence/adjudications-m7.json`; findings **DISC-041,
+> DISC-043 … DISC-048** with **DISC-025 and DISC-029 revised in place** and DISC-042/046 merged into DISC-030.
+> The operation register was re-derived (**397 registrations → 393 unique**, was 499 → 385) and the parity mix
+> moved to **12 FULL / 49 PARTIAL / 30 MISSING / 12 MOCK / 6 REPLACED / 3 UNVERIFIED**. Verdict stays
+> **`PARTIAL — INCOMPLETE`**; application diff = 0.
+
 > **Added 2026-10-29 (Mandate 6 — V6 feature-depth re-audit, base `a5835ff6`):**
 > `FEATURE-DEPTH-EVIDENCE-REGISTER.md` (56 subfeature rows traced legacy → modern UI → backend →
 > persistence → test, the eight allegation dispositions, the fixture table, the 19 dead client paths,

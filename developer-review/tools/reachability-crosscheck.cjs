@@ -69,7 +69,9 @@ function pathRegex(p) {
     if (/^\{X\}$/.test(seg)) return '[^/\'"`\\s]+';
     return seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   });
-  return new RegExp('/' + parts.join('/') + '(?![/\\w-])');
+  // V7: anchor the leading slash so `/support/tickets` is not satisfied by
+  // `/admin/support/tickets`, and (below) consider every matching line rather than the first.
+  return new RegExp('(?:^|[^\\w/-])/' + parts.join('/') + '(?![/\\w-])');
 }
 
 function literalsIn(window) {
@@ -121,9 +123,16 @@ for (const row of rows) {
   let independent;
   if (live.length) independent = 'CALL-SITE-PRESENT';
   else if (hookOnly) {
-    const lineIndex = hookText.findIndex((line) => pathRegex(row.path).test(line));
-    const owners = lineIndex >= 0 ? hooksForLine(lineIndex) : [];
-    independent = owners.some((r) => r.live) ? 'HOOK-LIVE' : 'HOOK-DEAD';
+    const ownerNames = new Set();
+    for (let i = 0; i < hookText.length; i += 1) {
+      if (!pathRegex(row.path).test(hookText[i])) continue;
+      for (const range of hooksForLine(i)) ownerNames.add(range.name);
+    }
+    // one endpoint can be referenced by several hooks (user and admin variants); the endpoint is
+    // live if ANY of the owning hooks has a consumer
+    independent = [...ownerNames].some((name) => (hookRanges.find((r) => r.name === name) || {}).live)
+      ? 'HOOK-LIVE'
+      : 'HOOK-DEAD';
   } else independent = 'NO-CALL-SITE';
 
   const registerSaysUi = row.reachability === 'UI-REACHABLE';

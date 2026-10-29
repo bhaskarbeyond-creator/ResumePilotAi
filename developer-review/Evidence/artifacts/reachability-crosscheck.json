@@ -1,8 +1,8 @@
 {
- "generatedAt": "2026-10-28T21:33:58.398Z",
+ "generatedAt": "2026-10-29T07:20:24.501Z",
  "unit": "unique METHOD+path",
- "total": 385,
- "agreements": 385,
+ "total": 393,
+ "agreements": 393,
  "disagreements": [],
  "enumeration": {
   "method": "independent regex over app|router.<verb>(literal) in backend/index.js and backend/routes/*.js, no mount-prefix expansion",

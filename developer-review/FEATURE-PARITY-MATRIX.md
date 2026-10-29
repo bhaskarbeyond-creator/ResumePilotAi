@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Audit revision:** `abd366084901` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-28 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
+**Audit revision:** `a7d08a2fa67b` (inventory measured at `a5835ff6693d`) · **Generated:** 2026-10-29 (generator clock, UTC) · **Generator:** `developer-review/tools/parity-matrix.cjs`
 **Machine-checkable twin:** `Evidence/artifacts/feature-parity.json` (consumed by `scripts/verify-audit-package.sh`)
 **Inventory basis:** `LEGACY-MODERN-FEATURE-INVENTORY.md` / `Evidence/artifacts/legacy-modern-inventory.json`
 
@@ -31,8 +31,8 @@ implementation omits it") is respected literally. Undocumented removal is still 
 | Classification | Capabilities |
 |---|---:|
 | FULL PARITY | 12 |
-| PARTIAL PARITY | 47 |
-| MISSING | 32 |
+| PARTIAL PARITY | 49 |
+| MISSING | 30 |
 | STATIC STUB | 0 |
 | MOCK / FABRICATED STATE | 12 |
 | LOCAL-ONLY PERSISTENCE | 0 |
@@ -42,7 +42,7 @@ implementation omits it") is respected literally. Undocumented removal is still 
 | **Total** | **112** |
 
 Aggregate verdict: of 112 capabilities, **18 are at parity** 
-(FULL + REPLACED BY EQUIVALENT), **47 partial**, **44 missing or fabricated**, and **3 UNVERIFIED**.
+(FULL + REPLACED BY EQUIVALENT), **49 partial**, **42 missing or fabricated**, and **3 UNVERIFIED**.
 
 The four figures sum to 112; the UNVERIFIED row is reported separately rather than folded into either side, because "not established" is not a synonym for "present" or "absent".
 
@@ -52,11 +52,11 @@ The four figures sum to 112; the UNVERIFIED row is reported separately rather th
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | A — Super Admin / platform operations | 26 | 0 | 0 | 9 | 6 | 11 | 0 | 0 | 0 |
 | B — Enterprise talent cloud | 11 | 2 | 0 | 8 | 1 | 0 | 0 | 0 | 0 |
-| C — Portfolio / Puck / WebCV | 7 | 2 | 0 | 1 | 4 | 0 | 0 | 0 | 0 |
+| C — Portfolio / Puck / WebCV | 7 | 2 | 0 | 0 | 5 | 0 | 0 | 0 | 0 |
 | D — Candidate experience, voice interview, HUD, palette | 15 | 1 | 1 | 6 | 7 | 0 | 0 | 0 | 0 |
-| E — Resume builder, ATS, templates, share | 17 | 5 | 0 | 8 | 3 | 0 | 0 | 0 | 1 |
+| E — Resume builder, ATS, templates, share | 17 | 5 | 0 | 10 | 1 | 0 | 0 | 0 | 1 |
 | F — Employer, pipelines, messaging, onboarding, job discovery | 11 | 1 | 0 | 6 | 2 | 1 | 0 | 0 | 1 |
-| G — Remaining legacy components (shared infra & content) | 25 | 1 | 5 | 9 | 9 | 0 | 0 | 0 | 1 |
+| G — Remaining legacy components (shared infra & content) | 25 | 1 | 5 | 10 | 8 | 0 | 0 | 0 | 1 |
 
 Per-domain legacy footprint (measured): see §5 of `LEGACY-MODERN-FEATURE-INVENTORY.md`.
 
@@ -107,7 +107,7 @@ capability has no backend surface by design (pure client feature).
 | FP-C02 | 71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, …) | MISSING | no | — | partial | no | — | n/a | n/a | no |
 | FP-C03 | WebCV Studio (layout ladder, template presets, template utils) | MISSING | partial | yes | partial | no | compatible | n/a | n/a | no |
 | FP-C04 | Editing portfolios created by the legacy editor | MISSING | yes | yes | partial | yes | compatible | yes | partial | no |
-| FP-C06 | Portfolio template gallery with palettes | PARTIAL PARITY | n/a | — | — | n/a | compatible | n/a | n/a | no |
+| FP-C06 | Portfolio template gallery with palettes | MISSING | n/a | — | — | n/a | compatible | n/a | n/a | no |
 | FP-D01 | Live voice interview (TTS question delivery + pacing) | MISSING | yes | yes | partial | yes | compatible | yes | partial | partial |
 | FP-D02 | Microphone capture + live audio waveform | MISSING | n/a | — | — | no | compatible | n/a | n/a | no |
 | FP-D03 | Interview session UI (question flow, transcript, scoring) | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
@@ -126,12 +126,12 @@ capability has no backend surface by design (pure client feature).
 | FP-E02 | Template catalogue volume (51 legacy cv dirs) | PARTIAL PARITY | n/a | — | — | n/a | compatible | n/a | n/a | partial |
 | FP-E03 | Structurally distinct template layouts (design diversity) | PARTIAL PARITY | n/a | — | — | n/a | compatible | n/a | n/a | partial |
 | FP-E05 | Server-side ATS audit (authoritative score from backend) | UNVERIFIED | no | — | partial | no | — | no | n/a | no |
-| FP-E06 | Profile photo crop / zoom | MISSING | yes | yes | partial | no | compatible | n/a | n/a | no |
+| FP-E06 | Profile photo crop / zoom | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | no |
 | FP-E07 | QR code generation for shares / MFA enrolment | MISSING | partial | yes | partial | no | compatible | n/a | n/a | no |
 | FP-E16 | Export access guard (plan-gated export routes) | PARTIAL PARITY | yes | yes | partial | yes | compatible | no | yes | partial |
 | FP-E11 | DOCX export with ZIP magic-byte validation | PARTIAL PARITY | yes | yes | partial | yes | compatible | no | yes | partial |
 | FP-E12 | Server-rendered PDF export | PARTIAL PARITY | yes | yes | partial | no | compatible | yes | partial | yes |
-| FP-E14 | Bullet-point quality/health cards and role health checks | MISSING | no | — | partial | no | — | n/a | n/a | no |
+| FP-E14 | Bullet-point quality/health cards and role health checks | PARTIAL PARITY | no | — | partial | n/a | — | n/a | n/a | no |
 | FP-E15 | Free-tier watermark + export entitlement gating | PARTIAL PARITY | yes | yes | partial | partial | compatible | partial | partial | partial |
 | FP-E10 | AI writing aids (grammar check, summary, import) | PARTIAL PARITY | yes | yes | partial | yes | compatible | no | yes | partial |
 | FP-F01 | Employer portal shell with tabbed workspace | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | partial | partial |
@@ -165,7 +165,7 @@ capability has no backend surface by design (pure client feature).
 | FP-G21 | AI interview coach / role-based question generation | PARTIAL PARITY | yes | yes | partial | yes | compatible | yes | yes | partial |
 | FP-G22 | Data models, runtime conf and React context scaffolding | REPLACED BY EQUIVALENT | n/a | — | — | n/a | compatible | n/a | n/a | partial |
 | FP-G23 | Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs) | PARTIAL PARITY | yes | yes | partial | partial | compatible | partial | partial | no |
-| FP-G24 | In-app support surface and input validation modals | MISSING | no | — | partial | no | — | no | no | no |
+| FP-G24 | In-app support surface and input validation modals | PARTIAL PARITY | yes | yes | partial | partial | compatible | yes | yes | partial |
 | FP-G25 | App bootstrap, route focus management, global spinner | REPLACED BY EQUIVALENT | n/a | — | — | n/a | compatible | n/a | n/a | partial |
 | FP-G14 | Misc legacy orphans (Front, initailisation, Analytics, variables.scss) | UNVERIFIED | no | — | partial | no | — | n/a | n/a | no |
 
@@ -232,7 +232,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-C03` | WebCV Studio (layout ladder, template presets, template utils) | 6 / 2,325 | 0 / 0 | **MISSING** | WebCvStudio 856 lines + presets 683 + utils 427; modern offers a 6-entry PORTFOLIO_TEMPLATES gallery |
 | `FP-C04` | Editing portfolios created by the legacy editor | 1 / 1,743 | 2 / 1,157 | **MISSING** | builder.tsx:347 `const editable = stored ? isWebCvDocument(stored) : false;`, :477 "Built with the earlier page editor", :490-533 save/preview gated; isWebCvDocument() portfolio-document.ts:412 rejects block content |
 | `FP-C05` | Public portfolio rendering + slug availability + publish | 1 / 308 | 6 / 1,725 | **FULL PARITY** | public-portfolio.tsx sets document.title; canonical document model |
-| `FP-C06` | Portfolio template gallery with palettes | 7 / 1,822 | 3 / 729 | **PARTIAL PARITY** | modern portfolio-view.tsx:33 PALETTES (modernMinimal, …); legacy template family library larger |
+| `FP-C06` | Portfolio template gallery with palettes | 7 / 1,822 | 3 / 729 | **MISSING** | V7 hand read: the named legacy blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) have zero matches in frontend/src/components/portfolio or frontend/src/pages/portfolio. modern portfolio-view.tsx:33 PALETTES still supplies colour palettes, but the modular section library itself has no counterpart. |
 | `FP-C07` | Portfolio gallery / showcase | 1 / 239 | 2 / 355 | **FULL PARITY** | legacy routed at src/main.jsx:575 -> /portfolios; modern routed at frontend/src/app/router.tsx:99 -> /portfolios. Search over title/description/tags, template filter, result count, loading skeleton, error+retry, empty state all present; modern adds URL-persisted ?q=/?template= and honest error surfacing |
 
 ### D — Candidate experience, voice interview, HUD, palette
@@ -264,7 +264,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-E03` | Structurally distinct template layouts (design diversity) | 73 / 13,985 | 2 / 2,299 | **PARTIAL PARITY** | verified: 100 catalogue entries carry only 5 distinct archetype values (modern-split, minimal-ats, executive-banner, compact-euro, tech-grid) and 6 distinct headerStyle values; differentiation is palette/font/skillVariant/timelineStyle/dividerStyle/density over a shared layout engine, plus smart-layout-families.tsx |
 | `FP-E04` | ATS score with per-section breakdown and job-description targeting | 1 / 349 | 2 / 445 | **FULL PARITY** | lib/atsScore.js 53,831 bytes; ats-score.tsx:311 renders result.sections with score/maxScore; JD targeting :202-225 |
 | `FP-E05` | Server-side ATS audit (authoritative score from backend) | 1 / 349 | 1 / 369 | **UNVERIFIED** | no ATS scoring route found in backend/routes; both trees compute in the browser |
-| `FP-E06` | Profile photo crop / zoom | 20 / 10,124 | 0 / 0 | **MISSING** | 0 `crop` matches in frontend/src; ImageCropModal.jsx in legacy |
+| `FP-E06` | Profile photo crop / zoom | 20 / 10,124 | 1 / 5,529 | **PARTIAL PARITY** | Upload exists and persists: resume-builder.tsx:2600-2612 reads the file to a base64 data URL into `heading.photo`, serialised at :507 and saved through the resume PATCH. Crop/zoom does not exist: 0 `crop` matches in frontend/src. The 5 MB client cap also exceeds the API 256 kb body limit (DISC-048). |
 | `FP-E07` | QR code generation for shares / MFA enrolment | 5 / 7,408 | 0 / 0 | **MISSING** | 0 `qrcode` matches in frontend/src |
 | `FP-E08` | Public share links / share modal | 36 / 16,941 | 2 / 477 | **FULL PARITY** | share-publication.ts:41 GET /resumes/{id}/publication, :52 POST /resumes/{id}/publish, :73 POST /resumes/{id}/unpublish — all three UI-REACHABLE. The V4-declared /share and /resumes/{X}/share are NOT registered. |
 | `FP-E09` | Cover letters | 74 / 15,832 | 2 / 1,454 | **FULL PARITY** | cover-letters.ts:207/220/232/238 call GET/POST/DELETE /covers[/{id}] and :303 POST /generate-ai-cover-letter — all UI-REACHABLE. The V4-declared /cover-letters is NOT registered. |
@@ -273,7 +273,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-E11` | DOCX export with ZIP magic-byte validation | 1 / 123 | 2 / 2,147 | **PARTIAL PARITY** | preview-modal.tsx:168, resumes.tsx:497 and cv-renderer.tsx:218 POST /export-docx (UI-REACHABLE; backend/index.js:5167). /public-export-docx is registered but UNREACHABLE. The ZIP magic-byte check exists only in legacy src/utils/docxDownload.js:14 (DOCX_MAGIC [0x50,0x4b]); the modern path calls res.blob() at preview-modal.tsx:185 and saves it without any signature check. |
 | `FP-E12` | Server-rendered PDF export | 3 / 372 | 2 / 2,147 | **PARTIAL PARITY** | modern handleDownloadPdf does `window.open('/export/<templateId>/<id>/en')` — the SPA print route (router.tsx:352); `/api/export` is never called |
 | `FP-E13` | Smart resume layout engine (section partitioner, 5 layouts, themed rendering) | 23 / 3,082 | 4 / 3,510 | **FULL PARITY** | legacy engine/hybrid layouts CompactEuroLayout/ExecutiveBannerLayout/MinimalATSLayout/ModernSplitLayout/TechGridLayout map 1:1 onto the modern archetype names modern-split/minimal-ats/executive-banner/tech-grid/compact-euro |
-| `FP-E14` | Bullet-point quality/health cards and role health checks | 2 / 1,471 | 0 / 0 | **MISSING** | bulletQuality referenced by 6 legacy files (WorkHistoryStep, EducationStep, RoleHealthCard, RoleAiCopilotModal); 0 modern references |
+| `FP-E14` | Bullet-point quality/health cards and role health checks | 2 / 1,471 | 3 / 6,286 | **PARTIAL PARITY** | V7 hand read: resume-builder.tsx:2336-2390 implements a "Bullet Polish" tab with a live impact analyzer (active verbs / metrics / outcomes, strength score with Strong/Moderate/Needs-Metrics bands, progress bar); formatting-toolbar.tsx:118-180 inserts power verbs and asks the AI bullet copilot for rewrites; role-ai-copilot-modal.tsx:43 exposes polish/quantify/tailor/interview modes. Absent: the legacy per-bullet editor actions (drag reorder, undo, passive-opener fixer, quick-metric injection). |
 | `FP-E15` | Free-tier watermark + export entitlement gating | 2 / 210 | 2 / 736 | **PARTIAL PARITY** | resume-view.tsx:28 WatermarkConfig; pricing advertises "PDF Download with watermark"; client-side moduleFlags/entitlements.js has no modern twin (FP-G13) |
 | `FP-E10` | AI writing aids (grammar check, summary, import) | 2 / 995 | 3 / 899 | **PARTIAL PARITY** | ai-content.ts calls /check-grammar and /parse-resume (UI-REACHABLE). The declared /ai/generate-summary is NOT registered and no summary endpoint exists (the only "summary" path is /admin/health-summary). |
 
@@ -319,7 +319,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 | `FP-G21` | AI interview coach / role-based question generation | 2 / 859 | 1 / 346 | **PARTIAL PARITY** | interview-coach.ts:176 calls /generate-interview and the /live-interview/sessions family (UI-REACHABLE) - text question generation, typed answers and session persistence are real and V5-verified; the V4-declared /ai/generate-interview is a different enterprise operation and is UNREACHABLE. Removed relative to legacy: the entire live voice mode. Legacy shipped 2,432 lines of audio code - LiveVoiceEngine.js (233, speechSynthesis voice ranking, chunked speak with word boundaries), LiveAudioWaveform.jsx (254), LiveInterviewSession.jsx (1,691) and hooks/useInterviewMedia.js (254, getUserMedia + MediaRecorder). A grep of frontend/src for SpeechRecognition, MediaRecorder, getUserMedia, speechSynthesis and AudioContext returns ZERO hits, so microphone capture, speech playback and the waveform are all absent; practice is text-only. |
 | `FP-G22` | Data models, runtime conf and React context scaffolding | 7 / 344 | 37 / 8,001 | **REPLACED BY EQUIVALENT** | legacy JS model factories replaced by TypeScript types in lib/*.types and app/ |
 | `FP-G23` | Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs) | 11 / 1,431 | 2 / 637 | **PARTIAL PARITY** | useAiTokenUsage/useAiEngineStatus/useServiceAvailability have no located modern twin; useUnreadMessages became the notification page (FP-D07) |
-| `FP-G24` | In-app support surface and input validation modals | 3 / 1,420 | 5 / 978 | **MISSING** | No ticket operation exists in the register: zero paths contain /support/tickets or /admin/support/tickets. AdminHelpDeskTab.tsx:128/157/188 and use-api-hooks.ts:588/599/612 call six non-existent paths (GET/POST /support/tickets, POST /support/tickets/{X}/messages, GET /admin/support/tickets, POST /admin/support/tickets/{X}/messages, PATCH /admin/support/tickets/{X}). |
+| `FP-G24` | In-app support surface and input validation modals | 3 / 1,420 | 5 / 978 | **PARTIAL PARITY** | Reconciled in V7 against the file it belongs to. backend/routes/support.js registers all eight ticket operations (:15 POST /tickets, :30 GET /tickets, :40 GET /tickets/:id, :54 POST /tickets/:id/messages for the user router at /api/support; :71, :81, :95, :110 for the admin router at /api/admin/support), persists through services/supportTickets, and scopes user operations to req.user.uid. frontend/src/pages/dashboard/support.tsx:36-38 drives the list, create and reply through three hooks in use-api-hooks.ts:585-620 (all consumed), renders an error state at :130-140, and the admin console calls the four admin operations directly (AdminHelpDeskTab.tsx:128/157/188). Reached from /dashboard/support (app/router.tsx:209). |
 | `FP-G25` | App bootstrap, route focus management, global spinner | 4 / 740 | 10 / 1,113 | **REPLACED BY EQUIVALENT** | modern entrypoint + loading primitive; route-level focus management not verified (U-G05) |
 | `FP-G14` | Misc legacy orphans (Front, initailisation, Analytics, variables.scss) | 5 / 108 | 0 / 0 | **UNVERIFIED** | Analytics.jsx is 10 lines; Front/initailisation are scaffolding |
 
@@ -355,7 +355,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-C01`** — Removal is undocumented: no ADR, no changelog entry, no migration note in the repo. Classified MISSING, not INTENTIONAL RETIREMENT, because intent is unevidenced.
 - **`FP-C02`** — Replaced by a constrained schema, which is a deliberate architectural choice for the *new* flow — but existing block content has no path into it (FP-C04).
 - **`FP-C04`** — Read-only dead end for every pre-existing portfolio. This is the concrete user-visible loss from C01-C03.
-- **`FP-C06`** — Visual diversity reduced; not a functional loss.
+- **`FP-C06`** — V7 correction from PARTIAL PARITY to MISSING: the palette half survives, the section-library half does not, and the row is the library. Same root cause as FP-C02 (71-block library replaced by a canonical document model).
 - **`FP-C07`** — V4 RECLASSIFIED from UNVERIFIED. The earlier note said "no route in main.jsx referenced it either" — that was wrong: main.jsx:575 routes it. Capability preserved; only the legacy static theme preview PNGs are replaced by palette rendering (see FP-C06).
 - **`FP-D01`** — Browser-only in legacy, so no backend prerequisite. Cheapest high-value restoration in the package.
 - **`FP-D02`** — Backend stores transcript turns only; audio was never persisted in either tree.
@@ -370,6 +370,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-E03`** — 100 templates are 5 archetypes x token permutations. Honest count: more entries, fewer visually distinct layouts than 51 hand-built legacy directories. Earlier "9 archetypes / 24 families" figures were not reproducible and are withdrawn.
 - **`FP-E04`** — REFUTES the "per-section ATS health dropped" allegation. Scoring is client-side in both trees — so "ATS score" is a local heuristic, not a server audit (scope note for FP-E05).
 - **`FP-E05`** — Not a legacy→modern regression. Recorded so the score shown to users is not mistaken for a server-validated audit.
+- **`FP-E06`** — V7 correction from MISSING to PARTIAL PARITY: the row was recorded as if photo handling were absent. It is present but uncropped, and its size budget contradicts the server limit.
 - **`FP-E07`** — Impacts 2FA enrolment UX: the modern card may show a secret without a scannable code.
 - **`FP-E08`** — V5 endpoint correction only: the capability is genuinely wired; V4 cited two paths that do not exist while missing the three that do.
 - **`FP-E09`** — V5 endpoint correction only. This is the class (i) artefact: the capability row listed a pluralised path with no mount, and the real resource is /covers.
@@ -377,7 +378,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-E11`** — V5: export works, but the validation half of the capability was dropped, and V4 counted a dead endpoint as evidence.
 - **`FP-E12`** — Legacy consumed the validated blob endpoint (magic-byte checked). Modern depends on the browser print dialog. Usable, but the server PDF path and its error handling are unused.
 - **`FP-E13`** — This is the provenance of FP-E03: the 5 hand-built engine layouts became 24 tokenised layout families. Ported and expanded, not dropped.
-- **`FP-E14`** — Client-side writing-quality coaching; no backend prerequisite.
+- **`FP-E14`** — V7 correction from MISSING to PARTIAL PARITY: the quality coaching is implemented as a different surface (a tab-level analyzer over the whole section rather than per-bullet cards). Recorded losses are the per-bullet edit actions, not the capability.
 - **`FP-E15`** — Watermark rendering survives; the client gating model that decided *whether* to watermark does not.
 - **`FP-E10`** — V5 correction: two of three aids are wired; summary generation has no backend operation.
 - **`FP-F02`** — V6 correction (RA-46): the pipeline is real, two side-actions inside it are not. FULL -> PARTIAL.
@@ -405,7 +406,7 @@ in `enterprise` routers, but per-endpoint audit is out of scope for this matrix 
 - **`FP-G18`** — Job-posting schema is what makes listings eligible for Google Jobs; its loss is commercially material for a job board.
 - **`FP-G20`** — V5 endpoint correction only: applications are per-job, and the tracker has its own /jobs-data resource.
 - **`FP-G21`** — V6 correction (RA-41): the coach survived, the interview mode did not. Text-only practice is not equivalent to a spoken mock interview, and no retirement rationale is recorded.
-- **`FP-G24`** — V5 correction from FULL PARITY to MISSING. The helpdesk UI is a shell over a backend surface that does not exist; the dashboard-side hooks have live consumers, so this is user-visible.
+- **`FP-G24`** — V7 correction from MISSING to PARTIAL PARITY. The V5 MISSING verdict rested on a register that never scanned routes/support.js (DISC-041), so "zero paths contain /support/tickets" was true only of the audit tool. Remaining PARTIAL, not FULL, because the legacy 916-line surface also carried the FAQ corpus and the toast/validation-modal primitives that the modern page does not reproduce as components (inline validation replaces them), and because the user-side operations are reached indirectly through hooks rather than at a call site.
 - **`FP-G14`** — Individually inspected during Domain G sweep; no capability judged lost, but not proven unused either.
 
 ## 6. Legacy file attribution (completeness check)

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T21:34:51.303Z",
+  "generatedAt": "2026-10-29T07:20:49.060Z",
   "summary": {
     "PASS": 4,
     "LEAD": 6
@@ -233,11 +233,11 @@
     {
       "check": "5. evidence file:line refs resolve",
       "status": "PASS",
-      "totalRefs": 65,
+      "totalRefs": 374,
       "badPath": [],
       "badLine": [],
       "counts": {
-        "refs": 65,
+        "refs": 374,
         "badPath": 0,
         "badLine": 0
       }
@@ -497,11 +497,21 @@
             "frontend/src/lib/portfolio.ts"
           ],
           "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-G24",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/lib/notifications.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
         }
       ],
       "counts": {
         "uncalled": 0,
-        "viaImport": 24
+        "viaImport": 25
       }
     },
     {
@@ -572,24 +582,6 @@
           "line": 126,
           "method": "",
           "path": "/blog/posts/{X}"
-        },
-        {
-          "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
-          "line": 128,
-          "method": "",
-          "path": "/admin/support/tickets"
-        },
-        {
-          "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
-          "line": 157,
-          "method": "",
-          "path": "/admin/support/tickets/{X}/messages"
-        },
-        {
-          "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
-          "line": 188,
-          "method": "",
-          "path": "/admin/support/tickets/{X}"
         },
         {
           "file": "frontend/src/components/admin/AdminModerationTab.tsx",
@@ -670,42 +662,6 @@
           "path": "/notify/email"
         },
         {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 433,
-          "method": "",
-          "path": "/admin/support/tickets"
-        },
-        {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 483,
-          "method": "",
-          "path": "/admin/support/tickets/{X}/messages"
-        },
-        {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 505,
-          "method": "",
-          "path": "/admin/support/tickets/{X}"
-        },
-        {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 588,
-          "method": "",
-          "path": "/support/tickets"
-        },
-        {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 599,
-          "method": "",
-          "path": "/support/tickets"
-        },
-        {
-          "file": "frontend/src/hooks/use-api-hooks.ts",
-          "line": 612,
-          "method": "",
-          "path": "/support/tickets/{X}/messages"
-        },
-        {
           "file": "frontend/src/lib/enterprise-api.ts",
           "line": 528,
           "method": "",
@@ -743,7 +699,7 @@
         }
       ],
       "counts": {
-        "dead": 30,
+        "dead": 21,
         "callSites": 229
       }
     },

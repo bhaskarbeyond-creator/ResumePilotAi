@@ -253,3 +253,96 @@ reported as *leads* and never as findings.
 
 Browser: 0 of 3,675 enumerated Playwright tests; database: 0 MariaDB-backed tests executed; providers: 0
 live calls. Denominator fixed by the enumerated suites, not by ambition. Source: `RUNTIME-VERIFICATION-V4.md`.
+
+---
+
+# V7 metrics (`8a6e03bb`) — new units, separately denominated
+
+The V4–V6 metrics above keep their definitions and values; none is re-scored. V7 introduces units that the
+earlier passes did not measure, and restates three whose denominators changed. Every one is defined with its
+own numerator/denominator, per the rule at the top of this document; **no composite is computed**.
+
+## MV1 — Subfeature rows with a recorded disposition
+
+| Field | Value |
+|---|---|
+| Numerator | capability rows carrying either a hand adjudication, an M6 deep read, or an automated status |
+| Denominator | 112 capability rows |
+| **Value** | **112 / 112 (100 %)** — but the class mix is the real information: 40 `ADJUDICATED`, 21 `SIGNAL_CLEAN`, 10 `DEEP_READ_M6`, 41 `EQUIVALENCE_LEAD` |
+| Exclusions | none; a row with no status cannot exist (the tool assigns one to every row) |
+| Source | `Evidence/artifacts/capability-subfeatures.json` → `byAuditStatus` |
+| Why it is not a quality score | "has a status" ≠ "the status is a hand verdict". 41 rows are automated equivalence only. |
+
+## MV2 — Rows with residual unadjudicated leads
+
+| Field | Value |
+|---|---|
+| **Value** | **10 rows / 20 items** (down from 50 rows / 282 items before adjudication) |
+| Numerator | rows where at least one legacy action name has no modern counterpart **and** no hand disposition exists |
+| Denominator | 112 |
+| Source | `capability-subfeatures.json`; the 10 rows are listed by name in `M7-CAPABILITY-CLOSURE.md` §2.2 |
+| Direction of honesty | this number is allowed to be non-zero; forcing it to zero by reclassification would be the failure mode the mandate names |
+
+## MV3 — Client call sites resolving to a registered operation (re-derived)
+
+| Field | Value |
+|---|---|
+| **Value** | **190 / 212 (89.6 %)** matched; 8 `REGISTERED_WITH_CONTRACT_MISMATCH`; 14 `NO_REGISTERED_OPERATION` |
+| Numerator | call sites whose verb + path shape resolve to a registration parsed independently from `backend/` |
+| Denominator | 212 client call sites with a literal or template URL in `frontend/src` |
+| Exclusions | absolute URLs (`INTENTIONALLY_EXTERNAL`); non-HTTP `.get('q')`-style calls |
+| Source | `Evidence/artifacts/client-contract-audit.json` → `tally` |
+| Prior figure | V5's 181/212 used the same client scan but a weaker backend parser; V7's parser sees 8 more operations |
+
+## MV4 — Client call sites that swallow a failure and then assert success
+
+| Field | Value |
+|---|---|
+| **Value** | **12 sites** |
+| Numerator | a swallowed rejection (`.catch(() => {})`, `catch { /* Keep baseline */ }`) within 14 lines of a success assertion |
+| Denominator | 212 call sites (reported as an absolute count, not a rate — the pattern is a defect class, not a distribution) |
+| Known false positives | a success string belonging to a neighbouring action in the same file; the detector over-counts rather than under-counts, and each of the 12 was read by hand in `M7-CAPABILITY-CLOSURE.md` §4 |
+| Source | `client-contract-audit.json` → `calls[].successAfter` |
+
+## MV5 — Contract gaps, split by repair shape
+
+| Field | Value |
+|---|---|
+| **Value** | **15 distinct paths / 22 sites**: 8 paths (12 sites) wrong URL with the capability present · 4 paths (7 sites) no backend capability · 2 paths (3 sites) dead fallback only · (1 path counted in two verbs) |
+| Why split | a wrong URL is a client edit; an absent capability is a build. Reporting them as one "dead path" count is what made DISC-025's repair advice wrong for half its rows |
+| Source | `M7-CAPABILITY-CLOSURE.md` §3.1; `Evidence/adjudications-m7.json` → `contractGaps` |
+
+## MV6 — Backend operations (re-derived, supersedes M-something in §2 of the reachability doc)
+
+| Field | Value |
+|---|---|
+| **Value** | **397 registrations → 393 unique METHOD+path** (was 499 → 385) |
+| Method | receiver discovered from `express.Router()`, resolved through `module.exports`, joined to every `app.use` prefix, prefixes de-duplicated, `:param` normalised to `{X}` |
+| Cross-check | `tools/reachability-crosscheck.cjs` **393/393 agreements, 0 disagreements** |
+| Source | `backend-reachability.json` → `units` |
+| Note | the 499 figure double-counted a router mounted at the same prefix twice and omitted a file whose routers have their own names |
+
+## MV7 — Live modern path to a backend operation
+
+| Field | Value |
+|---|---|
+| **Value** | **166 / 393 = 42.2 %** (156 `UI-REACHABLE` + 10 `INDIRECTLY-REACHABLE`) |
+| Exclusions | `EXTERNAL-CALLER` (27), `SERVER-ONLY` (11), `INTENTIONALLY-UNEXPOSED` (2) are not "uncovered" — they are reachable by other callers and counted separately |
+| Prior figure | 159 / 385 = 41.3 % (V5/V6) |
+| Why it moved | +8 operations found, +14 reached (4 direct from the admin helpdesk, 3 indirect through live hooks, and re-derivation effects) |
+
+## MV8 — Parity mix (never aggregated)
+
+| Class | Count | Meaning |
+|---|---:|---|
+| `FULL PARITY` | **12** | endpoint- and reachability-supported; 12/12 `SUPPORTED` by `parity-endpoint-audit.json` |
+| `PARTIAL PARITY` | **49** | capability present, scope reduced (subfeature losses recorded per row) |
+| `MISSING` | **30** | no working implementation |
+| `MOCK / FABRICATED STATE` | **12** | a surface renders state the server never produced |
+| `REPLACED BY EQUIVALENT` | **6** | mechanism replaced, outcome preserved |
+| `UNVERIFIED` | **3** | insufficient evidence either way |
+| `INTENTIONAL RETIREMENT` | **0** | no documented retirement decision exists for any row |
+
+**No percentage is derived from this table.** Summing six different verdict kinds into an "audit score" is
+the one arithmetic this package forbids; `12/112` is not "11 % parity" and `12 + 49 + 30` is not "91 rows
+fine", because `PARTIAL` and `MOCK` are not degrees of the same thing.

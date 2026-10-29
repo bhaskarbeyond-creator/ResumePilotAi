@@ -21,8 +21,10 @@ Candidates that remain **plausible but unproven** live in
 > workflows cannot succeed — while showing success messages (DISC-027). The V6 subfeature evidence, the 10-check
 > detector output and its adjudicated false positives are in `FEATURE-DEPTH-EVIDENCE-REGISTER.md`.
 
-Total confirmed findings in this log: **40** (DISC-001 … DISC-040). DISC-027 … DISC-040 were
-raised by V6 at revision `a5835ff6`; earlier entries keep their published numbers and reasoning. DISC-019 … DISC-022 were
+Total confirmed findings in this log: **46** (48 IDs: DISC-001 … DISC-048, of which DISC-042 and DISC-046
+are merged into DISC-030 and labelled as stubs). DISC-027 … DISC-040 were raised by V6 at revision
+`a5835ff6`; DISC-041 and DISC-043 … DISC-048 by V7 at `8a6e03bb`; earlier entries keep their published
+numbers and reasoning, with V7 revisions appended in place (DISC-025, DISC-026, DISC-029). DISC-019 … DISC-022 were
 raised by the V4 coverage-reconciliation mandate at revision `0adad00`; DISC-001 … DISC-018 are
 unchanged by that pass.
 
@@ -1430,7 +1432,16 @@ control plane that the admin UI actually drives.
 
 ---
 
-## [DISC-025] 23 client-side paths are served by no backend operation — blog, helpdesk, queue console, moderation, operations and user-status actions 404 at runtime
+## [DISC-025] 17 client-side paths are served by no backend operation — blog, queue console, moderation, operations and user-status actions 404 at runtime
+
+> **V7 revision (`8a6e03bb`).** As first raised this finding listed **23** paths, six of which were
+> `/support/tickets*` and `/admin/support/tickets*`. Those six are **retracted**: `backend/routes/support.js`
+> registers all eight ticket operations (`:15`, `:30`, `:40`, `:54`, `:71`, `:81`, `:95`, `:110`) and mounts
+> at `/api/support` and `/api/admin/support` (`index.js:514`, `:6925`). The V5 register never scanned that
+> file because its routers are named `userRouter`/`adminRouter`, not `router` (DISC-041). The corrected count
+> is **17 distinct paths / 21 call sites**, and the helpdesk no longer belongs in this finding's title. The
+> original 23-row table is retained below with the six retracted rows struck through, so the previous
+> conclusion stays readable next to the evidence that overturned it.
 
 **Severity:** P1 — Critical (shipped admin and public surfaces are non-functional; one of them reports success)
 **Confidence:** High — two independent static enumerations plus direct reads of both sides of each contract.
@@ -1440,9 +1451,10 @@ register → client. `tools/client-call-existence.cjs` checks client → registe
 **Expected:** every HTTP path literal passed to a call helper in `frontend/src` resolves to a registered
 operation (or to a registered dynamic pattern such as `/admin/settings/{X}`).
 
-**Actual:** 229 call sites were enumerated: 188 exact matches, 11 matches against a registered dynamic
-pattern, **30 call sites across 23 distinct paths with no registered operation**, 0 method mismatches.
-The dead paths, with their first call site:
+**Actual:** 229 call sites were enumerated: 197 exact matches, 11 matches against a registered dynamic
+pattern, **21 call sites across 17 distinct paths with no registered operation**, 0 method mismatches.
+(As first raised: 188 exact, 11 dynamic, 30 call sites / 23 paths.) The dead paths, with their first call
+site; rows 6–11 are retracted in V7 and kept for provenance:
 
 | # | Client call | Call site | Backend reality |
 |---:|---|---|---|
@@ -1451,12 +1463,12 @@ The dead paths, with their first call site:
 | 3 | `PUT /blog/posts/{X}` | `pages/blog/editor.tsx:147` | serves `POST /blog-data/{id}` |
 | 4 | `POST /blog/posts` | `pages/blog/editor.tsx:149` | serves `POST /admin/blog/posts` |
 | 5 | `DELETE /blog/posts/{X}` | `AdminBlogManagementTab.tsx:126` | serves `DELETE /admin/blog/posts/{id}` |
-| 6 | `GET /support/tickets` | `use-api-hooks.ts:588` | **no ticket endpoint exists** |
-| 7 | `POST /support/tickets` | `use-api-hooks.ts:599` | none |
-| 8 | `POST /support/tickets/{X}/messages` | `use-api-hooks.ts:612` | none |
-| 9 | `GET /admin/support/tickets` | `AdminHelpDeskTab.tsx:128` | none |
-| 10 | `PATCH /admin/support/tickets/{X}` | `AdminHelpDeskTab.tsx:188` | none |
-| 11 | `POST /admin/support/tickets/{X}/messages` | `AdminHelpDeskTab.tsx:157` | none |
+| 6 | ~~`GET /support/tickets`~~ | `use-api-hooks.ts:588` | ~~no ticket endpoint exists~~ **RETRACTED V7** — served by `routes/support.js:30` at `/api/support` |
+| 7 | ~~`POST /support/tickets`~~ | `use-api-hooks.ts:599` | ~~none~~ **RETRACTED V7** — `routes/support.js:15` |
+| 8 | ~~`POST /support/tickets/{X}/messages`~~ | `use-api-hooks.ts:612` | ~~none~~ **RETRACTED V7** — `routes/support.js:54` |
+| 9 | ~~`GET /admin/support/tickets`~~ | `AdminHelpDeskTab.tsx:128` | ~~none~~ **RETRACTED V7** — `routes/support.js:71` at `/api/admin/support` |
+| 10 | ~~`PATCH /admin/support/tickets/{X}`~~ | `AdminHelpDeskTab.tsx:188` | ~~none~~ **RETRACTED V7** — `routes/support.js:110` |
+| 11 | ~~`POST /admin/support/tickets/{X}/messages`~~ | `AdminHelpDeskTab.tsx:157` | ~~none~~ **RETRACTED V7** — `routes/support.js:95` |
 | 12 | `POST /admin/jobs/{X}/moderate` | `AdminModerationTab.tsx:184` | serves `PATCH /admin/jobs/{id}` |
 | 13 | `POST /admin/employer-applications/{X}/verify` | `AdminModerationTab.tsx:152,167` | serves `PATCH /admin/employer-applications/{id}` |
 | 14 | `POST /admin/operations/backup` | `AdminOperationsTab.tsx:122` | **no operations write endpoint** |
@@ -1525,6 +1537,28 @@ endpoint or remove the buttons.
 Playwright spec asserts the failure path. Not met — and forbidden by the audit's no-app-change rule, so
 this is recorded, not fixed.
 
+**V7 revision (`8a6e03bb`) — the class is larger and the diagnosis is narrower.** The defect shape is the
+same, but two things changed:
+
+1. **Two more sites of exactly this shape.** `AdminModerationTab.tsx:152/167` (approve/reject an employer
+   application) and `:184` (flag a job as spam) swallow with `.catch(() => {})`, flip local state and
+   announce success. They are now `DISC-042`.
+2. **"The endpoint does not exist" is only half true, and the difference matters for repair.** Of the six
+   sites in this finding, **two call an operation that exists under a different contract**:
+   *suspend user* → the capability is `PATCH /api/admin/users/:uid {suspended}`
+   (`routes/adminUsers.js:673-760`, permission-gated, concurrency-guarded, token-revoking), and *blog
+   delete* → `DELETE /api/admin/blog/posts/:postId` (`backend/index.js:3408`). Those are client
+   retargets. *Backup*, *cache purge* and *dead-letter purge* have **no** server-side implementation at
+   all (nothing in `backend/` creates a snapshot or purges a cache; `POST /platform/queues/purge` answers
+   `410`, and bulk dead-letter replay answers `400 BULK_REPLAY_FORBIDDEN`) — those need a feature or the
+   button's removal. The full per-site separation is the adjudication table in
+   `CLIENT-BACKEND-CONTRACT-REGISTER.md` §4.
+
+The finder that produces the list is `tools/client-contract-audit.cjs` (`successAfter`), which reported
+**12** swallow-then-assert-success sites at this revision: the six above, the two moderation sites, the
+dead-letter retry/purge pair, user-status, and blog delete. Counted per site, not per finding, because a
+single control can be reached from two call sites.
+
 ## [DISC-027] 17 client-call paths (27 call sites) have no registered backend operation
 
 | Field | Value |
@@ -1590,6 +1624,17 @@ this is recorded, not fixed.
 | **Confidence** | High — absence proven by grep, fixtures proven by source |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**V7 revision (`8a6e03bb`) — headline and severity retracted.** "Support help desk has no backend at all"
+is **false**. `backend/routes/support.js` registers eight ticket operations and mounts twice
+(`/api/support` at `index.js:514`, `/api/admin/support` at `:6925`); `use-api-hooks.ts:585-620` and
+`AdminHelpDeskTab.tsx:128/157/188` all resolve. The "zero registrations / no support router is mounted"
+evidence was produced by a scanner that only recognises a router named `router` (DISC-041).
+
+What survives, at **P3 not P1**: the tab still seeds `DEFAULT_TICKETS` (`:47`) and both the loader guard
+(`res.tickets.length > 0`) and the `catch { /* Keep baseline */ }` (`:135`) keep those fixtures on screen
+when the real list is empty or the read fails — recorded as **DISC-047**. The user-side help centre is
+functional. No application defect of the original severity exists.
+
 
 ## [DISC-030] Moderation queue is a fixture and both decisions target unregistered routes
 
@@ -1611,6 +1656,22 @@ this is recorded, not fixed.
 | **Closure** | Not met |
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+**V7 confirmation (`8a6e03bb`), with two details added.** V7 re-derived both sides independently
+(`tools/client-contract-audit.cjs`) and confirms this finding, adding:
+
+1. **The payload would be rejected even if the path were right.** The client sends
+   `{decision:'APPROVED'|'REJECTED'}` and `{isSpam, status:'flagged'}`; the real handler accepts
+   `{status:'approved'|'rejected'|'active', expectedStatus, reason}` and, for jobs, *exactly one* of
+   `{status}` or `{isFeatured}` with `status ∈ active|pending|inactive|archived` (`'flagged'` is not one
+   of them). A path-only fix would still fail with `400`.
+2. **The tab has no read path at all.** It imports only `post`; `DEFAULT_APPLICATIONS` (`:58`) and
+   `DEFAULT_JOBS` (`:81`) are the only sources of data, so even a successful decision would be applied to
+   a record the operator cannot verify exists. Both GET operations exist and are reachable
+   (`/api/admin/employer-applications` at `backend/index.js:6279`, `/api/admin/jobs` at `:6300`).
+
+DISC-042 and DISC-046 were raised separately before this cross-check and are **merged into this entry**;
+their IDs are retained as stubs so no citation breaks.
 
 
 ## [DISC-031] User manager renders fabricated accounts when the API fails, and the status toggle targets a missing route
@@ -1831,3 +1892,199 @@ this is recorded, not fixed.
 | **Closure** | Open — deliberately left as a lead |
 | **Confidence** | Low — attribution ambiguity, not a proven regression |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
+
+
+## [DISC-041] The reachability register never scanned a router that is not named `router` — 8 live operations and 6 "missing" client paths were audit artefacts
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-041` |
+| **Feature** | Audit package: `BACKEND-OPERATION-REACHABILITY.md`, `client-call-existence.cjs`, DISC-025, metric M19 |
+| **Severity** | P1 — Critical for audit integrity. Six operations reported as non-existent are in production code and serve the support console; every downstream number (385 operations, 152 UI-reachable, 41.3 % live path, "23 dead client paths") inherited the omission |
+| **Legacy path:line** | n/a (tooling) |
+| **Modern path:line** | `backend/routes/support.js:15,30,40,54,71,81,95,110`; mounts `backend/index.js:514` (`/api/support`) and `:6925` (`/api/admin/support`) |
+| **Backend dependencies** | eight ticket operations, `services/supportTickets`, `req.user.uid` scoping |
+| **Persistence / authorization** | MariaDB-backed outbox/repo through `services/supportTickets`; user routes scoped to the caller's uid, admin routes behind the admin mount |
+| **Reproduction** | `node developer-review/tools/backend-reachability.cjs` on the pre-V7 tool → `grep -c tickets Evidence/artifacts/backend-operations.tsv` = 0. Then `node developer-review/tools/client-contract-audit.cjs` (independent parser) → 8 registrations from `routes/support.js`, 0 overlap with the register |
+| **Evidence levels** | L1 (source) + tool cross-comparison |
+| **Affected workflow** | Support ticketing (candidate and admin), and every metric derived from the operation register |
+| **Impact** | DISC-025 wrongly reported six live ticket endpoints as non-existent (`support/tickets 0 hits` was true only of the scanner); `FP-G24` was dropped from FULL to MISSING on that basis; M19's denominator and numerator were both wrong |
+| **Remediation spec** | Resolve receivers from `const <name> = express.Router()`, map each receiver to its exported name through `module.exports`, apply *every* mount prefix for that name, de-duplicate prefixes before counting. Same fix applied to `tools/reachability-crosscheck.cjs` (leading-slash anchor + all matching lines, not the first) |
+| **Regression acceptance** | `backend-reachability.cjs` reports 397 registrations / 393 unique; all 8 ticket operations present in the TSV; cross-check 393/393 agreements, 0 disagreements; contract-parser vs register agreement `onlyInRegister` = 0 with the 8 ticket rows in `shared` |
+| **Closure** | **Met for the tool.** Not met for the application: the ticket *console* still keeps fixtures on an empty inbox (DISC-048) |
+| **Confidence** | High — two independent parsers, one written after the defect was found, both reading the same 3,806 files |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+**Why this is a finding and not a correction note:** the mandate's rule is that a route definition is not
+evidence of parity — but the inverse also applies. Calling an operation non-existent because one scanner
+did not see it produced a *false defect* (FP-G24 MISSING, DISC-025 rows 6–11) and a *false assurance*
+elsewhere (176 UNREACHABLE looked more separate from the UI than it is). Both directions are now bounded by
+two parsers that must agree.
+
+**Not claimed:** this is not evidence that the ticket UI works at runtime. Static registration, a live call
+site and a consumed hook do not prove that a ticket can be created against a real MariaDB instance; that
+remains blocked (see `RUNTIME-TEST-HARNESS-M7.md`).
+
+---
+
+## [DISC-042] MERGED INTO DISC-030 — Admin moderation writes to endpoints that do not exist while equivalent REST operations do
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-042` — **status: merged** (canonical entry: `DISC-030`). Not counted as a separate finding in the V7 tally. |
+| **Feature** | FP-A20 marketplace moderation (employer verification, job spam gating) |
+| **Severity** | P1 — Critical. An administrator approves or rejects an employer, or flags a spam job, and is told it succeeded; the record is unchanged and the employer never gains or loses access |
+| **Legacy path:line** | n/a — V5/V7 modern defect; the legacy admin surface is the comparison baseline |
+| **Modern path:line** | `AdminModerationTab.tsx:152` and `:167` (`POST /admin/employer-applications/{id}/verify`), `:184` (`POST /admin/jobs/{id}/moderate`) |
+| **Backend dependencies** | `PATCH /api/admin/employer-applications/:uid` (`backend/index.js:6440`), `PATCH /api/admin/jobs/:jobId` (`backend/index.js:6886`) |
+| **Persistence / authorization** | both PATCH handlers are audited, concurrency-guarded (`409 ADMIN_TARGET_CHANGED`), and the employer one writes Firebase custom claims + revokes refresh tokens |
+| **Reproduction** | `node developer-review/tools/client-contract-audit.cjs --verbose` → `/admin/employer-applications/{X}/verify` and `/admin/jobs/{X}/moderate` as `NO_REGISTERED_OPERATION`, both flagged `successAfter=true` |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Employer onboarding approval, spam moderation |
+| **Impact** | Two distinct failures in one control: the request 404s, `.catch(() => {})` hides it, local state flips, and a success toast is shown. The payloads also would not have been accepted: `{decision:'APPROVED'}` vs the API's `{status:'approved'}`, and `status:'flagged'` is not in the status allowlist |
+| **Remediation spec** | Retarget to `PATCH` with the server's payload contract and optimistic-concurrency fields; remove `.catch(() => {})`; on failure show the server message and reload the row |
+| **Regression acceptance** | A rejected approval leaves the row PENDING and shows an error; a `409 ADMIN_TARGET_CHANGED` reloads the row; no toast asserts success unless the response is 2xx |
+| **Closure** | Not met |
+| **Confidence** | High — both sides read, verdict supported by the independent contract parser |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+**Relationship to DISC-026:** DISC-026 recorded four fabricated admin controls. This finding records two more
+of the same shape, and corrects the *diagnosis* for the whole class: in most cases the backend capability
+exists (the client is calling the wrong contract), so the repair is a client retarget — except for backup,
+cache-clear and dead-letter purge, where nothing exists server-side at all.
+
+---
+
+## [DISC-043] The public job board calls `GET /api/jobs`, an operation that does not exist; the real public listing is `/api/jobs-data`
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-043` |
+| **Feature** | FP-F10 job search / listing |
+| **Severity** | P1 — Critical for the public product surface: the job board's only data call 404s, so the page cannot show a single listing |
+| **Legacy path:line** | `src/components/JobsListings/*` (fetched the same listing) |
+| **Modern path:line** | `frontend/src/pages/jobs/portal.tsx:74` — `get('/jobs?' + params)` with `baseURL '/api'` |
+| **Backend dependencies** | `GET /api/jobs-data` (`backend/routes/jobsData.js:159`), mounted at `backend/index.js:515`; public-only scoping and `isPubliclyVisibleJob` applied server-side |
+| **Persistence / authorization** | MariaDB via `req.repository.getJobs(filters)`; employer inventory only when `employerId` is the caller's own uid, otherwise `publicOnly` |
+| **Reproduction** | `node developer-review/tools/client-call-existence.cjs` → `MISSING GET /jobs`; `grep -n "app.get('/api/jobs'" backend/index.js` → no match; `routes/jobsData.js:159` is the only public listing |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Job discovery for candidates |
+| **Impact** | The page's error path is shown instead of listings; combined with DISC-025 row 1 (the filter UI also lost most filters) the capability is not merely broken, it is unreachable |
+| **Remediation spec** | Point the portal at `GET /api/jobs-data`, keep the existing query-parameter contract, and restore the legacy filter set (see FP-F10 loss note) |
+| **Regression acceptance** | `/jobs` renders only publicly-visible jobs returned by the API; an employer-scoped call without ownership returns 403 and is surfaced |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+---
+
+## [DISC-044] Employer→candidate email has no backend route, and the service that would send it is orphaned
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-044` |
+| **Feature** | FP-F11 candidate review / rejection messaging |
+| **Severity** | P2 — High. Rejection still persists (status PATCH works), so the workflow is not lost, but the candidate is never told |
+| **Legacy path:line** | legacy employer portal notified the candidate on status change |
+| **Modern path:line** | `frontend/src/components/employer/CandidateReviewDrawer.tsx:159` — `POST /notify/email` |
+| **Backend dependencies** | none. `/api/notify/*` client dispatches are retired to `410 CLIENT_NOTIFICATION_DISPATCH_RETIRED` (`backend/index.js:419-424`, `:7203`); `/api/notify/email` is not even in that set, so the request falls through to the zero-trust policy with no handler. `services/emailNotifier.js` is imported at `backend/index.js:14` and **never called** anywhere in `backend/` |
+| **Persistence / authorization** | notification outbox (`services/notificationOutbox.js`) exists and is used by auth-token and enterprise flows only |
+| **Reproduction** | `grep -rn "EmailNotifier\." backend/index.js` → 0; `grep -rn "notify/email" backend/routes backend/index.js` → only the retired-set variants |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Rejection feedback to candidates |
+| **Impact** | The failure is invisible: the call is swallowed *and* the outer `catch` at `:176-180` also sets `messageSuccess`, so the drawer always reports "Message Dispatched!" (this confirms DISC-028's reading, which a first pass of this audit got wrong and corrected here). Nothing is delivered, no outbox row is written, and the comment "Fallback: log notification to application record" describes a fallback that does not exist |
+| **Remediation spec** | Either implement a server-side transition notification (status change enqueues an outbox email) or remove the client call and state plainly that messaging goes through in-app messages |
+| **Regression acceptance** | Rejecting an application produces exactly one outbox row for the candidate, and the UI reports success only after the server accepts it |
+| **Closure** | Not met |
+| **Confidence** | High for the absent route; Medium for "the capability was removed" — no decision record exists, so this is `UNVERIFIED` as an intentional retirement |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+---
+
+## [DISC-045] Checkout validates coupons against a non-existent endpoint, then applies hardcoded promo codes locally
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-045` |
+| **Feature** | FP-A24 billing / checkout |
+| **Severity** | P2 — High. The displayed price can differ from the charged price, and checkout fails for any code that is not in the server's coupon table |
+| **Legacy path:line** | coupon entry existed in the legacy checkout |
+| **Modern path:line** | `frontend/src/pages/billing/checkout-modal.tsx:246` (`POST /api/billing/validate-coupon`), `:255-264` (hardcoded `SAVE20` / `WELCOME50` / `PROMO10` / `LAUNCH100`) |
+| **Backend dependencies** | `POST /api/coupons/validate` (`backend/index.js:4597`); order creation re-validates through `paymentActivation.applyServerCoupon` (`:71-101`) |
+| **Persistence / authorization** | server recomputes the amount; client-supplied amounts are rejected outright (`CLIENT_PAYMENT_IDENTITY_REJECTED`, `:1177-1180`) |
+| **Reproduction** | `node developer-review/tools/client-contract-audit.cjs --verbose` → `/api/billing/validate-coupon` `NO_REGISTERED_OPERATION`; `grep -n "coupons/validate" backend/index.js` → `:4597` |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Discount application and checkout |
+| **Impact** | Two paths: (a) a real coupon is never validated client-side, so the UI shows no discount even when the server would grant one; (b) a hardcoded code shows a discount, then order creation returns `400 INVALID_COUPON` and the purchase fails with an error. **No free or discounted order is obtainable** — the server recomputes and rejects unknown codes — so this is a pricing-integrity and UX defect, not a payment bypass |
+| **Remediation spec** | Call `/coupons/validate`; delete the hardcoded constants; render the server's `discount` in the price breakdown |
+| **Regression acceptance** | An unknown code shows no discount and an error before submission; a valid code shows the server-calculated amount and the created order returns the same amount |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+---
+
+## [DISC-046] MERGED INTO DISC-030 — The moderation tab renders fixture records and never reads the backend
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-046` — **status: merged** (canonical entry: `DISC-030`). Not counted as a separate finding in the V7 tally. |
+| **Feature** | FP-A20 marketplace moderation |
+| **Severity** | P1 — Critical. Employer applications and jobs shown to a moderator are invented (`app_101 Nexus AI Robotics GmbH`, fabricated tax IDs); none of the decisions affect the records they appear to describe |
+| **Legacy path:line** | legacy admin moderation read from the API |
+| **Modern path:line** | `frontend/src/components/admin/AdminModerationTab.tsx:58` (`DEFAULT_APPLICATIONS`), `:81` (`DEFAULT_JOBS`); the file imports only `post` from `@/lib/api-client` — `get` count is 0 |
+| **Backend dependencies** | `GET /api/admin/employer-applications` (`backend/index.js:6279`) and `GET /api/admin/jobs` (`:6300`) both exist, are registered and are reachable, and are never called by this tab |
+| **Persistence / authorization** | the write handlers behind the equivalent PATCH operations are audited and concurrency-guarded |
+| **Reproduction** | `grep -c "get<\|get(" frontend/src/components/admin/AdminModerationTab.tsx` → 0; `grep -c "^const DEFAULT_" …` → 2 |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Employer verification queue, spam gating |
+| **Impact** | This is the strongest form of the MOCK class: not a fallback after a failed read, but a surface with no read at all. A moderator cannot see a real pending employer application through this tab even if one exists |
+| **Remediation spec** | Load both queues from their GET operations, delete the fixtures, and keep an explicit empty state |
+| **Regression acceptance** | With a database containing one pending application, the tab shows exactly that application; with an empty database it shows an empty state, never invented rows |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+---
+
+## [DISC-047] An empty support inbox still displays fixture tickets
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-047` |
+| **Feature** | FP-G24 support console |
+| **Severity** | P3 — Medium. No data is lost or wrongly changed, but support staff can be shown tickets that do not exist |
+| **Modern path:line** | `frontend/src/components/admin/AdminHelpDeskTab.tsx:128-137` — the loader only replaces state when `res.tickets.length > 0`; the catch keeps the baseline (`/* Keep baseline */`), and the initial state is a fixture list at `:47` |
+| **Backend dependencies** | `GET /api/admin/support/tickets` (`backend/routes/support.js:71`) — registered and working |
+| **Persistence / authorization** | `services/supportTickets.listTicketsForStaff`, staff-scoped |
+| **Reproduction** | Read `:126-138`; the `length > 0` guard means a legitimately empty result leaves `DEFAULT_TICKETS` on screen |
+| **Evidence levels** | L1 |
+| **Affected workflow** | Support triage |
+| **Impact** | The console cannot distinguish "no tickets" from "load failed", and shows fabricated conversations with fabricated customer names in both cases |
+| **Remediation spec** | Treat an empty array as data, drop the fixture default, render an explicit empty/error state |
+| **Regression acceptance** | Empty database → empty state; failed read → error state; neither shows invented tickets |
+| **Closure** | Not met |
+| **Confidence** | High |
+| **First raised** | Mandate 7, revision `8a6e03bb` |
+
+---
+
+## [DISC-048] The resume photo upload accepts 5 MB into a request body the API caps at 256 KB
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-048` |
+| **Feature** | FP-E06 photo upload, FP-E01 resume save |
+| **Severity** | P2 — High. A user can attach a photo the product says is acceptable and never be able to save the resume with it; the failure arrives as a generic save error |
+| **Modern path:line** | `frontend/src/pages/dashboard/resume-builder.tsx:2604` (5 MB guard) → base64 data URL stored in `heading.photo` (`:2600-2612`) → `handleSave` POSTs the whole resume (`:637-661`) |
+| **Backend dependencies** | `express.json({ limit: '256kb' })` for every route except `/api/stripe-webhook` (`backend/index.js:316`) |
+| **Persistence / authorization** | resume PATCH is ownership-scoped; the body limit applies before the handler |
+| **Reproduction** | arithmetic from source: a 300 KB JPEG becomes ~400 KB base64, which exceeds 262,144 bytes once wrapped in JSON. Not executed at runtime (no server/database in this environment) — `RUNTIME-TEST-HARNESS-M7.md` R-05 |
+| **Evidence levels** | L1 (static) / **no runtime evidence** |
+| **Affected workflow** | Resume builder with photo |
+| **Impact** | Payload rejection (`413`) surfaces through `normalizeError` as a save failure; autosave then retries a body that can never fit. The advertised 5 MB limit is unreachable by roughly an order of magnitude |
+| **Remediation spec** | Either downscale client-side to fit the body budget, or use a presigned upload and store a URL |
+| **Regression acceptance** | A 4 MB source image saves successfully, or the UI refuses it at the true limit with a message naming the limit |
+| **Closure** | Not met; runtime confirmation outstanding |
+| **Confidence** | Medium-High — the two limits and the code path are read directly; the exact failure status is inferred, not observed |
+| **First raised** | Mandate 7, revision `8a6e03bb` |

@@ -1,12 +1,12 @@
 # Backend Operation Reachability Register
 
-**Authoritative revision:** `0adad00d0975444f13b98f9cda3ec7e24c2c6a62` (branch `arena/393531fe-resumepilotai`; `origin/main` = same; `origin/dev` = `ea7b7416…`, tree-identical)
+**Authoritative revision:** `8a6e03bbc279cfb7e3a62519659fa3fe770ad1be` (register re-derived in V7; the previous stamp was `0adad00d`) — branch `arena/393531fe-resumepilotai`; `origin/main` = same; `origin/dev` = `ea7b7416…`, tree-identical)
 **Generator:** `developer-review/tools/backend-reachability.cjs`
-**Machine-readable register:** `Evidence/artifacts/backend-reachability.json` (385 records),
+**Machine-readable register:** `Evidence/artifacts/backend-reachability.json` (393 records),
 `Evidence/artifacts/backend-operations.tsv` (tabular), `Evidence/logs/backend-reachability.log`
-**Independent cross-check:** `tools/reachability-crosscheck.cjs` — 385/385 agreements, 0 disagreements
-**Client-side contract check:** `tools/client-call-existence.cjs` — 229 call sites, 23 served by no operation (DISC-025)
-**V5 status:** superseded counts are retained in §5; the register itself is authoritative as of `cccd35a5`.
+**Independent cross-check:** `tools/reachability-crosscheck.cjs` — 393/393 agreements, 0 disagreements
+**Client-side contract check:** `tools/client-call-existence.cjs` — 229 call sites, 21 served by no operation, 17 distinct paths (DISC-025)
+**V7 status:** the register was re-derived at `8a6e03bb` after a receiver-resolution defect was found (§5, V7 row, DISC-041). Superseded counts are retained there; the register is authoritative as of `8a6e03bb`.
 **Supersedes:** the binary "consumed / not consumed" split in `tools/backend-ui-coverage.cjs` (kept, unmodified, for provenance)
 
 ---
@@ -39,13 +39,15 @@ mandate defines.
 
 | Unit | Value | Method |
 |---|---:|---|
-| Route **registrations** (`router.<verb>(…)` / `app.<all>(…)` call sites) | **499** | regex over `backend/routes/*.js` + `backend/index.js`, mount-prefix expanded |
-| Unique **METHOD + path** pairs after mount resolution and de-duplication | **385** | this is the operation register denominator |
-| Duplicate/overlapping registrations collapsed | **114** | 499 − 385 (same method+path declared twice, e.g. index.js + a router) |
+| Route **registrations** (`<router>.<verb>(…)` / `app.<all>(…)` call sites) | **397** | regex over `backend/routes/*.js` + `backend/index.js`, receiver identified by `express.Router()` declaration + `module.exports` alias, mount-prefix expanded |
+| Unique **METHOD + path** pairs after mount resolution and de-duplication | **393** | this is the operation register denominator |
+| Duplicate/overlapping registrations collapsed | **4** | 397 − 393. The V5 figure of 114 was an artefact of not de-duplicating a router mounted at the same prefix twice (`/api/platform`, index.js:522 and :3299) |
 | Handlers | **384** | 1 inline handler per unique operation; no shared handler serves two paths |
 | Database operations | **not counted** | not enumerable from route declarations; see `DATABASE-INVENTORY.md` and §8 |
 
-Mount prefixes were resolved for all 385 operations (0 unresolved). `backend/index.js` is CommonJS with
+Mount prefixes were resolved for all 393 operations (0 unresolved). Receivers are resolved through
+`module.exports`, so a module that exports two routers (`routes/support.js` → `userRouter` at
+`/api/support`, `adminRouter` at `/api/admin/support`) contributes both mount points. `backend/index.js` is CommonJS with
 destructured `require`, so imports are resolved from `const { x } = require('./routes/y')` and
 `const x = require('./routes/y')` as well as ESM `import`.
 
@@ -65,27 +67,32 @@ destructured `require`, so imports are resolved from `const { x } = require('./r
 
 ## 4. Result
 
-| Reachability class | Operations | % of 385 |
+| Reachability class | Operations | % of 393 |
 |---|---:|---:|
-| `UI-REACHABLE` | **152** | 39.5 % |
-| `INDIRECTLY-REACHABLE` | **7** | 1.8 % |
-| `EXTERNAL-CALLER` | **27** | 7.0 % |
-| `SERVER-ONLY` | **11** | 2.9 % |
+| `UI-REACHABLE` | **156** | 39.7 % |
+| `INDIRECTLY-REACHABLE` | **10** | 2.5 % |
+| `EXTERNAL-CALLER` | **27** | 6.9 % |
+| `SERVER-ONLY` | **11** | 2.8 % |
 | `INTENTIONALLY-UNEXPOSED` | **2** | 0.5 % |
-| `UNREACHABLE` | **176** | 45.7 % |
-| `UNVERIFIED` | **10** | 2.6 % |
-| **Total** | **385** | 100 % |
+| `UNREACHABLE` | **176** | 44.8 % |
+| `UNVERIFIED` | **11** | 2.8 % |
+| **Total** | **393** | 100 % |
 
 Derived measures, each with its own denominator:
 
 | Measure | Numerator / denominator | Value |
 |---|---|---:|
-| Operations with a live modern call path (UI + indirect) | 159 / 385 | **41.3 %** |
-| Operations with **no** modern UI call site | 226 / 385 | **58.7 %** |
-| Operations unreachable from *any* client, after accounting for webhooks, server reuse and machine scope | 176 / 385 | **45.7 %** |
-| Operations never referenced by **either** frontend (modern or legacy) | 153 / 385 | **39.7 %** |
-| Operations the legacy UI called that no modern client calls | 23 / 385 | **6.0 %** |
-| Client call sites whose path no operation serves | 30 of 229 call sites / 23 distinct paths | **13.1 %** (DISC-025) |
+| Operations with a live modern call path (UI + indirect) | 166 / 393 | **42.2 %** |
+| Operations with **no** modern UI call site | 227 / 393 | **57.8 %** |
+| Operations unreachable from *any* client, after accounting for webhooks, server reuse and machine scope | 176 / 393 | **44.8 %** |
+| Operations never referenced by **either** frontend (modern or legacy) | 200 / 393 | **50.9 %** |
+| Operations the legacy UI called that no modern client calls | 26 / 393 | **6.6 %** |
+| Client call sites whose path no operation serves | 21 of 229 call sites / 17 distinct paths | **9.2 %** (DISC-025) |
+
+The last two derived measures are recomputed from the register's own `modernUiRefs` / `legacyUiRefs`
+columns at every run (`Evidence/artifacts/backend-operations.tsv`); the V5 text carried `153 / 385`
+and `23 / 385`, which no longer reconciled with the TSV it cites (199 and 26 before the V7 repair).
+That drift is itself recorded as an audit-package defect in DISC-041 rather than quietly corrected.
 
 ## 5. Reconciliation with the previously reported figures
 
@@ -96,6 +103,15 @@ Three successive figures exist for this register. None is deleted.
 | 2026-10-29 pass | 384 | binary: 192 "unreachable from modern UI", 58 "orphaned" | counted dead-hook mentions and string metadata as callers |
 | V4 (`0adad00`) | 384 | 126 / 6 / 27 / 11 / 9 / 201 / 4 | seven classes introduced; but `enterpriseRequest` was invisible and `dynamicParent` over-promoted |
 | **V5 (`cccd35a5`)** | **385** | **152 / 7 / 27 / 11 / 2 / 176 / 10** | three classifier defects fixed and `app.all` parsed (DISC-024) |
+| **V7 (`8a6e03bb`)** | **393** | **156 / 10 / 27 / 11 / 2 / 176 / 11** | receiver resolution: a router object not named `router` was never scanned, so `routes/support.js` (8 operations, 2 mount prefixes) was absent from every register and every downstream metric. Mount prefixes are now de-duplicated, which also explains the 499 → 397 registration count. See DISC-041. |
+
+V5 to V7 movement (8 operations added, none removed):
+
+| Movement | Ops | Cause |
+|---|---:|---|
+| new `UI-REACHABLE` | 4 | `AdminHelpDeskTab.tsx` calls `/admin/support/tickets`, `/admin/support/tickets/:id`, `POST …/:id/messages` and `PATCH …/:id` directly; those operations existed all along |
+| new `INDIRECTLY-REACHABLE` | 3 | user-side tickets are reached through three live hooks in `use-api-hooks.ts` |
+| new `UNVERIFIED` | 1 | `GET /support/tickets/:id` has a hook whose only consumer is a shape-compatible path |
 
 V4 to V5 movement, reconciled class by class (66 operations changed class):
 
@@ -407,14 +423,18 @@ column records whether the *legacy* tree called the operation, which separates a
 ## 10. Client calls with no served operation (DISC-025)
 
 This register asks "is this operation called?". The converse question — "is this call served?" — was not
-asked until Mandate 5, and it changes the picture: 30 of 229 call sites (13.1 %) target a path that no
-registered operation serves. Full table: `DISCREPANCY-LOG.md` DISC-025 and
+asked until Mandate 5. At the V7 re-derivation 21 of 229 call sites (9.2 %) target a path that no
+registered operation serves, across 17 distinct paths. The Mandate-5 figure was 30 call sites / 23
+distinct paths; six of those 23 — every `/support/tickets` and `/admin/support/tickets` path — are
+retracted in DISC-025, because `routes/support.js` registers them and the V5 register never scanned that
+file (DISC-041). Full table: `DISCREPANCY-LOG.md` DISC-025 and
 `Evidence/artifacts/client-call-existence.json`.
 
 Consequence for reading §9: an `UNREACHABLE` verdict means *no working call site was found*. For
 /admin/queues*, /admin/jobs/{X}/moderate*, /blog-data*, /coupons* and /admin/audit-logs* the modern UI does
 attempt a call, but to a different (non-existent) path — that is a broken integration, not an absent
-feature.
+feature. The ticket console is the counter-example and is now `UI-REACHABLE`: its eight operations were
+always served, and only the audit's own scanner was blind to them.
 
 ## 11. V6 confirmation and the reverse direction (base `a5835ff6`)
 
@@ -422,6 +442,35 @@ V6 re-ran this register rather than trusting it: `tools/backend-reachability.cjs
 `tools/reachability-crosscheck.cjs` still agree on **385/385** operations, class mix
 **152 UI / 7 indirect / 27 external-caller / 11 server-only / 2 intentionally-unexposed / 176 unreachable /
 10 unverified**. No class changed in V6.
+
+## 12. V7 re-derivation (base `8a6e03bb`) — the register itself was incomplete
+
+V7 required an independent backend registration parser for the client/backend contract audit. That parser
+resolved receivers through `module.exports` and immediately disagreed with this register on eight
+operations. The cause was this tool, not the backend: it scanned only the literal receiver name `router`,
+while `backend/routes/support.js` declares `const userRouter = express.Router()` and
+`const adminRouter = express.Router()` and exports both, mounted at `/api/support` (`index.js:514`) and
+`/api/admin/support` (`index.js:6925`). Every one of that file's eight registrations was therefore missing
+from the register, from `backend-operations.tsv`, from `client-call-existence.cjs` and from the
+reachability classes — which is how six live ticket endpoints came to be reported as "no ticket endpoint
+exists" in DISC-025.
+
+Repair (`tools/backend-reachability.cjs`, same run):
+1. receivers are discovered from `const <name> = express.Router()` rather than assumed to be `router`;
+2. each receiver is mapped to its exported name through `module.exports`, and to every `app.use()` prefix
+   for that exported name;
+3. mount prefixes are de-duplicated before registration counting.
+
+Result: 397 registrations / 393 unique operations (was 499 / 385). The 499 figure counted a router mounted
+twice at the same prefix (`/api/platform`, `index.js:522` and `:3299`) and did not include `support.js`.
+`tools/reachability-crosscheck.cjs` was repaired in the same pass: its independent hook attribution matched
+only the first `pathRegex` hit per file and did not anchor the leading slash, so `/support/tickets` was
+attributed to the dead admin hook at `use-api-hooks.ts:433`. With both fixes the cross-check agrees on
+**393/393** operations, 0 disagreements.
+
+This is a tooling defect found by cross-instrument comparison, not by application behaviour; nothing in
+`backend/` or `frontend/` was changed. It is recorded as DISC-041 with its own remediation and acceptance
+criteria.
 
 What V6 added is the *converse* measurement, now automated as check 9 of `tools/parity-depth-checks.cjs`:
 **27 client call sites over 17 distinct paths invoke operations that do not exist.** That is a different

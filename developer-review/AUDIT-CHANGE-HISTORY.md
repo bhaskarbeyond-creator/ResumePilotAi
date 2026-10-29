@@ -117,3 +117,48 @@ document's citations changed.
 | Live providers | BLOCKED (no credentials) |
 | Apache/PHP layer | BLOCKED (no runtime) |
 | Package self-verification | 61/61 checks pass — with the limits stated in `AUDIT-CHECK-PROVENANCE.md` |
+
+---
+
+## V7 — Mandate 7 (`8a6e03bb`), 2026-10-29
+
+**Scope:** final capability closure and backend contract forensic audit. Application source unchanged
+(`git diff --stat 8a6e03bb -- src backend frontend` = empty).
+
+### Tooling changed
+
+| Tool | Change | Why |
+|---|---|---|
+| `backend-reachability.cjs` | receivers discovered from `express.Router()` and resolved through `module.exports`; every mount prefix applied; prefixes de-duplicated | the literal receiver name `router` missed `routes/support.js` (`userRouter`/`adminRouter`), dropping 8 live operations (DISC-041) |
+| `reachability-crosscheck.cjs` | path regex anchored on a leading slash; all matching lines considered, not the first | `/support/tickets` matched `/admin/support/tickets` and was attributed to a dead hook |
+| `client-contract-audit.cjs` | **new** | independent client+backend parser; the disagreement with the register is what exposed DISC-041 |
+| `capability-subfeature-audit.cjs` | **new**; adjudication pass added | row-level subfeature closure with hand dispositions read from a data file |
+| `parity-depth-checks.cjs` | check 1 no longer reads adjudication prose lines as classification claims | a generated register quoting "FULL PARITY stands" is not a contradictory claim |
+| `parity-matrix.cjs` | 4 rows re-classified with evidence (FP-G24, FP-E14, FP-E06 up; FP-C06 down) | hand-read subfeature evidence |
+| `verify-v4-reconciliation.py` | operation count derived from the TSV instead of pinned at 385; coverage total recomputed from the registers; merge stubs excluded from the finding count | the pin is precisely what let DISC-041 survive three passes |
+| `verify-parity.py` | merge stubs excluded from the declared finding count | DISC-042/DISC-046 folded into DISC-030 |
+
+### Documents changed
+
+`M7-CAPABILITY-CLOSURE.md` (new) · `RUNTIME-TEST-HARNESS-M7.md` (new) · `CLIENT-BACKEND-CONTRACT-REGISTER.md`
+(new, regenerable) · `CAPABILITY-SUBFEATURE-REGISTER.md` (new, regenerable) · `Evidence/adjudications-m7.json`
+(new) · `DISCREPANCY-LOG.md` (DISC-041, 043–048 added; 042/046 merged into 030; 025 and 029 revised in place)
+· `BACKEND-OPERATION-REACHABILITY.md` (V7 re-derivation section; class table and derived measures restated) ·
+`V4-COVERAGE-RECONCILIATION.md` (§14 amendment; §1 table corrected where it had been stale since V5) ·
+`FINAL-AUDIT-HANDOVER.md` (§13) · `EVIDENCE-INDEX.md` (E-356 … E-364) · `REPAIR-ACTION-PLAN.md` (Phase 6) ·
+`METRIC-DEFINITIONS.md` (MV1 … MV8) · `FEATURE-PARITY-MATRIX.md` (regenerated).
+
+### Corrections to earlier conclusions
+
+| # | Earlier conclusion | V7 finding | How the earlier text was treated |
+|---|---|---|---|
+| 1 | "There is no ticket API at all" (DISC-029, FP-G24 MISSING) | eight operations in `routes/support.js`, registered and mounted twice | original text kept; revision block appended; headline and severity retracted |
+| 2 | "23 client paths have no backend operation" (DISC-025) | 17 distinct paths; the six ticket paths are served | table kept with six rows struck through and marked `RETRACTED V7` |
+| 3 | "backup, cache-purge and dead-letter purge are client bugs" | no server-side capability exists for any of the three | diagnosis narrowed per site in the contract register |
+| 4 | "FP-E14 bullet quality is MISSING" | a live section-level impact analyzer exists | re-classified PARTIAL with the per-bullet losses named |
+| 5 | "FP-E06 photo handling is MISSING" | upload + persistence exist; only crop/zoom is absent | re-classified PARTIAL |
+| 6 | "FP-C06 portfolio templates are PARTIAL" | the named modular blocks have no counterpart at all | re-classified MISSING |
+
+Nothing was deleted. Every superseded figure remains readable next to the evidence that replaced it, which
+is the standard this package has applied since V4 (`AUDIT-CHANGE-HISTORY.md` §1) and applies here to its own
+work.

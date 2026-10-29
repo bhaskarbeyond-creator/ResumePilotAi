@@ -80,6 +80,10 @@ function checkDocContradictions() {
     lines.forEach((line, i) => {
       if (/\b(was|were|previously|formerly|historically|superseded|earlier|pre-V6|V4|V5|moved|upgraded|downgraded|reclassified|corrected|retained)\b/.test(line)) return;
       if (line.includes('→')) return;                     // a recorded transition, not a live claim
+      // V7: the generated subfeature register carries a hand-written adjudication block whose prose
+      // can quote a classification ("which is why FULL PARITY stands"). Only the structured
+      // `**Classification:** \`X\`` marker on the line is a claim; prose next to it is not.
+      if (/^_?(Adjudication|Verified by)/.test(line.trim())) return;
       if (/^\|\s*`?FULL PARITY`?\s*\|/.test(line.trim())) return;  // a quantity row, not a row claim
       for (const m of line.matchAll(/FP-[A-G]\d{2}/g)) {
         const id = m[0];

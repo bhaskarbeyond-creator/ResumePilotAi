@@ -101,24 +101,69 @@ function normalise(p) {
 let registrations = 0;
 const operations = [];
 
+// V7: a router object is not always named `router`. backend/routes/support.js defines
+// `userRouter` and `adminRouter` and exports both, mounted at /api/support and /api/admin/support.
+// Scanning only the literal receiver `router` dropped that file's eight registrations entirely, so
+// the canonical operation count was 385 instead of 393 and eight live server-backed ticket
+// operations were classified as never-defined. Receivers are now discovered from
+// `const <name> = express.Router()`, each receiver is resolved to its exported name through
+// `module.exports`, and every mount prefix for that exported name is applied.
 const routeFiles = fs.readdirSync(path.join(ROOT, 'backend/routes')).filter(f => f.endsWith('.js'));
+let unresolvedRouterFiles = [];
 for (const file of routeFiles) {
   const rel = `backend/routes/${file}`;
-  const varName = Object.keys(imports).find(k => imports[k] === rel);
-  const prefixes = (varName && mounts[varName]) || [null];
   const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
-  for (const prefix of prefixes) {
-    for (const m of src.matchAll(/\brouter\.(get|post|put|patch|delete|options|head|all)\(\s*(\[[^\]]*\]|'[^']*'|"[^"]*"|`[^`]*`)/g)) {
-      registrations += 1;
-      const literals = m[2].match(/['"`]([^'"`]+)['"`]/g) || [];
-      for (const lit of literals) {
-        const routePath = lit.slice(1, -1);
-        const full = prefix ? `${prefix}${routePath === '/' ? '' : routePath}` : routePath;
-        operations.push({ method: m[1].toUpperCase(), path: normalise(full), file: rel, mounted: Boolean(prefix) });
+
+  // receivers declared in this module, plus the conventional `router`
+  const receivers = [...new Set([
+    ...[...src.matchAll(/const\s+([A-Za-z0-9_$]+)\s*=\s*express\.Router\(\s*\)/g)].map(m => m[1]),
+    'router',
+  ])];
+
+  // module.exports = { exportedName: internalName, name, ... } | module.exports = internalName
+  const exportAliases = new Map();   // internalName -> [exportedName]
+  const mod = src.match(/module\.exports\s*=\s*(\{[\s\S]*?\}|[A-Za-z0-9_$]+)\s*;?/);
+  if (mod) {
+    const body = mod[1].trim();
+    if (body.startsWith('{')) {
+      for (const part of body.slice(1, -1).split(',')) {
+        const bits = part.split(':').map(v => v.trim()).filter(Boolean);
+        if (!bits.length) continue;
+        const key = bits[0].replace(/\s+/g, '');
+        const val = bits[bits.length - 1].replace(/\s+/g, '');
+        if (!/^[A-Za-z0-9_$]+$/.test(key) || !/^[A-Za-z0-9_$]+$/.test(val)) continue;
+        exportAliases.set(val, [...(exportAliases.get(val) || []), key]);
+      }
+    } else if (/^[A-Za-z0-9_$]+$/.test(body)) {
+      exportAliases.set(body, [...(exportAliases.get(body) || []), '__default__']);
+    }
+  }
+
+  for (const receiver of receivers) {
+    const exported = exportAliases.get(receiver) || [];
+    let prefixes = [...new Set(exported.flatMap(name => mounts[name] || []))];
+    // fall back to the single mount of whatever this file is required as
+    if (!prefixes.length) {
+      const fallback = Object.keys(imports).filter(k => imports[k] === rel).flatMap(k => mounts[k] || []);
+      prefixes = [...new Set(fallback)];
+    }
+    if (!prefixes.length) unresolvedRouterFiles.push(rel);
+    const seenReceiver = prefixes.length ? prefixes : [null];
+    for (const prefix of seenReceiver) {
+      const re = new RegExp(`\\b${receiver.replace(/\$/g, '\\$')}\\.(get|post|put|patch|delete|options|head|all)\\(\\s*(\\[[^\\]]*\\]|'[^']*'|\"[^\"]*\"|\`[^\`]*\`)`, 'g');
+      for (const m of src.matchAll(re)) {
+        registrations += 1;
+        const literals = m[2].match(/['"`]([^'"`]+)['"`]/g) || [];
+        for (const lit of literals) {
+          const routePath = lit.slice(1, -1);
+          const full = prefix ? `${prefix}${routePath === '/' ? '' : routePath}` : routePath;
+          operations.push({ method: m[1].toUpperCase(), path: normalise(full), file: rel, mounted: Boolean(prefix) });
+        }
       }
     }
   }
 }
+unresolvedRouterFiles = [...new Set(unresolvedRouterFiles)];
 
 // direct app.<verb> handlers in index.js
 // V5: `app.all('/api/admin/ai/fetch-models', …)` is a real registration; omitting `all`

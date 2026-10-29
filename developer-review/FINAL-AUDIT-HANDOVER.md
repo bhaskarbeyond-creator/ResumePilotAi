@@ -1,4 +1,9 @@
-# Final Audit Handover — ResumePilotAi (Mandate 5, updated by V6 / Mandate 6)
+# Final Audit Handover — ResumePilotAi (Mandate 5, updated by V6 / Mandate 6, updated by V7 / Mandate 7)
+
+> **V7 amendment, 2026-10-29 (`8a6e03bb`).** Read §13 first: the operation register was missing eight live
+> operations (DISC-041), which changes the denominators in §2 and the verdict basis below. The V5/V6 text is
+> retained verbatim so the correction can be audited against what it replaced. Nothing in the application
+> changed; the verdict remains **`PARTIAL — INCOMPLETE`**.
 
 **V5 revision:** `cccd35a5dac62efa5ead2c309a0fc60b201f9b08`
 **V6 audit base:** `a5835ff6693d272505a4e1dfdd3a8faa95b824c4` (V5 chain `631f0e23` → `bad19736` → `a5835ff6`, all ancestors of the V6 head; nothing was reset or force-pushed)
@@ -137,3 +142,64 @@ re-measure parity. Do **not** treat the V5 mix as a baseline — it overstated F
 | Full diff = zero application changes | **PASS** | `git diff --stat a5835ff6..HEAD -- . ':(exclude)developer-review'` = 0 files |
 | Remaining runtime limitations explicit | **PASS** | §6 above and `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §8 |
 | Verdict may be `COMPLETE` only if all gates pass | **FAIL (by design)** | runtime evidence for the browser and the database remains absent, and 99 of 112 rows were not subfeature-audited → **`PARTIAL — INCOMPLETE`** |
+
+---
+
+## 13. V7 amendment (`8a6e03bb`) — final capability closure and contract forensic audit
+
+**V7 revision audited:** `8a6e03bbc279cfb7e3a62519659fa3fe770ad1be`. Comparison base `origin/main` =
+`0adad00d`; V6 base `a5835ff6`. A foreign commit `a7d08a2` was present in the remote history, proven
+byte-identical to `8a6e03bb` across all 3,806 tracked files, and preserved at
+`refs/audit-preserved/base-a7d08a2` rather than merged, reset or discarded.
+
+**Application source changes in V7: 0.** Every modified path is under `developer-review/`.
+
+### 13.1 What V7 did that V5/V6 did not
+
+| Mandate requirement | V7 action | Result |
+|---|---|---|
+| Source-of-truth verification before any conclusion | re-derived every register from the working tree, compared against the canonical artifacts, and wrote a second independent backend parser | found DISC-041: the register never scanned a router not named `router` |
+| Close all 112 rows at subfeature level | hand-read 27 further rows; recorded a disposition, the file:line that settled it, and the subfeature lost | 40 adjudicated, 21 signal-clean, 41 with leads recorded, 10 rows / 20 items explicitly left open (§2.2 of `M7-CAPABILITY-CLOSURE.md`) |
+| Validate the 17 paths / 27 sites independently | independent client scanner + independent backend parser, then a per-path adjudication separating *wrong URL* from *missing capability* | 15 paths / 22 live sites adjudicated; 3 paths retracted as served all along; every site classified |
+| Prioritise false-success workflows | a detector (`successAfter`) plus a click→request→response→state→notification trace per site | 12 sites traced; 3 root-cause classes distinguished (wrong contract, absent capability, unchecked result) |
+| Revalidate DISC-019…DISC-040 | re-read each against the tree | 20 re-confirmed, 2 corrected/partially retracted (DISC-025, DISC-029), 2 merged, 8 raised |
+| Strengthen verification | 12 detectors, source-derived and register-integrity kept separate, each documented with scope/limits/false-positive behaviour | 3 PASS, 6 LEAD, and one detector (#12) whose entire value is that it disagrees with the register |
+| Runtime | probed again and did not execute | blockers itemised; `RUNTIME-TEST-HARNESS-M7.md` specifies R-01…R-10 with no claims attached |
+
+### 13.2 Corrected numbers (these supersede §2 above)
+
+| Quantity | V6 | **V7** | Cause |
+|---|---:|---:|---|
+| Unique backend operations | 385 | **393** | `routes/support.js` defines `userRouter`/`adminRouter`, mounted twice; the scanner only knew `router` |
+| Route registrations | 499 | **397** | mount prefixes are now de-duplicated (`/api/platform` is mounted twice at the same prefix) |
+| Reachability classes (UI / indirect / external / server-only / unexposed / unreachable / unverified) | 152 / 7 / 27 / 11 / 2 / 176 / 10 | **156 / 10 / 27 / 11 / 2 / 176 / 11** | the 8 ticket operations are reachable |
+| Operations with a live modern path | 159/385 = 41.3 % | **166/393 = 42.2 %** | numerator +14, denominator +8 |
+| Parity mix (full / partial / missing / mock / replaced / unverified) | 12 / 47 / 32 / 12 / 6 / 3 | **12 / 49 / 30 / 12 / 6 / 3** | FP-G24 and FP-E14 corrected up, FP-E06 up, FP-C06 down |
+| Client paths served by no operation | 23 (V5) / 19 with 17 defective (V6) | **15 distinct / 22 sites** | six ticket paths retracted (DISC-041) |
+| Findings | 40 | **46 distinct** (48 IDs, 2 merged stubs) | DISC-041, 043…048 raised; 042/046 merged into 030 |
+| Runtime | 0 browser / 0 MariaDB | **0 / 0** | unchanged |
+
+### 13.3 Verdict
+
+**`PARTIAL — INCOMPLETE`**, unchanged in kind and now better bounded.
+
+- It is **not** `COMPLETE`: no browser run, no MariaDB, no provider call has executed; 10 capability rows
+  still carry unadjudicated subfeature leads.
+- It is **not** a collapse: 62 of 112 rows carry no residual lead, 12 FULL rows are endpoint- and
+  reachability-supported (12/12 `SUPPORTED`), and the eight "missing" ticket endpoints turned out to be
+  present, which means the product is in better shape than V5/V6 reported on that point — while the
+  moderation, queue, backup and blog surfaces are confirmed broken in ways V5/V6 only partly described.
+
+The honest one-line summary a reader should take away: **the administrative console is substantially
+fabricated.** It shows invented records in three tabs, claims success for at least twelve actions whose
+requests fail or are never sent, and in three cases the server-side capability does not exist at all.
+
+### 13.4 Where to read the detail
+
+| Question | Document |
+|---|---|
+| What did V7 conclude, row by row? | `M7-CAPABILITY-CLOSURE.md` + `CAPABILITY-SUBFEATURE-REGISTER.md` |
+| Which client path maps to which backend operation, and what breaks? | `CLIENT-BACKEND-CONTRACT-REGISTER.md` §4 |
+| What exactly is wrong, with severity and remediation? | `DISCREPANCY-LOG.md` DISC-041 … DISC-048 |
+| What must be run to move the verdict? | `RUNTIME-TEST-HARNESS-M7.md` R-01 … R-10 |
+| How were the numbers produced? | `M7-CAPABILITY-CLOSURE.md` §11 + `Evidence/logs/m7-toolchain.log` |

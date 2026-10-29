@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-28T21:34:29.166Z",
-  "revision": "abd366084901f2e36b6c9b1cfb77a0a2b127ebc2",
-  "registerRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
+  "generatedAt": "2026-10-29T07:20:48.736Z",
+  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "registerRevision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
   "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
   "reachableClasses": [
     "UI-REACHABLE",
@@ -31,8 +31,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0219",
-            "OP-0220"
+            "OP-0223",
+            "OP-0224"
           ],
           "reachable": true
         },
@@ -47,7 +47,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0222"
+            "OP-0226"
           ],
           "reachable": true
         },
@@ -62,7 +62,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0226"
+            "OP-0230"
           ],
           "reachable": true
         }
@@ -91,7 +91,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0180"
+            "OP-0184"
           ],
           "reachable": true
         },
@@ -106,7 +106,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0182"
+            "OP-0186"
           ],
           "reachable": true
         },
@@ -121,7 +121,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0181"
+            "OP-0185"
           ],
           "reachable": true
         }
@@ -150,7 +150,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0344"
+            "OP-0348"
           ],
           "reachable": true
         },
@@ -165,7 +165,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0345"
+            "OP-0349"
           ],
           "reachable": true
         },
@@ -182,9 +182,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0340",
-            "OP-0341",
-            "OP-0342"
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
           ],
           "reachable": true
         }
@@ -213,7 +213,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0343"
+            "OP-0347"
           ],
           "reachable": true
         }
@@ -243,8 +243,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0230",
-            "OP-0231"
+            "OP-0234",
+            "OP-0235"
           ],
           "reachable": true
         }
@@ -286,7 +286,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0363"
+            "OP-0367"
           ],
           "reachable": true
         },
@@ -301,7 +301,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0364"
+            "OP-0368"
           ],
           "reachable": true
         },
@@ -316,7 +316,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0365"
+            "OP-0369"
           ],
           "reachable": true
         }
@@ -345,7 +345,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0133"
+            "OP-0137"
           ],
           "reachable": true
         },
@@ -362,9 +362,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0134",
-            "OP-0135",
-            "OP-0136"
+            "OP-0138",
+            "OP-0139",
+            "OP-0140"
           ],
           "reachable": true
         },
@@ -379,7 +379,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0236"
+            "OP-0240"
           ],
           "reachable": true
         }
@@ -410,9 +410,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0360",
-            "OP-0361",
-            "OP-0362"
+            "OP-0364",
+            "OP-0365",
+            "OP-0366"
           ],
           "reachable": true
         }
@@ -455,8 +455,8 @@
             "INDIRECTLY-REACHABLE"
           ],
           "opIds": [
-            "OP-0158",
-            "OP-0159"
+            "OP-0162",
+            "OP-0163"
           ],
           "reachable": true
         },
@@ -472,8 +472,8 @@
             "INDIRECTLY-REACHABLE"
           ],
           "opIds": [
-            "OP-0160",
-            "OP-0161"
+            "OP-0164",
+            "OP-0165"
           ],
           "reachable": true
         }
@@ -503,8 +503,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0255",
-            "OP-0256"
+            "OP-0259",
+            "OP-0260"
           ],
           "reachable": true
         },
@@ -520,8 +520,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0257",
-            "OP-0258"
+            "OP-0261",
+            "OP-0262"
           ],
           "reachable": true
         },
@@ -537,8 +537,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0259",
-            "OP-0260"
+            "OP-0263",
+            "OP-0264"
           ],
           "reachable": true
         }
@@ -624,7 +624,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0314"
+            "OP-0318"
           ],
           "reachable": true
         }
@@ -654,7 +654,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0314"
+            "OP-0318"
           ],
           "reachable": true
         }
@@ -699,7 +699,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0333"
+            "OP-0337"
           ],
           "reachable": false
         }
@@ -730,8 +730,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0319",
-            "OP-0320"
+            "OP-0323",
+            "OP-0324"
           ],
           "reachable": false
         },
@@ -746,7 +746,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0321"
+            "OP-0325"
           ],
           "reachable": false
         }
@@ -791,8 +791,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0297",
-            "OP-0298"
+            "OP-0301",
+            "OP-0302"
           ],
           "reachable": false
         }
@@ -823,8 +823,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0293",
-            "OP-0294"
+            "OP-0297",
+            "OP-0298"
           ],
           "reachable": false
         },
@@ -857,8 +857,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0082",
-            "OP-0083"
+            "OP-0086",
+            "OP-0087"
           ],
           "reachable": false
         },
@@ -888,7 +888,7 @@
             "EXTERNAL-CALLER"
           ],
           "opIds": [
-            "OP-0355"
+            "OP-0359"
           ],
           "reachable": true
         },
@@ -903,7 +903,7 @@
             "EXTERNAL-CALLER"
           ],
           "opIds": [
-            "OP-0349"
+            "OP-0353"
           ],
           "reachable": true
         }
@@ -933,7 +933,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0301"
+            "OP-0305"
           ],
           "reachable": false
         }
@@ -998,7 +998,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0180"
+            "OP-0184"
           ],
           "reachable": true
         },
@@ -1013,7 +1013,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0182"
+            "OP-0186"
           ],
           "reachable": true
         }
@@ -1117,7 +1117,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0244"
+            "OP-0248"
           ],
           "reachable": false
         },
@@ -1132,7 +1132,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0282"
+            "OP-0286"
           ],
           "reachable": false
         }
@@ -1162,7 +1162,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0144"
+            "OP-0148"
           ],
           "reachable": true
         },
@@ -1177,7 +1177,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0142"
+            "OP-0146"
           ],
           "reachable": true
         },
@@ -1192,7 +1192,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0145"
+            "OP-0149"
           ],
           "reachable": true
         },
@@ -1207,7 +1207,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0140"
+            "OP-0144"
           ],
           "reachable": true
         }
@@ -1238,8 +1238,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0088",
-            "OP-0089"
+            "OP-0092",
+            "OP-0093"
           ],
           "reachable": true
         },
@@ -1254,7 +1254,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0100"
+            "OP-0104"
           ],
           "reachable": true
         }
@@ -1285,34 +1285,44 @@
       "id": "FP-A19",
       "capability": "Support / help-desk tickets",
       "declaredInvoke": "no",
-      "grade": "UNSUPPORTED-ENDPOINT",
+      "grade": "SUPPORTED",
       "endpoints": [
         {
           "declared": "/admin/support/tickets",
-          "status": "ABSENT",
-          "methods": [],
-          "classes": [],
-          "opIds": [],
-          "reachable": false
+          "status": "EXACT",
+          "path": "/admin/support/tickets",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0081"
+          ],
+          "reachable": true
         },
         {
           "declared": "/admin/support/tickets/{X}/messages",
-          "status": "AMBIGUOUS",
-          "candidates": [
-            "/messages/conversations/{X}/messages",
-            "/v1/messages"
+          "status": "EXACT",
+          "path": "/admin/support/tickets/{X}/messages",
+          "methods": [
+            "POST"
           ],
-          "methods": [],
-          "classes": [],
-          "opIds": [],
-          "reachable": false
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0084"
+          ],
+          "reachable": true
         }
       ],
       "counts": {
-        "ok": 0,
+        "ok": 2,
         "unreachable": 0,
-        "absent": 1,
-        "ambiguous": 1
+        "absent": 0,
+        "ambiguous": 0
       },
       "classification": "MOCK / FABRICATED STATE"
     },
@@ -1333,7 +1343,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0328"
+            "OP-0332"
           ],
           "reachable": true
         },
@@ -1348,7 +1358,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0330"
+            "OP-0334"
           ],
           "reachable": true
         },
@@ -1393,7 +1403,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0307"
+            "OP-0311"
           ],
           "reachable": false
         },
@@ -1409,8 +1419,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0311",
-            "OP-0312"
+            "OP-0315",
+            "OP-0316"
           ],
           "reachable": false
         },
@@ -1425,7 +1435,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0305"
+            "OP-0309"
           ],
           "reachable": false
         },
@@ -1440,7 +1450,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0302"
+            "OP-0306"
           ],
           "reachable": false
         }
@@ -1529,7 +1539,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0285"
+            "OP-0289"
           ],
           "reachable": true
         },
@@ -1544,7 +1554,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0356"
+            "OP-0360"
           ],
           "reachable": true
         },
@@ -1559,7 +1569,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0132"
+            "OP-0136"
           ],
           "reachable": false
         }
@@ -1705,8 +1715,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0168",
-            "OP-0169"
+            "OP-0172",
+            "OP-0173"
           ],
           "reachable": true
         }
@@ -1737,8 +1747,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0174",
-            "OP-0175"
+            "OP-0178",
+            "OP-0179"
           ],
           "reachable": true
         }
@@ -1806,8 +1816,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0204",
-            "OP-0205"
+            "OP-0208",
+            "OP-0209"
           ],
           "reachable": true
         },
@@ -1822,7 +1832,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0207"
+            "OP-0211"
           ],
           "reachable": true
         },
@@ -1837,7 +1847,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0211"
+            "OP-0215"
           ],
           "reachable": true
         },
@@ -1853,8 +1863,8 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0208",
-            "OP-0209"
+            "OP-0212",
+            "OP-0213"
           ],
           "reachable": false
         },
@@ -1869,7 +1879,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0210"
+            "OP-0214"
           ],
           "reachable": false
         }
@@ -1900,8 +1910,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0219",
-            "OP-0220"
+            "OP-0223",
+            "OP-0224"
           ],
           "reachable": true
         },
@@ -1916,7 +1926,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0222"
+            "OP-0226"
           ],
           "reachable": true
         },
@@ -1931,7 +1941,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0226"
+            "OP-0230"
           ],
           "reachable": true
         }
@@ -1961,7 +1971,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0180"
+            "OP-0184"
           ],
           "reachable": true
         },
@@ -1976,7 +1986,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0182"
+            "OP-0186"
           ],
           "reachable": true
         },
@@ -1991,7 +2001,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0181"
+            "OP-0185"
           ],
           "reachable": true
         }
@@ -2021,7 +2031,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0165"
+            "OP-0169"
           ],
           "reachable": true
         }
@@ -2078,7 +2088,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0218"
+            "OP-0222"
           ],
           "reachable": true
         },
@@ -2181,7 +2191,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0339"
+            "OP-0343"
           ],
           "reachable": true
         }
@@ -2241,9 +2251,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0340",
-            "OP-0341",
-            "OP-0342"
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
           ],
           "reachable": true
         }
@@ -2273,7 +2283,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0344"
+            "OP-0348"
           ],
           "reachable": true
         },
@@ -2288,7 +2298,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0345"
+            "OP-0349"
           ],
           "reachable": true
         },
@@ -2305,9 +2315,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0340",
-            "OP-0341",
-            "OP-0342"
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
           ],
           "reachable": true
         }
@@ -2332,7 +2342,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "PARTIAL PARITY"
+      "classification": "MISSING"
     },
     {
       "id": "FP-C07",
@@ -2351,7 +2361,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0343"
+            "OP-0347"
           ],
           "reachable": true
         }
@@ -2381,7 +2391,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0264"
+            "OP-0268"
           ],
           "reachable": true
         },
@@ -2396,7 +2406,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0268"
+            "OP-0272"
           ],
           "reachable": true
         }
@@ -2440,7 +2450,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0264"
+            "OP-0268"
           ],
           "reachable": true
         },
@@ -2455,7 +2465,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0267"
+            "OP-0271"
           ],
           "reachable": true
         }
@@ -2507,7 +2517,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0164"
+            "OP-0168"
           ],
           "reachable": false
         }
@@ -2644,7 +2654,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0359"
+            "OP-0363"
           ],
           "reachable": true
         },
@@ -2732,8 +2742,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0230",
-            "OP-0231"
+            "OP-0234",
+            "OP-0235"
           ],
           "reachable": true
         }
@@ -2756,7 +2766,9 @@
           "declared": "/messages",
           "status": "AMBIGUOUS",
           "candidates": [
+            "/admin/support/tickets/{X}/messages",
             "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
             "/v1/messages"
           ],
           "methods": [],
@@ -2790,7 +2802,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0359"
+            "OP-0363"
           ],
           "reachable": true
         },
@@ -2870,11 +2882,11 @@
     {
       "id": "FP-E06",
       "capability": "Profile photo crop / zoom",
-      "declaredInvoke": "no",
+      "declaredInvoke": "yes",
       "grade": "UNSUPPORTED-ENDPOINT",
       "endpoints": [
         {
-          "declared": "/storage/signed-upload-url",
+          "declared": "/resumes/X (PATCH, photo field)",
           "status": "ABSENT",
           "methods": [],
           "classes": [],
@@ -2888,7 +2900,7 @@
         "absent": 1,
         "ambiguous": 0
       },
-      "classification": "MISSING"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-E07",
@@ -2930,7 +2942,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0363"
+            "OP-0367"
           ],
           "reachable": true
         },
@@ -2945,7 +2957,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0364"
+            "OP-0368"
           ],
           "reachable": true
         },
@@ -2960,7 +2972,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0365"
+            "OP-0369"
           ],
           "reachable": true
         }
@@ -2990,7 +3002,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0133"
+            "OP-0137"
           ],
           "reachable": true
         },
@@ -3007,9 +3019,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0134",
-            "OP-0135",
-            "OP-0136"
+            "OP-0138",
+            "OP-0139",
+            "OP-0140"
           ],
           "reachable": true
         },
@@ -3024,7 +3036,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0236"
+            "OP-0240"
           ],
           "reachable": true
         }
@@ -3054,7 +3066,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0227"
+            "OP-0231"
           ],
           "reachable": false
         },
@@ -3069,7 +3081,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0228"
+            "OP-0232"
           ],
           "reachable": true
         },
@@ -3084,7 +3096,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0229"
+            "OP-0233"
           ],
           "reachable": true
         }
@@ -3116,9 +3128,9 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0360",
-            "OP-0361",
-            "OP-0362"
+            "OP-0364",
+            "OP-0365",
+            "OP-0366"
           ],
           "reachable": true
         }
@@ -3148,7 +3160,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0228"
+            "OP-0232"
           ],
           "reachable": true
         }
@@ -3178,7 +3190,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0227"
+            "OP-0231"
           ],
           "reachable": false
         },
@@ -3193,7 +3205,7 @@
             "UNREACHABLE"
           ],
           "opIds": [
-            "OP-0346"
+            "OP-0350"
           ],
           "reachable": false
         }
@@ -3223,7 +3235,7 @@
     {
       "id": "FP-E14",
       "capability": "Bullet-point quality/health cards and role health checks",
-      "declaredInvoke": "no",
+      "declaredInvoke": "n/a",
       "grade": "SUPPORTED",
       "endpoints": [],
       "counts": {
@@ -3232,7 +3244,7 @@
         "absent": 0,
         "ambiguous": 0
       },
-      "classification": "MISSING"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-E15",
@@ -3274,7 +3286,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0129"
+            "OP-0133"
           ],
           "reachable": true
         },
@@ -3289,7 +3301,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0280"
+            "OP-0284"
           ],
           "reachable": true
         }
@@ -3343,8 +3355,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0259",
-            "OP-0260"
+            "OP-0263",
+            "OP-0264"
           ],
           "reachable": true
         }
@@ -3367,7 +3379,9 @@
           "declared": "/messages",
           "status": "AMBIGUOUS",
           "candidates": [
+            "/admin/support/tickets/{X}/messages",
             "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
             "/v1/messages"
           ],
           "methods": [],
@@ -3416,8 +3430,8 @@
             "INDIRECTLY-REACHABLE"
           ],
           "opIds": [
-            "OP-0158",
-            "OP-0159"
+            "OP-0162",
+            "OP-0163"
           ],
           "reachable": true
         },
@@ -3433,8 +3447,8 @@
             "INDIRECTLY-REACHABLE"
           ],
           "opIds": [
-            "OP-0160",
-            "OP-0161"
+            "OP-0164",
+            "OP-0165"
           ],
           "reachable": true
         }
@@ -3465,8 +3479,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0154",
-            "OP-0155"
+            "OP-0158",
+            "OP-0159"
           ],
           "reachable": true
         },
@@ -3482,8 +3496,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0156",
-            "OP-0157"
+            "OP-0160",
+            "OP-0161"
           ],
           "reachable": true
         },
@@ -3499,8 +3513,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0204",
-            "OP-0205"
+            "OP-0208",
+            "OP-0209"
           ],
           "reachable": true
         },
@@ -3516,8 +3530,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0174",
-            "OP-0175"
+            "OP-0178",
+            "OP-0179"
           ],
           "reachable": true
         }
@@ -3622,7 +3636,7 @@
             "INDIRECTLY-REACHABLE"
           ],
           "opIds": [
-            "OP-0246"
+            "OP-0250"
           ],
           "reachable": true
         }
@@ -3859,7 +3873,7 @@
             "EXTERNAL-CALLER"
           ],
           "opIds": [
-            "OP-0349"
+            "OP-0353"
           ],
           "reachable": true
         }
@@ -4044,8 +4058,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0255",
-            "OP-0256"
+            "OP-0259",
+            "OP-0260"
           ],
           "reachable": true
         },
@@ -4061,8 +4075,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0257",
-            "OP-0258"
+            "OP-0261",
+            "OP-0262"
           ],
           "reachable": true
         },
@@ -4078,8 +4092,8 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0259",
-            "OP-0260"
+            "OP-0263",
+            "OP-0264"
           ],
           "reachable": true
         }
@@ -4109,7 +4123,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0238"
+            "OP-0242"
           ],
           "reachable": true
         },
@@ -4124,7 +4138,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0264"
+            "OP-0268"
           ],
           "reachable": true
         },
@@ -4139,7 +4153,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0268"
+            "OP-0272"
           ],
           "reachable": true
         }
@@ -4191,7 +4205,7 @@
             "UI-REACHABLE"
           ],
           "opIds": [
-            "OP-0314"
+            "OP-0318"
           ],
           "reachable": true
         }
@@ -4207,16 +4221,105 @@
     {
       "id": "FP-G24",
       "capability": "In-app support surface and input validation modals",
-      "declaredInvoke": "no",
-      "grade": "SUPPORTED",
-      "endpoints": [],
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "GET /support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /support/tickets/X/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /admin/support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /admin/support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /admin/support/tickets/X/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "PATCH /admin/support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
       "counts": {
         "ok": 0,
         "unreachable": 0,
-        "absent": 0,
-        "ambiguous": 0
+        "absent": 3,
+        "ambiguous": 5
       },
-      "classification": "MISSING"
+      "classification": "PARTIAL PARITY"
     },
     {
       "id": "FP-G25",
@@ -4251,6 +4354,6 @@
     "withUnsupportedEndpoint": 30,
     "withUnreachableEndpoint": 16,
     "fullySupported": 67,
-    "rowsWithNoDeclaredEndpoint": 38
+    "rowsWithNoDeclaredEndpoint": 37
   }
 }

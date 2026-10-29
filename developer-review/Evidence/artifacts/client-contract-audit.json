@@ -1,0 +1,5518 @@
+{
+  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "generatedAt": "2026-10-29T07:20:46.330Z",
+  "clientFilesScanned": 204,
+  "callSites": 212,
+  "backendRegistrationsParsed": 413,
+  "backendRegisterAgreement": {
+    "registerOperations": 393,
+    "parsedRaw": 413,
+    "parsedDistinct": 399,
+    "shared": 393,
+    "onlyInParser": [
+      "GET /v1/models",
+      "GET /llms.txt",
+      "GET /llms-full.txt",
+      "GET /sitemap.xml",
+      "GET /public/custom-pages.json",
+      "GET /public/trusted-by.json"
+    ],
+    "onlyInRegister": [],
+    "note": "The register expands array-form and dynamic routes differently from this parser; the shared set is the agreement measure, the two exclusives are listed rather than reconciled silently."
+  },
+  "tally": {
+    "REGISTERED_WITH_CONTRACT_MISMATCH": 8,
+    "REGISTERED_AND_MATCHED": 190,
+    "NO_REGISTERED_OPERATION": 14
+  },
+  "distinctGapPaths": 15,
+  "falseSuccessSites": 12,
+  "calls": [
+    {
+      "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+      "line": 97,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/blog/posts",
+      "path": "/blog/posts",
+      "matchPaths": [
+        "/api/blog/posts",
+        "/blog/posts"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/blog/posts",
+        "file": "backend/index.js",
+        "line": 6424,
+        "raw": "/api/admin/blog/posts",
+        "shape": "/api/admin/blog/posts"
+      },
+      "note": "same tail \"blog/posts\" exists at GET /api/admin/blog/posts",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+      "line": 126,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/blog/posts/${postId}",
+      "path": "/blog/posts/{X}",
+      "matchPaths": [
+        "/api/blog/posts/{X}",
+        "/blog/posts/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/blog/posts/:postId",
+        "file": "backend/index.js",
+        "line": 3388,
+        "raw": "/api/admin/blog/posts/:postId",
+        "shape": "/api/admin/blog/posts/{X}"
+      },
+      "note": "same tail \"posts/{X}\" exists at PATCH /api/admin/blog/posts/:postId",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 75,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/email/admin/settings",
+      "path": "/email/admin/settings",
+      "matchPaths": [
+        "/api/email/admin/settings",
+        "/email/admin/settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/email/admin/settings",
+        "file": "backend/routes/email.js",
+        "line": 1662,
+        "raw": "/admin/settings",
+        "mountedAt": "/api/email",
+        "shape": "/api/email/admin/settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 76,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/email/admin/deliverability",
+      "path": "/email/admin/deliverability",
+      "matchPaths": [
+        "/api/email/admin/deliverability",
+        "/email/admin/deliverability"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/email/admin/deliverability",
+        "file": "backend/routes/email.js",
+        "line": 1691,
+        "raw": "/admin/deliverability",
+        "mountedAt": "/api/email",
+        "shape": "/api/email/admin/deliverability"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 96,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/email/admin/test-connection",
+      "path": "/email/admin/test-connection",
+      "matchPaths": [
+        "/api/email/admin/test-connection",
+        "/email/admin/test-connection"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/email/admin/test-connection",
+        "file": "backend/routes/email.js",
+        "line": 1524,
+        "raw": "/admin/test-connection",
+        "mountedAt": "/api/email",
+        "shape": "/api/email/admin/test-connection"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 124,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/email/admin/save-smtp",
+      "path": "/email/admin/save-smtp",
+      "matchPaths": [
+        "/api/email/admin/save-smtp",
+        "/email/admin/save-smtp"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/email/admin/save-smtp",
+        "file": "backend/routes/email.js",
+        "line": 1829,
+        "raw": "/admin/save-smtp",
+        "mountedAt": "/api/email",
+        "shape": "/api/email/admin/save-smtp"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+      "line": 559,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/platform/operational-status/refresh",
+      "path": "/platform/operational-status/refresh",
+      "matchPaths": [
+        "/api/platform/operational-status/refresh",
+        "/platform/operational-status/refresh"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/operational-status/refresh",
+        "file": "backend/routes/platform.js",
+        "line": 403,
+        "raw": "/operational-status/refresh",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/operational-status/refresh"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+      "line": 568,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/platform/operational-status/${serviceId}/test",
+      "path": "/platform/operational-status/{X}/test",
+      "matchPaths": [
+        "/api/platform/operational-status/{X}/test",
+        "/platform/operational-status/{X}/test"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/operational-status/:serviceId/test",
+        "file": "backend/routes/platform.js",
+        "line": 368,
+        "raw": "/operational-status/:serviceId/test",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/operational-status/{X}/test"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 128,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/support/tickets",
+      "path": "/admin/support/tickets",
+      "matchPaths": [
+        "/api/admin/support/tickets",
+        "/admin/support/tickets"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/support/tickets",
+        "file": "backend/routes/support.js",
+        "line": 71,
+        "raw": "/tickets",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 157,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/support/tickets/${selectedTicket.id}/messages",
+      "path": "/admin/support/tickets/{X}/messages",
+      "matchPaths": [
+        "/api/admin/support/tickets/{X}/messages",
+        "/admin/support/tickets/{X}/messages"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/support/tickets/:ticketId/messages",
+        "file": "backend/routes/support.js",
+        "line": 95,
+        "raw": "/tickets/:ticketId/messages",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets/{X}/messages"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 188,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/admin/support/tickets/${selectedTicket.id}",
+      "path": "/admin/support/tickets/{X}",
+      "matchPaths": [
+        "/api/admin/support/tickets/{X}",
+        "/admin/support/tickets/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/support/tickets/:ticketId",
+        "file": "backend/routes/support.js",
+        "line": 110,
+        "raw": "/tickets/:ticketId",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets/{X}"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 152,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/employer-applications/${appId}/verify",
+      "path": "/admin/employer-applications/{X}/verify",
+      "matchPaths": [
+        "/api/admin/employer-applications/{X}/verify",
+        "/admin/employer-applications/{X}/verify"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 167,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/employer-applications/${appId}/verify",
+      "path": "/admin/employer-applications/{X}/verify",
+      "matchPaths": [
+        "/api/admin/employer-applications/{X}/verify",
+        "/admin/employer-applications/{X}/verify"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 184,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/jobs/${jobId}/moderate",
+      "path": "/admin/jobs/{X}/moderate",
+      "matchPaths": [
+        "/api/admin/jobs/{X}/moderate",
+        "/admin/jobs/{X}/moderate"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 57,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/health-summary",
+      "path": "/admin/health-summary",
+      "matchPaths": [
+        "/api/admin/health-summary",
+        "/admin/health-summary"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/health-summary",
+        "file": "backend/index.js",
+        "line": 3446,
+        "raw": "/api/admin/health-summary",
+        "shape": "/api/admin/health-summary"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 88,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/system-health-settings",
+      "path": "/admin/system-health-settings",
+      "matchPaths": [
+        "/api/admin/system-health-settings",
+        "/admin/system-health-settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/system-health-settings",
+        "file": "backend/index.js",
+        "line": 3487,
+        "raw": "/api/admin/system-health-settings",
+        "shape": "/api/admin/system-health-settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 122,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/operations/backup",
+      "path": "/admin/operations/backup",
+      "matchPaths": [
+        "/api/admin/operations/backup",
+        "/admin/operations/backup"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 136,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/operations/cache-clear",
+      "path": "/admin/operations/cache-clear",
+      "matchPaths": [
+        "/api/admin/operations/cache-clear",
+        "/admin/operations/cache-clear"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 138,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/platform/queues",
+      "path": "/platform/queues",
+      "matchPaths": [
+        "/api/platform/queues",
+        "/platform/queues"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/platform/queues",
+        "file": "backend/routes/platform.js",
+        "line": 465,
+        "raw": "/queues",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/queues"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 138,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/queues",
+      "path": "/admin/queues",
+      "matchPaths": [
+        "/api/admin/queues",
+        "/admin/queues"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 173,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/platform/queues/retry",
+      "path": "/platform/queues/retry",
+      "matchPaths": [
+        "/api/platform/queues/retry",
+        "/platform/queues/retry"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/queues/retry",
+        "file": "backend/routes/platform.js",
+        "line": 504,
+        "raw": "/queues/retry",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/queues/retry"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 173,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/queues/${queueName}/retry",
+      "path": "/admin/queues/{X}/retry",
+      "matchPaths": [
+        "/api/admin/queues/{X}/retry",
+        "/admin/queues/{X}/retry"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 185,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/platform/queues/retry",
+      "path": "/platform/queues/retry",
+      "matchPaths": [
+        "/api/platform/queues/retry",
+        "/platform/queues/retry"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/queues/retry",
+        "file": "backend/routes/platform.js",
+        "line": 504,
+        "raw": "/queues/retry",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/queues/retry"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 186,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/queues/dead-letter-queue/retry",
+      "path": "/admin/queues/dead-letter-queue/retry",
+      "matchPaths": [
+        "/api/admin/queues/dead-letter-queue/retry",
+        "/admin/queues/dead-letter-queue/retry"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 204,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/queues/dead-letter-queue/purge",
+      "path": "/admin/queues/dead-letter-queue/purge",
+      "matchPaths": [
+        "/api/admin/queues/dead-letter-queue/purge",
+        "/admin/queues/dead-letter-queue/purge"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 262,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/queues/dead-letter-queue/retry",
+      "path": "/admin/queues/dead-letter-queue/retry",
+      "matchPaths": [
+        "/api/admin/queues/dead-letter-queue/retry",
+        "/admin/queues/dead-letter-queue/retry"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 285,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/queues/dead-letter-queue/purge",
+      "path": "/admin/queues/dead-letter-queue/purge",
+      "matchPaths": [
+        "/api/admin/queues/dead-letter-queue/purge",
+        "/admin/queues/dead-letter-queue/purge"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 604,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/api/admin/payment-settings",
+      "path": "/api/admin/payment-settings",
+      "matchPaths": [
+        "/api/admin/payment-settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/payment-settings",
+        "file": "backend/index.js",
+        "line": 3303,
+        "raw": "/api/admin/payment-settings",
+        "shape": "/api/admin/payment-settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 626,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/payment/test-provider",
+      "path": "/api/admin/payment/test-provider",
+      "matchPaths": [
+        "/api/admin/payment/test-provider"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/payment/test-provider",
+        "file": "backend/index.js",
+        "line": 4702,
+        "raw": "/api/admin/payment/test-provider",
+        "shape": "/api/admin/payment/test-provider"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 661,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/payment-settings",
+      "path": "/api/admin/payment-settings",
+      "matchPaths": [
+        "/api/admin/payment-settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/payment-settings",
+        "file": "backend/index.js",
+        "line": 4248,
+        "raw": "/api/admin/payment-settings",
+        "shape": "/api/admin/payment-settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 864,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/api/admin/settings/branding",
+      "path": "/api/admin/settings/branding",
+      "matchPaths": [
+        "/api/admin/settings/branding"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3825,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 880,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/branding",
+      "path": "/api/admin/settings/branding",
+      "matchPaths": [
+        "/api/admin/settings/branding"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 883,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/geoSeo",
+      "path": "/api/admin/settings/geoSeo",
+      "matchPaths": [
+        "/api/admin/settings/geoSeo"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 886,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/llmGeo",
+      "path": "/api/admin/settings/llmGeo",
+      "matchPaths": [
+        "/api/admin/settings/llmGeo"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1009,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/api/admin/settings/integrations",
+      "path": "/api/admin/settings/integrations",
+      "matchPaths": [
+        "/api/admin/settings/integrations"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3825,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1024,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/integrations",
+      "path": "/api/admin/settings/integrations",
+      "matchPaths": [
+        "/api/admin/settings/integrations"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1179,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/templateManager",
+      "path": "/api/admin/settings/templateManager",
+      "matchPaths": [
+        "/api/admin/settings/templateManager"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1182,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/gdpr",
+      "path": "/api/admin/settings/gdpr",
+      "matchPaths": [
+        "/api/admin/settings/gdpr"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1185,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/api/admin/settings/codeInjection",
+      "path": "/api/admin/settings/codeInjection",
+      "matchPaths": [
+        "/api/admin/settings/codeInjection"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/settings/:category",
+        "file": "backend/index.js",
+        "line": 3855,
+        "raw": "/api/admin/settings/:category",
+        "shape": "/api/admin/settings/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 175,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/users",
+      "path": "/admin/users",
+      "matchPaths": [
+        "/api/admin/users",
+        "/admin/users"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/users",
+        "file": "backend/routes/adminUsers.js",
+        "line": 101,
+        "raw": "/",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 206,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/users/${user.id}/status",
+      "path": "/admin/users/{X}/status",
+      "matchPaths": [
+        "/api/admin/users/{X}/status",
+        "/admin/users/{X}/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/job-applications/:applicationId/status",
+        "file": "backend/index.js",
+        "line": 1687,
+        "raw": "/api/job-applications/:applicationId/status",
+        "shape": "/api/job-applications/{X}/status"
+      },
+      "note": "same tail \"{X}/status\" exists at PATCH /api/job-applications/:applicationId/status",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 230,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/platform/role-view-audit",
+      "path": "/platform/role-view-audit",
+      "matchPaths": [
+        "/api/platform/role-view-audit",
+        "/platform/role-view-audit"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/role-view-audit",
+        "file": "backend/routes/platform.js",
+        "line": 2027,
+        "raw": "/role-view-audit",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/role-view-audit"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 246,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/admin/users/${selectedUser.id}",
+      "path": "/admin/users/{X}",
+      "matchPaths": [
+        "/api/admin/users/{X}",
+        "/admin/users/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/users/:uid",
+        "file": "backend/routes/adminUsers.js",
+        "line": 673,
+        "raw": "/:uid",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 262,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/users/${selectedUser.id}/send-password-reset",
+      "path": "/admin/users/{X}/send-password-reset",
+      "matchPaths": [
+        "/api/admin/users/{X}/send-password-reset",
+        "/admin/users/{X}/send-password-reset"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/users/:uid/send-password-reset",
+        "file": "backend/routes/adminUsers.js",
+        "line": 1000,
+        "raw": "/:uid/send-password-reset",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users/{X}/send-password-reset"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 280,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/users/${selectedUser.id}/revoke-sessions",
+      "path": "/admin/users/{X}/revoke-sessions",
+      "matchPaths": [
+        "/api/admin/users/{X}/revoke-sessions",
+        "/admin/users/{X}/revoke-sessions"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/users/:uid/revoke-sessions",
+        "file": "backend/routes/adminUsers.js",
+        "line": 1059,
+        "raw": "/:uid/revoke-sessions",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users/{X}/revoke-sessions"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 354,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/users",
+      "path": "/admin/users",
+      "matchPaths": [
+        "/api/admin/users",
+        "/admin/users"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/users",
+        "file": "backend/routes/adminUsers.js",
+        "line": 312,
+        "raw": "/",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": true,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+      "line": 232,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/ai-settings",
+      "path": "/admin/ai-settings",
+      "matchPaths": [
+        "/api/admin/ai-settings",
+        "/admin/ai-settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/ai-settings",
+        "file": "backend/index.js",
+        "line": 3996,
+        "raw": "/api/admin/ai-settings",
+        "shape": "/api/admin/ai-settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+      "line": 305,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/ai-settings",
+      "path": "/admin/ai-settings",
+      "matchPaths": [
+        "/api/admin/ai-settings",
+        "/admin/ai-settings"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/ai-settings",
+        "file": "backend/index.js",
+        "line": 3321,
+        "raw": "/api/admin/ai-settings",
+        "shape": "/api/admin/ai-settings"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts",
+      "line": 119,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/ai/test-provider",
+      "path": "/admin/ai/test-provider",
+      "matchPaths": [
+        "/api/admin/ai/test-provider",
+        "/admin/ai/test-provider"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/ai/test-provider",
+        "file": "backend/index.js",
+        "line": 4020,
+        "raw": "/api/admin/ai/test-provider",
+        "shape": "/api/admin/ai/test-provider"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts",
+      "line": 306,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/ai/test-provider",
+      "path": "/admin/ai/test-provider",
+      "matchPaths": [
+        "/api/admin/ai/test-provider",
+        "/admin/ai/test-provider"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/ai/test-provider",
+        "file": "backend/index.js",
+        "line": 4020,
+        "raw": "/api/admin/ai/test-provider",
+        "shape": "/api/admin/ai/test-provider"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 41,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/ai/quota-stats",
+      "path": "/admin/ai/quota-stats",
+      "matchPaths": [
+        "/api/admin/ai/quota-stats",
+        "/admin/ai/quota-stats"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/ai/quota-stats",
+        "file": "backend/index.js",
+        "line": 4047,
+        "raw": "/api/admin/ai/quota-stats",
+        "shape": "/api/admin/ai/quota-stats"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 47,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/freellmapi/status",
+      "path": "/freellmapi/status",
+      "matchPaths": [
+        "/api/freellmapi/status",
+        "/freellmapi/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/freellmapi/status",
+        "file": "backend/index.js",
+        "line": 3261,
+        "raw": "/api/freellmapi/status",
+        "shape": "/api/freellmapi/status"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 48,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/freellmapi/metrics",
+      "path": "/freellmapi/metrics",
+      "matchPaths": [
+        "/api/freellmapi/metrics",
+        "/freellmapi/metrics"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/freellmapi/metrics",
+        "file": "backend/index.js",
+        "line": 3266,
+        "raw": "/api/freellmapi/metrics",
+        "shape": "/api/freellmapi/metrics"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 76,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/ai/quota-limits",
+      "path": "/admin/ai/quota-limits",
+      "matchPaths": [
+        "/api/admin/ai/quota-limits",
+        "/admin/ai/quota-limits"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/ai/quota-limits",
+        "file": "backend/index.js",
+        "line": 4094,
+        "raw": "/api/admin/ai/quota-limits",
+        "shape": "/api/admin/ai/quota-limits"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 112,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/ai/reset-quota",
+      "path": "/admin/ai/reset-quota",
+      "matchPaths": [
+        "/api/admin/ai/reset-quota",
+        "/admin/ai/reset-quota"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/ai/reset-quota",
+        "file": "backend/index.js",
+        "line": 4117,
+        "raw": "/api/admin/ai/reset-quota",
+        "shape": "/api/admin/ai/reset-quota"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+      "line": 159,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/notify/email",
+      "path": "/notify/email",
+      "matchPaths": [
+        "/api/notify/email",
+        "/notify/email"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/employer/CompanyProfile.tsx",
+      "line": 176,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/employer/companies/${activeCompany.id}",
+      "path": "/employer/companies/{X}",
+      "matchPaths": [
+        "/api/employer/companies/{X}",
+        "/employer/companies/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/employer/companies/:companyId",
+        "file": "backend/index.js",
+        "line": 1928,
+        "raw": "/api/employer/companies/:companyId",
+        "shape": "/api/employer/companies/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/employer/CompanyProfile.tsx",
+      "line": 182,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/employer/companies",
+      "path": "/employer/companies",
+      "matchPaths": [
+        "/api/employer/companies",
+        "/employer/companies"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/employer/companies",
+        "file": "backend/index.js",
+        "line": 1916,
+        "raw": "/api/employer/companies",
+        "shape": "/api/employer/companies"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 92,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes",
+      "path": "/resumes",
+      "matchPaths": [
+        "/api/resumes",
+        "/resumes"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes",
+        "file": "backend/routes/resumes.js",
+        "line": 21,
+        "raw": "/",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 164,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/generate-ai-cover-letter",
+      "path": "/generate-ai-cover-letter",
+      "matchPaths": [
+        "/api/generate-ai-cover-letter",
+        "/generate-ai-cover-letter"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/generate-ai-cover-letter",
+        "file": "backend/index.js",
+        "line": 5343,
+        "raw": "/api/generate-ai-cover-letter",
+        "shape": "/api/generate-ai-cover-letter"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 225,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/jobs/${job.id}/applications",
+      "path": "/jobs/{X}/applications",
+      "matchPaths": [
+        "/api/jobs/{X}/applications",
+        "/jobs/{X}/applications"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/jobs/:jobId/applications",
+        "file": "backend/index.js",
+        "line": 1637,
+        "raw": "/api/jobs/:jobId/applications",
+        "shape": "/api/jobs/{X}/applications"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/layout/cuba-app-shell.tsx",
+      "line": 298,
+      "callee": "fetch",
+      "verb": "POST",
+      "raw": "/api/platform/role-view-audit",
+      "path": "/api/platform/role-view-audit",
+      "matchPaths": [
+        "/api/platform/role-view-audit"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/platform/role-view-audit",
+        "file": "backend/routes/platform.js",
+        "line": 2027,
+        "raw": "/role-view-audit",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/role-view-audit"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/components/ui/preview-modal.tsx",
+      "line": 168,
+      "callee": "fetch",
+      "verb": "POST",
+      "raw": "/api/export-docx",
+      "path": "/api/export-docx",
+      "matchPaths": [
+        "/api/export-docx"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/export-docx",
+        "file": "backend/index.js",
+        "line": 5167,
+        "raw": "/api/export-docx",
+        "shape": "/api/export-docx"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 198,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/employer/jobs",
+      "path": "/employer/jobs",
+      "matchPaths": [
+        "/api/employer/jobs",
+        "/employer/jobs"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/employer/jobs",
+        "file": "backend/index.js",
+        "line": 1963,
+        "raw": "/api/employer/jobs",
+        "shape": "/api/employer/jobs"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 210,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/employer/companies",
+      "path": "/employer/companies",
+      "matchPaths": [
+        "/api/employer/companies",
+        "/employer/companies"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/employer/companies",
+        "file": "backend/index.js",
+        "line": 1896,
+        "raw": "/api/employer/companies",
+        "shape": "/api/employer/companies"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 223,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/jobs/${jobId}/applications",
+      "path": "/jobs/{X}/applications",
+      "matchPaths": [
+        "/api/jobs/{X}/applications",
+        "/jobs/{X}/applications"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/jobs/:jobId/applications",
+        "file": "backend/index.js",
+        "line": 1728,
+        "raw": "/api/jobs/:jobId/applications",
+        "shape": "/api/jobs/{X}/applications"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 237,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/employer/jobs/${jobId}/applications/${applicationId}/resume",
+      "path": "/employer/jobs/{X}/applications/{X}/resume",
+      "matchPaths": [
+        "/api/employer/jobs/{X}/applications/{X}/resume",
+        "/employer/jobs/{X}/applications/{X}/resume"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+        "file": "backend/index.js",
+        "line": 1748,
+        "raw": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+        "shape": "/api/employer/jobs/{X}/applications/{X}/resume"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 270,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/employer/jobs",
+      "path": "/employer/jobs",
+      "matchPaths": [
+        "/api/employer/jobs",
+        "/employer/jobs"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/employer/jobs",
+        "file": "backend/index.js",
+        "line": 1973,
+        "raw": "/api/employer/jobs",
+        "shape": "/api/employer/jobs"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 284,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/employer/jobs/${id}",
+      "path": "/employer/jobs/{X}",
+      "matchPaths": [
+        "/api/employer/jobs/{X}",
+        "/employer/jobs/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/employer/jobs/:jobId",
+        "file": "backend/index.js",
+        "line": 1992,
+        "raw": "/api/employer/jobs/:jobId",
+        "shape": "/api/employer/jobs/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 304,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/job-applications/${applicationId}/status",
+      "path": "/job-applications/{X}/status",
+      "matchPaths": [
+        "/api/job-applications/{X}/status",
+        "/job-applications/{X}/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/job-applications/:applicationId/status",
+        "file": "backend/index.js",
+        "line": 1687,
+        "raw": "/api/job-applications/:applicationId/status",
+        "shape": "/api/job-applications/{X}/status"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 332,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/platform/public-config",
+      "path": "/platform/public-config",
+      "matchPaths": [
+        "/api/platform/public-config",
+        "/platform/public-config"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/platform/public-config",
+        "file": "backend/routes/platform.js",
+        "line": 227,
+        "raw": "/public-config",
+        "mountedAt": "/api/platform",
+        "shape": "/api/platform/public-config"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 360,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/users",
+      "path": "/admin/users",
+      "matchPaths": [
+        "/api/admin/users",
+        "/admin/users"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/users",
+        "file": "backend/routes/adminUsers.js",
+        "line": 101,
+        "raw": "/",
+        "mountedAt": "/api/admin/users",
+        "shape": "/api/admin/users"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 433,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/support/tickets",
+      "path": "/admin/support/tickets",
+      "matchPaths": [
+        "/api/admin/support/tickets",
+        "/admin/support/tickets"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/support/tickets",
+        "file": "backend/routes/support.js",
+        "line": 71,
+        "raw": "/tickets",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 444,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/admin/audit-logs",
+      "path": "/admin/audit-logs",
+      "matchPaths": [
+        "/api/admin/audit-logs",
+        "/admin/audit-logs"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/audit-logs",
+        "file": "backend/routes/adminAudit.js",
+        "line": 14,
+        "raw": "/audit-logs",
+        "mountedAt": "/api/admin",
+        "shape": "/api/admin/audit-logs"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 483,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/admin/support/tickets/${ticketId}/messages",
+      "path": "/admin/support/tickets/{X}/messages",
+      "matchPaths": [
+        "/api/admin/support/tickets/{X}/messages",
+        "/admin/support/tickets/{X}/messages"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/admin/support/tickets/:ticketId/messages",
+        "file": "backend/routes/support.js",
+        "line": 95,
+        "raw": "/tickets/:ticketId/messages",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets/{X}/messages"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 505,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/admin/support/tickets/${ticketId}",
+      "path": "/admin/support/tickets/{X}",
+      "matchPaths": [
+        "/api/admin/support/tickets/{X}",
+        "/admin/support/tickets/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/support/tickets/:ticketId",
+        "file": "backend/routes/support.js",
+        "line": 110,
+        "raw": "/tickets/:ticketId",
+        "mountedAt": "/api/admin/support",
+        "shape": "/api/admin/support/tickets/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 588,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/support/tickets",
+      "path": "/support/tickets",
+      "matchPaths": [
+        "/api/support/tickets",
+        "/support/tickets"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/support/tickets",
+        "file": "backend/routes/support.js",
+        "line": 30,
+        "raw": "/tickets",
+        "mountedAt": "/api/support",
+        "shape": "/api/support/tickets"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 599,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/support/tickets",
+      "path": "/support/tickets",
+      "matchPaths": [
+        "/api/support/tickets",
+        "/support/tickets"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/support/tickets",
+        "file": "backend/routes/support.js",
+        "line": 15,
+        "raw": "/tickets",
+        "mountedAt": "/api/support",
+        "shape": "/api/support/tickets"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 612,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/support/tickets/${ticketId}/messages",
+      "path": "/support/tickets/{X}/messages",
+      "matchPaths": [
+        "/api/support/tickets/{X}/messages",
+        "/support/tickets/{X}/messages"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/support/tickets/:ticketId/messages",
+        "file": "backend/routes/support.js",
+        "line": 54,
+        "raw": "/tickets/:ticketId/messages",
+        "mountedAt": "/api/support",
+        "shape": "/api/support/tickets/{X}/messages"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 166,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 179,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 40,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 219,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/account/delete",
+      "path": "/account/delete",
+      "matchPaths": [
+        "/api/account/delete",
+        "/account/delete"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/account/delete",
+        "file": "backend/index.js",
+        "line": 7038,
+        "raw": "/api/account/delete",
+        "shape": "/api/account/delete"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 227,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/users-data/mfa/disable",
+      "path": "/users-data/mfa/disable",
+      "matchPaths": [
+        "/api/users-data/mfa/disable",
+        "/users-data/mfa/disable"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/users-data/mfa/disable",
+        "file": "backend/routes/usersData.js",
+        "line": 149,
+        "raw": "/mfa/disable",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/mfa/disable"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 395,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/generate-content",
+      "path": "/generate-content",
+      "matchPaths": [
+        "/api/generate-content",
+        "/generate-content"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/generate-content",
+        "file": "backend/routes/ai.js",
+        "line": 1249,
+        "raw": "/generate-content",
+        "mountedAt": "/api",
+        "shape": "/api/generate-content"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 554,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/check-grammar",
+      "path": "/check-grammar",
+      "matchPaths": [
+        "/api/check-grammar",
+        "/check-grammar"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/check-grammar",
+        "file": "backend/routes/ai.js",
+        "line": 1204,
+        "raw": "/check-grammar",
+        "mountedAt": "/api",
+        "shape": "/api/check-grammar"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 563,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/parse-resume",
+      "path": "/parse-resume",
+      "matchPaths": [
+        "/api/parse-resume",
+        "/parse-resume"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/parse-resume",
+        "file": "backend/routes/ai.js",
+        "line": 1282,
+        "raw": "/parse-resume",
+        "mountedAt": "/api",
+        "shape": "/api/parse-resume"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 570,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/ai-usage",
+      "path": "/ai-usage",
+      "matchPaths": [
+        "/api/ai-usage",
+        "/ai-usage"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/ai-usage",
+        "file": "backend/routes/ai.js",
+        "line": 50,
+        "raw": "/ai-usage",
+        "mountedAt": "/api",
+        "shape": "/api/ai-usage"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/applications.ts",
+      "line": 82,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/jobs-data/applications/list",
+      "path": "/jobs-data/applications/list",
+      "matchPaths": [
+        "/api/jobs-data/applications/list",
+        "/jobs-data/applications/list"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/jobs-data/applications/list",
+        "file": "backend/routes/jobsData.js",
+        "line": 363,
+        "raw": "/applications/list",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/applications/list"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/applications.ts",
+      "line": 95,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/jobs-data/applications/${encodeURIComponent(application.id)}",
+      "path": "/jobs-data/applications/{X}",
+      "matchPaths": [
+        "/api/jobs-data/applications/{X}",
+        "/jobs-data/applications/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/jobs-data/applications/:id",
+        "file": "backend/routes/jobsData.js",
+        "line": 408,
+        "raw": "/applications/:id",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/applications/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 238,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/covers/${encodeURIComponent(id)}",
+      "path": "/covers/{X}",
+      "matchPaths": [
+        "/api/covers/{X}",
+        "/covers/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/covers/:id",
+        "file": "backend/routes/covers.js",
+        "line": 47,
+        "raw": "/:id",
+        "mountedAt": "/api/covers",
+        "shape": "/api/covers/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 303,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/generate-ai-cover-letter",
+      "path": "/generate-ai-cover-letter",
+      "matchPaths": [
+        "/api/generate-ai-cover-letter",
+        "/generate-ai-cover-letter"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/generate-ai-cover-letter",
+        "file": "backend/index.js",
+        "line": 5343,
+        "raw": "/api/generate-ai-cover-letter",
+        "shape": "/api/generate-ai-cover-letter"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 362,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/status",
+      "path": "/api/enterprise/status",
+      "matchPaths": [
+        "/api/enterprise/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/status",
+        "file": "backend/routes/enterprise.js",
+        "line": 22,
+        "raw": "/status",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/status"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 365,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/tenants",
+      "path": "/api/enterprise/tenants",
+      "matchPaths": [
+        "/api/enterprise/tenants"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/tenants",
+        "file": "backend/routes/enterprise.js",
+        "line": 336,
+        "raw": "/tenants",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/tenants"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 368,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/context",
+      "path": "/api/enterprise/context",
+      "matchPaths": [
+        "/api/enterprise/context"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/context",
+        "file": "backend/routes/enterprise.js",
+        "line": 386,
+        "raw": "/context",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/context"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 376,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/workspaces",
+      "path": "/api/enterprise/workspaces",
+      "matchPaths": [
+        "/api/enterprise/workspaces"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/workspaces",
+        "file": "backend/routes/enterprise.js",
+        "line": 388,
+        "raw": "/workspaces",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/workspaces"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 382,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/workspaces",
+      "path": "/api/enterprise/workspaces",
+      "matchPaths": [
+        "/api/enterprise/workspaces"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/workspaces",
+        "file": "backend/routes/enterprise.js",
+        "line": 404,
+        "raw": "/workspaces",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/workspaces"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 389,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/workspaces/${workspaceId}",
+      "path": "/api/enterprise/workspaces/{X}",
+      "matchPaths": [
+        "/api/enterprise/workspaces/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/workspaces/:workspaceId",
+        "file": "backend/routes/enterprise.js",
+        "line": 413,
+        "raw": "/workspaces/:workspaceId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/workspaces/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 396,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/workspaces/${workspaceId}/archive",
+      "path": "/api/enterprise/workspaces/{X}/archive",
+      "matchPaths": [
+        "/api/enterprise/workspaces/{X}/archive"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/workspaces/:workspaceId/archive",
+        "file": "backend/routes/enterprise.js",
+        "line": 422,
+        "raw": "/workspaces/:workspaceId/archive",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/workspaces/{X}/archive"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 402,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/workspaces/${workspaceId}/restore",
+      "path": "/api/enterprise/workspaces/{X}/restore",
+      "matchPaths": [
+        "/api/enterprise/workspaces/{X}/restore"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/workspaces/:workspaceId/restore",
+        "file": "backend/routes/enterprise.js",
+        "line": 431,
+        "raw": "/workspaces/:workspaceId/restore",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/workspaces/{X}/restore"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 408,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/memberships",
+      "path": "/api/enterprise/memberships",
+      "matchPaths": [
+        "/api/enterprise/memberships"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/memberships",
+        "file": "backend/routes/enterprise.js",
+        "line": 467,
+        "raw": "/memberships",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/memberships"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 413,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/memberships",
+      "path": "/api/enterprise/memberships",
+      "matchPaths": [
+        "/api/enterprise/memberships"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/memberships",
+        "file": "backend/routes/enterprise.js",
+        "line": 476,
+        "raw": "/memberships",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/memberships"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 420,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/memberships/${principalId}",
+      "path": "/api/enterprise/memberships/{X}",
+      "matchPaths": [
+        "/api/enterprise/memberships/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/memberships/:principalId",
+        "file": "backend/routes/enterprise.js",
+        "line": 489,
+        "raw": "/memberships/:principalId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/memberships/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 427,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/memberships/${principalId}/invitation-resend",
+      "path": "/api/enterprise/memberships/{X}/invitation-resend",
+      "matchPaths": [
+        "/api/enterprise/memberships/{X}/invitation-resend"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/memberships/:principalId/invitation-resend",
+        "file": "backend/routes/enterprise.js",
+        "line": 498,
+        "raw": "/memberships/:principalId/invitation-resend",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/memberships/{X}/invitation-resend"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 433,
+      "callee": "enterpriseRequest",
+      "verb": "DELETE",
+      "raw": "/api/enterprise/memberships/${principalId}",
+      "path": "/api/enterprise/memberships/{X}",
+      "matchPaths": [
+        "/api/enterprise/memberships/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/enterprise/memberships/:principalId",
+        "file": "backend/routes/enterprise.js",
+        "line": 511,
+        "raw": "/memberships/:principalId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/memberships/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 439,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/roles-matrix",
+      "path": "/api/enterprise/roles-matrix",
+      "matchPaths": [
+        "/api/enterprise/roles-matrix"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/roles-matrix",
+        "file": "backend/routes/enterprise.js",
+        "line": 345,
+        "raw": "/roles-matrix",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/roles-matrix"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 444,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/teams",
+      "path": "/api/enterprise/teams",
+      "matchPaths": [
+        "/api/enterprise/teams"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/teams",
+        "file": "backend/routes/enterprise.js",
+        "line": 671,
+        "raw": "/teams",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/teams"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 449,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/teams",
+      "path": "/api/enterprise/teams",
+      "matchPaths": [
+        "/api/enterprise/teams"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/teams",
+        "file": "backend/routes/enterprise.js",
+        "line": 684,
+        "raw": "/teams",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/teams"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 456,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/teams/${teamId}",
+      "path": "/api/enterprise/teams/{X}",
+      "matchPaths": [
+        "/api/enterprise/teams/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/teams/:teamId",
+        "file": "backend/routes/enterprise.js",
+        "line": 693,
+        "raw": "/teams/:teamId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/teams/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 463,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/teams/${teamId}/archive",
+      "path": "/api/enterprise/teams/{X}/archive",
+      "matchPaths": [
+        "/api/enterprise/teams/{X}/archive"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/teams/:teamId/archive",
+        "file": "backend/routes/enterprise.js",
+        "line": 702,
+        "raw": "/teams/:teamId/archive",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/teams/{X}/archive"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 469,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/teams/${teamId}/restore",
+      "path": "/api/enterprise/teams/{X}/restore",
+      "matchPaths": [
+        "/api/enterprise/teams/{X}/restore"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/teams/:teamId/restore",
+        "file": "backend/routes/enterprise.js",
+        "line": 711,
+        "raw": "/teams/:teamId/restore",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/teams/{X}/restore"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 475,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/configuration",
+      "path": "/api/enterprise/configuration",
+      "matchPaths": [
+        "/api/enterprise/configuration"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/configuration",
+        "file": "backend/routes/enterprise.js",
+        "line": 747,
+        "raw": "/configuration",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/configuration"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 480,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/configuration",
+      "path": "/api/enterprise/configuration",
+      "matchPaths": [
+        "/api/enterprise/configuration"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/configuration",
+        "file": "backend/routes/enterprise.js",
+        "line": 756,
+        "raw": "/configuration",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/configuration"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 487,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/usage/ai?days=${days}",
+      "path": "/api/enterprise/usage/ai",
+      "matchPaths": [
+        "/api/enterprise/usage/ai"
+      ],
+      "query": "days={X}",
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/usage/ai",
+        "file": "backend/routes/enterprise.js",
+        "line": 881,
+        "raw": "/usage/ai",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/usage/ai"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 492,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/usage/ai/events",
+      "path": "/api/enterprise/usage/ai/events",
+      "matchPaths": [
+        "/api/enterprise/usage/ai/events"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/usage/ai/events",
+        "file": "backend/routes/enterprise.js",
+        "line": 890,
+        "raw": "/usage/ai/events",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/usage/ai/events"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 497,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/audit",
+      "path": "/api/enterprise/audit",
+      "matchPaths": [
+        "/api/enterprise/audit"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/audit",
+        "file": "backend/routes/enterprise.js",
+        "line": 648,
+        "raw": "/audit",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/audit"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 503,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/resources?resourceType=${resourceType}",
+      "path": "/api/enterprise/resources",
+      "matchPaths": [
+        "/api/enterprise/resources"
+      ],
+      "query": "resourceType={X}",
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/resources",
+        "file": "backend/routes/enterprise.js",
+        "line": 899,
+        "raw": "/resources",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/resources"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 508,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/resources",
+      "path": "/api/enterprise/resources",
+      "matchPaths": [
+        "/api/enterprise/resources"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/resources",
+        "file": "backend/routes/enterprise.js",
+        "line": 911,
+        "raw": "/resources",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/resources"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 515,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/resources/${resourceId}",
+      "path": "/api/enterprise/resources/{X}",
+      "matchPaths": [
+        "/api/enterprise/resources/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/resources/:resourceId",
+        "file": "backend/routes/enterprise.js",
+        "line": 930,
+        "raw": "/resources/:resourceId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/resources/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 522,
+      "callee": "enterpriseRequest",
+      "verb": "DELETE",
+      "raw": "/api/enterprise/resources/${resourceId}",
+      "path": "/api/enterprise/resources/{X}",
+      "matchPaths": [
+        "/api/enterprise/resources/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/enterprise/resources/:resourceId",
+        "file": "backend/routes/enterprise.js",
+        "line": 940,
+        "raw": "/resources/:resourceId",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/resources/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 528,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/platform/status",
+      "path": "/api/platform/status",
+      "matchPaths": [
+        "/api/platform/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/platform/status",
+        "file": "backend/routes/adminPlatformOperations.js",
+        "line": 533,
+        "raw": "/platform/status",
+        "mountedAt": "/api/admin",
+        "shape": "/api/admin/platform/status"
+      },
+      "note": "same tail \"platform/status\" exists at GET /api/admin/platform/status",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 534,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/service-accounts",
+      "path": "/api/enterprise/service-accounts",
+      "matchPaths": [
+        "/api/enterprise/service-accounts"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/service-accounts",
+        "file": "backend/routes/enterprise.js",
+        "line": 538,
+        "raw": "/service-accounts",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/service-accounts"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 539,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/service-accounts",
+      "path": "/api/enterprise/service-accounts",
+      "matchPaths": [
+        "/api/enterprise/service-accounts"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/service-accounts",
+        "file": "backend/routes/enterprise.js",
+        "line": 520,
+        "raw": "/service-accounts",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/service-accounts"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 546,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/service-accounts/${serviceAccountId}/revoke",
+      "path": "/api/enterprise/service-accounts/{X}/revoke",
+      "matchPaths": [
+        "/api/enterprise/service-accounts/{X}/revoke"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/service-accounts/:serviceAccountId/revoke",
+        "file": "backend/routes/enterprise.js",
+        "line": 547,
+        "raw": "/service-accounts/:serviceAccountId/revoke",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/service-accounts/{X}/revoke"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 552,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/service-accounts/${serviceAccountId}/rotate",
+      "path": "/api/enterprise/service-accounts/{X}/rotate",
+      "matchPaths": [
+        "/api/enterprise/service-accounts/{X}/rotate"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/service-accounts/:serviceAccountId/rotate",
+        "file": "backend/routes/enterprise.js",
+        "line": 556,
+        "raw": "/service-accounts/:serviceAccountId/rotate",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/service-accounts/{X}/rotate"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 558,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/queue/status",
+      "path": "/api/enterprise/queue/status",
+      "matchPaths": [
+        "/api/enterprise/queue/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/queue/status",
+        "file": "backend/routes/enterprise.js",
+        "line": 994,
+        "raw": "/queue/status",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/queue/status"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 568,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/queue/replay",
+      "path": "/api/enterprise/queue/replay",
+      "matchPaths": [
+        "/api/enterprise/queue/replay"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/queue/replay",
+        "file": "backend/routes/enterprise.js",
+        "line": 1039,
+        "raw": "/queue/replay",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/queue/replay"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 575,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/observability/metrics",
+      "path": "/api/enterprise/observability/metrics",
+      "matchPaths": [
+        "/api/enterprise/observability/metrics"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/observability/metrics",
+        "file": "backend/routes/enterprise.js",
+        "line": 950,
+        "raw": "/observability/metrics",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/observability/metrics"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 580,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/data-plane/status",
+      "path": "/api/enterprise/data-plane/status",
+      "matchPaths": [
+        "/api/enterprise/data-plane/status"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/data-plane/status",
+        "file": "backend/routes/enterprise.js",
+        "line": 963,
+        "raw": "/data-plane/status",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/data-plane/status"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 585,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/support-grants",
+      "path": "/api/enterprise/support-grants",
+      "matchPaths": [
+        "/api/enterprise/support-grants"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/support-grants",
+        "file": "backend/routes/enterprise.js",
+        "line": 307,
+        "raw": "/support-grants",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/support-grants"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 590,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/support-grants",
+      "path": "/api/enterprise/support-grants",
+      "matchPaths": [
+        "/api/enterprise/support-grants"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/support-grants",
+        "file": "backend/routes/enterprise.js",
+        "line": 287,
+        "raw": "/support-grants",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/support-grants"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 597,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/support-grants/${grantId}/revoke",
+      "path": "/api/enterprise/support-grants/{X}/revoke",
+      "matchPaths": [
+        "/api/enterprise/support-grants/{X}/revoke"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/support-grants/:grantId/revoke",
+        "file": "backend/routes/enterprise.js",
+        "line": 298,
+        "raw": "/support-grants/:grantId/revoke",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/support-grants/{X}/revoke"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 603,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "raw": "/api/enterprise/platform/tenants",
+      "path": "/api/enterprise/platform/tenants",
+      "matchPaths": [
+        "/api/enterprise/platform/tenants"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/platform/tenants",
+        "file": "backend/routes/enterprise.js",
+        "line": 608,
+        "raw": "/platform/tenants",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/platform/tenants"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 606,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/platform/tenants/${tenantId}/suspend",
+      "path": "/api/enterprise/platform/tenants/{X}/suspend",
+      "matchPaths": [
+        "/api/enterprise/platform/tenants/{X}/suspend"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/platform/tenants/:tenantId/suspend",
+        "file": "backend/routes/enterprise.js",
+        "line": 621,
+        "raw": "/platform/tenants/:tenantId/suspend",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/platform/tenants/{X}/suspend"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 611,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/platform/tenants/${tenantId}/reactivate",
+      "path": "/api/enterprise/platform/tenants/{X}/reactivate",
+      "matchPaths": [
+        "/api/enterprise/platform/tenants/{X}/reactivate"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/platform/tenants/:tenantId/reactivate",
+        "file": "backend/routes/enterprise.js",
+        "line": 630,
+        "raw": "/platform/tenants/:tenantId/reactivate",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/platform/tenants/{X}/reactivate"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 621,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "raw": "/api/enterprise/test-email",
+      "path": "/api/enterprise/test-email",
+      "matchPaths": [
+        "/api/enterprise/test-email"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/enterprise/test-email",
+        "file": "backend/routes/enterprise.js",
+        "line": 1082,
+        "raw": "/test-email",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/test-email"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 628,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "raw": "/api/enterprise/tenant",
+      "path": "/api/enterprise/tenant",
+      "matchPaths": [
+        "/api/enterprise/tenant"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/enterprise/tenant",
+        "file": "backend/routes/enterprise.js",
+        "line": 585,
+        "raw": "/tenant",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/tenant"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 62,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/favourites",
+      "path": "/favourites",
+      "matchPaths": [
+        "/api/favourites",
+        "/favourites"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/favourites",
+        "file": "backend/routes/miscData.js",
+        "line": 87,
+        "raw": "/favourites",
+        "mountedAt": "/api",
+        "shape": "/api/favourites"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 71,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/favourites/${encodeURIComponent(item.itemId)}",
+      "path": "/favourites/{X}",
+      "matchPaths": [
+        "/api/favourites/{X}",
+        "/favourites/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/favourites/:itemId",
+        "file": "backend/routes/miscData.js",
+        "line": 119,
+        "raw": "/favourites/:itemId",
+        "mountedAt": "/api",
+        "shape": "/api/favourites/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 77,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/favourites",
+      "path": "/favourites",
+      "matchPaths": [
+        "/api/favourites",
+        "/favourites"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/favourites",
+        "file": "backend/routes/miscData.js",
+        "line": 102,
+        "raw": "/favourites",
+        "mountedAt": "/api",
+        "shape": "/api/favourites"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 146,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/generate-interview",
+      "path": "/generate-interview",
+      "matchPaths": [
+        "/api/generate-interview",
+        "/generate-interview"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/generate-interview",
+        "file": "backend/routes/ai.js",
+        "line": 808,
+        "raw": "/generate-interview",
+        "mountedAt": "/api",
+        "shape": "/api/generate-interview"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 256,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/live-interview/sessions",
+      "path": "/live-interview/sessions",
+      "matchPaths": [
+        "/api/live-interview/sessions",
+        "/live-interview/sessions"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/live-interview/sessions",
+        "file": "backend/routes/ai.js",
+        "line": 1010,
+        "raw": "/live-interview/sessions",
+        "mountedAt": "/api",
+        "shape": "/api/live-interview/sessions"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 271,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/live-interview/sessions/${encodeURIComponent(sessionId)}",
+      "path": "/live-interview/sessions/{X}",
+      "matchPaths": [
+        "/api/live-interview/sessions/{X}",
+        "/live-interview/sessions/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/live-interview/sessions/:sessionId",
+        "file": "backend/routes/ai.js",
+        "line": 1037,
+        "raw": "/live-interview/sessions/:sessionId",
+        "mountedAt": "/api",
+        "shape": "/api/live-interview/sessions/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 289,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/live-interview/sessions/${encodeURIComponent(session.sessionId)}/turns",
+      "path": "/live-interview/sessions/{X}/turns",
+      "matchPaths": [
+        "/api/live-interview/sessions/{X}/turns",
+        "/live-interview/sessions/{X}/turns"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/live-interview/sessions/:sessionId/turns",
+        "file": "backend/routes/ai.js",
+        "line": 1050,
+        "raw": "/live-interview/sessions/:sessionId/turns",
+        "mountedAt": "/api",
+        "shape": "/api/live-interview/sessions/{X}/turns"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 307,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/live-interview/sessions/${encodeURIComponent(session.sessionId)}/complete",
+      "path": "/live-interview/sessions/{X}/complete",
+      "matchPaths": [
+        "/api/live-interview/sessions/{X}/complete",
+        "/live-interview/sessions/{X}/complete"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/live-interview/sessions/:sessionId/complete",
+        "file": "backend/routes/ai.js",
+        "line": 1076,
+        "raw": "/live-interview/sessions/:sessionId/complete",
+        "mountedAt": "/api",
+        "shape": "/api/live-interview/sessions/{X}/complete"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 319,
+      "callee": "delete",
+      "verb": "DELETE",
+      "raw": "/live-interview/sessions/${encodeURIComponent(sessionId)}",
+      "path": "/live-interview/sessions/{X}",
+      "matchPaths": [
+        "/api/live-interview/sessions/{X}",
+        "/live-interview/sessions/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/live-interview/sessions/:sessionId",
+        "file": "backend/routes/ai.js",
+        "line": 1102,
+        "raw": "/live-interview/sessions/:sessionId",
+        "mountedAt": "/api",
+        "shape": "/api/live-interview/sessions/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 208,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/jobs-data/tracker",
+      "path": "/jobs-data/tracker",
+      "matchPaths": [
+        "/api/jobs-data/tracker",
+        "/jobs-data/tracker"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/jobs-data/tracker",
+        "file": "backend/routes/jobsData.js",
+        "line": 182,
+        "raw": "/tracker",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/tracker"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 214,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/jobs-data/tracker",
+      "path": "/jobs-data/tracker",
+      "matchPaths": [
+        "/api/jobs-data/tracker",
+        "/jobs-data/tracker"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/jobs-data/tracker",
+        "file": "backend/routes/jobsData.js",
+        "line": 189,
+        "raw": "/tracker",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/tracker"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 224,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/jobs-data/tracker/${encodeURIComponent(saved.id)}",
+      "path": "/jobs-data/tracker/{X}",
+      "matchPaths": [
+        "/api/jobs-data/tracker/{X}",
+        "/jobs-data/tracker/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/jobs-data/tracker/:id",
+        "file": "backend/routes/jobsData.js",
+        "line": 200,
+        "raw": "/tracker/:id",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/tracker/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 234,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/jobs-data/tracker/${encodeURIComponent(job.id)}",
+      "path": "/jobs-data/tracker/{X}",
+      "matchPaths": [
+        "/api/jobs-data/tracker/{X}",
+        "/jobs-data/tracker/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/jobs-data/tracker/:id",
+        "file": "backend/routes/jobsData.js",
+        "line": 216,
+        "raw": "/tracker/:id",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data/tracker/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 138,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/messages/conversations",
+      "path": "/messages/conversations",
+      "matchPaths": [
+        "/api/messages/conversations",
+        "/messages/conversations"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/messages/conversations",
+        "file": "backend/index.js",
+        "line": 2042,
+        "raw": "/api/messages/conversations",
+        "shape": "/api/messages/conversations"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 146,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/messages/conversations/${encodeURIComponent(conversationId)}/messages",
+      "path": "/messages/conversations/{X}/messages",
+      "matchPaths": [
+        "/api/messages/conversations/{X}/messages",
+        "/messages/conversations/{X}/messages"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/messages/conversations/:conversationId/messages",
+        "file": "backend/index.js",
+        "line": 2141,
+        "raw": "/api/messages/conversations/:conversationId/messages",
+        "shape": "/api/messages/conversations/{X}/messages"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 156,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/messages/conversations/${encodeURIComponent(conversationId)}/participant-profile",
+      "path": "/messages/conversations/{X}/participant-profile",
+      "matchPaths": [
+        "/api/messages/conversations/{X}/participant-profile",
+        "/messages/conversations/{X}/participant-profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/messages/conversations/:conversationId/participant-profile",
+        "file": "backend/index.js",
+        "line": 2280,
+        "raw": "/api/messages/conversations/:conversationId/participant-profile",
+        "shape": "/api/messages/conversations/{X}/participant-profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 165,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/messages/conversations/${encodeURIComponent(conversationId)}/read",
+      "path": "/messages/conversations/{X}/read",
+      "matchPaths": [
+        "/api/messages/conversations/{X}/read",
+        "/messages/conversations/{X}/read"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/messages/conversations/:conversationId/read",
+        "file": "backend/index.js",
+        "line": 2181,
+        "raw": "/api/messages/conversations/:conversationId/read",
+        "shape": "/api/messages/conversations/{X}/read"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 172,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/messages/send",
+      "path": "/messages/send",
+      "matchPaths": [
+        "/api/messages/send",
+        "/messages/send"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/messages/send",
+        "file": "backend/index.js",
+        "line": 2320,
+        "raw": "/api/messages/send",
+        "shape": "/api/messages/send"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 105,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/notifications-data",
+      "path": "/notifications-data",
+      "matchPaths": [
+        "/api/notifications-data",
+        "/notifications-data"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/notifications-data",
+        "file": "backend/routes/notificationsData.js",
+        "line": 16,
+        "raw": "/",
+        "mountedAt": "/api/notifications-data",
+        "shape": "/api/notifications-data"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 113,
+      "callee": "patch",
+      "verb": "PATCH",
+      "raw": "/notifications-data/${encodeURIComponent(id)}",
+      "path": "/notifications-data/{X}",
+      "matchPaths": [
+        "/api/notifications-data/{X}",
+        "/notifications-data/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/notifications-data/:id",
+        "file": "backend/routes/notificationsData.js",
+        "line": 27,
+        "raw": "/:id",
+        "mountedAt": "/api/notifications-data",
+        "shape": "/api/notifications-data/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 118,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/notifications-data/mark-all-read",
+      "path": "/notifications-data/mark-all-read",
+      "matchPaths": [
+        "/api/notifications-data/mark-all-read",
+        "/notifications-data/mark-all-read"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/notifications-data/mark-all-read",
+        "file": "backend/routes/notificationsData.js",
+        "line": 52,
+        "raw": "/mark-all-read",
+        "mountedAt": "/api/notifications-data",
+        "shape": "/api/notifications-data/mark-all-read"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 118,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/portfolios",
+      "path": "/portfolios",
+      "matchPaths": [
+        "/api/portfolios",
+        "/portfolios"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/portfolios",
+        "file": "backend/routes/portfolios.js",
+        "line": 63,
+        "raw": "/",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 123,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/portfolios/${encodeURIComponent(id)}",
+      "path": "/portfolios/{X}",
+      "matchPaths": [
+        "/api/portfolios/{X}",
+        "/portfolios/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/portfolios/public",
+        "file": "backend/routes/portfolios.js",
+        "line": 51,
+        "raw": "/public",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/public"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 129,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/portfolios/${encodeURIComponent(id)}",
+      "path": "/portfolios/{X}",
+      "matchPaths": [
+        "/api/portfolios/{X}",
+        "/portfolios/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/portfolios/:id",
+        "file": "backend/routes/portfolios.js",
+        "line": 115,
+        "raw": "/:id",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 134,
+      "callee": "delete",
+      "verb": "DELETE",
+      "raw": "/portfolios/${encodeURIComponent(id)}",
+      "path": "/portfolios/{X}",
+      "matchPaths": [
+        "/api/portfolios/{X}",
+        "/portfolios/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/portfolios/:id",
+        "file": "backend/routes/portfolios.js",
+        "line": 137,
+        "raw": "/:id",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 145,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/portfolios/slug-availability",
+      "path": "/portfolios/slug-availability",
+      "matchPaths": [
+        "/api/portfolios/slug-availability",
+        "/portfolios/slug-availability"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/portfolios/slug-availability",
+        "file": "backend/routes/portfolios.js",
+        "line": 82,
+        "raw": "/slug-availability",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/slug-availability"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 150,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/portfolios/public",
+      "path": "/portfolios/public",
+      "matchPaths": [
+        "/api/portfolios/public",
+        "/portfolios/public"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/portfolios/public",
+        "file": "backend/routes/portfolios.js",
+        "line": 51,
+        "raw": "/public",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/public"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 155,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/portfolios/public/${encodeURIComponent(slug)}",
+      "path": "/portfolios/public/{X}",
+      "matchPaths": [
+        "/api/portfolios/public/{X}",
+        "/portfolios/public/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/portfolios/public/:slug",
+        "file": "backend/routes/portfolios.js",
+        "line": 38,
+        "raw": "/public/:slug",
+        "mountedAt": "/api/portfolios",
+        "shape": "/api/portfolios/public/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 170,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes",
+      "path": "/resumes",
+      "matchPaths": [
+        "/api/resumes",
+        "/resumes"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes",
+        "file": "backend/routes/resumes.js",
+        "line": 21,
+        "raw": "/",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 134,
+      "callee": "fetch",
+      "verb": "POST",
+      "raw": "/api/auth/preview-login",
+      "path": "/api/auth/preview-login",
+      "matchPaths": [
+        "/api/auth/preview-login"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/auth/preview-login",
+        "file": "backend/index.js",
+        "line": 7474,
+        "raw": "/api/auth/preview-login",
+        "shape": "/api/auth/preview-login"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 169,
+      "callee": "fetch",
+      "verb": "GET",
+      "raw": "/api/users-data/profile",
+      "path": "/api/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 41,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${id}/publication",
+      "path": "/resumes/{X}/publication",
+      "matchPaths": [
+        "/api/resumes/{X}/publication",
+        "/resumes/{X}/publication"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/public/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 36,
+        "raw": "/public/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/public/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 52,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/resumes/${id}/publish",
+      "path": "/resumes/{X}/publish",
+      "matchPaths": [
+        "/api/resumes/{X}/publish",
+        "/resumes/{X}/publish"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/resumes/:id/publish",
+        "file": "backend/routes/resumes.js",
+        "line": 197,
+        "raw": "/:id/publish",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}/publish"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 73,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/resumes/${id}/unpublish",
+      "path": "/resumes/{X}/unpublish",
+      "matchPaths": [
+        "/api/resumes/{X}/unpublish",
+        "/resumes/{X}/unpublish"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/resumes/:id/unpublish",
+        "file": "backend/routes/resumes.js",
+        "line": 230,
+        "raw": "/:id/unpublish",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}/unpublish"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/lib/tenant-context.ts",
+      "line": 143,
+      "callee": "fetch",
+      "verb": "GET",
+      "raw": "/api/enterprise/tenants",
+      "path": "/api/enterprise/tenants",
+      "matchPaths": [
+        "/api/enterprise/tenants"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/enterprise/tenants",
+        "file": "backend/routes/enterprise.js",
+        "line": 336,
+        "raw": "/tenants",
+        "mountedAt": "/api/enterprise",
+        "shape": "/api/enterprise/tenants"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 59,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 60,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 40,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 246,
+      "callee": "axios.post",
+      "verb": "POST",
+      "raw": "/api/billing/validate-coupon",
+      "path": "/api/billing/validate-coupon",
+      "matchPaths": [
+        "/api/billing/validate-coupon"
+      ],
+      "query": null,
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 344,
+      "callee": "axios.post",
+      "verb": "POST",
+      "raw": "/api/pay",
+      "path": "/api/pay",
+      "matchPaths": [
+        "/api/pay"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/pay",
+        "file": "backend/index.js",
+        "line": 784,
+        "raw": "/api/pay",
+        "shape": "/api/pay"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 346,
+      "callee": "axios.post",
+      "verb": "POST",
+      "raw": "/api/razorpay/create-order",
+      "path": "/api/razorpay/create-order",
+      "matchPaths": [
+        "/api/razorpay/create-order"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/razorpay/create-order",
+        "file": "backend/index.js",
+        "line": 1176,
+        "raw": "/api/razorpay/create-order",
+        "shape": "/api/razorpay/create-order"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 348,
+      "callee": "axios.post",
+      "verb": "POST",
+      "raw": "/api/paypal/create-order",
+      "path": "/api/paypal/create-order",
+      "matchPaths": [
+        "/api/paypal/create-order"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/paypal/create-order",
+        "file": "backend/index.js",
+        "line": 1074,
+        "raw": "/api/paypal/create-order",
+        "shape": "/api/paypal/create-order"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 91,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/blog/posts/${postId}",
+      "path": "/blog/posts/{X}",
+      "matchPaths": [
+        "/api/blog/posts/{X}",
+        "/blog/posts/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/blog/posts/:postId",
+        "file": "backend/index.js",
+        "line": 3388,
+        "raw": "/api/admin/blog/posts/:postId",
+        "shape": "/api/admin/blog/posts/{X}"
+      },
+      "note": "same tail \"posts/{X}\" exists at PATCH /api/admin/blog/posts/:postId",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 147,
+      "callee": "put",
+      "verb": "PUT",
+      "raw": "/blog/posts/${postId}",
+      "path": "/blog/posts/{X}",
+      "matchPaths": [
+        "/api/blog/posts/{X}",
+        "/blog/posts/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "PATCH",
+        "path": "/api/admin/blog/posts/:postId",
+        "file": "backend/index.js",
+        "line": 3388,
+        "raw": "/api/admin/blog/posts/:postId",
+        "shape": "/api/admin/blog/posts/{X}"
+      },
+      "note": "same tail \"posts/{X}\" exists at PATCH /api/admin/blog/posts/:postId",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 149,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/blog/posts",
+      "path": "/blog/posts",
+      "matchPaths": [
+        "/api/blog/posts",
+        "/blog/posts"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/blog/posts",
+        "file": "backend/index.js",
+        "line": 6424,
+        "raw": "/api/admin/blog/posts",
+        "shape": "/api/admin/blog/posts"
+      },
+      "note": "same tail \"blog/posts\" exists at GET /api/admin/blog/posts",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/blog/index.tsx",
+      "line": 46,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/blog/posts",
+      "path": "/blog/posts",
+      "matchPaths": [
+        "/api/blog/posts",
+        "/blog/posts"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_WITH_CONTRACT_MISMATCH",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/admin/blog/posts",
+        "file": "backend/index.js",
+        "line": 6424,
+        "raw": "/api/admin/blog/posts",
+        "shape": "/api/admin/blog/posts"
+      },
+      "note": "same tail \"blog/posts\" exists at GET /api/admin/blog/posts",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 112,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/user-stats",
+      "path": "/user-stats",
+      "matchPaths": [
+        "/api/user-stats",
+        "/user-stats"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/user-stats",
+        "file": "backend/routes/miscData.js",
+        "line": 151,
+        "raw": "/user-stats",
+        "mountedAt": "/api",
+        "shape": "/api/user-stats"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 125,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes",
+      "path": "/resumes",
+      "matchPaths": [
+        "/api/resumes",
+        "/resumes"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes",
+        "file": "backend/routes/resumes.js",
+        "line": 21,
+        "raw": "/",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 149,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/jobs-data",
+      "path": "/jobs-data",
+      "matchPaths": [
+        "/api/jobs-data",
+        "/jobs-data"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/jobs-data",
+        "file": "backend/routes/jobsData.js",
+        "line": 159,
+        "raw": "/",
+        "mountedAt": "/api/jobs-data",
+        "shape": "/api/jobs-data"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 161,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/favourites",
+      "path": "/favourites",
+      "matchPaths": [
+        "/api/favourites",
+        "/favourites"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/favourites",
+        "file": "backend/routes/miscData.js",
+        "line": 87,
+        "raw": "/favourites",
+        "mountedAt": "/api",
+        "shape": "/api/favourites"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 177,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/covers",
+      "path": "/covers",
+      "matchPaths": [
+        "/api/covers",
+        "/covers"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/covers",
+        "file": "backend/routes/covers.js",
+        "line": 16,
+        "raw": "/",
+        "mountedAt": "/api/covers",
+        "shape": "/api/covers"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 192,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 218,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/favourites/${encodeURIComponent(jobId)}",
+      "path": "/favourites/{X}",
+      "matchPaths": [
+        "/api/favourites/{X}",
+        "/favourites/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/favourites/:itemId",
+        "file": "backend/routes/miscData.js",
+        "line": 119,
+        "raw": "/favourites/:itemId",
+        "mountedAt": "/api",
+        "shape": "/api/favourites/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 227,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/favourites",
+      "path": "/favourites",
+      "matchPaths": [
+        "/api/favourites",
+        "/favourites"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/favourites",
+        "file": "backend/routes/miscData.js",
+        "line": 102,
+        "raw": "/favourites",
+        "mountedAt": "/api",
+        "shape": "/api/favourites"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 239,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/favourites",
+      "path": "/favourites",
+      "matchPaths": [
+        "/api/favourites",
+        "/favourites"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/favourites",
+        "file": "backend/routes/miscData.js",
+        "line": 87,
+        "raw": "/favourites",
+        "mountedAt": "/api",
+        "shape": "/api/favourites"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 646,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/resumes/${id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 156,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 771,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes",
+      "path": "/resumes",
+      "matchPaths": [
+        "/api/resumes",
+        "/resumes"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes",
+        "file": "backend/routes/resumes.js",
+        "line": 21,
+        "raw": "/",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 778,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${targetId}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 124,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 854,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 897,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/export-docx",
+      "path": "/export-docx",
+      "matchPaths": [
+        "/api/export-docx",
+        "/export-docx"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/export-docx",
+        "file": "backend/index.js",
+        "line": 5167,
+        "raw": "/api/export-docx",
+        "shape": "/api/export-docx"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 3806,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": true,
+      "successAfter": false,
+      "onFailure": "swallowed (no user-visible error)"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 3882,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 40,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 153,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes",
+      "path": "/resumes",
+      "matchPaths": [
+        "/api/resumes",
+        "/resumes"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes",
+        "file": "backend/routes/resumes.js",
+        "line": 21,
+        "raw": "/",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 191,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/users-data/profile",
+      "path": "/users-data/profile",
+      "matchPaths": [
+        "/api/users-data/profile",
+        "/users-data/profile"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/users-data/profile",
+        "file": "backend/routes/usersData.js",
+        "line": 25,
+        "raw": "/profile",
+        "mountedAt": "/api/users-data",
+        "shape": "/api/users-data/profile"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 321,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${resume.id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 124,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 497,
+      "callee": "fetch",
+      "verb": "POST",
+      "raw": "/api/export-docx",
+      "path": "/api/export-docx",
+      "matchPaths": [
+        "/api/export-docx"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/export-docx",
+        "file": "backend/index.js",
+        "line": 5167,
+        "raw": "/api/export-docx",
+        "shape": "/api/export-docx"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 535,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${resume.id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 124,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 548,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/resumes/${newId}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 156,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 568,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${renameTarget.id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 124,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 578,
+      "callee": "post",
+      "verb": "POST",
+      "raw": "/resumes/${renameTarget.id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 156,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 598,
+      "callee": "del",
+      "verb": "DELETE",
+      "raw": "/resumes/${deleteTarget.id}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "DELETE",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 183,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 127,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/export-render-data",
+      "path": "/export-render-data",
+      "matchPaths": [
+        "/api/export-render-data",
+        "/export-render-data"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/export-render-data",
+        "file": "backend/index.js",
+        "line": 2389,
+        "raw": "/api/export-render-data",
+        "shape": "/api/export-render-data"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 145,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/public/token/${encodeURIComponent(publicToken)}",
+      "path": "/resumes/public/token/{X}",
+      "matchPaths": [
+        "/api/resumes/public/token/{X}",
+        "/resumes/public/token/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/public/token/:token",
+        "file": "backend/routes/resumes.js",
+        "line": 56,
+        "raw": "/public/token/:token",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/public/token/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 155,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/resumes/${encodeURIComponent(resumeId)}",
+      "path": "/resumes/{X}",
+      "matchPaths": [
+        "/api/resumes/{X}",
+        "/resumes/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/resumes/:id",
+        "file": "backend/routes/resumes.js",
+        "line": 124,
+        "raw": "/:id",
+        "mountedAt": "/api/resumes",
+        "shape": "/api/resumes/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 218,
+      "callee": "fetch",
+      "verb": "POST",
+      "raw": "/api/export-docx",
+      "path": "/api/export-docx",
+      "matchPaths": [
+        "/api/export-docx"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "POST",
+        "path": "/api/export-docx",
+        "file": "backend/index.js",
+        "line": 5167,
+        "raw": "/api/export-docx",
+        "shape": "/api/export-docx"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "not handled at the call site"
+    },
+    {
+      "file": "frontend/src/pages/jobs/portal.tsx",
+      "line": 74,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/jobs?${params.toString()}",
+      "path": "/jobs",
+      "matchPaths": [
+        "/api/jobs",
+        "/jobs"
+      ],
+      "query": "{X}",
+      "disposition": "NO_REGISTERED_OPERATION",
+      "candidate": null,
+      "note": "no registration shares this path shape or tail",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    },
+    {
+      "file": "frontend/src/pages/jobs/regional-hub.tsx",
+      "line": 77,
+      "callee": "get",
+      "verb": "GET",
+      "raw": "/api/public/geo/regions/${kind}/${slug}",
+      "path": "/api/public/geo/regions/{X}/{X}",
+      "matchPaths": [
+        "/api/public/geo/regions/{X}/{X}"
+      ],
+      "query": null,
+      "disposition": "REGISTERED_AND_MATCHED",
+      "candidate": {
+        "method": "GET",
+        "path": "/api/public/geo/regions/:kind/:slug",
+        "file": "backend/routes/publicDiscovery.js",
+        "line": 80,
+        "raw": "/geo/regions/:kind/:slug",
+        "mountedAt": "/api/public",
+        "shape": "/api/public/geo/regions/{X}/{X}"
+      },
+      "note": "",
+      "swallows": false,
+      "successAfter": false,
+      "onFailure": "caught and surfaced"
+    }
+  ]
+}

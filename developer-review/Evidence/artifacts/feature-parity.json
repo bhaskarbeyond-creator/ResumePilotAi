@@ -1,7 +1,7 @@
 {
- "revision": "abd366084901",
+ "revision": "a7d08a2fa67b",
  "inventoryRevision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
- "generatedAt": "2026-10-28T21:34:29.105Z",
+ "generatedAt": "2026-10-29T07:20:48.669Z",
  "vocabulary": [
   "FULL PARITY",
   "PARTIAL PARITY",
@@ -15,8 +15,8 @@
  ],
  "counts": {
   "FULL PARITY": 12,
-  "PARTIAL PARITY": 47,
-  "MISSING": 32,
+  "PARTIAL PARITY": 49,
+  "MISSING": 30,
   "STATIC STUB": 0,
   "MOCK / FABRICATED STATE": 12,
   "LOCAL-ONLY PERSISTENCE": 0,
@@ -57,8 +57,8 @@
    "total": 7,
    "byClassification": {
     "FULL PARITY": 2,
-    "PARTIAL PARITY": 1,
-    "MISSING": 4,
+    "PARTIAL PARITY": 0,
+    "MISSING": 5,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -85,8 +85,8 @@
    "total": 17,
    "byClassification": {
     "FULL PARITY": 5,
-    "PARTIAL PARITY": 8,
-    "MISSING": 3,
+    "PARTIAL PARITY": 10,
+    "MISSING": 1,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -113,8 +113,8 @@
    "total": 25,
    "byClassification": {
     "FULL PARITY": 1,
-    "PARTIAL PARITY": 9,
-    "MISSING": 9,
+    "PARTIAL PARITY": 10,
+    "MISSING": 8,
     "STATIC STUB": 0,
     "MOCK / FABRICATED STATE": 0,
     "LOCAL-ONLY PERSISTENCE": 0,
@@ -1120,7 +1120,7 @@
    "id": "FP-C06",
    "domain": "C",
    "capability": "Portfolio template gallery with palettes",
-   "classification": "PARTIAL PARITY",
+   "classification": "MISSING",
    "legacyPaths": [
     "src/components/PortfolioTemplates"
    ],
@@ -1134,7 +1134,7 @@
    "backend": "n/a",
    "endpoints": [],
    "invoke": "n/a",
-   "evidence": "modern portfolio-view.tsx:33 PALETTES (modernMinimal, …); legacy template family library larger"
+   "evidence": "V7 hand read: the named legacy blocks (Distinctions & Milestones, Leadership & Career Trajectory, Notes From Collaborators) have zero matches in frontend/src/components/portfolio or frontend/src/pages/portfolio. modern portfolio-view.tsx:33 PALETTES still supplies colour palettes, but the modular section library itself has no counterpart."
   },
   {
    "id": "FP-C07",
@@ -1636,22 +1636,24 @@
    "id": "FP-E06",
    "domain": "E",
    "capability": "Profile photo crop / zoom",
-   "classification": "MISSING",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/Dashboard/DashboardSettings/ImageCropModal.jsx",
     "src/components/BuildResume/steps"
    ],
-   "modernPaths": [],
+   "modernPaths": [
+    "frontend/src/pages/dashboard/resume-builder.tsx"
+   ],
    "legacyFiles": 20,
    "legacyLines": 10124,
-   "modernFiles": 0,
-   "modernLines": 0,
+   "modernFiles": 1,
+   "modernLines": 5529,
    "backend": "yes",
    "endpoints": [
-    "/storage/signed-upload-url"
+    "/resumes/X (PATCH, photo field)"
    ],
-   "invoke": "no",
-   "evidence": "0 `crop` matches in frontend/src; ImageCropModal.jsx in legacy"
+   "invoke": "yes",
+   "evidence": "Upload exists and persists: resume-builder.tsx:2600-2612 reads the file to a base64 data URL into `heading.photo`, serialised at :507 and saved through the resume PATCH. Crop/zoom does not exist: 0 `crop` matches in frontend/src. The 5 MB client cap also exceeds the API 256 kb body limit (DISC-048)."
   },
   {
    "id": "FP-E07",
@@ -1855,20 +1857,24 @@
    "id": "FP-E14",
    "domain": "E",
    "capability": "Bullet-point quality/health cards and role health checks",
-   "classification": "MISSING",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/utils/bulletQuality.js",
     "src/components/Form/BulletPointsEditor.jsx"
    ],
-   "modernPaths": [],
+   "modernPaths": [
+    "frontend/src/pages/dashboard/resume-builder.tsx",
+    "frontend/src/components/ui/formatting-toolbar.tsx",
+    "frontend/src/components/resume/role-ai-copilot-modal.tsx"
+   ],
    "legacyFiles": 2,
    "legacyLines": 1471,
-   "modernFiles": 0,
-   "modernLines": 0,
+   "modernFiles": 3,
+   "modernLines": 6286,
    "backend": "no",
    "endpoints": [],
-   "invoke": "no",
-   "evidence": "bulletQuality referenced by 6 legacy files (WorkHistoryStep, EducationStep, RoleHealthCard, RoleAiCopilotModal); 0 modern references"
+   "invoke": "n/a",
+   "evidence": "V7 hand read: resume-builder.tsx:2336-2390 implements a \"Bullet Polish\" tab with a live impact analyzer (active verbs / metrics / outcomes, strength score with Strong/Moderate/Needs-Metrics bands, progress bar); formatting-toolbar.tsx:118-180 inserts power verbs and asks the AI bullet copilot for rewrites; role-ai-copilot-modal.tsx:43 exposes polish/quantify/tailor/interview modes. Absent: the legacy per-bullet editor actions (drag reorder, undo, passive-opener fixer, quick-metric injection)."
   },
   {
    "id": "FP-E15",
@@ -2656,7 +2662,7 @@
    "id": "FP-G24",
    "domain": "G",
    "capability": "In-app support surface and input validation modals",
-   "classification": "MISSING",
+   "classification": "PARTIAL PARITY",
    "legacyPaths": [
     "src/components/Dashboard/DashboardSupport",
     "src/components/Dashboard/ValidationModal",
@@ -2670,10 +2676,19 @@
    "legacyLines": 1420,
    "modernFiles": 5,
    "modernLines": 978,
-   "backend": "no",
-   "endpoints": [],
-   "invoke": "no",
-   "evidence": "No ticket operation exists in the register: zero paths contain /support/tickets or /admin/support/tickets. AdminHelpDeskTab.tsx:128/157/188 and use-api-hooks.ts:588/599/612 call six non-existent paths (GET/POST /support/tickets, POST /support/tickets/{X}/messages, GET /admin/support/tickets, POST /admin/support/tickets/{X}/messages, PATCH /admin/support/tickets/{X})."
+   "backend": "yes",
+   "endpoints": [
+    "GET /support/tickets",
+    "POST /support/tickets",
+    "GET /support/tickets/X",
+    "POST /support/tickets/X/messages",
+    "GET /admin/support/tickets",
+    "GET /admin/support/tickets/X",
+    "POST /admin/support/tickets/X/messages",
+    "PATCH /admin/support/tickets/X"
+   ],
+   "invoke": "partial",
+   "evidence": "Reconciled in V7 against the file it belongs to. backend/routes/support.js registers all eight ticket operations (:15 POST /tickets, :30 GET /tickets, :40 GET /tickets/:id, :54 POST /tickets/:id/messages for the user router at /api/support; :71, :81, :95, :110 for the admin router at /api/admin/support), persists through services/supportTickets, and scopes user operations to req.user.uid. frontend/src/pages/dashboard/support.tsx:36-38 drives the list, create and reply through three hooks in use-api-hooks.ts:585-620 (all consumed), renders an error state at :130-140, and the admin console calls the four admin operations directly (AdminHelpDeskTab.tsx:128/157/188). Reached from /dashboard/support (app/router.tsx:209)."
   },
   {
    "id": "FP-G25",

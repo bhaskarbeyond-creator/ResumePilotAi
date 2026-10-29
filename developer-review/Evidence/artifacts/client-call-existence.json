@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-10-28T21:34:17.952Z",
-  "revision": "a5835ff6693d272505a4e1dfdd3a8faa95b824c4",
+  "generatedAt": "2026-10-29T07:20:45.681Z",
+  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
   "method": "Every HTTP path literal passed to a call helper in frontend/src (tests, .d.ts, navigation excluded) tested against the routed register. MISSING = the client calls a path with no registered operation, i.e. a 404 at runtime (or a dead fallback branch).",
   "filesScanned": 205,
   "callSites": 229,
   "tally": {
-    "MISSING": 30,
-    "EXACT": 188,
+    "MISSING": 21,
+    "EXACT": 197,
     "DYNAMIC-MATCH": 11
   },
   "distinctMissingEndpoints": [
@@ -21,27 +21,6 @@
       "endpoint": "DELETE /blog/posts/{X}",
       "sites": [
         "frontend/src/components/admin/AdminBlogManagementTab.tsx:126"
-      ]
-    },
-    {
-      "endpoint": "GET /admin/support/tickets",
-      "sites": [
-        "frontend/src/components/admin/AdminHelpDeskTab.tsx:128",
-        "frontend/src/hooks/use-api-hooks.ts:433 [useAdminSupportTickets consumers=0]"
-      ]
-    },
-    {
-      "endpoint": "POST /admin/support/tickets/{X}/messages",
-      "sites": [
-        "frontend/src/components/admin/AdminHelpDeskTab.tsx:157",
-        "frontend/src/hooks/use-api-hooks.ts:483 [useReplyToTicket consumers=0]"
-      ]
-    },
-    {
-      "endpoint": "PATCH /admin/support/tickets/{X}",
-      "sites": [
-        "frontend/src/components/admin/AdminHelpDeskTab.tsx:188",
-        "frontend/src/hooks/use-api-hooks.ts:505 [useUpdateTicketStatus consumers=0]"
       ]
     },
     {
@@ -105,24 +84,6 @@
       "endpoint": "POST /notify/email",
       "sites": [
         "frontend/src/components/employer/CandidateReviewDrawer.tsx:159"
-      ]
-    },
-    {
-      "endpoint": "GET /support/tickets",
-      "sites": [
-        "frontend/src/hooks/use-api-hooks.ts:588 [useDashboardSupportTickets consumers=1]"
-      ]
-    },
-    {
-      "endpoint": "POST /support/tickets",
-      "sites": [
-        "frontend/src/hooks/use-api-hooks.ts:599 [useCreateSupportTicket consumers=1]"
-      ]
-    },
-    {
-      "endpoint": "POST /support/tickets/{X}/messages",
-      "sites": [
-        "frontend/src/hooks/use-api-hooks.ts:612 [useReplyToSupportTicket consumers=1]"
       ]
     },
     {
@@ -254,7 +215,7 @@
       "callee": "get",
       "verb": "GET",
       "path": "/admin/support/tickets",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": null
     },
@@ -264,7 +225,7 @@
       "callee": "post",
       "verb": "POST",
       "path": "/admin/support/tickets/{X}/messages",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": null
     },
@@ -274,7 +235,7 @@
       "callee": "patch",
       "verb": "PATCH",
       "path": "/admin/support/tickets/{X}",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": null
     },
@@ -974,7 +935,7 @@
       "callee": "get",
       "verb": "GET",
       "path": "/admin/support/tickets",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useAdminSupportTickets",
       "hookConsumers": 0
@@ -1007,7 +968,7 @@
       "callee": "post",
       "verb": "POST",
       "path": "/admin/support/tickets/{X}/messages",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useReplyToTicket",
       "hookConsumers": 0
@@ -1018,7 +979,7 @@
       "callee": "patch",
       "verb": "PATCH",
       "path": "/admin/support/tickets/{X}",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useUpdateTicketStatus",
       "hookConsumers": 0
@@ -1029,7 +990,7 @@
       "callee": "get",
       "verb": "GET",
       "path": "/support/tickets",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useDashboardSupportTickets",
       "hookConsumers": 1
@@ -1040,7 +1001,7 @@
       "callee": "post",
       "verb": "POST",
       "path": "/support/tickets",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useCreateSupportTicket",
       "hookConsumers": 1
@@ -1051,7 +1012,7 @@
       "callee": "post",
       "verb": "POST",
       "path": "/support/tickets/{X}/messages",
-      "status": "MISSING",
+      "status": "EXACT",
       "detail": "",
       "hook": "useReplyToSupportTicket",
       "hookConsumers": 1
