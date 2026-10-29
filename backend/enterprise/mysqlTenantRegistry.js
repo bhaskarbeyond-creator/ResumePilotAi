@@ -1530,6 +1530,99 @@ class MySqlTenantRegistry {
     }
   }
 
+  async updateTeam({ tenantId, teamId, name, description, ...fields }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    teamId = assertUuid(teamId, 'Team identifier');
+    await this.getTeam(teamId, tenantId);
+
+    const teamLeadUid = fields.teamLeadUid;
+    const teamLeadUidProvided = Object.hasOwn(fields, 'teamLeadUid');
+    let leadPrincipalId = null;
+    if (teamLeadUid !== undefined && teamLeadUid !== null) {
+      leadPrincipalId = String(teamLeadUid).trim();
+      if (leadPrincipalId === '') leadPrincipalId = null;
+      if (leadPrincipalId) {
+        let membership;
+        try {
+          membership = await this.getMembership(tenantId, leadPrincipalId);
+        } catch (error) {
+          if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
+            throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+          }
+          throw error;
+        }
+        if (membership.status !== 'ACTIVE') {
+          throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+        }
+      }
+    }
+
+    const updates = [];
+    const params = [];
+    if (name !== undefined) {
+      const cleanName = compact(name, 120);
+      if (!cleanName) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM_NAME', status: 400 });
+      updates.push('name = ?');
+      params.push(cleanName);
+    }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      params.push(description === null ? '' : String(description));
+    }
+    if (teamLeadUidProvided) {
+      updates.push('team_lead_uid = ?');
+      params.push(leadPrincipalId);
+    }
+    if (updates.length === 0) return this.getTeam(teamId, tenantId);
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(teamId, tenantId);
+    await this.pool.query(
+      `UPDATE enterprise_teams SET ${updates.join(', ')} WHERE id = ? AND tenantId = ?`,
+      params
+    );
+    return this.getTeam(teamId, tenantId);
+  }
+
+  async archiveTeam({ tenantId, teamId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    teamId = assertUuid(teamId, 'Team identifier');
+    const team = await this.getTeam(teamId, tenantId);
+    if (team.archived) throw Object.assign(new Error('Team is already archived'), { code: 'TEAM_ALREADY_ARCHIVED', status: 409 });
+    const conn = await this.pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      // Archive the team and revoke its team-wide workspace delegation so
+      // members lose access through this team while the tenant record is kept.
+      await conn.query(
+        'UPDATE enterprise_teams SET archived = 1, archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenantId = ?',
+        [teamId, tenantId]
+      );
+      await conn.query('DELETE FROM enterprise_team_members WHERE teamId = ? AND tenantId = ?', [teamId, tenantId]);
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback().catch(() => {});
+      throw err;
+    } finally {
+      conn.release();
+    }
+    return this.getTeam(teamId, tenantId);
+  }
+
+  async restoreTeam({ tenantId, teamId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    teamId = assertUuid(teamId, 'Team identifier');
+    const team = await this.getTeam(teamId, tenantId);
+    if (!team.archived) throw Object.assign(new Error('Team is not archived'), { code: 'TEAM_NOT_ARCHIVED', status: 409 });
+    await this.pool.query(
+      'UPDATE enterprise_teams SET archived = 0, archived_at = NULL, restored_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenantId = ?',
+      [teamId, tenantId]
+    );
+    return this.getTeam(teamId, tenantId);
+  }
+
   async addTeamMember({ tenantId, teamId, principalId, role = 'MEMBER' }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
