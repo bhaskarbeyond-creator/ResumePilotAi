@@ -75,9 +75,11 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 ## 3.0 Latest audit publication (Mandate 8, 2026-10-29) — **read this first**
 
 **Branch:** `arena/393531fe-resumepilotai` · **Audited revision:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`
-(parent `c292159`; the M7 publication `2def3e5` audited `8a6e03bb`) · **Publication commit:** `d849137`
-(`d8491378de0969b4d2132976dbb86cdf6670d1bc`) — the M8 publication; this pointer sentence was added by the immediately following commit, so the
-full SHA is recorded in `Evidence/logs/m8-toolchain.log` §0 as well.
+(parent `c292159`; the M7 publication `2def3e5` audited `8a6e03bb`) · **Publication series:** `d849137` (the package) → `8fce715` (records the SHA) → `dec42e3` (key-level counts,
+DISC-055) → `416fda3` (runtime artefact, secret-scan log) → `e3e8d6f` (provenance corrections). The series
+head is whichever commit last touched this file; recover it with
+`git log -1 --format=%H -- developer-review/README.md`, and `Evidence/logs/m8-toolchain.log` §0 lists every
+member with what it changed. Nothing in the series was force-pushed, reset or rewritten.
 
 **Verdict:** **`PARTIAL — BLOCKED`** — *not* COMPLETE. Audit work complete; runtime gate blocked on
 dependencies this environment cannot supply (MariaDB, a browser, provider credentials); one gate fails on

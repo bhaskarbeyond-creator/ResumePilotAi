@@ -50,7 +50,11 @@ commits             listed rather than folded in, so a reader can see what chang
                         local pointer moved with `git reset --soft`. No published history was
                         rewritten, reset or force-pushed; `git reflog` on this clone still shows
                         both entries for anyone who wants to check.
-                    Head at the time of this line: 416fda3 (416fda31935f476f70da5f3ff606ae4afdebeef7).
+                    The series continued past this line (416fda3, e3e8d6f and later). Rather than
+                    pin a head that is stale the moment it is written, recover the true head with:
+                        git log -1 --format=%H -- developer-review/Evidence/logs/m8-toolchain.log
+                    and read every member of the series with:
+                        git log --format='%h %s' a2ecb96..origin/arena/393531fe-resumepilotai
 counts of the       tracked files at audited revision: see §1.6 (re-derived, not carried over)
 working tree        clean outside developer-review/ (§6)
 
