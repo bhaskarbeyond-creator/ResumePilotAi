@@ -50,6 +50,7 @@ import { RoleAiCopilotModal } from '@/components/resume/role-ai-copilot-modal';
 import { AiRecommendationModal, type RecommendationItem } from '@/components/resume/ai-recommendation-modal';
 import { GrammarCheckModal } from '@/components/resume/grammar-check-modal';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
+import type { ParsedResumeData } from '@/lib/ai-content';
 import { TEMPLATE_CATEGORIES, getTemplatesByCategory } from '@/lib/template-catalog';
 import {
   User,
