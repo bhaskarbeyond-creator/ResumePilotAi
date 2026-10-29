@@ -1,0 +1,2343 @@
+{
+  "artifact": "m8d-row-reconstruction",
+  "mandate": "M8D section 2",
+  "generatedBy": "developer-review/tools/m8d-reconstruct-rows.py",
+  "sourceRevision": "69a3ed4",
+  "method": "Each of the 41 rows was read at source. A row is VERIFIED only when every file in its declared corpus implements its own capability; CORRECTED when the corpus contained another row's implementation; PARTIALLY RECONSTRUCTED when the capability is a region of a shared file or extends beyond the measured corpus. Line counts are splitlines() of the audit tree; class counts use the same patterns as the register's generator.",
+  "rowsInScope": 41,
+  "decisionsRecorded": 41,
+  "missingDecision": [],
+  "extraDecision": [],
+  "tally": {
+    "VERIFIED \u2014 CORRECT": 24,
+    "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED": 9,
+    "PARTIALLY RECONSTRUCTED": 3,
+    "SHARED \u2014 JUSTIFIED WITH EVIDENCE": 5
+  },
+  "rows": [
+    {
+      "row": "FP-A01",
+      "title": "Platform KPI dashboard (users, resumes, applications, AI generations, storage)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/dashboard"
+        ],
+        "files": 1,
+        "lines": 508
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/dashboard"
+        ],
+        "files": [
+          "src/components/admin/dashboard/dashboard.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 508,
+        "classes": {
+          "pagination": 11
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "The directory holds exactly one file, dashboard.jsx (507 L, 6 useState / 3 useEffect / 1 API import). There is no other capability in the corpus to contaminate it.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminDashboardTab.tsx",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminDashboardTab.tsx",
+        "frontend/src/pages/admin/console.tsx"
+      ],
+      "endpoints": [
+        "/platform/stats"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A03",
+      "title": "Subsystem health catalogue (28 services, latency, remediation hints)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/health"
+        ],
+        "files": 3,
+        "lines": 882
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/health"
+        ],
+        "files": [
+          "src/components/admin/health/ApiHealthMatrix.jsx",
+          "src/components/admin/health/PlatformHealth.jsx",
+          "src/components/admin/health/ServiceDetailPanel.jsx"
+        ],
+        "fileCount": 3,
+        "lines": 882,
+        "classes": {
+          "search": 5,
+          "filter": 34,
+          "pagination": 4,
+          "authz": 3,
+          "table": 2
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Three files, all health-specific: PlatformHealth (372 L, 61 capability-term hits), ApiHealthMatrix (263 L) and ServiceDetailPanel (244 L) are the catalogue, the matrix and the detail panel of one screen. No other row claims them.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminHealthTab.tsx",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminHealthTab.tsx"
+      ],
+      "endpoints": [
+        "/platform/operational-status"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A05",
+      "title": "Security event stream / audit viewer",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/admin/audit",
+          "src/components/admin/security"
+        ],
+        "files": 2,
+        "lines": 762
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/security/PlatformSecurity.jsx"
+        ],
+        "files": [
+          "src/components/admin/security/PlatformSecurity.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 363,
+        "classes": {
+          "table": 2,
+          "filter": 5,
+          "pagination": 7,
+          "modal": 4
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/admin/audit/AdminAuditLogs.jsx"
+      ],
+      "rationale": "The declared corpus was AdminAuditLogs.jsx (398 L) + PlatformSecurity.jsx (362 L). AdminAuditLogs.jsx IS the whole corpus of FP-A22 (dedicated audit-log browser) and contains no security-event stream; including it credited this row with another row's implementation. The row's own endpoints (/platform/security-events) resolve to getSecurityEvents in PlatformSecurity.jsx, which is therefore the whole scoped corpus.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminSecurityTab.tsx (event stream region)",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminSecurityTab.tsx"
+      ],
+      "endpoints": [
+        "/admin/audit-logs",
+        "/platform/security-events"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -1,
+        "lines": -399
+      }
+    },
+    {
+      "row": "FP-A06",
+      "title": "Operator roster + force-revoke sessions",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/operators"
+        ],
+        "files": 1,
+        "lines": 770
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/operators"
+        ],
+        "files": [
+          "src/components/admin/operators/PlatformOperators.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 770,
+        "classes": {
+          "table": 2,
+          "filter": 16,
+          "pagination": 13,
+          "modal": 8
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, PlatformOperators.jsx, 769 L with 17 useState hooks and a platformApi import; it is the operator roster itself, not a wrapper.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminUsersTab / operator roster",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminSecurityTab.tsx"
+      ],
+      "endpoints": [
+        "/platform/operators",
+        "/platform/operators/{X}/revoke-sessions"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A07",
+      "title": "IP blocklist / deny rules",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/admin/security"
+        ],
+        "files": 1,
+        "lines": 363
+      },
+      "reconstructed": {
+        "paths": [],
+        "files": [],
+        "fileCount": 0,
+        "lines": 0,
+        "classes": {},
+        "regions": null
+      },
+      "excluded": [
+        "src/components/admin/security/PlatformSecurity.jsx"
+      ],
+      "rationale": "The row claims an IP blocklist / deny rules. Its declared corpus (PlatformSecurity.jsx, 362 L) contains no blocklist, deny rule or IP-ban logic: a case-insensitive search of the whole legacy tree for blocklist/deny-rule/IP-ban vocabulary returns only an unrelated hit in Checkout.jsx. The register's own evidence cites `handleBlockIp`, which exists ONLY in the MODERN file frontend/src/components/admin/AdminSecurityTab.tsx:214. The legacy corpus therefore implements FP-A05's security-event stream, not this row's capability: the legacy side has NO implementation, and the MOCK/FABRICATED finding is a modern-side finding.",
+      "missingEvidence": null,
+      "modernAnchor": "frontend/src/components/admin/AdminSecurityTab.tsx:214 (handleBlockIp)",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminSecurityTab.tsx"
+      ],
+      "endpoints": [],
+      "backend": "partial",
+      "delta": {
+        "files": -1,
+        "lines": -363
+      }
+    },
+    {
+      "row": "FP-A09",
+      "title": "Marketing content: phrases, reviews, trusted-by logos, landing pages",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/phrases",
+          "src/components/admin/reviews",
+          "src/components/admin/TrustedBy",
+          "src/components/admin/landingPages"
+        ],
+        "files": 4,
+        "lines": 1127
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/phrases",
+          "src/components/admin/reviews",
+          "src/components/admin/TrustedBy",
+          "src/components/admin/landingPages"
+        ],
+        "files": [
+          "src/components/admin/TrustedBy/TrustedBy.jsx",
+          "src/components/admin/landingPages/LandingPages.jsx",
+          "src/components/admin/phrases/Phrases.jsx",
+          "src/components/admin/reviews/Reviews.jsx"
+        ],
+        "fileCount": 4,
+        "lines": 1127,
+        "classes": {
+          "pagination": 2,
+          "filter": 3
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Four files, each one of the four things the row claims (phrases 246 L, reviews 432 L, trusted-by 101 L, admin landing pages 344 L). No other row claims them.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminMarketingTab / content tabs",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminContentMarketingTab.tsx"
+      ],
+      "endpoints": [
+        "/phrases",
+        "/admin/reviews",
+        "/admin/trusted-by",
+        "/admin/pages",
+        "/public/trusted-by",
+        "/public/custom-pages"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A10",
+      "title": "At-risk attention inbox / platform insights",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/attention"
+        ],
+        "files": 1,
+        "lines": 131
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/attention"
+        ],
+        "files": [
+          "src/components/admin/attention/PlatformAttention.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 131,
+        "classes": {
+          "pagination": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, PlatformAttention.jsx, 130 L with 8 useState hooks and one API import: small but genuinely the attention inbox, not a wrapper.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminDashboardTab attention region",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminAttentionTab.tsx"
+      ],
+      "endpoints": [
+        "/platform/attention"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A11",
+      "title": "Employer application + job posting moderation",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/employerApplications",
+          "src/components/admin/jobsManager"
+        ],
+        "files": 2,
+        "lines": 1186
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/employerApplications",
+          "src/components/admin/jobsManager"
+        ],
+        "files": [
+          "src/components/admin/employerApplications/EmployerApplications.jsx",
+          "src/components/admin/jobsManager/JobsManager.jsx"
+        ],
+        "fileCount": 2,
+        "lines": 1186,
+        "classes": {
+          "table": 4,
+          "search": 12,
+          "filter": 8,
+          "pagination": 2
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Two files, one per half of the row's own title (employer applications 585 L, jobs manager 599 L with 179 capability-term hits).",
+      "missingEvidence": null,
+      "modernAnchor": "AdminJobsTab / AdminEmployerApplicationsTab",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminModerationTab.tsx"
+      ],
+      "endpoints": [
+        "/admin/employer-applications/{X}/verify",
+        "/admin/jobs/{X}/moderate"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A12",
+      "title": "Platform tenant registry (list tenants, quotas, suspend)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/tenants"
+        ],
+        "files": 1,
+        "lines": 2106
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/tenants"
+        ],
+        "files": [
+          "src/components/admin/tenants/PlatformTenants.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 2106,
+        "classes": {
+          "table": 2,
+          "search": 8,
+          "filter": 12,
+          "pagination": 26,
+          "modal": 4,
+          "json": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, PlatformTenants.jsx, 2,105 L with 312 capability-term hits \u2014 the tenant registry in full.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminTenantsTab.tsx",
+      "modernPaths": [
+        "frontend/src/components/enterprise/EnterprisePlatformTab.tsx",
+        "frontend/src/lib/enterprise-api.ts"
+      ],
+      "endpoints": [
+        "/enterprise/platform/tenants",
+        "/enterprise/platform/tenants/{X}/suspend",
+        "/enterprise/platform/tenants/{X}/reactivate"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A13",
+      "title": "Company management (verification, documents, quotas)",
+      "classification": "MOCK / FABRICATED STATE",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/companyManagement"
+        ],
+        "files": 1,
+        "lines": 642
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/companyManagement"
+        ],
+        "files": [
+          "src/components/admin/companyManagement/CompanyManagement.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 642,
+        "classes": {
+          "table": 2,
+          "search": 5,
+          "filter": 6
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, CompanyManagement.jsx, 641 L with ZERO useState, ZERO useEffect and ZERO API calls \u2014 a static fixture screen. That is precisely why the row is MOCK/FABRICATED; the corpus is correct and the classification is supported by the absence of data plumbing.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminCompaniesTab.tsx",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminModerationTab.tsx"
+      ],
+      "endpoints": [
+        "/admin/employer-applications/{X}/verify"
+      ],
+      "backend": "partial",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A17",
+      "title": "User manager, User360 drawer, session revoke",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/usersManager",
+          "src/components/admin/userEdit"
+        ],
+        "files": 4,
+        "lines": 3243
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/usersManager",
+          "src/components/admin/userEdit"
+        ],
+        "files": [
+          "src/components/admin/userEdit/UserEdit.jsx",
+          "src/components/admin/usersManager/CreateUserModal.jsx",
+          "src/components/admin/usersManager/User360Drawer.jsx",
+          "src/components/admin/usersManager/UsersManager.jsx"
+        ],
+        "fileCount": 4,
+        "lines": 3243,
+        "classes": {
+          "pagination": 18,
+          "filter": 10,
+          "modal": 7,
+          "json": 2,
+          "table": 2,
+          "search": 8,
+          "csv": 1,
+          "bulk": 17
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Four files that together are user management: UsersManager (1,013 L), User360Drawer (1,513 L), UserEdit (469 L), CreateUserModal (244 L). FP-A18's bulk operations are a region inside UsersManager, so this parent corpus is correct for its own scope; the overlap is declared rather than removed.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminUsersTab.tsx / User360 drawer",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminUsersTab.tsx"
+      ],
+      "endpoints": [
+        "/admin/users",
+        "/admin/users/{X}/revoke-sessions"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A18",
+      "title": "Bulk user operations (multi-select, bulk role change, bulk removal)",
+      "classification": "MISSING",
+      "disposition": "PARTIALLY RECONSTRUCTED",
+      "published": {
+        "paths": [
+          "src/components/admin/usersManager"
+        ],
+        "files": 3,
+        "lines": 2773
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/usersManager/UsersManager.jsx"
+        ],
+        "files": [
+          "src/components/admin/usersManager/UsersManager.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 1014,
+        "classes": {
+          "table": 2,
+          "search": 8,
+          "filter": 9,
+          "pagination": 8,
+          "modal": 4,
+          "csv": 1,
+          "json": 1,
+          "bulk": 17
+        },
+        "regions": [
+          {
+            "path": "src/components/admin/usersManager/UsersManager.jsx",
+            "lines": "34-50, 155-170, 328-430",
+            "what": "multi-selection state, select-all, bulk suspend/remove handlers"
+          }
+        ]
+      },
+      "excluded": [
+        "src/components/admin/usersManager/User360Drawer.jsx",
+        "src/components/admin/usersManager/CreateUserModal.jsx"
+      ],
+      "rationale": "The capability is a REGION of UsersManager.jsx (selection state 34-50, select-all 155-170, bulk handlers 328-430), not three whole files. The published corpus also carried User360Drawer (1,513 L) and CreateUserModal (244 L), neither of which implements a bulk operation. A line-region measurement is stated rather than a file count, because a bulk action is not a whole-file property; the file-level number below is the containing file.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminUsersTab.tsx bulk-action region",
+      "modernPaths": [],
+      "endpoints": [],
+      "backend": "partial",
+      "delta": {
+        "files": -2,
+        "lines": -1759
+      }
+    },
+    {
+      "row": "FP-A20",
+      "title": "Job queues, DLQ, outbox, cache, backups (operations console)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/admin/queues",
+          "src/components/admin/operations",
+          "src/components/admin/command",
+          "src/components/admin/sidebar"
+        ],
+        "files": 5,
+        "lines": 1634
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/queues",
+          "src/components/admin/operations"
+        ],
+        "files": [
+          "src/components/admin/operations/PlatformOperations.jsx",
+          "src/components/admin/queues/PlatformQueues.jsx"
+        ],
+        "fileCount": 2,
+        "lines": 713,
+        "classes": {
+          "pagination": 4,
+          "modal": 2,
+          "table": 2,
+          "json": 2
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/admin/command/AdminCommandPalette.jsx",
+        "src/components/admin/command/adminEntitySearch.js",
+        "src/components/admin/sidebar/sidebar.jsx"
+      ],
+      "rationale": "The declared corpus was five files across four directories. Two of them (command/, 381 L) are the whole corpus of FP-A23 (command palette + entity search) and one (sidebar.jsx, 538 L) is the corpus of FP-A26 (console shell and tab routing). Neither implements queues, DLQ, outbox, cache or backups. The scoped corpus is PlatformQueues (379 L) + PlatformOperations (332 L) = 711 L.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminQueuesTab.tsx / AdminOperationsTab",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminQueuesTab.tsx",
+        "frontend/src/components/admin/AdminOperationsTab.tsx"
+      ],
+      "endpoints": [
+        "/platform/queues",
+        "/platform/queues/retry",
+        "/admin/operations/feature-flags"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -3,
+        "lines": -921
+      }
+    },
+    {
+      "row": "FP-A22",
+      "title": "Dedicated audit-log browser with filters and export",
+      "classification": "MISSING",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/audit"
+        ],
+        "files": 1,
+        "lines": 399
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/audit"
+        ],
+        "files": [
+          "src/components/admin/audit/AdminAuditLogs.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 399,
+        "classes": {
+          "table": 2,
+          "search": 13,
+          "filter": 4,
+          "pagination": 2,
+          "modal": 1,
+          "csv": 3
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, AdminAuditLogs.jsx, 398 L with 94 capability-term hits and the row's own endpoints (/admin/audit-logs, /admin/audit-logs/stats). It is the audit browser itself.",
+      "missingEvidence": null,
+      "modernAnchor": "AdminAuditTab.tsx",
+      "modernPaths": [],
+      "endpoints": [
+        "/admin/audit-logs",
+        "/admin/audit-logs/stats"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A23",
+      "title": "Admin command palette + entity search",
+      "classification": "MISSING",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/admin/command"
+        ],
+        "files": 2,
+        "lines": 382
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/admin/command"
+        ],
+        "files": [
+          "src/components/admin/command/AdminCommandPalette.jsx",
+          "src/components/admin/command/adminEntitySearch.js"
+        ],
+        "fileCount": 2,
+        "lines": 382,
+        "classes": {
+          "filter": 2,
+          "pagination": 1,
+          "authz": 3
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Two files that are exactly the palette and its search engine (AdminCommandPalette 239 L, adminEntitySearch 142 L). The palette imports searchPlatform from platformApi, matching the row's own implementation.",
+      "missingEvidence": null,
+      "modernAnchor": "command palette (\u2318K)",
+      "modernPaths": [],
+      "endpoints": [],
+      "backend": "partial",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-A24",
+      "title": "Public pricing, plan comparison and checkout",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/Billing/Plans",
+          "src/components/Billing"
+        ],
+        "files": 3,
+        "lines": 3856
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Billing/Plans"
+        ],
+        "files": [
+          "src/components/Billing/Plans/Checkout.jsx",
+          "src/components/Billing/Plans/Plans.jsx",
+          "src/components/Billing/Plans/PlansTable.jsx"
+        ],
+        "fileCount": 3,
+        "lines": 3856,
+        "classes": {
+          "table": 2,
+          "pagination": 34,
+          "modal": 1,
+          "filter": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Three files, one per element the row names: Plans (1,123 L), PlansTable (206 L), Checkout (2,524 L). No other row claims them.",
+      "missingEvidence": null,
+      "modernAnchor": "pages/pricing + checkout",
+      "modernPaths": [
+        "frontend/src/pages/billing",
+        "frontend/src/pages/billing/checkout-modal.tsx"
+      ],
+      "endpoints": [
+        "/paypal/create-order",
+        "/razorpay/create-order",
+        "/coupons/validate"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-C02",
+      "title": "71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, \u2026)",
+      "classification": "MISSING",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/PortfolioBuilder/PortfolioComponents"
+        ],
+        "files": 72,
+        "lines": 18016
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/PortfolioBuilder/PortfolioComponents"
+        ],
+        "files": [
+          "src/components/PortfolioBuilder/PortfolioComponents/About1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/About2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/About3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/About4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/About5.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/About6.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Awards1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Awards2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/AwardsCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Contact1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Contact3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Contact4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/ContactCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Education1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Education2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/EducationCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience5.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Experience6.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/ExperienceCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/FlexItem.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/FlexLayout.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Footer1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Footer2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Footer3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Footer4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/FooterCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/GridItem.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/GridLayout.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero5.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero6.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Hero7.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/LayoutCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Navbar1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Navbar2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/NavbarDarkCyber.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/NavbarDarkCyberSec.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/NavbarDarkTerminal.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Projects1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Projects2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Projects3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Projects4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/ProjectsCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Resume1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Resume2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/ResumeCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Services1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Services2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/ServicesCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills3.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills4.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills5.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Skills6.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/SkillsCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/TemplateModal.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Testimonials1.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/Testimonials2.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/TestimonialsCategory.jsx",
+          "src/components/PortfolioBuilder/PortfolioComponents/index.js"
+        ],
+        "fileCount": 72,
+        "lines": 18016,
+        "classes": {
+          "filter": 32,
+          "pagination": 46,
+          "chart": 112
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "72 files: 71 category/block components plus index.js, which re-exports NavbarCategory, HeroCategory, AboutCategory \u2026 AwardsCategory. That is one block library, which is what the row claims. The 72nd file is an export barrel, not a second capability.",
+      "missingEvidence": null,
+      "modernAnchor": "portfolio block library",
+      "modernPaths": [],
+      "endpoints": [],
+      "backend": "no",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-C05",
+      "title": "Public portfolio rendering + slug availability + publish",
+      "classification": "FULL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/PublicPortfolio"
+        ],
+        "files": 1,
+        "lines": 308
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/PublicPortfolio"
+        ],
+        "files": [
+          "src/components/PublicPortfolio/PublicPortfolio.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 308,
+        "classes": {
+          "filter": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, PublicPortfolio.jsx, 307 L with 114 capability-term hits and 4 useState hooks.",
+      "missingEvidence": null,
+      "modernAnchor": "public portfolio route",
+      "modernPaths": [
+        "frontend/src/pages/portfolio",
+        "frontend/src/components/portfolio"
+      ],
+      "endpoints": [
+        "/portfolios/public/{X}",
+        "/portfolios/slug-availability",
+        "/portfolios/{X}"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-C06",
+      "title": "Portfolio template gallery with palettes",
+      "classification": "FULL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/PortfolioTemplates"
+        ],
+        "files": 7,
+        "lines": 1822
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/PortfolioTemplates"
+        ],
+        "files": [
+          "src/components/PortfolioTemplates/CreativeDark.jsx",
+          "src/components/PortfolioTemplates/Executive.jsx",
+          "src/components/PortfolioTemplates/ModernMinimal.jsx",
+          "src/components/PortfolioTemplates/PremiumTech.jsx",
+          "src/components/PortfolioTemplates/WebCvRenderer.jsx",
+          "src/components/PortfolioTemplates/index.js",
+          "src/components/PortfolioTemplates/shared.jsx"
+        ],
+        "fileCount": 7,
+        "lines": 1822,
+        "classes": {
+          "filter": 44,
+          "pagination": 9,
+          "modal": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Seven files: four named templates (CreativeDark, Executive, ModernMinimal, PremiumTech), shared.jsx, WebCvRenderer.jsx and index.js. All are the template gallery; the shared helpers are part of it rather than a separate capability.",
+      "missingEvidence": null,
+      "modernAnchor": "portfolio template gallery",
+      "modernPaths": [
+        "frontend/src/components/portfolio",
+        "frontend/src/lib/portfolio-document.ts",
+        "frontend/src/pages/portfolio/builder.tsx"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-C07",
+      "title": "Portfolio gallery / showcase",
+      "classification": "FULL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/PortfolioGallery"
+        ],
+        "files": 1,
+        "lines": 239
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/PortfolioGallery"
+        ],
+        "files": [
+          "src/components/PortfolioGallery/PortfolioGallery.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 239,
+        "classes": {
+          "search": 9,
+          "filter": 4,
+          "chart": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, PortfolioGallery.jsx, 238 L with 6 useState hooks and 85 capability-term hits.",
+      "missingEvidence": null,
+      "modernAnchor": "portfolio gallery route",
+      "modernPaths": [
+        "frontend/src/pages/portfolio/gallery.tsx",
+        "frontend/src/lib/portfolio.ts"
+      ],
+      "endpoints": [
+        "/portfolios/public"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-D03",
+      "title": "Interview session UI (question flow, transcript, scoring)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "SHARED \u2014 JUSTIFIED WITH EVIDENCE",
+      "published": {
+        "paths": [
+          "src/components/Dashboard/DashboardInterviews"
+        ],
+        "files": 6,
+        "lines": 5823
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard/DashboardInterviews"
+        ],
+        "files": [
+          "src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveAnswerGuide.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveAudioWaveform.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveInterviewSession.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveResumeDrawer.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveVoiceEngine.js"
+        ],
+        "fileCount": 6,
+        "lines": 5823,
+        "classes": {
+          "filter": 30,
+          "pagination": 104,
+          "modal": 12,
+          "print": 2,
+          "chart": 2,
+          "authz": 5,
+          "search": 8
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Six files that are one interview session: DashboardInterviews (3,129 L), LiveInterviewSession (1,691 L), LiveAnswerGuide (281 L), LiveAudioWaveform (254 L), LiveResumeDrawer (229 L) and LiveVoiceEngine (233 L). FP-D01 and FP-D02 measure the voice delivery and microphone sub-capabilities, whose implementation is INSIDE this session \u2014 a session UI cannot have a voice mode without containing it. The sharing is real and the corpus is correct for the session, but this row's subfeature counts include those two sub-capabilities' classes and must be read with that in mind.",
+      "missingEvidence": null,
+      "modernAnchor": "interview session UI",
+      "modernPaths": [
+        "frontend/src/components/interview",
+        "frontend/src/pages/dashboard"
+      ],
+      "endpoints": [
+        "/live-interview/sessions",
+        "/live-interview/sessions/{X}/complete"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-D12",
+      "title": "Dashboard-v2 element library (stats, activity, profile display, resumes/covers lists)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/Dashboard2",
+          "src/components/Dashboard/ResumesList",
+          "src/components/Dashboard/CoversList",
+          "src/components/Dashboard/ProfileDisplay",
+          "src/components/Dashboard/SettingsDropdown",
+          "src/components/Dashboard/DashboardSearch",
+          "src/components/Dashboard/DashboardPortfolios",
+          "src/components/AppShell",
+          "src/components/common"
+        ],
+        "files": 28,
+        "lines": 3390
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard2",
+          "src/components/Dashboard/ResumesList",
+          "src/components/Dashboard/CoversList",
+          "src/components/Dashboard/DashboardPortfolios",
+          "src/components/Dashboard/DashboardSearch",
+          "src/components/Dashboard/ProfileDisplay",
+          "src/components/Dashboard/SettingsDropdown",
+          "src/components/AppShell",
+          "src/components/common"
+        ],
+        "files": [
+          "src/components/AppShell/AuthenticatedAppShell.jsx",
+          "src/components/AppShell/applicationShell.js",
+          "src/components/Dashboard/CoversList/CoversList.jsx",
+          "src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx",
+          "src/components/Dashboard/DashboardSearch/DashboardSearch.jsx",
+          "src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx",
+          "src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx",
+          "src/components/Dashboard/ResumesList/ResumesList.jsx",
+          "src/components/Dashboard/SettingsDropdown/SettingsDropdown.jsx",
+          "src/components/Dashboard2/dashboard2.jsx",
+          "src/components/common/ContextSwitcher.jsx",
+          "src/components/common/PremiumUpgradeModal.jsx",
+          "src/components/common/ResumeWatermarkOverlay.jsx",
+          "src/components/common/RouteErrorBoundary.jsx"
+        ],
+        "fileCount": 14,
+        "lines": 3250,
+        "classes": {
+          "pagination": 23,
+          "authz": 12,
+          "filter": 32,
+          "search": 11,
+          "modal": 4,
+          "chart": 4
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/Dashboard2/elements/*"
+      ],
+      "rationale": "The 28-file corpus mixed dashboard elements with the CONTENT-MARKETING homepage: 13 files under Dashboard2/elements are HomepageHero, HomepageFooter, HomepagePricing, HomepageReviews, Homepagefaqs, HomepageTemplates and siblings. Those same files are the implementation of FP-G10 (CMS custom pages / landing-page rendering), so they were counted twice and this row's element library was inflated with marketing copy it does not own. The scoped corpus keeps the Dashboard widgets, the AppShell and the shared common/ widgets.",
+      "missingEvidence": null,
+      "modernAnchor": "dashboard element components",
+      "modernPaths": [
+        "frontend/src/pages/dashboard",
+        "frontend/src/components/layout"
+      ],
+      "endpoints": [
+        "/dashboard",
+        "/resumes",
+        "/cover-letters"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -14,
+        "lines": -140
+      }
+    },
+    {
+      "row": "FP-D13",
+      "title": "Candidate shell, AI career briefing, top job matches, executive rail, progress charts",
+      "classification": "PARTIAL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/Candidate"
+        ],
+        "files": 16,
+        "lines": 2920
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Candidate"
+        ],
+        "files": [
+          "src/components/Candidate/AiCareerBriefing.jsx",
+          "src/components/Candidate/CandidateCareerAssistant.jsx",
+          "src/components/Candidate/CandidateExecutiveRail.jsx",
+          "src/components/Candidate/CopilotHeroHud.jsx",
+          "src/components/Candidate/CubaApplicationProgressChart.jsx",
+          "src/components/Candidate/CubaCandidateHero.jsx",
+          "src/components/Candidate/CubaCandidateShell.jsx",
+          "src/components/Candidate/CubaMetricCardRow.jsx",
+          "src/components/Candidate/CubaTopJobMatches.jsx",
+          "src/components/Candidate/analyticsLogic.js",
+          "src/components/Candidate/briefingLogic.js",
+          "src/components/Candidate/command/candidateEntitySearch.js",
+          "src/components/Candidate/navigationState.js"
+        ],
+        "fileCount": 13,
+        "lines": 2657,
+        "classes": {
+          "filter": 14,
+          "pagination": 4,
+          "chart": 2,
+          "modal": 1
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/Candidate/CubaNextSteps.jsx",
+        "src/components/Candidate/PaymentGraceBanner.jsx",
+        "src/components/Candidate/gracePeriodNotice.js",
+        "src/components/Candidate/candidateEntitySearch.js"
+      ],
+      "rationale": "The 16-file Candidate directory contains three independent capabilities with their own rows: CubaNextSteps (FP-D10, onboarding checklist), PaymentGraceBanner + gracePeriodNotice (FP-D14, dunning banner) and candidateEntitySearch (candidate search). The shell is correctly composed of them at runtime, but counting their classes as the shell's own measurement contaminates it.",
+      "missingEvidence": null,
+      "modernAnchor": "candidate shell",
+      "modernPaths": [
+        "frontend/src/pages/dashboard/ai-assistant.tsx",
+        "frontend/src/pages/dashboard/overview.tsx"
+      ],
+      "endpoints": [
+        "/ai/generate-summary",
+        "/jobs/search"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -3,
+        "lines": -263
+      }
+    },
+    {
+      "row": "FP-D15",
+      "title": "Saved jobs / favourites",
+      "classification": "FULL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/Dashboard/DashboardFavourites"
+        ],
+        "files": 1,
+        "lines": 402
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard/DashboardFavourites"
+        ],
+        "files": [
+          "src/components/Dashboard/DashboardFavourites/DashboardFavourites.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 402,
+        "classes": {
+          "filter": 10
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, DashboardFavourites.jsx, 401 L with 7 useState hooks.",
+      "missingEvidence": null,
+      "modernAnchor": "saved jobs route",
+      "modernPaths": [
+        "frontend/src/pages/dashboard/favourites.tsx",
+        "frontend/src/lib/favourites.ts",
+        "frontend/src/lib/favourite-display.ts",
+        "frontend/src/components/favourites"
+      ],
+      "endpoints": [
+        "/favourites"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-E01",
+      "title": "Guided multi-step resume builder (Form/Boards/Actions steps)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "PARTIALLY RECONSTRUCTED",
+      "published": {
+        "paths": [
+          "src/components/BuildResume",
+          "src/components/Form",
+          "src/components/Boards",
+          "src/components/Actions"
+        ],
+        "files": 61,
+        "lines": 25243
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/BuildResume",
+          "src/components/Form",
+          "src/components/Boards",
+          "src/components/Actions"
+        ],
+        "files": [
+          "src/components/Actions/ResumesSelector/ResumesSelector.jsx",
+          "src/components/Actions/action-step-cover-filling/ActionCoverFilling.jsx",
+          "src/components/Actions/action-step-filling/ActionFilling.jsx",
+          "src/components/Actions/action-step-selection/ActionSelection.jsx",
+          "src/components/Actions/action/Action.jsx",
+          "src/components/Boards/board-cover-filling/BoardCoverFilling.jsx",
+          "src/components/Boards/board-step-filling/BoardFilling.jsx",
+          "src/components/Boards/board-step-introduction/BoardIntroduction.jsx",
+          "src/components/Boards/board-step-selection/BoardSelection.jsx",
+          "src/components/Boards/board/board.jsx",
+          "src/components/Boards/canvas-react/CanvasR.jsx",
+          "src/components/Boards/canvas/Canvas.jsx",
+          "src/components/BuildResume/BuildResume.jsx",
+          "src/components/BuildResume/PreviewModal.jsx",
+          "src/components/BuildResume/ResumeImportModal.jsx",
+          "src/components/BuildResume/SyncProfileModal.jsx",
+          "src/components/BuildResume/TemplateSelectionModal.jsx",
+          "src/components/BuildResume/ai/aiContract.js",
+          "src/components/BuildResume/ai/useAiAssist.js",
+          "src/components/BuildResume/components/AiPromptCard.jsx",
+          "src/components/BuildResume/components/EmptyState.jsx",
+          "src/components/BuildResume/components/EntryHeader.jsx",
+          "src/components/BuildResume/components/EntryList.jsx",
+          "src/components/BuildResume/components/Field.jsx",
+          "src/components/BuildResume/components/InlineAtsGuidance.jsx",
+          "src/components/BuildResume/components/StepGuide.jsx",
+          "src/components/BuildResume/components/StepShell.jsx",
+          "src/components/BuildResume/components/inlineAtsLogic.js",
+          "src/components/BuildResume/steps/AchievementsStep.jsx",
+          "src/components/BuildResume/steps/CertificationsStep.jsx",
+          "src/components/BuildResume/steps/CustomSectionsStep.jsx",
+          "src/components/BuildResume/steps/EducationStep.jsx",
+          "src/components/BuildResume/steps/HeadingStep.jsx",
+          "src/components/BuildResume/steps/LanguagesStep.jsx",
+          "src/components/BuildResume/steps/ProjectsStep.jsx",
+          "src/components/BuildResume/steps/ReferencesStep.jsx",
+          "src/components/BuildResume/steps/ReviewStep.jsx",
+          "src/components/BuildResume/steps/SkillsStep.jsx",
+          "src/components/BuildResume/steps/SummaryStep.jsx",
+          "src/components/BuildResume/steps/WorkHistoryStep.jsx",
+          "src/components/BuildResume/steps/components/AutocompleteInputField.jsx",
+          "src/components/BuildResume/steps/components/ConfirmRegenerateModal.jsx",
+          "src/components/BuildResume/steps/components/EducationHealthCard.jsx",
+          "src/components/BuildResume/steps/components/PhotoUpload.jsx",
+          "src/components/BuildResume/steps/components/RichTextEditor.jsx",
+          "src/components/BuildResume/steps/components/RoleAiCopilotModal.jsx",
+          "src/components/BuildResume/steps/components/RoleHealthCard.jsx",
+          "src/components/Form/AiRecommendationModal.jsx",
+          "src/components/Form/BulletPointsEditor.jsx",
+          "src/components/Form/MonthYearPicker.jsx",
+          "src/components/Form/dropdown-input/DropdownInput.jsx",
+          "src/components/Form/education-component/Education.jsx",
+          "src/components/Form/employment-component/Employment.jsx",
+          "src/components/Form/img-upload-input/ImgUploadInput.jsx",
+          "src/components/Form/language-picker/LanguagePicker.jsx",
+          "src/components/Form/languages-component/Languages.jsx",
+          "src/components/Form/progress-bar/ProgressBar.jsx",
+          "src/components/Form/simple-input/SimpleInput.jsx",
+          "src/components/Form/simple-textarea/SimpleTextarea.jsx",
+          "src/components/Form/skill-component/Skill.jsx"
+        ],
+        "fileCount": 60,
+        "lines": 24894,
+        "classes": {
+          "filter": 198,
+          "pagination": 208,
+          "modal": 54,
+          "bulk": 9,
+          "chart": 70,
+          "search": 79,
+          "sort": 14,
+          "authz": 12
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/BuildResume/AtsScoreMeter.jsx"
+      ],
+      "rationale": "The builder legitimately spans four directories (61 files), and the step components are its own implementation. It also contains whole sub-capabilities with their own rows \u2014 ATS meter (FP-E04/E05), AI writing aids (FP-E10), import/sync modals, template selection (FP-E08's share entry point) \u2014 so a single scoped file set would be arbitrary. The ATS meter is excluded here because it is a self-contained measured capability; the remaining overlap is declared and the row needs per-step scoping before its subfeature table is cited as its own.",
+      "missingEvidence": null,
+      "modernAnchor": "resume builder step flow",
+      "modernPaths": [
+        "frontend/src/pages/dashboard/resume-builder.tsx",
+        "frontend/src/components/resume"
+      ],
+      "endpoints": [
+        "/resumes",
+        "/users/ai/generate-summary"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -1,
+        "lines": -349
+      }
+    },
+    {
+      "row": "FP-E08",
+      "title": "Public share links / share modal",
+      "classification": "FULL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/BuildResume"
+        ],
+        "files": 36,
+        "lines": 16941
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard/ShareModal/ShareModal.jsx"
+        ],
+        "files": [
+          "src/components/Dashboard/ShareModal/ShareModal.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 271,
+        "classes": {},
+        "regions": [
+          {
+            "path": "src/components/BuildResume/BuildResume.jsx",
+            "lines": "93, 1060-1090, 1920-1935, 2600-2620, 2704",
+            "what": "share state, plan-gated handleShare, review-link modal mounts"
+          }
+        ]
+      },
+      "excluded": null,
+      "rationale": "The capability is a share modal, but the row was measured over the ENTIRE BuildResume directory (36 files, 16,941 L) \u2014 the same corpus as FP-E01's builder. The implementation is Dashboard/ShareModal/ShareModal.jsx (270 L) plus a handful of share handlers inside BuildResume.jsx. A 36-file corpus for a share modal is the same defect class as FP-A08's 68-file directory.",
+      "missingEvidence": null,
+      "modernAnchor": "share/public-link modal",
+      "modernPaths": [
+        "frontend/src/lib/share-publication.ts",
+        "frontend/src/components/ui/share-modal.tsx"
+      ],
+      "endpoints": [
+        "/resumes/{X}/publication",
+        "/resumes/{X}/publish",
+        "/resumes/{X}/unpublish"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -35,
+        "lines": -16670
+      }
+    },
+    {
+      "row": "FP-E09",
+      "title": "Cover letters",
+      "classification": "FULL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/CoverLetter",
+          "src/cv-templates"
+        ],
+        "files": 74,
+        "lines": 15832
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/CoverLetter/CoverLetter.jsx",
+          "src/components/TemplateRenderer.jsx"
+        ],
+        "files": [
+          "src/components/CoverLetter/CoverLetter.jsx",
+          "src/components/TemplateRenderer.jsx"
+        ],
+        "fileCount": 2,
+        "lines": 1918,
+        "classes": {
+          "filter": 5,
+          "modal": 13,
+          "print": 4,
+          "authz": 4
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "74 declared files: the entire cv-templates directory (72 files) plus CoverLetter.jsx. cv-templates is the corpus of FP-E02/FP-E03 (template catalogue volume and diversity) and CoverLetter.jsx does not read it \u2014 it imports ../TemplateRenderer, a single shared renderer. Including 72 unrelated template files inflated the cover-letter row by an order of magnitude.",
+      "missingEvidence": null,
+      "modernAnchor": "cover letter editor",
+      "modernPaths": [
+        "frontend/src/pages/dashboard/cover-letter-builder.tsx",
+        "frontend/src/lib/template-catalog.ts"
+      ],
+      "endpoints": [
+        "/covers",
+        "/covers/{X}",
+        "/generate-ai-cover-letter"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -72,
+        "lines": -13914
+      }
+    },
+    {
+      "row": "FP-E13",
+      "title": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+      "classification": "FULL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/engine/hybrid"
+        ],
+        "files": 23,
+        "lines": 3082
+      },
+      "reconstructed": {
+        "paths": [
+          "src/engine/hybrid"
+        ],
+        "files": [
+          "src/engine/hybrid/SmartResumeComposer.jsx",
+          "src/engine/hybrid/components/SmartAchievements.jsx",
+          "src/engine/hybrid/components/SmartCertifications.jsx",
+          "src/engine/hybrid/components/SmartCustomSection.jsx",
+          "src/engine/hybrid/components/SmartEducation.jsx",
+          "src/engine/hybrid/components/SmartExperience.jsx",
+          "src/engine/hybrid/components/SmartFlowRenderer.jsx",
+          "src/engine/hybrid/components/SmartHeader.jsx",
+          "src/engine/hybrid/components/SmartHobbies.jsx",
+          "src/engine/hybrid/components/SmartLanguages.jsx",
+          "src/engine/hybrid/components/SmartProjects.jsx",
+          "src/engine/hybrid/components/SmartReferences.jsx",
+          "src/engine/hybrid/components/SmartSkills.jsx",
+          "src/engine/hybrid/components/SmartSummary.jsx",
+          "src/engine/hybrid/layouts/CompactEuroLayout.jsx",
+          "src/engine/hybrid/layouts/ExecutiveBannerLayout.jsx",
+          "src/engine/hybrid/layouts/MinimalATSLayout.jsx",
+          "src/engine/hybrid/layouts/ModernSplitLayout.jsx",
+          "src/engine/hybrid/layouts/TechGridLayout.jsx",
+          "src/engine/hybrid/smartPartitioner.js",
+          "src/engine/hybrid/themePresets.js",
+          "src/engine/hybrid/utils/contentSanitizer.js",
+          "src/engine/hybrid/utils/formatText.js"
+        ],
+        "fileCount": 23,
+        "lines": 3082,
+        "classes": {
+          "filter": 26,
+          "chart": 8,
+          "authz": 2
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "23 files that are one engine: SmartResumeComposer, 14 Smart* section components, 5 layouts, smartPartitioner, themePresets and 2 utils. That is exactly the partitioner + layouts the row claims.",
+      "missingEvidence": null,
+      "modernAnchor": "resume layout engine",
+      "modernPaths": [
+        "frontend/src/components/resume/smart-layout-families.tsx",
+        "frontend/src/components/resume/smart-render-primitives.tsx",
+        "frontend/src/components/resume/smart-resume-document.tsx",
+        "frontend/src/lib/template-layouts.ts"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-E16",
+      "title": "Export access guard (plan-gated export routes)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/Exporter"
+        ],
+        "files": 3,
+        "lines": 179
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Exporter"
+        ],
+        "files": [
+          "src/components/Exporter/Exporter.jsx",
+          "src/components/Exporter/RequireExportAccess.jsx",
+          "src/components/Exporter/exportAccess.js"
+        ],
+        "fileCount": 3,
+        "lines": 179,
+        "classes": {},
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Three files, all export access: Exporter (104 L), RequireExportAccess (30 L), exportAccess.js (42 L) \u2014 guard, gate and component.",
+      "missingEvidence": null,
+      "modernAnchor": "plan-gated export guard",
+      "modernPaths": [
+        "frontend/src/components/guards/require-export-access.tsx",
+        "frontend/src/app/router.tsx"
+      ],
+      "endpoints": [
+        "/export",
+        "/export-docx",
+        "/export-render-data"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-F08",
+      "title": "Regional job hubs / landing pages",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/JobsLanding"
+        ],
+        "files": 4,
+        "lines": 901
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/JobsLanding"
+        ],
+        "files": [
+          "src/components/JobsLanding/JobsLanding.jsx",
+          "src/components/JobsLanding/JobsLandingHero.jsx",
+          "src/components/JobsLanding/LandingJobTopCompanies.jsx",
+          "src/components/JobsLanding/LandingJobsFeatured.jsx"
+        ],
+        "fileCount": 4,
+        "lines": 901,
+        "classes": {
+          "filter": 3,
+          "modal": 1,
+          "search": 6,
+          "pagination": 2
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Four files, all regional job landing pages (JobsLanding, JobsLandingHero, LandingJobTopCompanies, LandingJobsFeatured). FP-F10 includes this directory but that is FP-F10's contamination, not this row's.",
+      "missingEvidence": null,
+      "modernAnchor": "regional job hub pages",
+      "modernPaths": [
+        "frontend/src/pages/jobs/regional-hub.tsx"
+      ],
+      "endpoints": [
+        "/jobs"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-F10",
+      "title": "Job listing browse/filter UI (beyond maps and autocomplete)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/JobsListings",
+          "src/components/JobsLanding"
+        ],
+        "files": 21,
+        "lines": 7818
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/JobsListings"
+        ],
+        "files": [
+          "src/components/JobsListings/CreateJob.jsx",
+          "src/components/JobsListings/CreateJobModal.jsx",
+          "src/components/JobsListings/CustomLocationAutocomplete.jsx",
+          "src/components/JobsListings/EmployerApplicationForm.jsx",
+          "src/components/JobsListings/FavoritesModal.jsx",
+          "src/components/JobsListings/GoogleMapsProvider.jsx",
+          "src/components/JobsListings/JobApplicationModal.jsx",
+          "src/components/JobsListings/JobCard.jsx",
+          "src/components/JobsListings/JobDetailsModal.jsx",
+          "src/components/JobsListings/JobFilters.jsx",
+          "src/components/JobsListings/JobSearchBar.jsx",
+          "src/components/JobsListings/LocationAutocomplete.jsx",
+          "src/components/JobsListings/MainJobListings.jsx",
+          "src/components/JobsListings/RegionalHubsSection.jsx",
+          "src/components/JobsListings/RegionalJobsPage.jsx",
+          "src/components/JobsListings/SimpleLocationInput.jsx",
+          "src/components/JobsListings/countries.js"
+        ],
+        "fileCount": 17,
+        "lines": 6917,
+        "classes": {
+          "filter": 42,
+          "pagination": 53,
+          "modal": 18,
+          "authz": 15,
+          "search": 24,
+          "sort": 9
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/JobsLanding/JobsLanding.jsx",
+        "src/components/JobsLanding/JobsLandingHero.jsx",
+        "src/components/JobsLanding/LandingJobTopCompanies.jsx",
+        "src/components/JobsLanding/LandingJobsFeatured.jsx"
+      ],
+      "rationale": "The row claims browse/filter (FP-F07 separately claims maps and autocomplete). Its corpus included the whole JobsLanding directory, which is FP-F08's entire declared corpus \u2014 four regional hub pages with no listing filters. Scoped to JobsListings (17 files).",
+      "missingEvidence": null,
+      "modernAnchor": "jobs listing page",
+      "modernPaths": [
+        "frontend/src/pages/jobs/portal.tsx",
+        "frontend/src/components/jobs/job-application-modal.tsx"
+      ],
+      "endpoints": [
+        "/jobs/search",
+        "/jobs/{X}"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -4,
+        "lines": -901
+      }
+    },
+    {
+      "row": "FP-F11",
+      "title": "Employer dashboard: companies management, job editing, application modals, rejection reasons",
+      "classification": "PARTIAL PARITY",
+      "disposition": "SHARED \u2014 JUSTIFIED WITH EVIDENCE",
+      "published": {
+        "paths": [
+          "src/components/Dashboard/EmployerDashboard"
+        ],
+        "files": 7,
+        "lines": 3394
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard/EmployerDashboard"
+        ],
+        "files": [
+          "src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx",
+          "src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx",
+          "src/components/Dashboard/EmployerDashboard/EditJobModal.jsx",
+          "src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx",
+          "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx",
+          "src/components/Dashboard/EmployerDashboard/RejectionReasonModal.jsx",
+          "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx"
+        ],
+        "fileCount": 7,
+        "lines": 3394,
+        "classes": {
+          "search": 23,
+          "filter": 29,
+          "sort": 4,
+          "pagination": 10,
+          "modal": 6,
+          "chart": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Seven files that are one employer dashboard: EmployerDashboard (720 L), CompaniesManagement (566 L), AddCompanyModal (591 L), EditCompany-replacement EditJobModal (713 L), JobApplicationsModal (576 L), RejectionReasonModal (107 L) and SendMessageDialog (114 L). Every file serves the row's own title. The sharing is justified in both directions: the messaging dialog is FP-F03's implementation, and this directory is where M8C found the real implementations of FP-F05/FP-F06, whose own declared corpora were 25- and 27-line wrappers.",
+      "missingEvidence": null,
+      "modernAnchor": "employer dashboard",
+      "modernPaths": [
+        "frontend/src/pages/employer/portal.tsx",
+        "frontend/src/components/employer",
+        "frontend/src/components/applications"
+      ],
+      "endpoints": [
+        "/employer/company",
+        "/jobs/{X}",
+        "/job-applications/{X}/status"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G02",
+      "title": "Cuba design-system primitives (30 components)",
+      "classification": "REPLACED BY EQUIVALENT",
+      "disposition": "SHARED \u2014 JUSTIFIED WITH EVIDENCE",
+      "published": {
+        "paths": [
+          "src/components/cuba"
+        ],
+        "files": 52,
+        "lines": 7164
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/cuba"
+        ],
+        "files": [
+          "src/components/cuba/AiEngineStatus.jsx",
+          "src/components/cuba/AiSurface.jsx",
+          "src/components/cuba/AiTokenMeter.jsx",
+          "src/components/cuba/CubaAppShell.jsx",
+          "src/components/cuba/CubaBadge.jsx",
+          "src/components/cuba/CubaButton.jsx",
+          "src/components/cuba/CubaCard.jsx",
+          "src/components/cuba/CubaCommandPalette.jsx",
+          "src/components/cuba/CubaCopilotMascot.jsx",
+          "src/components/cuba/CubaDensityProvider.jsx",
+          "src/components/cuba/CubaDrawer.jsx",
+          "src/components/cuba/CubaEmptyState.jsx",
+          "src/components/cuba/CubaErrorState.jsx",
+          "src/components/cuba/CubaField.jsx",
+          "src/components/cuba/CubaHud.jsx",
+          "src/components/cuba/CubaInlineNotice.jsx",
+          "src/components/cuba/CubaMetricCapsule.jsx",
+          "src/components/cuba/CubaModal.jsx",
+          "src/components/cuba/CubaPageFrame.jsx",
+          "src/components/cuba/CubaPageHeader.jsx",
+          "src/components/cuba/CubaPortalShell.jsx",
+          "src/components/cuba/CubaPromptDialog.jsx",
+          "src/components/cuba/CubaPublicHeader.jsx",
+          "src/components/cuba/CubaSkeleton.jsx",
+          "src/components/cuba/CubaSplitView.jsx",
+          "src/components/cuba/CubaStatCard.jsx",
+          "src/components/cuba/CubaStickyRail.jsx",
+          "src/components/cuba/CubaToolbar.jsx",
+          "src/components/cuba/CubaUpgradeCard.jsx",
+          "src/components/cuba/CubaViewport.jsx",
+          "src/components/cuba/DesignSystemShowcase.jsx",
+          "src/components/cuba/M3Breadcrumbs.jsx",
+          "src/components/cuba/M3NotificationCenter.jsx",
+          "src/components/cuba/M3UserMenu.jsx",
+          "src/components/cuba/MessagesModuleGate.jsx",
+          "src/components/cuba/MessagesNavBadge.jsx",
+          "src/components/cuba/StatMicroVisuals.jsx",
+          "src/components/cuba/accountLinks.js",
+          "src/components/cuba/aiStatus.js",
+          "src/components/cuba/candidateNavigation.js",
+          "src/components/cuba/copilotActions.js",
+          "src/components/cuba/copilotPrompt.js",
+          "src/components/cuba/cubaShellFlag.js",
+          "src/components/cuba/fuzzyRank.js",
+          "src/components/cuba/index.js",
+          "src/components/cuba/portalCommands.js",
+          "src/components/cuba/portalNavigation.js",
+          "src/components/cuba/publicNavigation.js",
+          "src/components/cuba/resolveNotificationHref.js",
+          "src/components/cuba/useDialogA11y.js",
+          "src/components/cuba/useHeaderPopover.js",
+          "src/components/cuba/userIdentity.js"
+        ],
+        "fileCount": 52,
+        "lines": 7164,
+        "classes": {
+          "filter": 51,
+          "pagination": 9,
+          "authz": 6,
+          "modal": 16,
+          "chart": 2,
+          "json": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "52 files: 30+ design-system primitives AND five feature components whose capabilities have their own rows (candidate command palette, copilot mascot, HUD, density provider, application shell). A component library legitimately ships composite components, so the corpus is not wrong \u2014 but this is sharing, not independent verification: the row's subfeature counts include those five features' classes, which is why it is recorded as a justified share rather than a clean measurement. Excluding them would be defensible too; the choice is stated so a reader can take the other one.",
+      "missingEvidence": null,
+      "modernAnchor": "design system primitives",
+      "modernPaths": [
+        "frontend/src/components/ui"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G07",
+      "title": "Toast / notification feedback primitives",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/Toasts"
+        ],
+        "files": 1,
+        "lines": 132
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Toasts"
+        ],
+        "files": [
+          "src/components/Toasts/Toats.jsx"
+        ],
+        "fileCount": 1,
+        "lines": 132,
+        "classes": {},
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "One file, Toats.jsx (131 L, 0 useState, 0 API) \u2014 presentational toast primitives. The filename is misspelt in the legacy tree; that is a naming defect, not a corpus defect.",
+      "missingEvidence": null,
+      "modernAnchor": "toast primitives",
+      "modernPaths": [
+        "frontend/src/components/admin/AdminOperationsTab.tsx"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G09",
+      "title": "Blog authoring + public blog",
+      "classification": "MISSING",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/Blog",
+          "src/components/admin/blogManagement"
+        ],
+        "files": 7,
+        "lines": 3915
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Blog",
+          "src/components/admin/blogManagement"
+        ],
+        "files": [
+          "src/components/Blog/BlogEditor/BlogEditor.jsx",
+          "src/components/Blog/BlogList/BlogList.jsx",
+          "src/components/Blog/BlogPost/BlogPost.jsx",
+          "src/components/Blog/components/BlogCard.jsx",
+          "src/components/Blog/components/CategoryFilter.jsx",
+          "src/components/admin/blogManagement/BlogManagement.jsx",
+          "src/components/admin/blogManagement/BlogPreviewModal.jsx"
+        ],
+        "fileCount": 7,
+        "lines": 3915,
+        "classes": {
+          "search": 10,
+          "filter": 27,
+          "sort": 4,
+          "pagination": 22,
+          "modal": 13,
+          "table": 2,
+          "bulk": 6
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Seven files: BlogEditor (1,631 L), BlogList (387 L), BlogPost (483 L), BlogCard (171 L), CategoryFilter (84 L), BlogManagement (874 L), BlogPreviewModal (281 L). Authoring and the public blog are the row's own two halves.",
+      "missingEvidence": null,
+      "modernAnchor": "blog editor + public blog",
+      "modernPaths": [
+        "frontend/src/pages/blog",
+        "frontend/src/components/admin/AdminBlogManagementTab.tsx"
+      ],
+      "endpoints": [],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G10",
+      "title": "CMS custom pages / landing page rendering",
+      "classification": "PARTIAL PARITY",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/components/CustomPage",
+          "src/components/Marketing"
+        ],
+        "files": 17,
+        "lines": 3985
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/CustomPage",
+          "src/components/Marketing"
+        ],
+        "files": [
+          "src/components/CustomPage/CustomePage.jsx",
+          "src/components/Marketing/LandingPage.jsx",
+          "src/components/Marketing/elements/GridBackground.jsx",
+          "src/components/Marketing/elements/HomepageComparison.jsx",
+          "src/components/Marketing/elements/HomepageFinalCta.jsx",
+          "src/components/Marketing/elements/HomepageFooter.jsx",
+          "src/components/Marketing/elements/HomepageHero.jsx",
+          "src/components/Marketing/elements/HomepageLanguages.jsx",
+          "src/components/Marketing/elements/HomepageNavbar.jsx",
+          "src/components/Marketing/elements/HomepagePricing.jsx",
+          "src/components/Marketing/elements/HomepageReviews.jsx",
+          "src/components/Marketing/elements/HomepageSteps.jsx",
+          "src/components/Marketing/elements/HomepageStorySections.jsx",
+          "src/components/Marketing/elements/HomepageTemplates.jsx",
+          "src/components/Marketing/elements/HomepageTrustedBy.jsx",
+          "src/components/Marketing/elements/Homepagefaqs.jsx",
+          "src/components/Marketing/elements/faqData.js"
+        ],
+        "fileCount": 17,
+        "lines": 3985,
+        "classes": {
+          "filter": 6,
+          "pagination": 16,
+          "modal": 6,
+          "search": 8,
+          "table": 2,
+          "bulk": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "17 files: CustomePage.jsx (299 L), LandingPage.jsx and 15 Marketing/elements sections. The row claims CMS custom pages and landing-page rendering; the elements ARE the landing page. FP-D12 also counted them, which is D12's contamination, corrected there.",
+      "missingEvidence": null,
+      "modernAnchor": "CMS page renderer",
+      "modernPaths": [
+        "frontend/src/pages/cms/index.tsx",
+        "frontend/src/pages/landing.tsx"
+      ],
+      "endpoints": [
+        "/public/custom-pages"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G11",
+      "title": "Marketing site: welcome, features, FAQ, about, contact, legal",
+      "classification": "PARTIAL PARITY",
+      "disposition": "PARTIALLY RECONSTRUCTED",
+      "published": {
+        "paths": [
+          "src/components/welcome",
+          "src/components/Features",
+          "src/components/Contact"
+        ],
+        "files": 3,
+        "lines": 2592
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/welcome",
+          "src/components/Features",
+          "src/components/Contact"
+        ],
+        "files": [
+          "src/components/Contact/Contact.jsx",
+          "src/components/Features/Features.jsx",
+          "src/components/welcome/Welcome.jsx"
+        ],
+        "fileCount": 3,
+        "lines": 2592,
+        "classes": {
+          "filter": 4,
+          "pagination": 3,
+          "modal": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Welcome (1,504 L), Features (667 L) and Contact (420 L) are genuinely one marketing surface, so the corpus is not contaminated. But the row's stated scope includes FAQ/about/legal pages that live in another row's directory, so the capability is only partly covered by the measured corpus. Reconstructing it means deciding whether those pages are part of this row or of FP-G10 \u2014 a register-level decision, not a measurement.",
+      "missingEvidence": [
+        "FAQ, About and Legal content is NOT in this corpus. A search of the three files for FAQ returns zero hits; FAQ content exists in Marketing/elements/Homepagefaqs.jsx and faqData.js, which belong to FP-G10's corpus. The row's title overstates what the corpus implements."
+      ],
+      "modernAnchor": "marketing pages",
+      "modernPaths": [
+        "frontend/src/pages/landing.tsx",
+        "frontend/src/pages/features",
+        "frontend/src/pages/shared"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G15",
+      "title": "Shared utility library (42 modules: formatting, validation, download, OAuth resolvers, print)",
+      "classification": "REPLACED BY EQUIVALENT",
+      "disposition": "SHARED \u2014 JUSTIFIED WITH EVIDENCE",
+      "published": {
+        "paths": [
+          "src/utils"
+        ],
+        "files": 43,
+        "lines": 9669
+      },
+      "reconstructed": {
+        "paths": [
+          "src/utils"
+        ],
+        "files": [
+          "src/utils/adminData.js",
+          "src/utils/adminSetup.js",
+          "src/utils/atsScore.js",
+          "src/utils/authErrorMessages.js",
+          "src/utils/authoritativeInvoice.js",
+          "src/utils/autocompleteDirectories.js",
+          "src/utils/blogData.js",
+          "src/utils/browserState.js",
+          "src/utils/bulletQuality.js",
+          "src/utils/candidateContext.js",
+          "src/utils/contactFormValidation.js",
+          "src/utils/cubaToken.js",
+          "src/utils/currencyFormat.js",
+          "src/utils/docxDownload.js",
+          "src/utils/dynamicPlaceholders.js",
+          "src/utils/exportDownloader.js",
+          "src/utils/facebookSdkAuth.js",
+          "src/utils/ga4.js",
+          "src/utils/googleSdkAuth.js",
+          "src/utils/gstUtils.js",
+          "src/utils/healthPresentation.js",
+          "src/utils/interviewCoach.js",
+          "src/utils/jobTracker.js",
+          "src/utils/locationHelper.js",
+          "src/utils/moduleFlags.js",
+          "src/utils/oauthRedirectError.js",
+          "src/utils/oauthResolver.js",
+          "src/utils/pdfDownload.js",
+          "src/utils/portfolioData.js",
+          "src/utils/printSurface.js",
+          "src/utils/privacyConsent.js",
+          "src/utils/profileData.js",
+          "src/utils/resumeData.js",
+          "src/utils/roleInterviewGenerator.js",
+          "src/utils/runtimeOrigin.js",
+          "src/utils/safeInternalPath.js",
+          "src/utils/sanitizeHtml.js",
+          "src/utils/signOut.js",
+          "src/utils/subscriptionUtils.js",
+          "src/utils/templateCatalog.js",
+          "src/utils/templateRegistry.js",
+          "src/utils/totpHelper.js",
+          "src/utils/watermarkEntitlement.js"
+        ],
+        "fileCount": 43,
+        "lines": 9669,
+        "classes": {
+          "filter": 129,
+          "pagination": 9,
+          "table": 2,
+          "print": 1,
+          "authz": 2
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "43 files of shared utilities. Other rows measure individual modules of this library as their own implementation, which is what a utility library is for; the sharing is therefore justified and recorded. It is not independent verification of this row: its counts are the union of everything in src/utils, including capabilities measured elsewhere.",
+      "missingEvidence": null,
+      "modernAnchor": "shared utils",
+      "modernPaths": [
+        "frontend/src/lib"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G22",
+      "title": "Data models, runtime conf and React context scaffolding",
+      "classification": "REPLACED BY EQUIVALENT",
+      "disposition": "VERIFIED \u2014 CORRECT",
+      "published": {
+        "paths": [
+          "src/models",
+          "src/conf",
+          "src/context"
+        ],
+        "files": 7,
+        "lines": 344
+      },
+      "reconstructed": {
+        "paths": [
+          "src/models",
+          "src/conf",
+          "src/context"
+        ],
+        "files": [
+          "src/conf/configuration.js",
+          "src/conf/fire.js",
+          "src/context/AuthContext.jsx",
+          "src/models/Education.js",
+          "src/models/Employment.js",
+          "src/models/Language.js",
+          "src/models/Skills.js"
+        ],
+        "fileCount": 7,
+        "lines": 344,
+        "classes": {
+          "json": 1
+        },
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "Seven files: four models (Education, Employment, Language, Skills), two conf modules and AuthContext. src/models contains exactly those four files, so the corpus is complete for what it claims.",
+      "missingEvidence": null,
+      "modernAnchor": "models/config/context",
+      "modernPaths": [
+        "frontend/src/lib",
+        "frontend/src/app"
+      ],
+      "endpoints": [],
+      "backend": "n/a",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G23",
+      "title": "Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs)",
+      "classification": "PARTIAL PARITY",
+      "disposition": "SHARED \u2014 JUSTIFIED WITH EVIDENCE",
+      "published": {
+        "paths": [
+          "src/hooks"
+        ],
+        "files": 11,
+        "lines": 1431
+      },
+      "reconstructed": {
+        "paths": [
+          "src/hooks"
+        ],
+        "files": [
+          "src/hooks/unreadMessagesPoller.js",
+          "src/hooks/useAiEngineStatus.js",
+          "src/hooks/useAiTokenUsage.js",
+          "src/hooks/useConfirmDialog.jsx",
+          "src/hooks/useInterviewMedia.js",
+          "src/hooks/useMetaManager.js",
+          "src/hooks/useOAuthSignIn.js",
+          "src/hooks/usePromptDialog.jsx",
+          "src/hooks/useServiceAvailability.js",
+          "src/hooks/useUnreadMessages.js",
+          "src/hooks/useUnreadNotifications.js"
+        ],
+        "fileCount": 11,
+        "lines": 1431,
+        "classes": {},
+        "regions": null
+      },
+      "excluded": null,
+      "rationale": "11 hook modules. Hooks are cross-cutting by construction and other rows consume them; being used by several capabilities is their purpose, so the sharing is justified. As with the other library rows, the counts describe the library, not an isolated capability.",
+      "missingEvidence": null,
+      "modernAnchor": "shared hooks",
+      "modernPaths": [
+        "frontend/src/hooks"
+      ],
+      "endpoints": [
+        "/notifications",
+        "/platform/operational-status"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": 0,
+        "lines": 0
+      }
+    },
+    {
+      "row": "FP-G24",
+      "title": "In-app support surface and input validation modals",
+      "classification": "PARTIAL PARITY",
+      "disposition": "CORRECTED \u2014 MEASUREMENT WAS CONTAMINATED",
+      "published": {
+        "paths": [
+          "src/components/Dashboard/DashboardSupport",
+          "src/components/Dashboard/ValidationModal",
+          "src/components/Dashboard/DashboardToast"
+        ],
+        "files": 3,
+        "lines": 1420
+      },
+      "reconstructed": {
+        "paths": [
+          "src/components/Dashboard/DashboardSupport",
+          "src/components/Dashboard/ValidationModal"
+        ],
+        "files": [
+          "src/components/Dashboard/DashboardSupport/DashboardSupport.jsx",
+          "src/components/Dashboard/ValidationModal/ValidationModal.jsx"
+        ],
+        "fileCount": 2,
+        "lines": 1356,
+        "classes": {
+          "search": 10,
+          "filter": 8,
+          "pagination": 25,
+          "modal": 1
+        },
+        "regions": null
+      },
+      "excluded": [
+        "src/components/Dashboard/DashboardToast/DashboardToast.jsx"
+      ],
+      "rationale": "The row claims the in-app support surface and input-validation modals. DashboardToast is neither: DashboardSupport.jsx does not import it (a grep for DashboardToast inside DashboardSupport returns nothing), and its subject is toast notification primitives, which is FP-G07's capability. Scoped to DashboardSupport (916 L) + ValidationModal (438 L).",
+      "missingEvidence": null,
+      "modernAnchor": "support surface",
+      "modernPaths": [
+        "frontend/src/pages/dashboard/support.tsx",
+        "frontend/src/components/messages"
+      ],
+      "endpoints": [
+        "GET /support/tickets",
+        "POST /support/tickets",
+        "GET /support/tickets/X",
+        "POST /support/tickets/X/messages",
+        "GET /admin/support/tickets",
+        "GET /admin/support/tickets/X",
+        "POST /admin/support/tickets/X/messages",
+        "PATCH /admin/support/tickets/X"
+      ],
+      "backend": "yes",
+      "delta": {
+        "files": -1,
+        "lines": -64
+      }
+    }
+  ]
+}

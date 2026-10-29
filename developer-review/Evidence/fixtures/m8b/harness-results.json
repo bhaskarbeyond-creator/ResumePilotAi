@@ -28,7 +28,8 @@
     "exit": 1,
     "failed": [
       "C02 paths-resolve",
-      "C10 verification-evidence"
+      "C10 verification-evidence",
+      "C13 corpus-volume"
     ],
     "caught": true,
     "reason": "path does not exist",
@@ -132,7 +133,7 @@
       "C10 verification-evidence"
     ],
     "caught": true,
-    "reason": "identical non-trivial distribution across different rows, with no member declaring the sharing",
+    "reason": "identical non-trivial distribution across rows that declare no sharing",
     "verdict": "REJECTED_CORRECTLY"
   },
   {
@@ -168,7 +169,43 @@
       "C10 verification-evidence"
     ],
     "caught": true,
-    "reason": "identical non-trivial distribution across different rows, with no member declaring the sharing",
+    "reason": "identical non-trivial distribution across rows that declare no sharing",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f14_defect_beside_justified",
+    "expected": "C05 duplicate-dist",
+    "exit": 1,
+    "failed": [
+      "C05 duplicate-dist",
+      "C10 verification-evidence"
+    ],
+    "caught": true,
+    "reason": "row carries an identical non-trivial distribution but declares no sharing of its own; proximity to a justified",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f15_line_count_manipulated",
+    "expected": "C13 corpus-volume",
+    "exit": 1,
+    "failed": [
+      "C10 verification-evidence",
+      "C13 corpus-volume"
+    ],
+    "caught": true,
+    "reason": "declared line count does not reproduce from the declared paths",
+    "verdict": "REJECTED_CORRECTLY"
+  },
+  {
+    "fixture": "f16_file_count_manipulated",
+    "expected": "C13 corpus-volume",
+    "exit": 1,
+    "failed": [
+      "C10 verification-evidence",
+      "C13 corpus-volume"
+    ],
+    "caught": true,
+    "reason": "declared file count does not reproduce from the declared paths",
     "verdict": "REJECTED_CORRECTLY"
   }
 ]

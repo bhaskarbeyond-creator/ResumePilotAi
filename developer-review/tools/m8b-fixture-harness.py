@@ -251,6 +251,48 @@ def f13_overlay_classes_duplicated(dst):
     return "C05 duplicate-dist"
 
 
+
+def f14_defect_beside_justified(dst):
+    """A row whose EFFECTIVE distribution is identical to the justified legitimate-share pair,
+    declaring no sharing of its own. Under a group-level exemption it was invisible; C05 must now
+    report it. This is the bypass the mandate names explicitly."""
+    op = "Evidence/artifacts/m8c-corpus-scoping.json"
+    o = load(dst, op)
+    src = o["rows"].get("FP-E02") or {}
+    classes = (src.get("capabilityScoped") or {}).get("classes")
+    if not classes:
+        raise SystemExit("f14 precondition: FP-E02 has no scoped classes in the overlay")
+    victim = o["rows"].setdefault("FP-G07", {})
+    victim["corpusScope"] = "capability-scoped"
+    victim["capabilityScoped"] = {"files": 1, "lines": 131, "paths": ["src/components/Toasts"],
+                                  "classes": dict(classes)}
+    victim.pop("sharedCorpusJustification", None)
+    victim.pop("nestedCorpusJustification", None)
+    save(dst, op, o)
+    return "C05 duplicate-dist"
+
+
+def f15_line_count_manipulated(dst):
+    """Inflate a row's declared line count by 1,000 without touching its paths. Cosmetic edits to
+    the numbers a reader quotes must not pass structural checks."""
+    p = "Evidence/artifacts/feature-parity.json"
+    d = load(dst, p)
+    row = next(r for r in d["capabilities"] if r["id"] == "FP-A12")
+    row["legacyLines"] = (row["legacyLines"] or 0) + 1000
+    save(dst, p, d)
+    return "C13 corpus-volume"
+
+
+def f16_file_count_manipulated(dst):
+    """Add a phantom file to a row's declared corpus count. C13 must recompute and disagree."""
+    p = "Evidence/artifacts/feature-parity.json"
+    d = load(dst, p)
+    row = next(r for r in d["capabilities"] if r["id"] == "FP-A01")
+    row["legacyFiles"] = (row["legacyFiles"] or 0) + 3
+    save(dst, p, d)
+    return "C13 corpus-volume"
+
+
 FIXTURES = [
     ("f1_duplicate_capability", f1_duplicate_capability),
     ("f2_fabricated_path", f2_fabricated_path),
@@ -265,6 +307,9 @@ FIXTURES = [
     ("f11_clientonly_rationale_removed", f11_clientonly_rationale_removed),
     ("f12_scoped_corpus_duplicated", f12_scoped_corpus_duplicated),
     ("f13_overlay_classes_duplicated", f13_overlay_classes_duplicated),
+    ("f14_defect_beside_justified", f14_defect_beside_justified),
+    ("f15_line_count_manipulated", f15_line_count_manipulated),
+    ("f16_file_count_manipulated", f16_file_count_manipulated),
 ]
 
 

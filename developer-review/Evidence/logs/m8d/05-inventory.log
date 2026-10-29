@@ -1,0 +1,10 @@
+revision 69a3ed4
+legacy .js/.jsx inventoried : 651
+  test/spec excluded        : 1 -> ['src/components/welcome/App.test.js']
+  measured (in scope)       : 650
+  mapped by register union  : 651 distinct / 1213 per-row sum (inflation 1.866x)
+  measured but never mapped : 0
+  register reaches test file: ['src/components/welcome/App.test.js']
+modern .ts/.tsx inventoried : 206 measured 206
+
+650 vs 651: RECONCILED (651 raw code files minus 1 test file = 650)

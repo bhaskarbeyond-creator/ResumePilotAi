@@ -1,0 +1,16 @@
+PASS  C01 provenance       13 artifacts carry a revision; all must resolve and have an identical application tree
+PASS  C02 paths-resolve    112 rows checked; every declared source path must exist
+PASS  C03 corpus-scope     53 rows measure a bare directory; 12 are capability-scoped or a declared legitimate share, 41 remain DIRECTORY-UNRECONSTRUCTED and UNVERIFIED
+PASS  C04 duplicate-corpus 109 distinct corpora across the register; shared corpora must be declared
+PASS  C05 duplicate-dist   112 rows; 5 rows exempt on declared sharing or corpus ownership (2 fully-documented groups); an identical non-trivial distribution must otherwise repeat for no row
+PASS  C06 full-evidence    13 FULL rows checked for positive evidence
+PASS  C07 exact-totals     recomputed 112 rows, 6 classifications, 7 domains; corpus double-count factor 1.86x (per-row sum 1212 vs 651 distinct files)
+PASS  C08 dispositions     16 claims, each must hold exactly one primary disposition
+PASS  C09 finding-ids      56 DISC findings, 56 unique, declared total reconciled
+PASS  C10 verification-evidence 56 findings: status vocabulary enforced; 7 RUNTIME claims checked against the evidence index; NOTE no closure/disposition field exists in the register
+PASS  C11 unique-rows      112 rows, 112 unique ids
+PASS  C12 artifact-staleness 19 rows declare their stored distribution stale/superseded; a coincidence may not be left unexplained behind the overlay
+PASS  C13 corpus-volume    110 rows: declared files and lines must reproduce exactly from the declared paths at the audited revision
+
+--- Summary ---
+PASS: 13  FAIL: 0
