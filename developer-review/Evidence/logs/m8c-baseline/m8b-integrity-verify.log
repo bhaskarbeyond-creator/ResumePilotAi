@@ -1,0 +1,40 @@
+PASS  C01 provenance       13 artifacts carry a revision; all must resolve and have an identical application tree
+PASS  C02 paths-resolve    112 rows checked; every declared source path must exist
+FAIL  C03 corpus-scope     53 rows measure a bare directory; each must declare corpusScope
+        - {"row": "FP-A01", "paths": ["src/components/admin/dashboard"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - {"row": "FP-A03", "paths": ["src/components/admin/health"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - {"row": "FP-A05", "paths": ["src/components/admin/audit", "src/components/admin/security"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - {"row": "FP-A06", "paths": ["src/components/admin/operators"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - {"row": "FP-A07", "paths": ["src/components/admin/security"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - {"row": "FP-A08", "paths": ["src/components/admin"], "reason": "all paths are bare directories; no corpusScope declaration"}
+        - ... 47 more
+FAIL  C04 duplicate-corpus 101 distinct corpora across the register; shared corpora must be declared
+        - {"rows": ["FP-A02", "FP-A04"], "paths": [], "legacyFiles": 0, "legacyLines": 0, "reason": "2 rows share one corpus without sharedCorpusJustification"}
+        - {"rows": ["FP-A08", "FP-A19"], "paths": ["src/components/admin"], "legacyFiles": 68, "legacyLines": 29850, "reason": "2 rows share one corpus without sharedCorpusJustification"}
+        - {"rows": ["FP-A14", "FP-A15", "FP-A16", "FP-A21"], "paths": ["src/components/admin/settings"], "legacyFiles": 35, "legacyLines": 14191, "reason": "4 rows share one corpus without sharedCorpusJustification"}
+        - {"rows": ["FP-B02", "FP-B03"], "paths": ["src/enterprise/components/EnterpriseUsersTab.jsx"], "legacyFiles": 1, "legacyLines": 973, "reason": "2 rows share one corpus without sharedCorpusJustification"}
+        - {"rows": ["FP-E02", "FP-E03"], "paths": ["src/cv-templates"], "legacyFiles": 73, "legacyLines": 13985, "reason": "2 rows share one corpus without sharedCorpusJustification"}
+        - {"rows": ["FP-E04", "FP-E05"], "paths": ["src/components/BuildResume/AtsScoreMeter.jsx"], "legacyFiles": 1, "legacyLines": 349, "reason": "2 rows share one corpus without sharedCorpusJustification"}
+        - ... 1 more
+FAIL  C05 duplicate-dist   112 rows; identical non-trivial distributions must not repeat
+        - {"rows": ["FP-A08", "FP-A19"], "distribution": {"authz": 150, "bulk": 7, "csv": 5, "document": 5, "filter": 156, "json": 16, "modal": 61, "pagination": 207, "search": 64, "table": 38}, "reason": "identical non-trivial di
+        - {"rows": ["FP-A14", "FP-A15", "FP-A16", "FP-A21"], "distribution": {"authz": 87, "csv": 1, "document": 5, "filter": 28, "json": 10, "modal": 18, "pagination": 100, "search": 10, "table": 14}, "reason": "identical non-tri
+        - {"rows": ["FP-B02", "FP-B03"], "distribution": {"authz": 2, "bulk": 3, "csv": 1, "filter": 8, "modal": 3, "pagination": 1, "search": 5, "table": 2}, "reason": "identical non-trivial distribution across different rows"}
+        - {"rows": ["FP-C01", "FP-C04"], "distribution": {"chart": 28, "filter": 3, "modal": 10, "pagination": 4, "search": 3}, "reason": "identical non-trivial distribution across different rows"}
+        - {"rows": ["FP-E02", "FP-E03"], "distribution": {"chart": 4, "filter": 35, "pagination": 2}, "reason": "identical non-trivial distribution across different rows"}
+        - {"rows": ["FP-E04", "FP-E05"], "distribution": {"chart": 1, "filter": 1, "pagination": 3}, "reason": "identical non-trivial distribution across different rows"}
+        - ... 1 more
+FAIL  C06 full-evidence    13 FULL rows checked for positive evidence
+        - {"row": "FP-C06", "grade": "SUPPORTED", "reason": "FULL row graded without any endpoint and without clientOnly rationale"}
+        - {"row": "FP-E04", "grade": "SUPPORTED", "reason": "FULL row graded without any endpoint and without clientOnly rationale"}
+        - {"row": "FP-E13", "grade": "SUPPORTED", "reason": "FULL row graded without any endpoint and without clientOnly rationale"}
+PASS  C07 exact-totals     recomputed 112 rows, 6 classifications, 7 domains; corpus double-count factor 1.86x (per-row sum 1212 vs 651 distinct files)
+PASS  C08 dispositions     16 claims, each must hold exactly one primary disposition
+PASS  C09 finding-ids      56 DISC findings, 56 unique, declared total reconciled
+FAIL  C10 verification-evidence 56 findings: status vocabulary enforced; 6 RUNTIME claims checked against the evidence index; NOTE no closure/disposition field exists in the register
+        - {"finding": "DISC-056", "reason": "claims RUNTIME VERIFIED but cites no evidence id and no evidence path"}
+        - {"reason": "schema non-uniformity: 32 of 56 findings carry no Verification status field (evidence class unrecorded): ['DISC-024', 'DISC-025', 'DISC-026', 'DISC-027', 'DISC-028', 'DISC-029', 'DISC-030', 'DISC-031']"}
+PASS  C11 unique-rows      112 rows, 112 unique ids
+
+--- Summary ---
+PASS: 6  FAIL: 5

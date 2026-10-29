@@ -1,0 +1,51 @@
+scripts/verify-v4-reconciliation.py: line 24: V4 reconciliation verifier — stronger checks than verify-audit-package.sh.
+
+Written because AUDIT-CHECK-PROVENANCE.md found that 58 of the 61 existing checks are
+self-referential: none stats a path, none re-derives a number from the repository, and
+none notices when a document and its generator disagree.
+
+This script is deliberately SEPARATE from verify-audit-package.sh. The old script is not
+weakened, relaxed, or edited — a verifier that is adjusted until the package passes is
+worthless.
+
+Checks:
+  1. capability totals sum, per domain and overall
+  2. every legacy/modern path cited by a capability row exists on disk
+  3. both trees are fully attributed (legacy AND modern — the old script checks legacy only)
+  4. backend register: class counts sum to the unique-operation total, and the classes are
+     exactly the seven the mandate names
+  5. the reachability document's headline table matches the JSON it was generated from
+  6. DISC headings == declared total; RA rows == expected count and unique
+  7. every V4 artifact exists
+  8. no V4 document claims FULL PARITY for a row with no modern anchor
+
+Exit 0 = clean, 1 = findings (printed).
+: File name too long
+import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
+import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
+import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
+import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
+scripts/verify-v4-reconciliation.py: line 30: syntax error near unexpected token `('
+scripts/verify-v4-reconciliation.py: line 30: `DR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))'
+PASS: capability totals reconcile
+PASS: every cited path exists on disk
+PASS: both trees fully attributed
+PASS: reachability classes are the seven and sum to the total
+PASS: reachability document matches its JSON
+PASS: finding/allegation IDs are consistent
+PASS: all V4 artifacts present
+PASS: no FULL PARITY row without a modern anchor
+PASS: no glob-style paths in the register
+PASS: legacy/modern counts recomputed from the filesystem
+PASS: operation register matches its TSV
+PASS: every dispositioned category enumerates
+PASS: client call existence artifact reconciles
+PASS: every FULL PARITY row is supported
+PASS: reachability document matches the register
+PASS: coverage total equals the sum of its parts
+PASS: registration counts reconcile across the two parsers
+PASS: legacy call evidence re-derivable from src/
+PASS: M8 gap adjudications cite registered operations
+PASS: M8 parity revalidation agrees with the register
+--- Summary ---
+PASS: 20  FAIL: 0

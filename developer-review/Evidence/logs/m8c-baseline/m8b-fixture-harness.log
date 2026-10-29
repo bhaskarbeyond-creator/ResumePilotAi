@@ -1,0 +1,12 @@
+BASELINE  exit=1  failing=['C03 corpus-scope', 'C04 duplicate-corpus', 'C05 duplicate-dist', 'C06 full-evidence', 'C10 verification-evidence']
+OK   f1_duplicate_capability                expect=C11 unique-rows    exit=1 caught=True  row id appears 2 times: FP-A01
+OK   f2_fabricated_path                     expect=C02 paths-resolve  exit=1 caught=True  path does not exist
+OK   f3_missing_source_reference            expect=C02 paths-resolve  exit=1 caught=True  declares 1 files but names no source path
+OK   f4_incorrect_parity_classification     expect=C06 full-evidence  exit=1 caught=True  FULL row graded without any endpoint and without clientOnly rationale
+OK   f5_incorrect_summary_count             expect=C07 exact-totals   exit=1 caught=True  
+OK   f6_unresolved_marked_closed            expect=C10 verification-evidence exit=1 caught=True  marked resolved/closed but cites no resolving evidence
+OK   f7_full_row_without_implementation     expect=C06 full-evidence  exit=1 caught=True  FULL row has declared endpoints but none resolved as ok
+OK   f8_duplicated_measurement_table        expect=C05 duplicate-dist exit=1 caught=True  identical non-trivial distribution across different rows
+
+--- Summary ---
+fixtures: 8  rejected-for-the-right-reason: 8  failures: 0

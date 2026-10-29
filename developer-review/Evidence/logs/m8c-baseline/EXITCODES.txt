@@ -1,0 +1,4 @@
+tools/m8b-integrity-verify.py exit=1
+tools/m8b-fixture-harness.py exit=0
+scripts/verify-audit-package.sh exit=0
+scripts/verify-v4-reconciliation.py exit=0

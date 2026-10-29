@@ -1,0 +1,6 @@
+# Generated fixture copies.
+# m8b-fixture-harness.py rebuilds these from the audit dataset on every run; together they are
+# ~13 MB of duplicated register data and must never be committed. Only the harness, its README
+# and its result record are versioned.
+_baseline/
+f*/

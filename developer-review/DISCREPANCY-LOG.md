@@ -1442,6 +1442,10 @@ control plane that the admin UI actually drives.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-025] 17 client-side paths are served by no backend operation — blog, queue console, moderation, operations and user-status actions 404 at runtime
 
 > **V7 revision (`8a6e03bb`).** As first raised this finding listed **23** paths, six of which were
@@ -1511,6 +1515,10 @@ client; a re-run of `client-call-existence.cjs` reports 0 `MISSING`. Not met.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-026] Admin controls fabricate success after swallowing a failed write (suspend user, backup, cache purge, blog delete)
 
 **Severity:** P1 — Critical (an administrator is told a security-relevant action succeeded when the server never received it)
@@ -1569,6 +1577,10 @@ The finder that produces the list is `tools/client-contract-audit.cjs` (`success
 dead-letter retry/purge pair, user-status, and blog delete. Counted per site, not per finding, because a
 single control can be reached from two call sites.
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-027] 17 client-call paths (27 call sites) have no registered backend operation
 
 | Field | Value |
@@ -1590,6 +1602,9 @@ single control can be reached from two call sites.
 | **Confidence** | High — two independent artefacts (client call sites, backend grep) agree |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-028] Recruiter "Message candidate" posts to a non-existent route and displays "Message Dispatched!"
 
@@ -1612,6 +1627,9 @@ single control can be reached from two call sites.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-029] Support help desk has no backend at all; tickets, replies and status changes are fabricated
 
@@ -1645,6 +1663,9 @@ What survives, at **P3 not P1**: the tab still seeds `DEFAULT_TICKETS` (`:47`) a
 when the real list is empty or the read fails — recorded as **DISC-047**. The user-side help centre is
 functional. No application defect of the original severity exists.
 
+**Verification status:** STATICALLY VERIFIED
+
+Absence-of-backend claim reproduced by static inspection at `69a3ed4` (`grep -rn "support/tickets" backend/` returns no match; no support router is mounted). The `curl` in the reproduction field is a recipe that was NOT executed against a running stack with a retained log, so no runtime status is claimed.
 
 ## [DISC-030] Moderation queue is a fixture and both decisions target unregistered routes
 
@@ -1683,6 +1704,9 @@ functional. No application defect of the original severity exists.
 DISC-042 and DISC-046 were raised separately before this cross-check and are **merged into this entry**;
 their IDs are retained as stubs so no citation breaks.
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-031] User manager renders fabricated accounts when the API fails, and the status toggle targets a missing route
 
@@ -1705,6 +1729,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-032] Employer portal messaging is component state only; the real messaging stack is unused on the employer side
 
@@ -1727,6 +1754,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-033] Employer Team Seats screen is local state: invites "succeed" without a request
 
@@ -1749,6 +1779,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-034] Team member management (list/add/remove) removed from the enterprise teams tab while its API survives
 
@@ -1771,6 +1804,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-035] Audit trail narrowed to the newest 100 events; JSON export and deep links removed
 
@@ -1793,6 +1829,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-036] 100 template ids are generated from 5 structural archetypes; 51 bespoke layouts and 4 cover templates are gone
 
@@ -1815,6 +1854,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High — counts are generated from source, not estimated |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-037] Eight email-administration subfeatures are unexposed in the UI while their endpoints remain server-only
 
@@ -1837,6 +1879,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-038] Voice interview mode removed entirely: 2,432 lines of speech/audio code, zero replacement
 
@@ -1859,6 +1904,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-039] Blog editor downgraded from TipTap rich text to a Markdown textarea; the entire blog data path is unregistered
 
@@ -1881,6 +1929,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | High |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-040] Legacy download helpers (PDF/DOCX) have no recorded disposition in the share and job-editor rows
 
@@ -1903,6 +1954,9 @@ their IDs are retained as stubs so no citation breaks.
 | **Confidence** | Low — attribution ambiguity, not a proven regression |
 | **First raised** | Mandate 6, revision `a5835ff6` (branch head when V6 began) |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-041] The reachability register never scanned a router that is not named `router` — 8 live operations and 6 "missing" client paths were audit artefacts
 
@@ -1937,6 +1991,10 @@ remains blocked (see `RUNTIME-TEST-HARNESS-M7.md`).
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-042] MERGED INTO DISC-030 — Admin moderation writes to endpoints that do not exist while equivalent REST operations do
 
 | Field | Value |
@@ -1965,6 +2023,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-043] The public job board calls `GET /api/jobs`, an operation that does not exist; the real public listing is `/api/jobs-data`
 
 | Field | Value |
@@ -1987,6 +2049,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **First raised** | Mandate 7, revision `8a6e03bb` |
 
 ---
+
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-044] Employer→candidate email has no backend route, and the service that would send it is orphaned
 
@@ -2011,6 +2077,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-045] Checkout validates coupons against a non-existent endpoint, then applies hardcoded promo codes locally
 
 | Field | Value |
@@ -2033,6 +2103,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **First raised** | Mandate 7, revision `8a6e03bb` |
 
 ---
+
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-046] MERGED INTO DISC-030 — The moderation tab renders fixture records and never reads the backend
 
@@ -2057,6 +2131,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-047] An empty support inbox still displays fixture tickets
 
 | Field | Value |
@@ -2079,6 +2157,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 
 ---
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-048] The resume photo upload accepts 5 MB into a request body the API caps at 256 KB
 
 | Field | Value |
@@ -2098,6 +2180,10 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **Closure** | Not met; runtime confirmation outstanding |
 | **Confidence** | Medium-High — the two limits and the code path are read directly; the exact failure status is inferred, not observed |
 | **First raised** | Mandate 7, revision `8a6e03bb` |
+
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-049] M7's provenance claim is false in two ways, and the ref it says preserves the foreign commit does not exist
 
@@ -2145,6 +2231,10 @@ here. Every scope proof in this package now uses `-c core.quotePath=false`, and 
 command. A reviewer running the naive form would conclude the audit had rewritten 100 application
 files; §1.7 of the toolchain log says so in as many words.
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-050] The public contact form reports success without sending a request
 
 | Field | Value |
@@ -2164,6 +2254,10 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Regression acceptance** | With the backend running, a submitted enquiry produces exactly one `POST /api/contact` and one stored row, and the success card appears only after the 202; with the backend unreachable the card does not appear and an error is shown |
 | **Closure** | Not met |
 
+**Verification status:** STATICALLY VERIFIED
+
+The missing request is proven statically at `69a3ed4` (the submit handler never calls the API client). The 503 `RATE_LIMIT_UNAVAILABLE` observed on `/api/contact` during M8B is a separate, recorded result; it does not make the fabricated-success path a runtime finding.
+
 ## [DISC-051] The public jobs page requests an operation that does not exist, and its filters are ignored even on the operation that does
 
 | Field | Value |
@@ -2181,6 +2275,10 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Remediation spec** | Point the page at `/jobs-data`; add `q`/`location`/`type` predicates in the repository (parameterised), or remove the controls and say so |
 | **Regression acceptance** | With three active and one draft job seeded, `/jobs` shows exactly three; applying a location filter changes the result set server-side; the request in the network log is `/api/jobs-data` |
 | **Closure** | Not met |
+
+**Verification status:** RUNTIME VERIFIED
+
+The public-jobs 404 was executed against the local stack and recorded in `Evidence/logs/m8-http-probe-authenticated.log`; the filter/sort claims are static, from source at `69a3ed4`.
 
 ## [DISC-052] The create-ticket modal has no focus trap, no Escape handling, no scroll lock and no focus return
 
@@ -2200,6 +2298,10 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Regression acceptance** | Keyboard-only: open, Escape closes when not submitting and does not close mid-submit; Tab cycles inside; focus returns to the opener; the page behind does not scroll |
 | **Closure** | Not met |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
 ## [DISC-053] The shared unread-message poller and the global unread badge are gone; what replaced them stops polling on error
 
 | Field | Value |
@@ -2217,6 +2319,10 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Remediation spec** | One shared query with a coalesced interval and a backoff ladder that honours `Retry-After`; derive a nav badge from it; never conflate "error" with "stop polling" |
 | **Regression acceptance** | Two components on one page produce one request per tick; a 429 with `Retry-After: 60` delays the next attempt by 60 s; the badge updates without visiting the messages page |
 | **Closure** | Not met |
+
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-054] Three team-management operations have no production implementation, and team leads have nowhere to be stored
 
@@ -2240,6 +2346,9 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Regression acceptance** | With MariaDB: create a team with a lead → `GET /teams` returns that lead; `PATCH` renames and re-leads it; `archive` then `restore` round-trips the status; the completeness suite passes when pointed at the MySQL registry, and fails if `updateTeam` is removed |
 | **Closure** | Not met |
 
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
 
 ## [DISC-056] The in-memory test double ignores repository query options, so acceptance runs cannot validate visibility
 
@@ -2265,6 +2374,11 @@ options and **ignores the second argument entirely**. `getCustomPages()` at `:73
 **Observed:** publishing a page through `PUT /api/admin/pages/m8b-probe-page` returned 200; `GET
 /api/public/custom-pages/m8b-probe-page` returned 200. After `status: 'unpublished'` was written (200), the public
 route **still returned 200 with the unpublished content**.
+
+**Evidence artifacts:** `Evidence/artifacts/m8b-runtime-probes.json` (probe rows T4, T4b, T4c and the T4 publish
+cycle), `Evidence/logs/m8b-runtime-probes.log`; source loci `backend/repositories/InMemoryRepository.js:731-736` and
+`backend/repositories/MySQLRepository.js:1802-1819`; disclosed at `M8B-RUNTIME-CLOSURE-MATRIX.md` row T4c and
+`M8B-METHOD-LIMITATIONS.md` section 2 item 7.
 
 **Why it matters:** the observation is real and reproducible, but it is **not a product defect**. `MySQLRepository`
 filters correctly, so in production the page would 404. The danger runs both ways:
@@ -2302,3 +2416,8 @@ Until then, no CMS-visibility runtime claim may be made from an in-memory run.
 observed. What is asserted is what the code says: the live guard is the any-of form, the roles that satisfy
 it are ADMIN and AUDITOR, and the file documents a narrower intent. Treating that as "fine because nothing
 broke" is exactly the reasoning this audit exists to refuse.
+
+**Verification status:** STATICALLY VERIFIED
+
+Reproduced by static inspection of the modern tree at the audited revision `69a3ed4` (source lines cited above); NOT executed at runtime. Static inspection establishes what the code does, not that a browser reaches it.
+
