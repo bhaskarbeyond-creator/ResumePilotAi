@@ -1,6 +1,23 @@
-M7 toolchain log
-revision: a7d08a2fa67b44aefe4692405b470fa6b174d29f
-generatedAt: 2026-10-29T07:20:09Z
+# M7 toolchain log — provenance reconciled
+
+executionRevision: a7d08a2fa67b44aefe4692405b470fa6b174d29f
+auditedSourceRevision: 8a6e03bbc279cfb7e3a62519659fa3fe770ad1be
+publicationCommit: 2def3e524654e24fc9ebd658f0be78045aeb7ae1
+publicationBranch: arena/393531fe-resumepilotai
+originalGeneratedAt: 2026-10-29T07:20:09Z
+reconciledOn: 2026-10-29
+
+Provenance note: the original command output below was captured at executionRevision, not at the publication commit.
+The Mandate 7 report states that a7d08a2 is byte-identical to the audited source snapshot 8a6e03bb across all
+3,806 tracked files. This reconciliation does not claim that commands were re-executed during this update.
+
+IMPORTANT COUNT RECONCILIATION:
+- The canonical mounted-router register reports 397 effective route registrations and 393 unique METHOD+path operations.
+- The independent client-contract tool's captured output reports backendRegistrations=413 and 393 unique-operation matching results.
+- The 397-versus-413 registration counts are not demonstrated to be the same counting unit by the existing log.
+  Preserve both observations; do not claim registration-count agreement until the 16-registration delta is
+  itemized by route/source and explained. The 393/393 operation cross-check is a separate assertion.
+
 
 === tools/backend-reachability.cjs ===
 revision                 : a7d08a2fa67b
@@ -141,3 +158,11 @@ VERIFICATION PASSED
 PASS: coverage total equals the sum of its parts
 --- Summary ---
 PASS: 16  FAIL: 0
+
+
+=== RECONCILIATION NOTES (documentation-only; no command re-execution) ===
+- Preserved the original captured command output below/above without fabricating a new run.
+- V7 publication commit: 2def3e524654e24fc9ebd658f0be78045aeb7ae1; parent/source checkpoint: 8a6e03bbc279cfb7e3a62519659fa3fe770ad1be.
+- Reported verification results: verify-audit-package.sh 61/61; verify-v4-reconciliation.py 16/16; secret scan clean.
+- Runtime status remains PARTIAL — INCOMPLETE: 0 browser tests, 0 MariaDB tests, 0 live-provider calls in this mandate.
+- Open toolchain reconciliation item: explain the 413 raw/parsed registration count versus 397 effective mounted registrations. Do not collapse these values without a source-level reconciliation.
