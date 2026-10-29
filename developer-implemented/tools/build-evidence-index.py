@@ -12,9 +12,9 @@ OUT = EVIDENCE / "evidence-index-20261029.md"
 
 CURRENT = {
     "BASELINE/forensic-file-inventory.json": "Pre-implementation path/size/SHA-256 inventory for protected historical review files.",
-    "REMOTE/repository-state-final-20261029.txt": "Pre-push branch/remote baseline: main/dev/task refs, open PR list, and branch-protection API result.",
+    "REMOTE/push-verification-20261029.txt": "Post-push remote verification of task-branch SHA; main/dev SHA, open PR state, and branch-protection limitation.",
     "REGISTERS/recovery-register-validation-final-registers-20261029.txt": "Final validation of capability/finding counts, traceability IDs, evidence paths, and explicit FP-A12 mismatch handling.",
-    "REGISTERS/recovery-cross-reference-audit-final-snapshot-20261029.txt": "Final audit of the 10 authoritative reports after register/path updates; 92 repository-relative file references resolve.",
+    "REGISTERS/recovery-cross-reference-audit-postpush-20261029.txt": "Final audit of the 10 authoritative reports after register/path updates; 95 repository-relative file references resolve.",
     "FORENSIC/check-review-integrity-release-20261029.txt": "Final protected-review integrity check after report/register updates; establishes 393/393 historical files unchanged.",
     "UNIT/current-backend-suite-final-20261029.txt": "Authoritative default full backend suite result; FAIL 1,290/57/0 of 1,347.",
     "UNIT/backend-non-mariadb-diagnostic-final-20261029.txt": "Separate MariaDB-disabled diagnostic; FAIL 1,292/25/30 of 1,347; skipped tests are not passes.",

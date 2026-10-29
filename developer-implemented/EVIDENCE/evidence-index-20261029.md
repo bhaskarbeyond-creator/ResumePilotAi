@@ -1,7 +1,7 @@
 # Recovery evidence index — 2026-10-29
 
 - Repository branch: `arena/76eeea4d-resumepilotai`
-- Base/HEAD commit at index generation: `aa24147245daa6c027d046f1f7ae6f8fc703be46`
+- Base/HEAD commit at index generation: `94399f2d886eb1f65e2728603f32f3e8c9ec452d`
 - This is a checksum inventory, not a certification that every result passed. Current reports explicitly distinguish pass, fail, skip, mocked and blocked evidence.
 - SHA-256 values cover the exact indexed files; regenerating logs or evidence changes those digests.
 
@@ -10,9 +10,9 @@
 | Evidence file | Current scope / result | Bytes | SHA-256 |
 |---|---|---:|---|
 | `developer-implemented/EVIDENCE/BASELINE/forensic-file-inventory.json` | Pre-implementation path/size/SHA-256 inventory for protected historical review files. | 80828 | `49ca5e1f0cd7cb93537e008ad23133d5de4c7828b5a81ec2ca92d41b700baa1d` |
-| `developer-implemented/EVIDENCE/REMOTE/repository-state-final-20261029.txt` | Pre-push branch/remote baseline: main/dev/task refs, open PR list, and branch-protection API result. | 2715 | `fb0878758c3760949e2379cef16798aeec25f40b6b22bf7257bd400286054083` |
+| `developer-implemented/EVIDENCE/REMOTE/push-verification-20261029.txt` | Post-push remote verification of task-branch SHA; main/dev SHA, open PR state, and branch-protection limitation. | 978 | `eb01fc197350a3a58a6b11f2663e05a0325d71becf93d28aae07684ba1f0021f` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-register-validation-final-registers-20261029.txt` | Final validation of capability/finding counts, traceability IDs, evidence paths, and explicit FP-A12 mismatch handling. | 291 | `01071202760afc8a6f0fe3130eef6c5829dd05f32908beb31e99a4fb5d9d1230` |
-| `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-final-snapshot-20261029.txt` | Final audit of the 10 authoritative reports after register/path updates; 92 repository-relative file references resolve. | 133 | `1cbc38e9388b9c29ce22d9d5ca5130040c671f71cf091ff7476a4beabf0845a3` |
+| `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-postpush-20261029.txt` | Final audit of the 10 authoritative reports after register/path updates; 95 repository-relative file references resolve. | 133 | `192c77c4f0aeb56e84e8ad7c004f8c85b466f12f154035f564a07a2183850519` |
 | `developer-implemented/EVIDENCE/FORENSIC/check-review-integrity-release-20261029.txt` | Final protected-review integrity check after report/register updates; establishes 393/393 historical files unchanged. | 61 | `4c36c9ef1e35978cc1056d3059ee1b3e268e0574fa81145b020ee25d96e0e070` |
 | `developer-implemented/EVIDENCE/UNIT/current-backend-suite-final-20261029.txt` | Authoritative default full backend suite result; FAIL 1,290/57/0 of 1,347. | 503738 | `01489bc63f7a47624bf472d55024ea11e11ad0af41acd7e1786a49bfe16ee50e` |
 | `developer-implemented/EVIDENCE/UNIT/backend-non-mariadb-diagnostic-final-20261029.txt` | Separate MariaDB-disabled diagnostic; FAIL 1,292/25/30 of 1,347; skipped tests are not passes. | 477800 | `c6924d5ca403ea005826f84e952a472c92286ffae559c9e71d509362c2716533` |
@@ -49,6 +49,7 @@ Files below are retained for traceability. Unless listed as current above, they 
 | `developer-implemented/EVIDENCE/FORENSIC/check-review-integrity-post-change-20261029.txt` | Supporting baseline/context | 74 | `bd5f221908054d34e2fb69a50327674080f00aede3c59b9d0b772888aa7d21ef` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 714 | `f780884294a48d4520a77b554879b63e5a6aa15c9b93099c6de785ef20ca2f17` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-final-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 133 | `00f915940720bbe8eb2947d14ff315e29196dc7a793cd5b7cb46033b70b80da4` |
+| `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-final-snapshot-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 133 | `1cbc38e9388b9c29ce22d9d5ca5130040c671f71cf091ff7476a4beabf0845a3` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-cross-reference-audit-post-update-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 133 | `00f915940720bbe8eb2947d14ff315e29196dc7a793cd5b7cb46033b70b80da4` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-register-validation-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 291 | `01071202760afc8a6f0fe3130eef6c5829dd05f32908beb31e99a4fb5d9d1230` |
 | `developer-implemented/EVIDENCE/REGISTERS/recovery-register-validation-final-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 291 | `01071202760afc8a6f0fe3130eef6c5829dd05f32908beb31e99a4fb5d9d1230` |
@@ -56,6 +57,7 @@ Files below are retained for traceability. Unless listed as current above, they 
 | `developer-implemented/EVIDENCE/REGRESSION/disc055-and-webhook-replay-final-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 7168 | `cd3c5290a5b98a2e8e8c6a1561c627591e862feb16e42f202cc7c281be479e64` |
 | `developer-implemented/EVIDENCE/REGRESSION/disc055-and-webhook-replay-targeted.txt` | Historical/supporting; not authoritative for current release verdict | 7197 | `c23541bb218f961ef0ffbff011bfba0ce3ee27b7c335e360a350940aa9dd556b` |
 | `developer-implemented/EVIDENCE/REGRESSION/platform-registration-notification-webhook-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 5237 | `0bd5fcc729ba07e80ed6718540f4c44ec46130255596f46444a5ca9af9b30b80` |
+| `developer-implemented/EVIDENCE/REMOTE/repository-state-final-20261029.txt` | Historical/supporting; not authoritative for current release verdict | 2715 | `fb0878758c3760949e2379cef16798aeec25f40b6b22bf7257bd400286054083` |
 | `developer-implemented/EVIDENCE/SECURITY/current-postbuild-security.txt` | Historical/supporting; not authoritative for current release verdict | 473 | `510f7d7d31443f19d98a8a5e699d0be7cc28de01e6c7713ff9c0fd7aeb2cc20c` |
 | `developer-implemented/EVIDENCE/SECURITY/current-security-checks.log` | Historical/supporting; not authoritative for current release verdict | 573 | `909b7409438196951a603d8122f80903c7dad4ae98ff57002fd7f97448523321` |
 | `developer-implemented/EVIDENCE/STATIC/current-frontend-lint.log` | Historical/supporting; not authoritative for current release verdict | 285 | `980b4b8285a0efbc8059b4532e6c5d2fc9a0b2f0597d586584663e88e0c056ac` |

@@ -1,6 +1,6 @@
 # Open blockers — recovery snapshot 2026-10-29
 
-**Verdict: BLOCKED — NOT PRODUCTION-READY.** Current base `aa24147245daa6c027d046f1f7ae6f8fc703be46`; working changes are on `arena/76eeea4d-resumepilotai`. No push to `main`/`dev`, PR, merge, deployment, production-data operation, or financial transaction is authorized. The user requested a push to the active feature branch only; that does not clear release gates.
+**Verdict: BLOCKED — NOT PRODUCTION-READY.** Current base `aa24147245daa6c027d046f1f7ae6f8fc703be46`; working changes are on `arena/76eeea4d-resumepilotai`. The recovery commit was pushed only to the active feature branch (`94399f2d886eb1f65e2728603f32f3e8c9ec452d`). No push to `main`/`dev`, PR, merge, deployment, production-data operation, or financial transaction occurred; the branch push does not clear release gates.
 
 ## Evidence-backed release gates still open
 

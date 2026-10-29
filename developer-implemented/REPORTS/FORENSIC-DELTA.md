@@ -8,7 +8,7 @@ The earlier M9-P01 analysis noted that `GET /api/blog-data` being a public route
 
 ## Current source and branch
 
-Current base SHA: `aa24147245daa6c027d046f1f7ae6f8fc703be46`; current working branch: `arena/76eeea4d-resumepilotai`. The user authorized a push to the active task branch only; no push to `main`/`dev`, merge, PR, deployment, production-data change, or financial transaction is authorized. The post-change forensic inventory recheck passes: **393 historical `developer-review/` files unchanged by path, size, and SHA-256** (`EVIDENCE/FORENSIC/check-review-integrity-release-20261029.txt`).
+Current base SHA: `aa24147245daa6c027d046f1f7ae6f8fc703be46`; current working branch: `arena/76eeea4d-resumepilotai`. Recovery commit `94399f2d886eb1f65e2728603f32f3e8c9ec452d` was pushed to the active task branch; `main`/`dev` remain unchanged. No merge, PR, deployment, production-data change, or financial transaction occurred. The post-change forensic inventory recheck passes: **393 historical `developer-review/` files unchanged by path, size, and SHA-256** (`EVIDENCE/FORENSIC/check-review-integrity-release-20261029.txt`).
 
 ## New observations and changes
 

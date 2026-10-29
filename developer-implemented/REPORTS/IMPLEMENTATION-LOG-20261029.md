@@ -2,7 +2,7 @@
 
 **Branch:** `arena/76eeea4d-resumepilotai` (active)<br>
 **Base commit:** `aa24147245daa6c027d046f1f7ae6f8fc703be46`<br>
-**Delivery scope:** changes are confined to `arena/76eeea4d-resumepilotai`. The user authorized a push to this active task branch only; no push to `main`/`dev`, PR, merge, deployment, production-data change, or real financial transaction is authorized.
+**Delivery scope:** changes are confined to `arena/76eeea4d-resumepilotai`. Recovery commit `94399f2d886eb1f65e2728603f32f3e8c9ec452d` was pushed to this active task branch. No push to `main`/`dev`, PR, merge, deployment, production-data change, or real financial transaction occurred.
 
 This log records work performed in this recovery snapshot. It does not retroactively validate earlier `PATCH-RECORDS/` or superseded handoff claims.
 

@@ -1,6 +1,6 @@
 # Release acceptance matrix — BLOCKED (2026-10-29)
 
-**Current source base:** `aa24147245daa6c027d046f1f7ae6f8fc703be46`; recovery changes are scoped to `arena/76eeea4d-resumepilotai`. **Verdict:** not production-ready. The user authorized an active-task-branch push only; no `main`/`dev` push, merge, or deployment is authorized.
+**Current source base:** `aa24147245daa6c027d046f1f7ae6f8fc703be46`; recovery changes are scoped to `arena/76eeea4d-resumepilotai`. **Verdict:** not production-ready. Recovery commit `94399f2d886eb1f65e2728603f32f3e8c9ec452d` was pushed only to the active task branch; no `main`/`dev` push, merge, or deployment occurred.
 
 | Gate | Current evidence | Result | Release status |
 |---|---|---|---|
@@ -20,8 +20,8 @@
 | Provider sandbox / verified settlement / replay | Payment and webhook reports | No provider credentials; metadata-only event cannot safely replay | Blocked / incomplete |
 | Protected forensic integrity | `EVIDENCE/FORENSIC/check-review-integrity-release-20261029.txt` | 393/393 historical files unchanged | Pass |
 | Capability/finding completeness | `REGISTERS/` and `EVIDENCE/REGISTERS/recovery-register-validation-final-registers-20261029.txt` | 112 accepted capabilities preserved; 5 proposals excluded; 56 original DISC IDs plus M9-P01; cross-reference/count validator passes; not fully re-adjudicated in this recovery | Incomplete |
-| Evidence and report cross-reference audit | `EVIDENCE/evidence-index-20261029.md`; `EVIDENCE/REGISTERS/recovery-cross-reference-audit-final-snapshot-20261029.txt` | 90 evidence artifacts checksum-indexed; 10 authoritative reports and 92 detected file references resolve | Pass for indexing/path integrity only; no readiness inference |
-| Remote delivery / deployment | `EVIDENCE/REMOTE/repository-state-final-20261029.txt` | Pre-push snapshot: local branch `arena/76eeea4d-resumepilotai` at base `aa24147245daa6c027d046f1f7ae6f8fc703be46`; `origin/main` and `origin/dev` both at that SHA; task-branch ref absent at that observation; no open PR. Post-push task-branch SHA must be independently verified. No merge/deployment | Feature-branch publication only; no release |
+| Evidence and report cross-reference audit | `EVIDENCE/evidence-index-20261029.md`; `EVIDENCE/REGISTERS/recovery-cross-reference-audit-postpush-20261029.txt` | 92 evidence artifacts checksum-indexed; 10 authoritative reports and 95 detected file references resolve | Pass for indexing/path integrity only; no readiness inference |
+| Remote delivery / deployment | `EVIDENCE/REMOTE/push-verification-20261029.txt` | Post-push verification: `arena/76eeea4d-resumepilotai` at `94399f2d886eb1f65e2728603f32f3e8c9ec452d`; `origin/main` and `origin/dev` remain at `aa24147245daa6c027d046f1f7ae6f8fc703be46`; no open PR, merge, or deployment | Feature-branch publication only; release remains blocked |
 
 ## Acceptance rule
 

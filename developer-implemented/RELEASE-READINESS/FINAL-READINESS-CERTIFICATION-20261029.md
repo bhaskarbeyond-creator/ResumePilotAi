@@ -4,19 +4,19 @@
 
 **BLOCKED — NOT PRODUCTION-READY. Do not release, merge, deploy, or treat this branch as accepted.** This is a certification of the evidence and limits observed in the current Arena recovery, not approval to ship. The release gates for MariaDB-backed workflows, identity, provider behavior, full browser E2E, hosting/runtime configuration, and complete capability/finding acceptance are not satisfied.
 
-The user explicitly requested a push to the active task branch only. This does not authorize a push to `main`/`dev`, PR, merge, deployment, production-data operation, or real financial transaction, and it does not constitute release approval.
+The user explicitly requested a push to the active task branch only. Recovery commit `94399f2d886eb1f65e2728603f32f3e8c9ec452d` was pushed there and independently verified. No push to `main`/`dev`, PR, merge, deployment, production-data operation, or real financial transaction occurred; the push does not constitute release approval.
 
 ## Repository and delivery state
 
 - **Active working branch:** `arena/76eeea4d-resumepilotai` (Arena status: active).
-- **Base commit:** `aa24147245daa6c027d046f1f7ae6f8fc703be46`. All changes are scoped to the active task branch. The post-push task-branch SHA must be verified from the remote rather than inferred from this report.
+- **Base commit:** `aa24147245daa6c027d046f1f7ae6f8fc703be46`. Initial pushed commit and verified remote task-branch SHA: `94399f2d886eb1f65e2728603f32f3e8c9ec452d`.
 - **Remote `main`:** `aa24147245daa6c027d046f1f7ae6f8fc703be46` at final inspection.
 - **Remote `dev`:** `aa24147245daa6c027d046f1f7ae6f8fc703be46` at final inspection.
-- **Remote task-branch ref:** absent in the pre-push snapshot below; **open PRs:** none in that snapshot.
+- **Remote task-branch ref:** created by the push and verified at the SHA above; **open PRs:** none at verification.
 - **Branch protection:** unknown; the GitHub branch-protection endpoint returned HTTP 403 `Resource not accessible by integration`. This is not evidence that protection is absent.
-- Evidence: `developer-implemented/EVIDENCE/REMOTE/repository-state-final-20261029.txt`.
+- Pre-push baseline: `developer-implemented/EVIDENCE/REMOTE/repository-state-final-20261029.txt`. Post-push verification: `developer-implemented/EVIDENCE/REMOTE/push-verification-20261029.txt`.
 
-No push to `main` or `dev` and no merge occurred. The explicitly requested feature-branch push is for review only; backend verification still fails, the release verdict remains blocked, and no force-push or branch deletion is permitted.
+The feature-branch push is for review only; backend verification still fails, the release verdict remains blocked, and no push to `main`/`dev`, merge, deployment, force-push, or branch deletion occurred.
 
 ## Implementation and audit outputs
 

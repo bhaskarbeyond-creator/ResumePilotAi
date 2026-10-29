@@ -1,0 +1,2 @@
+authoritative_reports=10; file_references_checked=95
+CROSS_REFERENCE_AUDIT=PASS; all detected repository-relative references resolve
