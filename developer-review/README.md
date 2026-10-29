@@ -98,6 +98,13 @@ Start here:
 | [`M8-RUNTIME-VERIFICATION.md`](M8-RUNTIME-VERIFICATION.md) | what was actually executed (backend suite, typecheck, 43 HTTP probes), what is blocked and the exact gate |
 | [`M8-VERIFIER-QUALITY-REVIEW.md`](M8-VERIFIER-QUALITY-REVIEW.md) | what each verifier check proves and, more importantly, what it does not |
 | [`Evidence/logs/m8-toolchain.log`](Evidence/logs/m8-toolchain.log) | every M8 command, raw exit code, tool versions and the reconciliation result |
+| [`M8A-OMISSION-CHALLENGE-REPORT.md`](M8A-OMISSION-CHALLENGE-REPORT.md) | 16-claim forensic challenge: dispositions, counts, gates, verdict `PARTIAL — INCOMPLETE` |
+| [`M8A-SOURCE-CROSSWALK.md`](M8A-SOURCE-CROSSWALK.md) | per-claim legacy/modern/backend/persistence/authz crosswalk and the 9 path corrections |
+| [`M8A-omission-challenge.json`](M8A-omission-challenge.json) | machine-readable 16-claim register with stable finding IDs |
+| [`M8A-PARITY-REGISTER-DELTA.md`](M8A-PARITY-REGISTER-DELTA.md) | +5 new rows, 12 corrections, 2 no-change — proposed, deliberately not applied |
+| [`M8A-FALSE-SUCCESS-AND-MOCK-DATA.md`](M8A-FALSE-SUCCESS-AND-MOCK-DATA.md) | 5 fabricated surfaces, incl. a fabricated PAID invoice produced on payment failure |
+| [`M8A-RUNTIME-VERIFICATION.md`](M8A-RUNTIME-VERIFICATION.md) | what was executed (7 probes), what was blocked and why, and the 401-vs-404 correction |
+| [`M8A-METHOD-QUALITY-REVIEW.md`](M8A-METHOD-QUALITY-REVIEW.md) | dossier defects, register measurement defects, and this mandate's own four self-corrections |
 | [`DISCREPANCY-LOG.md`](DISCREPANCY-LOG.md) | **DISC-049 … DISC-055** added (53 distinct findings / 55 IDs): DISC-049 corrects an M7 provenance claim, DISC-054 a broken enterprise team chain, DISC-055 duplicated route blocks with divergent guards |
 
 **Current reported M8 results** (all measured at `a2ecb96`, none carried forward): **393** route call sites /

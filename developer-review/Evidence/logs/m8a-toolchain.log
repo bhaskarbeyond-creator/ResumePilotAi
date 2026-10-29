@@ -1,0 +1,61 @@
+# M8A — TOOLCHAIN LOG
+# mandate: 8A forensic omission challenge (source-level validation, register correction)
+# NOTE: timestamps are taken from the repository/clock at run time; no number below is hand-estimated.
+
+## 0. provenance asserted BEFORE any work
+$ git rev-parse HEAD
+888c2e5
+$ git rev-parse origin/arena/393531fe-resumepilotai
+888c2e5
+$ git status --porcelain
+(empty)
+environment: node v22.22.3 | npm 10.9.8 | python 3.11.2 | git 2.39.5
+
+## 1. dossier path resolution (9 of 24 did not resolve)
+command class: find/grep repo-wide per dossier basename
+result: all 9 relocated; corrections recorded in M8A-SOURCE-CROSSWALK.md section 0
+also: cited register id "U-G03" does not exist (no U- namespace in the register)
+also: cited route GET /api/pages is not registered; live pair is /api/public/custom-pages
+
+## 2. source inspection commands (representative, all read-only)
+grep -rn "computeGaps" frontend/src                      -> 0 hits
+grep -rn "atsTip|ATS tip" frontend/src                   -> 0 hits
+grep -rn "computeGaps" .../DashboardSettings.jsx         -> 27 hits (11 section engines + render)
+grep -rn "payment-orders" frontend/src                   -> 0 hits
+grep -rn "contentEditable|lexical|tiptap|quill" src      -> found src/components/Blog/BlogEditor/BlogEditor.jsx (1631 lines)
+grep -rn "getUserMedia|AudioContext|SpeechRecognition|speechSynthesis|MediaRecorder" frontend/src -> 0 hits
+grep -rni "siem" src                                     -> 3 hits, all unrelated skill labels
+grep -rni "siem" frontend/src backend                    -> 0 hits
+grep -c "id: '" frontend/src/pages/dashboard/settings.tsx -> 4 tabs
+grep -c "" frontend/src/pages/landing.tsx                 -> 358 lines, 0 useState
+find src/components/Marketing -name "*.jsx" | wc -l       -> 15
+
+## 3. runtime attempt (bounded, disposable, in-memory only)
+$ cd backend && npm install --no-audit --no-fund --ignore-scripts
+exit 0 ; 249 packages ; backend/node_modules is git-ignored (git check-ignore -> IGNORED_OK)
+$ PORT=5099 IN_MEMORY_REPOSITORY=1 NODE_ENV=test node index.js
+HTTP Server running on port 5099
+[Startup] DEGRADED_MODE_REPOSITORY=inmemory explicitly set — using in-memory repository.
+probes -> see Evidence/logs/m8a-runtime-probes.log
+outcome: contact route 503 RATE_LIMIT_UNAVAILABLE x4 (no rate-limit store)
+stderr: [Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306
+process stopped with SIGTERM -> "Clean exit complete."
+
+## 4. self-corrections applied before publication
+1. D3 nearly falsified -> reversed by inventory sweep (editor lives under src/components/Blog/)
+2. B3 "confirmed 404" -> demoted; runtime returned 401 AUTH_REQUIRED
+3. B2 route absence -> demoted to static-only; runtime returned 401
+4. "no FP row for 2FA" -> corrected; FP-G08 and FP-G19 both exist
+
+## 5. machine-readable register validation
+$ python3 -c "json.load(M8A-omission-challenge.json)"
+claims = 16
+histogram = {1:3, 2:7, 3:4, 4:1, 7:1}  (5:0, 6:0)
+declared histogram matches computed histogram -> OK
+
+## 6. scope compliance
+$ git status --porcelain | grep -v '^?? developer-review/'
+(empty)
+=> no application source, config, manifest, lockfile, schema, migration or deployment file modified.
+=> all new artefacts are under developer-review/.
+=> node_modules excluded by .gitignore; no DB file, browser cache or secret committed.

@@ -1,0 +1,1108 @@
+{
+  "$schema": "m8a-omission-challenge/1.0",
+  "artifact": "M8A-omission-challenge.json",
+  "mandate": "8A",
+  "sourceRevision": "888c2e5",
+  "sourceRevisionFull": "888c2e511d5c2c32ec959232ec2d451aa4dd80ce",
+  "auditedBranch": "arena/393531fe-resumepilotai",
+  "generatedUtc": "2026-10-29",
+  "claimCount": 16,
+  "method": "static source inspection of the checked-out revision at 888c2e5; no dossier line numbers reused",
+  "buckets": {
+    "1": "verified legacy capability omitted",
+    "2": "partially implemented with material functional loss",
+    "3": "false-success / mock-data / disconnected-API / misleading-UI",
+    "4": "already recorded but inadequately explained or classified",
+    "5": "duplicate of an existing finding needing correction not a new finding",
+    "6": "UNVERIFIED (no source/runtime/provider evidence)",
+    "7": "incorrect/unsupported by source"
+  },
+  "claims": [
+    {
+      "id": "A1",
+      "title": "Master Profile 11-section career repository with ATS gap computation and actionable tips",
+      "domain": "A",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "11-section career repository",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "AI STAR bullets on work experience in the profile",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "modern equivalent is resume-builder only (role-ai-copilot-modal.tsx:178); profile-level synthesis has no counterpart"
+        },
+        {
+          "subClaim": "skills with ratings, CEFR languages, awards, references, hobbies",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "backend profileSanitizer.js still accepts 8 list sections with no modern writer"
+        },
+        {
+          "subClaim": "ATS gap computation",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "repo-wide computeGaps in frontend/src = 0 hits"
+        },
+        {
+          "subClaim": "actionable tips",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "repo-wide atsTip in frontend/src = 0 hits"
+        },
+        {
+          "subClaim": "not recorded in the registers",
+          "verdict": "CONFIRMED",
+          "note": "no FP row covers Master Profile"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:327",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:67-253 (computeGaps per section)",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:270",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:5348",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:93,98",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1155,1252,1272-1276"
+        ],
+        "modern": [
+          "frontend/src/pages/dashboard/settings.tsx:26,28-33",
+          "frontend/src/lib/account-settings.ts:39-52",
+          "frontend/src/components/settings/profile-panel.tsx"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rn 'computeGaps' frontend/src -> 0",
+          "grep -rn 'atsTip|ATS tip' frontend/src -> 0"
+        ],
+        "backend": [
+          "backend/services/profileSanitizer.js:3-52",
+          "backend/routes/usersData.js (/profile GET/POST)"
+        ],
+        "persistence": "server-owned /users-data/profile; survives reload",
+        "authz": "authenticated owner route"
+      },
+      "existingFindingIds": [],
+      "proposedRegisterAction": "NEW_ROW",
+      "proposedNewId": "FP-A27",
+      "confidence": "HIGH",
+      "limitations": "reader-side master-profile.ts:330-405 still maps 9 lists and describeMasterCompleteness:427-454 reports 11 sections, so stored data may exist for legacy users; no seeded legacy dataset was available to confirm hand-authored content survives",
+      "runtimeRepro": "BLOCKED",
+      "reason": "12 legacy profile subtabs with per-section ATS gap engines and action-guiding tips collapse to 4 settings tabs holding 12 flat scalar fields; the backend still accepts 8 list section types no modern code writes"
+    },
+    {
+      "id": "A2",
+      "title": "Bidirectional resume <-> profile sync with per-field selection and conflict behaviour",
+      "domain": "A",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "pull direction",
+          "verdict": "PARTIALLY_CONFIRMED",
+          "note": "modern pull covers the 9 list sections on read; not a total loss"
+        },
+        {
+          "subClaim": "push direction",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "section push absent; summary-only"
+        },
+        {
+          "subClaim": "field selection",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "selectedPullSections checklist has no modern equivalent"
+        },
+        {
+          "subClaim": "conflict behaviour",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "no conflict resolution surface in modern sync"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/DashboardSettings/SyncProfileModal.jsx:1-40"
+        ],
+        "modern": [
+          "frontend/src/pages/dashboard/resume-builder.tsx:3867-3897",
+          "frontend/src/lib/master-profile.ts:330-405"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rn 'selectedPullSections|pushSection' frontend/src -> 0"
+        ],
+        "backend": [
+          "backend/routes/usersData.js (/profile)"
+        ],
+        "persistence": "server-owned; reload survival unchanged",
+        "authz": "authenticated owner route"
+      },
+      "existingFindingIds": [],
+      "proposedRegisterAction": "NEW_ROW",
+      "proposedNewId": "FP-A28",
+      "confidence": "HIGH",
+      "limitations": "summary push is real and functional, so bidirectionality is asymmetric rather than absent",
+      "runtimeRepro": "BLOCKED",
+      "reason": "modern sync is summary-only in the push direction and has no per-section selection or conflict handling"
+    },
+    {
+      "id": "A3",
+      "title": "Candidate billing / subscription console (plan display, coupon validation, transaction history, invoice/receipt, upgrade/downgrade/cancel)",
+      "domain": "A",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "payment backend absent",
+          "verdict": "FALSIFIED",
+          "note": "5 provider/coupon/invoice/refund routes exist server-side"
+        },
+        {
+          "subClaim": "plan display",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "validated coupon application",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "modern checkout fails open to hardcoded coupons at checkout-modal.tsx:249-259"
+        },
+        {
+          "subClaim": "transaction history",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "0 modern references to /api/payment-orders"
+        },
+        {
+          "subClaim": "invoice / receipt",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "backend /api/invoices exists; no modern consumer"
+        },
+        {
+          "subClaim": "upgrade / downgrade / cancel",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "pricing.tsx:167-172 promises them; account-panel.tsx offers deletion only"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/DashboardSettings/SubscriptionModal.jsx:9,68-72,162-232",
+          "src/services/api/platform.js:356-368",
+          "src/components/Billing/Plans/Plans.jsx:8,165"
+        ],
+        "modern": [
+          "frontend/src/pages/billing/pricing.tsx:167-172",
+          "frontend/src/pages/billing/checkout-modal.tsx:246-259,300-380",
+          "frontend/src/components/settings/account-panel.tsx:53,240",
+          "frontend/src/app/router.tsx:201-203,223"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rn 'payment-orders' frontend/src -> 0"
+        ],
+        "backend": [
+          "backend/index.js:784 POST /api/pay",
+          "backend/index.js:805 GET /api/payment-orders",
+          "backend/index.js:1074 POST /api/paypal/create-order",
+          "backend/index.js:1176 POST /api/razorpay/create-order",
+          "backend/index.js:4597 POST /api/coupons/validate",
+          "backend/index.js:5101,5131,5146,5162 invoice routes",
+          "backend/index.js:6132 POST /api/admin/payments/refund"
+        ],
+        "persistence": "server-owned orders/invoices; modern UI reads none of it",
+        "authz": "owner-scoped orders; refund requires requireRecentAdminAuthentication"
+      },
+      "existingFindingIds": [
+        "FP-A24",
+        "FP-A14",
+        "FP-A15"
+      ],
+      "existingOverlapNote": "FP-A24 covers public pricing/checkout; FP-A14/A15 cover admin coupon and refund surfaces. The candidate-side console is not covered by any of them.",
+      "proposedRegisterAction": "NEW_ROW",
+      "proposedNewId": "FP-A29",
+      "relatedFinding": "FS-M8A-01 (checkout false success, separate record in M8A-FALSE-SUCCESS-AND-MOCK-DATA.md)",
+      "confidence": "HIGH",
+      "limitations": "no provider credentials, so provider-side settlement was not exercised; absence of UI is proven, absence of payment processing is not claimed and is in fact disproven",
+      "runtimeRepro": "BLOCKED",
+      "reason": "the payment backend is real; the candidate-facing console that reads and controls it is missing, and the two dashboard routes that would host it redirect to the public marketing page"
+    },
+    {
+      "id": "A4",
+      "title": "TOTP enrolment + QR + verification + recovery codes + login history + session management",
+      "domain": "A",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy login history was a working capability",
+          "verdict": "FALSIFIED",
+          "note": "platform.js:1399 returns [] unconditionally"
+        },
+        {
+          "subClaim": "modern factor listing",
+          "verdict": "PRESENT",
+          "note": "security-panel.tsx:165-215"
+        },
+        {
+          "subClaim": "modern factor disable",
+          "verdict": "PRESENT",
+          "note": "usersData.js:145-190, audit-logged, revokes tokens"
+        },
+        {
+          "subClaim": "TOTP enrolment + QR",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "verification codes",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "recovery codes",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "session management",
+          "verdict": "PARTIALLY_CONFIRMED",
+          "note": "lib/session-security.ts present; scope narrower than legacy"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:487,1077-1100",
+          "src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:784,5874",
+          "src/services/api/platform.js:1337-1352",
+          "src/services/api/platform.js:1399"
+        ],
+        "modern": [
+          "frontend/src/components/settings/security-panel.tsx:165-215",
+          "frontend/src/lib/session-security.ts"
+        ],
+        "backend": [
+          "backend/routes/usersData.js:145-190 POST /api/users-data/mfa/disable (audit-logged, token revoking, 503 on identity outage)"
+        ],
+        "persistence": "enrolled factors server-owned and persisted; disabling survives reload",
+        "authz": "authenticated owner route with audit trail"
+      },
+      "existingFindingIds": [
+        "FP-G08",
+        "FP-G19"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G19 classifies TOTP as PARTIAL PARITY from filtering/pagination subfeature classes while recording legacy 0 handlers / 0 labels; DashboardSettings.jsx:487,1077-1100 and platform.js:1337-1352 contradict that measurement. Legacy login history must additionally be marked stubbed (platform.js:1399).",
+      "confidence": "HIGH",
+      "limitations": "enrolment absence proven by repo-wide search only; the server may expose an enrolment endpoint consumed by no UI, which was not exhaustively enumerated",
+      "runtimeRepro": "BLOCKED",
+      "reason": "modern list/disable are genuinely implemented and audited, but enrolment, QR, verification and recovery are gone, and the legacy login-history capability the claim relies on never returned data"
+    },
+    {
+      "id": "B1",
+      "title": "Contact form false success",
+      "domain": "B",
+      "disposition": 3,
+      "dispositionLabel": "false-success / mock-data / disconnected-API / misleading-UI",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "modern form shows success without a request",
+          "verdict": "CONFIRMED",
+          "note": "handleSubmit sets submitted=true and returns; no fetch"
+        },
+        {
+          "subClaim": "no validation feedback",
+          "verdict": "CONFIRMED",
+          "note": "only `if (!email || !message) return;` client-side"
+        },
+        {
+          "subClaim": "no storage from the modern UI",
+          "verdict": "CONFIRMED"
+        },
+        {
+          "subClaim": "no notification email",
+          "verdict": "CONFIRMED",
+          "note": "backend persists but dispatches no mail, affecting legacy callers too"
+        },
+        {
+          "subClaim": "backend missing",
+          "verdict": "FALSIFIED",
+          "note": "POST /api/contact validates, rate-limits and persists"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Contact/Contact.jsx:11",
+          "src/services/api/platform.js:310",
+          "src/utils/contactFormValidation.js:5"
+        ],
+        "modern": [
+          "frontend/src/pages/cms/index.tsx:234-247"
+        ],
+        "backend": [
+          "backend/index.js:2360-2385 POST /api/contact",
+          "backend/index.js:577 contactAccountLimiter"
+        ],
+        "persistence": "backend persists via repo.saveContactMessage; the modern UI never reaches it",
+        "authz": "public route with rate limit and honeypot",
+        "runtime": [
+          "POST /api/contact valid/invalid/honeypot -> all 503 RATE_LIMIT_UNAVAILABLE",
+          "server stderr: '[Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306'"
+        ]
+      },
+      "existingFindingIds": [],
+      "proposedRegisterAction": "NEW_ROW",
+      "proposedNewId": "FP-G22",
+      "relatedFinding": "FS-M8A-02",
+      "confidence": "HIGH",
+      "limitations": "no runtime form submission was executed (no browser); conclusion rests on the literal absence of any network call in the handler",
+      "runtimeRepro": "BLOCKED",
+      "reason": "a fully functional validated persisting endpoint exists and the modern form silently reports success without calling it",
+      "runtimeNote": "handler unreachable: admission fails closed without a rate-limit store; B1 backend half remains BLOCKED"
+    },
+    {
+      "id": "B2",
+      "title": "Public CMS pages (renderer, GET /api/pages, :slug, admin publishing), re-adjudicating FP-G10",
+      "domain": "B",
+      "disposition": 3,
+      "dispositionLabel": "false-success / mock-data / disconnected-API / misleading-UI",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "route named GET /api/pages",
+          "verdict": "FALSIFIED",
+          "note": "no such route is registered (static grep); runtime GET /api/pages returns 401 AUTH_REQUIRED, so a 404 could not be observed and route absence therefore rests on static evidence only"
+        },
+        {
+          "subClaim": "modern renderer is a hardcoded dictionary",
+          "verdict": "CONFIRMED",
+          "note": "CMS_PAGES at index.tsx:38, zero network calls in file"
+        },
+        {
+          "subClaim": "unknown slug behaviour",
+          "verdict": "CONFIRMED_WORSE_THAN_CLAIMED",
+          "note": "index.tsx:148 silently serves privacy-policy content"
+        },
+        {
+          "subClaim": "admin publishing exists",
+          "verdict": "CONFIRMED",
+          "note": "GET /api/admin/pages, PUT/DELETE /api/admin/pages/:slug"
+        },
+        {
+          "subClaim": "hardcoded dictionary vs fallback",
+          "verdict": "RESOLVED",
+          "note": "it is a hardcoded dictionary AND a fallback; both, not either"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/CustomPage/CustomePage.jsx"
+        ],
+        "modern": [
+          "frontend/src/pages/cms/index.tsx:38",
+          "frontend/src/pages/cms/index.tsx:148"
+        ],
+        "backend": [
+          "backend/index.js:6537 public list routes",
+          "backend/index.js:6595 GET /api/public/custom-pages/:slug",
+          "backend/index.js:6621,6630,6658 admin pages CRUD",
+          "backend/index.js:470 410 API_RETIRED for /api/cms-pages"
+        ],
+        "persistence": "admin-authored pages are persisted server-side and are unreachable by the public renderer",
+        "authz": "public read; admin write",
+        "runtime": [
+          "GET /api/public/custom-pages -> 200 {\"success\":true,\"pages\":[],\"source\":\"MARIADB_CUSTOM_PAGES\"} (in-memory mode)",
+          "GET /api/public/custom-pages/some-slug -> 404 CUSTOM_PAGE_NOT_FOUND",
+          "GET /api/pages -> 401 AUTH_REQUIRED (auth-shielded; absence static-only)",
+          "GET /api/cms-pages -> 410 API_RETIRED (retired by design, not a defect)"
+        ]
+      },
+      "existingFindingIds": [
+        "FP-G10"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G10 is PARTIAL PARITY / SUBFEATURE_LOSS. Evidence requires upgrade: the modern public renderer performs no fetch and serves a hardcoded dictionary with a privacy-policy fallback, so admin-published pages are invisible. Reclassify as false-success/disconnected-API surface and record the wrong-content fallback as a distinct defect.",
+      "relatedFinding": "FS-M8A-03",
+      "confidence": "HIGH",
+      "limitations": "the dossier's own route name was wrong; correct route identity is recorded above",
+      "runtimeRepro": "PARTIAL",
+      "reason": "admin publishing is real, the public renderer is disconnected from it, and unknown slugs silently render the wrong page",
+      "runtimeNote": "public CMS routes exercised successfully and confirm a working public API that the renderer never calls; the in-page renderer itself is browser-side and was NOT executed (no browser)"
+    },
+    {
+      "id": "B3",
+      "title": "Blog article reader /blog/:slug (HTML, author, sharing, loading, missing-article handling)",
+      "domain": "B",
+      "disposition": 3,
+      "dispositionLabel": "false-success / mock-data / disconnected-API / misleading-UI",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "API 404",
+          "verdict": "PARTIALLY_CONFIRMED",
+          "note": "runtime returns 401 AUTH_REQUIRED, not 404; the modern reader sends no credentials for a public page, so the observable outcome is an error swallowed into the empty state, but the stated cause is 404 is NOT confirmed"
+        },
+        {
+          "subClaim": "error handling",
+          "verdict": "CONFIRMED_WORSE_THAN_CLAIMED",
+          "note": "catch swallows the error into a permanent 'No articles found'"
+        },
+        {
+          "subClaim": ":slug article reader missing",
+          "verdict": "CONFIRMED",
+          "note": "/blog/:slug renders BlogPage which never reads the slug"
+        },
+        {
+          "subClaim": "article HTML rendering",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "author / sharing",
+          "verdict": "CONFIRMED_LOSS"
+        },
+        {
+          "subClaim": "missing-article handling",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "no 404 state exists because no article is ever loaded"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Blog/"
+        ],
+        "modern": [
+          "frontend/src/app/router.tsx:77,78",
+          "frontend/src/pages/blog/index.tsx:42-56",
+          "frontend/src/pages/blog/index.tsx:47-50"
+        ],
+        "backend": [
+          "backend/index.js:517 mount /api/blog-data",
+          "backend/routes/blogData.js:35,49,74,85,96",
+          "backend/index.js:6424 /api/admin/blog/posts"
+        ],
+        "persistence": "posts persisted server-side under /api/blog-data; modern reader cannot reach them",
+        "authz": "public read; write permission-gated",
+        "runtime": [
+          "GET /api/blog/posts -> 401 AUTH_REQUIRED (not 404; auth-shielded)",
+          "GET /api/blog-data -> 200 {\"success\":true,\"posts\":[]}",
+          "GET /api/blog-data/slug/any-slug -> 404 {\"success\":false,\"error\":\"Post not found\"} => a correct missing-article handler EXISTS and the reader does not use it"
+        ]
+      },
+      "existingFindingIds": [
+        "FP-G09"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G09 is MISSING / SUBFEATURE_LOSS; the reader defect must be recorded as three findings (wrong URL, swallowed error, slug ignored) rather than an API 404, and the authoring regression recorded separately (see D3).",
+      "relatedFinding": "FS-M8A-04",
+      "confidence": "HIGH",
+      "limitations": "no browser run; the permanent empty state is inferred from the literal catch block",
+      "runtimeRepro": "PARTIAL",
+      "reason": "the reader calls a non-existent route, swallows the failure, and ignores the slug, so no article view is possible even with data",
+      "runtimeNote": "backend routes exercised; the swallowed-error empty state is browser-side and was NOT executed"
+    },
+    {
+      "id": "B4",
+      "title": "Marketing storytelling / interactive modules under FP-G11 (comparison table, CV transformation, template inspector, pricing/coupon calculator, language selector)",
+      "domain": "B",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "homepage comparison table",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy HomepageComparison.jsx:5,115 has a stateful aspect switcher"
+        },
+        {
+          "subClaim": "template inspector",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy HomepageTemplates.jsx:13-14 category + preview state"
+        },
+        {
+          "subClaim": "pricing / coupon calculator",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy HomepagePricing.jsx:12-13 three billing cycles + comparison modal"
+        },
+        {
+          "subClaim": "language selector",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy HomepageLanguages.jsx:27-28 with fetched disabledLanguages"
+        },
+        {
+          "subClaim": "interactive CV transformation",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "no stateful transformation module in landing.tsx"
+        },
+        {
+          "subClaim": "static icon grid equals interactive tool",
+          "verdict": "FALSIFIED",
+          "note": "landing.tsx contains zero useState"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Marketing/ (15 jsx components)",
+          "src/components/Marketing/elements/HomepageComparison.jsx:5,115",
+          "src/components/Marketing/elements/HomepageTemplates.jsx:13-14",
+          "src/components/Marketing/elements/HomepageLanguages.jsx:27-28",
+          "src/components/Marketing/elements/HomepagePricing.jsx:12-13",
+          "src/components/Marketing/elements/HomepageStorySections.jsx"
+        ],
+        "modern": [
+          "frontend/src/pages/landing.tsx (358 lines, 0 useState)"
+        ],
+        "backend": [
+          "n/a"
+        ],
+        "persistence": "n/a (client-side presentation capability)",
+        "authz": "n/a (public pages)"
+      },
+      "existingFindingIds": [
+        "FP-G11",
+        "FP-A24"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G11 records legacy 3 files / modern 3 files with 3 handlers -> 2, which cannot represent a 15-component marketing set. Recount the legacy inventory and record the four stateful modules as lost subfeatures.",
+      "confidence": "HIGH",
+      "limitations": "the dossier's companion ID U-G03 does not exist in the register (see method review \u00a72)",
+      "runtimeRepro": "BLOCKED",
+      "reason": "four stateful legacy marketing modules collapse into a completely static landing page"
+    },
+    {
+      "id": "C1",
+      "title": "Enterprise team member management (drawer, list/add/remove, permission checks, error handling)",
+      "domain": "C",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "team management absent",
+          "verdict": "FALSIFIED",
+          "note": "EnterpriseTeamsTab implements team CRUD with loading/error/permission states"
+        },
+        {
+          "subClaim": "member list/add/remove absent in UI",
+          "verdict": "CONFIRMED",
+          "note": "no member add/remove control in the tab"
+        },
+        {
+          "subClaim": "backend absent",
+          "verdict": "FALSIFIED",
+          "note": "GET/POST members and DELETE member exist with permission gates"
+        },
+        {
+          "subClaim": "permission checks",
+          "verdict": "PRESENT",
+          "note": "workspace.members.manage / tenant.members.manage"
+        },
+        {
+          "subClaim": "error handling",
+          "verdict": "PRESENT",
+          "note": "tab exposes loading and error states"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "n/a (enterprise surface is modern-side)"
+        ],
+        "modern": [
+          "frontend/src/components/enterprise/EnterpriseTeamsTab.tsx"
+        ],
+        "backend": [
+          "backend/routes/enterprise.js:671 GET /teams",
+          "backend/routes/enterprise.js:684 POST /teams",
+          "backend/routes/enterprise.js:693 PATCH /teams/:teamId",
+          "backend/routes/enterprise.js:702 archive, :711 restore",
+          "backend/routes/enterprise.js:720 GET /teams/:teamId/members",
+          "backend/routes/enterprise.js:729 POST /teams/:teamId/members",
+          "backend/routes/enterprise.js:738 DELETE /teams/:teamId/members/:principalId"
+        ],
+        "persistence": "server-owned tenant membership",
+        "authz": "requireTenantPermission('workspace.read'); requireAnyTenantPermission('workspace.members.manage','tenant.members.manage')"
+      },
+      "existingFindingIds": [
+        "FP-B05"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-B05 covers Teams + archive/restore and is correctly classified. The member-management UI gap is a narrower subfeature loss and must be recorded as such, not as a missing capability. The claim's premise that team management is absent is false.",
+      "confidence": "HIGH",
+      "limitations": "enterprise UI requires tenant context that was not provisioned, so no authenticated walkthrough was possible",
+      "runtimeRepro": "BLOCKED",
+      "reason": "backend membership add/remove exists with correct permission gates, but the modern UI exposes team-level management only, with no member add/remove surface"
+    },
+    {
+      "id": "C2",
+      "title": "SIEM JSON export + deep links (re-adjudicating FP-B08)",
+      "domain": "C",
+      "disposition": 7,
+      "dispositionLabel": "incorrect/unsupported by source",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy SIEM JSON export existed",
+          "verdict": "FALSIFIED",
+          "note": "AdminAuditLogs.jsx:100 emits text/csv only"
+        },
+        {
+          "subClaim": "legacy JSON export existed elsewhere",
+          "verdict": "FALSIFIED",
+          "note": "other legacy exports (UsersManager.jsx:387, subscriptionsSettings.jsx:514) are text/csv"
+        },
+        {
+          "subClaim": "deep links existed",
+          "verdict": "UNSUPPORTED",
+          "note": "no entity deep-link construction found in the audit viewer"
+        },
+        {
+          "subClaim": "FP-B08 needs reclassification because JSON exists",
+          "verdict": "FALSIFIED",
+          "note": "FP-B08's CSV-only framing is accurate"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/admin/audit/AdminAuditLogs.jsx:100",
+          "src/components/admin/usersManager/UsersManager.jsx:387",
+          "src/components/admin/settings/subscriptionsSettings.jsx:514"
+        ],
+        "modern": [
+          "frontend/src (0 siem hits)"
+        ],
+        "backend": [
+          "backend/ (0 siem hits)"
+        ],
+        "searchEvidence": [
+          "grep -rni 'siem' src -> 3 hits, all unrelated skill labels: Experience6.jsx:205, TemplatePresets.js:572, autocompleteDirectories.js:834",
+          "grep -rni 'siem' frontend/src -> 0",
+          "grep -rni 'siem' backend -> 0"
+        ],
+        "persistence": "n/a",
+        "authz": "n/a"
+      },
+      "existingFindingIds": [
+        "FP-B08"
+      ],
+      "proposedRegisterAction": "NO_CHANGE",
+      "proposedCorrection": "No change to FP-B08. Record the falsification so the claim is not re-raised. CSV export remains the only legacy export format.",
+      "confidence": "HIGH",
+      "limitations": "absence proven by repository-wide search at one revision; a removed historical implementation cannot be excluded from the checked-out tree alone",
+      "runtimeRepro": "NOT_APPLICABLE",
+      "reason": "the alleged SIEM JSON export with deep links never existed; the legacy audit export is CSV and FP-B08 already says so"
+    },
+    {
+      "id": "C3",
+      "title": "Employer candidate messaging (hardcoded candidates, stored messages, reload / other-session retrieval)",
+      "domain": "C",
+      "disposition": 2,
+      "dispositionLabel": "partially implemented with material functional loss",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy candidates were hardcoded",
+          "verdict": "FALSIFIED",
+          "note": "SendMessageDialog.jsx:5 imports real createConversation/sendMessage; applicants load from server"
+        },
+        {
+          "subClaim": "messages not stored",
+          "verdict": "FALSIFIED",
+          "note": "6 persisted /api/messages routes"
+        },
+        {
+          "subClaim": "reload / other-session retrieval",
+          "verdict": "PRESENT",
+          "note": "messages.tsx uses TanStack Query with 15s refetch and conversationId deep link"
+        },
+        {
+          "subClaim": "employer-side initiation from applicant surface",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "no message action in applied-jobs.tsx or job-tracker.tsx"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx:5",
+          "src/components/Dashboard/DashboardMessages/DashboardMessages.jsx",
+          "src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx:180",
+          "src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx:265,342"
+        ],
+        "modern": [
+          "frontend/src/pages/dashboard/messages.tsx:5,136,146,222-241"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rn 'conversations|sendMessage' frontend/src/pages/dashboard/applied-jobs.tsx job-tracker.tsx -> 0"
+        ],
+        "backend": [
+          "backend/index.js:2042 GET /api/messages/conversations",
+          "backend/index.js:2141 GET /:conversationId/messages",
+          "backend/index.js:2181 POST /:conversationId/read",
+          "backend/index.js:2230 POST /api/messages/conversations",
+          "backend/index.js:2280 GET /:conversationId/participant-profile",
+          "backend/index.js:2320 POST /api/messages/send"
+        ],
+        "persistence": "server-owned conversations and messages; reload and cross-session retrieval proven by query design",
+        "authz": "participant-scoped on every route"
+      },
+      "existingFindingIds": [
+        "FP-F03"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-F03 is classified MOCK / FABRICATED STATE, but legacy messaging was backed by real API calls and the backend persists 6 routes. Narrow the row to the actual loss: the employer-side initiation entry point. The MOCK classification is not supported by source.",
+      "confidence": "HIGH",
+      "limitations": "no second session was opened, so cross-session retrieval is inferred from the participant-scoped query and route design, not observed",
+      "runtimeRepro": "BLOCKED",
+      "reason": "messaging is real and persisted on both sides; the only genuine loss is the employer-side way to start a conversation from the applicant surface"
+    },
+    {
+      "id": "D1",
+      "title": "Admin financial back-office (providers, refunds, invoice/credit-note, webhook replay, permissions, audit logging, secret handling)",
+      "domain": "D",
+      "disposition": 4,
+      "dispositionLabel": "already recorded but inadequately explained or classified",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "operator back-office UI absent in modern",
+          "verdict": "CONFIRMED",
+          "note": "only incident-catalogue strings in AdminHealthTab.tsx:245-278"
+        },
+        {
+          "subClaim": "backend refund absent",
+          "verdict": "FALSIFIED",
+          "note": "index.js:6132 with requireRecentAdminAuthentication"
+        },
+        {
+          "subClaim": "invoice / credit-note absent",
+          "verdict": "FALSIFIED",
+          "note": "index.js:5101/5131/5146/5162 plus authoritativeInvoice helpers"
+        },
+        {
+          "subClaim": "multi-provider gateway config",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "5 legacy tabs incl. Razorpay/Stripe/PayPal keys"
+        },
+        {
+          "subClaim": "already recorded",
+          "verdict": "CONFIRMED",
+          "note": "FP-A15 exists and is MISSING with backend yes"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/admin/settings/subscriptionsSettings.jsx (2993 lines)",
+          "src/components/admin/settings/subscriptionsSettings.jsx:1,3 imports",
+          "src/components/admin/settings/subscriptionsSettings.jsx:45-53",
+          "src/components/admin/settings/subscriptionsSettings.jsx:76-77",
+          "src/utils/authoritativeInvoice.js"
+        ],
+        "modern": [
+          "frontend/src/components/admin/AdminHealthTab.tsx:245-278",
+          "frontend/src/components/admin/AdminSettingsTab.tsx"
+        ],
+        "backend": [
+          "backend/index.js:6132 POST /api/admin/payments/refund",
+          "backend/index.js:5101,5131,5146,5162 invoice routes",
+          "backend/index.js:805,6329 payment-order routes"
+        ],
+        "persistence": "server-owned orders, invoices, coupons, webhooks",
+        "authz": "requireRecentAdminAuthentication (step-up re-auth) on destructive finance ops"
+      },
+      "existingFindingIds": [
+        "FP-A15",
+        "FP-A14"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-A15 already records this correctly as MISSING with backend present, so the claim adds no new finding. However FP-A14 and FP-A15 carry byte-identical subfeature tables (14/10/28/100/18/1/10/5/87 with files legacy 35 / modern 0), which is a template-copy artifact rather than an independent measurement. Both rows require re-measurement.",
+      "confidence": "HIGH",
+      "limitations": "webhook replay was not traced end-to-end; secret handling was inspected only as field presence, not as storage hygiene",
+      "runtimeRepro": "BLOCKED",
+      "reason": "the operator back-office UI is genuinely absent while its backend exists, but this is already recorded as FP-A15; the real defect is that the register's evidence tables for FP-A14/A15 are duplicated artifacts"
+    },
+    {
+      "id": "D2",
+      "title": "Admin queue / DLQ console mock failures (hardcoded DLQ IDs, simulated SES stack traces on failure or offline)",
+      "domain": "D",
+      "disposition": 3,
+      "dispositionLabel": "false-success / mock-data / disconnected-API / misleading-UI",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "hardcoded queue baseline",
+          "verdict": "CONFIRMED",
+          "note": "DEFAULT_QUEUES:48 and INITIAL_JOBS:55 are constants used as initial state at :114-115"
+        },
+        {
+          "subClaim": "simulated SES stack trace",
+          "verdict": "CONFIRMED",
+          "note": ":67-69 invents SESClient.sendTransactional (/backend/services/mailTransport.js:142:19) and Worker.processJob (/backend/services/queues/emailWorker.js:88:24)"
+        },
+        {
+          "subClaim": "fabrication shown on failure/offline",
+          "verdict": "CONFIRMED",
+          "note": ":154-156 catch { /* Keep baseline */ } leaves the invented data on screen"
+        },
+        {
+          "subClaim": "entire console is mock",
+          "verdict": "FALSIFIED",
+          "note": "list and retry are wired to real /platform/queues and /platform/queues/retry"
+        },
+        {
+          "subClaim": "retry error handling",
+          "verdict": "CONFIRMED_WORSE_THAN_CLAIMED",
+          "note": "retry handlers have finally but no catch, and assert success text without verifying the response"
+        },
+        {
+          "subClaim": "purge capability",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy Purge DLQ now POST /queues/purge -> 410 retired"
+        },
+        {
+          "subClaim": "fallback route validity",
+          "verdict": "CONFIRMED_DEFECT",
+          "note": "/admin/queues does not exist in the backend"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/admin/queues/PlatformQueues.jsx:96-101,187",
+          "src/components/admin/queues/PlatformQueues.jsx:152,155,226"
+        ],
+        "modern": [
+          "frontend/src/components/admin/AdminQueuesTab.tsx:48",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:55,59",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:67-69",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:114-115",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:139",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:154-156",
+          "frontend/src/components/admin/AdminQueuesTab.tsx:164-176,178-196"
+        ],
+        "backend": [
+          "backend/routes/platform.js:465 GET /queues",
+          "backend/routes/platform.js:504 POST /queues/retry (+ requireRecentAdminAuthentication)",
+          "backend/routes/platform.js:543 POST /queues/purge -> 410 retired"
+        ],
+        "persistence": "queue telemetry server-owned; the baseline is not",
+        "authz": "retry and purge require step-up recent admin authentication"
+      },
+      "existingFindingIds": [
+        "FP-A20"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-A20 is PARTIAL PARITY / DEEP_READ_M6. It must additionally record: fabricated SES stack frame paths rendered as live; hardcoded baseline retained after a failed load; retry handlers with no failure path; a retired 410 purge; and a non-existent fallback route.",
+      "relatedFinding": "FS-M8A-05",
+      "confidence": "HIGH",
+      "limitations": "queue telemetry was not reachable at runtime, which is precisely the condition under which the fabricated baseline would be displayed; the display logic is proven from source, not observed in a browser",
+      "runtimeRepro": "BLOCKED",
+      "reason": "the console is partly real and partly fabricated, and the fabricated part is exactly what a user sees when telemetry is missing or offline"
+    },
+    {
+      "id": "D3",
+      "title": "Blog WYSIWYG regression (textarea vs Markdown vs regression; API availability separate)",
+      "domain": "D",
+      "disposition": 1,
+      "dispositionLabel": "verified legacy capability omitted",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy had a WYSIWYG editor",
+          "verdict": "CONFIRMED",
+          "note": "BlogEditor.jsx:827-984 Tiptap/ProseMirror toolbar, 1631 lines"
+        },
+        {
+          "subClaim": "modern regressed to raw text",
+          "verdict": "CONFIRMED",
+          "note": "editor.tsx:290,352 two plain textareas"
+        },
+        {
+          "subClaim": "regression not merely an API gap",
+          "verdict": "CONFIRMED",
+          "note": "APIs exist independently at index.js:3388/3408/6424 and blogData.js:96"
+        },
+        {
+          "subClaim": "live preview lost",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "legacy sanitized HTML preview at BlogEditor.jsx:1470"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Blog/BlogEditor/BlogEditor.jsx (1631 lines)",
+          "src/components/Blog/BlogEditor/BlogEditor.jsx:827-984",
+          "src/components/Blog/BlogEditor/BlogEditor.jsx:1470",
+          "src/components/admin/blogManagement/BlogManagement.jsx (moderation only, not authoring)"
+        ],
+        "modern": [
+          "frontend/src/pages/blog/editor.tsx:290",
+          "frontend/src/pages/blog/editor.tsx:352"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rln 'contentEditable|lexical|tiptap|quill' frontend/src -> no editor dependency"
+        ],
+        "backend": [
+          "backend/index.js:3388 PATCH /api/admin/blog/posts/:postId",
+          "backend/index.js:3408 DELETE /api/admin/blog/posts/:postId",
+          "backend/index.js:6424 GET /api/admin/blog/posts",
+          "backend/routes/blogData.js:96 POST /:id"
+        ],
+        "persistence": "post content persisted server-side; format capability lost regardless",
+        "authz": "write permission-gated (system.config.write / blog.write / blog_management / content.manage)"
+      },
+      "existingFindingIds": [
+        "FP-G09"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G09 is MISSING / SUBFEATURE_LOSS. Split the row: the authoring regression (rich text -> textarea) is a distinct verified omission and must not be conflated with the public reader defects in B3 or with API availability.",
+      "confidence": "HIGH",
+      "limitations": "a first-pass read of BlogManagement.jsx alone would have wrongly falsified this claim; the editor lives under src/components/Blog/. Recorded so the error is not repeated.",
+      "runtimeRepro": "BLOCKED",
+      "reason": "a real rich-text authoring surface with toolbar and sanitized live preview regressed to raw textareas, and the editor dependency is absent from the modern frontend"
+    },
+    {
+      "id": "D4",
+      "title": "Cover-letter editor richness (Lexical -> modern modal; raw text is not rich text)",
+      "domain": "D",
+      "disposition": 1,
+      "dispositionLabel": "verified legacy capability omitted",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy used Lexical rich text",
+          "verdict": "CONFIRMED",
+          "note": "SimpleTextarea.jsx:7-9 LexicalComposer/RichTextPlugin/ContentEditable"
+        },
+        {
+          "subClaim": "legacy used it for cover letters",
+          "verdict": "CONFIRMED",
+          "note": "ActionCoverFilling.jsx:3,122"
+        },
+        {
+          "subClaim": "modern is plain text",
+          "verdict": "CONFIRMED",
+          "note": "cover-letter-builder.tsx:33,903,918,966"
+        },
+        {
+          "subClaim": "editor dependency removed",
+          "verdict": "CONFIRMED",
+          "note": "no lexical in frontend/package.json"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Form/simple-textarea/SimpleTextarea.jsx:4,7-9",
+          "src/components/Form/simple-textarea/LexicalStyles.css",
+          "src/components/Actions/action-step-cover-filling/ActionCoverFilling.jsx:3,122",
+          "src/components/BuildResume/steps/components/RichTextEditor.jsx"
+        ],
+        "modern": [
+          "frontend/src/pages/dashboard/cover-letter-builder.tsx:33",
+          "frontend/src/pages/dashboard/cover-letter-builder.tsx:903,918,966"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -n 'lexical' frontend/package.json -> no match"
+        ],
+        "backend": [
+          "n/a (client-side formatting capability)"
+        ],
+        "persistence": "cover-letter text persisted; formatting capability lost",
+        "authz": "authenticated owner route"
+      },
+      "existingFindingIds": [],
+      "proposedRegisterAction": "NEW_ROW",
+      "proposedNewId": "FP-G23",
+      "confidence": "HIGH",
+      "limitations": "formatting semantics (bold/italic) are client-side; whether any server-side sanitizer would preserve rich markup was not traced",
+      "runtimeRepro": "BLOCKED",
+      "reason": "a Lexical rich-text editor used for cover-letter paragraphs became a plain textarea, and the dependency itself was removed"
+    },
+    {
+      "id": "D5",
+      "title": "AI interview voice engine (mic permission, capture, waveform, TTS playback/pacing, server speech) under FP-G21",
+      "domain": "D",
+      "disposition": 1,
+      "dispositionLabel": "verified legacy capability omitted",
+      "subClaimVerdicts": [
+        {
+          "subClaim": "legacy voice engine existed",
+          "verdict": "CONFIRMED",
+          "note": "2178 lines across LiveVoiceEngine.js, LiveAudioWaveform.jsx, LiveInterviewSession.jsx"
+        },
+        {
+          "subClaim": "TTS playback / pacing",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "speechSynthesis at LiveVoiceEngine.js:54,126,151,209"
+        },
+        {
+          "subClaim": "mic capture + waveform",
+          "verdict": "CONFIRMED_LOSS",
+          "note": "AudioContext/analyser at LiveAudioWaveform.jsx:58,78-81"
+        },
+        {
+          "subClaim": "a replacement exists somewhere",
+          "verdict": "FALSIFIED",
+          "note": "0 hits for getUserMedia|AudioContext|SpeechRecognition|speechSynthesis|MediaRecorder in frontend/src"
+        }
+      ],
+      "evidence": {
+        "legacy": [
+          "src/components/Dashboard/DashboardInterviews/LiveVoiceEngine.js:54,58,70-71,126-127,151,209",
+          "src/components/Dashboard/DashboardInterviews/LiveAudioWaveform.jsx:58,78-81",
+          "src/components/Dashboard/DashboardInterviews/LiveInterviewSession.jsx (1691 lines)",
+          "src/components/Dashboard/DashboardInterviews/LiveAnswerGuide.jsx",
+          "src/components/Dashboard/DashboardInterviews/LiveResumeDrawer.jsx"
+        ],
+        "modern": [
+          "frontend/src/pages/dashboard/interview-coach.tsx (question generation only)"
+        ],
+        "modernAbsenceBySearch": [
+          "grep -rn 'getUserMedia|AudioContext|SpeechRecognition|speechSynthesis|MediaRecorder' frontend/src -> 0 hits"
+        ],
+        "backend": [
+          "n/a for the browser voice stack; no server speech route identified"
+        ],
+        "persistence": "n/a (ephemeral media capability)",
+        "authz": "n/a (browser permission gate)"
+      },
+      "existingFindingIds": [
+        "FP-G21",
+        "FP-D02"
+      ],
+      "proposedRegisterAction": "CORRECT_EXISTING",
+      "proposedCorrection": "FP-G21 is PARTIAL PARITY / SUBFEATURE_LOSS and FP-D02 records mic+waveform as MISSING. Both under-record the loss: the entire 2178-line voice stack has no replacement in frontend/src, including TTS voice selection and pacing, which no row currently names. Upgrade the provenance of FP-D02 from EQUIVALENCE_LEAD to adjudicated absence and add the TTS subfeature.",
+      "confidence": "HIGH",
+      "limitations": "a replacement search was performed repo-wide and returned zero; a server-side speech provider was not found but provider configuration was not exhaustively searched",
+      "runtimeRepro": "BLOCKED",
+      "reason": "the complete legacy voice stack is absent with no replacement anywhere in the modern frontend, and both TTS pacing and mic capture are lost"
+    }
+  ],
+  "dispositionHistogram": {
+    "1": 3,
+    "2": 7,
+    "3": 4,
+    "4": 1,
+    "5": 0,
+    "6": 0,
+    "7": 1
+  },
+  "registerActions": {
+    "NEW_ROW": [
+      "FP-A27 (A1 Master Profile)",
+      "FP-A28 (A2 resume<->profile sync)",
+      "FP-A29 (A3 candidate billing console)",
+      "FP-G22 (B1 contact false success)",
+      "FP-G23 (D4 cover-letter rich text)"
+    ],
+    "CORRECT_EXISTING": [
+      "FP-G19",
+      "FP-G08",
+      "FP-G10",
+      "FP-G09",
+      "FP-G11",
+      "FP-B05",
+      "FP-F03",
+      "FP-A20",
+      "FP-A15",
+      "FP-A14",
+      "FP-G21",
+      "FP-D02"
+    ],
+    "NO_CHANGE": [
+      "FP-B08",
+      "FP-A24"
+    ]
+  },
+  "falseSuccessFindings": [
+    "FS-M8A-01",
+    "FS-M8A-02",
+    "FS-M8A-03",
+    "FS-M8A-04",
+    "FS-M8A-05"
+  ],
+  "runtimeExecuted": 2,
+  "runtimePassed": 0,
+  "runtimeFailed": 0,
+  "runtimeBlocked": 14,
+  "verdict": "PARTIAL \u2014 INCOMPLETE",
+  "verdictReason": "all 16 claims are adjudicated from source with three-layer evidence, but zero of 16 could be exercised at runtime because no database, provider credential or browser automation is available in this environment; gates G and the runtime half of C/D remain outstanding",
+  "applicationFilesModified": 0,
+  "runtimePartial": 2,
+  "runtimeNote": "2 claims (B2, B3) obtained backend route-level runtime evidence under in-memory repository mode; 0 claims obtained end-to-end or browser-level proof; the in-memory repository is NOT MariaDB and is not presented as production evidence"
+}
