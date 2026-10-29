@@ -1,5 +1,13 @@
 # Executive Gap Summary — ResumePilotAi Forensic Audit
 
+> **Superseded (Mandate 6, base `a5835ff6`).** This document is the V1 executive summary and its
+> numbers (7 findings, 109 capability rows, 25 FULL) are **historical**. The current figures are:
+> 40 findings (DISC-001 … DISC-040), 112 capability rows — **12 FULL / 47 PARTIAL / 32 MISSING /
+> 12 MOCK / 6 REPLACED / 3 UNVERIFIED** — 48 allegations, 385 backend operations. Read
+> `FINAL-AUDIT-HANDOVER.md` and `FEATURE-DEPTH-EVIDENCE-REGISTER.md` for the current state. The numbers in
+> this file are deliberately not rewritten, so the audit's own history stays checkable.
+
+
 ## 1. Executive summary
 
 This is a **PARTIAL**, evidence-backed, read-only forensic audit of
@@ -334,9 +342,9 @@ This section answers it and revises the verdict accordingly. Earlier text is pre
 | Item | Before this re-audit | After |
 |---|---|---|
 | Frontend parity | Not measured (only backend route presence, §7) | **109 capability verdicts**: 25 FULL, 6 REPLACED, 35 PARTIAL, **30 MISSING**, **9 MOCK / FABRICATED**, 4 UNVERIFIED |
-| Legacy tree size | "144 files/dirs" (`EVIDENCE-INDEX` E-002) | **651 source files / 519 `.jsx` / 193,320 lines** (≈4.5× understated) |
+| Legacy tree size | "144 files/dirs" (`EVIDENCE-INDEX` E-002) | **650 source files / 519 `.jsx` / 193,310 lines** (≈4.5× understated) |
 | Legacy disposition | Ambiguous duplicate tree (DISC-001) | Outside the active build, but **not deletable** — sole implementation of 30 capabilities and an active backend-test contract |
-| Backend reachability | Route presence only | **192 of 384 operations (50 %) unreachable from the modern UI**; 58 reachable from *neither* frontend |
+| Backend reachability | Route presence only | **V5: 176 of 385 operations (45.7 %) unreachable from any client; 152 UI-driven.** The earlier "192 of 384" and "58 orphaned" figures are superseded — see `BACKEND-OPERATION-REACHABILITY.md` §5 |
 
 ### 12.2 The three findings that change the verdict
 

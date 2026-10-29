@@ -1,0 +1,4359 @@
+{
+  "generatedAt": "2026-10-29T07:20:48.736Z",
+  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "registerRevision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "method": "Every FULL PARITY row's declared endpoints resolved against the routed register; capability rows omit mount prefixes so a unique segment-boundary suffix match is accepted as MOUNT-PREFIX, ambiguity is never accepted, and route-definition-only endpoints are not evidence.",
+  "reachableClasses": [
+    "UI-REACHABLE",
+    "INDIRECTLY-REACHABLE",
+    "EXTERNAL-CALLER"
+  ],
+  "fullParityRows": 12,
+  "tally": {
+    "SUPPORTED": 12
+  },
+  "rows": [
+    {
+      "id": "FP-B06",
+      "capability": "Workspaces + archive/restore",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/workspaces",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0223",
+            "OP-0224"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/archive",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/archive",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0226"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/restore",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/restore",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0230"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-B07",
+      "capability": "Tenant lifecycle (suspend / reactivate) from the enterprise platform tab",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/platform/tenants",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0184"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/suspend",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/suspend",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0186"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/reactivate",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/reactivate",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0185"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-C05",
+      "capability": "Public portfolio rendering + slug availability + publish",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/public/{X}",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0348"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/slug-availability",
+          "status": "EXACT",
+          "path": "/portfolios/slug-availability",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0349"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-C07",
+      "capability": "Portfolio gallery / showcase",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public",
+          "status": "EXACT",
+          "path": "/portfolios/public",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0347"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-D15",
+      "capability": "Saved jobs / favourites",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/favourites",
+          "status": "EXACT",
+          "path": "/favourites",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0234",
+            "OP-0235"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E04",
+      "capability": "ATS score with per-section breakdown and job-description targeting",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E08",
+      "capability": "Public share links / share modal",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}/publication",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publication",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0367"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/publish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0368"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/unpublish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/unpublish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0369"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E09",
+      "capability": "Cover letters",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/covers",
+          "status": "EXACT",
+          "path": "/covers",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0137"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/covers/{X}",
+          "status": "EXACT",
+          "path": "/covers/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0138",
+            "OP-0139",
+            "OP-0140"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/generate-ai-cover-letter",
+          "status": "EXACT",
+          "path": "/generate-ai-cover-letter",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0240"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E17",
+      "capability": "Document rendering surface (page composer, template renderer, public resume)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}",
+          "status": "EXACT",
+          "path": "/resumes/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0364",
+            "OP-0365",
+            "OP-0366"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-E13",
+      "capability": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-F05",
+      "capability": "Job creation / requisition editor",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/employer/jobs",
+          "status": "EXACT",
+          "path": "/employer/jobs",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0162",
+            "OP-0163"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/employer/jobs/{X}",
+          "status": "EXACT",
+          "path": "/employer/jobs/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0164",
+            "OP-0165"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    },
+    {
+      "id": "FP-G20",
+      "capability": "Job application tracker",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/jobs-data/tracker",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0259",
+            "OP-0260"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs-data/tracker/{X}",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0261",
+            "OP-0262"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs/{X}/applications",
+          "status": "EXACT",
+          "path": "/jobs/{X}/applications",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0263",
+            "OP-0264"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      }
+    }
+  ],
+  "allRowsChecked": 112,
+  "allRows": [
+    {
+      "id": "FP-A01",
+      "capability": "Platform KPI dashboard (users, resumes, applications, AI generations, storage)",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/platform/stats",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/audit-logs/stats",
+            "/stats"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A02",
+      "capability": "KPI fabricated fallback values shown when the stats endpoint returns nothing",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/platform/stats",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/audit-logs/stats",
+            "/stats"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A03",
+      "capability": "Subsystem health catalogue (28 services, latency, remediation hints)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/platform/operational-status",
+          "status": "EXACT",
+          "path": "/platform/operational-status",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0318"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A04",
+      "capability": "Health fallback claims (invented latency, \"99.8%\" delivery, \"100% Enforced\" isolation) displayed when no telemetry arrives",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/platform/operational-status",
+          "status": "EXACT",
+          "path": "/platform/operational-status",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0318"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A05",
+      "capability": "Security event stream / audit viewer",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/admin/audit-logs",
+          "status": "EXACT",
+          "path": "/admin/audit-logs",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0017"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/security-events",
+          "status": "EXACT",
+          "path": "/platform/security-events",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0337"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 2,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A06",
+      "capability": "Operator roster + force-revoke sessions",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/platform/operators",
+          "status": "EXACT",
+          "path": "/platform/operators",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0323",
+            "OP-0324"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/operators/{X}/revoke-sessions",
+          "status": "EXACT",
+          "path": "/platform/operators/{X}/revoke-sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0325"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 2,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A07",
+      "capability": "IP blocklist / deny rules",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A08",
+      "capability": "Platform announcements publisher",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/platform/announcements",
+          "status": "EXACT",
+          "path": "/platform/announcements",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0301",
+            "OP-0302"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A09",
+      "capability": "Marketing content: phrases, reviews, trusted-by logos, landing pages",
+      "declaredInvoke": "no",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/phrases",
+          "status": "EXACT",
+          "path": "/phrases",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0297",
+            "OP-0298"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/admin/reviews",
+          "status": "EXACT",
+          "path": "/admin/reviews",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0073",
+            "OP-0074"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/admin/trusted-by",
+          "status": "EXACT",
+          "path": "/admin/trusted-by",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0086",
+            "OP-0087"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/admin/pages",
+          "status": "EXACT",
+          "path": "/admin/pages",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0056"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/public/trusted-by",
+          "status": "EXACT",
+          "path": "/public/trusted-by",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "EXTERNAL-CALLER"
+          ],
+          "opIds": [
+            "OP-0359"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/public/custom-pages",
+          "status": "EXACT",
+          "path": "/public/custom-pages",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "EXTERNAL-CALLER"
+          ],
+          "opIds": [
+            "OP-0353"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 4,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A10",
+      "capability": "At-risk attention inbox / platform insights",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/platform/attention",
+          "status": "EXACT",
+          "path": "/platform/attention",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0305"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A11",
+      "capability": "Employer application + job posting moderation",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/admin/employer-applications/{X}/verify",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/enterprise/storage/verify",
+            "/paypal/verify"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/admin/jobs/{X}/moderate",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 1
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A12",
+      "capability": "Platform tenant registry (list tenants, quotas, suspend)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/platform/tenants",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0184"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/suspend",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/suspend",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0186"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A13",
+      "capability": "Company management (verification, documents, quotas)",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/admin/employer-applications/{X}/verify",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/enterprise/storage/verify",
+            "/paypal/verify"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A14",
+      "capability": "Coupon / promo-code administration",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/admin/coupons",
+          "status": "EXACT",
+          "path": "/admin/coupons",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0030",
+            "OP-0031"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A15",
+      "capability": "Refunds, invoices, payment orders administration",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/admin/payments/refund",
+          "status": "EXACT",
+          "path": "/admin/payments/refund",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0063"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/invoices",
+          "status": "EXACT",
+          "path": "/invoices",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0248"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/payment-orders",
+          "status": "EXACT",
+          "path": "/payment-orders",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0286"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 3,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A16",
+      "capability": "SMTP/IMAP + transactional email template settings",
+      "declaredInvoke": "partial",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/email/admin/settings",
+          "status": "EXACT",
+          "path": "/email/admin/settings",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0148"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/email/admin/save-smtp",
+          "status": "EXACT",
+          "path": "/email/admin/save-smtp",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0146"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/email/admin/test-connection",
+          "status": "EXACT",
+          "path": "/email/admin/test-connection",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0149"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/email/admin/deliverability",
+          "status": "EXACT",
+          "path": "/email/admin/deliverability",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0144"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 4,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A17",
+      "capability": "User manager, User360 drawer, session revoke",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/admin/users",
+          "status": "EXACT",
+          "path": "/admin/users",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0092",
+            "OP-0093"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/users/{X}/revoke-sessions",
+          "status": "EXACT",
+          "path": "/admin/users/{X}/revoke-sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0104"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A18",
+      "capability": "Bulk user operations (multi-select, bulk role change, bulk removal)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A19",
+      "capability": "Support / help-desk tickets",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/admin/support/tickets",
+          "status": "EXACT",
+          "path": "/admin/support/tickets",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0081"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/support/tickets/{X}/messages",
+          "status": "EXACT",
+          "path": "/admin/support/tickets/{X}/messages",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0084"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-A20",
+      "capability": "Job queues, DLQ, outbox, cache, backups (operations console)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/platform/queues",
+          "status": "EXACT",
+          "path": "/platform/queues",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0332"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/platform/queues/retry",
+          "status": "EXACT",
+          "path": "/platform/queues/retry",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0334"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/operations/feature-flags",
+          "status": "EXACT",
+          "path": "/admin/operations/feature-flags",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0053"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A21",
+      "capability": "Platform settings, feature flags, maintenance, encryption/backup status",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/platform/feature-flags",
+          "status": "EXACT",
+          "path": "/platform/feature-flags",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0311"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/maintenance",
+          "status": "EXACT",
+          "path": "/platform/maintenance",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0315",
+            "OP-0316"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/encryption",
+          "status": "EXACT",
+          "path": "/platform/encryption",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0309"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/backup-status",
+          "status": "EXACT",
+          "path": "/platform/backup-status",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0306"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 4,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A22",
+      "capability": "Dedicated audit-log browser with filters and export",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/admin/audit-logs",
+          "status": "EXACT",
+          "path": "/admin/audit-logs",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0017"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/admin/audit-logs/stats",
+          "status": "EXACT",
+          "path": "/admin/audit-logs/stats",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0019"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 2,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A23",
+      "capability": "Admin command palette + entity search",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-A24",
+      "capability": "Public pricing, plan comparison and checkout",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/paypal/create-order",
+          "status": "EXACT",
+          "path": "/paypal/create-order",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0289"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/razorpay/create-order",
+          "status": "EXACT",
+          "path": "/razorpay/create-order",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0360"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/coupons/validate",
+          "status": "EXACT",
+          "path": "/coupons/validate",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0136"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A25",
+      "capability": "AI provider / gateway administration (provider CRUD, key pool, quotas, discovery, playground, unified gateway)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/admin/ai-settings",
+          "status": "EXACT",
+          "path": "/admin/ai-settings",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0007",
+            "OP-0008"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/test-provider",
+          "status": "EXACT",
+          "path": "/admin/ai/test-provider",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0016"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/quota-stats",
+          "status": "EXACT",
+          "path": "/admin/ai/quota-stats",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0012"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/reset-quota",
+          "status": "EXACT",
+          "path": "/admin/ai/reset-quota",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0013"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/fetch-models",
+          "status": "EXACT",
+          "path": "/admin/ai/fetch-models",
+          "methods": [
+            "ALL"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0010"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 4,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-A26",
+      "capability": "Admin console shell and tab routing",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/admin/settings/modules",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B01",
+      "capability": "Enterprise console shell + context switching",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/context",
+          "status": "EXACT",
+          "path": "/enterprise/context",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0172",
+            "OP-0173"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B02",
+      "capability": "Member directory, invitations, single-member removal, CSV export",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/memberships",
+          "status": "EXACT",
+          "path": "/enterprise/memberships",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0178",
+            "OP-0179"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B03",
+      "capability": "Bulk member actions with per-member partial-failure reporting",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-B04",
+      "capability": "Roles & permissions matrix",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/enterprise/roles",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B05",
+      "capability": "Teams + archive/restore",
+      "declaredInvoke": "partial",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/teams",
+          "status": "EXACT",
+          "path": "/enterprise/teams",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0208",
+            "OP-0209"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/archive",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/archive",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0211"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/restore",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/restore",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0215"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams/{X}/members",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/members",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0212",
+            "OP-0213"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/enterprise/teams/{X}/members/{X}",
+          "status": "EXACT",
+          "path": "/enterprise/teams/{X}/members/{X}",
+          "methods": [
+            "DELETE"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0214"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 2,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B06",
+      "capability": "Workspaces + archive/restore",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/workspaces",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0223",
+            "OP-0224"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/archive",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/archive",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0226"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/workspaces/{X}/restore",
+          "status": "EXACT",
+          "path": "/enterprise/workspaces/{X}/restore",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0230"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-B07",
+      "capability": "Tenant lifecycle (suspend / reactivate) from the enterprise platform tab",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/platform/tenants",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0184"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/suspend",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/suspend",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0186"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/platform/tenants/{X}/reactivate",
+          "status": "EXACT",
+          "path": "/enterprise/platform/tenants/{X}/reactivate",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0185"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-B08",
+      "capability": "Enterprise audit trail with CSV export",
+      "declaredInvoke": "partial",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/audit",
+          "status": "EXACT",
+          "path": "/enterprise/audit",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0169"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B09",
+      "capability": "Enterprise resumes + PDF rendering",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/enterprise/resumes",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/employer/jobs/{X}/applications/{X}/resume",
+            "/resumes"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B10",
+      "capability": "AI quota rings + enterprise AI controls",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/enterprise/usage/ai/events",
+          "status": "EXACT",
+          "path": "/enterprise/usage/ai/events",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0222"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/quota-stats",
+          "status": "EXACT",
+          "path": "/admin/ai/quota-stats",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0012"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/admin/ai/reset-quota",
+          "status": "EXACT",
+          "path": "/admin/ai/reset-quota",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0013"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-B11",
+      "capability": "Usage, email, security, support, settings tabs",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/enterprise/usage",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/enterprise/email",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/enterprise/settings",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/settings",
+            "/email/admin/settings"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 2,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-C01",
+      "capability": "Puck-based drag-and-drop portfolio page editor",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios",
+          "status": "EXACT",
+          "path": "/portfolios",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0343"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-C02",
+      "capability": "71 modular portfolio page blocks (About1-6, Experience1-2, Education1-2, Contact1-4, Awards1-2, …)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-C03",
+      "capability": "WebCV Studio (layout ladder, template presets, template utils)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-C04",
+      "capability": "Editing portfolios created by the legacy editor",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-C05",
+      "capability": "Public portfolio rendering + slug availability + publish",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/public/{X}",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0348"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/slug-availability",
+          "status": "EXACT",
+          "path": "/portfolios/slug-availability",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0349"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/portfolios/{X}",
+          "status": "EXACT",
+          "path": "/portfolios/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0344",
+            "OP-0345",
+            "OP-0346"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-C06",
+      "capability": "Portfolio template gallery with palettes",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-C07",
+      "capability": "Portfolio gallery / showcase",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/portfolios/public",
+          "status": "EXACT",
+          "path": "/portfolios/public",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0347"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-D01",
+      "capability": "Live voice interview (TTS question delivery + pacing)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/live-interview/sessions",
+          "status": "EXACT",
+          "path": "/live-interview/sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0268"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions/{X}/turns",
+          "status": "EXACT",
+          "path": "/live-interview/sessions/{X}/turns",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0272"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D02",
+      "capability": "Microphone capture + live audio waveform",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D03",
+      "capability": "Interview session UI (question flow, transcript, scoring)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/live-interview/sessions",
+          "status": "EXACT",
+          "path": "/live-interview/sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0268"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions/{X}/complete",
+          "status": "EXACT",
+          "path": "/live-interview/sessions/{X}/complete",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0271"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-D04",
+      "capability": "Candidate command palette (⌘K) with fuzzy entity search",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D05",
+      "capability": "Copilot assistant (mascot, prompt builder, action registry)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/ai/generate-summary",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/ai/generate-interview",
+          "status": "MOUNT-PREFIX",
+          "path": "/enterprise/ai/generate-interview",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0168"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 1,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-D06",
+      "capability": "Candidate HUD overlay",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D07",
+      "capability": "Notification centre (bell, unread poller, routing)",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/notifications",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-D08",
+      "capability": "User-selectable UI density",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D09",
+      "capability": "Candidate dashboard home, next-steps onboarding, applied-jobs tracker",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/jobs/applications",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/jobs/{X}/applications"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/dashboard",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-D10",
+      "capability": "Guided \"next steps\" onboarding checklist",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D12",
+      "capability": "Dashboard-v2 element library (stats, activity, profile display, resumes/covers lists)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/dashboard",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/resumes",
+          "status": "EXACT",
+          "path": "/resumes",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0363"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/cover-letters",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 2,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-D13",
+      "capability": "Candidate shell, AI career briefing, top job matches, executive rail, progress charts",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/ai/generate-summary",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/jobs/search",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/platform/search",
+            "/v1/search"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-D14",
+      "capability": "Payment grace-period / dunning banner",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-D15",
+      "capability": "Saved jobs / favourites",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/favourites",
+          "status": "EXACT",
+          "path": "/favourites",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0234",
+            "OP-0235"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-D11",
+      "capability": "Candidate⇄employer messaging",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E01",
+      "capability": "Guided multi-step resume builder (Form/Boards/Actions steps)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/resumes",
+          "status": "EXACT",
+          "path": "/resumes",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0363"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/users/ai/generate-summary",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E02",
+      "capability": "Template catalogue volume (51 legacy cv dirs)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E03",
+      "capability": "Structurally distinct template layouts (design diversity)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E04",
+      "capability": "ATS score with per-section breakdown and job-description targeting",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-E05",
+      "capability": "Server-side ATS audit (authoritative score from backend)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "UNVERIFIED"
+    },
+    {
+      "id": "FP-E06",
+      "capability": "Profile photo crop / zoom",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/resumes/X (PATCH, photo field)",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E07",
+      "capability": "QR code generation for shares / MFA enrolment",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/auth/2fa/setup",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-E08",
+      "capability": "Public share links / share modal",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}/publication",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publication",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0367"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/publish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/publish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0368"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/resumes/{X}/unpublish",
+          "status": "EXACT",
+          "path": "/resumes/{X}/unpublish",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0369"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-E09",
+      "capability": "Cover letters",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/covers",
+          "status": "EXACT",
+          "path": "/covers",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0137"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/covers/{X}",
+          "status": "EXACT",
+          "path": "/covers/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0138",
+            "OP-0139",
+            "OP-0140"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/generate-ai-cover-letter",
+          "status": "EXACT",
+          "path": "/generate-ai-cover-letter",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0240"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-E16",
+      "capability": "Export access guard (plan-gated export routes)",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/export",
+          "status": "EXACT",
+          "path": "/export",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0231"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/export-docx",
+          "status": "EXACT",
+          "path": "/export-docx",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0232"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/export-render-data",
+          "status": "EXACT",
+          "path": "/export-render-data",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0233"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 1,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E17",
+      "capability": "Document rendering surface (page composer, template renderer, public resume)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/resumes/{X}",
+          "status": "EXACT",
+          "path": "/resumes/{X}",
+          "methods": [
+            "DELETE",
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0364",
+            "OP-0365",
+            "OP-0366"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-E11",
+      "capability": "DOCX export with ZIP magic-byte validation",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/export-docx",
+          "status": "EXACT",
+          "path": "/export-docx",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0232"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E12",
+      "capability": "Server-rendered PDF export",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-REACHABILITY",
+      "endpoints": [
+        {
+          "declared": "/export",
+          "status": "EXACT",
+          "path": "/export",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0231"
+          ],
+          "reachable": false
+        },
+        {
+          "declared": "/public-export",
+          "status": "EXACT",
+          "path": "/public-export",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UNREACHABLE"
+          ],
+          "opIds": [
+            "OP-0350"
+          ],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 2,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E13",
+      "capability": "Smart resume layout engine (section partitioner, 5 layouts, themed rendering)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-E14",
+      "capability": "Bullet-point quality/health cards and role health checks",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E15",
+      "capability": "Free-tier watermark + export entitlement gating",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/billing/plans",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-E10",
+      "capability": "AI writing aids (grammar check, summary, import)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/check-grammar",
+          "status": "EXACT",
+          "path": "/check-grammar",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0133"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/parse-resume",
+          "status": "EXACT",
+          "path": "/parse-resume",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0284"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F01",
+      "capability": "Employer portal shell with tabbed workspace",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/employer",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F02",
+      "capability": "Applicant pipeline (kanban + list, stage transitions)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/jobs/{X}/applications",
+          "status": "EXACT",
+          "path": "/jobs/{X}/applications",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0263",
+            "OP-0264"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F03",
+      "capability": "Employer candidate messaging / send-message dialog",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "MOCK / FABRICATED STATE"
+    },
+    {
+      "id": "FP-F04",
+      "capability": "Employer onboarding wizard",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-F05",
+      "capability": "Job creation / requisition editor",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/employer/jobs",
+          "status": "EXACT",
+          "path": "/employer/jobs",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0162",
+            "OP-0163"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/employer/jobs/{X}",
+          "status": "EXACT",
+          "path": "/employer/jobs/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0164",
+            "OP-0165"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 2,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-F06",
+      "capability": "Company profile + team seats",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/employer/companies",
+          "status": "EXACT",
+          "path": "/employer/companies",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0158",
+            "OP-0159"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/employer/companies/{X}",
+          "status": "EXACT",
+          "path": "/employer/companies/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0160",
+            "OP-0161"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/teams",
+          "status": "EXACT",
+          "path": "/enterprise/teams",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0208",
+            "OP-0209"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/enterprise/memberships",
+          "status": "EXACT",
+          "path": "/enterprise/memberships",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0178",
+            "OP-0179"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 4,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F07",
+      "capability": "Job discovery with map view and location autocomplete",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/jobs/search",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/platform/search",
+            "/v1/search"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-F08",
+      "capability": "Regional job hubs / landing pages",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/jobs",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/jobs",
+            "/employer/jobs",
+            "/enterprise/queue/jobs"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F11",
+      "capability": "Employer dashboard: companies management, job editing, application modals, rejection reasons",
+      "declaredInvoke": "yes",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/employer/company",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/jobs/{X}",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/jobs/{X}",
+            "/employer/jobs/{X}"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/job-applications/{X}/status",
+          "status": "EXACT",
+          "path": "/job-applications/{X}/status",
+          "methods": [
+            "PATCH"
+          ],
+          "classes": [
+            "INDIRECTLY-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0250"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F10",
+      "capability": "Job listing browse/filter UI (beyond maps and autocomplete)",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/jobs/search",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/platform/search",
+            "/v1/search"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/jobs/{X}",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/jobs/{X}",
+            "/employer/jobs/{X}"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 2
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-F09",
+      "capability": "Employer dashboard analytics",
+      "declaredInvoke": "partial",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "UNVERIFIED"
+    },
+    {
+      "id": "FP-G01",
+      "capability": "Cuba application shell (nav, header, popovers, a11y)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G02",
+      "capability": "Cuba design-system primitives (30 components)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-G03",
+      "capability": "Internationalisation (16 locales, ~1,011 translation keys)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G04",
+      "capability": "Product analytics (GA4 / gtag)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G05",
+      "capability": "Per-route SEO metadata (title, description, canonical, structured data)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G06",
+      "capability": "Service worker / offline shell",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G07",
+      "capability": "Toast / notification feedback primitives",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G08",
+      "capability": "Auth flows: OAuth sign-in, 2FA, forced password change",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/auth/login",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/auth/2fa/setup",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/auth/2fa/send-sms",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/send-sms"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 2,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G09",
+      "capability": "Blog authoring + public blog",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G10",
+      "capability": "CMS custom pages / landing page rendering",
+      "declaredInvoke": "partial",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/public/custom-pages",
+          "status": "EXACT",
+          "path": "/public/custom-pages",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "EXTERNAL-CALLER"
+          ],
+          "opIds": [
+            "OP-0353"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G11",
+      "capability": "Marketing site: welcome, features, FAQ, about, contact, legal",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G12",
+      "capability": "Privacy consent banner + cookie policy surface",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G13",
+      "capability": "Entitlements / plan-gating data model",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/billing/plans",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G15",
+      "capability": "Shared utility library (42 modules: formatting, validation, download, OAuth resolvers, print)",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-G16",
+      "capability": "Typed API service layer (client, resumes, covers, jobs, portfolios, blog, platform, users, databaseAdmin)",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-G17",
+      "capability": "Geo / location datasets, autocomplete directories, job-location helpers",
+      "declaredInvoke": "no",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/jobs/search",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/platform/search",
+            "/v1/search"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 1
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G18",
+      "capability": "Structured data / JSON-LD for public pages",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "MISSING"
+    },
+    {
+      "id": "FP-G19",
+      "capability": "TOTP / MFA secret provisioning helpers",
+      "declaredInvoke": "yes",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "/auth/2fa/setup",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/auth/2fa/send-sms",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/send-sms"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 1
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G20",
+      "capability": "Job application tracker",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/jobs-data/tracker",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0259",
+            "OP-0260"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs-data/tracker/{X}",
+          "status": "EXACT",
+          "path": "/jobs-data/tracker/{X}",
+          "methods": [
+            "DELETE",
+            "PATCH"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0261",
+            "OP-0262"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/jobs/{X}/applications",
+          "status": "EXACT",
+          "path": "/jobs/{X}/applications",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0263",
+            "OP-0264"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "FULL PARITY"
+    },
+    {
+      "id": "FP-G21",
+      "capability": "AI interview coach / role-based question generation",
+      "declaredInvoke": "yes",
+      "grade": "SUPPORTED",
+      "endpoints": [
+        {
+          "declared": "/generate-interview",
+          "status": "EXACT",
+          "path": "/generate-interview",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0242"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions",
+          "status": "EXACT",
+          "path": "/live-interview/sessions",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0268"
+          ],
+          "reachable": true
+        },
+        {
+          "declared": "/live-interview/sessions/{X}/turns",
+          "status": "EXACT",
+          "path": "/live-interview/sessions/{X}/turns",
+          "methods": [
+            "POST"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0272"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 3,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G22",
+      "capability": "Data models, runtime conf and React context scaffolding",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-G23",
+      "capability": "Cross-cutting hooks (unread pollers, AI token usage, AI engine status, service availability, dialogs)",
+      "declaredInvoke": "partial",
+      "grade": "MIXED",
+      "endpoints": [
+        {
+          "declared": "/notifications",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "/platform/operational-status",
+          "status": "EXACT",
+          "path": "/platform/operational-status",
+          "methods": [
+            "GET"
+          ],
+          "classes": [
+            "UI-REACHABLE"
+          ],
+          "opIds": [
+            "OP-0318"
+          ],
+          "reachable": true
+        }
+      ],
+      "counts": {
+        "ok": 1,
+        "unreachable": 0,
+        "absent": 1,
+        "ambiguous": 0
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G24",
+      "capability": "In-app support surface and input validation modals",
+      "declaredInvoke": "partial",
+      "grade": "UNSUPPORTED-ENDPOINT",
+      "endpoints": [
+        {
+          "declared": "GET /support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /support/tickets/X/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /admin/support/tickets",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets",
+            "/support/tickets"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "GET /admin/support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "POST /admin/support/tickets/X/messages",
+          "status": "AMBIGUOUS",
+          "candidates": [
+            "/admin/support/tickets/{X}/messages",
+            "/messages/conversations/{X}/messages",
+            "/support/tickets/{X}/messages",
+            "/v1/messages"
+          ],
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        },
+        {
+          "declared": "PATCH /admin/support/tickets/X",
+          "status": "ABSENT",
+          "methods": [],
+          "classes": [],
+          "opIds": [],
+          "reachable": false
+        }
+      ],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 3,
+        "ambiguous": 5
+      },
+      "classification": "PARTIAL PARITY"
+    },
+    {
+      "id": "FP-G25",
+      "capability": "App bootstrap, route focus management, global spinner",
+      "declaredInvoke": "n/a",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "REPLACED BY EQUIVALENT"
+    },
+    {
+      "id": "FP-G14",
+      "capability": "Misc legacy orphans (Front, initailisation, Analytics, variables.scss)",
+      "declaredInvoke": "no",
+      "grade": "SUPPORTED",
+      "endpoints": [],
+      "counts": {
+        "ok": 0,
+        "unreachable": 0,
+        "absent": 0,
+        "ambiguous": 0
+      },
+      "classification": "UNVERIFIED"
+    }
+  ],
+  "allRowsSummary": {
+    "withUnsupportedEndpoint": 30,
+    "withUnreachableEndpoint": 16,
+    "fullySupported": 67,
+    "rowsWithNoDeclaredEndpoint": 37
+  }
+}

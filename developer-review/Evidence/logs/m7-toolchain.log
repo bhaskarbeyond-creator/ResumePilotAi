@@ -1,0 +1,168 @@
+# M7 toolchain log — provenance reconciled
+
+executionRevision: a7d08a2fa67b44aefe4692405b470fa6b174d29f
+auditedSourceRevision: 8a6e03bbc279cfb7e3a62519659fa3fe770ad1be
+publicationCommit: 2def3e524654e24fc9ebd658f0be78045aeb7ae1
+publicationBranch: arena/393531fe-resumepilotai
+originalGeneratedAt: 2026-10-29T07:20:09Z
+reconciledOn: 2026-10-29
+
+Provenance note: the original command output below was captured at executionRevision, not at the publication commit.
+The Mandate 7 report states that a7d08a2 is byte-identical to the audited source snapshot 8a6e03bb across all
+3,806 tracked files. This reconciliation does not claim that commands were re-executed during this update.
+
+IMPORTANT COUNT RECONCILIATION:
+- The canonical mounted-router register reports 397 effective route registrations and 393 unique METHOD+path operations.
+- The independent client-contract tool's captured output reports backendRegistrations=413 and 393 unique-operation matching results.
+- The 397-versus-413 registration counts are not demonstrated to be the same counting unit by the existing log.
+  Preserve both observations; do not claim registration-count agreement until the 16-registration delta is
+  itemized by route/source and explained. The 393/393 operation cross-check is a separate assertion.
+
+
+=== tools/backend-reachability.cjs ===
+revision                 : a7d08a2fa67b
+route registrations      : 397
+unique METHOD+path       : 393
+duplicate registrations  : 4
+
+reachability classes (numerator / denominator = unique METHOD+path):
+  UI-REACHABLE              156  (39.7%)
+  INDIRECTLY-REACHABLE       10  (2.5%)
+  EXTERNAL-CALLER            27  (6.9%)
+  SERVER-ONLY                11  (2.8%)
+  INTENTIONALLY-UNEXPOSED     2  (0.5%)
+  UNREACHABLE               176  (44.8%)
+  UNVERIFIED                 11  (2.8%)
+exit=0
+
+=== tools/reachability-crosscheck.cjs ===
+operations checked : 393
+agreements         : 393
+disagreements      : 0
+raw route literals (independent, pre-expansion): 356
+exit=0
+
+=== tools/client-call-existence.cjs ===
+         frontend/src/components/admin/AdminQueuesTab.tsx:204
+         frontend/src/components/admin/AdminQueuesTab.tsx:285
+MISSING  POST /admin/users/{X}/status
+         frontend/src/components/admin/AdminUsersTab.tsx:206
+MISSING  POST /notify/email
+         frontend/src/components/employer/CandidateReviewDrawer.tsx:159
+MISSING  GET /platform/status
+         frontend/src/lib/enterprise-api.ts:528
+MISSING  POST /billing/validate-coupon
+         frontend/src/pages/billing/checkout-modal.tsx:246
+MISSING  GET /blog/posts/{X}
+         frontend/src/pages/blog/editor.tsx:91
+MISSING  PUT /blog/posts/{X}
+         frontend/src/pages/blog/editor.tsx:147
+MISSING  POST /blog/posts
+         frontend/src/pages/blog/editor.tsx:149
+
+artifact: developer-review/Evidence/artifacts/client-call-existence.json
+exit=0
+
+=== tools/client-contract-audit.cjs ===
+M7 client/backend contract audit
+{
+ "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+ "callSites": 212,
+ "backendRegistrations": 413,
+ "tally": {
+  "REGISTERED_WITH_CONTRACT_MISMATCH": 8,
+  "REGISTERED_AND_MATCHED": 190,
+  "NO_REGISTERED_OPERATION": 14
+ },
+ "distinctGapPaths": 15,
+ "gaps": 22,
+ "falseSuccess": 12
+}
+register: developer-review/CLIENT-BACKEND-CONTRACT-REGISTER.md
+exit=0
+
+=== tools/capability-subfeature-audit.cjs ===
+  "ADJUDICATED": 40
+ },
+ "adjudicationFile": "developer-review/Evidence/adjudications-m7.json",
+ "dispositionHistogram": {
+  "NO_CHANGE": 24,
+  "SUBFEATURE_LOSS": 9,
+  "CONFIRMED_MISSING": 5,
+  "PARTIAL_EQUIVALENT": 1,
+  "RECLASSIFY_PARTIAL": 1
+ },
+ "rowsWithAbsentClass": 0,
+ "rowsWithActionDiff": 50,
+ "rowsWithAccountedOnly": 8,
+ "crossRowAccountedActions": 312,
+ "attributionRule": "an action counts as a lead only if it appears in the legacy corpora of <= 2 rows",
+ "absentClassHistogram": {}
+}
+register: developer-review/CAPABILITY-SUBFEATURE-REGISTER.md
+exit=0
+
+=== tools/parity-matrix.cjs ===
+capabilities        : 112
+  FULL PARITY               12
+  PARTIAL PARITY            49
+  MISSING                   30
+  MOCK / FABRICATED STATE   12
+  REPLACED BY EQUIVALENT    6
+  UNVERIFIED                3
+legacy files covered: 650/650 (unattributed source: 0)
+modern files covered: 206/206 (unattributed source: 0)
+exit=0
+
+=== tools/parity-endpoint-audit.cjs ===
+FULL PARITY rows audited : 12
+tally                    : {"SUPPORTED":12}
+
+  FP-B06  SUPPORTED                Workspaces + archive/restore
+  FP-B07  SUPPORTED                Tenant lifecycle (suspend / reactivate) from t
+  FP-C05  SUPPORTED                Public portfolio rendering + slug availability
+  FP-C07  SUPPORTED                Portfolio gallery / showcase
+  FP-D15  SUPPORTED                Saved jobs / favourites
+  FP-E04  SUPPORTED                ATS score with per-section breakdown and job-d
+  FP-E08  SUPPORTED                Public share links / share modal
+  FP-E09  SUPPORTED                Cover letters
+  FP-E17  SUPPORTED                Document rendering surface (page composer, tem
+  FP-E13  SUPPORTED                Smart resume layout engine (section partitione
+  FP-F05  SUPPORTED                Job creation / requisition editor
+  FP-G20  SUPPORTED                Job application tracker
+
+artifact: developer-review/Evidence/artifacts/parity-endpoint-audit.json
+exit=0
+
+=== tools/parity-depth-checks.cjs ===
+V6 parity-depth checks
+{"PASS":4,"LEAD":6}
+  PASS  1. doc/matrix classification contradiction
+  LEAD  2. swallowed failure followed by success state — 17 item(s)
+  LEAD  3. hardcoded operational baseline in a live view — 17 item(s)
+  LEAD  4. browser storage alongside a server client — 3 item(s)
+  PASS  5. evidence file:line refs resolve
+  PASS  6. runtime claims are backed by a log
+  PASS  7. declared backend is actually called by the row — 25 item(s)
+  LEAD  8. FULL rows with legacy subfeature signals absent from modern — 4 item(s)
+  LEAD  9. client call sites resolve to a registered operation — 21 item(s)
+  LEAD  10. legacy export/edit capability has a recorded disposition — 9 item(s)
+artifact: developer-review/Evidence/artifacts/parity-depth-checks.json
+exit=0
+
+=== scripts/verify-audit-package.sh ===
+--- Summary ---
+PASS: 61  FAIL: 0
+VERIFICATION PASSED
+=== scripts/verify-v4-reconciliation.py ===
+PASS: coverage total equals the sum of its parts
+--- Summary ---
+PASS: 16  FAIL: 0
+
+
+=== RECONCILIATION NOTES (documentation-only; no command re-execution) ===
+- Preserved the original captured command output below/above without fabricating a new run.
+- V7 publication commit: 2def3e524654e24fc9ebd658f0be78045aeb7ae1; parent/source checkpoint: 8a6e03bbc279cfb7e3a62519659fa3fe770ad1be.
+- Reported verification results: verify-audit-package.sh 61/61; verify-v4-reconciliation.py 16/16; secret scan clean.
+- Runtime status remains PARTIAL — INCOMPLETE: 0 browser tests, 0 MariaDB tests, 0 live-provider calls in this mandate.
+- Open toolchain reconciliation item: explain the 413 raw/parsed registration count versus 397 effective mounted registrations. Do not collapse these values without a source-level reconciliation.

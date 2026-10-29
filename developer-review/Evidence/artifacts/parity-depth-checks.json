@@ -1,0 +1,829 @@
+{
+  "generatedAt": "2026-10-29T07:20:49.060Z",
+  "summary": {
+    "PASS": 4,
+    "LEAD": 6
+  },
+  "results": [
+    {
+      "check": "1. doc/matrix classification contradiction",
+      "status": "PASS",
+      "findings": []
+    },
+    {
+      "check": "2. swallowed failure followed by success state",
+      "status": "LEAD",
+      "leads": [
+        {
+          "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+          "line": 126,
+          "successHint": "Article ${postId} deleted successfully."
+        },
+        {
+          "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+          "line": 559,
+          "successHint": "/platform/operational-status/${serviceId}/test"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 152,
+          "successHint": " } : a))\n      );\n      setFeedback("
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 184,
+          "successHint": "Job listing ${jobId} status updated to ${isSpam ? "
+        },
+        {
+          "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+          "line": 122,
+          "successHint": "Just now (Verified OK)"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+          "line": 136,
+          "successHint": "Application route and model caches purged across nodes."
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 204,
+          "successHint": "Job ${jobId} purged from outbox records."
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 285,
+          "successHint": "));\n                      setRetryFeedback("
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 209,
+          "successHint": "User ${user.email} marked as ${nextStatus.toUpperCase()}."
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 223,
+          "successHint": "/platform/role-view-audit"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 234,
+          "successHint": "Audit trail logged for session observation: ${user.email} (${user.role})"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 238,
+          "successHint": "/admin/users/${selectedUser.id}"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 280,
+          "successHint": "All active JWT & refresh tokens revoked for ${selectedUser.email}."
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 360,
+          "successHint": ");\n      setNewEmail("
+        },
+        {
+          "file": "frontend/src/components/enterprise/EnterpriseEmailTab.tsx",
+          "line": 44,
+          "successHint": "enterprise_email_sender_${tenant?.id || "
+        },
+        {
+          "file": "frontend/src/pages/blog/editor.tsx",
+          "line": 153,
+          "successHint": ""
+        },
+        {
+          "file": "frontend/src/pages/dashboard/favourites.tsx",
+          "line": 134,
+          "successHint": "${name} couldn’t be saved again. Check your connection and try again."
+        }
+      ]
+    },
+    {
+      "check": "3. hardcoded operational baseline in a live view",
+      "status": "LEAD",
+      "leads": [
+        {
+          "file": "frontend/src/components/admin/AdminAttentionTab.tsx",
+          "line": 31,
+          "name": "DEFAULT_SIGNALS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+          "line": 46,
+          "name": "DEFAULT_ARTICLES",
+          "retainsOnFailure": true
+        },
+        {
+          "file": "frontend/src/components/admin/AdminContentMarketingTab.tsx",
+          "line": 66,
+          "name": "INITIAL_PHRASES",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminContentMarketingTab.tsx",
+          "line": 74,
+          "name": "INITIAL_REVIEWS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminContentMarketingTab.tsx",
+          "line": 80,
+          "name": "INITIAL_TRUSTED",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminContentMarketingTab.tsx",
+          "line": 88,
+          "name": "INITIAL_PAGES",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+          "line": 47,
+          "name": "DEFAULT_TICKETS",
+          "retainsOnFailure": true
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 58,
+          "name": "DEFAULT_APPLICATIONS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 108,
+          "name": "DEFAULT_JOBS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 48,
+          "name": "DEFAULT_QUEUES",
+          "retainsOnFailure": true
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 55,
+          "name": "INITIAL_JOBS",
+          "retainsOnFailure": true
+        },
+        {
+          "file": "frontend/src/components/admin/AdminSecurityTab.tsx",
+          "line": 68,
+          "name": "INITIAL_EVENTS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminSecurityTab.tsx",
+          "line": 136,
+          "name": "INITIAL_OPERATORS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminSecurityTab.tsx",
+          "line": 143,
+          "name": "INITIAL_AUDITS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminSecurityTab.tsx",
+          "line": 150,
+          "name": "INITIAL_ANNOUNCEMENTS",
+          "retainsOnFailure": false
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 68,
+          "name": "DEFAULT_USERS",
+          "retainsOnFailure": true
+        },
+        {
+          "file": "frontend/src/components/employer/TeamSeats.tsx",
+          "line": 36,
+          "name": "INITIAL_TEAM",
+          "retainsOnFailure": false
+        }
+      ]
+    },
+    {
+      "check": "4. browser storage alongside a server client",
+      "status": "LEAD",
+      "leads": [
+        {
+          "file": "frontend/src/lib/interview-coach.ts",
+          "storage": "sessionStorage",
+          "apiCalls": 6
+        },
+        {
+          "file": "frontend/src/pages/dashboard/resumes.tsx",
+          "storage": "localStorage",
+          "apiCalls": 8
+        },
+        {
+          "file": "frontend/src/pages/export/cv-renderer.tsx",
+          "storage": "localStorage",
+          "apiCalls": 3
+        }
+      ]
+    },
+    {
+      "check": "5. evidence file:line refs resolve",
+      "status": "PASS",
+      "totalRefs": 374,
+      "badPath": [],
+      "badLine": [],
+      "counts": {
+        "refs": 374,
+        "badPath": 0,
+        "badLine": 0
+      }
+    },
+    {
+      "check": "6. runtime claims are backed by a log",
+      "status": "PASS",
+      "claimed": 2,
+      "missing": []
+    },
+    {
+      "check": "7. declared backend is actually called by the row",
+      "status": "PASS",
+      "leads": [
+        {
+          "id": "FP-A01",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/lib/notifications.ts",
+            "frontend/src/components/admin/AdminHealthTab.tsx"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-A25",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-A26",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/components/admin/AdminHealthTab.tsx",
+            "frontend/src/components/admin/AdminQueuesTab.tsx",
+            "frontend/src/components/admin/AdminOperationsTab.tsx"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B01",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/preview-session.ts",
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B02",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B04",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B05",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B06",
+          "classification": "FULL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B07",
+          "classification": "FULL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B08",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B09",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B10",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-B11",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 8,
+          "viaImport": [
+            "frontend/src/lib/enterprise-api.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-D05",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/lib/ai-content.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-E09",
+          "classification": "FULL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/job-tracker.ts",
+            "frontend/src/lib/cover-letters.ts",
+            "frontend/src/lib/preview-session.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-E16",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/preview-session.ts",
+            "frontend/src/components/layout/cuba-app-shell.tsx",
+            "frontend/src/hooks/use-api-hooks.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-E17",
+          "classification": "FULL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/share-publication.ts",
+            "frontend/src/lib/preview-session.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-E15",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/share-publication.ts",
+            "frontend/src/lib/preview-session.ts",
+            "frontend/src/lib/tenant-context.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-E10",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 3,
+          "viaImport": [
+            "frontend/src/lib/ai-content.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-F01",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+            "frontend/src/components/employer/CompanyProfile.tsx"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-F05",
+          "classification": "FULL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/lib/notifications.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-F11",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+            "frontend/src/components/employer/CompanyProfile.tsx"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-G10",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/preview-session.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-G20",
+          "classification": "FULL PARITY",
+          "modernFiles": 2,
+          "viaImport": [
+            "frontend/src/lib/job-tracker.ts",
+            "frontend/src/lib/applications.ts",
+            "frontend/src/lib/portfolio.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        },
+        {
+          "id": "FP-G24",
+          "classification": "PARTIAL PARITY",
+          "modernFiles": 1,
+          "viaImport": [
+            "frontend/src/hooks/use-api-hooks.ts",
+            "frontend/src/lib/notifications.ts"
+          ],
+          "note": "row file does not call directly; a helper it imports does"
+        }
+      ],
+      "counts": {
+        "uncalled": 0,
+        "viaImport": 25
+      }
+    },
+    {
+      "check": "8. FULL rows with legacy subfeature signals absent from modern",
+      "status": "LEAD",
+      "leads": [
+        {
+          "id": "FP-E08",
+          "capability": "Public share links / share modal",
+          "missing": [
+            "export",
+            "import",
+            "search",
+            "preview",
+            "bulk",
+            "undo",
+            "upload",
+            "sort",
+            "drag"
+          ],
+          "legacyLines": 16941,
+          "modernLines": 477
+        },
+        {
+          "id": "FP-E09",
+          "capability": "Cover letters",
+          "missing": [
+            "preview",
+            "undo"
+          ],
+          "legacyLines": 15832,
+          "modernLines": 1454
+        },
+        {
+          "id": "FP-E17",
+          "capability": "Document rendering surface (page composer, template renderer, public resume)",
+          "missing": [
+            "export",
+            "a11y"
+          ],
+          "legacyLines": 1274,
+          "modernLines": 1496
+        },
+        {
+          "id": "FP-F05",
+          "capability": "Job creation / requisition editor",
+          "missing": [
+            "export",
+            "search"
+          ],
+          "legacyLines": 2100,
+          "modernLines": 747
+        }
+      ]
+    },
+    {
+      "check": "9. client call sites resolve to a registered operation",
+      "status": "LEAD",
+      "leads": [
+        {
+          "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+          "line": 97,
+          "method": "",
+          "path": "/blog/posts"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+          "line": 126,
+          "method": "",
+          "path": "/blog/posts/{X}"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 152,
+          "method": "",
+          "path": "/admin/employer-applications/{X}/verify"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 167,
+          "method": "",
+          "path": "/admin/employer-applications/{X}/verify"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+          "line": 184,
+          "method": "",
+          "path": "/admin/jobs/{X}/moderate"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+          "line": 122,
+          "method": "",
+          "path": "/admin/operations/backup"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+          "line": 136,
+          "method": "",
+          "path": "/admin/operations/cache-clear"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 138,
+          "method": "",
+          "path": "/admin/queues"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 173,
+          "method": "",
+          "path": "/admin/queues/{X}/retry"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 186,
+          "method": "",
+          "path": "/admin/queues/dead-letter-queue/retry"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 204,
+          "method": "",
+          "path": "/admin/queues/dead-letter-queue/purge"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 262,
+          "method": "",
+          "path": "/admin/queues/dead-letter-queue/retry"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+          "line": 285,
+          "method": "",
+          "path": "/admin/queues/dead-letter-queue/purge"
+        },
+        {
+          "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+          "line": 206,
+          "method": "",
+          "path": "/admin/users/{X}/status"
+        },
+        {
+          "file": "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+          "line": 159,
+          "method": "",
+          "path": "/notify/email"
+        },
+        {
+          "file": "frontend/src/lib/enterprise-api.ts",
+          "line": 528,
+          "method": "",
+          "path": "/platform/status"
+        },
+        {
+          "file": "frontend/src/pages/billing/checkout-modal.tsx",
+          "line": 246,
+          "method": "",
+          "path": "/billing/validate-coupon"
+        },
+        {
+          "file": "frontend/src/pages/blog/editor.tsx",
+          "line": 91,
+          "method": "",
+          "path": "/blog/posts/{X}"
+        },
+        {
+          "file": "frontend/src/pages/blog/editor.tsx",
+          "line": 147,
+          "method": "",
+          "path": "/blog/posts/{X}"
+        },
+        {
+          "file": "frontend/src/pages/blog/editor.tsx",
+          "line": 149,
+          "method": "",
+          "path": "/blog/posts"
+        },
+        {
+          "file": "frontend/src/pages/blog/index.tsx",
+          "line": 46,
+          "method": "",
+          "path": "/blog/posts"
+        }
+      ],
+      "counts": {
+        "dead": 21,
+        "callSites": 229
+      }
+    },
+    {
+      "check": "10. legacy export/edit capability has a recorded disposition",
+      "status": "LEAD",
+      "leads": [
+        {
+          "id": "FP-A16",
+          "classification": "PARTIAL PARITY",
+          "capability": "SMTP/IMAP + transactional email template settings",
+          "legacySymbols": [
+            "exportConfig",
+            "exportPdf",
+            "docx",
+            "exportPdfSettings",
+            "printAuthoritativeCreditNote",
+            "printAuthoritativeInvoice"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-A21",
+          "classification": "PARTIAL PARITY",
+          "capability": "Platform settings, feature flags, maintenance, encryption/backup status",
+          "legacySymbols": [
+            "exportConfig",
+            "exportPdf",
+            "docx",
+            "exportPdfSettings",
+            "printAuthoritativeCreditNote",
+            "printAuthoritativeInvoice"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-D03",
+          "classification": "PARTIAL PARITY",
+          "capability": "Interview session UI (question flow, transcript, scoring)",
+          "legacySymbols": [
+            "downloadTextFile",
+            "downloadSlug"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-E08",
+          "classification": "FULL PARITY",
+          "capability": "Public share links / share modal",
+          "legacySymbols": [
+            "downloadResumePdf",
+            "downloadResumeDocx",
+            "exportDownloader",
+            "docx",
+            "downloadFailed",
+            "downloadType"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-F01",
+          "classification": "PARTIAL PARITY",
+          "capability": "Employer portal shell with tabbed workspace",
+          "legacySymbols": [
+            "printSurface",
+            "downloadResumePdf",
+            "downloadResumeDocx",
+            "exportDownloader",
+            "exportBusy",
+            "exportError"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-F05",
+          "classification": "FULL PARITY",
+          "capability": "Job creation / requisition editor",
+          "legacySymbols": [
+            "printSurface",
+            "downloadResumePdf",
+            "downloadResumeDocx",
+            "exportDownloader",
+            "exportBusy",
+            "exportError"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-F06",
+          "classification": "PARTIAL PARITY",
+          "capability": "Company profile + team seats",
+          "legacySymbols": [
+            "printSurface",
+            "downloadResumePdf",
+            "downloadResumeDocx",
+            "exportDownloader",
+            "exportBusy",
+            "exportError"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-G07",
+          "classification": "PARTIAL PARITY",
+          "capability": "Toast / notification feedback primitives",
+          "legacySymbols": [
+            "downloadAnimation",
+            "downloadOptions"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        },
+        {
+          "id": "FP-G16",
+          "classification": "REPLACED BY EQUIVALENT",
+          "capability": "Typed API service layer (client, resumes, covers, jobs, portfolios, blog, platform, users, databaseAdmin)",
+          "legacySymbols": [
+            "exportUserDataJSON",
+            "exportPdf",
+            "docx",
+            "exportUserData"
+          ],
+          "note": "legacy exports/downloads; modern has none and no disposition recorded"
+        }
+      ]
+    }
+  ]
+}

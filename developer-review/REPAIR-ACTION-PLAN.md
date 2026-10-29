@@ -351,3 +351,62 @@ entries in `FEATURE-PARITY-MATRIX.md`.
 
 5.1 → 5.3 (voice, i18n) → 5.2 → 5.4 → 5.5. Phase 5.1 is a *removal* exercise as much as a build
 exercise and should not wait for anything. Nothing in Phases 5.1–5.3 requires a schema migration.
+
+---
+
+## Phase 6 — V7 additions (`8a6e03bb`): repair the contract before building anything
+
+Phase 5 assumes each broken surface needs a feature. V7 shows that most of them need a **retarget**, and
+that the console must first stop asserting success it cannot verify. Do this phase before 5.1: its first
+two items are deletions, and everything else is cheaper once the console stops lying.
+
+### 6.1 P0 — stop fabricating success (no backend work required)
+
+| # | Action | Exact site |
+|---|---|---|
+| R-A6-01 | Delete every `.catch(() => {})` / `catch { /* Keep baseline */ }` that is followed by a success state, and mutate local state only after a 2xx | 12 sites listed in `M7-CAPABILITY-CLOSURE.md` §4; detector `client-contract-audit.cjs` → `successAfter` |
+| R-A6-02 | Delete the fixture seeds in the three admin tabs and render explicit empty/error states | `AdminModerationTab.tsx:58,81`; `AdminHelpDeskTab.tsx:47` (and the `length > 0` guard at `:128-137`); `AdminUsersTab.tsx:68` |
+| R-A6-03 | Remove the two dead fallback URLs in the queue console (the primary calls are correct) | `AdminQueuesTab.tsx:138,173` → keep `/api/platform/queues*` only |
+| R-A6-04 | Remove the hardcoded promo constants; call the real validator | `checkout-modal.tsx:255-264` (see R-A6-08) |
+
+### 6.2 P0 — retarget clients at operations that already exist
+
+| # | Action | From → to |
+|---|---|---|
+| R-A6-05 | Employer approval/rejection | `POST …/verify {decision}` → `PATCH /api/admin/employer-applications/:uid {status, expectedStatus, reason}` (`backend/index.js:6440`) |
+| R-A6-06 | Job spam flagging | `POST /admin/jobs/:id/moderate {isSpam,status:'flagged'}` → `PATCH /api/admin/jobs/:jobId {status}` with a real status (`:6886`) |
+| R-A6-07 | User suspension | `POST /admin/users/:id/status` → `PATCH /api/admin/users/:uid {suspended:boolean}` (`routes/adminUsers.js:673`) |
+| R-A6-08 | Coupon validation | `POST /api/billing/validate-coupon` → `POST /api/coupons/validate` (`backend/index.js:4597`) |
+| R-A6-09 | Public job listing | `GET /jobs` → `GET /api/jobs-data` (`routes/jobsData.js:159`) |
+| R-A6-10 | Blog list/read/write/delete | `/blog/posts*` → `/api/admin/blog/posts*` (`backend/index.js:3388/3408/6424`) and `/api/blog-data*` (`routes/blogData.js:35,85,96,106`); note there is **no create route** — creation is an upsert through `POST /api/blog-data/:id`, so the editor must mint an id |
+| R-A6-11 | Enterprise platform status | `/api/platform/status` → `/api/admin/platform/status` (`routes/adminPlatformOperations.js:533`) |
+| R-A6-12 | Feed the moderation tab from the server | call `GET /api/admin/employer-applications` (`:6279`) and `GET /api/admin/jobs` (`:6300`); both are registered and reachable and currently unused |
+
+### 6.3 P1 — build what really is absent
+
+| # | Action | Evidence |
+|---|---|---|
+| R-A6-13 | Backup operation (or remove the button) | no route creates a snapshot; only `GET /api/platform/backup-status` exists |
+| R-A6-14 | Cache-invalidation operation (or remove the button) | no cache route exists in `backend/` |
+| R-A6-15 | Dead-letter purge: keep the refusal, remove the fake success | `POST /platform/queues/purge` answers `410` deliberately; bulk replay answers `400 BULK_REPLAY_FORBIDDEN` (`routes/databaseAdmin.js:157`) |
+| R-A6-16 | Employer→candidate email on transition | `/notify/email` has no route; `services/emailNotifier.js` is imported at `index.js:14` and never called. Either wire it into a transition or use the in-app message channel |
+| R-A6-17 | Photo pipeline that fits the body budget | 5 MB client cap vs `express.json({limit:'256kb'})` (`index.js:316`) — downscale client-side or upload out-of-band |
+
+### 6.4 P2 — capability restorations confirmed by V7 (additions to Phase 5)
+
+R-A6-18 per-route SEO metadata (FP-G05) · R-A6-19 service worker / offline shell (FP-G06, positively
+confirmed absent) · R-A6-20 consent surface (FP-G12) · R-A6-21 dunning banner (FP-D14) · R-A6-22 candidate
+resume download in the review drawer and enterprise review (FP-F11, FP-B09) · R-A6-23 enterprise workspace
+assignment (FP-B02) · R-A6-24 bullet-editor undo / passive-opener fixer / quick-metric injection (FP-E01,
+FP-E14 — the section-level analyzer already exists, so this is the per-bullet half) · R-A6-25 portfolio
+section library (FP-C02/FP-C06) · R-A6-26 interview snippet reuse + session export (FP-D01, FP-D03) · R-A6-27
+rich blog authoring (FP-G09: insert image/link, auto-excerpt) · R-A6-28 job filters: industry, seniority,
+work mode, reset-all, paging (FP-F10).
+
+### 6.5 Acceptance for Phase 6
+
+Phase 6 is done when: `client-contract-audit.cjs` reports **0** `successAfter` sites and **0**
+`NO_REGISTERED_OPERATION`; `client-call-existence.cjs` reports 0 `MISSING`; the three admin tabs contain no
+fixture constant; and every retargeted control has a Playwright spec asserting its failure path (the R-specs
+in `RUNTIME-TEST-HARNESS-M7.md` are the starting point). No application change was made by this audit; the
+phase is a specification for whoever is authorised to edit the product.

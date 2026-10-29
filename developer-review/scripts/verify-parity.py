@@ -92,7 +92,10 @@ def check_discrepancy_ids():
     for expected in ("DISC-013", "DISC-014", "DISC-015", "DISC-016", "DISC-017", "DISC-018"):
         assert expected in ids, f"{expected} missing"
     declared = int(re.search(r"Total confirmed findings in this log: \*\*(\d+)\*\*", md).group(1))
-    assert declared == len(ids), f"declared {declared} but {len(ids)} DISC entries exist"
+    # V7: DISC-042 and DISC-046 are merge stubs (folded into DISC-030 to keep the finding set free of
+    # duplicates). They keep their headings so citations do not break, and are excluded from the count.
+    merged = len(re.findall(r"## \[DISC-\d{3}\] MERGED INTO", md))
+    assert declared == len(ids) - merged, f"declared {declared} but {len(ids)} DISC entries exist ({merged} merged stubs)"
 
 
 def check_history_preserved():

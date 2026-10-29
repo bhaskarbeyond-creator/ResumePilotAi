@@ -211,9 +211,9 @@ directive. Section M (R-110 … R-119) is unchanged. Row count: 55 → **65**.
 |---|---|---|---|
 | **R-120** | Independently verify the supplied omission report as an allegation register; accept nothing from it | **PASS** | `LEGACY-MODERN-FEATURE-INVENTORY.md` §5 — 34 adjudications: 18 confirmed, 1 confirmed-with-correction, 2 partial, 9 refuted, 4 unresolved |
 | **R-121** | Establish which frontend is active, distinguishing "outside the active build" from "intentionally retired" | **PASS** | Inventory §1 — npm scripts all `--prefix frontend`; `scripts/sync-dist.mjs` ships `frontend/dist`; legacy still consumed by 7 backend contract tests + 1 tooling script → outside build, **not** retired |
-| **R-122** | Recalculate every count; do not trust reported figures | **PASS** | 651 legacy / 206 modern files, 519 `.jsx` / 151 `.tsx`, 193,320 / 68,812 lines, 153 / 161 endpoints, 58 / 100 routes (`E-325`) |
+| **R-122** | Recalculate every count; do not trust reported figures | **PASS** | 650 legacy / 206 modern files, 519 `.jsx` / 151 `.tsx`, 193,310 / 68,812 lines, 153 / 161 endpoints, 58 / 100 routes (`E-325`) |
 | **R-123** | Classify every capability against the closed nine-value vocabulary; no component-level scoring | **PASS** | `FEATURE-PARITY-MATRIX.md` — 109 rows; generator rejects out-of-vocabulary values; `INTENTIONAL RETIREMENT` = 0, deliberately |
-| **R-124** | Cover all seven required domains (A super-admin, B enterprise, C portfolio, D voice/HUD/palette, E templates/ATS/export, F employer, G remainder) | **PASS** | Inventory §2 — all 651 legacy files attributed to a domain and to ≥1 capability row (coverage 651/651) |
+| **R-124** | Cover all seven required domains (A super-admin, B enterprise, C portfolio, D voice/HUD/palette, E templates/ATS/export, F employer, G remainder) | **PASS** | Inventory §2 — all 650 legacy files attributed to a domain and to ≥1 capability row (coverage 650/650) |
 | **R-125** | Trace each gap to the backend (exists / authz / tenant / invoked / schema / persisted / errors / tests) | **PASS** | `FEATURE-PARITY-MATRIX.md` §4 (per-row trace) + `E-326` (192/384 operations unreachable; 58 orphaned) |
 | **R-126** | Do not declare parity from filename similarity; do not claim parity without evidence | **PASS** | 9 allegations refuted on direct evidence; 4 capability rows left `UNVERIFIED`; one of this audit's own hypotheses refuted and recorded (RA-30) |
 | **R-127** | Record earlier conclusion + new evidence + revised conclusion; never silently rewrite history | **PASS** | `DISCREPANCY-LOG.md` DISC-001 banner (original text preserved); DISC-018 corrects the package's own `E-002` figures; superseded text retained in `PARITY-MATRIX-V2.md` §3/§7 and `EXECUTIVE-GAP-SUMMARY.md` §12 |
@@ -233,3 +233,57 @@ directive. Section M (R-110 … R-119) is unchanged. Row count: 55 → **65**.
 | History preservation | R-127 |
 | Read-only boundary | R-128 |
 | Final reporting | R-129 |
+
+---
+
+## §P. V4 revalidation of requirement statuses (2026-10-29, revision `0adad00`)
+
+Per the V4 mandate, no status in this register was carried forward unexamined. The table was re-tallied
+row by row from the register body (not from the summary) and the rows whose *evidence* is contradicted
+by V4 measurements were amended in place, keeping the previous text.
+
+**Re-tally (65 rows, row-level):**
+
+| Status | Rows | Composition |
+|---|---:|---|
+| PASS | **48** | 47 `**PASS**` + 1 `PASS for execution / claim REFUTED` (R-081) |
+| PARTIAL | **12** | 10 `**PARTIAL**` + 2 `PARTIAL (was BLOCKED)` |
+| BLOCKED | **4** | 3 `**BLOCKED**` + 1 `BLOCKED (was NOT VERIFIED)` |
+| NOT VERIFIED | **1** | 1 |
+| FAIL | **0** | — |
+| **Total** | **65** | reconciles with the §1 table once the 10 §N rows are included |
+
+**Amendments (previous text retained verbatim):**
+
+| ID | Previous evidence | V4 revalidation | Revised status |
+|---|---|---|---|
+| R-125 | "`E-326` (192/384 operations unreachable; 58 orphaned)" | The 192/58 figures are **superseded** by the seven-class register: 201/384 unreachable from any client, 250/384 with no modern call site, 183/384 never referenced by either frontend, and 126 UI-reachable. The requirement (trace each gap to the backend) is still met — the trace now exists at rule level (`Evidence/artifacts/backend-operations.tsv`, 384 rows with rule + reason + refs). | **PASS** (unchanged) with corrected evidence |
+| R-070 | "…4 payment gateways, 2 OAuth…" | The repository implements **four** OAuth entry points: Google and Facebook as client-side Firebase popups plus LinkedIn and GitHub as server-side flows. Only Google survives in the modern client (`DISC-019`). The inventory row understated the legacy surface and would have hidden the regression. | **PASS** (unchanged) with corrected count |
+| R-123 | classification of 109 capability rows | Rows are now **112** after V4 added `FP-A25`, `FP-A26`, `FP-D15` (capabilities that existed but had no row, which is why 68 modern files were unattributable) and reclassified `FP-C07` on evidence. Counts: 28 FULL / 36 PARTIAL / 30 MISSING / 9 MOCK / 6 REPLACED / 3 UNVERIFIED. | **PASS** (unchanged) with corrected counts |
+| R-126 | "9 allegations refuted on direct evidence; 4 capability rows left UNVERIFIED" | Refutations now number **10** (RA-33 added) and unverified rows **3** (FP-C07 became parity). Two earlier statements were found factually wrong and corrected rather than defended (`FP-C07`, `FP-F11`). | **PASS** (unchanged) with corrected counts |
+| R-082 | "448 inventory items, 61 audited, 387 deferred" | The deferred count is now structured: 206 modern files all attributed, 384 backend operations all classified, 65 requirements all adjudicated. The "61 audited" figure referred to the verification script's assertions, which V4 audited separately (`AUDIT-CHECK-PROVENANCE.md`). | **PASS** (unchanged) with corrected interpretation |
+
+**No requirement was downgraded.** That is a finding in itself: the requirements as written measure *the
+audit's* internal rigour, not the *product's* state, so evidence corrections do not change them. The
+product-level verdict is expressed in `V4-FINAL-ACCEPTANCE-REPORT.md`, not here.
+
+## §Q. V6 revalidation (2026-10-29, base `a5835ff6`)
+
+The V6 mandate adds ten requirements of its own (R-130 … R-139). Status is reported against what the pass
+actually executed, not against what the package contains.
+
+| ID | Requirement | Status | Evidence |
+|---|---|---|---|
+| **R-130** | Establish the authoritative revision and record the commit for every new finding | **PASS** | HEAD descends from `a5835ff6`; `cccd35a5` re-confirmed as the comparison checkpoint; every DISC-027 … DISC-040 entry carries `First raised: Mandate 6, revision a5835ff6` |
+| **R-131** | Adjudicate the eight allegations against source, independently of the developer and of V4/V5 | **PASS** | RA-36 … RA-48; 7 `CONFIRMED`, 1 `CONFIRMED — scoped`; each cites legacy + modern + backend anchors (`FEATURE-DEPTH-EVIDENCE-REGISTER.md` §2.1) |
+| **R-132** | Apply behavioural equivalence, not component-name equivalence | **PASS** | equivalences searched and found for workspaces (membership via `updateMembership`), cover letters (4 inline templates), candidate messaging (`lib/messages.ts`) — those rows were **not** downgraded |
+| **R-133** | Sweep every FULL/PARTIAL row at subfeature level and downgrade mixed parents | **PARTIAL** | all 19 V5-FULL rows re-read (7 downgraded); 56 subfeature rows traced in depth across 10 rows; the remaining 99 rows rest on V5 evidence and are declared as such (`§8` of the depth register) |
+| **R-134** | Classify with the existing vocabulary, preserve IDs and finding history | **PASS** | no row added, renumbered or deleted; 9 reclassifications recorded in-row and in `ALLEGATION-RESOLUTION-REGISTER.md` §5 |
+| **R-135** | New findings carry the 15 mandated fields | **PASS** | DISC-027 … DISC-040 are table-form with Finding ID, feature, severity+rationale, legacy, modern, backend, persistence/authz, reproduction, levels, workflow, impact, remediation, acceptance, closure, confidence |
+| **R-136** | Update the whole package and sweep stale claims | **PASS** | 12 documents amended; historical documents (`EXECUTIVE-GAP-SUMMARY.md`, `FINAL-ACCEPTANCE-REPORT.md`, `V4-FINAL-ACCEPTANCE-REPORT.md`, `HANDOVER.md`) carry dated superseded banners instead of rewritten numbers |
+| **R-137** | Publish separate, reproducible metrics; never aggregate into one score | **PASS** | `METRIC-DEFINITIONS.md` M13 … M20 with numerator/denominator/exclusions/formula/source; no composite published |
+| **R-138** | Ten automated checks + documented false-positive limits | **PASS** | `tools/parity-depth-checks.cjs` (10 checks); limits documented in the tool header and adjudicated in depth register §6 |
+| **R-139** | All acceptance gates, verdict not upgraded without runtime evidence | **PARTIAL** | 9 of 10 gates pass; the runtime gate cannot pass in this environment, so the verdict remains `PARTIAL — INCOMPLETE` and no capability is claimed repaired |
+
+**Nothing was upgraded.** V6 moved 9 rows downward and none upward; the product verdict is unchanged in
+kind (`PARTIAL — INCOMPLETE`) and weaker in the parity axis.

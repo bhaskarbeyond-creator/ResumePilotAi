@@ -72,6 +72,48 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 
 ## 3. Deliverables in this package
 
+> **Added 2026-10-29 (Mandate 7 — V7 capability closure + contract forensics, revision `8a6e03bb`):**
+> `M7-CAPABILITY-CLOSURE.md` (all 112 rows: 40 hand-adjudicated, 21 signal-clean, 10 M6 deep reads, 41 with
+> leads recorded, 10 rows / 20 items explicitly open; the 15 gap paths / 22 sites; the 12 false-success sites
+> traced click → request → response → state → notification; the 46 distinct findings; coverage arithmetic);
+> `CLIENT-BACKEND-CONTRACT-REGISTER.md` + `tools/client-contract-audit.cjs` (an **independent** backend parser
+> and client scanner — the disagreement between it and the canonical register exposed DISC-041);
+> `CAPABILITY-SUBFEATURE-REGISTER.md` + `tools/capability-subfeature-audit.cjs`; `RUNTIME-TEST-HARNESS-M7.md`
+> (R-01 … R-10, **specified not executed**); `Evidence/adjudications-m7.json`; findings **DISC-041,
+> DISC-043 … DISC-048** with **DISC-025 and DISC-029 revised in place** and DISC-042/046 merged into DISC-030.
+> The operation register was re-derived (**397 registrations → 393 unique**, was 499 → 385) and the parity mix
+> moved to **12 FULL / 49 PARTIAL / 30 MISSING / 12 MOCK / 6 REPLACED / 3 UNVERIFIED**. Verdict stays
+> **`PARTIAL — INCOMPLETE`**; application diff = 0.
+
+> **Added 2026-10-29 (Mandate 6 — V6 feature-depth re-audit, base `a5835ff6`):**
+> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` (56 subfeature rows traced legacy → modern UI → backend →
+> persistence → test, the eight allegation dispositions, the fixture table, the 19 dead client paths,
+> detector false positives and metrics M13–M20); `tools/parity-depth-checks.cjs` (**10** automated checks,
+> 4 PASS / 6 LEAD, artifact `Evidence/artifacts/parity-depth-checks.json`); findings **DISC-027 … DISC-040**;
+> allegations **RA-36 … RA-48**; parity re-measured at **12 FULL / 47 PARTIAL / 32 MISSING / 12 MOCK /
+> 6 REPLACED / 3 UNVERIFIED** of 112. Verdict stays **`PARTIAL — INCOMPLETE`**; application diff = 0.
+
+> **Added 2026-10-29 (V4 coverage reconciliation, revision `0adad00`):** nine reconciliation artifacts —
+> `V4-COVERAGE-RECONCILIATION.md` (1,492/1,492 items dispositioned), `V4-FINAL-ACCEPTANCE-REPORT.md`
+> (verdict `PARTIAL — INCOMPLETE`), `ALLEGATION-RESOLUTION-REGISTER.md` (35 allegations),
+> `OAUTH-PROBE.md` (subfeature decomposition), `BACKEND-OPERATION-REACHABILITY.md` (**385** operations in seven
+> classes), `EG-REVALIDATION-REGISTER.md` (EG-007…012 + accessibility re-tested),
+> `RUNTIME-VERIFICATION-V4.md` (executed evidence), `AUDIT-CHECK-PROVENANCE.md` (what the 61 checks really
+> prove), `METRIC-DEFINITIONS.md` + `AUDIT-CHANGE-HISTORY.md`. The parity register is now **112
+> capabilities** with **650/650 legacy and 206/206 modern files attributed** and **385 path anchors
+> stat-verified** by `scripts/verify-v4-reconciliation.py` (9 checks, separate from — and stricter than —
+> the original 61-check script, which is unchanged).
+
+> **Added 2026-10-29 (Mandate 5 — independent verification of V4, revision `cccd35a5`):**
+> `INDEPENDENT-VERIFICATION-REGISTER.md` (20 checks classified by what they prove — 13 PASS, 3
+> FAIL-found, 1 blocked, 1 inconclusive), `FINAL-AUDIT-HANDOVER.md` (verdict + ordered next steps),
+> `REGRESSION-TEST-SPEC-DISC-020.md` + `specs/disc-020-application-feedback.test.js` (safe, MariaDB-gated,
+> outside the runner glob). Three new tools: `tools/reachability-crosscheck.cjs` (385/385 agreement),
+> `tools/client-call-existence.cjs` (the missing direction: **23 client paths served by no operation**),
+> `tools/parity-endpoint-audit.cjs` (19/19 surviving `FULL PARITY` rows supported, and all 112 rows
+> endpoint-resolved). New findings **DISC-024/025/026**. Verifier is now **16 checks**; the original
+> 61-check script is still unchanged.
+
 > **Added 2026-10-29 (forensic re-audit of the legacy→modern transition):**
 > `LEGACY-MODERN-FEATURE-INVENTORY.md` (domain inventory, 34 allegation adjudications, backend-without-UI
 > analysis, verdict) and `FEATURE-PARITY-MATRIX.md` (**109 capability verdicts** with backend
@@ -107,7 +149,8 @@ Per mandate §2, the active/reference split was **verified**, not assumed:
 | `FINAL-ACCEPTANCE-REPORT.md` | **NEW (runtime pass):** directive §10 delivery report |
 | `Evidence/` | **NEW (runtime pass):** 45 screenshots, 25+ logs, `environment.json`, `browser-observations.json`, `axe-violation-details.json`, `migration-fidelity.json` |
 | `tools/` | **NEW (runtime pass):** audit-only Playwright configs, viewport spec, migration probe, secret scanner |
-| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification (34 checks, passing) |
+| `scripts/verify-audit-package.sh` | **NEW (v3 completion):** Automated package verification (61 checks, passing) |
+| `scripts/verify-v4-reconciliation.py` | **NEW (V4):** stricter, separate verifier — stats all 385 register anchors, re-derives class sums, cross-checks documents against their JSON |
 
 ## 4. Scope limitations declared up front (see also `appendix/ENVIRONMENT-GAPS.md`)
 

@@ -13,11 +13,19 @@ reproducible from it)
 
 ## 0. Headline counts (measured, not carried over)
 
+> **V6 note (base `a5835ff6`).** The inventory counts below are unchanged and were re-verified: 650 legacy
+> source files / 519 `.jsx` / 193,310 lines, 206 modern files / 151 `.tsx` / 68,812 lines. What changed in V6
+> is the **capability mix**, not the file counts: `FULL PARITY` is **12**, not the 19 this document's V5
+> annotation quotes, because seven rows were tested at subfeature depth (see
+> `FEATURE-DEPTH-EVIDENCE-REGISTER.md` §2.2). The domain map below still holds; the "modern tree genuinely
+> added" table now has a counterpart in §2.2 of that register listing what the modern tree *removed*.
+
+
 | Metric | Legacy `src/` | Modern `frontend/src/` |
 |---|---:|---:|
-| Source files (`.js`/`.jsx` vs `.ts`/`.tsx`) | **651** | **206** |
+| Source files (`.js`/`.jsx` vs `.ts`/`.tsx`) | **650** | **206** |
 | of which JSX/TSX | **519 .jsx** | **151 .tsx** |
-| Total lines | **193,320** | **68,812** |
+| Total lines | **193,310** | **68,812** |
 | Distinct API endpoints referenced | **153** | **161** |
 | Route declarations in the app entry | 58 (`src/main.jsx`) | **100** (`app/router.tsx`) |
 
@@ -30,7 +38,7 @@ Neither document asserted that the legacy tree's **capabilities** had been porte
 directive's premise — that a large capability surface was not ported — is **substantially
 confirmed** (§4), but several specific allegations are **refuted** (§6). Both are recorded.
 
-> The legacy file count is **651**, not the "hundreds of JSX components" figure in the supplied
+> The legacy file count is **650**, not the "hundreds of JSX components" figure in the supplied
 > report (which is also right in spirit: 519 `.jsx` components). The modern tree is **not** a thin
 > shell: it has 206 files, 68,812 lines, 100 routes and more distinct API endpoints (161) than the
 > legacy tree (153). Modern is a genuine re-architecture, not a stub — with specific, serious
@@ -58,7 +66,7 @@ however:
 Therefore "delete it" is **not** a supportable recommendation; "retire capability-by-capability,
 with a recorded decision per capability" is (§7).
 
-## 2. Domain map of the legacy tree (all 651 files accounted)
+## 2. Domain map of the legacy tree (all 650 files accounted)
 
 | Domain | Files | .jsx | Lines | Endpoints | Legacy location(s) |
 |---|---:|---:|---:|---:|---|
@@ -72,7 +80,7 @@ with a recorded decision per capability" is (§7).
 | **F — Employer / job board** | 35 | 33 | 11,542 | 2 | `EmployerPortal`, `JobsListings`, `JobsLanding`, `AppliedJobs` |
 | **G — Content & shared infra** | 139 | 59 | 30,885 | 108 | `engine`, `services`, `utils`, `hooks`, `models`, `conf`, `Blog`, `CustomPage`, `MetaManager`, `auth`, `common`, … |
 
-Every one of the 651 files appears individually in
+Every one of the 650 files appears individually in
 `Evidence/artifacts/legacy-file-inventory.tsv` with its domain, line count and capability signals
 (seed arrays, API calls, speech APIs, QR, image-crop, Puck, map-provider). **No legacy source file is
 unaccounted for.** The 29 files whose path did not match a directory rule were individually
@@ -310,7 +318,7 @@ prior `PARITY-MATRIX-V2` would have missed 30 genuinely missing capabilities.
 
 Produced by `developer-review/tools/backend-ui-coverage.cjs`; artifacts in
 `Evidence/artifacts/backend-ui-coverage.json` and `Evidence/logs/backend-ui-coverage.log`.
-Mount prefixes are resolved from `backend/index.js` (all 384 unique `METHOD + path` pairs resolved; 0
+Mount prefixes are resolved from `backend/index.js` (V5: all 385 unique `METHOD + path` pairs resolved; 0
 guessed). A route counts as consumed only if the modern tree references the same normalised path.
 
 | Measure | Count |
@@ -362,7 +370,7 @@ It is not a stub, and it did not ship the legacy product. In 109 capability verd
 | `UNVERIFIED` | 4 |
 | `STATIC STUB` / `LOCAL-ONLY PERSISTENCE` / `INTENTIONAL RETIREMENT` | 0 |
 
-Legacy file attribution is **complete: 651/651 source files** map to at least one capability row
+Legacy file attribution is **complete: 650/650 source files** map to at least one capability row
 (`FEATURE-PARITY-MATRIX.md` §6). No legacy source file is unaccounted for.
 
 ### 7.1 Remediation order implied by the evidence
@@ -395,7 +403,7 @@ was found in the repository. Absent that, `MISSING` and `MOCK / FABRICATED STATE
 
 **Reproduce:**
 ```bash
-node developer-review/tools/legacy-modern-inventory.cjs   # 651/206 files, 153/161 endpoints
+node developer-review/tools/legacy-modern-inventory.cjs   # 650/206 files, 153/161 endpoints
 node developer-review/tools/parity-matrix.cjs             # 109 capabilities, regenerates FEATURE-PARITY-MATRIX.md
 node developer-review/tools/backend-ui-coverage.cjs       # 384 backend ops, 192 unreachable
 ```

@@ -1,0 +1,164 @@
+# Audit Change History
+
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
+**Purpose.** V4 requires that a revised conclusion be recorded as *previous conclusion + new evidence +
+revision*, never erased. This file is that ledger. Nothing here replaces the underlying documents; each
+row points at the file that now carries the corrected text and at the anchor that produced the change.
+
+**Reference checkpoint:** `0adad00d0975444f13b98f9cda3ec7e24c2c6a62` (audited revision, = `origin/main`).
+
+---
+
+## 1. Revision of scope and reference point
+
+| Item | Earlier passes | V4 |
+|---|---|---|
+| Audited commit cited in documents | `537e298`, then `ff841d5`/`537e2985` | **`0adad00d`** — verified `git rev-parse HEAD`, `origin/main`, and tree hash equality with `origin/dev` (`ea7b7416`) |
+| Verdict | `PARTIAL — BLOCKED` | `PARTIAL — INCOMPLETE` (see `V4-FINAL-ACCEPTANCE-REPORT.md`) — the *blockers* are unchanged; what changed is that the remaining work is now enumerable rather than open-ended |
+| Parity denominator | 109 rows | **112** rows (`FP-A25`, `FP-A26`, `FP-D15` added; `FP-C07` reclassified) |
+| Backend reachability | binary: 192 without UI / 58 neither | **seven classes**, 384/384 dispositioned |
+
+## 2. Corrections of fact (with the evidence that forced them)
+
+| # | Previous conclusion | New evidence | Revision | Where |
+|---:|---|---|---|---|
+| 1 | "`FP-C07` — no route in `main.jsx` referenced the gallery; could not establish reachability" | `src/main.jsx:575` mounts `<Route path="/portfolios" element={<PortfolioGallery/>}>`; modern `router.tsx:99` mounts the same path | `FP-C07`: `UNVERIFIED` → **`FULL PARITY`**; RA-33 refuted as a *gallery* regression; the real defect is the editor (`FP-C04`) | `FEATURE-PARITY-MATRIX.md`, `ALLEGATION-RESOLUTION-REGISTER.md` §3.3 |
+| 2 | "`FP-F11` — no employer-side rejection-reason capture located (admin-side only)" | `components/employer/CandidateReviewDrawer.tsx:84` state, `:245-258` composes `[Feedback: …]` into `notes` | `FP-F11` evidence replaced; classification stays `PARTIAL PARITY` for different, evidenced reasons | matrix, register §3.2 |
+| 3 | "Template catalogue = 104 entries; 9 archetypes / 24 layout families" | bracket/string-aware scan: **100** entries `Cv1…Cv100`; **5** distinct `archetype` values, **6** distinct `headerStyle` values. The 104 came from `grep -c "id: '"`, which also counted 8 filter chips | corrected to 100 / 5 / 6 | matrix `FP-E02`/`FP-E03`, register RA-11/RA-12 |
+| 4 | "Command palette = 1,527 legacy lines" | `wc -l`: 787 + 109 + 239 + 141 + 95 = **1,371** | corrected; classification unchanged (`MISSING`) | register RA-09 |
+| 5 | "Voice interview = 2,432 legacy lines" (figure unattributed) | four voice-path files sum to **2,432**: 1,691 + 233 + 254 + 254 | figure retained **because it now reproduces**, with the file breakdown cited | register RA-08 |
+| 6 | "Deployed system runs a different frontend entirely" | every root npm script delegates `--prefix frontend`; `frontend` build runs `sync-dist.mjs` into the Apache DocumentRoot `dist/`; `dist/` is not committed (`git ls-tree` → 0) | withdrawn; replaced by "build freshness unverifiable" (EG-004) | `BACKEND-OPERATION-REACHABILITY.md` §8 |
+| 7 | "Payment Webhooks Replay failure looks like a logic defect (404 expected, 500 returned)" | the handler's `catch` converts a DB error into 500 before the 404 branch (`platform.js:1974-1991`); log shows 215 × `ECONNREFUSED 3306` | re-triaged as **environment-caused**; all 14 failures now trace to the absent DB | `RUNTIME-VERIFICATION-V4.md` §3 |
+| 8 | "Candidate Playwright suite = 175 tests, blocked" | `frontend/tests` has 7 spec files; `--list` = 3,675 tests / 21 files / 42 projects; **no browser binary at all** | blocker widened to *all* suites; 175 was one project's slice | `EG-REVALIDATION-REGISTER.md` EG-011 |
+| 9 | (Prepared for this register, never published) "the deployed commit contains no `frontend/src`" | `git ls-tree -r HEAD` → **211** tracked `frontend/src` files | **withdrawn before publication**; recorded so the withdrawal itself is auditable | this row |
+| 10 | "Modern attribution 138/206 (68 unattributed)" | the 68 are consumers of surfaces the matrix tracked only at page level; three capability rows were missing | 3 rows added → **206/206** attributed, with the rule stated (row must name the path; no filename matching) | `METRIC-DEFINITIONS.md` M3 |
+
+### 2.1 Corrections added by Mandate 5 (V5, revision `cccd35a5`)
+
+| # | Previous conclusion | New evidence | Revision | Where |
+|---:|---|---|---|---|
+| 11 | Legacy inventory = 651 files / 193,320 lines | the walker did not exclude `*.test.*`; the 651st file is `src/components/welcome/App.test.js` | 650 / 193,310; 12 documents swept | DISC-023 |
+| 12 | Reachability register 126 / 6 / 27 / 11 / 9 / 201 / 4 over 384 operations | `enterpriseRequest(` invisible to the call-site regex (46 sites → 45 operations under-classified); `dynamicParent` over-promoting (14 operations); `app.all` unparsed (1 operation) | **152 / 7 / 27 / 11 / 2 / 176 / 10 over 385**; second parser agrees 385/385 | DISC-024, register §5 |
+| 13 | "No modern caller" was the only question asked | the converse check found **23 client paths served by no operation** (blog, helpdesk, queues, moderation, operations, user status, coupons) | new check + finding; 8 `FULL PARITY` rows downgraded | DISC-025, M11 |
+| 14 | Admin capability claims were treated as display-only fabrications (DISC-014) | four admin *write* controls swallow the failure and then report success | new finding, P1 | DISC-026, M12 |
+| 15 | Backend suite = 1,271 pass / 14 fail / 30 skip | those figures came from a run with the repo's MariaDB gate off; the canonical `npm test` enables it | **1,269 / 46 / 0**, all 46 DB-caused | M7, `Evidence/logs/v5/` |
+
+Corrections 12 and 13 are the first in this audit that were found by *fixing the instrument* rather than by
+reading the product. That is the most transferable lesson in the package: a register that is never
+re-derived will keep producing confident, wrong numbers.
+
+### 2.2 Corrections added by Mandate 6 (V6, base `a5835ff6`)
+
+| # | Previous conclusion | New evidence | Revision | Where |
+|---:|---|---|---|---|
+| 16 | `FP-B05` terms: FULL ("modern exceeds legacy") | the modern tab has a member **count**, not member management; the members API is alive and unreachable | FULL → **PARTIAL** | DISC-034, RA-36 |
+| 17 | `FP-B08` audit: FULL ("refutes the allegation that exports were dropped") | CSV survived; JSON export, deep links and cursor paging were dropped while the API still serves them | FULL → **PARTIAL** | DISC-035, RA-37 |
+| 18 | `FP-E02` templates: FULL ("refutes the 51→5 allegation") | 100 ids exist but resolve to 5 archetypes × 19 families + 6 bespoke specs; 32,696 legacy template lines → 3,254 | FULL → **PARTIAL** | DISC-036, RA-39 |
+| 19 | `FP-G21` interview coach: FULL | 2,432 lines of speech/audio code removed; **0** audio APIs in `frontend/src` | FULL → **PARTIAL** | DISC-038, RA-41 |
+| 20 | `FP-F06` team seats: FULL after a V5 endpoint fix | the seat screen is local state; invites never leave the browser | FULL → **PARTIAL** | DISC-033, RA-43 |
+| 21 | `FP-G01` shell: FULL by line count (792 → 1,342) | line count was never a parity argument: Cmd+K palette (787 lines) absent, drawer lost Escape/focus trap | FULL → **PARTIAL** | RA-44 |
+| 22 | `FP-F02` pipeline: FULL | pipeline real, but the drawer's "Message Dispatched!" posts to a non-existent route | FULL → **PARTIAL** | DISC-028, RA-46 |
+| 23 | `FP-A19` help desk: PARTIAL, "3 api refs, 1 seed array" | there is **no ticket backend at all**; the tab is entirely fabricated | PARTIAL → **MOCK** | DISC-029, RA-45 |
+| 24 | `FP-A11` moderation: PARTIAL, "real POSTs" | the POSTs are to unregistered paths; the queue is a fixture | PARTIAL → **MOCK** | DISC-030, RA-47 |
+| 25 | V5 counted "30 call sites / 23 paths" dead | normalising `{X}` gives **19 distinct paths**, of which 2 are benign fallbacks → 17 defective paths / 27 sites | sharpened, no row change | DISC-027, register §5 |
+| 26 | `verify-v4-reconciliation.py` asserted `full == 19` | a pinned expected value can be satisfied by editing the register; it now derives the count and asserts every FULL row is supported | verifier hardened, 16/16 | E-355 |
+
+Corrections 16–24 share one cause and it is not a careless reading: **a capability row was credited from
+the presence of a component with the right name.** V6's answer is mechanical — every row that claims
+`FULL PARITY` must show its subfeatures in the modern source, and every client call must resolve to a
+registered operation. Both checks now exist as scripts, which is the only durable fix.
+
+## 3. Identifier reconciliation (`RA-31` … `RA-35`)
+
+The 2026-10-29 pass seeded four internal hypotheses as `RA-31`…`RA-34`. The V4 mandate assigns those same
+four IDs to OAuth security, employer rejection reasons, portfolio-gallery capabilities and OAuth provider
+breadth. Three coincided; one did not.
+
+| Old ID | Topic | Outcome |
+|---|---|---|
+| old `RA-31` | "employer dashboard analytics are server-derived" | **renumbered `RA-35`** — disposition unchanged (`UNRESOLVED`) |
+| `RA-32` | employer rejection reasons | mandate definition kept; deepened with the persistence defect (`DISC-020`) |
+| `RA-33` | portfolio gallery | adjudicated `REFUTED` as a gallery regression |
+| `RA-34` | OAuth provider breadth | adjudicated `CONFIRMED` (4 → 1) |
+| new `RA-31` | OAuth flow and security architecture | `PARTIALLY CONFIRMED` — architecture improved, coverage reduced |
+
+No other IDs moved. `DISC-019`…`DISC-022` were allocated in ascending order at publication; an earlier
+draft of `BACKEND-OPERATION-REACHABILITY.md` referenced *planned* DISC numbers 020–023 for other findings,
+which would have collided. Every such reference was rewritten to the published IDs (or to `FP-` / `RA-`
+IDs where no DISC entry exists). The plan is recorded here so a reader who saw the draft knows why the
+document's citations changed.
+
+## 4. What V4 did **not** change
+
+- No application source, test, migration, config or lockfile was modified. `git status` shows changes
+  only under `developer-review/`.
+- No prior document was rewritten to hide an error. Where a sentence was wrong, the wrong sentence's
+  substance is preserved in this ledger and the corrected text carries a dated note.
+- No earlier allegation was deleted. `RA-01`…`RA-30` are untouched; `RA-31`…`RA-35` are as above.
+- No `INTENTIONAL RETIREMENT` classification was introduced, because no retirement decision exists in the
+  repository to support one.
+- No blocker was closed by assertion. EG-007…EG-011 remain `BLOCKED` with re-test evidence.
+
+## 5. Standing verification state after V4
+
+| Dimension | State |
+|---|---|
+| Backend syntax (364 files) | VERIFIED (executed) |
+| Frontend types (206 files) | VERIFIED (executed) |
+| Backend suite | EXECUTED — 1,271/1,315 pass, 14 fail (DB), 30 skip (DB gate) |
+| Enterprise suite | EXECUTED — 187/187 |
+| Browser/E2E | BLOCKED (no binary) |
+| Live DB / migrations | BLOCKED (no server) |
+| Live providers | BLOCKED (no credentials) |
+| Apache/PHP layer | BLOCKED (no runtime) |
+| Package self-verification | 61/61 checks pass — with the limits stated in `AUDIT-CHECK-PROVENANCE.md` |
+
+---
+
+## V7 — Mandate 7 (`8a6e03bb`), 2026-10-29
+
+**Scope:** final capability closure and backend contract forensic audit. Application source unchanged
+(`git diff --stat 8a6e03bb -- src backend frontend` = empty).
+
+### Tooling changed
+
+| Tool | Change | Why |
+|---|---|---|
+| `backend-reachability.cjs` | receivers discovered from `express.Router()` and resolved through `module.exports`; every mount prefix applied; prefixes de-duplicated | the literal receiver name `router` missed `routes/support.js` (`userRouter`/`adminRouter`), dropping 8 live operations (DISC-041) |
+| `reachability-crosscheck.cjs` | path regex anchored on a leading slash; all matching lines considered, not the first | `/support/tickets` matched `/admin/support/tickets` and was attributed to a dead hook |
+| `client-contract-audit.cjs` | **new** | independent client+backend parser; the disagreement with the register is what exposed DISC-041 |
+| `capability-subfeature-audit.cjs` | **new**; adjudication pass added | row-level subfeature closure with hand dispositions read from a data file |
+| `parity-depth-checks.cjs` | check 1 no longer reads adjudication prose lines as classification claims | a generated register quoting "FULL PARITY stands" is not a contradictory claim |
+| `parity-matrix.cjs` | 4 rows re-classified with evidence (FP-G24, FP-E14, FP-E06 up; FP-C06 down) | hand-read subfeature evidence |
+| `verify-v4-reconciliation.py` | operation count derived from the TSV instead of pinned at 385; coverage total recomputed from the registers; merge stubs excluded from the finding count | the pin is precisely what let DISC-041 survive three passes |
+| `verify-parity.py` | merge stubs excluded from the declared finding count | DISC-042/DISC-046 folded into DISC-030 |
+
+### Documents changed
+
+`M7-CAPABILITY-CLOSURE.md` (new) · `RUNTIME-TEST-HARNESS-M7.md` (new) · `CLIENT-BACKEND-CONTRACT-REGISTER.md`
+(new, regenerable) · `CAPABILITY-SUBFEATURE-REGISTER.md` (new, regenerable) · `Evidence/adjudications-m7.json`
+(new) · `DISCREPANCY-LOG.md` (DISC-041, 043–048 added; 042/046 merged into 030; 025 and 029 revised in place)
+· `BACKEND-OPERATION-REACHABILITY.md` (V7 re-derivation section; class table and derived measures restated) ·
+`V4-COVERAGE-RECONCILIATION.md` (§14 amendment; §1 table corrected where it had been stale since V5) ·
+`FINAL-AUDIT-HANDOVER.md` (§13) · `EVIDENCE-INDEX.md` (E-356 … E-364) · `REPAIR-ACTION-PLAN.md` (Phase 6) ·
+`METRIC-DEFINITIONS.md` (MV1 … MV8) · `FEATURE-PARITY-MATRIX.md` (regenerated).
+
+### Corrections to earlier conclusions
+
+| # | Earlier conclusion | V7 finding | How the earlier text was treated |
+|---|---|---|---|
+| 1 | "There is no ticket API at all" (DISC-029, FP-G24 MISSING) | eight operations in `routes/support.js`, registered and mounted twice | original text kept; revision block appended; headline and severity retracted |
+| 2 | "23 client paths have no backend operation" (DISC-025) | 17 distinct paths; the six ticket paths are served | table kept with six rows struck through and marked `RETRACTED V7` |
+| 3 | "backup, cache-purge and dead-letter purge are client bugs" | no server-side capability exists for any of the three | diagnosis narrowed per site in the contract register |
+| 4 | "FP-E14 bullet quality is MISSING" | a live section-level impact analyzer exists | re-classified PARTIAL with the per-bullet losses named |
+| 5 | "FP-E06 photo handling is MISSING" | upload + persistence exist; only crop/zoom is absent | re-classified PARTIAL |
+| 6 | "FP-C06 portfolio templates are PARTIAL" | the named modular blocks have no counterpart at all | re-classified MISSING |
+
+Nothing was deleted. Every superseded figure remains readable next to the evidence that replaced it, which
+is the standard this package has applied since V4 (`AUDIT-CHANGE-HISTORY.md` §1) and applies here to its own
+work.

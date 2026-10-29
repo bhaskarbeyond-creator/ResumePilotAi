@@ -1,0 +1,2441 @@
+{
+  "generatedAt": "2026-10-29T07:20:45.681Z",
+  "revision": "a7d08a2fa67b44aefe4692405b470fa6b174d29f",
+  "method": "Every HTTP path literal passed to a call helper in frontend/src (tests, .d.ts, navigation excluded) tested against the routed register. MISSING = the client calls a path with no registered operation, i.e. a 404 at runtime (or a dead fallback branch).",
+  "filesScanned": 205,
+  "callSites": 229,
+  "tally": {
+    "MISSING": 21,
+    "EXACT": 197,
+    "DYNAMIC-MATCH": 11
+  },
+  "distinctMissingEndpoints": [
+    {
+      "endpoint": "GET /blog/posts",
+      "sites": [
+        "frontend/src/components/admin/AdminBlogManagementTab.tsx:97",
+        "frontend/src/pages/blog/index.tsx:46"
+      ]
+    },
+    {
+      "endpoint": "DELETE /blog/posts/{X}",
+      "sites": [
+        "frontend/src/components/admin/AdminBlogManagementTab.tsx:126"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/employer-applications/{X}/verify",
+      "sites": [
+        "frontend/src/components/admin/AdminModerationTab.tsx:152",
+        "frontend/src/components/admin/AdminModerationTab.tsx:167"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/jobs/{X}/moderate",
+      "sites": [
+        "frontend/src/components/admin/AdminModerationTab.tsx:184"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/operations/backup",
+      "sites": [
+        "frontend/src/components/admin/AdminOperationsTab.tsx:122"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/operations/cache-clear",
+      "sites": [
+        "frontend/src/components/admin/AdminOperationsTab.tsx:136"
+      ]
+    },
+    {
+      "endpoint": "GET /admin/queues",
+      "sites": [
+        "frontend/src/components/admin/AdminQueuesTab.tsx:138"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/queues/{X}/retry",
+      "sites": [
+        "frontend/src/components/admin/AdminQueuesTab.tsx:173"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/queues/dead-letter-queue/retry",
+      "sites": [
+        "frontend/src/components/admin/AdminQueuesTab.tsx:186",
+        "frontend/src/components/admin/AdminQueuesTab.tsx:262"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/queues/dead-letter-queue/purge",
+      "sites": [
+        "frontend/src/components/admin/AdminQueuesTab.tsx:204",
+        "frontend/src/components/admin/AdminQueuesTab.tsx:285"
+      ]
+    },
+    {
+      "endpoint": "POST /admin/users/{X}/status",
+      "sites": [
+        "frontend/src/components/admin/AdminUsersTab.tsx:206"
+      ]
+    },
+    {
+      "endpoint": "POST /notify/email",
+      "sites": [
+        "frontend/src/components/employer/CandidateReviewDrawer.tsx:159"
+      ]
+    },
+    {
+      "endpoint": "GET /platform/status",
+      "sites": [
+        "frontend/src/lib/enterprise-api.ts:528"
+      ]
+    },
+    {
+      "endpoint": "POST /billing/validate-coupon",
+      "sites": [
+        "frontend/src/pages/billing/checkout-modal.tsx:246"
+      ]
+    },
+    {
+      "endpoint": "GET /blog/posts/{X}",
+      "sites": [
+        "frontend/src/pages/blog/editor.tsx:91"
+      ]
+    },
+    {
+      "endpoint": "PUT /blog/posts/{X}",
+      "sites": [
+        "frontend/src/pages/blog/editor.tsx:147"
+      ]
+    },
+    {
+      "endpoint": "POST /blog/posts",
+      "sites": [
+        "frontend/src/pages/blog/editor.tsx:149"
+      ]
+    }
+  ],
+  "methodMismatches": [],
+  "calls": [
+    {
+      "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+      "line": 97,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/blog/posts",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminBlogManagementTab.tsx",
+      "line": 126,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/blog/posts/{X}",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 75,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/email/admin/settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 76,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/email/admin/deliverability",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 96,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/email/admin/test-connection",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminEmailSmtpTab.tsx",
+      "line": 124,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/email/admin/save-smtp",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+      "line": 528,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/platform/operational-status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+      "line": 559,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/platform/operational-status/refresh",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHealthTab.tsx",
+      "line": 568,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/platform/operational-status/{X}/test",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 128,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/support/tickets",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 157,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/support/tickets/{X}/messages",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminHelpDeskTab.tsx",
+      "line": 188,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/admin/support/tickets/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 152,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/employer-applications/{X}/verify",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 167,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/employer-applications/{X}/verify",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminModerationTab.tsx",
+      "line": 184,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/jobs/{X}/moderate",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 57,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/health-summary",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 88,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/system-health-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 122,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/operations/backup",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminOperationsTab.tsx",
+      "line": 136,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/operations/cache-clear",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 138,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/platform/queues",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 138,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/queues",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 173,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/platform/queues/retry",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 173,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/queues/{X}/retry",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 185,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/platform/queues/retry",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 186,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/queues/dead-letter-queue/retry",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 204,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/queues/dead-letter-queue/purge",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 262,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/queues/dead-letter-queue/retry",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminQueuesTab.tsx",
+      "line": 285,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/queues/dead-letter-queue/purge",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 366,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/settings/modules",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 421,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/modules",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 604,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/payment-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 626,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/payment/test-provider",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 661,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/payment-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 864,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/settings/branding",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 880,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/branding",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 883,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/geoSeo",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 886,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/llmGeo",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1009,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/settings/integrations",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1024,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/integrations",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1179,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/templateManager",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1182,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/gdpr",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminSettingsTab.tsx",
+      "line": 1185,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/settings/codeInjection",
+      "status": "DYNAMIC-MATCH",
+      "detail": "/admin/settings/{X}",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 175,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/users",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 206,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/users/{X}/status",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 230,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/platform/role-view-audit",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 246,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/admin/users/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 262,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/users/{X}/send-password-reset",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 280,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/users/{X}/revoke-sessions",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/AdminUsersTab.tsx",
+      "line": 354,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/users",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+      "line": 232,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/context/AiSettingsContext.tsx",
+      "line": 305,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/ai-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useDiscoveryPlayground.ts",
+      "line": 60,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai/fetch-models",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useDiscoveryPlayground",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useDiscoveryPlayground.ts",
+      "line": 99,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/v1/chat/completions",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useDiscoveryPlayground",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts",
+      "line": 119,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai/test-provider",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useProviderMutations",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useProviderMutations.ts",
+      "line": 306,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai/test-provider",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useProviderMutations",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 41,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/ai/quota-stats",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useQuotaGovernance",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 47,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/freellmapi/status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useQuotaGovernance",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 48,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/freellmapi/metrics",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useQuotaGovernance",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 76,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai/quota-limits",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useQuotaGovernance",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/admin/ai-settings/hooks/useQuotaGovernance.ts",
+      "line": 112,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/ai/reset-quota",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useQuotaGovernance",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/components/employer/CandidateReviewDrawer.tsx",
+      "line": 159,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/notify/email",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/employer/CompanyProfile.tsx",
+      "line": 176,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/employer/companies/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/employer/CompanyProfile.tsx",
+      "line": 182,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/employer/companies",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 92,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 164,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/generate-ai-cover-letter",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/jobs/job-application-modal.tsx",
+      "line": 225,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/jobs/{X}/applications",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/layout/cuba-app-shell.tsx",
+      "line": 298,
+      "callee": "fetch",
+      "verb": "POST",
+      "path": "/platform/role-view-audit",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/components/ui/preview-modal.tsx",
+      "line": 168,
+      "callee": "fetch",
+      "verb": "POST",
+      "path": "/export-docx",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 198,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/employer/jobs",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useJobs",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 210,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/employer/companies",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useEmployerCompanies",
+      "hookConsumers": 2
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 223,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/jobs/{X}/applications",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useJobApplications",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 237,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/employer/jobs/{X}/applications/{X}/resume",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useApplicationResume",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 270,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/employer/jobs",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useCreateJob",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 284,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/employer/jobs/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useUpdateJob",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 304,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/job-applications/{X}/status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useUpdateApplicationStatus",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 331,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/platform/operational-status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "usePlatformStats",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 332,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/platform/public-config",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "usePlatformStats",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 360,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/users",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useAdminUsers",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 371,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/ai-settings",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useAIProviders",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 433,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/support/tickets",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useAdminSupportTickets",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 444,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/admin/audit-logs",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useAdminAuditLogs",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 455,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/platform/operational-status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useSystemHealth",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 483,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/admin/support/tickets/{X}/messages",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useReplyToTicket",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 505,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/admin/support/tickets/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useUpdateTicketStatus",
+      "hookConsumers": 0
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 588,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/support/tickets",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useDashboardSupportTickets",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 599,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/support/tickets",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useCreateSupportTicket",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/hooks/use-api-hooks.ts",
+      "line": 612,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/support/tickets/{X}/messages",
+      "status": "EXACT",
+      "detail": "",
+      "hook": "useReplyToSupportTicket",
+      "hookConsumers": 1
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 166,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 179,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 197,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/account/export",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 219,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/account/delete",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/account-settings.ts",
+      "line": 227,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/users-data/mfa/disable",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 395,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/generate-content",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 554,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/check-grammar",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 563,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/parse-resume",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/ai-content.ts",
+      "line": 570,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/ai-usage",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/applications.ts",
+      "line": 82,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/jobs-data/applications/list",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/applications.ts",
+      "line": 95,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/jobs-data/applications/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 207,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/covers",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 220,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/covers/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 232,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/covers/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 238,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/covers/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 267,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/cover-letters.ts",
+      "line": 303,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/generate-ai-cover-letter",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 362,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 365,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/tenants",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 368,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/context",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 376,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/workspaces",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 382,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/workspaces",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 389,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/workspaces/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 396,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/workspaces/{X}/archive",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 402,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/workspaces/{X}/restore",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 408,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/memberships",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 413,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/memberships",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 420,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/memberships/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 427,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/memberships/{X}/invitation-resend",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 433,
+      "callee": "enterpriseRequest",
+      "verb": "DELETE",
+      "path": "/enterprise/memberships/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 439,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/roles-matrix",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 444,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/teams",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 449,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/teams",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 456,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/teams/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 463,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/teams/{X}/archive",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 469,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/teams/{X}/restore",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 475,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/configuration",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 480,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/configuration",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 487,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/usage/ai",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 492,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/usage/ai/events",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 497,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/audit",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 503,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/resources",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 508,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/resources",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 515,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/resources/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 522,
+      "callee": "enterpriseRequest",
+      "verb": "DELETE",
+      "path": "/enterprise/resources/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 528,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/platform/status",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 534,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/service-accounts",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 539,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/service-accounts",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 546,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/service-accounts/{X}/revoke",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 552,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/service-accounts/{X}/rotate",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 558,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/queue/status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 568,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/queue/replay",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 575,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/observability/metrics",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 580,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/data-plane/status",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 585,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/support-grants",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 590,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/support-grants",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 597,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/support-grants/{X}/revoke",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 603,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/platform/tenants",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 606,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/platform/tenants/{X}/suspend",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 611,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/platform/tenants/{X}/reactivate",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 616,
+      "callee": "enterpriseRequest",
+      "verb": "GET",
+      "path": "/enterprise/data/export",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 621,
+      "callee": "enterpriseRequest",
+      "verb": "POST",
+      "path": "/enterprise/test-email",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/enterprise-api.ts",
+      "line": 628,
+      "callee": "enterpriseRequest",
+      "verb": "PATCH",
+      "path": "/enterprise/tenant",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 62,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/favourites",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 71,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/favourites/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/favourites.ts",
+      "line": 77,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/favourites",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 146,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/generate-interview",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 176,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/live-interview/guide",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 256,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/live-interview/sessions",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 271,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/live-interview/sessions/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 289,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/live-interview/sessions/{X}/turns",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 307,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/live-interview/sessions/{X}/complete",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/interview-coach.ts",
+      "line": 319,
+      "callee": "apiClient.delete",
+      "verb": "DELETE",
+      "path": "/live-interview/sessions/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 208,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/jobs-data/tracker",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 214,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/jobs-data/tracker",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 224,
+      "callee": "patch",
+      "verb": "PATCH",
+      "path": "/jobs-data/tracker/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/job-tracker.ts",
+      "line": 234,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/jobs-data/tracker/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 138,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/messages/conversations",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 146,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/messages/conversations/{X}/messages",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 156,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/messages/conversations/{X}/participant-profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 165,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/messages/conversations/{X}/read",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/messages.ts",
+      "line": 172,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/messages/send",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 105,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/notifications-data",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 113,
+      "callee": "apiClient.patch",
+      "verb": "PATCH",
+      "path": "/notifications-data/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/notifications.ts",
+      "line": 118,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/notifications-data/mark-all-read",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 118,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/portfolios",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 123,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/portfolios/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 129,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/portfolios/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 134,
+      "callee": "apiClient.delete",
+      "verb": "DELETE",
+      "path": "/portfolios/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 145,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/portfolios/slug-availability",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 150,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/portfolios/public",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 155,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/portfolios/public/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 170,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/portfolio.ts",
+      "line": 177,
+      "callee": "apiClient.get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 134,
+      "callee": "fetch",
+      "verb": "POST",
+      "path": "/auth/preview-login",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/preview-session.ts",
+      "line": 169,
+      "callee": "fetch",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 41,
+      "callee": "api.get",
+      "verb": "GET",
+      "path": "/resumes/{X}/publication",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 52,
+      "callee": "api.post",
+      "verb": "POST",
+      "path": "/resumes/{X}/publish",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/share-publication.ts",
+      "line": 73,
+      "callee": "api.post",
+      "verb": "POST",
+      "path": "/resumes/{X}/unpublish",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/lib/tenant-context.ts",
+      "line": 143,
+      "callee": "fetch",
+      "verb": "GET",
+      "path": "/enterprise/tenants",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 59,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/auth/login.tsx",
+      "line": 60,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 246,
+      "callee": "axios.post",
+      "verb": "POST",
+      "path": "/billing/validate-coupon",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 344,
+      "callee": "axios.post",
+      "verb": "POST",
+      "path": "/pay",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 346,
+      "callee": "axios.post",
+      "verb": "POST",
+      "path": "/razorpay/create-order",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/billing/checkout-modal.tsx",
+      "line": 348,
+      "callee": "axios.post",
+      "verb": "POST",
+      "path": "/paypal/create-order",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 91,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/blog/posts/{X}",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 147,
+      "callee": "put",
+      "verb": "PUT",
+      "path": "/blog/posts/{X}",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/blog/editor.tsx",
+      "line": 149,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/blog/posts",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/blog/index.tsx",
+      "line": 46,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/blog/posts",
+      "status": "MISSING",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/ats-score.tsx",
+      "line": 68,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/ats-score.tsx",
+      "line": 92,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 112,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/user-stats",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 125,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 149,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/jobs-data",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 161,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/favourites",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 177,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/covers",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 192,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 218,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/favourites/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 227,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/favourites",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/overview.tsx",
+      "line": 239,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/favourites",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 646,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 771,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 778,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 854,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 897,
+      "callee": "apiClient.post",
+      "verb": "POST",
+      "path": "/export-docx",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 3806,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resume-builder.tsx",
+      "line": 3882,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 153,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 191,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/users-data/profile",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 321,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 497,
+      "callee": "fetch",
+      "verb": "POST",
+      "path": "/export-docx",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 535,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 548,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 568,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 578,
+      "callee": "post",
+      "verb": "POST",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/dashboard/resumes.tsx",
+      "line": 598,
+      "callee": "del",
+      "verb": "DELETE",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 127,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/export-render-data",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 145,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/public/token/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 155,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/resumes/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/export/cv-renderer.tsx",
+      "line": 218,
+      "callee": "fetch",
+      "verb": "POST",
+      "path": "/export-docx",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    },
+    {
+      "file": "frontend/src/pages/jobs/regional-hub.tsx",
+      "line": 77,
+      "callee": "get",
+      "verb": "GET",
+      "path": "/public/geo/regions/{X}/{X}",
+      "status": "EXACT",
+      "detail": "",
+      "hook": null
+    }
+  ]
+}

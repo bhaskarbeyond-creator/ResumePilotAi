@@ -1,5 +1,16 @@
 # Final Acceptance Report — Temporary Environment & Runtime Verification
 
+> **Superseded (Mandate 6, base `a5835ff6`).** V1 acceptance record. Current verdict:
+> **`PARTIAL — INCOMPLETE`** (see `FINAL-AUDIT-HANDOVER.md`); current parity mix 12/47/32/12/6/3 of 112.
+> Kept verbatim so earlier claims remain auditable rather than rewritten.
+
+
+
+> **V5 note (`cccd35a5`):** backend-suite figures quoted in this document are from the V4 run, which
+> left the repo's MariaDB gate off. The canonical run (`cd backend && npm test`) executes those tests:
+> **1,315 discovered / 1,315 executed / 1,269 pass / 46 fail / 0 skipped, exit 1**, all 46 fails DB-caused
+> (`Evidence/logs/v5/backend-canonical-suite.triage.md`). Historical numbers are retained, not overwritten.
+
 **Directive:** "Temporary Test Environment Provisioning — Enable Real Runtime Verification
 and Close Blocked Audit Requirements"
 **Executed:** 2026-10-28, 19:29–20:25 UTC
@@ -197,7 +208,7 @@ frontend? Answer: partly. See `LEGACY-MODERN-FEATURE-INVENTORY.md` and `FEATURE-
 | New fact | Value |
 |---|---|
 | Capability verdicts across 7 domains | **109**: 25 FULL · 6 REPLACED · 35 PARTIAL · **30 MISSING** · **9 MOCK/FABRICATED** · 4 UNVERIFIED |
-| Legacy tree actually measured | **651 files / 519 `.jsx` / 193,320 lines** (prior package said "144 files/dirs" — corrected in DISC-018 / E-325) |
+| Legacy tree actually measured | **650 files / 519 `.jsx` / 193,310 lines** (prior package said "144 files/dirs" — corrected in DISC-018 / E-325) |
 | Backend operations unreachable from the modern UI | **192 of 384 (50 %)**; 58 reachable from neither frontend |
 | New confirmed findings | **DISC-013 … DISC-018** |
 | Allegations adjudicated | 34: 18 confirmed, 1 confirmed-with-correction, 2 partial, **9 refuted**, 4 unresolved |
