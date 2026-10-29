@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
 import { get, normalizeError } from '@/lib/api-client';
+import { parseJobListings, filterJobListings } from './jobs-contract';
 import { cn } from '@/lib/utils';
 import {
   Search,
@@ -24,10 +25,6 @@ import {
   Filter,
   RefreshCw,
   AlertCircle,
-  TrendingUp,
-  Users,
-  Globe,
-  Zap,
 } from 'lucide-react';
 import { JobApplicationModal } from '@/components/jobs/job-application-modal';
 
@@ -36,19 +33,13 @@ interface Job {
   title: string;
   company: string;
   location: string;
-  type: 'full-time' | 'part-time' | 'contract' | 'internship' | 'remote';
+  type: 'full-time' | 'part-time' | 'contract' | 'internship' | 'remote' | 'unknown';
   salary?: string;
   description: string;
   skills: string[];
   postedAt: string;
   featured?: boolean;
   logo?: string;
-}
-
-interface JobCategory {
-  name: string;
-  count: number;
-  icon: typeof Briefcase;
 }
 
 const JOB_TYPES = ['All', 'Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'] as const;
@@ -67,12 +58,10 @@ export function JobsPortalPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.set('q', searchQuery);
-      if (locationFilter) params.set('location', locationFilter);
-      if (typeFilter !== 'All') params.set('type', typeFilter.toLowerCase());
-      const data = await get<{ jobs: Job[] }>(`/jobs?${params.toString()}`);
-      setJobs(data.jobs ?? []);
+      // The public endpoint enforces visibility; search filters are applied
+      // locally because this repository does not implement q/location/type.
+      const data = await get<unknown>('/jobs-data');
+      setJobs(filterJobListings(parseJobListings(data), searchQuery, locationFilter, typeFilter));
     } catch (err) {
       setError(normalizeError(err).message);
     } finally {
@@ -82,13 +71,7 @@ export function JobsPortalPage() {
 
   useEffect(() => { void fetchJobs(); }, [fetchJobs]);
 
-  const categories: JobCategory[] = [
-    { name: 'Engineering', count: 245, icon: Zap },
-    { name: 'Design', count: 89, icon: Globe },
-    { name: 'Marketing', count: 156, icon: TrendingUp },
-    { name: 'Sales', count: 120, icon: Users },
-    { name: 'Operations', count: 67, icon: Briefcase },
-  ];
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +87,7 @@ export function JobsPortalPage() {
             Find Your Dream Job
           </h1>
           <p className="mt-2 text-center text-brand-200">
-            Discover thousands of opportunities from top companies
+            Browse available job opportunities
           </p>
 
           {/* Search bar */}
@@ -133,34 +116,12 @@ export function JobsPortalPage() {
             </Button>
           </form>
 
-          {/* Quick stats */}
-          <div className="mt-6 flex flex-wrap justify-center gap-6 text-sm text-brand-200">
-            <span><strong className="text-white">2,450+</strong> Active Jobs</span>
-            <span><strong className="text-white">890+</strong> Companies</span>
-            <span><strong className="text-white">12K+</strong> Applications</span>
-          </div>
+
         </div>
       </div>
 
       {/* Main content */}
       <div className="mx-auto max-w-6xl px-4 py-8">
-        {/* Categories */}
-        <div className="mb-8 flex gap-3 overflow-x-auto pb-2">
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.name}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-brand-300 hover:bg-brand-50"
-              >
-                <Icon className="size-4 text-ink-muted" />
-                {cat.name}
-                <span className="text-xs text-ink-muted">({cat.count})</span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* Filters bar */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2 overflow-x-auto">
@@ -332,6 +293,7 @@ function JobListingCard({ job, onApply }: { job: Job; onApply: () => void }) {
 function formatRelativeTime(dateString: string): string {
   try {
     const diff = Date.now() - new Date(dateString).getTime();
+    if (!Number.isFinite(diff) || diff < 0) return 'Date unavailable';
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
