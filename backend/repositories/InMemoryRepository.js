@@ -172,9 +172,15 @@ class InMemoryRepository {
     }
     async saveUserWithRevisionGuard(userId, userData, expectedRevision = null) {
         const existing = this._users.get(userId);
-        const currentRev = existing?.revision || 1;
-        if (expectedRevision !== null && expectedRevision !== undefined && Number(currentRev) !== Number(expectedRevision)) {
-            this._reject('Revision conflict', 'STALE_WRITE', 409);
+        // Match the authoritative repository: absence is revision 0, and a
+        // stale write reports the current revision through PROFILE_CONFLICT.
+        const currentRev = existing ? Number(existing.revision || 0) : 0;
+        if (expectedRevision !== null && expectedRevision !== undefined && currentRev !== Number(expectedRevision)) {
+            const error = new Error('Profile changed in another tab or device.');
+            error.code = 'PROFILE_CONFLICT';
+            error.status = 409;
+            error.remoteRevision = currentRev;
+            throw error;
         }
         const res = await this.saveUser(userId, { ...userData, revision: currentRev + 1 });
         return { user: this._users.get(userId), isNewUser: res.isNewUser, currentRevision: currentRev + 1 };
