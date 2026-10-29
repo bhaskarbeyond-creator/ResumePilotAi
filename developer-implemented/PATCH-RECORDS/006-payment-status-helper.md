@@ -1,0 +1,5 @@
+# FS-M8A-01 — payment status helper, not integrated checkout
+
+Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`; starting commit `0eed905b5e3909b3b6f2ea1adcb06c3f410f6353`. Added `frontend/src/pages/billing/payment-status-contract.ts` to validate the order-ID-bound `GET /api/payment-orders/:id` response. It rejects wrong IDs, unknown status, invalid ACTIVE invoice/date shapes; distinguishes pending/failed/cancelled/refunded, and reports an ACTIVE order only when invoice consistency is present. This deliberately does not claim current entitlement based on an old order and allows a legacy ACTIVE order without inventing an invoice. `developer-implemented/TESTS/unit/payment-status-contract.test.mjs` has 2 passing mocked data tests (`EVIDENCE/payment-status-unit.txt`). No provider initiation, idempotency, retries, authenticated fetch, browser integration, or live settlement is implemented. Helper is unused; checkout remains fail-closed. Payment remains **NOT IMPLEMENTED** against mandate acceptance.
+
+Application commit: `6029938`.

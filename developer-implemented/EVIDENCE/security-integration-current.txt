@@ -1,0 +1,161 @@
+TAP version 13
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# Subtest: anonymous and ordinary users cannot discover draft rows or categories
+ok 1 - anonymous and ordinary users cannot discover draft rows or categories
+  ---
+  duration_ms: 73.099709
+  type: 'test'
+  ...
+# Subtest: editor can read drafts, explicit published-only remains honored
+ok 2 - editor can read drafts, explicit published-only remains honored
+  ---
+  duration_ms: 11.173907
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+# Subtest: new profile and deterministic welcome event commit atomically
+ok 3 - new profile and deterministic welcome event commit atomically
+  ---
+  duration_ms: 4.782922
+  type: 'test'
+  ...
+# Subtest: new profile rolls back when welcome enqueue fails
+ok 4 - new profile rolls back when welcome enqueue fails
+  ---
+  duration_ms: 0.717864
+  type: 'test'
+  ...
+# Subtest: profile updates do not enqueue duplicate welcome events
+ok 5 - profile updates do not enqueue duplicate welcome events
+  ---
+  duration_ms: 0.27075
+  type: 'test'
+  ...
+# Subtest: first portfolio publication and publication event commit atomically
+ok 6 - first portfolio publication and publication event commit atomically
+  ---
+  duration_ms: 1.114541
+  type: 'test'
+  ...
+# Subtest: portfolio publication rolls back if its outbox event cannot enqueue
+ok 7 - portfolio publication rolls back if its outbox event cannot enqueue
+  ---
+  duration_ms: 0.538377
+  type: 'test'
+  ...
+# Subtest: portfolio CAS rejects stale revisions before mutation or notification
+ok 8 - portfolio CAS rejects stale revisions before mutation or notification
+  ---
+  duration_ms: 0.343411
+  type: 'test'
+  ...
+# Subtest: portfolio identifiers cannot be reassigned across owners
+ok 9 - portfolio identifiers cannot be reassigned across owners
+  ---
+  duration_ms: 12.054877
+  type: 'test'
+  ...
+# Subtest: private and reserved IP encodings are rejected
+ok 10 - private and reserved IP encodings are rejected
+  ---
+  duration_ms: 4.587889
+  type: 'test'
+  ...
+# Subtest: network target guard rejects literal metadata, loopback, local names, and malformed hosts
+ok 11 - network target guard rejects literal metadata, loopback, local names, and malformed hosts
+  ---
+  duration_ms: 4.52878
+  type: 'test'
+  ...
+# Subtest: HTTPS allowlist rejects credentials, insecure schemes and suffix confusion
+ok 12 - HTTPS allowlist rejects credentials, insecure schemes and suffix confusion
+  ---
+  duration_ms: 0.279614
+  type: 'test'
+  ...
+# Subtest: role permissions are normalized but ordinary users receive none
+ok 13 - role permissions are normalized but ordinary users receive none
+  ---
+  duration_ms: 0.232513
+  type: 'test'
+  ...
+# Subtest: route policy classifies aliases and sensitive operations
+ok 14 - route policy classifies aliases and sensitive operations
+  ---
+  duration_ms: 0.119016
+  type: 'test'
+  ...
+# Subtest: route policy blocks normal user from admin alias
+ok 15 - route policy blocks normal user from admin alias
+  ---
+  duration_ms: 0.276608
+  type: 'test'
+  ...
+# Subtest: ordinary ADMIN cannot rotate Firebase credentials
+ok 16 - ordinary ADMIN cannot rotate Firebase credentials
+  ---
+  duration_ms: 0.148032
+  type: 'test'
+  ...
+# Subtest: stale admin sessions can mutate or test AI provider configuration
+ok 17 - stale admin sessions can mutate or test AI provider configuration
+  ---
+  duration_ms: 0.169694
+  type: 'test'
+  ...
+# Subtest: route policy requires verified email for paid AI and payments
+ok 18 - route policy requires verified email for paid AI and payments
+  ---
+  duration_ms: 0.206024
+  type: 'test'
+  ...
+# Subtest: account limiter cannot be bypassed by changing IP for an authenticated account
+ok 19 - account limiter cannot be bypassed by changing IP for an authenticated account
+  ---
+  duration_ms: 0.565782
+  type: 'test'
+  ...
+# Subtest: rate-limit test-provider: POST /api/admin/ai/test-provider rate limits after abuse budget
+ok 20 - rate-limit test-provider: POST /api/admin/ai/test-provider rate limits after abuse budget
+  ---
+  duration_ms: 0.478584
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# Subtest: profile API requires an explicit revision and rejects protected-field mass assignment
+ok 21 - profile API requires an explicit revision and rejects protected-field mass assignment
+  ---
+  duration_ms: 30.310563
+  type: 'test'
+  ...
+# Subtest: profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+ok 22 - profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+  ---
+  duration_ms: 6.984496
+  type: 'test'
+  ...
+# Subtest: profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+ok 23 - profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+  ---
+  duration_ms: 8.492783
+  type: 'test'
+  ...
+# Subtest: profile API stale write returns authoritative revision/profile and performs no mutation
+ok 24 - profile API stale write returns authoritative revision/profile and performs no mutation
+  ---
+  duration_ms: 3.596313
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1275.898829
+exit code: 0

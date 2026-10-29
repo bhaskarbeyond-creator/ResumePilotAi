@@ -28,7 +28,7 @@ Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. IDs and headings transcribe
 | DISC-022 | A Facebook provider is constructed and advertised while no sign-in path exists | NOT STARTED |
 | DISC-023 | The legacy inventory counted a test file, inflating its own baseline by one | NOT STARTED |
 | DISC-024 | The V4 reachability register was wrong in both directions: 45 operations under-classified, 14 over-classified, 1 absent | NOT STARTED |
-| DISC-025 | 17 client-side paths are served by no backend operation — blog, queue console, moderation, operations and user-status actions 404 at runtime | IN PROGRESS — queue and coupon subset only; see contract dispositions |
+| DISC-025 | 17 client-side paths are served by no backend operation — blog, queue console, moderation, operations and user-status actions 404 at runtime | IN PROGRESS — queue, coupon, public jobs/blog and platform status subsets; see contract dispositions |
 | DISC-026 | Admin controls fabricate success after swallowing a failed write (suspend user, backup, cache purge, blog delete) | NOT STARTED |
 | DISC-027 | 17 client-call paths (27 call sites) have no registered backend operation | NOT STARTED |
 | DISC-028 | Recruiter "Message candidate" posts to a non-existent route and displays "Message Dispatched!" | NOT STARTED |
@@ -46,7 +46,7 @@ Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. IDs and headings transcribe
 | DISC-040 | Legacy download helpers (PDF/DOCX) have no recorded disposition in the share and job-editor rows | NOT STARTED |
 | DISC-041 | The reachability register never scanned a router that is not named `router` — 8 live operations and 6 "missing" client paths were audit artefacts | NOT STARTED |
 | DISC-042 | MERGED INTO DISC-030 — Admin moderation writes to endpoints that do not exist while equivalent REST operations do | NOT APPLICABLE — historical merge alias to DISC-030 |
-| DISC-043 | The public job board calls `GET /api/jobs`, an operation that does not exist; the real public listing is `/api/jobs-data` | NOT STARTED |
+| DISC-043 | The public job board calls `GET /api/jobs`, an operation that does not exist; the real public listing is `/api/jobs-data` | IMPLEMENTED — NOT VERIFIED (browser/DB) |
 | DISC-044 | Employer→candidate email has no backend route, and the service that would send it is orphaned | NOT STARTED |
 | DISC-045 | Checkout validates coupons against a non-existent endpoint, then applies hardcoded promo codes locally | IMPLEMENTED — NOT VERIFIED (browser/DB) |
 | DISC-046 | MERGED INTO DISC-030 — The moderation tab renders fixture records and never reads the backend | NOT APPLICABLE — historical merge alias to DISC-030 |
@@ -54,7 +54,7 @@ Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. IDs and headings transcribe
 | DISC-048 | The resume photo upload accepts 5 MB into a request body the API caps at 256 KB | NOT STARTED |
 | DISC-049 | M7's provenance claim is false in two ways, and the ref it says preserves the foreign commit does not exist | NOT STARTED |
 | DISC-050 | The public contact form reports success without sending a request | IMPLEMENTED — NOT VERIFIED (browser/DB) |
-| DISC-051 | The public jobs page requests an operation that does not exist, and its filters are ignored even on the operation that does | NOT STARTED |
+| DISC-051 | The public jobs page requests an operation that does not exist, and its filters are ignored even on the operation that does | IMPLEMENTED — NOT VERIFIED (browser/DB) |
 | DISC-052 | The create-ticket modal has no focus trap, no Escape handling, no scroll lock and no focus return | NOT STARTED |
 | DISC-053 | The shared unread-message poller and the global unread badge are gone; what replaced them stops polling on error | NOT STARTED |
 | DISC-054 | Three team-management operations have no production implementation, and team leads have nowhere to be stored | NOT STARTED |

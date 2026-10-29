@@ -1,0 +1,145 @@
+TAP version 13
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+# Subtest: anonymous and ordinary users cannot discover draft rows or categories
+ok 1 - anonymous and ordinary users cannot discover draft rows or categories
+  ---
+  duration_ms: 29.662529
+  type: 'test'
+  ...
+# Subtest: editor can read drafts, explicit published-only remains honored
+ok 2 - editor can read drafts, explicit published-only remains honored
+  ---
+  duration_ms: 8.335612
+  type: 'test'
+  ...
+# Subtest: in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+ok 3 - in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+  ---
+  duration_ms: 1.540142
+  type: 'test'
+  ...
+# Subtest: concurrent in-memory initial creates do not both succeed
+ok 4 - concurrent in-memory initial creates do not both succeed
+  ---
+  duration_ms: 0.234651
+  type: 'test'
+  ...
+# Subtest: only documented published rows are rendered and sparse fields are safe
+ok 5 - only documented published rows are rendered and sparse fields are safe
+  ---
+  duration_ms: 0.774244
+  type: 'test'
+  ...
+# Subtest: sends persisted subject and accepts only documented response
+ok 6 - sends persisted subject and accepts only documented response
+  ---
+  duration_ms: 16.720522
+  type: 'test'
+  ...
+# Subtest: validation rejected
+ok 7 - validation rejected
+  ---
+  duration_ms: 0.436053
+  type: 'test'
+  ...
+# Subtest: server failure
+ok 8 - server failure
+  ---
+  duration_ms: 0.312897
+  type: 'test'
+  ...
+# Subtest: network failure
+ok 9 - network failure
+  ---
+  duration_ms: 0.133201
+  type: 'test'
+  ...
+# Subtest: malformed
+ok 10 - malformed
+  ---
+  duration_ms: 0.348808
+  type: 'test'
+  ...
+# Subtest: false success
+ok 11 - false success
+  ---
+  duration_ms: 0.26701
+  type: 'test'
+  ...
+# Subtest: wrong status
+ok 12 - wrong status
+  ---
+  duration_ms: 0.248081
+  type: 'test'
+  ...
+# Subtest: local validation and retry after failure
+ok 13 - local validation and retry after failure
+  ---
+  duration_ms: 0.389812
+  type: 'test'
+  ...
+# Subtest: coupon accepts documented server response only
+ok 14 - coupon accepts documented server response only
+  ---
+  duration_ms: 2.286911
+  type: 'test'
+  ...
+# Subtest: maps public jobs-data rows and filters the actual result
+ok 15 - maps public jobs-data rows and filters the actual result
+  ---
+  duration_ms: 1.878025
+  type: 'test'
+  ...
+# Subtest: rejects failed or malformed responses instead of claiming an empty listing
+ok 16 - rejects failed or malformed responses instead of claiming an empty listing
+  ---
+  duration_ms: 0.322986
+  type: 'test'
+  ...
+# Subtest: checkout submission stays fail-closed until provider integration is implemented
+ok 17 - checkout submission stays fail-closed until provider integration is implemented
+  ---
+  duration_ms: 1.323619
+  type: 'test'
+  ...
+# Subtest: only an owner-bound verified ACTIVE response produces verified order state
+ok 18 - only an owner-bound verified ACTIVE response produces verified order state
+  ---
+  duration_ms: 1.904676
+  type: 'test'
+  ...
+# Subtest: pending failed cancelled refunded never indicate paid success
+ok 19 - pending failed cancelled refunded never indicate paid success
+  ---
+  duration_ms: 0.163575
+  type: 'test'
+  ...
+# Subtest: validates credential status without implying provider health
+ok 20 - validates credential status without implying provider health
+  ---
+  duration_ms: 1.224509
+  type: 'test'
+  ...
+# Subtest: accepts sampled backend telemetry and retains real diagnostic
+ok 21 - accepts sampled backend telemetry and retains real diagnostic
+  ---
+  duration_ms: 2.274367
+  type: 'test'
+  ...
+# Subtest: rejects malformed and incomplete telemetry, not as empty success
+ok 22 - rejects malformed and incomplete telemetry, not as empty success
+  ---
+  duration_ms: 0.428678
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 996.013008
+exit code: 0

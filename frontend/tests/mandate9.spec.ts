@@ -28,3 +28,20 @@ test('network uncertainty allows retry', async ({ page }) => {
   await page.getByRole('button', { name: 'Send Message' }).click();
   await expect(page.getByText('Message Received!')).toBeVisible(); expect(attempts).toBe(2);
 });
+
+test('jobs browse uses public data route and filters the returned jobs', async ({ page }) => {
+  await page.route('**/api/jobs-data', route => route.fulfill({status:200,json:{success:true,jobs:[{id:'job-1',title:'Platform Engineer',company_name:'Example Co',location:'Remote',job_type:'Full-time',skills:['TypeScript'],status:'active',created_at:'2026-01-01'}]}}));
+  await page.goto('/jobs');
+  await expect(page.getByText('Platform Engineer')).toBeVisible();
+  await page.getByPlaceholder('Job title, keyword, or company…').fill('not-found');
+  await expect(page.getByText('No jobs found')).toBeVisible();
+});
+
+test('blog list requests only published posts and shows errors instead of empty success', async ({ page }) => {
+  let publishedOnly: string | null = null;
+  await page.route('**/api/blog-data?*', route => { publishedOnly = new URL(route.request().url()).searchParams.get('publishedOnly'); return route.fulfill({status:503,json:{success:false}}); });
+  await page.goto('/blog');
+  await expect(page.getByRole('alert')).toContainText('unavailable');
+  await expect(page.getByText('No articles found')).toHaveCount(0);
+  expect(publishedOnly).toBe('true');
+});

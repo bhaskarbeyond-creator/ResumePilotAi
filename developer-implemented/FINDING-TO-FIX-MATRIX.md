@@ -19,3 +19,7 @@ Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`; implementation commits `4ec
 - `DISC-045` / coupon subset of `DISC-025`: **IMPLEMENTED — NOT VERIFIED**. Use `POST /api/coupons/validate` and strict `success/valid/coupon.code/coupon.discount`; removed local fallback codes. `EVIDENCE/coupon-unit.txt` passes; browser and DB blocked. The displayed subtotal is still client-calculated and not an authoritative quote; checkout remains unavailable.
 
 Eleven historical wrong-URL shapes have an explicit, incomplete disposition in `REPORTS/contract-dispositions.md`. All discrepancy headings are listed in `REPORTS/discrepancy-status-index.md`; this is not a complete root-cause and acceptance matrix. Payment remains **IN PROGRESS**, with no settlement implementation or verified success.
+
+## Latest progress
+
+At source baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`, subsequent commits `9e9b201`, `52a7746`, `da345fc`, `16a300f`, `6029938` are described in patch records 005–006. `DISC-043`/`DISC-051` job listing, public portion of `DISC-039`, M9-P01 draft confidentiality, and the enterprise `/platform/status` call are **IMPLEMENTED — NOT VERIFIED**. A standalone payment status parser exists but is not integrated; FS-M8A-01 remains **NOT IMPLEMENTED**, checkout stays disabled. The 11 shapes have detailed source dispositions in `REPORTS/contract-dispositions.md`; several are still **NOT IMPLEMENTED**. A per-heading status inventory is `RELEASE-READINESS/finding-completion-table.md`; it is not a fully reconciled acceptance matrix.
