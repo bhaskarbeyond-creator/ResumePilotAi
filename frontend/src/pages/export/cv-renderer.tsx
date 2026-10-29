@@ -1,27 +1,28 @@
 /**
  * Master Resume & CV Export Engine
  *
- * Vector-sharp printable document rendering supporting all 51 CV templates
- * and 4 Cover Letter templates, plus public shared resume views.
+ * Printable document rendering for all 100 CV templates and four cover-letter
+ * definitions, plus public shared resume views.
  *
  * Features:
  * - High-fidelity print styles (@media print)
- * - 51 Template layout variations across 8 design archetypes
+ * - Five resume archetypes driven by template layout specifications
  * - 7 Curated color palettes
  * - Density & font size scaling
  * - Quick template switcher
  * - Print & Save to PDF triggers
- * - Graceful fallback to rich realistic data when offline/testing
+ * - Explicit unsupported-template and load-error states; no demo data
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { get } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
-import { TEMPLATES, COVER_TEMPLATES, getTemplateMeta } from '@/lib/template-catalog';
-import { normalizeResumeToDocument } from '@/lib/resume-view-model';
+import { TEMPLATES, COVER_TEMPLATES, tryGetTemplateMeta } from '@/lib/template-catalog';
+import { normalizeDocumentResume } from '@/cv-templates/templateUtils';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
+import type { ResumeWatermark } from '@/components/ResumePageComposer';
 import {
   Printer,
   Share2,
@@ -59,9 +60,13 @@ export function CVRendererPage() {
   const navigate = useNavigate();
 
   // Extract template number from URL path (e.g. /export/Cv14/... or /export/Cover2/...)
-  const isCoverLetter = location.pathname.includes('/export/Cover');
-  const matchedCvNum = location.pathname.match(/\/export\/Cv(\d+)/i)?.[1];
-  const matchedCoverNum = location.pathname.match(/\/export\/Cover(\d+)/i)?.[1];
+  const requestedTemplateId = location.pathname.match(/^\/export\/([^/]+)(?:\/|$)/)?.[1];
+  const isCoverLetter = Boolean(requestedTemplateId?.startsWith('Cover'));
+  const matchedCvNum = requestedTemplateId?.match(/^Cv(\d+)$/)?.[1];
+  const matchedCoverNum = requestedTemplateId?.match(/^Cover(\d+)$/)?.[1];
+  // The generic export route must not turn an unknown or malformed URL ID
+  // into Cv1 merely because it contains no recognized numeric prefix.
+  const routeTemplateSupported = !requestedTemplateId || Boolean(tryGetTemplateMeta(requestedTemplateId));
 
   const initialTemplateNum = matchedCvNum ? parseInt(matchedCvNum, 10) : matchedCoverNum ? parseInt(matchedCoverNum, 10) : 1;
   const [templateNum, setTemplateNum] = useState<number>(initialTemplateNum);
@@ -72,12 +77,17 @@ export function CVRendererPage() {
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [copied, setCopied] = useState(false);
   const [resumeData, setResumeData] = useState<any>(null);
+  const [exportWatermark, setExportWatermark] = useState<ResumeWatermark | undefined>();
+  // Strict Mode replays effects in development. Both effect instances must
+  // await the same redemption instead of consuming a one-time token twice.
+  const renderTokenRequest = useRef<{ token: string; promise: Promise<{ data?: unknown }> } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const currentMeta = useMemo(
-    () => getTemplateMeta(isCoverLetter ? `Cover${templateNum}` : `Cv${templateNum}`),
-    [templateNum, isCoverLetter]
+    () => routeTemplateSupported ? tryGetTemplateMeta(isCoverLetter ? `Cover${templateNum}` : `Cv${templateNum}`) : null,
+    [templateNum, isCoverLetter, routeTemplateSupported]
   );
+  const templateSupported = Boolean(currentMeta);
 
   // Dynamic template-curated palette with manual override support
   const activePalette: PaletteTheme = useMemo(() => {
@@ -86,12 +96,12 @@ export function CVRendererPage() {
     }
     // Default to the template's designated colors from template-catalog
     return {
-      id: currentMeta.id,
-      name: currentMeta.name,
-      primary: currentMeta.primary || '#1e3a8a',
-      secondary: currentMeta.secondary || '#3b82f6',
-      soft: `${currentMeta.primary || '#1e3a8a'}15`,
-      text: currentMeta.primary || '#1e3a8a',
+      id: currentMeta?.id || 'unsupported',
+      name: currentMeta?.name || 'Unsupported template',
+      primary: currentMeta?.primary || '#1e3a8a',
+      secondary: currentMeta?.secondary || '#3b82f6',
+      soft: `${currentMeta?.primary || '#1e3a8a'}15`,
+      text: currentMeta?.primary || '#1e3a8a',
     };
   }, [paletteIndex, currentMeta]);
 
@@ -112,6 +122,7 @@ export function CVRendererPage() {
     const renderToken = fragment.get('renderToken') || new URLSearchParams(location.search).get('renderToken');
     const publicToken = new URLSearchParams(location.search).get('publicToken');
 
+    if (!templateSupported) return;
     if (!resumeId) {
       setLoadError('No resume was specified for this export.');
       return;
@@ -124,7 +135,10 @@ export function CVRendererPage() {
             if (!cancelled) setLoadError('This export link is malformed. Request a new export.');
             return;
           }
-          const payload = await get<{ data?: any }>('/export-render-data', { token: renderToken });
+          if (!renderTokenRequest.current || renderTokenRequest.current.token !== renderToken) {
+            renderTokenRequest.current = { token: renderToken, promise: get<{ data?: unknown }>('/export-render-data', { token: renderToken }) };
+          }
+          const payload = await renderTokenRequest.current.promise;
           if (cancelled) return;
           if (!payload?.data) {
             setLoadError('This export link has expired. Run the export again to create a fresh link.');
@@ -138,6 +152,7 @@ export function CVRendererPage() {
             /* history is unavailable in some embedded webviews */
           }
           applyResumePayload(payload.data);
+          renderTokenRequest.current = null;
           return;
         }
 
@@ -152,13 +167,14 @@ export function CVRendererPage() {
           return;
         }
 
-        const data = await get<any>(`/resumes/${encodeURIComponent(resumeId)}`);
+        const resource = isCoverLetter ? 'covers' : 'resumes';
+        const data = await get<any>(`/${resource}/${encodeURIComponent(resumeId)}`);
         if (cancelled) return;
-        if (!data?.resume && !data?.data && !data?.heading) {
-          setLoadError('Resume not found.');
+        if (!data?.resume && !data?.data && !data?.heading && !data?.cover) {
+          setLoadError(isCoverLetter ? 'Cover letter not found.' : 'Resume not found.');
           return;
         }
-        applyResumePayload(data);
+        applyResumePayload(isCoverLetter ? data.cover : data);
       } catch (err: any) {
         if (cancelled) return;
         const status = err?.response?.status;
@@ -176,22 +192,57 @@ export function CVRendererPage() {
 
     function applyResumePayload(raw: any) {
       if (cancelled) return;
-      const normalized = normalizeResumeToDocument(raw);
+      const normalized = normalizeDocumentResume(raw);
+      // The server supplies this only when its entitlement policy requires it.
+      // Do not infer a watermark from candidate data or client-side plan guesses.
+      const suppliedWatermark = raw?._watermark ?? raw?.resume?._watermark ?? raw?.data?._watermark;
+      setExportWatermark(suppliedWatermark?.enableFreeWatermark === true && typeof suppliedWatermark.watermarkText === 'string'
+        ? { enableFreeWatermark: true, watermarkText: suppliedWatermark.watermarkText,
+            opacity: Number(suppliedWatermark.opacity) || undefined, position: typeof suppliedWatermark.position === 'string' ? suppliedWatermark.position : undefined }
+        : undefined);
       const templateId = normalized.template || raw?.resume?.template || raw?.template || '';
-      setResumeData(normalized);
-      if (!matchedCvNum && templateId) {
-        const num = Number.parseInt(String(templateId).replace(/\D/g, ''), 10);
-        if (Number.isFinite(num) && num >= 1 && num <= 100 && !isCoverLetter) {
-          setTemplateNum(num);
+      if (!requestedTemplateId && templateId) {
+        const saved = tryGetTemplateMeta(templateId);
+        if (!saved || !saved.id.startsWith('Cv')) {
+          setLoadError('Unsupported template layout. Choose a registered template before previewing this resume.');
+          return;
         }
+        setTemplateNum(Number.parseInt(saved.id.slice(2), 10));
       }
+      setResumeData(normalized);
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [resumeId, matchedCvNum, location.hash, location.search, isCoverLetter]);
+  }, [resumeId, requestedTemplateId, location.hash, location.search, isCoverLetter, templateSupported]);
+
+  useEffect(() => {
+    const message = !currentMeta ? 'Unsupported template layout.' : loadError;
+    if (message) {
+      delete document.documentElement.dataset.exportReady;
+      document.documentElement.dataset.exportError = message;
+    }
+    return () => { if (message) delete document.documentElement.dataset.exportError; };
+  }, [currentMeta, loadError]);
+
+  // A print action from the preview opens this route in a new tab. Wait for
+  // composed pages, fonts and images; do not print a loading or overflow state.
+  const autoPrinted = useRef(false);
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('print') !== '1') return;
+    const printWhenReady = () => {
+      if (!autoPrinted.current && document.documentElement.dataset.exportReady === 'true') {
+        autoPrinted.current = true;
+        window.print();
+      }
+    };
+    const observer = new MutationObserver(printWhenReady);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-export-ready'] });
+    printWhenReady();
+    return () => observer.disconnect();
+  }, [location.search]);
 
   const handlePrint = () => {
     window.print();
@@ -212,8 +263,8 @@ export function CVRendererPage() {
         }
       }
 
-      if (!resumeId) {
-        throw new Error('Save the resume before exporting it to Word.');
+      if (!resumeId || !currentMeta) {
+        throw new Error('Save the resume and choose a supported template before exporting it to Word.');
       }
       const res = await fetch('/api/export-docx', {
         method: 'POST',
@@ -252,14 +303,33 @@ export function CVRendererPage() {
     // This copies the private preview URL (owner/authorised access only). A
     // public share link is created exclusively through the Share dialog, which
     // publishes through the backend. The two must never be confused.
-    const url = window.location.href;
-    void navigator.clipboard.writeText(url).then(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('print');
+    if (currentMeta && resumeId) {
+      if (/^\/export\/[^/]+\//.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/^\/export\/[^/]+\//, `/export/${encodeURIComponent(currentMeta.id)}/`);
+      } else if (url.pathname.startsWith('/preview/')) {
+        url.pathname = `/export/${encodeURIComponent(currentMeta.id)}/${encodeURIComponent(resumeId)}/en`;
+      }
+    }
+    void navigator.clipboard.writeText(url.href).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => setCopied(false));
   };
 
-  // Determine archetype based on template metadata
+  if (!currentMeta) {
+    return (
+      <main className="min-h-screen bg-neutral-100 flex items-center justify-center p-6" role="alert">
+        <div className="max-w-md rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-lg">
+          <h1 className="text-lg font-bold text-neutral-900">Unsupported template layout</h1>
+          <p className="mt-2 text-sm text-neutral-600">This template is not in the catalogue. Choose a supported design to continue.</p>
+          <Button className="mt-4" onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </main>
+    );
+  }
+
   // Loading state — real resume ID but data hasn't arrived yet
   if (!resumeData && !loadError) {
     return (
@@ -482,6 +552,7 @@ export function CVRendererPage() {
             meta={currentMeta}
             palette={activePalette}
             density={density}
+            watermark={exportWatermark}
           />
         </div>
       </main>

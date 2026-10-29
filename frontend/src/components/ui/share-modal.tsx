@@ -128,8 +128,11 @@ export function ShareModal({
         setPublicationRevision(typeof result.publicationRevision === 'number' ? result.publicationRevision : null);
       }
     } catch (err) {
-      setError(describeShareError(err));
+      // Refresh server state, but keep the action failure visible: the refresh
+      // itself clears stale errors at its start.
+      const message = describeShareError(err);
       await loadPublication();
+      setError(message);
     } finally {
       setPending(false);
     }

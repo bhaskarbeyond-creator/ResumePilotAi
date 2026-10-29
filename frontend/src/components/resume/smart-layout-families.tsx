@@ -1,13 +1,10 @@
 /**
  * DIR-008 — per-template page-one layout families.
  *
- * Exactly one family renders for a given catalog id, selected exclusively from
- * the typed `TemplateLayoutSpec` (never from a color or a silent fallback).
- * Each family composes genuinely different geometry: column count, identity
- * block treatment, rail contents, reading order, section framing and density.
- *
- * All content still flows from the same partitioner output, so pagination,
- * continuation headings and ATS-safe text extraction stay consistent.
+ * The legacy family components remain registered for existing callers. The
+ * measured A4 document path uses ComposableResumeLayout below: five archetypes
+ * driven by the per-template specifications and breakable content blocks. This
+ * preserves tokens and ordering, but is not pixel-identical to every legacy family.
  */
 
 import React from 'react';
@@ -16,7 +13,9 @@ import { formatDateRange } from '@/lib/resume-format';
 import type { TemplateMeta } from '@/lib/template-catalog';
 import type { FlowItem, PartitionedPage } from '@/lib/smart-partitioner';
 import { SECTION_TITLES } from '@/lib/smart-partitioner';
-import type { AsideSectionKey, SectionKey, TemplateLayoutSpec } from '@/lib/template-layouts';
+import { SECTION_KEYS, type AsideSectionKey, type SectionKey, type TemplateLayoutSpec } from '@/lib/template-layouts';
+import type { ResumeDocumentModel } from '@/lib/resume-view-model';
+import { backgroundStops, contrastRatio, getContrastTextColor, readableAccent } from '@/cv-templates/templateUtils';
 import {
   FlowItemRenderer,
   GithubIcon,
@@ -1788,3 +1787,205 @@ export const LAYOUT_FAMILY_COMPONENTS: Record<string, React.ComponentType<Family
   cv25: Cv25Family,
   cv34: Cv34Family,
 };
+
+
+/**
+ * Pagination-friendly composition of the five public archetypes. The existing
+ * registered family specifications still supply ordering, rail geometry,
+ * typography, density and section treatment; the blocks below are explicit
+ * break opportunities, so no family can hide a long rail or omit a section.
+ */
+interface ComposableLayoutProps {
+  resume: ResumeDocumentModel;
+  meta: TemplateMeta;
+  layout: TemplateLayoutSpec;
+  palette: ResumePalette;
+  fullName: string;
+  density: 'compact' | 'standard' | 'spacious';
+}
+
+function SafeDocumentLink({ value }: { value: string }) {
+  if (!value) return null;
+  const href = /^https?:\/\//i.test(value) ? value : '';
+  return href ? <a href={href} rel="noopener noreferrer" target="_blank">{value}</a> : <span>{value}</span>;
+}
+
+function DocumentSectionBlocks({
+  section, resume, meta, layout,
+}: { section: SectionKey; resume: ResumeDocumentModel; meta: TemplateMeta; layout: TemplateLayoutSpec }) {
+  let entries: React.ReactNode[] = [];
+  switch (section) {
+    case 'summary':
+      entries = resume.summary && resume.summary.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim() ? [<RichTextContent content={resume.summary} />] : [];
+      break;
+    case 'experience':
+      entries = resume.experience.map((role) => (
+        <div className="resume-role" data-date-rail={meta.archetype === 'compact-euro' || meta.timelineStyle === 'date-rail' || layout.family === 'europass' ? 'true' : undefined}>
+          <div className="resume-role-date">{formatDateRange(role.startDate, role.endDate, role.current)}</div>
+          <div className="resume-role-details">
+            {role.position && <h3>{role.position}</h3>}
+            {(role.company || role.location) && <div className="resume-muted">{[role.company, role.location].filter(Boolean).join(' · ')}</div>}
+            <RichTextContent content={role.description} />
+          </div>
+        </div>
+      ));
+      break;
+    case 'education':
+      entries = resume.education.map((entry) => (
+        <div>
+          {(entry.degree || entry.field) && <h3>{[entry.degree, entry.field].filter(Boolean).join(' · ')}</h3>}
+          <div className="resume-muted">{[entry.institution, entry.location, formatDateRange(entry.startDate, entry.endDate), entry.gpa ? `GPA: ${entry.gpa}` : ''].filter(Boolean).join(' · ')}</div>
+          <RichTextContent content={entry.description} />
+        </div>
+      ));
+      break;
+    case 'projects':
+      entries = resume.projects.map((project) => (
+        <div className={meta.archetype === 'tech-grid' ? 'resume-project-card' : ''} data-project-card={meta.archetype === 'tech-grid' ? 'true' : undefined}>
+          {project.title && <h3>{project.title}</h3>}
+          {project.technologies && <div className="resume-muted">{project.technologies}</div>}
+          {(project.startDate || project.endDate) && <div>{formatDateRange(project.startDate, project.endDate)}</div>}
+          {project.liveUrl && <div><SafeDocumentLink value={project.liveUrl} /></div>}
+          {project.githubUrl && project.githubUrl !== project.liveUrl && <div><SafeDocumentLink value={project.githubUrl} /></div>}
+          <RichTextContent content={project.description} />
+        </div>
+      ));
+      break;
+    case 'achievements':
+      entries = resume.achievements.map((achievement) => (
+        <div>{achievement.title && <h3>{achievement.title}</h3>}{achievement.date && <div className="resume-muted">{achievement.date}</div>}<RichTextContent content={achievement.description} /></div>
+      ));
+      break;
+    case 'skills':
+      // Small groups are independent measured blocks, so a page boundary does
+      // not cut through an otherwise ordinary skill badge.
+      entries = resume.skillCategories.flatMap((category) => {
+        const skills: Array<string | { name?: string; rating?: number }> = Array.isArray(category.skills) ? category.skills : [];
+        const chunks: Array<Array<string | { name?: string; rating?: number }>> = [];
+        for (let index = 0; index < skills.length; index += 8) chunks.push(skills.slice(index, index + 8));
+        return chunks.map((chunk, chunkIndex) => (
+          <div>
+            {category.category && chunkIndex === 0 && <h3>{category.category}</h3>}
+            <div className={meta.archetype === 'tech-grid' || meta.skillVariant !== 'inline' ? 'resume-skill-list' : 'resume-skill-inline'}>
+              {chunk.map((skill, index) => (
+                <React.Fragment key={index}><span className="resume-skill">{typeof skill === 'string' ? skill : <>{skill.name}{typeof skill.rating === 'number' ? ` (${skill.rating})` : ''}</>}</span>{meta.skillVariant === 'inline' && meta.archetype !== 'tech-grid' && (index < chunk.length - 1 || chunkIndex < chunks.length - 1) ? ', ' : ' '}</React.Fragment>
+              ))}
+            </div>
+          </div>
+        ));
+      });
+      break;
+    case 'certifications':
+      entries = resume.certifications.map((certificate) => (
+        <div><h3>{certificate.name || certificate.title}</h3><div className="resume-muted">{[certificate.issuer, certificate.date, certificate.expiryDate ? `Expires: ${certificate.expiryDate}` : ''].filter(Boolean).join(' · ')}</div>{certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialId} /></div>}{certificate.credentialUrl && certificate.credentialUrl !== certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialUrl} /></div>}</div>
+      ));
+      break;
+    case 'languages':
+      entries = resume.languages.map((language) => <div>{language.name || language.language}{language.proficiency ? ` — ${language.proficiency}` : ''}</div>);
+      break;
+    case 'hobbies':
+      entries = resume.hobbies.map((hobby) => <div>{hobby}</div>);
+      break;
+    case 'references':
+      entries = resume.references.map((reference) => (
+        <div>
+          {reference.name && <h3>{reference.name}</h3>}
+          <div className="resume-muted">{[reference.position, reference.company, reference.email, reference.phone, reference.relationship].filter(Boolean).join(' · ')}</div>
+          <RichTextContent content={reference.description} />
+        </div>
+      ));
+      break;
+  }
+  return <>{entries.map((entry, index) => (
+    <section className="resume-block" data-resume-block="true" data-section={section} key={`${section}-${index}`}>
+      {index === 0 && <h2 className={`resume-section-title resume-title-${layout.titleStyle}`}>{SECTION_TITLES[section]}</h2>}
+      {entry}
+    </section>
+  ))}</>;
+}
+
+export function ComposableResumeLayout({ resume, meta, layout, palette, fullName, density }: ComposableLayoutProps) {
+  const archetype = meta.archetype;
+  const isSplit = archetype === 'modern-split';
+  const hasRail = isSplit || (archetype !== 'minimal-ats' && Boolean(layout.aside));
+  const position = meta.sidebarPosition || layout.aside || 'left';
+  const asideSections = hasRail
+    ? (layout.asideSections.length ? layout.asideSections : ['contact', 'skills', 'languages', 'education'] as AsideSectionKey[])
+    : [];
+  const asideSet = new Set<string>(asideSections);
+  const orderedMain = [...layout.mainOrder, ...SECTION_KEYS].filter((key, index, all) => !asideSet.has(key) && all.indexOf(key) === index);
+  const heading = resume.heading;
+  const contacts = [heading.email, heading.phone, heading.address, heading.location, heading.postalCode, heading.website, heading.linkedin, heading.github].filter((value, index, all): value is string => Boolean(value) && all.indexOf(value) === index);
+  let sidebarBg = meta.sidebarBg && backgroundStops(meta.sidebarBg).length ? meta.sidebarBg : '#f1f5f9';
+  let stops = backgroundStops(sidebarBg);
+  const readableOnRail = (color: string) => stops.every(stop => contrastRatio(color, stop) >= 4.5);
+  let sidebarText = meta.sidebarText && readableOnRail(meta.sidebarText) ? meta.sidebarText : getContrastTextColor(stops[0]);
+  // A mixed light/dark gradient may not admit one AA foreground; use a solid
+  // accessible rail rather than sacrificing readability.
+  if (!readableOnRail(sidebarText)) {
+    sidebarText = ['#ffffff', '#000000'].find(readableOnRail) || '';
+    if (!sidebarText) { sidebarBg = '#f1f5f9'; stops = [sidebarBg]; sidebarText = '#000000'; }
+  }
+  const headerBg = /^#[0-9a-f]{6}$/i.test(palette.primary) ? palette.primary : '#1e293b';
+  const headerText = getContrastTextColor(headerBg);
+  const style = {
+    fontFamily: meta.font || "'Inter', sans-serif",
+    '--resume-primary': headerBg,
+    '--resume-secondary': /^#[0-9a-f]{6}$/i.test(palette.secondary) ? palette.secondary : headerBg,
+    '--resume-tertiary': meta.accent && /^#[0-9a-f]{6}$/i.test(meta.accent) ? meta.accent : palette.secondary,
+    '--resume-badge-radius': meta.badgeRadius && /^\d+(?:\.\d+)?px$/.test(meta.badgeRadius) ? meta.badgeRadius : '4px',
+    '--resume-accent-text': readableAccent(headerBg),
+    '--resume-header-text': headerText,
+    '--resume-rail-bg': sidebarBg,
+    '--resume-rail-text': sidebarText,
+    '--resume-rail-width': `${Math.min(40, Math.max(24, layout.asideWidth || 32))}%`,
+    '--resume-name-size': ({ md: '23px', lg: '27px', xl: '31px', '2xl': '36px' })[layout.nameScale],
+    '--resume-block-space': ({ compact: '8px', standard: '12px', spacious: '16px' })[density],
+  } as React.CSSProperties;
+
+  const contactBlock = contacts.length ? (
+    <section className="resume-block" data-resume-block="true" data-section="contact">
+      <h2 className="resume-section-title">Contact</h2>
+      <div className="resume-contact-list">{contacts.map((contact, index) => <div key={index}><SafeDocumentLink value={contact} /></div>)}</div>
+    </section>
+  ) : null;
+  const rail = hasRail ? (
+    <aside className="resume-column resume-rail" data-resume-column="rail" data-layout-rail={layout.family}>
+      {asideSections.map(section => section === 'contact' ? <React.Fragment key={section}>{contactBlock}</React.Fragment>
+        : <DocumentSectionBlocks key={section} section={section} resume={resume} meta={meta} layout={layout} />)}
+    </aside>
+  ) : null;
+  const main = (
+    <main className="resume-column resume-main" data-resume-column="main">
+      {orderedMain.map(section => <DocumentSectionBlocks key={section} section={section} resume={resume} meta={meta} layout={layout} />)}
+      {(resume.customSections || []).flatMap((section, sectionIndex) => {
+        if (!section.items.length) return section.sectionTitle ? [<section key={`custom-${sectionIndex}`} className="resume-block" data-resume-block="true" data-section="custom"><p><strong>{section.sectionTitle}</strong></p></section>] : [];
+        return section.items.map((item, itemIndex) => (
+          <section key={`custom-${sectionIndex}-${itemIndex}`} className="resume-block" data-resume-block="true" data-section="custom">
+            {itemIndex === 0 && section.sectionTitle && <h2 className={`resume-section-title resume-title-${layout.titleStyle}`}>{section.sectionTitle}</h2>}
+            {item.title && <h3>{item.title}</h3>}
+            <RichTextContent content={item.description} />
+          </section>
+        ));
+      })}
+    </main>
+  );
+  return (
+    <div data-resume-source="true" data-template-id={meta.id} data-archetype={archetype} data-layout-family={layout.family} data-skill-variant={meta.skillVariant || 'inline'} data-header-style={layout.header} data-contact-layout={layout.contactLayout} data-divider-style={meta.dividerStyle || 'solid-thin'} data-timeline-style={meta.timelineStyle || 'compact-clean'} data-accent-bar={String(layout.accentBar)} style={style}>
+      <header className={`resume-identity resume-identity-${archetype} ${meta.headerStyle === 'centered-classic' ? 'resume-identity-centered' : ''}`} data-resume-header="true">
+        {heading.photo && heading.showPhoto && layout.photoShape !== 'none' && <img className={`resume-photo resume-photo-${layout.photoShape}`} src={heading.photo} alt="" />}
+        {meta.id === 'Cv1' && !heading.photo && fullName && <span className="resume-initials" aria-hidden="true">{fullName.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span>}
+        <div className="resume-identity-copy">
+          <h1>{fullName || 'Resume'}</h1>
+          {heading.title && <p className="resume-occupation">{heading.title}</p>}
+          {!asideSet.has('contact') && contacts.length > 0 && <div className="resume-contact-row">{contacts.map((contact, index) => <SafeDocumentLink key={index} value={contact} />)}</div>}
+        </div>
+      </header>
+      <div className="resume-columns" data-resume-columns="true" data-sidebar-position={hasRail ? position : 'none'}>
+        {hasRail && position === 'left' && rail}
+        {main}
+        {hasRail && position === 'right' && rail}
+      </div>
+    </div>
+  );
+}

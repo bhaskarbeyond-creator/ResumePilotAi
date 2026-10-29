@@ -1,3 +1,5 @@
+import { normalizeResumeToDocument, type ResumeDocumentModel } from '@/lib/resume-view-model';
+
 /**
  * Shared utility functions for CV Templates
  * TypeScript port from src/cv-templates/templateUtils.js
@@ -8,7 +10,7 @@ export const ARRAY_FIELDS = ['employments', 'educations', 'skills', 'languages',
 
 export function text(value: unknown, fallback = ''): string {
     if (value === null || value === undefined) return fallback;
-    if (typeof value === 'string') return value.slice(0, 100_000);
+    if (typeof value === 'string') return value;
     if (typeof value === 'number' || typeof value === 'boolean') return String(value);
     return fallback;
 }
@@ -271,7 +273,7 @@ export function formatDateRange(startDate: string, endDate: string, isCurrent: b
 export function getContrastTextColor(bgHex: string, fallback = '#ffffff'): string {
     if (!bgHex || typeof bgHex !== 'string') return fallback;
     const hex = bgHex.replace('#', '').trim();
-    if (hex.length !== 3 && hex.length !== 6) return fallback;
+    if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex)) return fallback;
 
     let r, g, b;
     if (hex.length === 3) {
@@ -293,10 +295,10 @@ export function getContrastTextColor(bgHex: string, fallback = '#ffffff'): strin
         const [hi, lo] = luminance > foregroundLuminance ? [luminance, foregroundLuminance] : [foregroundLuminance, luminance];
         return (hi + 0.05) / (lo + 0.05);
     };
-    // #ffffff vs #1a202c (relative luminance ≈ 0.0118)
+    // The better of white and black guarantees at least 4.5:1 for a solid background.
     const whiteRatio = ratioWith(1.0);
-    const darkRatio = ratioWith(0.0118);
-    return whiteRatio >= darkRatio ? '#ffffff' : '#1a202c';
+    const darkRatio = ratioWith(0);
+    return whiteRatio >= darkRatio ? '#ffffff' : '#000000';
 }
 
 /**
@@ -376,4 +378,156 @@ export function formatLanguages(langsData: unknown): Array<{ name: string; level
 
         return null;
     }).filter(Boolean) as Array<{ name: string; level: string }>;
+}
+
+/** WCAG relative luminance / contrast helpers for the actual foreground pairing. */
+export function contrastRatio(first: string, second: string): number {
+    const luminance = (color: string): number | null => {
+        const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+        if (!match) return null;
+        const hex = match[1].length === 3 ? [...match[1]].map(c => c + c).join('') : match[1];
+        const channels = [0, 2, 4].map(i => {
+            const value = parseInt(hex.slice(i, i + 2), 16) / 255;
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const a = luminance(first);
+    const b = luminance(second);
+    return a === null || b === null ? 0 : (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/** Supported rail backgrounds are solid hex or the catalog's two-stop linear gradient. */
+export function backgroundStops(value: string): string[] {
+    if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) return [value];
+    const gradient = /^linear-gradient\(\s*\d+deg\s*,\s*(#[0-9a-f]{3,6})\s+\d+%\s*,\s*(#[0-9a-f]{3,6})\s+\d+%\s*\)$/i.exec(value);
+    if (!gradient || !gradient.slice(1).every(stop => /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(stop))) return [];
+    return gradient.slice(1);
+}
+
+/** Darken an accent only when it would otherwise fail normal-text AA on white. */
+export function readableAccent(color: string): string {
+    if (!/^#[0-9a-f]{6}$/i.test(color)) return '#1e293b';
+    let rgb = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16));
+    let result = color;
+    while (contrastRatio(result, '#ffffff') < 4.5) {
+        rgb = rgb.map(channel => Math.floor(channel * 0.9));
+        result = `#${rgb.map(channel => channel.toString(16).padStart(2, '0')).join('')}`;
+    }
+    return result;
+}
+
+const record = (value: unknown): Record<string, unknown> =>
+    value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+function parsed(value: unknown): unknown {
+    if (typeof value !== 'string') return value;
+    try { return JSON.parse(value); } catch { return value; }
+}
+
+function entries(value: unknown): unknown[] {
+    const resolved = parsed(value);
+    return Array.isArray(resolved) ? resolved.filter(item => item !== null && item !== undefined) : [];
+}
+
+/**
+ * Defensive adapter at the renderer boundary. It uses the same view-model as
+ * export/share, but first repairs malformed optional collections and merges the
+ * legacy nested `data` payload. It never invents candidate content or mutates
+ * the saved record. Unknown collection entries are ignored rather than passed
+ * through to a React text node.
+ */
+export function normalizeDocumentResume(input: unknown): ResumeDocumentModel {
+    const envelope = record(input);
+    const nested = record(parsed(envelope.resume ?? envelope.data));
+    const raw: Record<string, unknown> = { ...nested };
+    for (const [key, value] of Object.entries(envelope)) {
+        if (value !== null && value !== undefined && value !== '') raw[key] = value;
+        else if (!(key in raw)) raw[key] = value;
+    }
+    delete raw.resume;
+    delete raw.data;
+    const heading = record(raw.heading);
+    const cleanHeading: Record<string, unknown> = {};
+    for (const key of ['firstName', 'lastName', 'title', 'email', 'phone', 'location', 'address', 'postalcode', 'postalCode', 'website', 'linkedin', 'github', 'photo']) {
+        cleanHeading[key] = text(heading[key]);
+    }
+    cleanHeading.showPhoto = heading.showPhoto !== false && raw.showPhoto !== false && raw.hidePhoto !== true && raw.includePhoto !== false;
+    raw.heading = cleanHeading;
+    for (const key of ['firstname', 'firstName', 'lastname', 'lastName', 'name', 'occupation', 'jobTitle', 'title', 'email', 'phone', 'city', 'country', 'address', 'postalcode', 'postalCode', 'zip', 'website', 'websiteUrl', 'linkedin', 'linkedinUrl', 'github', 'githubUrl', 'photo', 'avatar', 'picture', 'summary', 'template', 'id']) {
+        if (raw[key] !== undefined) raw[key] = text(raw[key]);
+    }
+    const cleanEntries = (value: unknown, fields: string[], textField?: string) => entries(value).map((item, index) => {
+        const source = typeof item === 'string' && textField ? { [textField]: item } : record(item);
+        const result: Record<string, unknown> = { id: text(source.id, String(index)) || String(index) };
+        for (const key of fields) {
+            const value = source[key];
+            result[key] = Array.isArray(value) ? value.map(part => text(part)).filter(Boolean).join(', ') : text(value);
+        }
+        result.current = source.current === true || source.currentWork === true;
+        return result;
+    }).filter(item => fields.some(key => typeof item[key] === 'string' && (item[key] as string).trim()));
+    raw.experience = cleanEntries(raw.experience ?? raw.employments ?? raw.workExperiences,
+        ['company', 'employer', 'organization', 'position', 'jobTitle', 'title', 'location', 'startDate', 'begin', 'started', 'endDate', 'end', 'finished', 'description', 'summary'], 'description');
+    raw.education = cleanEntries(raw.education ?? raw.educations,
+        ['institution', 'school', 'organization', 'location', 'degree', 'qualification', 'field', 'major', 'startDate', 'begin', 'started', 'endDate', 'end', 'finished', 'gpa', 'description'], 'institution');
+    raw.projects = cleanEntries(raw.projects,
+        ['title', 'name', 'projectName', 'technologies', 'techStack', 'skills', 'liveUrl', 'link', 'url', 'githubUrl', 'startDate', 'endDate', 'description', 'summary'], 'title');
+    raw.certifications = cleanEntries(raw.certifications,
+        ['name', 'title', 'certificationName', 'issuer', 'institution', 'organization', 'date', 'issueDate', 'year', 'expiryDate', 'credentialId', 'credentialUrl', 'url'], 'name');
+    raw.languages = cleanEntries(raw.languages, ['name', 'language', 'proficiency', 'level'], 'name');
+    raw.achievements = cleanEntries(raw.achievements, ['title', 'name', 'date', 'description', 'summary'], 'title');
+    raw.references = cleanEntries(raw.references,
+        ['name', 'referenceName', 'position', 'title', 'jobTitle', 'company', 'organization', 'email', 'phone', 'relationship', 'description', 'recommendation'], 'name');
+    raw.customSections = entries(raw.customSections).map((item, index) => {
+        const section = record(item);
+        return {
+            id: text(section.id, `custom-${index}`), sectionTitle: text(section.sectionTitle || section.title),
+            items: cleanEntries(section.items, ['title', 'description']),
+        };
+    }).filter(section => section.sectionTitle.trim() || section.items.length);
+    raw.hobbies = entries(raw.hobbies).map(item => typeof item === 'string' ? item : text(record(item).name || record(item).hobby)).filter(value => value.trim());
+
+    const skillName = (value: unknown) => {
+        const source = record(value);
+        const name = typeof value === 'string' ? value : text(source.name || source.skillName || source.skill || source.title || source.value);
+        if (!name.trim()) return null;
+        const rating = source.rating ?? source.level;
+        return typeof value === 'object' && typeof rating === 'number' && Number.isFinite(rating)
+            ? { name, rating } : name;
+    };
+    const grouped: Array<{ id: string; category: string; skills: Array<string | { name: string; rating: number }> }> = [];
+    const categoryEntries = entries(raw.skillCategories);
+    const rawSkills = entries(raw.skills);
+    const groups = categoryEntries.length ? categoryEntries : rawSkills;
+    for (const [index, item] of groups.entries()) {
+        const source = record(item);
+        if (Array.isArray(source.skills)) {
+            const skills = source.skills.map(skillName).filter((skill): skill is string | { name: string; rating: number } => skill !== null);
+            if (skills.length) grouped.push({ id: text(source.id) || `skills-${index}`, category: text(source.category) || 'Skills', skills });
+        } else {
+            const name = skillName(item);
+            if (!name) continue;
+            const category = text(source.category) || 'Skills';
+            let group = grouped.find(candidate => candidate.category === category);
+            if (!group) { group = { id: `skills-${index}`, category, skills: [] }; grouped.push(group); }
+            group.skills.push(name);
+        }
+    }
+    raw.skillCategories = grouped;
+    raw.skills = [];
+    const hidden = new Set(entries(raw.hiddenSections).map(value => text(value)));
+    for (const [field, aliases] of Object.entries({
+        summary: ['summary'], experience: ['experience', 'employment', 'employments'], education: ['education', 'educations'],
+        skillCategories: ['skills'], certifications: ['certifications'], projects: ['projects'], languages: ['languages'],
+        achievements: ['achievements'], hobbies: ['hobbies'], references: ['references'], customSections: ['custom', 'customSections'],
+    })) if (aliases.some(alias => hidden.has(alias))) raw[field] = field === 'summary' ? '' : [];
+    if (hidden.has('heading')) {
+        raw.heading = {};
+        for (const key of ['firstname', 'lastname', 'firstName', 'lastName', 'email', 'phone', 'city', 'country', 'address', 'website', 'websiteUrl', 'linkedin', 'linkedinUrl', 'github', 'githubUrl', 'occupation', 'jobTitle', 'title', 'photo', 'avatar', 'picture']) raw[key] = '';
+    }
+
+    const model = normalizeResumeToDocument(raw);
+    model.id = text(raw.id); // The shared adapter otherwise substitutes "resume-1".
+    return model;
 }

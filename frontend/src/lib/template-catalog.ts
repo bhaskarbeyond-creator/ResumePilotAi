@@ -46,13 +46,13 @@ export interface TemplateMeta {
 }
 
 export const TEMPLATE_CATEGORIES = [
-  { id: 'all', label: 'All Templates (100+)' },
+  { id: 'all', label: 'All templates' },
   { id: 'modern', label: 'Modern Split' },
   { id: 'professional', label: 'Executive' },
   { id: 'simple', label: 'Simple / ATS' },
   { id: 'creative', label: 'Tech & AI' },
   { id: 'europass', label: 'Europass' },
-  { id: 'specialized', label: 'Specialized 10/10' },
+  { id: 'specialized', label: 'Specialized' },
 ] as const;
 
 export const TEMPLATES: TemplateMeta[] = [
@@ -207,18 +207,16 @@ export const COVER_TEMPLATES: TemplateMeta[] = [
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
 const COVER_BY_ID = new Map(COVER_TEMPLATES.map((t) => [t.id, t]));
 
-/**
- * Resolve a catalog entry. Unknown ids throw: a resume must never silently
- * render as a different template. Route handlers translate the throw into an
- * explicit "template not found" state.
- */
+/** Strict resolution preserves existing route handlers' explicit unsupported
+ * template state. Use tryGetTemplateMeta when the caller needs a safe lookup. */
 export function getTemplateMeta(id: string): TemplateMeta {
-  const meta = id.startsWith('Cover') ? COVER_BY_ID.get(id) : BY_ID.get(id);
+  const meta = tryGetTemplateMeta(id);
   if (!meta) throw new Error(`Unknown resume template: ${id}`);
   return meta;
 }
 
 export function tryGetTemplateMeta(id: string): TemplateMeta | null {
+  if (typeof id !== 'string') return null;
   return (id.startsWith('Cover') ? COVER_BY_ID.get(id) : BY_ID.get(id)) ?? null;
 }
 
