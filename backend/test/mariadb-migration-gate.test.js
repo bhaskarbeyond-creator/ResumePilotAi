@@ -304,6 +304,40 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     assert.match(stored.firstname, /^Writer \d+$/);
   });
 
+  await t.test('guarded first creation has one winner even when both transactions read absence', async () => {
+    // READ COMMITTED makes a missing-row SELECT FOR UPDATE insufficient as a
+    // serialization mechanism; the barrier forces both reads before INSERT.
+    const raceRepo = new MySQLRepository();
+    const realPool = database.getPool();
+    raceRepo._getPool = () => ({
+      async getConnection() {
+        const conn = await realPool.getConnection();
+        try { await conn.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED'); }
+        catch (error) { conn.release(); throw error; }
+        return conn;
+      },
+    });
+    const originalUpsert = raceRepo._upsertUser.bind(raceRepo);
+    let arrivals = 0;
+    let release;
+    const barrier = new Promise(resolve => { release = resolve; });
+    raceRepo._upsertUser = async (...args) => {
+      if (++arrivals <= 2) {
+        if (arrivals === 2) release();
+        await barrier;
+      }
+      return originalUpsert(...args);
+    };
+    const raceUid = `${runId}_profile_create_race`;
+    const results = await Promise.allSettled(['A', 'B'].map(firstname =>
+      raceRepo.saveUserWithRevisionGuard(raceUid, { firstname }, 0)));
+    assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+    assert.equal(results.filter(result => result.status === 'rejected' && result.reason?.code === 'PROFILE_CONFLICT').length, 1);
+    const stored = await repo.getUser(raceUid);
+    assert.equal(stored.revision, 1);
+    assert.equal(stored.firstname, results.find(result => result.status === 'fulfilled').value.firstname);
+  });
+
   await t.test('prevents cross-owner resume-id collisions', async () => {
     const resumeId = `${runId}_shared_resume`;
     await repo.saveResume(uid, resumeId, {

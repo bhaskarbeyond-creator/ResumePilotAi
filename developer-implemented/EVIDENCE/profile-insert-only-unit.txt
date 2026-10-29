@@ -1,0 +1,119 @@
+TAP version 13
+# Subtest: in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+ok 1 - in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+  ---
+  duration_ms: 1.444874
+  type: 'test'
+  ...
+# Subtest: concurrent in-memory initial creates do not both succeed
+ok 2 - concurrent in-memory initial creates do not both succeed
+  ---
+  duration_ms: 0.299871
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# Subtest: guarded creation uses insert-only and preserves atomic welcome event
+ok 3 - guarded creation uses insert-only and preserves atomic welcome event
+  ---
+  duration_ms: 1.752452
+  type: 'test'
+  ...
+# Subtest: existing guarded update still uses row lock and rejects stale revision
+ok 4 - existing guarded update still uses row lock and rejects stale revision
+  ---
+  duration_ms: 0.591604
+  type: 'test'
+  ...
+# Subtest: competing insert rolls back and maps duplicate UID to authoritative conflict
+ok 5 - competing insert rolls back and maps duplicate UID to authoritative conflict
+  ---
+  duration_ms: 0.221522
+  type: 'test'
+  ...
+# Subtest: unrelated duplicate is not hidden as profile conflict
+ok 6 - unrelated duplicate is not hidden as profile conflict
+  ---
+  duration_ms: 0.191409
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+# Subtest: new profile and deterministic welcome event commit atomically
+ok 7 - new profile and deterministic welcome event commit atomically
+  ---
+  duration_ms: 2.002643
+  type: 'test'
+  ...
+# Subtest: new profile rolls back when welcome enqueue fails
+ok 8 - new profile rolls back when welcome enqueue fails
+  ---
+  duration_ms: 0.719092
+  type: 'test'
+  ...
+# Subtest: profile updates do not enqueue duplicate welcome events
+ok 9 - profile updates do not enqueue duplicate welcome events
+  ---
+  duration_ms: 0.291601
+  type: 'test'
+  ...
+# Subtest: first portfolio publication and publication event commit atomically
+ok 10 - first portfolio publication and publication event commit atomically
+  ---
+  duration_ms: 1.021719
+  type: 'test'
+  ...
+# Subtest: portfolio publication rolls back if its outbox event cannot enqueue
+ok 11 - portfolio publication rolls back if its outbox event cannot enqueue
+  ---
+  duration_ms: 0.595202
+  type: 'test'
+  ...
+# Subtest: portfolio CAS rejects stale revisions before mutation or notification
+ok 12 - portfolio CAS rejects stale revisions before mutation or notification
+  ---
+  duration_ms: 0.342629
+  type: 'test'
+  ...
+# Subtest: portfolio identifiers cannot be reassigned across owners
+ok 13 - portfolio identifiers cannot be reassigned across owners
+  ---
+  duration_ms: 1.784154
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+# Subtest: profile API requires an explicit revision and rejects protected-field mass assignment
+ok 14 - profile API requires an explicit revision and rejects protected-field mass assignment
+  ---
+  duration_ms: 40.785307
+  type: 'test'
+  ...
+# Subtest: profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+ok 15 - profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+  ---
+  duration_ms: 8.69911
+  type: 'test'
+  ...
+# Subtest: profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+ok 16 - profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+  ---
+  duration_ms: 5.939486
+  type: 'test'
+  ...
+# Subtest: profile API stale write returns authoritative revision/profile and performs no mutation
+ok 17 - profile API stale write returns authoritative revision/profile and performs no mutation
+  ---
+  duration_ms: 3.74711
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1094.685936
+exit code: 0

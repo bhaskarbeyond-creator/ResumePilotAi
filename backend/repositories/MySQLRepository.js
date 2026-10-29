@@ -725,7 +725,7 @@ class MySQLRepository {
         }));
     }
 
-    async _upsertUser(connection, userId, userData, nextRev) {
+    async _upsertUser(connection, userId, userData, nextRev, { insertOnly = false } = {}) {
         const knownUserCols = new Set([
                 'id', 'email', 'firstname', 'lastname', 'displayName', 'photoUrl', 'avatarUrl',
                 'phone', 'jobTitle', 'bio', 'city', 'country', 'website', 'membership',
@@ -779,7 +779,7 @@ class MySQLRepository {
             const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
 
             await connection.query(
-                `INSERT INTO users (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}`,
+                `INSERT INTO users (${keys.join(', ')}) VALUES (${placeholders})${insertOnly ? '' : ` ON DUPLICATE KEY UPDATE ${updateClause}`}`,
                 Object.values(values)
             );
 
@@ -821,21 +821,43 @@ class MySQLRepository {
      * never silently overwrite each other. MySQL is the authoritative store.
      */
     async saveUserWithRevisionGuard(userId, userData, expectedRevision = null) {
-        return this._withTransaction(async (connection) => {
-            const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]);
-            const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
-            if (expectedRevision !== null && expectedRevision !== undefined && Number(currentRev) !== Number(expectedRevision)) {
-                const error = new Error('Profile changed in another tab or device.');
-                error.code = 'PROFILE_CONFLICT';
-                error.status = 409;
-                error.remoteRevision = currentRev;
-                throw error;
+        try {
+            return await this._withTransaction(async (connection) => {
+                const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]);
+                const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
+                if (expectedRevision !== null && expectedRevision !== undefined && Number(currentRev) !== Number(expectedRevision)) {
+                    const error = new Error('Profile changed in another tab or device.');
+                    error.code = 'PROFILE_CONFLICT';
+                    error.status = 409;
+                    error.remoteRevision = currentRev;
+                    throw error;
+                }
+                const nextRev = currentRev + 1;
+                // A missing row cannot be row-locked under every isolation level.
+                // For guarded creation use a plain INSERT, so a concurrent creator
+                // can never turn this write into an unconditional duplicate update.
+                const saved = await this._upsertUser(connection, userId, userData, nextRev, {
+                    insertOnly: existingRows.length === 0 && expectedRevision !== null && expectedRevision !== undefined,
+                });
+                await this._queueWelcomeForNewUser(connection, userId, userData, existingRows.length === 0);
+                return saved;
+            });
+        } catch (error) {
+            if (error?.code === 'ER_DUP_ENTRY' && Number(expectedRevision) === 0 && expectedRevision !== null && expectedRevision !== undefined) {
+                // Transaction has rolled back. Only classify as a revision
+                // conflict when the exact UID now exists; other uniqueness
+                // failures remain errors, not invented conflicts.
+                const current = await this.getUser(userId);
+                if (current) {
+                    const conflict = new Error('Profile changed in another tab or device.');
+                    conflict.code = 'PROFILE_CONFLICT';
+                    conflict.status = 409;
+                    conflict.remoteRevision = Number(current.revision || 0);
+                    throw conflict;
+                }
             }
-            const nextRev = currentRev + 1;
-            const saved = await this._upsertUser(connection, userId, userData, nextRev);
-            await this._queueWelcomeForNewUser(connection, userId, userData, existingRows.length === 0);
-            return saved;
-        });
+            throw error;
+        }
     }
 
     async deleteUser(userId) {

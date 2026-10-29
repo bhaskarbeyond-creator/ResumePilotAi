@@ -1,0 +1,7 @@
+# 007 — guarded first profile creation
+
+Status: IMPLEMENTED — VERIFICATION BLOCKED (real MariaDB race).
+
+A guarded write previously read an absent row with `FOR UPDATE`, then used an unconditional `INSERT ... ON DUPLICATE KEY UPDATE`. At READ COMMITTED two transactions may both observe absence, and the losing insert could overwrite the winner rather than reporting a conflict. Guarded initial creation now uses a plain insert. After a duplicate error and rollback, it reports `PROFILE_CONFLICT` only if the target UID exists; otherwise it propagates the original duplicate error. Existing-row updates retain row locking, revision checks, and the existing transactional outbox. Unguarded saves retain their prior behavior. This is an analysis-based correction, not a claim that the defect was reproduced against MariaDB.
+
+`backend/test/profile-mysql-guard-unit.test.js` checks generated SQL, rollback/conflict classification, and stale writes with a mocked connection. Together with profile outbox and API tests: 17 passed (see `EVIDENCE/profile-insert-only-unit.txt`). A new disposable MariaDB gate case forces two transactions at READ COMMITTED to both read absence before attempting the insert, then asserts one winner, one conflict, and persisted winner. The gate was skipped because no explicitly configured disposable MariaDB target exists (`EVIDENCE/profile-mariadb-gate-attempt.txt`). The fix and deterministic database test remain unverified against an actual engine, including deadlock/retry behavior. Existing `developer-review` evidence remains untouched.
