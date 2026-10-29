@@ -1,0 +1,504 @@
+#!/usr/bin/env python3
+"""
+m8b-integrity-verify.py — M8B substantive integrity verifier.
+
+WHY THIS EXISTS
+---------------
+The published verifiers (scripts/verify-parity.py, verify-v4-reconciliation.py,
+verify-audit-package.sh) check *presence and arithmetic*: that files exist, that columns
+are populated, and that numbers clear a floor. M8A found this insufficient:
+
+  * verify-v4-reconciliation.py:338 pins the literal string "all 176"
+  * verify-parity.py:32,53,83,140 and verify-v4-reconciliation.py:210-221,290 use
+    `>=` floors, so shrinkage or drift passes
+  * verify-v4-reconciliation.py:281 skips the SUPPORTED tally entirely, and the endpoint
+    audit's `else` branch (tools/parity-endpoint-audit.cjs:105-108) grades a row with
+    ZERO endpoints as SUPPORTED -> FP-C06, FP-E04, FP-E13 are auto-passes
+  * verify-v4-reconciliation.py:294 accepts a 30..45 band for rowsWithNoDeclaredEndpoint
+  * nothing detects two capabilities measured over the same corpus (FP-A14/FP-A15)
+
+This verifier checks MEANING, not shape. Every expected value is derived from the
+artifacts themselves; nothing is pinned. Exit code 0 only if every check passes.
+
+CHECKS
+  C01 provenance        every artifact revision resolves AND its app tree equals the
+                        tree at --at-rev (so a measurement transfers to the audited source)
+  C02 paths-resolve     every legacyPaths/modernPaths entry exists in the working tree
+  C03 corpus-scope      a row whose paths are all bare directories measures a module, not
+                        a capability; permitted only when the row declares corpusScope
+  C04 duplicate-corpus  no two rows share (paths, files, lines) without a justification
+  C05 duplicate-dist    no two rows share an identical non-trivial subfeature distribution
+  C06 full-evidence     every FULL row has >=1 resolvable endpoint with ok>0, or declares
+                        clientOnly with a rationale; never SUPPORTED on an empty list
+  C07 exact-totals      recomputed totals must EQUAL published totals (not >=)
+  C08 dispositions      every claim has exactly one primary bucket; histogram reconciles
+  C09 finding-ids       finding IDs unique; referenced IDs exist; no duplicate records
+  C10 closed-evidence   a finding marked closed must carry resolving evidence references
+
+USAGE
+  python3 developer-review/tools/m8b-integrity-verify.py [--data-dir DIR] [--at-rev SHA] [--json]
+
+EXIT
+  0 all checks pass; 1 one or more checks failed; 2 usage/IO error.
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def sh(*args):
+    try:
+        return subprocess.run(args, cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    except Exception:
+        return ""
+
+
+class Report:
+    def __init__(self):
+        self.results = []
+
+    def add(self, code, ok, detail, failures=None):
+        self.results.append({
+            "check": code,
+            "ok": bool(ok),
+            "detail": detail,
+            "rejections": failures or [],
+        })
+
+    @property
+    def failed(self):
+        return [r for r in self.results if not r["ok"]]
+
+
+def load(data_dir, name):
+    p = os.path.join(data_dir, name)
+    if not os.path.exists(p):
+        return None
+    with open(p, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# --------------------------------------------------------------------- C01
+def c01_provenance(rep, data_dir, at_rev):
+    arts = sorted(f for f in os.listdir(os.path.join(data_dir, "Evidence", "artifacts"))
+                  if f.endswith(".json"))
+    bad = []
+    seen = {}
+    for f in arts:
+        d = load(os.path.join(data_dir, "Evidence", "artifacts"), f)
+        if not isinstance(d, dict):
+            continue
+        rev = d.get("revision") or d.get("inventoryRevision")
+        if not rev:
+            continue
+        seen[f] = rev
+        full = sh("git", "rev-parse", f"{rev}^{{commit}}")
+        if not full:
+            bad.append({"artifact": f, "revision": rev, "reason": "revision does not resolve in this repository"})
+            continue
+        if at_rev:
+            diff = sh("git", "diff", "--name-only", full, at_rev, "--", "frontend/src", "src", "backend")
+            if diff:
+                bad.append({"artifact": f, "revision": rev,
+                            "reason": f"{len(diff.splitlines())} application files differ from {at_rev[:7]}"})
+    rep.add("C01 provenance", not bad,
+            f"{len(seen)} artifacts carry a revision; all must resolve and have an identical application tree",
+            bad)
+
+
+# --------------------------------------------------------------------- C02
+def c02_paths_resolve(rep, parity):
+    bad = []
+    rows = parity.get("capabilities") or []
+    for r in rows:
+        for key, cnt in (("legacyPaths", "legacyFiles"), ("modernPaths", "modernFiles")):
+            paths = r.get(key) or []
+            # a row that reports a non-zero corpus must say WHERE that corpus is; otherwise
+            # the measurement has no source reference and cannot be reproduced at all
+            if (r.get(cnt) or 0) > 0 and not paths:
+                bad.append({"row": r.get("id"), "field": key,
+                            "declaredCount": r.get(cnt), "pathCount": 0,
+                            "reason": f"declares {r.get(cnt)} files but names no source path"})
+            for p in paths:
+                full = os.path.join(ROOT, p)
+                if not (os.path.isdir(full) or os.path.isfile(full)):
+                    bad.append({"row": r.get("id"), "field": key, "path": p,
+                                "reason": "path does not exist"})
+    rep.add("C02 paths-resolve", not bad,
+            f"{len(rows)} rows checked; every declared source path must exist", bad)
+
+
+# --------------------------------------------------------------------- C03
+def c03_corpus_scope(rep, parity):
+    """A bare-directory corpus measures a whole module. That is legitimate only if the row
+    says so; otherwise the row's subfeature distribution describes the module, not the
+    capability, and cannot be read as the capability's inventory."""
+    bad, bare = [], 0
+    for r in parity.get("capabilities") or []:
+        paths = r.get("legacyPaths") or []
+        if not paths:
+            continue
+        if all(not p.endswith((".js", ".jsx", ".ts", ".tsx")) for p in paths):
+            bare += 1
+            if not r.get("corpusScope"):
+                bad.append({"row": r.get("id"), "paths": paths,
+                            "reason": "all paths are bare directories; no corpusScope declaration"})
+    rep.add("C03 corpus-scope", not bad,
+            f"{bare} rows measure a bare directory; each must declare corpusScope", bad)
+
+
+# --------------------------------------------------------------------- C04
+def c04_duplicate_corpus(rep, parity):
+    """Two capabilities must not be measured over the same corpus unless that is recorded."""
+    groups = {}
+    for r in parity.get("capabilities") or []:
+        key = (tuple(r.get("legacyPaths") or []), r.get("legacyFiles"), r.get("legacyLines"))
+        if key == ((), None, None):
+            continue
+        groups.setdefault(key, []).append(r)
+    bad = []
+    for key, rows in groups.items():
+        if len(rows) < 2:
+            continue
+        justified = all(r.get("sharedCorpusJustification") for r in rows)
+        if not justified:
+            bad.append({
+                "rows": [r.get("id") for r in rows],
+                "paths": list(key[0]),
+                "legacyFiles": key[1],
+                "legacyLines": key[2],
+                "reason": f"{len(rows)} rows share one corpus without sharedCorpusJustification",
+            })
+    rep.add("C04 duplicate-corpus", not bad,
+            f"{len(groups)} distinct corpora across the register; shared corpora must be declared", bad)
+
+
+# --------------------------------------------------------------------- C05
+MIN_MASS = 2  # see note in c05: distributions this small can coincide by chance
+
+
+def c05_duplicate_distribution(rep, subs):
+    """Identical non-trivial subfeature vectors across different capabilities are a symptom
+    of shared corpora or a copied template, never of two independent measurements."""
+    rows = subs.get("capabilities") or subs.get("rows") or []
+    if isinstance(rows, int) or not rows:
+        rep.add("C05 duplicate-dist", False, "subfeature artifact has no row array to check", [])
+        return
+    seen, bad = {}, []
+    for r in rows:
+        classes = r.get("subfeatures") or r.get("classes") or {}
+        if isinstance(classes, list):
+            vec = tuple(sorted((c.get("class") or c.get("key"), c.get("legacy"))
+                               for c in classes if isinstance(c, dict)))
+        elif isinstance(classes, dict):
+            vec = tuple(sorted((k, (v.get("legacy") if isinstance(v, dict) else v))
+                               for k, v in classes.items()))
+        else:
+            continue
+        if not vec or all((v or 0) == 0 for _, v in vec):
+            continue
+        # A distribution whose total mass is <=2 can coincide by chance; identical single
+        # counts are not evidence of a shared corpus. MIN_MASS is declared, not tuned to a result.
+        if sum((v or 0) for _, v in vec) <= MIN_MASS:
+            continue
+        seen.setdefault(vec, []).append(r.get("id"))
+    for vec, ids in seen.items():
+        if len(ids) > 1:
+            bad.append({"rows": ids, "distribution": {k: v for k, v in vec if v},
+                        "reason": "identical non-trivial distribution across different rows"})
+    rep.add("C05 duplicate-dist", not bad,
+            f"{len(rows)} rows; identical non-trivial distributions must not repeat", bad)
+
+
+# --------------------------------------------------------------------- C06
+def c06_full_evidence(rep, ep_art, parity):
+    """The vacuity M8A found: an endpoint audit grades a row with no endpoints SUPPORTED.
+    A FULL row needs positive evidence, or an explicit clientOnly rationale."""
+    cl = {r.get("id"): r for r in (parity.get("capabilities") or [])}
+    bad = []
+    rows = ep_art.get("rows") or []
+    for r in rows:
+        rid = r.get("id")
+        eps = r.get("endpoints") or []
+        counts = r.get("counts") or {}
+        ok = counts.get("ok", 0)
+        if not eps and ok == 0:
+            if not (cl.get(rid) or {}).get("clientOnly"):
+                bad.append({"row": rid, "grade": r.get("grade"),
+                            "reason": "FULL row graded without any endpoint and without clientOnly rationale"})
+        elif eps and ok == 0:
+            bad.append({"row": rid, "grade": r.get("grade"),
+                        "reason": "FULL row has declared endpoints but none resolved as ok"})
+    rep.add("C06 full-evidence", not bad,
+            f"{len(rows)} FULL rows checked for positive evidence", bad)
+
+
+# --------------------------------------------------------------------- C07
+def c07_exact_totals(rep, parity):
+    """Recompute from rows; published totals must EQUAL the recomputation."""
+    rows = parity.get("capabilities") or []
+    bad = []
+    published_total = parity.get("total")
+    if published_total != len(rows):
+        bad.append({"metric": "total", "published": published_total, "recomputed": len(rows)})
+    hist = {}
+    for r in rows:
+        hist[r.get("classification")] = hist.get(r.get("classification"), 0) + 1
+    pub_hist = parity.get("counts") or {}
+    for k, v in hist.items():
+        if pub_hist.get(k) != v:
+            bad.append({"metric": f"counts.{k}", "published": pub_hist.get(k), "recomputed": v})
+    for k, v in pub_hist.items():
+        if k not in hist and v:
+            bad.append({"metric": f"counts.{k}", "published": v, "recomputed": 0})
+    # domain totals
+    dom = {}
+    for r in rows:
+        dom[r.get("domain")] = dom.get(r.get("domain"), 0) + 1
+    pub_dom = parity.get("byDomain") or {}
+    def _dtot(v):
+        return v.get("total") if isinstance(v, dict) else v
+    for k, v in dom.items():
+        if _dtot(pub_dom.get(k)) != v:
+            bad.append({"metric": f"byDomain.{k}", "published": _dtot(pub_dom.get(k)), "recomputed": v})
+    # corpus totals: legacyFilesMeasured is a DISTINCT-file count over the legacy tree.
+    # The sum of per-row legacyFiles is a different quantity (it double-counts a file that
+    # several rows share), so it must never be compared to it. It is reported instead as the
+    # double-counting indicator it actually is.
+    per_row_sum = sum(r.get("legacyFiles") or 0 for r in rows)
+    distinct = set()
+    for r in rows:
+        for p in (r.get("legacyPaths") or []):
+            full = os.path.join(ROOT, p)
+            if os.path.isdir(full):
+                for dirpath, _dn, fn in os.walk(full):
+                    distinct.update(os.path.join(dirpath, f) for f in fn
+                                    if f.endswith((".js", ".jsx", ".ts", ".tsx")))
+            elif os.path.isfile(full):
+                distinct.add(full)
+    info = {"legacyFilesPerRowSum": per_row_sum,
+            "legacyFilesDistinctViaPaths": len(distinct),
+            "publishedMeasured": parity.get("legacyFilesMeasured"),
+            "doubleCountingFactor": round(per_row_sum / len(distinct), 2) if distinct else None}
+    rep.add("C07 exact-totals", not bad,
+            f"recomputed {len(rows)} rows, {len(hist)} classifications, {len(dom)} domains; "
+            f"corpus double-count factor {info['doubleCountingFactor']}x "
+            f"(per-row sum {per_row_sum} vs {len(distinct)} distinct files)", bad)
+
+
+# --------------------------------------------------------------------- C08
+def c08_dispositions(rep, claims):
+    if not claims:
+        rep.add("C08 dispositions", False, "no claim register found", [])
+        return
+    cl = claims.get("claims") or []
+    bad = []
+    ids = [c.get("id") for c in cl]
+    if len(ids) != len(set(ids)):
+        dupes = {i for i in ids if ids.count(i) > 1}
+        bad.append({"reason": f"duplicate claim ids: {sorted(dupes)}"})
+    hist = {}
+    for c in cl:
+        d = c.get("disposition")
+        if not isinstance(d, int) or not (1 <= d <= 7):
+            bad.append({"claim": c.get("id"), "reason": f"primary disposition not an int 1..7: {d!r}"})
+            continue
+        if isinstance(c.get("secondaryTags"), str):
+            bad.append({"claim": c.get("id"), "reason": "secondaryTags must be a list, not a string"})
+        hist[d] = hist.get(d, 0) + 1
+    declared = claims.get("dispositionHistogram") or {}
+    for k in range(1, 8):
+        if declared.get(str(k), 0) != hist.get(k, 0):
+            bad.append({"reason": f"histogram[{k}] declared {declared.get(str(k), 0)}, recomputed {hist.get(k, 0)}"})
+    if sum(hist.values()) != len(cl):
+        bad.append({"reason": f"sum of primary dispositions {sum(hist.values())} != claim count {len(cl)}"})
+    if claims.get("claimCount") not in (None, len(cl)):
+        bad.append({"reason": f"claimCount {claims.get('claimCount')} != {len(cl)} records"})
+    rep.add("C08 dispositions", not bad,
+            f"{len(cl)} claims, each must hold exactly one primary disposition", bad)
+
+
+# --------------------------------------------------------------------- C09
+DISC_RE = re.compile(r"^## \[(DISC-\d{3})\]", re.M)
+
+
+def _read(dd, name):
+    p = os.path.join(dd, name)
+    if not os.path.exists(p):
+        return None
+    return open(p, encoding="utf-8").read()
+
+
+def c09_finding_ids(rep, data_dir):
+    """Finding IDs must be unique and every referenced ID must exist.
+    Findings live in DISCREPANCY-LOG.md (DISC-nnn); there is no findings.json artifact."""
+    disc = _read(data_dir, "DISCREPANCY-LOG.md")
+    if disc is None:
+        rep.add("C09 finding-ids", False, "DISCREPANCY-LOG.md not found", [])
+        return
+    ids = DISC_RE.findall(disc)
+    bad = []
+    dupes = sorted({i for i in ids if ids.count(i) > 1})
+    if dupes:
+        bad.append({"reason": f"duplicate finding ids in register: {dupes}"})
+    m = re.search(r"Total confirmed findings in this log: \*\*(\d+)\*\*(?:\s*\((\d+)\s*IDs?)", disc)
+    if not m:
+        bad.append({"reason": "declared total line missing or does not state both the finding "
+                              "count and the ID count, so the two cannot be reconciled"})
+    else:
+        declared_findings, declared_ids = int(m.group(1)), int(m.group(2))
+        if declared_ids != len(ids):
+            bad.append({"metric": "declaredIds", "published": declared_ids, "recomputed": len(ids)})
+        if declared_findings > declared_ids:
+            bad.append({"reason": f"declared {declared_findings} findings but only {declared_ids} ids"})
+    claims = load(data_dir, "M8A-omission-challenge.json") or {}
+    known = set(ids)
+    for c in claims.get("claims") or []:
+        for ref in c.get("existingFindingIds") or []:
+            # claim registers reference FP- subfeature rows, not DISC ids; only check DISC refs
+            if isinstance(ref, str) and ref.startswith("DISC-") and ref not in known:
+                bad.append({"claim": c.get("id"), "reason": f"references unknown finding id {ref}"})
+    rep.add("C09 finding-ids", not bad,
+            f"{len(ids)} DISC findings, {len(set(ids))} unique, declared total reconciled", bad)
+
+
+# --------------------------------------------------------------------- C10
+ALLOWED_STATUS = ("STATICALLY VERIFIED", "RUNTIME VERIFIED", "BLOCKED", "UNVERIFIED", "NOT VERIFIED")
+
+
+def c10_verification_evidence(rep, data_dir):
+    """Findings in DISCREPANCY-LOG.md carry a Verification status, not a closure status.
+    Two things are checkable and both matter:
+      (a) the status must come from a recognised vocabulary, so no entry is silently statusless;
+      (b) any claim of RUNTIME verification must cite an evidence id that resolves in
+          EVIDENCE-INDEX.md, otherwise the strongest status in the register is unsupported.
+    The ABSENCE of a closure/disposition field is reported as a structural limitation, because it
+    means 'is this finding still open?' cannot be answered from the register at all."""
+    disc = _read(data_dir, "DISCREPANCY-LOG.md")
+    ev = _read(data_dir, "EVIDENCE-INDEX.md")
+    if disc is None or ev is None:
+        rep.add("C10 verification-evidence", False,
+                "DISCREPANCY-LOG.md or EVIDENCE-INDEX.md not found", [])
+        return
+    ev_ids = set(re.findall(r"\*\*(E-\d{3})\*\*", ev))
+    parts = re.split(r"^## \[(DISC-\d{3})\]", disc, flags=re.M)
+    bad, checked, runtime_checked, no_status = [], 0, 0, []
+    for i in range(1, len(parts), 2):
+        fid, body = parts[i], parts[i + 1]
+        checked += 1
+        m = re.search(r"\*\*Verification status:\*\*\s*(.+?)(?:\n\n|$)", body, re.S)
+        if not m:
+            no_status.append(fid)
+            continue
+        status = m.group(1).strip().strip("*").upper()
+        if not any(k in status for k in ALLOWED_STATUS):
+            bad.append({"finding": fid, "reason": f"unrecognised verification status: {status[:60]}"})
+        # an EXPLICIT closure marker is a claim that the finding is settled; it must cite
+        # evidence that resolves. (A "Closure condition" field states WHEN it would close and
+        # is deliberately not treated as a closure claim.)
+        cm = re.search(r"\*\*(?:Resolution|Closure) status:\*\*\s*(.+?)(?:\n\n|$)", body, re.S)
+        if cm and re.search(r"\bresolved|\bclosed|\bfixed\b", cm.group(1), re.I):
+            refs = set(re.findall(r"E-\d{3}", body))
+            paths = re.findall(r"Evidence/[A-Za-z0-9/_.\-]+\.(?:json|log|png|tsv|md)", body)
+            path_ok = [q for q in paths if os.path.exists(os.path.join(data_dir, q))]
+            if not (refs & ev_ids) and not path_ok:
+                bad.append({"finding": fid,
+                            "reason": "marked resolved/closed but cites no resolving evidence"})
+        if "RUNTIME VERIFIED" in status:
+            runtime_checked += 1
+            refs = set(re.findall(r"E-\d{3}", body))
+            paths = re.findall(r"Evidence/[A-Za-z0-9/_.\-]+\.(?:json|log|png|tsv|md)", body)
+            path_ok = [q for q in paths if os.path.exists(os.path.join(data_dir, q))]
+            if not refs and not paths:
+                bad.append({"finding": fid,
+                            "reason": "claims RUNTIME VERIFIED but cites no evidence id and no evidence path"})
+            elif refs and not (refs & ev_ids) and not path_ok:
+                bad.append({"finding": fid,
+                            "reason": f"cites {sorted(refs)[:3]} but none exist in EVIDENCE-INDEX "
+                                      f"and no cited path resolves"})
+            elif paths and not path_ok and not (refs & ev_ids):
+                bad.append({"finding": fid,
+                            "reason": f"cites {len(paths)} evidence path(s) but none resolve on disk"})
+    if no_status:
+        bad.append({"reason": f"schema non-uniformity: {len(no_status)} of {checked} findings carry no "
+                              f"Verification status field (evidence class unrecorded): {no_status[:8]}"})
+    rep.add("C10 verification-evidence", not bad,
+            f"{checked} findings: status vocabulary enforced; {runtime_checked} RUNTIME claims checked "
+            f"against the evidence index; NOTE no closure/disposition field exists in the register",
+            bad)
+
+
+
+# --------------------------------------------------------------------- C11
+def c11_unique_rows(rep, parity):
+    """A capability register must not contain the same row id twice: a duplicate id silently
+    inflates every total derived from it and makes 'one row per capability' unprovable."""
+    rows = parity.get("capabilities") or []
+    ids = [r.get("id") for r in rows]
+    dupes = sorted({i for i in ids if i and ids.count(i) > 1})
+    bad = [{"reason": f"row id appears {ids.count(d)} times: {d}"} for d in dupes]
+    for r in rows:
+        if not r.get("id"):
+            bad.append({"reason": "row with no id", "capability": r.get("capability")})
+    rep.add("C11 unique-rows", not bad, f"{len(ids)} rows, {len(set(ids))} unique ids", bad)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", default=os.path.join(ROOT, "developer-review"))
+    ap.add_argument("--at-rev", default=None)
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    dd = os.path.abspath(a.data_dir)
+    if not os.path.isdir(dd):
+        print(f"FATAL: data dir not found: {dd}")
+        return 2
+    at_rev = a.at_rev or sh("git", "rev-parse", "HEAD")
+
+    parity = load(dd, "Evidence/artifacts/feature-parity.json") or load(dd, "feature-parity.json") or {}
+    ep = load(dd, "Evidence/artifacts/parity-endpoint-audit.json") or load(dd, "parity-endpoint-audit.json") or {}
+    subs = load(dd, "Evidence/artifacts/capability-subfeatures.json") or load(dd, "capability-subfeatures.json") or {}
+    claims = load(dd, "M8A-omission-challenge.json") or load(dd, "omission-challenge.json")
+
+    rep = Report()
+    if not parity:
+        rep.add("C00 inputs", False, "feature-parity.json not found", [])
+    else:
+        c01_provenance(rep, dd, at_rev)
+        c02_paths_resolve(rep, parity)
+        c03_corpus_scope(rep, parity)
+        c04_duplicate_corpus(rep, parity)
+        c05_duplicate_distribution(rep, subs)
+        if ep:
+            c06_full_evidence(rep, ep, parity)
+        else:
+            rep.add("C06 full-evidence", False, "parity-endpoint-audit.json not found", [])
+        c07_exact_totals(rep, parity)
+        c08_dispositions(rep, claims)
+        c09_finding_ids(rep, dd)
+        c10_verification_evidence(rep, dd)
+        c11_unique_rows(rep, parity)
+
+    if a.json:
+        print(json.dumps({"atRev": at_rev, "dataDir": dd,
+                          "results": rep.results,
+                          "passed": len(rep.results) - len(rep.failed),
+                          "failed": len(rep.failed)}, indent=2))
+    else:
+        for r in rep.results:
+            print(f"{'PASS' if r['ok'] else 'FAIL'}  {r['check']:<20} {r['detail']}")
+            for x in r["rejections"][:6]:
+                print(f"        - {json.dumps(x)[:220]}")
+            if len(r["rejections"]) > 6:
+                print(f"        - ... {len(r['rejections']) - 6} more")
+        print(f"\n--- Summary ---\nPASS: {len(rep.results) - len(rep.failed)}  FAIL: {len(rep.failed)}")
+    return 0 if not rep.failed else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

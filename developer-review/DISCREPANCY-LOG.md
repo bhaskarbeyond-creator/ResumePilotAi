@@ -30,7 +30,7 @@ Candidates that remain **plausible but unproven** live in
 > workflows cannot succeed — while showing success messages (DISC-027). The V6 subfeature evidence, the 10-check
 > detector output and its adjudicated false positives are in `FEATURE-DEPTH-EVIDENCE-REGISTER.md`.
 
-Total confirmed findings in this log: **53** (55 IDs: DISC-001 … DISC-055, of which DISC-042 and DISC-046
+Total confirmed findings in this log: **54** (56 IDs: DISC-001 … DISC-056, of which DISC-042 and DISC-046
 are merged into DISC-030 and labelled as stubs). DISC-049 … DISC-055 were raised by Mandate 8 at
 `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`. DISC-027 … DISC-040 were raised by V6 at revision
 `a5835ff6`; DISC-041 and DISC-043 … DISC-048 by V7 at `8a6e03bb`; earlier entries keep their published
@@ -2240,6 +2240,45 @@ files; §1.7 of the toolchain log says so in as many words.
 | **Regression acceptance** | With MariaDB: create a team with a lead → `GET /teams` returns that lead; `PATCH` renames and re-leads it; `archive` then `restore` round-trips the status; the completeness suite passes when pointed at the MySQL registry, and fails if `updateTeam` is removed |
 | **Closure** | Not met |
 
+
+## [DISC-056] The in-memory test double ignores repository query options, so acceptance runs cannot validate visibility
+
+**Severity:** P2 — High (it can produce both a false product defect and a false pass)
+
+**Severity gate:** "Evidence-gathering infrastructure that silently changes the meaning of a test" — the
+acceptance suite's conclusions inherit it.
+
+**Verification status:** STATICALLY VERIFIED (code path) + RUNTIME VERIFIED (temp env)
+
+**Confidence:** High — both implementations read side by side and the difference observed at runtime.
+
+**Divergence class:** test-double / production divergence.
+
+**Expected:** `getCustomPageBySlug(slug, { publishedOnly: true })` returns only published pages, in every
+repository implementation, because the public CMS route depends on it for visibility.
+
+**Actual:** `backend/repositories/MySQLRepository.js:1814-1819` applies
+`const publishedClause = options.publishedOnly ? ' AND published = 1' : ''` — correct.
+`backend/repositories/InMemoryRepository.js:734` is `async getCustomPageBySlug(slug) { ... }` — it accepts no
+options and **ignores the second argument entirely**. `getCustomPages()` at `:731` likewise ignores `publishedOnly`.
+
+**Observed:** publishing a page through `PUT /api/admin/pages/m8b-probe-page` returned 200; `GET
+/api/public/custom-pages/m8b-probe-page` returned 200. After `status: 'unpublished'` was written (200), the public
+route **still returned 200 with the unpublished content**.
+
+**Why it matters:** the observation is real and reproducible, but it is **not a product defect**. `MySQLRepository`
+filters correctly, so in production the page would 404. The danger runs both ways:
+- a reviewer could file a *false security defect* ("unpublished pages are public"),
+- or an acceptance suite could record a *false pass* for CMS visibility rules.
+
+**Net effect:** every CMS visibility conclusion drawn in `IN_MEMORY_REPOSITORY=1` mode is void. M8B records its own
+T4c row as `NOT APPLICABLE to the product` rather than as a finding against the application.
+
+**Closure condition:** either `InMemoryRepository` honours `publishedOnly` for `getCustomPages` and
+`getCustomPageBySlug`, or the harness refuses to assert CMS visibility when the in-memory repository is active.
+Until then, no CMS-visibility runtime claim may be made from an in-memory run.
+
+**First raised:** Mandate 8B, revision `69a3ed4`.
 
 ## [DISC-055] Four route blocks are declared twice in `backend/routes/platform.js`, the second copy can never run, and the two copies of the payment-settings read disagree on authorization
 

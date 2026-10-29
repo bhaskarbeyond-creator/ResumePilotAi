@@ -1,0 +1,71 @@
+# M8B runtime probe log
+source_revision: 69a3ed4c28d2fa7984eac7ee48cb75862d2cc029
+recorded_utc: 2026-10-29T10:57:50Z
+env: PORT=5099 IN_MEMORY_REPOSITORY=1 NODE_ENV=development identity secret: set to a locally generated 48-hex value for this disposable run and deliberately not recorded here
+identity: local HMAC test tokens (rptest.*) via backend/security/auth.js — NOT Firebase
+caveat: IN-MEMORY REPOSITORY — NOT MariaDB, NOT production. Route wiring, authz and validation only.
+caveat: no browser, no provider credentials, no production data. Synthetic identities and records only.
+
+## server root causes observed in stderr
+[Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306
+[UsersData MFA disable error]: app/invalid-credential (no Google credentials)
+
+## probes (run 1 and run 2 were identical except one status transition)
+## T2 contact form — backend validation and admission
+503  ANONYMOUS    POST   /api/contact  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+503  ANONYMOUS    POST   /api/contact  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+503  ANONYMOUS    POST   /api/contact  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+503  ANONYMOUS    POST   /api/contact  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+
+## T3 queue telemetry failure condition (the state that reveals FS-M8A-05)
+503  SUPER_ADMIN  GET    /api/{id}/queues  {"error":{"code":"QUEUE_QUERY_UNAVAILABLE","message":"Queue telemetry is unavailable.","requestId":"6c27df72-8
+404  SUPER_ADMIN  GET    /api/admin/queues  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"66fc82e8-99ac-498e-b039-6b3df7a32358
+410  SUPER_ADMIN  POST   /api/{id}/queues/purge  {"error":{"code":"DEAD_LETTER_PURGE_RETIRED","message":"Dead letters are retained for investigation and may no
+
+## T4 CMS published / unknown slug / admin publish
+200  ANONYMOUS    GET    /api/public/{id}  {"success":true,"pages":[{"id":"m8b-probe-page","createdAt":"2026-10-29T10:53:35.427Z","slug":"m8b-probe-page"
+404  ANONYMOUS    GET    /api/public/{id}/{id}  {"success":false,"code":"CUSTOM_PAGE_NOT_FOUND","error":"Page not found."}
+400  SUPER_ADMIN  PUT    /api/admin/pages/{id}  {"success":false,"code":"CUSTOM_PAGE_SAVE_FAILED","error":"Page content is required and must be smaller than 5
+200  ANONYMOUS    GET    /api/public/{id}/{id}  {"success":true,"page":{"id":"m8b-probe-page","createdAt":"2026-10-29T10:53:35.427Z","slug":"m8b-probe-page","
+200  SUPER_ADMIN  GET    /api/admin/pages  {"success":true,"pages":[{"id":"m8b-probe-page","createdAt":"2026-10-29T10:53:35.427Z","slug":"m8b-probe-page"
+
+## T5 blog reader routes
+404  SUPER_ADMIN  GET    /api/blog/posts  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"74e573fc-b891-45cf-a187-06474c20b6c5
+401  ANONYMOUS    GET    /api/blog/posts  {"error":{"code":"AUTH_REQUIRED","message":"Authentication required","requestId":"e9cd0120-5bc0-4160-a9d4-d905
+200  ANONYMOUS    GET    /api/{id}  {"success":true,"posts":[]}
+404  ANONYMOUS    GET    /api/{id}/slug/{id}  {"success":false,"error":"Post not found"}
+
+## T6 profile persistence (write then read)
+400  USER(probe-user) POST   /api/{id}/profile  {"success":false,"code":"PROFILE_REVISION_REQUIRED","error":"A non-negative expectedRevision is required."}
+404  USER(probe-user) GET    /api/{id}/profile  {"success":false,"code":"PROFILE_NOT_FOUND","error":"Profile not found"}
+
+## T7 billing / subscription console backend
+200  USER(probe-user) GET    /api/{id}  {"success":true,"orders":[],"source":"MARIADB_PAYMENT_ORDERS","count":0}
+503  USER(probe-user) GET    /api/{id}  {"success":false,"code":"ECONNREFUSED","error":"Invoice history is unavailable.","requestId":"c8055cc8-65bd-49
+404  USER(probe-user) POST   /api/coupons/{id}  {"success":false,"valid":false,"error":"Coupon code \"M8B-NOT-A-REAL-CODE\" does not exist."}
+
+## T8 TOTP / session controls
+503  USER(probe-user) POST   /api/{id}/mfa/disable  {"success":false,"code":"IDENTITY_DIRECTORY_UNAVAILABLE","error":"The identity service is unavailable, so two-
+404  USER(probe-user) POST   /api/{id}/mfa/enroll  {"error":{"code":"NOT_FOUND","message":"API route not found","requestId":"d423dd2f-9f7b-47ca-8921-469b49fc0987
+
+## T9 enterprise team membership
+404  SUPER_ADMIN  GET    /api/{id}/teams  {"error":{"code":"ENTERPRISE_DISABLED","message":"Enterprise tenancy is disabled for this deployment.","config
+404  SUPER_ADMIN  GET    /api/{id}/teams/{id}/members  {"error":{"code":"ENTERPRISE_DISABLED","message":"Enterprise tenancy is disabled for this deployment.","config
+
+## T10 employer messaging persistence (two identities)
+503  USER(probe-user) POST   /api/{id}/{id}  {"error":{"code":"RATE_LIMIT_UNAVAILABLE","message":"Request admission is temporarily unavailable","requestId"
+-    conversation id not returned; T10b..e skipped
+403  USER(probe-user) GET    /api/{id}/{id}  {"success":false,"code":"MODULE_DISABLED","error":"Messaging module is disabled by administrator.","requestId"
+
+## T11 admin financial operations
+503  SUPER_ADMIN  GET    /api/admin/{id}  {"success":false,"code":"ECONNREFUSED","error":"Payment ledger is unavailable.","requestId":"11d82b4b-5b65-454
+400  SUPER_ADMIN  POST   /api/admin/{id}/refund  {"success":false,"code":"INVALID_PAYMENT_ORDER","error":"Valid payment order is required."}
+403  USER(probe-user) POST   /api/admin/{id}/refund  {"error":{"code":"FORBIDDEN","message":"Insufficient permission","requestId":"8a8d5644-ac11-4341-982a-e2fdbe59
+503  SUPER_ADMIN  POST   /api/invoice/{id}  {"success":false,"code":"ECONNREFUSED","error":"Unable to generate the invoice.","requestId":"436b9ab9-2e4f-42
+
+## T14 checkout rejection path (server side only)
+400  USER(probe-user) POST   /api/pay  {"error":{"code":"INVALID_PLAN","message":"Unable to create payment","requestId":"a32cd814-69b4-45b8-9e85-9cfd
+400  USER(probe-user) POST   /api/{id}/{id}  {"error":{"code":"CLIENT_PAYMENT_IDENTITY_REJECTED","message":"Payment ownership and amounts are server-contro
+503  USER(probe-user) POST   /api/paypal/{id}  {"error":{"code":"PAYMENT_CONFIGURATION_UNAVAILABLE","message":"Unable to create PayPal order","requestId":"3e
+
+## summary {"probes":35,"byStatusClass":{"5xx":11,"4xx":18,"2xx":5,"skipped":1}}

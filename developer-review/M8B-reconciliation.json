@@ -1,0 +1,439 @@
+{
+  "artifact": "M8B-reconciliation.json",
+  "mandate": "8B",
+  "sourceRevision": "69a3ed4c28d2fa7984eac7ee48cb75862d2cc029",
+  "sourceRevisionShort": "69a3ed4",
+  "generatedUtc": "2026-10-29T10:56:02Z",
+  "gates": {},
+  "counts": {
+    "capabilities": 112,
+    "parityHistogram": {
+      "FULL PARITY": 13,
+      "PARTIAL PARITY": 51,
+      "MISSING": 28,
+      "MOCK / FABRICATED STATE": 12,
+      "REPLACED BY EQUIVALENT": 5,
+      "UNVERIFIED": 3
+    },
+    "operations": 393,
+    "subfeatureRows": 112,
+    "byAuditStatus": {
+      "SIGNAL_CLEAN": 21,
+      "EQUIVALENCE_LEAD": 33,
+      "DEEP_READ_M6": 8,
+      "ADJUDICATED": 50
+    },
+    "findings": {
+      "confirmed": 53,
+      "ids": 55
+    },
+    "claims": 16,
+    "claimDispositions": {
+      "1": 3,
+      "2": 7,
+      "3": 4,
+      "4": 1,
+      "5": 0,
+      "6": 0,
+      "7": 1
+    },
+    "legacyFilesMeasured": {
+      "published": 650,
+      "recomputedViaRowPaths": 651,
+      "delta": 1,
+      "status": "UNRESOLVED"
+    },
+    "coverageTotal": {
+      "published": 1544,
+      "independentlyReDerived": false,
+      "status": "UNVERIFIED"
+    }
+  },
+  "corpusIntegrity": {
+    "rowsWithBareDirectoryPaths": 53,
+    "sharedCorpusGroups": 8,
+    "rowsInSharedGroups": 18,
+    "doubleCountingFactor": 1.86,
+    "perRowFileSum": 1212,
+    "distinctFiles": 651
+  },
+  "a14a15": {
+    "cause": "directory-scoped corpus attribution (proven by exact reproduction of the published table from the shared directory)",
+    "publishedTable": {
+      "table": 14,
+      "search": 10,
+      "filter": 28,
+      "pagination": 100,
+      "modal": 18,
+      "csv": 1,
+      "json": 10,
+      "document": 5,
+      "authz": 87
+    },
+    "wholeDirectoryReproducesPublished": true,
+    "legacyFiles": 35,
+    "legacyLines": {
+      "published": 14191,
+      "splitlines": 14158,
+      "cause": "split('\\n') trailing-newline inflation"
+    },
+    "scoped": {
+      "FP-A14": {
+        "panel": "coupons",
+        "span": [
+          2390,
+          2677
+        ],
+        "classes": {
+          "table": 2,
+          "search": 0,
+          "filter": 0,
+          "sort": 0,
+          "pagination": 8,
+          "modal": 2,
+          "csv": 0,
+          "json": 0,
+          "document": 0,
+          "print": 0,
+          "upload": 0,
+          "drag": 0,
+          "chart": 0,
+          "bulk": 0,
+          "undo": 0,
+          "authz": 0
+        }
+      },
+      "FP-A15": {
+        "panel": "invoices",
+        "span": [
+          1356,
+          1669
+        ],
+        "classes": {
+          "table": 2,
+          "search": 0,
+          "filter": 8,
+          "sort": 0,
+          "pagination": 6,
+          "modal": 0,
+          "csv": 0,
+          "json": 0,
+          "document": 0,
+          "print": 0,
+          "upload": 0,
+          "drag": 0,
+          "chart": 0,
+          "bulk": 0,
+          "undo": 0,
+          "authz": 0
+        }
+      }
+    },
+    "classificationUnchanged": "MISSING for both (modern 0 files)"
+  },
+  "verifier": {
+    "tool": "developer-review/tools/m8b-integrity-verify.py",
+    "checks": 11,
+    "passed": 6,
+    "failed": 5,
+    "failing": [
+      "C03 corpus-scope",
+      "C04 duplicate-corpus",
+      "C05 duplicate-dist",
+      "C06 full-evidence",
+      "C10 verification-evidence"
+    ],
+    "publishedSetBefore": {
+      "verify_audit_package": "61/61 PASS",
+      "verify_v4_reconciliation": "20/20 PASS",
+      "verify_parity": "exit 0"
+    },
+    "fixtures": {
+      "total": 8,
+      "rejectedCorrectly": 8,
+      "baselineReproducesRealDefects": true
+    }
+  },
+  "runtime": {
+    "environment": "IN_MEMORY_REPOSITORY=1, NODE_ENV=development, local HMAC test identity, port 5099",
+    "caveats": [
+      "in-memory repository: write-then-read proves route wiring and in-process persistence only",
+      "no browser: nothing here is browser end-to-end evidence",
+      "no payment provider contacted: no settlement behaviour proven"
+    ],
+    "probeCount": 35,
+    "statusClasses": {
+      "5xx": 11,
+      "4xx": 18,
+      "2xx": 5,
+      "skipped": 1
+    },
+    "rows": 23,
+    "totals": {
+      "BLOCKED": 12,
+      "PASS": 8,
+      "NOT APPLICABLE": 2,
+      "FAIL": 1
+    },
+    "rowsDetail": [
+      {
+        "test": "T2",
+        "claim": "B1",
+        "class": "integration",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T2-UI",
+        "claim": "B1",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T3",
+        "claim": "D2",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T3-UI",
+        "claim": "D2",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T4",
+        "claim": "B2",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T4b",
+        "claim": "B2",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T4c",
+        "claim": "B2",
+        "class": "integration",
+        "result": "NOT APPLICABLE"
+      },
+      {
+        "test": "T4-UI",
+        "claim": "B2",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T5",
+        "claim": "B3",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T5-UI",
+        "claim": "B3",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T6",
+        "claim": "A1/A2",
+        "class": "integration",
+        "result": "FAIL"
+      },
+      {
+        "test": "T7",
+        "claim": "A3",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T7-UI",
+        "claim": "A3",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T8",
+        "claim": "A4",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T8b",
+        "claim": "A4",
+        "class": "integration",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T9",
+        "claim": "C1",
+        "class": "integration",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T10",
+        "claim": "C3",
+        "class": "integration",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T11",
+        "claim": "D1",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T14",
+        "claim": "A3",
+        "class": "integration",
+        "result": "PASS"
+      },
+      {
+        "test": "T15",
+        "claim": "D5",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T16",
+        "claim": "D3/D4",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "T17",
+        "claim": "B4",
+        "class": "browser e2e",
+        "result": "BLOCKED"
+      },
+      {
+        "test": "C2",
+        "claim": "C2",
+        "class": "n/a",
+        "result": "NOT APPLICABLE"
+      }
+    ]
+  },
+  "claimDispositions": {
+    "A1": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": "FP-A27",
+      "idCollisionCorrection": null
+    },
+    "A2": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": "FP-A28",
+      "idCollisionCorrection": null
+    },
+    "A3": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": "FP-A29",
+      "idCollisionCorrection": null
+    },
+    "A4": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "B1": {
+      "bucket": 3,
+      "label": "false-success / mock-data / disconnected-API / misleading-UI",
+      "proposedNewId": "FP-G26",
+      "idCollisionCorrection": "M8A proposed FP-G22, which already exists for a different capability in CAPABILITY-SUBFEATURE-REGISTER.md. Corrected to FP-G26 by M8B (see M8B-FORENSIC-CLOSURE-REPORT.md section 5)."
+    },
+    "B2": {
+      "bucket": 3,
+      "label": "false-success / mock-data / disconnected-API / misleading-UI",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "B3": {
+      "bucket": 3,
+      "label": "false-success / mock-data / disconnected-API / misleading-UI",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "B4": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "C1": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "C2": {
+      "bucket": 7,
+      "label": "incorrect/unsupported by source",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "C3": {
+      "bucket": 2,
+      "label": "partially implemented with material functional loss",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "D1": {
+      "bucket": 4,
+      "label": "already recorded but inadequately explained or classified",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "D2": {
+      "bucket": 3,
+      "label": "false-success / mock-data / disconnected-API / misleading-UI",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "D3": {
+      "bucket": 1,
+      "label": "verified legacy capability omitted",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    },
+    "D4": {
+      "bucket": 1,
+      "label": "verified legacy capability omitted",
+      "proposedNewId": "FP-G27",
+      "idCollisionCorrection": "M8A proposed FP-G23, which already exists for a different capability in CAPABILITY-SUBFEATURE-REGISTER.md. Corrected to FP-G27 by M8B (see M8B-FORENSIC-CLOSURE-REPORT.md section 5)."
+    },
+    "D5": {
+      "bucket": 1,
+      "label": "verified legacy capability omitted",
+      "proposedNewId": null,
+      "idCollisionCorrection": null
+    }
+  },
+  "openFindings": {
+    "FP-B05": "verified defect (narrow)",
+    "FP-C02": "verified defect",
+    "FP-D07": "verified, keep open",
+    "FP-D12": "verified defect",
+    "FP-D13": "verified defect",
+    "FP-F07": "verified defect",
+    "FP-G11": "verified defect + measurement defect",
+    "FP-G21": "verified defect",
+    "FP-G23": "keep open; id reserved (collision corrected)",
+    "FP-G24": "unsupported as a loss",
+    "FP-D02": "verified defect, adjudicated absence"
+  },
+  "newFindings": [
+    "DISC-056 test-double divergence",
+    "corpus attribution defect",
+    "SUPPORTED without evidence (3 FULL rows)",
+    "proposed-ID collisions",
+    "register schema non-uniformity",
+    "profile CAS inconsistency (unresolved)"
+  ],
+  "applicationFilesModified": 0
+}

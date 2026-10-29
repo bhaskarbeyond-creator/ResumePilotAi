@@ -1,0 +1,161 @@
+{
+  "revision": "a2ecb96d2b19",
+  "file": "src/components/admin/settings/subscriptionsSettings.jsx",
+  "fileLines": 2993,
+  "panels": {
+    "webhooks": [
+      1142,
+      1353
+    ],
+    "invoices": [
+      1356,
+      1669
+    ],
+    "gst": [
+      1672,
+      1940
+    ],
+    "gateways": [
+      1943,
+      2387
+    ],
+    "coupons": [
+      2390,
+      2677
+    ],
+    "plans": [
+      2680,
+      2837
+    ]
+  },
+  "rows": {
+    "FP-A14": {
+      "panel": "coupons",
+      "panelSpan": [
+        2390,
+        2677
+      ],
+      "panelLines": 288,
+      "fileLevelAffinityLines": 76,
+      "scopedLines": 364,
+      "scopedShareOfFile": 12.2,
+      "scopedClasses": {
+        "table": 2,
+        "search": 0,
+        "filter": 0,
+        "sort": 0,
+        "pagination": 8,
+        "modal": 2,
+        "csv": 0,
+        "json": 0,
+        "document": 0,
+        "print": 0,
+        "upload": 0,
+        "drag": 0,
+        "chart": 0,
+        "bulk": 0,
+        "undo": 0,
+        "authz": 0
+      },
+      "wholeFileClasses": {
+        "table": 8,
+        "search": 0,
+        "filter": 8,
+        "sort": 0,
+        "pagination": 46,
+        "modal": 6,
+        "csv": 1,
+        "json": 0,
+        "document": 0,
+        "print": 0,
+        "upload": 0,
+        "drag": 0,
+        "chart": 0,
+        "bulk": 0,
+        "undo": 0,
+        "authz": 10
+      },
+      "published": {
+        "legacyPaths": [
+          "src/components/admin/settings"
+        ],
+        "legacyFiles": 35,
+        "legacyLines": 14191,
+        "modernFiles": 0,
+        "classification": "MISSING",
+        "endpoints": [
+          "/admin/coupons"
+        ]
+      },
+      "backendRoutes": [
+        "/admin/coupons"
+      ]
+    },
+    "FP-A15": {
+      "panel": "invoices",
+      "panelSpan": [
+        1356,
+        1669
+      ],
+      "panelLines": 314,
+      "fileLevelAffinityLines": 125,
+      "scopedLines": 439,
+      "scopedShareOfFile": 14.7,
+      "scopedClasses": {
+        "table": 2,
+        "search": 0,
+        "filter": 8,
+        "sort": 0,
+        "pagination": 6,
+        "modal": 0,
+        "csv": 0,
+        "json": 0,
+        "document": 0,
+        "print": 0,
+        "upload": 0,
+        "drag": 0,
+        "chart": 0,
+        "bulk": 0,
+        "undo": 0,
+        "authz": 0
+      },
+      "wholeFileClasses": {
+        "table": 8,
+        "search": 0,
+        "filter": 8,
+        "sort": 0,
+        "pagination": 46,
+        "modal": 6,
+        "csv": 1,
+        "json": 0,
+        "document": 0,
+        "print": 0,
+        "upload": 0,
+        "drag": 0,
+        "chart": 0,
+        "bulk": 0,
+        "undo": 0,
+        "authz": 10
+      },
+      "published": {
+        "legacyPaths": [
+          "src/components/admin/settings"
+        ],
+        "legacyFiles": 35,
+        "legacyLines": 14191,
+        "modernFiles": 0,
+        "classification": "MISSING",
+        "endpoints": [
+          "/admin/payments/refund",
+          "/invoices",
+          "/payment-orders"
+        ]
+      },
+      "backendRoutes": [
+        "/admin/payments/refund",
+        "/invoices",
+        "/payment-orders"
+      ]
+    }
+  }
+}

@@ -1,0 +1,368 @@
+{
+  "generatedAt": "2026-10-29T10:53:59.637Z",
+  "base": "http://127.0.0.1:5099",
+  "repository": "IN_MEMORY_REPOSITORY=1 (NOT MariaDB, NOT production)",
+  "identity": "local HMAC test tokens via backend/security/auth.js issueLocalTestToken (rptest.*, NODE_ENV=development)",
+  "caveats": [
+    "in-memory repository: write-then-read proves route wiring and in-process persistence only",
+    "no browser: nothing here is browser end-to-end evidence",
+    "no payment provider contacted: no settlement behaviour proven"
+  ],
+  "totals": {
+    "probes": 35,
+    "byStatusClass": {
+      "5xx": 11,
+      "4xx": 18,
+      "2xx": 5,
+      "skipped": 1
+    }
+  },
+  "probes": [
+    {
+      "id": "T2a",
+      "label": "valid payload",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"29ab4772-8794-4ae7-beaf-cb4fcc6d81c0\"}}",
+      "note": ""
+    },
+    {
+      "id": "T2b",
+      "label": "message too short",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"5d0e3269-569b-47aa-996b-73c47e24c105\"}}",
+      "note": ""
+    },
+    {
+      "id": "T2c",
+      "label": "malformed email",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"f867b62b-9bc0-4191-a92d-2e08769563db\"}}",
+      "note": ""
+    },
+    {
+      "id": "T2d",
+      "label": "honeypot populated",
+      "method": "POST",
+      "path": "/api/contact",
+      "identity": "ANONYMOUS",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"26e83d59-f7b5-43de-ab79-fdcb312f49b8\"}}",
+      "note": ""
+    },
+    {
+      "id": "T3a",
+      "label": "real queue route",
+      "method": "GET",
+      "path": "/api/{id}/queues",
+      "identity": "SUPER_ADMIN",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"QUEUE_QUERY_UNAVAILABLE\",\"message\":\"Queue telemetry is unavailable.\",\"requestId\":\"6c27df72-8eb5-4934-96e3-7cddad072393\"}}",
+      "note": ""
+    },
+    {
+      "id": "T3b",
+      "label": "client fallback URL",
+      "method": "GET",
+      "path": "/api/admin/queues",
+      "identity": "SUPER_ADMIN",
+      "status": 404,
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"66fc82e8-99ac-498e-b039-6b3df7a32358\"}}",
+      "note": ""
+    },
+    {
+      "id": "T3c",
+      "label": "retired purge",
+      "method": "POST",
+      "path": "/api/{id}/queues/purge",
+      "identity": "SUPER_ADMIN",
+      "status": 410,
+      "body": "{\"error\":{\"code\":\"DEAD_LETTER_PURGE_RETIRED\",\"message\":\"Dead letters are retained for investigation and may not be bulk-deleted.\"}}",
+      "note": ""
+    },
+    {
+      "id": "T4a",
+      "label": "public list",
+      "method": "GET",
+      "path": "/api/public/{id}",
+      "identity": "ANONYMOUS",
+      "status": 200,
+      "body": "{\"success\":true,\"pages\":[{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pagecontent\":\"<p>synthetic m8b</p>\",\"content\":\"<p>synthetic m8b</p>\",\"status\":\"unpubli",
+      "note": ""
+    },
+    {
+      "id": "T4b",
+      "label": "unknown slug",
+      "method": "GET",
+      "path": "/api/public/{id}/{id}",
+      "identity": "ANONYMOUS",
+      "status": 404,
+      "body": "{\"success\":false,\"code\":\"CUSTOM_PAGE_NOT_FOUND\",\"error\":\"Page not found.\"}",
+      "note": ""
+    },
+    {
+      "id": "T4c",
+      "label": "admin publish (PUT)",
+      "method": "PUT",
+      "path": "/api/admin/pages/{id}",
+      "identity": "SUPER_ADMIN",
+      "status": 400,
+      "body": "{\"success\":false,\"code\":\"CUSTOM_PAGE_SAVE_FAILED\",\"error\":\"Page content is required and must be smaller than 500 KB.\",\"requestId\":\"5c3c928a-c465-48ec-964f-cb8857cee8c1\"}",
+      "note": ""
+    },
+    {
+      "id": "T4d",
+      "label": "published slug read",
+      "method": "GET",
+      "path": "/api/public/{id}/{id}",
+      "identity": "ANONYMOUS",
+      "status": 200,
+      "body": "{\"success\":true,\"page\":{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pagecontent\":\"<p>synthetic m8b</p>\",\"content\":\"<p>synthetic m8b</p>\",\"status\":\"unpublish",
+      "note": ""
+    },
+    {
+      "id": "T4e",
+      "label": "admin list",
+      "method": "GET",
+      "path": "/api/admin/pages",
+      "identity": "SUPER_ADMIN",
+      "status": 200,
+      "body": "{\"success\":true,\"pages\":[{\"id\":\"m8b-probe-page\",\"createdAt\":\"2026-10-29T10:53:35.427Z\",\"slug\":\"m8b-probe-page\",\"title\":\"M8B probe page\",\"description\":\"\",\"pagecontent\":\"<p>synthetic m8b</p>\",\"content\":\"<p>synthetic m8b</p>\",\"status\":\"unpubli",
+      "note": ""
+    },
+    {
+      "id": "T5a",
+      "label": "route the client calls",
+      "method": "GET",
+      "path": "/api/blog/posts",
+      "identity": "SUPER_ADMIN",
+      "status": 404,
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"74e573fc-b891-45cf-a187-06474c20b6c5\"}}",
+      "note": ""
+    },
+    {
+      "id": "T5b",
+      "label": "route the client calls (anonymous)",
+      "method": "GET",
+      "path": "/api/blog/posts",
+      "identity": "ANONYMOUS",
+      "status": 401,
+      "body": "{\"error\":{\"code\":\"AUTH_REQUIRED\",\"message\":\"Authentication required\",\"requestId\":\"e9cd0120-5bc0-4160-a9d4-d905f2bacf02\"}}",
+      "note": ""
+    },
+    {
+      "id": "T5c",
+      "label": "real list",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "ANONYMOUS",
+      "status": 200,
+      "body": "{\"success\":true,\"posts\":[]}",
+      "note": ""
+    },
+    {
+      "id": "T5d",
+      "label": "real slug (missing)",
+      "method": "GET",
+      "path": "/api/{id}/slug/{id}",
+      "identity": "ANONYMOUS",
+      "status": 404,
+      "body": "{\"success\":false,\"error\":\"Post not found\"}",
+      "note": ""
+    },
+    {
+      "id": "T6a",
+      "label": "write profile",
+      "method": "POST",
+      "path": "/api/{id}/profile",
+      "identity": "USER(probe-user)",
+      "status": 400,
+      "body": "{\"success\":false,\"code\":\"PROFILE_REVISION_REQUIRED\",\"error\":\"A non-negative expectedRevision is required.\"}",
+      "note": ""
+    },
+    {
+      "id": "T6b",
+      "label": "read profile back",
+      "method": "GET",
+      "path": "/api/{id}/profile",
+      "identity": "USER(probe-user)",
+      "status": 404,
+      "body": "{\"success\":false,\"code\":\"PROFILE_NOT_FOUND\",\"error\":\"Profile not found\"}",
+      "note": ""
+    },
+    {
+      "id": "T7a",
+      "label": "transaction history",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "USER(probe-user)",
+      "status": 200,
+      "body": "{\"success\":true,\"orders\":[],\"source\":\"MARIADB_PAYMENT_ORDERS\",\"count\":0}",
+      "note": ""
+    },
+    {
+      "id": "T7b",
+      "label": "invoice list",
+      "method": "GET",
+      "path": "/api/{id}",
+      "identity": "USER(probe-user)",
+      "status": 503,
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Invoice history is unavailable.\",\"requestId\":\"c8055cc8-65bd-4935-aa4d-0de74ac3fed2\"}",
+      "note": ""
+    },
+    {
+      "id": "T7c",
+      "label": "coupon validation",
+      "method": "POST",
+      "path": "/api/coupons/{id}",
+      "identity": "USER(probe-user)",
+      "status": 404,
+      "body": "{\"success\":false,\"valid\":false,\"error\":\"Coupon code \\\"M8B-NOT-A-REAL-CODE\\\" does not exist.\"}",
+      "note": ""
+    },
+    {
+      "id": "T8a",
+      "label": "mfa disable (no factor)",
+      "method": "POST",
+      "path": "/api/{id}/mfa/disable",
+      "identity": "USER(probe-user)",
+      "status": 503,
+      "body": "{\"success\":false,\"code\":\"IDENTITY_DIRECTORY_UNAVAILABLE\",\"error\":\"The identity service is unavailable, so two-factor authentication was not confirmed as changed. Try again later.\",\"requestId\":\"2b4aaa07-1192-4445-9340-2529ca17f91a\"}",
+      "note": ""
+    },
+    {
+      "id": "T8b",
+      "label": "mfa enrol endpoint probe",
+      "method": "POST",
+      "path": "/api/{id}/mfa/enroll",
+      "identity": "USER(probe-user)",
+      "status": 404,
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"API route not found\",\"requestId\":\"d423dd2f-9f7b-47ca-8921-469b49fc0987\"}}",
+      "note": ""
+    },
+    {
+      "id": "T9a",
+      "label": "teams list",
+      "method": "GET",
+      "path": "/api/{id}/teams",
+      "identity": "SUPER_ADMIN",
+      "status": 404,
+      "body": "{\"error\":{\"code\":\"ENTERPRISE_DISABLED\",\"message\":\"Enterprise tenancy is disabled for this deployment.\",\"configurationState\":\"DISABLED\",\"requestId\":\"1314c027-7b0a-4c00-89a6-8b511777df84\"}}",
+      "note": ""
+    },
+    {
+      "id": "T9b",
+      "label": "team members",
+      "method": "GET",
+      "path": "/api/{id}/teams/{id}/members",
+      "identity": "SUPER_ADMIN",
+      "status": 404,
+      "body": "{\"error\":{\"code\":\"ENTERPRISE_DISABLED\",\"message\":\"Enterprise tenancy is disabled for this deployment.\",\"configurationState\":\"DISABLED\",\"requestId\":\"47e617fb-dee5-4bcb-9e7d-5953c87e3faa\"}}",
+      "note": ""
+    },
+    {
+      "id": "T10a",
+      "label": "create conversation",
+      "method": "POST",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"RATE_LIMIT_UNAVAILABLE\",\"message\":\"Request admission is temporarily unavailable\",\"requestId\":\"b8147047-ec1e-4878-ab5a-aa07fd3921ba\"}}",
+      "note": ""
+    },
+    {
+      "id": "T10b-e",
+      "label": "conversation id not returned; dependent probes skipped",
+      "status": -2,
+      "body": ""
+    },
+    {
+      "id": "T10f",
+      "label": "conversation list",
+      "method": "GET",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "status": 403,
+      "body": "{\"success\":false,\"code\":\"MODULE_DISABLED\",\"error\":\"Messaging module is disabled by administrator.\",\"requestId\":\"2da9b93d-1859-441a-a53e-48a3aa38489c\"}",
+      "note": ""
+    },
+    {
+      "id": "T11a",
+      "label": "admin payment orders",
+      "method": "GET",
+      "path": "/api/admin/{id}",
+      "identity": "SUPER_ADMIN",
+      "status": 503,
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Payment ledger is unavailable.\",\"requestId\":\"11d82b4b-5b65-4541-a9a5-4c3919f3dbb6\"}",
+      "note": ""
+    },
+    {
+      "id": "T11b",
+      "label": "refund without recent step-up auth",
+      "method": "POST",
+      "path": "/api/admin/{id}/refund",
+      "identity": "SUPER_ADMIN",
+      "status": 400,
+      "body": "{\"success\":false,\"code\":\"INVALID_PAYMENT_ORDER\",\"error\":\"Valid payment order is required.\"}",
+      "note": ""
+    },
+    {
+      "id": "T11c",
+      "label": "refund as non-admin",
+      "method": "POST",
+      "path": "/api/admin/{id}/refund",
+      "identity": "USER(probe-user)",
+      "status": 403,
+      "body": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permission\",\"requestId\":\"8a8d5644-ac11-4341-982a-e2fdbe5928cd\"}}",
+      "note": ""
+    },
+    {
+      "id": "T11d",
+      "label": "invoice generate",
+      "method": "POST",
+      "path": "/api/invoice/{id}",
+      "identity": "SUPER_ADMIN",
+      "status": 503,
+      "body": "{\"success\":false,\"code\":\"ECONNREFUSED\",\"error\":\"Unable to generate the invoice.\",\"requestId\":\"436b9ab9-2e4f-4200-83a4-fb8b9c710a2d\"}",
+      "note": ""
+    },
+    {
+      "id": "T14a",
+      "label": "pay with no order",
+      "method": "POST",
+      "path": "/api/pay",
+      "identity": "USER(probe-user)",
+      "status": 400,
+      "body": "{\"error\":{\"code\":\"INVALID_PLAN\",\"message\":\"Unable to create payment\",\"requestId\":\"a32cd814-69b4-45b8-9e85-9cfdc5a12533\"}}",
+      "note": ""
+    },
+    {
+      "id": "T14b",
+      "label": "razorpay create-order unconfigured",
+      "method": "POST",
+      "path": "/api/{id}/{id}",
+      "identity": "USER(probe-user)",
+      "status": 400,
+      "body": "{\"error\":{\"code\":\"CLIENT_PAYMENT_IDENTITY_REJECTED\",\"message\":\"Payment ownership and amounts are server-controlled\",\"requestId\":\"8dff1d81-65dd-41a7-a6fb-d67b7b1662d6\"}}",
+      "note": ""
+    },
+    {
+      "id": "T14c",
+      "label": "paypal create-order unconfigured",
+      "method": "POST",
+      "path": "/api/paypal/{id}",
+      "identity": "USER(probe-user)",
+      "status": 503,
+      "body": "{\"error\":{\"code\":\"PAYMENT_CONFIGURATION_UNAVAILABLE\",\"message\":\"Unable to create PayPal order\",\"requestId\":\"3ec0baac-e482-498b-ae42-191cf5467f1e\"}}",
+      "note": ""
+    }
+  ]
+}

@@ -105,6 +105,16 @@ Start here:
 | [`M8A-FALSE-SUCCESS-AND-MOCK-DATA.md`](M8A-FALSE-SUCCESS-AND-MOCK-DATA.md) | 5 fabricated surfaces, incl. a fabricated PAID invoice produced on payment failure |
 | [`M8A-RUNTIME-VERIFICATION.md`](M8A-RUNTIME-VERIFICATION.md) | what was executed (7 probes), what was blocked and why, and the 401-vs-404 correction |
 | [`M8A-METHOD-QUALITY-REVIEW.md`](M8A-METHOD-QUALITY-REVIEW.md) | dossier defects, register measurement defects, and this mandate's own four self-corrections |
+| [`M8B-FORENSIC-CLOSURE-REPORT.md`](M8B-FORENSIC-CLOSURE-REPORT.md) | gates A–L, verdict `PARTIAL — BLOCKED`, and the finding that matters most |
+| [`M8B-FP-A14-FP-A15-RECONSTRUCTION.md`](M8B-FP-A14-FP-A15-RECONSTRUCTION.md) | cause proven by experiment; both rows independently reconstructed; 8 shared corpora |
+| [`M8B-VERIFIER-INDEPENDENT-VALIDATION.md`](M8B-VERIFIER-INDEPENDENT-VALIDATION.md) | before/after verifier behaviour and 8 corrupted fixtures, each rejected for the right reason |
+| [`M8B-RUNTIME-CLOSURE-MATRIX.md`](M8B-RUNTIME-CLOSURE-MATRIX.md) | 23 runtime rows: 8 PASS, 1 FAIL, 12 BLOCKED, 2 N/A, with exact prerequisites |
+| [`M8B-REGISTER-RECONCILIATION.md`](M8B-REGISTER-RECONCILIATION.md) | published vs recomputed counts, unreliable counts, `FP-G22`/`FP-G23` ID-collision correction |
+| [`M8B-OPEN-FINDINGS-AND-BLOCKERS.md`](M8B-OPEN-FINDINGS-AND-BLOCKERS.md) | 10 open IDs dispositioned, blocker prerequisites, remediation queue |
+| [`M8B-METHOD-LIMITATIONS.md`](M8B-METHOD-LIMITATIONS.md) | remaining blind spots and seven self-corrections made inside this mandate |
+| [`M8B-reconciliation.json`](M8B-reconciliation.json) | machine-readable reconciliation dataset |
+| [`tools/m8b-integrity-verify.py`](tools/m8b-integrity-verify.py) | 11 substantive checks, no pinned counts, equality not floors |
+| [`tools/m8b-fixture-harness.py`](tools/m8b-fixture-harness.py) | baseline + 8 corrupted fixtures proving the verifier rejects invalid evidence |
 | [`DISCREPANCY-LOG.md`](DISCREPANCY-LOG.md) | **DISC-049 … DISC-055** added (53 distinct findings / 55 IDs): DISC-049 corrects an M7 provenance claim, DISC-054 a broken enterprise team chain, DISC-055 duplicated route blocks with divergent guards |
 
 **Current reported M8 results** (all measured at `a2ecb96`, none carried forward): **393** route call sites /

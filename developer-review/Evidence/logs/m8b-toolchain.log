@@ -1,0 +1,141 @@
+# M8B — TOOLCHAIN LOG
+# mandate 8B: forensic closure, measurement reconciliation, independent acceptance
+# every revision below was read from git; none was typed by hand
+
+## 0. provenance asserted BEFORE any work
+$ git fetch origin
+$ git rev-parse HEAD
+69a3ed4c28d2fa7984eac7ee48cb75862d2cc029
+$ git rev-parse origin/arena/393531fe-resumepilotai
+69a3ed4c28d2fa7984eac7ee48cb75862d2cc029
+$ git -c core.quotePath=false status --porcelain
+(empty)
+$ git log --oneline -2
+69a3ed4 M8A: forensic omission challenge — 16/16 source-adjudicated, registers corrected
+888c2e5 audit(M8): state the proved/uncertain section at its final resolution
+$ git cat-file -t 888c2e5
+commit            # the application source checkpoint; HEAD's parent
+environment: node v22.22.3 | npm 10.9.8 | python 3.11.2 | git 2.39.5
+
+## 1. P0 FP-A14 / FP-A15 — cause established by experiment
+$ python3 developer-review/tools/m8b-reconstruct-a14-a15.py
+  panels discovered: coupons 2390-2677 | invoices 1356-1669 | gateways | gst | plans | webhooks
+  FP-A14 scoped: table=2 pagination=8 modal=2 (all other classes 0)
+  FP-A15 scoped: table=2 filter=8   pagination=6 (all other classes 0)
+$ (independent recount of the DECLARED corpus, src/components/admin/settings, 35 files)
+  table=14 search=10 filter=28 pagination=100 modal=18 csv=1 json=10 document=5 authz=87
+  => EXACTLY equals the published FP-A14/FP-A15 table -> the numbers were computed, not copied
+$ line-count method
+  splitlines() = 14158 ; split('\n') = 14191 = published  -> trailing-newline inflation proven
+$ rows sharing the same corpus (feature-parity.json)
+  FP-A14, FP-A15, FP-A16, FP-A21 -> src/components/admin/settings (35 files / 14191 lines)
+  FP-F01, FP-F02, FP-F05, FP-F06 -> src/components/EmployerPortal (12 / 2100)
+  FP-A08, FP-A19 -> src/components/admin (68 / 29850) ; FP-E02, FP-E03 -> src/cv-templates (73 / 13985)
+  FP-B02, FP-B03 ; FP-E04, FP-E05 ; FP-C01, FP-C04 ; FP-C05, FP-D06
+  => 8 groups, 18 rows, 53 rows with bare-directory paths, double-count factor 1.86x
+
+## 2. P0 verifier — claimed weaknesses checked one by one
+$ grep -n "176" scripts/verify-v4-reconciliation.py
+338:    assert "Per-operation rationale for all 176" in doc      # literal pin CONFIRMED
+$ grep -n ">=" scripts/verify-parity.py scripts/verify-v4-reconciliation.py
+  total>=100 ; legacyFilesMeasured>=600 ; len(ids)>=30 ; legacyFiles>=600 ;
+  disc>=26 ; req>=65 ; ra>=35 ; ops>=385 ; disc>=46 ; bucket sum>=112   # floors CONFIRMED
+$ sed -n '105,108p' tools/parity-endpoint-audit.cjs
+  ... else grade = prefixed ? 'SUPPORTED-AFTER-PREFIX' : 'SUPPORTED';
+  => a row with ZERO endpoints falls into the else branch -> SUPPORTED  (generator-side vacuity)
+$ python3 - (read parity-endpoint-audit.json)
+  FP-C06, FP-E04, FP-E13 : grade=SUPPORTED, endpoints=[], counts all 0   # CONFIRMED, 3 rows
+$ sed -n '294p' scripts/verify-v4-reconciliation.py
+  assert 30 <= no_endpoint <= 45     # 16-wide band, actual 37   CONFIRMED
+$ sed -n '38,43p;100,109p' tools/client-call-existence.cjs
+  VERBS map exists BUT explicit method: wins -> 9 bare fetch() sites, 6 POST, all recorded POST
+  => shared helper-verb assumption OVERSTATED   (corrects M8/M8A)
+
+## 3. new verifier + negative testing
+$ python3 developer-review/tools/m8b-integrity-verify.py
+  PASS C01 provenance | PASS C02 paths-resolve | FAIL C03 corpus-scope (53)
+  FAIL C04 duplicate-corpus (7 groups) | FAIL C05 duplicate-dist (7) | FAIL C06 full-evidence (3)
+  PASS C07 exact-totals | PASS C08 dispositions | PASS C09 finding-ids
+  FAIL C10 verification-evidence (32/55 lack a status field) | PASS C11 unique-rows
+  -> PASS: 6  FAIL: 5   exit 1
+$ python3 developer-review/tools/m8b-fixture-harness.py
+  BASELINE exit=1 failing=[C03,C04,C05,C06,C10]
+  f1 duplicate capability        -> C11  row id appears 2 times: FP-A01
+  f2 fabricated path             -> C02  path does not exist
+  f3 missing source reference    -> C02  declares 1 files but names no source path
+  f4 incorrect parity class      -> C06  FULL row graded without any endpoint
+  f5 incorrect summary count     -> C07  published != recomputed
+  f6 unresolved marked closed    -> C10  marked resolved/closed but cites no resolving evidence
+  f7 FULL without implementation -> C06  declared endpoints but none resolved as ok
+  f8 duplicated measurement      -> C05  identical non-trivial distribution
+  -> 8/8 rejected for the correct reason   exit 0
+note: f3 was NOT caught on the first run (C02 had nothing to validate when paths were empty);
+      C02 was extended to require a path whenever a corpus is declared. Recorded, not hidden.
+
+## 4. provenance reconciliation
+$ for r in a2ecb96 a5835ff6 a7d08a2 8fce7151 a0bb09aa; do git diff --name-only $r HEAD -- frontend/src src backend | wc -l; done
+  0 0 0 0 0        # every recorded artifact revision has an identical application tree
+$ git merge-base --is-ancestor a7d08a2 HEAD ; echo $?
+  1                # a7d08a2 is NOT an ancestor; accepted only on app-tree identity
+$ git diff --name-only a7d08a2 HEAD | grep -v '^developer-review/' | wc -l
+  0
+
+## 5. runtime — isolated disposable server, current revision
+$ cd backend && npm install --no-audit --no-fund --ignore-scripts     # exit 0; node_modules git-ignored
+$ PORT=5099 IN_MEMORY_REPOSITORY=1 NODE_ENV=development TEST_AUTH_HMAC_SECRET=<generated> node index.js
+  HTTP Server running on port 5099
+  [Startup] DEGRADED_MODE_REPOSITORY=inmemory explicitly set
+$ node developer-review/tools/m8b-runtime-probes.cjs
+  35 probes | {"2xx":5,"4xx":18,"5xx":11,"skipped":1}
+  T3  GET  /api/platform/queues       503 QUEUE_QUERY_UNAVAILABLE
+  T3  GET  /api/admin/queues          404  (client fallback URL does not exist)
+  T3  POST /api/platform/queues/purge 410 DEAD_LETTER_PURGE_RETIRED
+  T4  PUT  /api/admin/pages/<slug>    200 ; GET public slug 200 ; unknown slug 404
+  T5  GET  /api/blog/posts            404 as SUPER_ADMIN ; 401 anonymous   <- resolves M8A's demotion
+  T5  GET  /api/blog-data/slug/<x>    404 "Post not found"
+  T7  GET  /api/payment-orders        200 {orders:[]} ; POST coupons/validate 404 strict
+  T8  POST /api/users-data/mfa/enroll 404 (no enrolment route exists anywhere in backend/)
+  T8  POST /api/users-data/mfa/disable 503 IDENTITY_DIRECTORY_UNAVAILABLE (Firebase app/invalid-credential)
+  T9  GET  /api/enterprise/teams      404 ENTERPRISE_DISABLED
+  T10 GET  /api/messages/conversations 403 MODULE_DISABLED
+  T11 POST /api/admin/payments/refund 403 as USER / 400 as SUPER_ADMIN  (authz + validation correct)
+  T14 POST /api/pay                   400 INVALID_PLAN ; razorpay 400 ; paypal 503
+  T6  POST /api/users-data/profile    409 STALE_WRITE at expectedRevision 0 while GET -> 404
+  server stderr root causes:
+    [Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306
+    [UsersData MFA disable error]: app/invalid-credential (no Google credentials)
+  SIGTERM -> "[Shutdown] Clean exit complete."
+
+## 6. test-double divergence (recorded as DISC-056, NOT a product defect)
+  MySQLRepository.js:1814  ' AND published = 1' applied when options.publishedOnly
+  InMemoryRepository.js:734  getCustomPageBySlug(slug)  -- options argument ignored
+  => the "unpublished page publicly readable" observation is a harness artifact
+  => recorded as NOT APPLICABLE to the product, because reporting it would be a false defect
+
+## 7. self-corrections applied before publication
+  1 C09 compared 53 findings to 55 ids; the log declares both     -> parse the declared split
+  2 C10 read "STATICALLY VERIFIED" as closure                     -> only explicit closure markers
+  3 C10 required an E-id; DISC-008 cites resolving paths          -> accept resolving paths
+  4 C07 compared a distinct-file metric to a row sum              -> removed; ratio published instead
+  5 M8A issued FP-G22/FP-G23 which already exist                  -> corrected to FP-G26/FP-G27
+  6 runtime totals in the first matrix draft summed wrong         -> regenerated from the dataset
+  7 CMS "unpublished is public" nearly reported as a product bug  -> reclassified as test-double defect
+
+## 8. derived-total propagation (verifier caught it, not me)
+$ python3 scripts/verify-v4-reconciliation.py
+  FAIL: coverage total equals the sum of its parts -> coverage document does not state the derived total 1,545
+$ python3 -c "print(650+206+112+393+48+54+65+17)"
+  1545          # DISC-056 moved findings 53 -> 54
+-> V4-COVERAGE-RECONCILIATION.md updated to the DERIVED value with a dated M8B amendment.
+   the verifier's expected value was NOT touched.
+
+## 9. final verification state
+$ bash scripts/verify-audit-package.sh          -> PASS: 61  FAIL: 0
+$ python3 scripts/verify-v4-reconciliation.py   -> PASS: 20  FAIL: 0
+$ python3 scripts/scan-secrets.py               -> PASS (see m8b-secret-scan.log)
+$ python3 tools/m8b-integrity-verify.py         -> PASS: 6  FAIL: 5   (the 5 are the real defects)
+$ python3 tools/m8b-fixture-harness.py          -> 8/8 rejected correctly
+
+## 10. scope
+$ git -c core.quotePath=false status --porcelain | grep -v 'developer-review/'
+(empty)   => no application source, config, manifest, lockfile, schema, migration or deploy file modified
