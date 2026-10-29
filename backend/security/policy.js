@@ -76,7 +76,10 @@ function resolveAdminReadPermission(pathname) {
   if (pathname === '/platform/search') return ['users.read', 'tenants.read', 'payments.read', 'tickets.manage', 'audit.read', 'security.read', 'system.config.read'];
   if (pathname === '/admin/dashboard' || pathname === '/platform/overview' || pathname === '/platform/command-center') return ['system.config.read', 'users.read', 'audit.read'];
   if (isSupportDeskPath(pathname)) return 'tickets.manage';
-  return 'system.config.read';
+  if (pathname === '/admin/audit-logs' || pathname.startsWith('/admin/audit-logs/')) return 'audit.read';
+  // Admin reads require system.config.read OR system.config.write: holding write
+  // authority implies read authority on the same administrative surface.
+  return ['system.config.read', 'system.config.write'];
 }
 
 function resolveAdminMutationPermission(pathname) {
@@ -106,7 +109,7 @@ const RECENT_AUTHENTICATION_PATHS = new Set(['/account/delete', '/users-data/mfa
 function enforceApiPolicy(req, res, next) {
   const pathname = req.path;
   const read = isReadMethod(req.method);
-
+  
   if (!read) {
     const elevatedPermission = pathname === '/admin/firebase-service-account'
       ? 'secrets.manage'

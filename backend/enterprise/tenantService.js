@@ -890,18 +890,40 @@ class TenantService {
   async updateTeam({ context, teamId, input }) {
     const team = await this.registry.getTeam(teamId, context.tenantId);
     this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
-    const leadChanged = input && Object.hasOwn(input, 'leadPrincipalId');
+
+    const rawLead = input && (input.teamLeadUid !== undefined ? input.teamLeadUid : input.leadPrincipalId);
+    const leadChanged = input && (Object.hasOwn(input, 'teamLeadUid') || Object.hasOwn(input, 'leadPrincipalId'));
+    let leadPrincipalId = null;
+    if (leadChanged) {
+      leadPrincipalId = rawLead === undefined || rawLead === '' ? null : String(rawLead);
+      if (leadPrincipalId) {
+        let membership;
+        try {
+          membership = await this.registry.getMembership(context.tenantId, leadPrincipalId);
+        } catch (error) {
+          if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
+            throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+          }
+          throw error;
+        }
+        if (membership.status !== 'ACTIVE') {
+          throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+        }
+      }
+    }
+
     const updated = await this.registry.updateTeam({
       tenantId: context.tenantId,
       teamId,
       name: input?.name,
-      leadPrincipalId: leadChanged ? (input.leadPrincipalId === '' ? null : input.leadPrincipalId) : undefined,
+      description: input?.description,
+      teamLeadUid: leadChanged ? leadPrincipalId : undefined,
     });
     await this.writeAudit(context, {
       action: 'TEAM_UPDATED', category: 'tenant.team',
       resource: { type: 'team', id: updated.id }, metadata: {
         name: updated.name,
-        ...(leadChanged ? { leadPrincipalId: updated.leadPrincipalId || null } : {}),
+        ...(leadChanged ? { teamLeadUid: updated.teamLeadUid || null } : {}),
       },
     });
     return updated;

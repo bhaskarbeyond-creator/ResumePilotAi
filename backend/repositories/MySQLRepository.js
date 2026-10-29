@@ -3516,18 +3516,44 @@ class MySQLRepository {
         const pool = this._getPool();
         const [rows] = await pool.query('SELECT * FROM coupons WHERE code = ? LIMIT 1', [String(code).toUpperCase()]);
         if (!rows.length) return null;
-        const r = rows[0];
+        return this._mapCouponRow(rows[0]);
+    }
+
+    _mapCouponRow(r) {
         return {
             code: r.code,
-            discount: r.discount,
-            description: r.description,
+            discount: Number(r.discount || 0),
+            discountType: r.discount_type || 'percentage',
+            discountValue: r.discount_value !== null && r.discount_value !== undefined ? Number(r.discount_value) : Number(r.discount || 0),
+            description: r.description || '',
             active: r.active === 1,
-            expiryDate: r.expiry_date,
-            maxUses: r.max_uses,
-            usedCount: r.used_count,
+            expiresAt: r.expiry_date || null,
+            maxUses: Number(r.max_uses || 0),
+            usedCount: Number(r.used_count || 0),
             singleUsePerUser: r.single_use_per_user === 1,
-            revision: r.revision,
+            revision: Number(r.revision || 1),
+            redemptionCount: Number(r.redemptionCount || 0),
+            createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+            updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : null,
         };
+    }
+
+    async listCoupons() {
+        const pool = this._getPool();
+        const [rows] = await pool.query(`
+            SELECT c.code, c.discount, c.discount_type, c.discount_value, c.description, c.active,
+                   c.expiry_date, c.max_uses, c.used_count, c.single_use_per_user, c.revision,
+                   c.created_at, c.updated_at,
+                   COALESCE(stats.redemptions, 0) AS redemptionCount
+            FROM coupons c
+            LEFT JOIN (
+                SELECT coupon_code, COUNT(*) AS redemptions
+                FROM coupon_redemptions
+                GROUP BY coupon_code
+            ) stats ON stats.coupon_code = c.code
+            ORDER BY c.created_at DESC
+        `);
+        return rows.map(row => this._mapCouponRow(row));
     }
 
     async saveCoupon(code, data) {
@@ -3535,10 +3561,12 @@ class MySQLRepository {
         const cCode = String(code).toUpperCase();
         const values = {
             code: cCode,
-            discount: Number(data.discount || 10),
+            discount: Number(data.discountValue || data.discount || 10),
+            discount_type: data.discountType || 'percentage',
+            discount_value: Number(data.discountValue || data.discount || 0),
             description: data.description || '',
             active: data.active !== false ? 1 : 0,
-            expiry_date: data.expiryDate || null,
+            expiry_date: data.expiresAt || null,
             max_uses: Number(data.maxUses || 0),
             used_count: Number(data.usedCount || 0),
             single_use_per_user: data.singleUsePerUser ? 1 : 0,

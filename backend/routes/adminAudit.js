@@ -7,33 +7,75 @@ const { getRepository } = require('../repositories');
 
 const router = express.Router();
 
-// Audit log reads require audit.read (AUDITOR/ADMIN/SUPER_ADMIN) — NOT
-// system.config.read, which would incorrectly block AUDITOR/SUPPORT.
-// Per-route middleware avoids imposing a blanket requirement on later
-// routers that share the /api/admin mount point.
-router.get('/audit-logs', requirePermission('audit.read'), async (req, res) => {
+const CSV_HEADER = [
+  'id', 'createdAt', 'actorUid', 'actorEmail', 'actorRole', 'action', 'category',
+  'severity', 'outcome', 'method', 'pathname', 'statusCode', 'requestId', 'metadata',
+];
+
+function csvEscape(value) {
+  const string = value === null || value === undefined ? '' : String(value);
+  if (/[",\n\r]/.test(string)) {
+    return '"' + string.replace(/"/g, '""') + '"';
+  }
+  return string;
+}
+
+function auditLogToCsvRow(log) {
+  return CSV_HEADER.map(field => {
+    let value;
+    switch (field) {
+      case 'metadata': value = JSON.stringify(log?.metadata || {}); break;
+      default: value = log?.[field] ?? '';
+    }
+    return csvEscape(value);
+  }).join(',');
+}
+
+// Audit log reads require audit.read (AUDITOR/ADMIN/SUPER_ADMIN) or
+// admin.audit.read — NOT system.config.read, which would incorrectly block
+// AUDITOR/SUPPORT. Super admin holds '*' and passes either check.
+// Per-route middleware avoids imposing a blanket requirement on later routers
+// that share the /api/admin mount point.
+router.get('/audit-logs', requirePermission(['admin.audit.read', 'audit.read']), async (req, res) => {
   try {
-    const {
-      limit = 50,
-      actorUid,
-      action,
-      category,
-      severity,
-      outcome,
-      search,
-      startAfterDocId,
-    } = req.query;
+    const rawLimit = req.query.limit == null ? 50 : parseInt(req.query.limit, 10);
+    const rawOffset = req.query.offset == null ? 0 : parseInt(req.query.offset, 10);
+    const limitCount = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+    const offsetCount = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
     const result = await queryAdminAuditLogs(getRepository(), {
-      limit: parseInt(limit, 10) || 50,
-      actorUid: actorUid ? String(actorUid) : undefined,
-      action: action ? String(action) : undefined,
-      category: category ? String(category) : undefined,
-      severity: severity ? String(severity) : undefined,
-      outcome: outcome ? String(outcome) : undefined,
-      search: search ? String(search) : undefined,
-      startAfterDocId: startAfterDocId ? String(startAfterDocId) : undefined,
+      limit: limitCount,
+      offset: offsetCount,
+      actorUid: req.query.actorUid ? String(req.query.actorUid) : undefined,
+      action: req.query.action ? String(req.query.action) : undefined,
+      category: req.query.category ? String(req.query.category) : undefined,
+      severity: req.query.severity ? String(req.query.severity) : undefined,
+      outcome: req.query.outcome ? String(req.query.outcome) : undefined,
+      search: req.query.search ? String(req.query.search) : undefined,
+      startAfterDocId: req.query.startAfterDocId ? String(req.query.startAfterDocId) : undefined,
+      startDate: req.query.startDate ? String(req.query.startDate) : undefined,
+      endDate: req.query.endDate ? String(req.query.endDate) : undefined,
     });
-    return res.json(result);
+
+    if (String(req.query.format || '').toLowerCase() === 'csv') {
+      const lines = [CSV_HEADER.map(csvEscape).join(',')];
+      for (const log of result.logs) lines.push(auditLogToCsvRow(log));
+      const body = lines.join('\n') + '\n';
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="audit-logs.csv"');
+      res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'));
+      return res.send(body);
+    }
+
+    return res.json({
+      logs: result.logs,
+      count: result.logs.length,
+      offset: result.offset ?? offsetCount,
+      limit: result.limit ?? limitCount,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor || null,
+      source: result.source || 'mariadb',
+    });
   } catch (error) {
     console.error('[AdminAuditRoute] Audit query failed:', { code: error.code, requestId: res.locals?.requestId });
     return res.status(error.status || 503).json({
@@ -46,7 +88,7 @@ router.get('/audit-logs', requirePermission('audit.read'), async (req, res) => {
   }
 });
 
-router.get('/audit-logs/stats', requirePermission('audit.read'), async (_req, res) => {
+router.get('/audit-logs/stats', requirePermission(['admin.audit.read', 'audit.read']), async (_req, res) => {
   try {
     const logs = await getRepository().getAdminAuditLogs({ limit: 200 });
     let highSeverityCount = 0;
@@ -87,7 +129,7 @@ router.get('/audit-logs/stats', requirePermission('audit.read'), async (_req, re
   }
 });
 
-router.get('/audit-logs/:id', requirePermission('audit.read'), async (req, res) => {
+router.get('/audit-logs/:id', requirePermission(['admin.audit.read', 'audit.read']), async (req, res) => {
   const logId = String(req.params.id || '').trim();
   if (!/^[A-Za-z0-9:_-]{1,128}$/.test(logId)) {
     return res.status(400).json({ error: { code: 'INVALID_AUDIT_ID', message: 'Invalid audit record ID.', requestId: res.locals?.requestId } });

@@ -664,11 +664,31 @@ class InMemoryRepository {
     async getCoupon(code) {
         return this._coupons.get(String(code).toUpperCase()) || null;
     }
-    async saveCoupon(coupon) {
-        if (!coupon || !coupon.code) this._reject('Coupon code required', 'BAD_REQUEST', 400);
-        const code = String(coupon.code).toUpperCase();
-        this._coupons.set(code, { code, ...coupon });
+    async saveCoupon(coupon, data) {
+        let code; const stored = {};
+        if (typeof coupon === 'string') {
+            code = coupon;
+            Object.assign(stored, typeof data === 'object' && data !== null ? data : {});
+        } else if (coupon && typeof coupon === 'object') {
+            code = coupon.code;
+            Object.assign(stored, coupon);
+        }
+        if (!code) this._reject('Coupon code required', 'BAD_REQUEST', 400);
+        code = String(code).toUpperCase();
+        stored.code = code;
+        this._coupons.set(code, stored);
         return this._coupons.get(code);
+    }
+    async listCoupons() {
+        const redemptions = {};
+        for (const key of this._couponRedemptions.keys()) {
+            const couponCode = String(key).split(':')[0];
+            redemptions[couponCode] = (redemptions[couponCode] || 0) + 1;
+        }
+        return Array.from(this._coupons.values()).map(coupon => ({
+            ...coupon,
+            redemptionCount: redemptions[coupon.code] || 0,
+        }));
     }
     async deleteCoupon(code) {
         const cCode = String(code).toUpperCase();

@@ -80,6 +80,8 @@ const { buildPublicSitemapXml } = require('./services/publicSitemap');
 const { blogDataRouter } = require('./routes/blogData');
 const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
+const { notificationsRouter } = require('./routes/notifications');
+const { couponsRouter } = require('./routes/coupons');
 const { miscDataRouter } = require('./routes/miscData');
 const { databaseAdminRouter } = require('./routes/databaseAdmin');
 const { getRepository } = require('./repositories');
@@ -520,6 +522,7 @@ app.use('/api/resumes', resumesRouter);
 app.use('/api/portfolios', portfoliosRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/support', supportUserRouter);
+app.use('/api', notificationsRouter);
 app.use('/api/jobs-data', jobsDataRouter);
 app.use('/api/jobs', jobsDataRouter);
 app.use('/api/public', publicDiscoveryRouter);
@@ -532,6 +535,7 @@ app.use('/api/enterprise', enterpriseRouter);
 app.use('/api/platform', platformRouter);
 app.use('/api', miscDataRouter);
 app.use('/api/admin/database-settings', databaseAdminRouter);
+app.use('/api/admin/coupons', couponsRouter);
 
 // During enterprise rollout, reject tenant/workspace headers on legacy routes rather
 // than silently ignoring them. A client must use a tenant-aware /api/enterprise path
@@ -4539,30 +4543,6 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
     }
 });
 
-// Admin coupon list — MySQL authoritative (coupons table).
-app.get('/api/admin/coupons', requireAuth, requirePermission(['payments.read', 'system.config.read']), async (req, res) => {
-    try {
-        const pool = require('./database/mysql').getPool();
-        const [rows] = await pool.query('SELECT * FROM coupons ORDER BY created_at DESC LIMIT 500');
-        const coupons = rows.map(row => ({
-            code: row.code,
-            discount: Number(row.discount || 0),
-            description: row.description || '',
-            active: row.active === 1 || row.active === true,
-            maxUses: Number(row.max_uses || 0),
-            singleUsePerUser: row.single_use_per_user === 1,
-            expiryDate: row.expiry_date || null,
-            validUntil: row.expiry_date || (row.valid_until ? adminIso(row.valid_until) : null),
-            revision: Number(row.revision || 0),
-            createdAt: adminIso(row.created_at),
-            ...(row.extra_json ? (typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : row.extra_json) : {}),
-        }));
-        return res.json({ success: true, coupons });
-    } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
-    }
-});
-
 // Public active coupons for checkout (MariaDB authoritative)
 app.get('/api/coupons/active', async (_req, res) => {
     try {
@@ -4677,29 +4657,8 @@ const handleSaveCouponRoute = async (req, res) => {
     }
 };
 
-app.post('/api/admin/coupons', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
 app.post('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
 app.put('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
-
-app.delete('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), async (req, res) => {
-    const code = String(req.params.code || '').trim().toUpperCase();
-    try {
-        const repo = resilientMutations.repoFor();
-        const existing = await repo.getCoupon(code);
-        if (!existing) return res.status(404).json({ success: false, error: 'Coupon not found.' });
-        const expectedRevisionRaw = req.body?.expectedRevision ?? req.query?.expectedRevision ?? req.body?.revision;
-        const expectedRevision = expectedRevisionRaw !== undefined && expectedRevisionRaw !== null && expectedRevisionRaw !== '' ? Number(expectedRevisionRaw) : null;
-        if (expectedRevision !== null && expectedRevision > 0 && Number(existing.revision || 0) !== expectedRevision) {
-            return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: `Coupon changed after loading (current revision: ${existing.revision}, expected: ${expectedRevision}).` });
-        }
-        await repo.deleteCoupon(code);
-        const actorUid = req.user?.uid || 'admin';
-        await resilientMutations.audit(repo, { action: 'COUPON_DELETED', actorUid, code, revision: existing.revision, requestId: res.locals?.requestId });
-        return res.json({ success: true, message: 'Coupon deleted successfully.' });
-    } catch (error) {
-        return res.status(error.status || 500).json({ success: false, error: error.message });
-    }
-});
 
 app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, async (req, res) => {
     const { type, secretKey } = req.body;

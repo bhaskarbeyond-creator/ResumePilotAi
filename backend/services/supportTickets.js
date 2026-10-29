@@ -5,7 +5,23 @@ const { getPool } = require('../database/mysql');
 
 const STATUSES = new Set(['OPEN', 'PENDING', 'RESOLVED', 'CLOSED']);
 const PRIORITIES = new Set(['LOW', 'NORMAL', 'HIGH', 'URGENT']);
+// The public contract accepts low|medium|high; MEDIUM is normalized to NORMAL
+// for storage (the ticket table CHECK constraint governs persisted values).
+const ACCEPTED_PRIORITIES = new Set(['LOW', 'NORMAL', 'HIGH', 'URGENT', 'MEDIUM']);
 const STAFF_ROLES = new Set(['SUPPORT', 'ADMIN', 'SUPER_ADMIN']);
+
+function normalizeStatus(value) {
+  return String(value || '').toUpperCase();
+}
+
+function normalizePriority(value) {
+  return String(value || '').toUpperCase();
+}
+
+function storablePriority(value) {
+  const normalized = normalizePriority(value);
+  return normalized === 'MEDIUM' ? 'NORMAL' : normalized;
+}
 
 function fail(code, status, message) {
   return Object.assign(new Error(message || code), { code, status });
@@ -21,7 +37,8 @@ function mapTicket(row) {
     id: row.id,
     userId: row.user_id,
     subject: row.subject,
-    status: row.status,
+    category: row.category || undefined,
+    status: row.status ? String(row.status).toLowerCase() : null,
     priority: row.priority,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
@@ -47,10 +64,11 @@ async function ensureUserRow(connection, uid, email) {
   );
 }
 
-async function createTicket({ uid, email, subject, body, priority = 'NORMAL', pool = getPool() }) {
+async function createTicket({ uid, email, subject, body, priority = 'NORMAL', category, pool = getPool() }) {
   const cleanSubject = cleanText(subject, 200);
   const cleanBody = cleanText(body, 8000);
-  const cleanPriority = String(priority || 'NORMAL').toUpperCase();
+  const cleanPriority = storablePriority(priority);
+  const cleanCategory = category === undefined || category === null ? undefined : String(category).toLowerCase();
   if (cleanSubject.length < 4) throw fail('INVALID_TICKET_SUBJECT', 400, 'A subject of at least four characters is required.');
   if (cleanBody.length < 8) throw fail('INVALID_TICKET_BODY', 400, 'A message of at least eight characters is required.');
   if (!PRIORITIES.has(cleanPriority)) throw fail('INVALID_TICKET_PRIORITY', 400, 'Invalid ticket priority.');
@@ -89,20 +107,28 @@ async function listTicketsForUser({ uid, pool = getPool() }) {
   return rows.map(mapTicket);
 }
 
-async function listTicketsForStaff({ status, pool = getPool() } = {}) {
+async function listTicketsForStaff({ status, priority, limit, offset, pool = getPool() } = {}) {
   const filters = [];
   const params = [];
-  if (status) {
-    const normalized = String(status).toUpperCase();
+  if (status !== undefined && status !== null && String(status).length > 0) {
+    const normalized = normalizeStatus(status);
     if (!STATUSES.has(normalized)) throw fail('INVALID_TICKET_STATUS', 400, 'Invalid ticket status filter.');
     filters.push('status = ?');
     params.push(normalized);
   }
+  if (priority !== undefined && priority !== null && String(priority).length > 0) {
+    const normalized = storablePriority(priority);
+    if (!PRIORITIES.has(normalized)) throw fail('INVALID_TICKET_PRIORITY', 400, 'Invalid ticket priority filter.');
+    filters.push('priority = ?');
+    params.push(normalized);
+  }
   const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+  const safeLimit = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Math.min(Math.trunc(Number(limit)), 500) : 200;
+  const safeOffset = Number.isFinite(Number(offset)) && Number(offset) >= 0 ? Math.trunc(Number(offset)) : 0;
   const [rows] = await pool.query(
     `SELECT id, user_id, subject, status, priority, created_at, updated_at
-     FROM support_tickets ${where} ORDER BY updated_at DESC LIMIT 200`,
-    params
+     FROM support_tickets ${where} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+    [...params, safeLimit, safeOffset]
   );
   return rows.map(mapTicket);
 }
@@ -157,8 +183,11 @@ async function addMessage({ ticketId, uid, role, body, staff = false, pool = get
   return getTicket({ ticketId, uid, staff, pool });
 }
 
-async function updateTicketStatus({ ticketId, status, pool = getPool() }) {
+async function updateTicketStatus({ ticketId, status, resolutionNote, pool = getPool() }) {
   const normalized = String(status || '').toUpperCase();
+  // resolutionNote is accepted for audit/display purposes by the caller; the
+  // support ticket schema tracks status transitions through the message thread.
+  void resolutionNote;
   if (!STATUSES.has(normalized)) throw fail('INVALID_TICKET_STATUS', 400, 'Invalid ticket status.');
   const [result] = await pool.query(
     `UPDATE support_tickets SET status = ?, updated_at = CURRENT_TIMESTAMP(3) WHERE id = ?`,

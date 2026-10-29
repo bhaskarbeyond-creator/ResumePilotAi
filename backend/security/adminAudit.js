@@ -200,28 +200,57 @@ function createAdminAuditMiddleware() {
   };
 }
 
+function matchesAuditFilter(log, options = {}) {
+  if (options.actorUid && String(log.actorUid) !== String(options.actorUid)) return false;
+  if (options.severity && String(log.severity).toUpperCase() !== String(options.severity).toUpperCase()) return false;
+  if (options.category && String(log.category) !== String(options.category)) return false;
+  if (options.action && String(log.action) !== String(options.action)) return false;
+  if (options.outcome && String(log.outcome).toUpperCase() !== String(options.outcome).toUpperCase()) return false;
+  if (options.search) {
+    const haystack = JSON.stringify(log || {}).toLowerCase();
+    if (!haystack.includes(String(options.search).toLowerCase())) return false;
+  }
+  if (options.startDate || options.endDate) {
+    const occurred = new Date(log.createdAt || log.occurredAt || 0).getTime();
+    if (!Number.isFinite(occurred)) return false;
+    if (options.startDate) {
+      const startMs = new Date(options.startDate).getTime();
+      if (Number.isFinite(startMs) && occurred < startMs) return false;
+    }
+    if (options.endDate) {
+      const endMs = new Date(options.endDate).getTime();
+      if (Number.isFinite(endMs) && occurred > endMs) return false;
+    }
+  }
+  return true;
+}
+
 async function queryAdminAuditLogs(repository, options = {}) {
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
+  const offsetCount = Math.max(Number(options.offset || 0), 0);
   const activeRepository = repository?.getAdminAuditLogs ? repository : getRepository();
   if (!activeRepository?.getAdminAuditLogs) {
     throw Object.assign(new Error('Administrative audit repository is unavailable'), { code: 'AUDIT_READ_FAILED', status: 503 });
   }
+  // Client-side filtering keeps date-range, severity, category and actor
+  // scoping correct even when the underlying repository ignores them (for
+  // example the in-memory fallback repository).
   const page = await activeRepository.getAdminAuditLogs({
     ...options,
     search: String(options.search || '').trim() || undefined,
-    limit: limitCount + 1,
+    limit: limitCount + offsetCount + 1,
   });
-  const hasMore = page.length > limitCount;
-  // Read-time redaction protects against legacy/imported rows that predate the
-  // write-side sanitizer. Administrative audit APIs must never become a
-  // credential exfiltration path merely because historical metadata is dirty.
-  const logs = page.slice(0, limitCount).map(log => ({
+  const filtered = page.filter(log => matchesAuditFilter(log, options)).map(log => ({
     ...log,
     metadata: sanitizeAuditValue('metadata', log?.metadata || {}),
   }));
+  const hasMore = filtered.length > offsetCount + limitCount;
+  const logs = filtered.slice(offsetCount, offsetCount + limitCount);
   return {
     logs,
     count: logs.length,
+    offset: offsetCount,
+    limit: limitCount,
     hasMore,
     nextCursor: hasMore ? logs[logs.length - 1]?.id || null : null,
     source: 'mariadb',
