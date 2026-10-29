@@ -16,19 +16,21 @@
  * Profile edits survive switching sections.
  */
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
-import { Palette, Shield, User, UserCog } from 'lucide-react';
+import { Palette, Receipt, Shield, User, UserCog } from 'lucide-react';
 import { AccountPanel } from '@/components/settings/account-panel';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
+import { BillingInvoicesPanel } from '@/components/settings/billing-invoices-panel';
 import { ProfilePanel } from '@/components/settings/profile-panel';
 import { SecurityPanel } from '@/components/settings/security-panel';
 import { cn } from '@/lib/utils';
 
-type SettingsTab = 'profile' | 'security' | 'account' | 'appearance';
+type SettingsTab = 'profile' | 'security' | 'account' | 'billing' | 'appearance';
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string; icon: typeof User; description: string }> = [
   { id: 'profile', label: 'Master Profile', icon: User, description: 'Your contact details and summary. New resumes and cover letters start from these values.' },
   { id: 'security', label: 'Security & 2FA', icon: Shield, description: 'Your password and two-factor authentication.' },
   { id: 'account', label: 'Account & Data', icon: UserCog, description: 'Download a copy of your data or delete your account.' },
+  { id: 'billing', label: 'Billing & Invoices', icon: Receipt, description: 'Your subscription invoices, GST/tax breakdowns, and printable tax receipts.' },
   { id: 'appearance', label: 'Appearance', icon: Palette, description: 'How the dashboard looks on this device.' },
 ];
 
@@ -39,6 +41,7 @@ const MOVED: Record<string, string> = {
 
 function resolveTab(value: string): SettingsTab {
   if (value === 'security' || value === '2fa') return 'security';
+  if (value === 'billing' || value === 'invoices' || value === 'receipts') return 'billing';
   if (value === 'account' || value === 'appearance') return value;
   return 'profile';
 }
@@ -93,6 +96,7 @@ export function SettingsPage() {
               {tab.id === 'profile' && <ProfilePanel />}
               {tab.id === 'security' && <SecurityPanel />}
               {tab.id === 'account' && <AccountPanel />}
+              {tab.id === 'billing' && <BillingInvoicesPanel active={active === 'billing'} />}
               {tab.id === 'appearance' && <AppearancePanel />}
             </section>
           ))}

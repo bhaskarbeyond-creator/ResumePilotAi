@@ -15,6 +15,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Briefcase,
+  Calendar,
   Users,
   UserCheck,
   TrendingUp,
@@ -51,6 +52,7 @@ import {
 } from '@/hooks/use-api-hooks';
 import { CreateJobModal } from '@/components/employer/CreateJobModal';
 import { CandidateReviewDrawer } from '@/components/employer/CandidateReviewDrawer';
+import { EmployerInterviewSlotManagerDialog } from '@/components/employer/EmployerInterviewSlotPanel';
 import { CompanyProfile } from '@/components/employer/CompanyProfile';
 import { TeamSeats } from '@/components/employer/TeamSeats';
 
@@ -64,7 +66,7 @@ export type EmployerTabId =
   | 'settings';
 
 const KANBAN_STAGES = [
-  { key: 'pending', label: 'Applied / Review', badgeTone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+  { key: 'pending', label: 'Applied / Review', badgeTone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30' },
   { key: 'interview', label: 'In Interview', badgeTone: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30' },
   { key: 'accepted', label: 'Offer Extended', badgeTone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
   { key: 'rejected', label: 'Archived / Rejected', badgeTone: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30' },
@@ -186,6 +188,7 @@ export function EmployerPortalPage() {
 
   // Settings state
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [showInterviewSlotManager, setShowInterviewSlotManager] = useState(false);
   const [emailAlertFrequency, setEmailAlertFrequency] = useState('instant');
   const [atsThreshold, setAtsThreshold] = useState('75');
   const [calendarLink, setCalendarLink] = useState('https://calendly.com/talent-team/interview');
@@ -627,10 +630,22 @@ export function EmployerPortalPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowInterviewSlotManager(true)}
+                className="h-8 text-xs gap-1.5"
+              >
+                <Calendar className="size-3.5" aria-hidden="true" />
+                Manage Interview Slots
+              </Button>
+
               <div className="relative w-full sm:w-64">
-                <Search className="size-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="size-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
                 <Input
+                  aria-label="Search applicants"
                   placeholder="Search applicants..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -641,6 +656,7 @@ export function EmployerPortalPage() {
               <div className="flex items-center rounded-lg border border-edge p-0.5 bg-canvas-soft shrink-0">
                 <button
                   type="button"
+                  aria-label="Kanban Board View"
                   onClick={() => setPipelineViewMode('kanban')}
                   className={cn(
                     'p-1.5 rounded text-ink transition-colors',
@@ -648,10 +664,11 @@ export function EmployerPortalPage() {
                   )}
                   title="Kanban Board View"
                 >
-                  <LayoutGrid className="size-3.5" />
+                  <LayoutGrid className="size-3.5" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
+                  aria-label="List Table View"
                   onClick={() => setPipelineViewMode('list')}
                   className={cn(
                     'p-1.5 rounded text-ink transition-colors',
@@ -659,7 +676,7 @@ export function EmployerPortalPage() {
                   )}
                   title="List Table View"
                 >
-                  <List className="size-3.5" />
+                  <List className="size-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -1151,6 +1168,12 @@ export function EmployerPortalPage() {
           refetchJobs();
           setActiveTab('jobs');
         }}
+      />
+
+      {/* ─── Employer Interview Slot Manager Dialog ─── */}
+      <EmployerInterviewSlotManagerDialog
+        open={showInterviewSlotManager}
+        onOpenChange={setShowInterviewSlotManager}
       />
 
       {/* ─── Candidate Review Drawer ─── */}

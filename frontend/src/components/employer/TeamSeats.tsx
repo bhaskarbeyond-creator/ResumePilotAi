@@ -1,348 +1,416 @@
-/**
- * TeamSeats — Employer Portal
- *
- * Hiring team seats, RBAC permissions matrix, and recruiter collaboration:
- * - Seat utilization meter (Active Seats vs Total Entitlement)
- * - Team member roster with roles (Admin, Recruiter, Viewer)
- * - Invite team member workflow with email and role selection
- * - Granular permissions matrix for recruitment operations
- */
-
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Users,
-  UserPlus,
-  Shield,
-  Check,
+  AlertCircle,
   CheckCircle2,
-  Lock,
+  Clock,
+  RefreshCw,
+  Shield,
+  ShieldCheck,
+  UserPlus,
+  Users,
 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/loading';
 import { useAuth } from '@/providers/auth-provider';
+import { resolveActiveTenantId } from '@/lib/tenant-context';
+import type { EnterpriseMembership } from '@/lib/enterprise-api';
+import {
+  type InviteMemberResult,
+  type SeatQuota,
+  canCallerAssignOwnerRole,
+  fetchEnterpriseRoster,
+  fetchSeatQuota,
+  normalizeError,
+} from '@/lib/enterprise-seats';
+import { WorkspaceSeatQuotaCard } from '@/components/enterprise/WorkspaceSeatQuotaCard';
+import { InviteTeammateDialog } from '@/components/enterprise/InviteTeammateDialog';
 import { cn } from '@/lib/utils';
 
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Admin' | 'Recruiter' | 'Viewer';
-  status: 'active' | 'invited';
-  avatar?: string;
-  joinedDate: string;
-}
-
-const INITIAL_TEAM: TeamMember[] = [
-  {
-    id: 'tm-1',
-    name: 'Primary Recruiter (You)',
-    email: 'hiring@resumepilot.io',
-    role: 'Admin',
-    status: 'active',
-    joinedDate: '2026-08-10',
-  },
-  {
-    id: 'tm-2',
-    name: 'Jessica Reynolds',
-    email: 'jessica.r@resumepilot.io',
-    role: 'Recruiter',
-    status: 'active',
-    joinedDate: '2026-09-01',
-  },
-  {
-    id: 'tm-3',
-    name: 'David Chen',
-    email: 'david.c@resumepilot.io',
-    role: 'Viewer',
-    status: 'invited',
-    joinedDate: '2026-10-14',
-  },
-];
-
-const PERMISSIONS = [
-  { action: 'Post & edit job requisitions', admin: true, recruiter: true, viewer: false },
-  { action: 'Review candidate applications & resumes', admin: true, recruiter: true, viewer: true },
-  { action: 'Advance candidate hiring stages', admin: true, recruiter: true, viewer: false },
-  { action: 'Extend formal offers & reject candidates', admin: true, recruiter: true, viewer: false },
-  { action: 'Manage company branding & entity settings', admin: true, recruiter: false, viewer: false },
-  { action: 'Invite & manage recruiter team seats', admin: true, recruiter: false, viewer: false },
-];
+type StatusFilter = 'ALL' | 'ACTIVE' | 'INVITED' | 'SUSPENDED';
 
 export function TeamSeats() {
-  const { user } = useAuth();
-  const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'Recruiter' | 'Viewer' | 'Admin'>('Recruiter');
-  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const { claims } = useAuth();
+  const activeTenantId = resolveActiveTenantId();
 
-  useEffect(() => {
-    if (user?.email) {
-      const displayName = user.displayName ? `${user.displayName} (You)` : `${user.email} (You)`;
-      setTeam((prev) =>
-        prev.map((m) =>
-          m.id === 'tm-1'
-            ? { ...m, name: displayName, email: user.email || m.email }
-            : m
-        )
-      );
-    }
-  }, [user?.displayName, user?.email]);
+  const canAssignOwner = useMemo(() => {
+    const roleList = [claims?.role].filter(
+      (r): r is string => typeof r === 'string',
+    );
+    return canCallerAssignOwnerRole(roleList);
+  }, [claims]);
 
-  useEffect(() => {
-    if (!showInviteModal) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowInviteModal(false);
+  // Seat quota state
+  const [seatQuota, setSeatQuota] = useState<SeatQuota | null>(null);
+  const [seatLoading, setSeatLoading] = useState(true);
+  const [seatError, setSeatError] = useState<string | null>(null);
+
+  // Member roster state
+  const [members, setMembers] = useState<EnterpriseMembership[]>([]);
+  const [rosterLoadedOnce, setRosterLoadedOnce] = useState(false);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const loadSeatQuota = useCallback(
+    async (signal?: AbortSignal) => {
+      setSeatLoading(true);
+      setSeatError(null);
+      try {
+        const quota = await fetchSeatQuota(activeTenantId, signal);
+        if (!signal?.aborted) {
+          setSeatQuota(quota);
+        }
+      } catch (err) {
+        if (signal?.aborted) return;
+        setSeatError(normalizeError(err).message);
+      } finally {
+        if (!signal?.aborted) {
+          setSeatLoading(false);
+        }
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showInviteModal]);
+    },
+    [activeTenantId],
+  );
 
-  const totalSeats = 5;
-  const usedSeats = team.length;
+  const loadRoster = useCallback(
+    async (signal?: AbortSignal) => {
+      setRosterLoading(true);
+      setRosterError(null);
+      try {
+        const list = await fetchEnterpriseRoster(activeTenantId, signal);
+        if (!signal?.aborted) {
+          setMembers(list);
+          setRosterLoadedOnce(true);
+        }
+      } catch (err) {
+        if (signal?.aborted) return;
+        setRosterError(normalizeError(err).message);
+      } finally {
+        if (!signal?.aborted) {
+          setRosterLoading(false);
+        }
+      }
+    },
+    [activeTenantId],
+  );
 
-  const handleInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail.trim() || !inviteName.trim()) return;
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadSeatQuota(controller.signal);
+    void loadRoster(controller.signal);
+    return () => controller.abort();
+  }, [loadSeatQuota, loadRoster]);
 
-    const newMember: TeamMember = {
-      id: `tm-${Date.now()}`,
-      name: inviteName.trim(),
-      email: inviteEmail.trim(),
-      role: inviteRole,
-      status: 'invited',
-      joinedDate: new Date().toISOString().split('T')[0],
-    };
+  const handleInvited = useCallback(
+    async (result: InviteMemberResult) => {
+      setNotice(
+        result.deliveryQueued
+          ? `Invitation request accepted for ${result.email} (${result.role}). Email delivery has been queued.`
+          : `Invitation sent to ${result.email} (${result.role}).`,
+      );
+      await Promise.all([loadSeatQuota(), loadRoster()]);
+    },
+    [loadSeatQuota, loadRoster],
+  );
 
-    setTeam([...team, newMember]);
-    setInviteSuccess(true);
-    setTimeout(() => {
-      setInviteSuccess(false);
-      setShowInviteModal(false);
-      setInviteName('');
-      setInviteEmail('');
-    }, 1200);
-  };
+  const filteredMembers = useMemo(() => {
+    if (statusFilter === 'ALL') return members;
+    return members.filter((m) => String(m.status || '').toUpperCase() === statusFilter);
+  }, [members, statusFilter]);
 
   return (
     <div className="space-y-6">
-      {/* Header and Seat Utilization Meter */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-bold text-ink flex items-center gap-2">
-            <Users className="size-5 text-accent" />
-            Recruiter Team Seats & Access Control
-          </h3>
-          <p className="text-xs text-ink-muted">
-            Collaborate with hiring managers, screeners, and interview loop participants.
+          <h1 className="text-xl font-bold text-ink flex items-center gap-2">
+            <Users className="size-5 text-brand-600 shrink-0" aria-hidden="true" />
+            <span>Workspace Team &amp; Seat Management</span>
+          </h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Monitor workspace seat capacity, invite recruiting teammates, and audit assigned roles.
           </p>
         </div>
-
-        <Button
-          size="sm"
-          onClick={() => setShowInviteModal(true)}
-          disabled={usedSeats >= totalSeats}
-          className="text-xs font-semibold gap-1.5 self-start sm:self-auto bg-accent hover:bg-accent/90"
-        >
-          <UserPlus className="size-3.5" /> Invite Team Member
+        <Button type="button" size="sm" onClick={() => setInviteOpen(true)}>
+          <UserPlus className="size-4" aria-hidden="true" />
+          Invite Teammate
         </Button>
       </div>
 
-      {/* Seat Meter Banner */}
-      <div className="p-4 rounded-xl border border-edge bg-surface shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-bold text-ink">
-            <span>Seat Capacity:</span>
-            <span className="text-accent">{usedSeats} of {totalSeats} Used</span>
-          </div>
-          <div className="w-48 sm:w-64 h-2 bg-canvas-soft rounded-full overflow-hidden border border-edge">
-            <div
-              className="h-full bg-accent rounded-full transition-all duration-300"
-              style={{ width: `${(usedSeats / totalSeats) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <p className="text-xs text-ink-muted">
-          {totalSeats - usedSeats} team seats available under your current tier plan.
-        </p>
-      </div>
-
-      {/* Team Roster Card */}
-      <Card className="border-edge shadow-sm">
-        <CardHeader className="border-b border-edge pb-3">
-          <CardTitle className="text-sm font-bold text-ink">Active Team Members</CardTitle>
-          <CardDescription className="text-xs text-ink-muted">
-            Authorized recruiters and viewers with pipeline access
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-edge">
-            {team.map((member) => (
-              <div
-                key={member.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas-soft/30 transition-colors"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="size-10 rounded-full bg-accent/15 text-accent font-bold text-xs flex items-center justify-center border border-accent/20">
-                    {member.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-ink">{member.name}</h4>
-                      <span
-                        className={cn(
-                          'text-[10px] font-semibold px-2 py-0.5 rounded border',
-                          member.role === 'Admin'
-                            ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
-                            : member.role === 'Recruiter'
-                            ? 'bg-accent/15 text-accent border-accent/30'
-                            : 'bg-canvas-soft text-ink-muted border-edge'
-                        )}
-                      >
-                        {member.role}
-                      </span>
-                      {member.status === 'invited' && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                          Pending Invite
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-ink-muted mt-0.5">{member.email}</p>
-                  </div>
-                </div>
-
-                <div className="text-left sm:text-right text-xs text-ink-muted">
-                  <span>Joined {member.joinedDate}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Permissions Matrix */}
-      <Card className="border-edge shadow-sm">
-        <CardHeader className="border-b border-edge pb-3">
-          <CardTitle className="text-sm font-bold text-ink flex items-center gap-2">
-            <Shield className="size-4 text-accent" />
-            Role Permissions Matrix
-          </CardTitle>
-          <CardDescription className="text-xs text-ink-muted">
-            Enforced server-side via RBAC guards
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-xs text-left min-w-[500px]">
-            <thead>
-              <tr className="border-b border-edge bg-canvas-soft/60">
-                <th className="p-3 font-semibold text-ink">Action / Scope</th>
-                <th className="p-3 font-semibold text-ink text-center">Admin</th>
-                <th className="p-3 font-semibold text-ink text-center">Recruiter</th>
-                <th className="p-3 font-semibold text-ink text-center">Viewer</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge">
-              {PERMISSIONS.map((p, idx) => (
-                <tr key={idx} className="hover:bg-canvas-soft/20">
-                  <td className="p-3 text-ink font-medium">{p.action}</td>
-                  <td className="p-3 text-center">
-                    {p.admin ? <Check className="size-4 text-emerald-500 mx-auto" /> : <Lock className="size-3 text-ink-muted mx-auto" />}
-                  </td>
-                  <td className="p-3 text-center">
-                    {p.recruiter ? <Check className="size-4 text-emerald-500 mx-auto" /> : <Lock className="size-3 text-ink-muted mx-auto" />}
-                  </td>
-                  <td className="p-3 text-center">
-                    {p.viewer ? <Check className="size-4 text-emerald-500 mx-auto" /> : <Lock className="size-3 text-ink-muted mx-auto" />}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-
-      {/* Invite Member Modal */}
-      {showInviteModal && (
+      {notice && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-          role="dialog"
-          aria-modal="true"
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm font-medium text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
         >
-          <div className="bg-surface border border-edge rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div>
-              <h4 className="text-base font-bold text-ink">Invite Recruiter or Hiring Manager</h4>
-              <p className="text-xs text-ink-muted mt-0.5">
-                Grant authorized access to review applicants and manage pipeline stages.
-              </p>
-            </div>
-
-            {inviteSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 className="size-4" />
-                <span>Invitation link generated & sent!</span>
-              </div>
-            )}
-
-            <form onSubmit={handleInvite} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Full Name</label>
-                <Input
-                  required
-                  placeholder="e.g. Rachel Sterling"
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  className="text-xs h-9"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Work Email</label>
-                <Input
-                  required
-                  type="email"
-                  placeholder="rachel@company.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="text-xs h-9"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Role Assignment</label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as any)}
-                  className="w-full text-xs h-9 px-3 rounded-md border border-edge bg-surface text-ink"
-                >
-                  <option value="Recruiter">Recruiter (Can post jobs & advance pipeline)</option>
-                  <option value="Viewer">Viewer (Read-only applicant inspection)</option>
-                  <option value="Admin">Admin (Full company & seat administration)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowInviteModal(false)}
-                  className="text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" className="text-xs font-semibold bg-accent hover:bg-accent/90">
-                  Send Invitation
-                </Button>
-              </div>
-            </form>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+            <span>{notice}</span>
           </div>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setNotice(null)}>
+            Dismiss
+          </Button>
         </div>
       )}
+
+      {/* Authoritative Workspace Seat Quota Gauge */}
+      <WorkspaceSeatQuotaCard
+        quota={seatQuota}
+        loading={seatLoading}
+        error={seatError}
+        onRetry={() => void loadSeatQuota()}
+        actionSlot={
+          <Button type="button" size="sm" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="size-4" aria-hidden="true" />
+            Invite Teammate
+          </Button>
+        }
+      />
+
+      {/* Workspace Member Directory */}
+      <Card>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base font-bold text-ink">
+              <ShieldCheck className="size-4 text-brand-600 shrink-0" aria-hidden="true" />
+              <span>Workspace Member Roster</span>
+            </CardTitle>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Persisted active members and pending invitations in your organization.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              role="group"
+              aria-label="Filter team members by status"
+              className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface p-1"
+            >
+              {(['ALL', 'ACTIVE', 'INVITED', 'SUSPENDED'] as const).map((st) => {
+                const isSelected = statusFilter === st;
+                return (
+                  <button
+                    key={st}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => setStatusFilter(st)}
+                    className={cn(
+                      'rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                      isSelected
+                        ? 'bg-brand-600 text-white'
+                        : 'text-ink-muted hover:bg-neutral-100 hover:text-ink dark:hover:bg-neutral-800',
+                    )}
+                  >
+                    {st === 'ALL' ? 'All' : st.charAt(0) + st.slice(1).toLowerCase()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void loadRoster()}
+              disabled={rosterLoading}
+              aria-busy={rosterLoading}
+            >
+              <RefreshCw className={cn('size-3.5', rosterLoading && 'animate-spin')} aria-hidden="true" />
+              Refresh Roster
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {rosterError && rosterLoadedOnce && (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-xl border border-error-200 bg-error-50 p-3.5 text-xs text-error-800 sm:flex-row sm:items-center sm:justify-between dark:border-error-900 dark:bg-error-950/40 dark:text-error-200"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <span>Could not refresh member roster: {rosterError}</span>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => void loadRoster()}>
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {rosterLoading && !rosterLoadedOnce ? (
+            <div className="space-y-3" role="status" aria-label="Loading workspace roster">
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+            </div>
+          ) : rosterError && !rosterLoadedOnce ? (
+            <div
+              role="alert"
+              className="rounded-xl border border-error-200 bg-error-50 p-5 text-sm text-error-800 dark:border-error-900 dark:bg-error-950/40 dark:text-error-200"
+            >
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <div className="space-y-2.5">
+                  <p className="font-semibold">Unable to load workspace members</p>
+                  <p className="text-xs">{rosterError}</p>
+                  <Button type="button" size="sm" variant="outline" onClick={() => void loadRoster()}>
+                    <RefreshCw className="size-3.5" aria-hidden="true" />
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center">
+              <Users className="mx-auto size-8 text-ink-muted" aria-hidden="true" />
+              <p className="mt-2 text-sm font-semibold text-ink">
+                {statusFilter === 'ALL'
+                  ? 'No workspace members found yet'
+                  : `No ${statusFilter.toLowerCase()} members in this workspace`}
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                {statusFilter === 'ALL'
+                  ? 'Invite your hiring managers and recruiters to collaborate on candidate pipelines.'
+                  : 'Switch back to All to inspect active members and pending invitations.'}
+              </p>
+              <div className="mt-4 flex justify-center gap-2">
+                {statusFilter !== 'ALL' ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => setStatusFilter('ALL')}>
+                    Show All Members
+                  </Button>
+                ) : (
+                  <Button type="button" size="sm" onClick={() => setInviteOpen(true)}>
+                    <UserPlus className="size-4" aria-hidden="true" />
+                    Invite Teammate
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Desktop semantic table */}
+              <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
+                <table className="w-full text-left text-xs" aria-label="Workspace members">
+                  <thead className="border-b border-border bg-neutral-50/70 text-[11px] font-semibold uppercase tracking-wider text-ink-muted dark:bg-neutral-900/50">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">Member</th>
+                      <th scope="col" className="px-4 py-3">Role</th>
+                      <th scope="col" className="px-4 py-3">Status</th>
+                      <th scope="col" className="px-4 py-3">Workspace</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredMembers.map((member) => {
+                      const primaryRole = (member.roles && member.roles[0]) || 'MEMBER';
+                      const statusUpper = String(member.status || 'ACTIVE').toUpperCase();
+                      return (
+                        <tr key={member.principalId || member.invitationEmail}>
+                          <td className="px-4 py-3.5">
+                            <p className="font-semibold text-ink break-words">
+                              {member.displayName || member.invitationEmail || member.email || member.principalId}
+                            </p>
+                            {(member.invitationEmail || member.email) && (
+                              <p className="text-[11px] text-ink-muted break-all">
+                                {member.invitationEmail || member.email}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-border bg-neutral-50 px-2 py-0.5 font-semibold text-ink dark:bg-neutral-800">
+                              <Shield className="size-3 text-brand-600" aria-hidden="true" />
+                              <span>{primaryRole}</span>
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <MemberStatusBadge status={statusUpper} />
+                          </td>
+                          <td className="px-4 py-3.5 text-ink-muted">
+                            {member.workspaceName || 'Default Workspace'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile stacked cards */}
+              <ul className="space-y-3 md:hidden" aria-label="Workspace members">
+                {filteredMembers.map((member) => {
+                  const primaryRole = (member.roles && member.roles[0]) || 'MEMBER';
+                  const statusUpper = String(member.status || 'ACTIVE').toUpperCase();
+                  return (
+                    <li
+                      key={member.principalId || member.invitationEmail}
+                      className="rounded-xl border border-border bg-surface p-3.5 space-y-2 text-xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-ink break-words">
+                            {member.displayName || member.invitationEmail || member.email || member.principalId}
+                          </p>
+                          {(member.invitationEmail || member.email) && (
+                            <p className="text-[11px] text-ink-muted break-all">
+                              {member.invitationEmail || member.email}
+                            </p>
+                          )}
+                        </div>
+                        <MemberStatusBadge status={statusUpper} />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-2">
+                        <span className="inline-flex items-center gap-1 font-semibold text-ink">
+                          <Shield className="size-3 text-brand-600" aria-hidden="true" />
+                          <span>{primaryRole}</span>
+                        </span>
+                        <span className="text-ink-muted">{member.workspaceName || 'Default Workspace'}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <InviteTeammateDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        tenantId={activeTenantId}
+        canAssignOwner={canAssignOwner}
+        onInvited={handleInvited}
+        onSeatLimitConflict={() => void loadSeatQuota()}
+        onReviewInvites={() => setStatusFilter('INVITED')}
+      />
     </div>
+  );
+}
+
+function MemberStatusBadge({ status }: { status: string }) {
+  if (status === 'INVITED') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
+        <Clock className="size-3 shrink-0" aria-hidden="true" />
+        <span>INVITED</span>
+      </span>
+    );
+  }
+  if (status === 'SUSPENDED') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200">
+        <AlertCircle className="size-3 shrink-0" aria-hidden="true" />
+        <span>SUSPENDED</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200">
+      <CheckCircle2 className="size-3 shrink-0" aria-hidden="true" />
+      <span>{status}</span>
+    </span>
   );
 }
