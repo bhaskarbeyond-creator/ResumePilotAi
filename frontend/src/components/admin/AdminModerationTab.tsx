@@ -12,7 +12,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { post, get } from '@/lib/api-client';
+import { post, get, normalizeError } from '@/lib/api-client';
 import {
   CheckCircle2,
   Building2,
@@ -30,6 +30,7 @@ import {
 
 interface EmployerApplication {
   id: string;
+  source?: 'COMPANY_PROFILE' | 'APPLICATION_SUBMISSION';
   companyName: string;
   contactEmail: string;
   contactPerson?: string;
@@ -50,72 +51,36 @@ interface JobModerationItem {
   title: string;
   company: string;
   location: string;
-  status: 'active' | 'flagged' | 'archived';
+  status: string;
   isSpam: boolean;
+  publiclyVisible?: boolean;
   postedAt: string;
 }
 
-const DEFAULT_APPLICATIONS: EmployerApplication[] = [
-  {
-    id: 'app_101',
-    companyName: 'Nexus AI Robotics GmbH',
-    contactEmail: 'legal@nexus-robotics.de',
-    contactPerson: 'Klaus Schmidt',
-    contactPersonTitle: 'Director of Talent Acquisition',
-    contactPhone: '+49 30 9182 301',
-    taxId: 'DE391829104',
-    website: 'https://nexus-robotics.de',
-    location: 'Berlin, Germany',
-    companySize: '51-200 employees',
-    companyDescription: 'Pioneering humanoid robotics and autonomous factory inspection systems.',
-    linkedinProfile: 'https://linkedin.com/company/nexus-ai-robotics',
-    status: 'PENDING',
-    submittedAt: '2 hours ago',
-  },
-  {
-    id: 'app_102',
-    companyName: 'Apex Health Systems Inc',
-    contactEmail: 'hr@apexhealth.com',
-    contactPerson: 'Dr. Evelyn Reed',
-    contactPersonTitle: 'Chief People Officer',
-    contactPhone: '+1 (415) 882-9011',
-    taxId: 'US-829104812',
-    website: 'https://apexhealth.com',
-    location: 'San Francisco, CA',
-    companySize: '501-1000 employees',
-    companyDescription: 'Enterprise health tech providing unified medical data interchange.',
-    linkedinProfile: 'https://linkedin.com/company/apex-health-systems',
-    status: 'APPROVED',
-    submittedAt: 'Yesterday',
-  },
-  {
-    id: 'app_103',
-    companyName: 'Quick Money Crypto Ltd',
-    contactEmail: 'scam@suspicious-crypto.biz',
-    contactPerson: 'Anonymous Operator',
-    contactPersonTitle: 'Lead Recruiter',
-    contactPhone: '+1 (000) 000-0000',
-    taxId: 'UNKNOWN',
-    website: 'http://quick-money-crypto.biz',
-    location: 'Unregistered Offshore',
-    companySize: '1-10 employees',
-    companyDescription: 'High frequency crypto arbitrage recruiting data clerks.',
-    status: 'REJECTED',
-    submittedAt: '3 days ago',
-  },
-];
+interface AdminFeedback {
+  type: 'success' | 'error';
+  text: string;
+}
 
-const DEFAULT_JOBS: JobModerationItem[] = [
-  { id: 'job_201', title: 'Senior Distributed Systems Architect', company: 'Nexus AI Robotics', location: 'Berlin / Hybrid', status: 'active', isSpam: false, postedAt: 'Today' },
-  { id: 'job_202', title: 'Earn $5000/day Data Entry Typist', company: 'Online Work Group', location: 'Remote', status: 'flagged', isSpam: true, postedAt: 'Yesterday' },
-  { id: 'job_203', title: 'Lead Full Stack TypeScript Engineer', company: 'Apex Health Systems', location: 'San Francisco, CA', status: 'active', isSpam: false, postedAt: '2 days ago' },
-];
+/**
+ * Both moderation queues are populated exclusively from the administrative API.
+ * If a read fails the panel shows an error with a Retry action — it never seeds
+ * itself with sample employers or sample jobs, because an operator cannot tell a
+ * fabricated row from a real one, and an approval click would then act on data
+ * that does not exist.
+ */
 
 export function AdminModerationTab() {
   const [subSection, setSubSection] = useState<'applications' | 'jobs' | 'companies' | 'tenants'>('applications');
-  const [applications, setApplications] = useState<EmployerApplication[]>(DEFAULT_APPLICATIONS);
-  const [jobs, setJobs] = useState<JobModerationItem[]>(DEFAULT_JOBS);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [applications, setApplications] = useState<EmployerApplication[]>([]);
+  const [jobs, setJobs] = useState<JobModerationItem[]>([]);
+  const [feedback, setFeedback] = useState<AdminFeedback | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // One in-flight decision at a time, keyed by record id, so a double click can
+  // never submit two conflicting administrative decisions.
+  const [pendingApplicationId, setPendingApplicationId] = useState<string | null>(null);
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
 
   // Modals state
   const [inspectApplication, setInspectApplication] = useState<EmployerApplication | null>(null);
@@ -148,40 +113,64 @@ export function AdminModerationTab() {
   }, [reviewConfirmation, jobSpamModal, inspectApplication]);
 
   const loadApplicationsAndJobs = async () => {
+    setLoading(true);
+    setLoadError(null);
+    const failures: string[] = [];
     try {
-      const appRes = await get<{ applications?: any[] }>('/admin/employer-applications').catch(() => null);
-      if (appRes?.applications && Array.isArray(appRes.applications) && appRes.applications.length > 0) {
-        setApplications(appRes.applications.map((a: any) => ({
-          id: a.id || a.uid,
-          companyName: a.companyName || a.company || 'Enterprise Partner',
-          contactEmail: a.contactEmail || a.email || '',
-          contactPerson: a.contactPerson || a.contactName || '',
-          contactPersonTitle: a.contactPersonTitle || 'Director',
-          contactPhone: a.contactPhone || a.phone || '',
-          taxId: a.taxId || a.gstin || 'VERIFIED',
-          website: a.website || 'https://ime365.com',
-          location: a.location || 'Remote',
-          companySize: a.companySize || '50-100',
-          companyDescription: a.companyDescription || a.description || '',
-          linkedinProfile: a.linkedinProfile || '',
-          status: String(a.status || 'PENDING').toUpperCase() as 'PENDING' | 'APPROVED' | 'REJECTED',
-          submittedAt: a.submittedAt || a.createdAt || 'Recent',
-        })));
+      try {
+        const appRes = await get<{ applications?: any[] }>('/admin/employer-applications');
+        const list = Array.isArray(appRes?.applications) ? appRes.applications : [];
+        setApplications(
+          list.map((a: any) => ({
+            id: String(a.id ?? a.uid ?? ''),
+            source: a.source === 'APPLICATION_SUBMISSION' ? 'APPLICATION_SUBMISSION' : 'COMPANY_PROFILE',
+            companyName: a.companyName || a.company || a.name || 'Unnamed organization',
+            contactEmail: a.contactEmail || a.email || '',
+            contactPerson: a.contactPerson || a.contactName || '',
+            contactPersonTitle: a.contactPersonTitle || '',
+            contactPhone: a.contactPhone || a.phone || '',
+            // The server omits tax/contact data for read-only roles; never invent it.
+            taxId: a.taxId || a.gstin || '',
+            website: a.website || '',
+            location: a.location || '',
+            companySize: a.companySize || a.size || '',
+            companyDescription: a.companyDescription || a.description || '',
+            linkedinProfile: a.linkedinProfile || '',
+            status: String(a.status || 'PENDING').toUpperCase() as 'PENDING' | 'APPROVED' | 'REJECTED',
+            submittedAt: a.submittedAt || a.createdAt || '',
+          }))
+        );
+      } catch (err) {
+        failures.push(`employer applications (${normalizeError(err).message})`);
       }
-      const jobRes = await get<{ jobs?: any[] }>('/admin/jobs').catch(() => null);
-      if (jobRes?.jobs && Array.isArray(jobRes.jobs) && jobRes.jobs.length > 0) {
-        setJobs(jobRes.jobs.map((j: any) => ({
-          id: j.id,
-          title: j.title || 'Untitled Role',
-          company: j.company || 'Confidential Employer',
-          location: j.location || 'Remote',
-          status: j.status === 'inactive' ? 'flagged' : (j.status || 'active'),
-          isSpam: Boolean(j.isSpam || j.status === 'inactive'),
-          postedAt: j.postedDate || j.createdAt || 'Recent',
-        })));
+
+      try {
+        const jobRes = await get<{ jobs?: any[]; allJobs?: any[] }>('/admin/jobs?limit=100');
+        const list = Array.isArray(jobRes?.jobs) ? jobRes.jobs : Array.isArray(jobRes?.allJobs) ? jobRes.allJobs : [];
+        setJobs(
+          list.map((j: any) => {
+            const status = String(j.status || 'pending').toLowerCase();
+            return {
+              id: String(j.id ?? ''),
+              title: j.title || 'Untitled role',
+              company: j.company || j.companyName || j.company_name || '',
+              location: j.location || '',
+              status,
+              isSpam: j.isSpam === true || status === 'flagged',
+              publiclyVisible: status === 'active',
+              postedAt: j.postedAt || j.postedDate || j.createdAt || '',
+            };
+          })
+        );
+      } catch (err) {
+        failures.push(`job listings (${normalizeError(err).message})`);
       }
-    } catch {
-      // Keep baseline
+
+      if (failures.length) {
+        setLoadError(`Failed to load ${failures.join(' and ')}.`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -189,54 +178,126 @@ export function AdminModerationTab() {
     void loadApplicationsAndJobs();
   }, []);
 
-  const handleApproveApplication = async (appId: string) => {
+  const showError = (text: string) => {
+    setFeedback({ type: 'error', text });
+    setTimeout(() => setFeedback((current) => (current?.text === text ? null : current)), 6000);
+  };
+
+  const showSuccess = (text: string) => {
+    setFeedback({ type: 'success', text });
+    setTimeout(() => setFeedback((current) => (current?.text === text ? null : current)), 4000);
+  };
+
+  const reviewApplication = async (
+    application: EmployerApplication,
+    decision: 'APPROVED' | 'REJECTED',
+    reason?: string
+  ) => {
+    if (pendingApplicationId) return;
+    if (decision === 'REJECTED' && !reason?.trim()) {
+      showError('A rejection reason is required before the decision can be submitted.');
+      return;
+    }
+    setPendingApplicationId(application.id);
     try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'APPROVED' });
+      const res = await post<{
+        success?: boolean;
+        decision?: string;
+        status?: string;
+        application?: { status?: string };
+        notification?: { state?: string };
+        warnings?: string[];
+      }>(`/admin/employer-applications/${application.id}/verify`, {
+        decision,
+        reason: decision === 'REJECTED' ? reason?.trim() : undefined,
+      });
+
+      // The served handler may confirm through `decision` or `application.status`.
+      const confirmed = String(
+        res?.decision || res?.application?.status || res?.status || decision
+      ).toUpperCase() as 'APPROVED' | 'REJECTED';
+      // Only a server-confirmed decision is reflected locally.
       setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, status: 'APPROVED' } : a))
+        prev.map((a) => (a.id === application.id ? { ...a, status: confirmed } : a))
       );
-      setFeedback(`Employer application ${appId} approved & verified badge assigned.`);
       setReviewConfirmation(null);
       setInspectApplication(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch (err: any) {
-      setFeedback(`Failed to approve application: ${err?.message || 'Verification error'}`);
-      setTimeout(() => setFeedback(null), 4000);
+      setReviewReason('');
+
+      // Only describe the applicant notification when the server reports it.
+      const notificationState = res?.notification?.state;
+      const notificationNote = notificationState
+        ? notificationState === 'QUEUED'
+          ? ' Applicant notification queued for delivery.'
+          : ` Applicant notification: ${notificationState.replace(/_/g, ' ').toLowerCase()}.`
+        : '';
+      showSuccess(
+        `${application.companyName} was ${confirmed === 'APPROVED' ? 'approved and verified' : 'rejected'}.${notificationNote}`
+      );
+      if (Array.isArray(res?.warnings) && res.warnings.length) {
+        showError(res.warnings.join(' '));
+      }
+      // Reconcile the queue with the server rather than trusting local edits.
+      await loadApplicationsAndJobs();
+    } catch (err) {
+      showError(`Failed to ${decision === 'APPROVED' ? 'approve' : 'reject'} ${application.companyName}: ${normalizeError(err).message}`);
+    } finally {
+      setPendingApplicationId(null);
     }
   };
 
-  const handleRejectApplication = async (appId: string, reason: string) => {
-    try {
-      await post(`/admin/employer-applications/${appId}/verify`, { decision: 'REJECTED', reason });
-      setApplications((prev) =>
-        prev.map((a) => (a.id === appId ? { ...a, status: 'REJECTED' } : a))
-      );
-      setFeedback(`Employer application ${appId} rejected. Reason logged to security audit ledger.`);
-      setReviewConfirmation(null);
-      setReviewReason('');
-      setInspectApplication(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch (err: any) {
-      setFeedback(`Failed to reject application: ${err?.message || 'Verification error'}`);
-      setTimeout(() => setFeedback(null), 4000);
+  const handleApproveApplication = (appId: string) => {
+    const application = applications.find((a) => a.id === appId);
+    if (!application) {
+      showError('That application is no longer in the queue. Reload the queue before deciding.');
+      return;
     }
+    void reviewApplication(application, 'APPROVED');
+  };
+
+  const handleRejectApplication = (appId: string, reason: string) => {
+    const application = applications.find((a) => a.id === appId);
+    if (!application) {
+      showError('That application is no longer in the queue. Reload the queue before deciding.');
+      return;
+    }
+    void reviewApplication(application, 'REJECTED', reason);
   };
 
   const handleToggleJobSpam = async (jobId: string, isSpam: boolean) => {
+    if (pendingJobId) return;
+    setPendingJobId(jobId);
     try {
-      const newStatus = isSpam ? 'flagged' : 'active';
-      await post(`/admin/jobs/${jobId}/moderate`, { isSpam, status: newStatus });
+      const requestedStatus = isSpam ? 'flagged' : 'active';
+      const res = await post<{
+        success?: boolean;
+        job?: { status?: string; isSpam?: boolean; publiclyVisible?: boolean };
+        status?: string;
+        isSpam?: boolean;
+        warnings?: string[];
+      }>(`/admin/jobs/${jobId}/moderate`, { status: requestedStatus, isSpam });
 
+      // Prefer the nested record the moderation router returns, then the flat
+      // status/isSpam pair other handlers confirm with, then the request.
+      const confirmedStatus = String(res?.job?.status || res?.status || requestedStatus).toLowerCase();
+      const confirmedSpam = res?.job?.isSpam ?? res?.isSpam ?? isSpam;
       setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, isSpam, status: newStatus } : j))
+        prev.map((j) =>
+          j.id === jobId
+            ? { ...j, status: confirmedStatus, isSpam: confirmedSpam, publiclyVisible: confirmedStatus === 'active' }
+            : j
+        )
       );
-
-      setFeedback(`Job listing ${jobId} status updated to ${isSpam ? 'SPAM / FLAGGED' : 'APPROVED / ACTIVE'}.`);
       setJobSpamModal(null);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch (err: any) {
-      setFeedback(`Failed to update job status: ${err?.message || 'Moderation error'}`);
-      setTimeout(() => setFeedback(null), 4000);
+      showSuccess(
+        `Job ${jobId} is now ${confirmedStatus.toUpperCase()}${confirmedSpam ? ' (flagged as spam)' : ''}.`
+      );
+      if (Array.isArray(res?.warnings) && res.warnings.length) showError(res.warnings.join(' '));
+      await loadApplicationsAndJobs();
+    } catch (err) {
+      showError(`Failed to update job status: ${normalizeError(err).message}`);
+    } finally {
+      setPendingJobId(null);
     }
   };
 
@@ -278,9 +339,36 @@ export function AdminModerationTab() {
       </div>
 
       {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
-          <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-          <span>{feedback}</span>
+        <div
+          role={feedback.type === 'error' ? 'alert' : 'status'}
+          className={cn(
+            'rounded-xl border p-3 text-xs flex items-center gap-2 animate-[fade-in_150ms_ease-out]',
+            feedback.type === 'error'
+              ? 'border-rose-200 bg-rose-50 text-rose-800'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          )}
+        >
+          {feedback.type === 'error' ? (
+            <AlertTriangle className="size-4 text-rose-600 shrink-0" />
+          ) : (
+            <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+          )}
+          <span>{feedback.text}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex flex-wrap items-center justify-between gap-2"
+        >
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="size-4 text-rose-600 shrink-0" />
+            <span>{loadError}</span>
+          </span>
+          <Button variant="outline" size="xs" onClick={() => void loadApplicationsAndJobs()} loading={loading}>
+            Retry
+          </Button>
         </div>
       )}
 
@@ -300,18 +388,41 @@ export function AdminModerationTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {applications.map((app) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-ink-muted">
+                      Loading the employer verification queue…
+                    </td>
+                  </tr>
+                )}
+                {!loading && applications.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-ink-muted">
+                      No employer applications are awaiting review.
+                    </td>
+                  </tr>
+                )}
+                {!loading && applications.map((app) => (
                   <tr key={app.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-bold text-ink">{app.companyName}</div>
-                      <div className="text-[11px] text-ink-muted font-mono">Tax ID: {app.taxId}</div>
+                      <div className="text-[11px] text-ink-muted font-mono">
+                        Tax ID: {app.taxId || 'Not disclosed to this role'}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-ink-muted">
+                        {app.source === 'APPLICATION_SUBMISSION' ? 'Submitted application' : 'Company profile'}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-ink-secondary">{app.contactEmail}</td>
+                    <td className="px-4 py-3 text-ink-secondary">{app.contactEmail || '—'}</td>
                     <td className="px-4 py-3">
-                      <a href={app.website} target="_blank" rel="noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1">
-                        {app.website.replace('https://', '')}
-                        <ExternalLink className="size-3" />
-                      </a>
+                      {app.website ? (
+                        <a href={app.website} target="_blank" rel="noreferrer" className="text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1">
+                          {app.website.replace('https://', '')}
+                          <ExternalLink className="size-3" />
+                        </a>
+                      ) : (
+                        <span className="text-ink-muted">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -345,6 +456,8 @@ export function AdminModerationTab() {
                               variant="success"
                               size="xs"
                               onClick={() => setReviewConfirmation({ app, action: 'approve' })}
+                              disabled={pendingApplicationId === app.id}
+                              loading={pendingApplicationId === app.id}
                               className="h-7 px-2 text-xs"
                             >
                               <Check className="size-3 mr-1" />
@@ -354,6 +467,8 @@ export function AdminModerationTab() {
                               variant="destructive"
                               size="xs"
                               onClick={() => setReviewConfirmation({ app, action: 'reject' })}
+                              disabled={pendingApplicationId === app.id}
+                              loading={pendingApplicationId === app.id}
                               className="h-7 px-2 text-xs"
                             >
                               <X className="size-3 mr-1" />
@@ -389,7 +504,21 @@ export function AdminModerationTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {jobs.map((job) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-ink-muted">
+                      Loading the job moderation queue…
+                    </td>
+                  </tr>
+                )}
+                {!loading && jobs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-ink-muted">
+                      No job listings were returned by the marketplace.
+                    </td>
+                  </tr>
+                )}
+                {!loading && jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-bold text-ink">{job.title}</div>
@@ -408,7 +537,7 @@ export function AdminModerationTab() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50')}>
+                      <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', job.status === 'active' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50' : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50')}>
                         {job.status}
                       </span>
                     </td>
@@ -418,6 +547,8 @@ export function AdminModerationTab() {
                         variant={job.isSpam ? 'outline' : 'destructive'}
                         size="xs"
                         onClick={() => setJobSpamModal({ job, action: job.isSpam ? 'clear' : 'flag' })}
+                        disabled={pendingJobId === job.id}
+                        loading={pendingJobId === job.id}
                       >
                         {job.isSpam ? 'Clear Spam Flag' : 'Flag as Spam'}
                       </Button>
@@ -439,7 +570,8 @@ export function AdminModerationTab() {
               {subSection === 'companies' ? 'Enterprise Company Verification Registry' : 'Multi-Tenant Organizations Directory'}
             </h3>
             <p className="text-xs text-ink-muted max-w-md mx-auto">
-              Automated DNS TXT record challenge verification and contract tier quota overrides are fully active against MariaDB.
+              Company badges and tenant registries are managed by their own administrative surfaces. This panel does not
+              render them, so it makes no claim about their state.
             </p>
           </CardContent>
         </Card>
@@ -651,15 +783,20 @@ export function AdminModerationTab() {
               <Button
                 variant={reviewConfirmation.action === 'reject' ? 'destructive' : 'primary'}
                 size="sm"
+                loading={pendingApplicationId !== null}
                 onClick={() => {
+                  if (pendingApplicationId) return;
                   if (reviewConfirmation.action === 'reject') {
-                    if (!reviewReason.trim()) return;
+                    if (!reviewReason.trim()) {
+                      showError('A rejection reason is required and is recorded in the audit trail.');
+                      return;
+                    }
                     handleRejectApplication(reviewConfirmation.app.id, reviewReason.trim());
                   } else {
                     handleApproveApplication(reviewConfirmation.app.id);
                   }
                 }}
-                disabled={reviewConfirmation.action === 'reject' && !reviewReason.trim()}
+                disabled={pendingApplicationId !== null || (reviewConfirmation.action === 'reject' && !reviewReason.trim())}
                 className={cn('text-xs font-bold', reviewConfirmation.action === 'approve' && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
               >
                 {reviewConfirmation.action === 'reject' ? 'Confirm Rejection' : 'Confirm Verification'}
@@ -705,7 +842,9 @@ export function AdminModerationTab() {
               <Button
                 variant={jobSpamModal.action === 'flag' ? 'destructive' : 'primary'}
                 size="sm"
-                onClick={() => handleToggleJobSpam(jobSpamModal.job.id, jobSpamModal.action === 'flag')}
+                onClick={() => void handleToggleJobSpam(jobSpamModal.job.id, jobSpamModal.action === 'flag')}
+                disabled={pendingJobId !== null}
+                loading={pendingJobId !== null}
                 className="text-xs font-bold"
               >
                 {jobSpamModal.action === 'flag' ? 'Flag as Spam' : 'Restore Listing'}

@@ -18,7 +18,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { get, post, patch } from '@/lib/api-client';
+import { get, post, patch, put, normalizeError } from '@/lib/api-client';
 import {
   Users,
   UserPlus,
@@ -55,7 +55,7 @@ export interface AdminUserRecord {
   email: string;
   displayName: string;
   role: PlatformRole;
-  status: 'active' | 'suspended' | 'pending';
+  status: 'active' | 'suspended' | 'disabled' | 'pending';
   lastLogin: string;
   createdAt: string;
   resumeCount: number;
@@ -65,86 +65,34 @@ export interface AdminUserRecord {
   aiUsedToday?: number;
 }
 
-const DEFAULT_USERS: AdminUserRecord[] = [
-  {
-    id: 'usr_001',
-    email: 'alex.rivera@example.com',
-    displayName: 'Alex Rivera',
-    role: 'SUPER_ADMIN',
-    status: 'active',
-    lastLogin: '10 mins ago',
-    createdAt: 'Jan 15, 2026',
-    resumeCount: 4,
-    plan: 'Enterprise',
-    tenantMembership: 'Northwind Careers (Owner)',
-    aiDailyLimit: 250,
-    aiUsedToday: 42,
-  },
-  {
-    id: 'usr_002',
-    email: 'elena.rostova@techcorp.de',
-    displayName: 'Elena Rostova',
-    role: 'RECRUITER',
-    status: 'active',
-    lastLogin: '2 hours ago',
-    createdAt: 'Feb 03, 2026',
-    resumeCount: 1,
-    plan: 'Pro Recruiter',
-    tenantMembership: 'Globex Talent (Admin)',
-    aiDailyLimit: 150,
-    aiUsedToday: 89,
-  },
-  {
-    id: 'usr_003',
-    email: 'marcus.vance@cloudsystems.io',
-    displayName: 'Marcus Vance',
-    role: 'ADMIN',
-    status: 'active',
-    lastLogin: 'Yesterday',
-    createdAt: 'Mar 12, 2026',
-    resumeCount: 2,
-    plan: 'Pro Candidate',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 100,
-    aiUsedToday: 15,
-  },
-  {
-    id: 'usr_004',
-    email: 'spammer_bot@suspicious-net.org',
-    displayName: 'Automated Account',
-    role: 'USER',
-    status: 'suspended',
-    lastLogin: '3 days ago',
-    createdAt: 'Oct 01, 2026',
-    resumeCount: 0,
-    plan: 'Basic Free',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 25,
-    aiUsedToday: 25,
-  },
-  {
-    id: 'usr_005',
-    email: 'chloe.dupont@paris-career.fr',
-    displayName: 'Chloe Dupont',
-    role: 'USER',
-    status: 'active',
-    lastLogin: '5 mins ago',
-    createdAt: 'Sep 22, 2026',
-    resumeCount: 6,
-    plan: 'Pro Candidate',
-    tenantMembership: 'None (Standalone)',
-    aiDailyLimit: 100,
-    aiUsedToday: 18,
-  },
-];
+/**
+ * The directory is populated exclusively from GET /api/admin/users. When that
+ * call fails the UI shows an actionable error and a Retry action — it never
+ * falls back to sample accounts, because a fabricated roster in an
+ * administrative console is indistinguishable from a real one.
+ */
+const EMPTY_USERS: AdminUserRecord[] = [];
 
 export function AdminUsersTab() {
-  const [users, setUsers] = useState<AdminUserRecord[]>(DEFAULT_USERS);
+  const [users, setUsers] = useState<AdminUserRecord[]>(EMPTY_USERS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'DISABLED'>('ALL');
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // A single in-flight lifecycle mutation at a time: duplicate submissions of a
+  // status change would issue two conflicting administrative decisions.
+  const [statusPendingId, setStatusPendingId] = useState<string | null>(null);
+  const [revokingSessions, setRevokingSessions] = useState(false);
+  const [resettingMfa, setResettingMfa] = useState(false);
+  const [savingRole, setSavingRole] = useState(false);
+  const [savingQuota, setSavingQuota] = useState(false);
+  const [resettingQuota, setResettingQuota] = useState(false);
+  const [requestingReset, setRequestingReset] = useState(false);
+  const [exportingUser, setExportingUser] = useState(false);
+  const [observingUser, setObservingUser] = useState<string | null>(null);
 
   // User 360 sub-tab
   const [drawerTab, setDrawerTab] = useState<'identity' | 'tenants' | 'ai' | 'documents'>('identity');
@@ -171,13 +119,18 @@ export function AdminUsersTab() {
   const [selectedTenantRole, setSelectedTenantRole] = useState('ENTERPRISE_MEMBER');
 
   const loadUsers = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const res = await get<{ users?: AdminUserRecord[] }>('/admin/users');
-      if (res?.users && Array.isArray(res.users)) {
-        setUsers(res.users);
+      if (!res || !Array.isArray(res.users)) {
+        throw new Error('The administrative directory returned an unexpected response.');
       }
-    } catch {
-      // Keep baseline
+      setUsers(res.users);
+    } catch (err) {
+      const message = normalizeError(err).message;
+      setUsers(EMPTY_USERS);
+      setLoadError(message || 'Failed to load administrative users.');
     } finally {
       setLoading(false);
     }
@@ -200,49 +153,85 @@ export function AdminUsersTab() {
     }
   }, [selectedUser]);
 
-  const handleToggleSuspend = async (user: AdminUserRecord) => {
-    const nextStatus = user.status === 'suspended' ? 'active' : 'suspended';
+  /**
+   * Apply a User360 lifecycle transition. The UI only reflects the new state
+   * after the server confirms it, and reports the exact server-side outcome
+   * (including a partial identity/profile result) instead of guessing.
+   */
+  const handleSetStatus = async (
+    user: AdminUserRecord,
+    nextStatus: 'ACTIVE' | 'SUSPENDED' | 'DISABLED',
+    reason?: string
+  ) => {
+    if (statusPendingId) return;
+    setStatusPendingId(user.id);
+    setActionError(null);
+    setActionSuccess(null);
     try {
-      await post(`/admin/users/${user.id}/status`, {
+      const res = await patch<{
+        success?: boolean;
+        status?: string;
+        previousStatus?: string;
+        persistence?: { profilePersisted?: boolean; limitation?: string | null };
+        identity?: { disabled?: boolean; tokensRevoked?: boolean };
+      }>(`/admin/users/${user.id}/status`, {
         status: nextStatus,
-        reason: suspensionReason.trim() || undefined,
+        reason: reason?.trim() || undefined,
       });
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u))
-      );
-
+      const confirmed = String(res?.status || nextStatus).toLowerCase() as AdminUserRecord['status'];
+      const applyStatus = (record: AdminUserRecord): AdminUserRecord => ({ ...record, status: confirmed });
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? applyStatus(u) : u)));
       if (selectedUser?.id === user.id) {
-        setSelectedUser((prev) => (prev ? { ...prev, status: nextStatus } : null));
+        setSelectedUser((prev) => (prev ? applyStatus(prev) : null));
       }
 
-      setActionSuccess(`User ${user.email} marked as ${nextStatus.toUpperCase()}.`);
+      const parts = [`${user.email} is now ${confirmed.toUpperCase()}.`];
+      if (res?.identity?.tokensRevoked) parts.push('Active sessions were revoked.');
+      if (res?.persistence?.profilePersisted === false) {
+        parts.push('This identity has no application profile row, so only the sign-in state was recorded.');
+      }
+      setActionSuccess(parts.join(' '));
       setShowSuspendInput(false);
       setSuspensionReason('');
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch (err: any) {
-      setActionSuccess(`Failed to update user status: ${err?.message || 'Error'}`);
       setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err) {
+      setActionError(`Failed to update the account status: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setStatusPendingId(null);
     }
   };
 
+  const handleToggleSuspend = async (user: AdminUserRecord) => {
+    const nextStatus = user.status === 'active' || user.status === 'pending' ? 'SUSPENDED' : 'ACTIVE';
+    await handleSetStatus(user, nextStatus, suspensionReason);
+  };
+
   const handleImpersonateAudit = async (user: AdminUserRecord) => {
+    if (observingUser) return;
+    setObservingUser(user.id);
+    setActionError(null);
     try {
       await post('/platform/role-view-audit', {
         simulatedRole: user.role,
         targetUserId: user.id,
         action: 'SUPER_ADMIN_VIEW_AS_USER',
-      }).catch(() => {});
-
+      });
       setActionSuccess(`Audit trail logged for session observation: ${user.email} (${user.role})`);
       setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
+    } catch (err) {
+      setActionError(`Failed to record the role-observation audit event: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setObservingUser(null);
     }
   };
 
   const handleSaveRole = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || savingRole) return;
+    setSavingRole(true);
+    setActionError(null);
     try {
       await patch(`/admin/users/${selectedUser.id}`, { role: editRole });
       setUsers((prev) =>
@@ -251,84 +240,148 @@ export function AdminUsersTab() {
       setSelectedUser((prev) => (prev ? { ...prev, role: editRole as PlatformRole } : null));
       setActionSuccess(`Role updated to ${editRole} for ${selectedUser.email}.`);
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setActionSuccess(`Failed to update role: ${err?.message || 'Verification rejected'}`);
-      setTimeout(() => setActionSuccess(null), 3500);
+    } catch (err) {
+      setActionError(`Failed to update role: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setSavingRole(false);
     }
   };
 
   const handleCopyResetLink = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || requestingReset) return;
+    setRequestingReset(true);
+    setActionError(null);
     try {
       await post(`/admin/users/${selectedUser.id}/send-password-reset`, {});
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
       setActionSuccess(`Password reset email queued for ${selectedUser.email}.`);
       setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      const resetLink = `${window.location.origin}/login?reset_token=sec_rst_${Date.now()}&uid=${selectedUser.id}`;
-      navigator.clipboard.writeText(resetLink);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-      setActionSuccess(`One-time password reset link copied to clipboard.`);
-      setTimeout(() => setActionSuccess(null), 3000);
+    } catch (err) {
+      // A locally minted "reset link" would not be honoured by the server, so a
+      // failed request is reported as a failure instead of faking a token.
+      setActionError(`Failed to queue the password reset email: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setRequestingReset(false);
     }
   };
 
   const handleRevokeSessions = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || revokingSessions) return;
+    setRevokingSessions(true);
+    setActionError(null);
     try {
-      await post(`/admin/users/${selectedUser.id}/revoke-sessions`, {}).catch(() => {});
-      setActionSuccess(`All active JWT & refresh tokens revoked for ${selectedUser.email}.`);
-      setTimeout(() => setActionSuccess(null), 3500);
-    } catch {
-      // Handled
+      const res = await post<{ success?: boolean; revokedAt?: string }>(
+        `/admin/users/${selectedUser.id}/revoke-sessions`,
+        {}
+      );
+      setActionSuccess(
+        `Refresh tokens revoked for ${selectedUser.email}. Sign-in is required again${
+          res?.revokedAt ? ` (revoked at ${new Date(res.revokedAt).toLocaleString()})` : ''
+        }.`
+      );
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err) {
+      setActionError(`Failed to revoke sessions: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setRevokingSessions(false);
     }
   };
 
-  const handleExportUserData = () => {
-    if (!selectedUser) return;
-    const dataStr = JSON.stringify(
-      {
-        exportedAt: new Date().toISOString(),
-        user: selectedUser,
-        compliance: 'GDPR / CCPA Right to Access Data Archive',
-        resumesCount: selectedUser.resumeCount,
-        sessionStatus: selectedUser.status,
-      },
-      null,
-      2
-    );
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `user_export_${selectedUser.id}_${Date.now()}.json`;
-    link.click();
-    setActionSuccess(`GDPR data bundle exported for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
+  const handleResetMfa = async () => {
+    if (!selectedUser || resettingMfa) return;
+    setResettingMfa(true);
+    setActionError(null);
+    try {
+      const res = await post<{ removedFactorCount?: number }>(`/admin/users/${selectedUser.id}/unenroll-mfa`, {});
+      setActionSuccess(
+        `Two-factor authentication reset for ${selectedUser.email}${
+          typeof res?.removedFactorCount === 'number' ? ` (${res.removedFactorCount} factor(s) removed)` : ''
+        }.`
+      );
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err) {
+      setActionError(`Failed to reset two-factor authentication: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setResettingMfa(false);
+    }
   };
 
-  const handleSaveAiQuota = () => {
-    if (!selectedUser) return;
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === selectedUser.id ? { ...u, aiDailyLimit: customAiLimit } : u
-      )
-    );
-    setSelectedUser((prev) => (prev ? { ...prev, aiDailyLimit: customAiLimit } : null));
-    setActionSuccess(`AI daily limit set to ${customAiLimit} for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
+  const handleExportUserData = async () => {
+    if (!selectedUser || exportingUser) return;
+    setExportingUser(true);
+    setActionError(null);
+    try {
+      // The server assembles the statutory export bundle from the authoritative
+      // stores; the browser never invents one from the row it happens to hold.
+      const res = await get<{ success?: boolean; export?: unknown }>(`/admin/users/${selectedUser.id}/export`);
+      const blob = new Blob([JSON.stringify(res?.export ?? res, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `user_export_${selectedUser.id}_${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setActionSuccess(`Server-generated data bundle exported for ${selectedUser.email}.`);
+      setTimeout(() => setActionSuccess(null), 3500);
+    } catch (err) {
+      setActionError(`Failed to export user data: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setExportingUser(false);
+    }
   };
 
-  const handleResetDailyUsage = () => {
-    if (!selectedUser) return;
-    setUsers((prev) =>
-      prev.map((u) => (u.id === selectedUser.id ? { ...u, aiUsedToday: 0 } : u))
-    );
-    setSelectedUser((prev) => (prev ? { ...prev, aiUsedToday: 0 } : null));
-    setActionSuccess(`Daily AI usage counter reset to 0 for ${selectedUser.email}.`);
-    setTimeout(() => setActionSuccess(null), 3000);
+  const handleSaveAiQuota = async () => {
+    if (!selectedUser || savingQuota) return;
+    if (!Number.isFinite(customAiLimit) || customAiLimit < 0) {
+      setActionError('The AI daily limit must be a non-negative number.');
+      setTimeout(() => setActionError(null), 5000);
+      return;
+    }
+    setSavingQuota(true);
+    setActionError(null);
+    try {
+      await put(`/admin/users/${selectedUser.id}/ai-entitlement`, {
+        dailyLimit: customAiLimit,
+        reason: aiLimitReason.trim() || undefined,
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === selectedUser.id ? { ...u, aiDailyLimit: customAiLimit } : u))
+      );
+      setSelectedUser((prev) => (prev ? { ...prev, aiDailyLimit: customAiLimit } : null));
+      setActionSuccess(`AI daily limit set to ${customAiLimit} for ${selectedUser.email}.`);
+      setTimeout(() => setActionSuccess(null), 3500);
+    } catch (err) {
+      setActionError(`Failed to update the AI quota: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setSavingQuota(false);
+    }
+  };
+
+  const handleResetDailyUsage = async () => {
+    if (!selectedUser || resettingQuota) return;
+    setResettingQuota(true);
+    setActionError(null);
+    try {
+      await post(`/admin/users/${selectedUser.id}/ai-quota-reset`, {});
+      setUsers((prev) =>
+        prev.map((u) => (u.id === selectedUser.id ? { ...u, aiUsedToday: 0 } : u))
+      );
+      setSelectedUser((prev) => (prev ? { ...prev, aiUsedToday: 0 } : null));
+      setActionSuccess(`Daily AI usage counter reset to 0 for ${selectedUser.email}.`);
+      setTimeout(() => setActionSuccess(null), 3500);
+    } catch (err) {
+      setActionError(`Failed to reset the daily AI usage counter: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setResettingQuota(false);
+    }
   };
 
   const handleProvisionUserSubmit = async (e: React.FormEvent) => {
@@ -336,39 +389,30 @@ export function AdminUsersTab() {
     if (!newEmail.trim() || !newName.trim()) return;
 
     setIsProvisioning(true);
+    setActionError(null);
     try {
-      const newUserRecord: AdminUserRecord = {
-        id: `usr_${Date.now().toString().slice(-4)}`,
-        email: newEmail.trim(),
-        displayName: newName.trim(),
-        role: newRole,
-        status: 'active',
-        lastLogin: 'Never (Just provisioned)',
-        createdAt: 'Just now',
-        resumeCount: 0,
-        plan: newRole === 'RECRUITER' ? 'Pro Recruiter' : newRole === 'ADMIN' ? 'Enterprise' : 'Basic Free',
-        tenantMembership: newTenant ? `${newTenant} (Member)` : 'None (Standalone)',
-        aiDailyLimit: newRole === 'SUPER_ADMIN' ? 500 : 100,
-        aiUsedToday: 0,
-      };
-
-      await post('/admin/users', {
+      const created = await post<{ success?: boolean; user?: Partial<AdminUserRecord> }>('/admin/users', {
         email: newEmail.trim(),
         displayName: newName.trim(),
         role: newRole,
         password: newPassword || undefined,
         verified: newVerifyEmail,
-      }).catch(() => {});
-
-      setUsers([newUserRecord, ...users]);
+      });
+      if (!created?.user) {
+        throw new Error('The server did not return the created user record.');
+      }
+      // Only the server-confirmed record is inserted; the directory is reloaded
+      // so the row reflects persisted state rather than a local guess.
+      await loadUsers();
       setShowCreateModal(false);
       setNewName('');
       setNewEmail('');
       setNewPassword('');
       setActionSuccess(`User ${newEmail.trim()} successfully provisioned with role ${newRole}!`);
       setTimeout(() => setActionSuccess(null), 4000);
-    } catch {
-      // Handled
+    } catch (err) {
+      setActionError(`Failed to provision the user: ${normalizeError(err).message}`);
+      setTimeout(() => setActionError(null), 6000);
     } finally {
       setIsProvisioning(false);
     }
@@ -378,7 +422,8 @@ export function AdminUsersTab() {
     const matchesFilter =
       statusFilter === 'ALL' ||
       (statusFilter === 'ACTIVE' && u.status === 'active') ||
-      (statusFilter === 'SUSPENDED' && u.status === 'suspended');
+      (statusFilter === 'SUSPENDED' && u.status === 'suspended') ||
+      (statusFilter === 'DISABLED' && u.status === 'disabled');
 
     if (!matchesFilter) return false;
     if (!searchQuery.trim()) return true;
@@ -416,7 +461,7 @@ export function AdminUsersTab() {
             Provision User
           </Button>
 
-          {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((filter) => (
+          {(['ALL', 'ACTIVE', 'SUSPENDED', 'DISABLED'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
@@ -434,9 +479,42 @@ export function AdminUsersTab() {
       </div>
 
       {actionSuccess && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]">
+        <div
+          role="status"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]"
+        >
           <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
           <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-center gap-2 animate-[fade-in_150ms_ease-out]"
+        >
+          <ShieldAlert className="size-4 text-rose-600 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex flex-wrap items-center justify-between gap-2"
+        >
+          <span className="flex items-center gap-2">
+            <ShieldAlert className="size-4 text-rose-600 shrink-0" />
+            <span>
+              {loadError.includes('Failed to load administrative users.')
+                ? loadError
+                : `Failed to load administrative users. ${loadError}`}
+            </span>
+          </span>
+          <Button variant="outline" size="xs" onClick={() => void loadUsers()} loading={loading}>
+            <RotateCcw className="size-3 mr-1" />
+            Retry
+          </Button>
         </div>
       )}
 
@@ -466,7 +544,14 @@ export function AdminUsersTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filteredUsers.map((user) => (
+            {loading && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-ink-muted">
+                  Loading the administrative user directory…
+                </td>
+              </tr>
+            )}
+            {!loading && filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-neutral-25 dark:hover:bg-neutral-800/30 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -509,7 +594,9 @@ export function AdminUsersTab() {
                       'rounded-full px-2 py-0.5 text-[10px] font-semibold',
                       user.status === 'active'
                         ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
-                        : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
+                        : user.status === 'disabled'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700'
+                          : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50'
                     )}
                   >
                     {user.status}
@@ -537,24 +624,30 @@ export function AdminUsersTab() {
                       size="xs"
                       onClick={() => handleImpersonateAudit(user)}
                       title="Observe role context"
+                      disabled={observingUser === user.id}
+                      loading={observingUser === user.id}
                     >
                       Simulate
                     </Button>
                     <Button
-                      variant={user.status === 'suspended' ? 'outline' : 'destructive'}
+                      variant={user.status === 'active' || user.status === 'pending' ? 'destructive' : 'outline'}
                       size="xs"
                       onClick={() => handleToggleSuspend(user)}
+                      disabled={statusPendingId === user.id || statusPendingId !== null}
+                      loading={statusPendingId === user.id}
                     >
-                      {user.status === 'suspended' ? 'Activate' : 'Suspend'}
+                      {user.status === 'active' || user.status === 'pending' ? 'Suspend' : 'Activate'}
                     </Button>
                   </div>
                 </td>
               </tr>
             ))}
-            {filteredUsers.length === 0 && (
+            {!loading && filteredUsers.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-ink-muted">
-                  No accounts found matching filter.
+                  {users.length === 0
+                    ? 'No administrative users were returned by the directory.'
+                    : 'No accounts found matching the current filters.'}
                 </td>
               </tr>
             )}
@@ -715,7 +808,9 @@ export function AdminUsersTab() {
                         'rounded-full px-2 py-0.2 text-[10px] font-black uppercase',
                         selectedUser.status === 'active'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-rose-100 text-rose-800'
+                          : selectedUser.status === 'disabled'
+                            ? 'bg-neutral-200 text-neutral-800'
+                            : 'bg-rose-100 text-rose-800'
                       )}
                     >
                       {selectedUser.status}
@@ -816,12 +911,10 @@ export function AdminUsersTab() {
                         <Button
                           size="xs"
                           variant="outline"
-                          onClick={() => {
-                            setActionSuccess(`Subscription plan set to ${editPlan}.`);
-                            setTimeout(() => setActionSuccess(null), 3000);
-                          }}
+                          disabled
+                          title="Membership plans are granted by the billing mandate; this control is read-only until that endpoint is wired."
                         >
-                          Apply
+                          Billing-owned
                         </Button>
                       </div>
                       <p className="text-[10px] text-ink-muted">Entitlement level for DOCX export & AI models.</p>
@@ -836,6 +929,8 @@ export function AdminUsersTab() {
                         variant="outline"
                         size="sm"
                         onClick={handleCopyResetLink}
+                        disabled={requestingReset}
+                        loading={requestingReset}
                         className="justify-start gap-2 h-9 text-xs"
                       >
                         {copiedLink ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4 text-brand-600" />}
@@ -846,6 +941,8 @@ export function AdminUsersTab() {
                         variant="outline"
                         size="sm"
                         onClick={handleRevokeSessions}
+                        disabled={revokingSessions}
+                        loading={revokingSessions}
                         className="justify-start gap-2 h-9 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                       >
                         <ShieldAlert className="size-4" />
@@ -856,6 +953,8 @@ export function AdminUsersTab() {
                         variant="outline"
                         size="sm"
                         onClick={handleExportUserData}
+                        disabled={exportingUser}
+                        loading={exportingUser}
                         className="justify-start gap-2 h-9 text-xs"
                       >
                         <Download className="size-4 text-blue-600" />
@@ -865,10 +964,9 @@ export function AdminUsersTab() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setActionSuccess(`Two-Factor Authentication un-enrolled for ${selectedUser.email}.`);
-                          setTimeout(() => setActionSuccess(null), 3500);
-                        }}
+                        onClick={handleResetMfa}
+                        disabled={resettingMfa}
+                        loading={resettingMfa}
                         className="justify-start gap-2 h-9 text-xs"
                       >
                         <Unlock className="size-4 text-amber-600" />
@@ -883,24 +981,51 @@ export function AdminUsersTab() {
                       <div>
                         <h4 className="font-bold text-rose-950 text-xs">Account Status & Suspension</h4>
                         <p className="text-[11px] text-rose-800/80">
-                          {selectedUser.status === 'suspended'
-                            ? 'This account is currently blocked from signing in and issuing API requests.'
-                            : 'Suspending this account immediately challenges all active sessions with HTTP 401.'}
+                          {selectedUser.status === 'active' || selectedUser.status === 'pending'
+                            ? 'Suspending blocks sign-in, revokes refresh tokens and challenges active sessions with HTTP 401.'
+                            : selectedUser.status === 'disabled'
+                              ? 'This account is DISABLED: sign-in is refused until an administrator reactivates it.'
+                              : 'This account is SUSPENDED and cannot sign in. Revoke sessions again after reactivation if needed.'}
                         </p>
                       </div>
-                      <Button
-                        variant={selectedUser.status === 'suspended' ? 'outline' : 'destructive'}
-                        size="sm"
-                        onClick={() => {
-                          if (selectedUser.status === 'active' && !showSuspendInput) {
-                            setShowSuspendInput(true);
-                          } else {
-                            handleToggleSuspend(selectedUser);
-                          }
-                        }}
-                      >
-                        {selectedUser.status === 'suspended' ? 'Lift Suspension' : 'Suspend Account'}
-                      </Button>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        {selectedUser.status !== 'active' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={statusPendingId === selectedUser.id}
+                            loading={statusPendingId === selectedUser.id}
+                            onClick={() => void handleSetStatus(selectedUser, 'ACTIVE')}
+                          >
+                            Reactivate
+                          </Button>
+                        )}
+                        {selectedUser.status !== 'suspended' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={statusPendingId === selectedUser.id}
+                            loading={statusPendingId === selectedUser.id}
+                            onClick={() => {
+                              if (!showSuspendInput) setShowSuspendInput(true);
+                              else void handleSetStatus(selectedUser, 'SUSPENDED', suspensionReason);
+                            }}
+                          >
+                            Suspend Account
+                          </Button>
+                        )}
+                        {selectedUser.status !== 'disabled' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={statusPendingId === selectedUser.id}
+                            loading={statusPendingId === selectedUser.id}
+                            onClick={() => void handleSetStatus(selectedUser, 'DISABLED', suspensionReason)}
+                          >
+                            Disable Account
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     {showSuspendInput && (
@@ -918,7 +1043,13 @@ export function AdminUsersTab() {
                           <Button size="xs" variant="ghost" onClick={() => setShowSuspendInput(false)}>
                             Cancel
                           </Button>
-                          <Button size="xs" variant="destructive" onClick={() => handleToggleSuspend(selectedUser)}>
+                          <Button
+                            size="xs"
+                            variant="destructive"
+                            disabled={statusPendingId === selectedUser.id}
+                            loading={statusPendingId === selectedUser.id}
+                            onClick={() => void handleSetStatus(selectedUser, 'SUSPENDED', suspensionReason)}
+                          >
                             Confirm Suspension
                           </Button>
                         </div>
@@ -1055,11 +1186,11 @@ export function AdminUsersTab() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <Button variant="outline" size="xs" onClick={handleResetDailyUsage}>
+                      <Button variant="outline" size="xs" onClick={handleResetDailyUsage} disabled={resettingQuota} loading={resettingQuota}>
                         <RotateCcw className="size-3 mr-1" />
                         Reset Today's Counter to 0
                       </Button>
-                      <Button variant="primary" size="xs" onClick={handleSaveAiQuota}>
+                      <Button variant="primary" size="xs" onClick={handleSaveAiQuota} disabled={savingQuota} loading={savingQuota}>
                         Save Quota Override
                       </Button>
                     </div>
