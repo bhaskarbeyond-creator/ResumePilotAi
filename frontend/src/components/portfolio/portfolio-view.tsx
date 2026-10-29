@@ -7,7 +7,7 @@
  * city and country. Links are allowed only for http(s) and mailto, and images
  * only for http(s) or inline raster data.
  */
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ExternalLink, FolderGit2, Globe, Link2, Mail, MapPin, Phone } from 'lucide-react';
 import {
   displayName,
@@ -73,12 +73,53 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
     { key: 'github', href: safeHttpUrl(heading.github), label: 'GitHub', icon: FolderGit2 },
   ].filter((entry) => entry.href);
   const skillGroups = groupSkills(canonical.skills);
+  const [photoFailed, setPhotoFailed] = useState(false);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photo]);
+
+  const initials = (name || 'P')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+
+  const navSections = [
+    canonical.summary ? { id: 'portfolio-section-about', label: 'About' } : null,
+    canonical.experiences.length > 0 ? { id: 'portfolio-section-experience', label: 'Experience' } : null,
+    canonical.projects.length > 0 ? { id: 'portfolio-section-projects', label: 'Projects' } : null,
+    skillGroups.length > 0 ? { id: 'portfolio-section-skills', label: 'Skills' } : null,
+    canonical.education.length > 0 ? { id: 'portfolio-section-education', label: 'Education' } : null,
+    canonical.certifications.length > 0 ? { id: 'portfolio-section-certifications', label: 'Certifications' } : null,
+    canonical.achievements.length > 0 ? { id: 'portfolio-section-achievements', label: 'Achievements' } : null,
+    canonical.languages.length > 0 ? { id: 'portfolio-section-languages', label: 'Languages' } : null,
+    canonical.hobbies.length > 0 ? { id: 'portfolio-section-interests', label: 'Interests' } : null,
+  ].filter((entry): entry is { id: string; label: string } => entry !== null);
 
   return (
     <div className={cn('min-w-0', palette.page, className)}>
       <div className="mx-auto max-w-4xl space-y-5 px-4 py-8 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          {photo && <img src={photo} alt={name ? `Photo of ${name}` : 'Profile photo'} className="size-24 shrink-0 rounded-full object-cover" />}
+          {photo && !photoFailed ? (
+            <img
+              src={photo}
+              alt={name ? `Photo of ${name}` : 'Profile photo'}
+              onError={() => setPhotoFailed(true)}
+              className="size-24 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className={cn(
+                'flex size-20 shrink-0 items-center justify-center rounded-full text-2xl font-bold sm:size-24',
+                palette.chip,
+              )}
+            >
+              {initials}
+            </div>
+          )}
           <div className="min-w-0">
             <Heading level={headingLevel} className="text-3xl font-bold tracking-tight break-words sm:text-4xl">{name || 'Unnamed portfolio'}</Heading>
             {heading.occupation && <p className={cn('mt-1 text-lg font-medium break-words', palette.accent)}>{heading.occupation}</p>}
@@ -98,16 +139,30 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
           </div>
         </header>
 
+        {navSections.length >= 2 && (
+          <nav aria-label="Portfolio sections" className={cn('rounded-2xl px-4 py-2.5', palette.card)}>
+            <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-medium">
+              {navSections.map((sec) => (
+                <li key={sec.id}>
+                  <a href={`#${sec.id}`} className={cn('underline-offset-4 hover:underline', palette.accent)}>
+                    {sec.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
         {!hasContent(canonical) && <p className={cn('rounded-2xl p-5', palette.card, palette.muted)}>This portfolio has no content yet.</p>}
 
         {canonical.summary && (
-          <ViewSection level={section} palette={palette} title="About">
+          <ViewSection id="portfolio-section-about" level={section} palette={palette} title="About">
             <p className={cn('whitespace-pre-line break-words', palette.muted)}>{canonical.summary}</p>
           </ViewSection>
         )}
 
         {canonical.experiences.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Experience">
+          <ViewSection id="portfolio-section-experience" level={section} palette={palette} title="Experience">
             <ol className="space-y-5">
               {canonical.experiences.map((entry) => (
                 <li key={entry.id} className={cn('border-l-2 pl-4', palette.rule)}>
@@ -123,7 +178,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.projects.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Projects">
+          <ViewSection id="portfolio-section-projects" level={section} palette={palette} title="Projects">
             <ul className="grid gap-4 sm:grid-cols-2">
               {canonical.projects.map((project) => {
                 const link = safeHttpUrl(project.link);
@@ -149,7 +204,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {skillGroups.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Skills">
+          <ViewSection id="portfolio-section-skills" level={section} palette={palette} title="Skills">
             <div className="space-y-3">
               {skillGroups.map(([category, skills]) => (
                 <div key={category || 'skills'}>
@@ -164,7 +219,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.education.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Education">
+          <ViewSection id="portfolio-section-education" level={section} palette={palette} title="Education">
             <ul className="space-y-4">
               {canonical.education.map((entry) => (
                 <li key={entry.id}>
@@ -178,7 +233,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.certifications.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Certifications">
+          <ViewSection id="portfolio-section-certifications" level={section} palette={palette} title="Certifications">
             <ul className="space-y-3">
               {canonical.certifications.map((entry) => {
                 const link = safeHttpUrl(entry.link);
@@ -195,7 +250,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.achievements.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Achievements">
+          <ViewSection id="portfolio-section-achievements" level={section} palette={palette} title="Achievements">
             <ul className="list-disc space-y-2 pl-5 text-sm">
               {canonical.achievements.map((entry) => (
                 <li key={entry.id}><span className="font-medium">{entry.title}</span>{entry.description && <span className={palette.muted}> — {entry.description}</span>}</li>
@@ -205,7 +260,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.languages.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Languages">
+          <ViewSection id="portfolio-section-languages" level={section} palette={palette} title="Languages">
             <ul className="flex flex-wrap gap-2 text-sm">
               {canonical.languages.map((entry) => <li key={entry.id} className={cn('rounded-full px-3 py-1', palette.chip)}>{entry.name}{entry.level && ` · ${entry.level}`}</li>)}
             </ul>
@@ -235,7 +290,7 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
         )}
 
         {canonical.hobbies.length > 0 && (
-          <ViewSection level={section} palette={palette} title="Interests">
+          <ViewSection id="portfolio-section-interests" level={section} palette={palette} title="Interests">
             <p className={cn('text-sm', palette.muted)}>{canonical.hobbies.join(' · ')}</p>
           </ViewSection>
         )}
@@ -244,9 +299,9 @@ export function PortfolioView({ canonical, headingLevel = 1, className }: Portfo
   );
 }
 
-function ViewSection({ title, level, palette, children }: { title: string; level: Level; palette: Palette; children: ReactNode }) {
+function ViewSection({ id, title, level, palette, children }: { id?: string; title: string; level: Level; palette: Palette; children: ReactNode }) {
   return (
-    <section className={cn('rounded-2xl p-5 sm:p-6', palette.card)}>
+    <section id={id} className={cn('scroll-mt-6 rounded-2xl p-5 sm:p-6', palette.card)}>
       <Heading level={level} className={cn('text-lg font-semibold', palette.accent)}>{title}</Heading>
       <div className="mt-3">{children}</div>
     </section>
