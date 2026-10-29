@@ -78,9 +78,9 @@ async function notifyHandler(req, res) {
 
   const body = req.body || {};
   const candidateId = String(body.candidateId || '').trim();
-  const recipientEmail = String(body.recipientEmail || '').trim();
+  const recipientEmail = String(body.recipientEmail || body.to || '').trim();
   const subject = String(body.subject || '').trim();
-  const message = String(body.message || '').trim();
+  const message = String(body.message || body.body || '').trim();
   const template = typeof body.template === 'string' && body.template.trim().length > 0
     ? body.template.trim()
     : DEFAULT_TEMPLATE;

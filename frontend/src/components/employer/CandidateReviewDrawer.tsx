@@ -159,22 +159,31 @@ export function CandidateReviewDrawer({
     setMessageSending(true);
     setMessageError(null);
     try {
-      const candidateId = application.applicantId || application.id;
+      const candidateId = application.id || application.applicantId;
+      const recipientEmail = application.applicantEmail || '';
       let res: any;
       try {
         res = await post(`/employer/candidates/${candidateId}/notify`, {
+          candidateId,
+          recipientEmail,
+          to: recipientEmail,
           subject: messageSubject.trim(),
           message: messageBody.trim(),
-          template: 'custom',
+          body: messageBody.trim(),
+          template: 'custom_message',
         });
       } catch {
         res = await post('/notify/email', {
-          to: application.applicantEmail,
+          candidateId,
+          recipientEmail,
+          to: recipientEmail,
           subject: messageSubject.trim(),
+          message: messageBody.trim(),
           body: messageBody.trim(),
           recipientName: application.applicantName,
           jobId,
           applicationId: application.id,
+          template: 'custom_message',
         });
       }
 
