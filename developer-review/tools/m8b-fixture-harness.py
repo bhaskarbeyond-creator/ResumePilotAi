@@ -185,9 +185,13 @@ def main():
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args()
 
-    if os.path.isdir(FIXROOT):
-        shutil.rmtree(FIXROOT)
+    # Remove only the GENERATED fixture directories. Deleting all of FIXROOT also destroyed the
+    # committed README.md next to them, which is how a documentation file kept disappearing.
     os.makedirs(FIXROOT, exist_ok=True)
+    for entry in os.listdir(FIXROOT):
+        ep = os.path.join(FIXROOT, entry)
+        if os.path.isdir(ep):
+            shutil.rmtree(ep)
 
     rows, failures = [], 0
 

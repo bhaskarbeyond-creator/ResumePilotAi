@@ -3,10 +3,6 @@
 These fixtures are **generated deterministically**, not stored. Each is the audit dataset with exactly one
 corruption applied, produced by `developer-review/tools/m8b-fixture-harness.py`.
 
-> **Note:** the harness deletes and rebuilds this directory on every run (`FIXROOT` is cleared at start), so this
-> README and `harness-results.json` are rewritten each time. If you run the harness, re-add this file afterwards —
-> or simply rely on the harness output, which is authoritative.
-
 The bulky per-fixture dataset copies are **deliberately not committed**: they are 8 near-copies of the same
 artifacts (~870 KB each) and the harness rebuilds them byte-identically in under a second. What *is* committed is
 `harness-results.json`, which records for every fixture the expected check, the observed failing checks, the exit
