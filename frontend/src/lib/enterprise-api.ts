@@ -303,10 +303,11 @@ export async function enterpriseRequest<T>(path: string, options: RequestOptions
 
     // Attach tenant context invariants
     const effectiveTenantId = tenantId || resolveActiveTenantId();
-    if (effectiveTenantId) {
+    const isEnterpriseRoute = url.split('?')[0] === '/api/enterprise' || url.startsWith('/api/enterprise/');
+    if (isEnterpriseRoute && effectiveTenantId) {
       reqHeaders['X-Tenant-Id'] = effectiveTenantId;
     }
-    if (workspaceId) {
+    if (isEnterpriseRoute && workspaceId) {
       reqHeaders['X-Workspace-Id'] = workspaceId;
     }
 
@@ -525,7 +526,7 @@ export const enterpriseApi = {
     }),
 
   getPlatformStatus: (tenantId: string) =>
-    enterpriseRequest<{ success: boolean; hasDedicatedBYOK: boolean; credentialCount: number; providers: string[] }>('/api/platform/status', {
+    enterpriseRequest<{ success: boolean; hasDedicatedBYOK: boolean; credentialCount: number; providers: string[] }>('/api/admin/platform/status', {
       tenantId,
       params: { tenantId },
     }),

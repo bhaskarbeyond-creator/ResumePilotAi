@@ -1,3 +1,4 @@
+import { parsePlatformCredentialStatus } from '@/lib/platform-status-contract';
 /**
  * Enterprise AI Tab (AI Workspace & Model Governance)
  *
@@ -101,10 +102,11 @@ export function EnterpriseAiTab() {
     }
     setLoading(true);
     setError(null);
+    setPlatformStatus(null);
     try {
       const [configRes, statusRes] = await Promise.all([
         enterpriseApi.getConfiguration(tenant.id),
-        enterpriseApi.getPlatformStatus(tenant.id),
+        enterpriseApi.getPlatformStatus(tenant.id).then(parsePlatformCredentialStatus).catch(() => null),
       ]);
       const c = configRes.configuration || {};
       setConfig(c);
@@ -119,13 +121,7 @@ export function EnterpriseAiTab() {
       setRequestsPerMinute(Number(c.quotaPolicy?.aiRequestsPerMinute ?? 12));
       setRequestsPerDay(Number(c.quotaPolicy?.aiRequestsPerDay ?? 100));
 
-      if (statusRes.success) {
-        setPlatformStatus({
-          hasDedicatedBYOK: statusRes.hasDedicatedBYOK,
-          credentialCount: statusRes.credentialCount,
-          providers: statusRes.providers || [],
-        });
-      }
+      setPlatformStatus(statusRes);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load AI configuration');
     } finally {
@@ -219,9 +215,11 @@ export function EnterpriseAiTab() {
               : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300',
           )}>
             <Shield className="size-3.5" />
-            {platformStatus?.hasDedicatedBYOK
-              ? '✓ Dedicated Enterprise Gateway Active'
-              : 'Platform High-Availability Shared Gateway'}
+            {platformStatus === null
+              ? 'Gateway credential status unavailable'
+              : platformStatus.hasDedicatedBYOK
+                ? 'Dedicated provider credentials configured'
+                : 'No dedicated provider credentials reported'}
             {platformStatus?.hasDedicatedBYOK && platformStatus.credentialCount > 0 && (
               <span className="font-mono text-[10px] opacity-70">
                 ({platformStatus.credentialCount} provider{platformStatus.credentialCount === 1 ? '' : 's'})
