@@ -1,0 +1,4636 @@
+{
+  "generatedAt": "2026-10-29T17:57:38.479Z",
+  "branch": "arena/76eeea4d-resumepilotai",
+  "baseSha": "aa24147245daa6c027d046f1f7ae6f8fc703be46",
+  "backendEntry": "backend/index.js",
+  "methodAndLiteralPathRegistrations": 457,
+  "distinctMethodAndLiteralPathKeys": 457,
+  "duplicateMethodAndLiteralPathKeys": 0,
+  "unresolvedRoutePatterns": 0,
+  "unresolvedMountPatterns": 0,
+  "completeness": "COMPLETE_FOR_LITERAL_EXPRESS_ROUTES",
+  "duplicates": [],
+  "unresolvedRoutes": [],
+  "unresolvedMounts": [],
+  "registrations": [
+    {
+      "method": "POST",
+      "path": "/api/pay",
+      "routePath": "/api/pay",
+      "source": "backend/index.js:794:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders",
+      "routePath": "/api/payment-orders",
+      "source": "backend/index.js:815:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders/:orderId",
+      "routePath": "/api/payment-orders/:orderId",
+      "source": "backend/index.js:832:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/stripe-webhook",
+      "routePath": "/api/stripe-webhook",
+      "source": "backend/index.js:866:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/create-order",
+      "routePath": "/api/paypal/create-order",
+      "source": "backend/index.js:1084:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/verify",
+      "routePath": "/api/paypal/verify",
+      "source": "backend/index.js:1125:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/create-order",
+      "routePath": "/api/razorpay/create-order",
+      "source": "backend/index.js:1186:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/verify-payment",
+      "routePath": "/api/razorpay/verify-payment",
+      "source": "backend/index.js:1234:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/initiate-transaction",
+      "routePath": "/api/paytm/initiate-transaction",
+      "source": "backend/index.js:1338:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/verify-transaction",
+      "routePath": "/api/paytm/verify-transaction",
+      "source": "backend/index.js:1396:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/initiate",
+      "routePath": "/api/phonepe/initiate",
+      "source": "backend/index.js:1445:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/status",
+      "routePath": "/api/phonepe/status",
+      "source": "backend/index.js:1504:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/callback",
+      "routePath": "/api/paytm/callback",
+      "source": "backend/index.js:1548:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/callback",
+      "routePath": "/api/phonepe/callback",
+      "source": "backend/index.js:1564:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/subscription/preferences",
+      "routePath": "/api/subscription/preferences",
+      "source": "backend/index.js:1594:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/check",
+      "routePath": "/api/check",
+      "source": "backend/index.js:1607:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/:jobId/applications",
+      "routePath": "/api/jobs/:jobId/applications",
+      "source": "backend/index.js:1647:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/job-applications/:applicationId/status",
+      "routePath": "/api/job-applications/:applicationId/status",
+      "source": "backend/index.js:1697:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/:jobId/applications",
+      "routePath": "/api/jobs/:jobId/applications",
+      "source": "backend/index.js:1738:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+      "routePath": "/api/employer/jobs/:jobId/applications/:applicationId/resume",
+      "source": "backend/index.js:1758:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer-applications",
+      "routePath": "/api/employer-applications",
+      "source": "backend/index.js:1855:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/featured-companies",
+      "routePath": "/api/public/featured-companies",
+      "source": "backend/index.js:1873:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/companies",
+      "routePath": "/api/employer/companies",
+      "source": "backend/index.js:1906:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/companies",
+      "routePath": "/api/employer/companies",
+      "source": "backend/index.js:1926:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/companies/:companyId",
+      "routePath": "/api/employer/companies/:companyId",
+      "source": "backend/index.js:1938:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/companies/:companyId",
+      "routePath": "/api/employer/companies/:companyId",
+      "source": "backend/index.js:1955:11",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/jobs",
+      "routePath": "/api/employer/jobs",
+      "source": "backend/index.js:1973:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/jobs",
+      "routePath": "/api/employer/jobs",
+      "source": "backend/index.js:1983:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/jobs/:jobId",
+      "routePath": "/api/employer/jobs/:jobId",
+      "source": "backend/index.js:2002:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/jobs/:jobId",
+      "routePath": "/api/employer/jobs/:jobId",
+      "source": "backend/index.js:2035:11",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations",
+      "routePath": "/api/messages/conversations",
+      "source": "backend/index.js:2052:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/messages",
+      "routePath": "/api/messages/conversations/:conversationId/messages",
+      "source": "backend/index.js:2151:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/conversations/:conversationId/read",
+      "routePath": "/api/messages/conversations/:conversationId/read",
+      "source": "backend/index.js:2191:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/conversations",
+      "routePath": "/api/messages/conversations",
+      "source": "backend/index.js:2240:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/participant-profile",
+      "routePath": "/api/messages/conversations/:conversationId/participant-profile",
+      "source": "backend/index.js:2290:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/send",
+      "routePath": "/api/messages/send",
+      "source": "backend/index.js:2330:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact",
+      "routePath": "/api/contact",
+      "source": "backend/index.js:2370:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/export-render-data",
+      "routePath": "/api/export-render-data",
+      "source": "backend/index.js:2399:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/export",
+      "routePath": "/api/export",
+      "source": "backend/index.js:2430:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/public-export",
+      "routePath": "/api/public-export",
+      "source": "backend/index.js:2430:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "routePath": "/v1/chat/completions",
+      "source": "backend/index.js:2877:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/chat/completions",
+      "routePath": "/api/v1/chat/completions",
+      "source": "backend/index.js:2877:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/messages",
+      "routePath": "/v1/messages",
+      "source": "backend/index.js:3077:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/messages",
+      "routePath": "/api/v1/messages",
+      "source": "backend/index.js:3077:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search",
+      "routePath": "/v1/search",
+      "source": "backend/index.js:3146:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/search",
+      "routePath": "/api/v1/search",
+      "source": "backend/index.js:3146:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/models",
+      "routePath": "/v1/models",
+      "source": "backend/index.js:3200:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/status",
+      "routePath": "/v1/status",
+      "source": "backend/index.js:3236:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "routePath": "/api/v1/status",
+      "source": "backend/index.js:3236:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/freellmapi/status",
+      "routePath": "/api/freellmapi/status",
+      "source": "backend/index.js:3271:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/freellmapi/metrics",
+      "routePath": "/api/freellmapi/metrics",
+      "source": "backend/index.js:3276:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai-fleet-health",
+      "routePath": "/api/admin/ai-fleet-health",
+      "source": "backend/index.js:3285:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-settings",
+      "routePath": "/api/admin/payment-settings",
+      "source": "backend/index.js:3302:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai-settings",
+      "routePath": "/api/admin/ai-settings",
+      "source": "backend/index.js:3320:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/categories",
+      "routePath": "/api/admin/blog/categories",
+      "source": "backend/index.js:3338:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "routePath": "/api/admin/blog/categories/:categoryId",
+      "source": "backend/index.js:3349:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "routePath": "/api/admin/blog/categories/:categoryId",
+      "source": "backend/index.js:3366:11",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/posts/:postId",
+      "routePath": "/api/admin/blog/posts/:postId",
+      "source": "backend/index.js:3387:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/posts/:postId",
+      "routePath": "/api/admin/blog/posts/:postId",
+      "source": "backend/index.js:3407:11",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/publish-due",
+      "routePath": "/api/admin/blog/publish-due",
+      "source": "backend/index.js:3423:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/health-summary",
+      "routePath": "/api/admin/health-summary",
+      "source": "backend/index.js:3445:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/system-health-settings",
+      "routePath": "/api/admin/system-health-settings",
+      "source": "backend/index.js:3486:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/settings",
+      "routePath": "/api/admin/settings",
+      "source": "backend/index.js:3787:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/settings/:category",
+      "routePath": "/api/admin/settings/:category",
+      "source": "backend/index.js:3824:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/settings/:category",
+      "routePath": "/api/admin/settings/:category",
+      "source": "backend/index.js:3854:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai-settings",
+      "routePath": "/api/admin/ai-settings",
+      "source": "backend/index.js:3995:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/test-provider",
+      "routePath": "/api/admin/ai/test-provider",
+      "source": "backend/index.js:4019:5",
+      "mountTrail": []
+    },
+    {
+      "method": "ALL",
+      "path": "/api/admin/ai/fetch-models",
+      "routePath": "/api/admin/ai/fetch-models",
+      "source": "backend/index.js:4032:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/quota-stats",
+      "routePath": "/api/admin/ai/quota-stats",
+      "source": "backend/index.js:4046:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/quota-limits",
+      "routePath": "/api/admin/ai/quota-limits",
+      "source": "backend/index.js:4093:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/reset-quota",
+      "routePath": "/api/admin/ai/reset-quota",
+      "source": "backend/index.js:4116:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/reset-state",
+      "routePath": "/api/admin/ai/reset-state",
+      "source": "backend/index.js:4146:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/routing-telemetry",
+      "routePath": "/api/admin/ai/routing-telemetry",
+      "source": "backend/index.js:4214:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment-settings",
+      "routePath": "/api/admin/payment-settings",
+      "source": "backend/index.js:4247:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/coupons",
+      "routePath": "/api/admin/coupons",
+      "source": "backend/index.js:4543:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/coupons/active",
+      "routePath": "/api/coupons/active",
+      "source": "backend/index.js:4567:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/coupons/validate",
+      "routePath": "/api/coupons/validate",
+      "source": "backend/index.js:4643:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/validate-coupon",
+      "routePath": "/api/billing/validate-coupon",
+      "source": "backend/index.js:4644:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/coupons",
+      "routePath": "/api/admin/coupons",
+      "source": "backend/index.js:4680:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/coupons/:code",
+      "routePath": "/api/admin/coupons/:code",
+      "source": "backend/index.js:4681:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/coupons/:code",
+      "routePath": "/api/admin/coupons/:code",
+      "source": "backend/index.js:4682:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/coupons/:code",
+      "routePath": "/api/admin/coupons/:code",
+      "source": "backend/index.js:4684:11",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment/test-provider",
+      "routePath": "/api/admin/payment/test-provider",
+      "source": "backend/index.js:4704:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/twilio-settings",
+      "routePath": "/api/admin/twilio-settings",
+      "source": "backend/index.js:4857:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/twilio-settings",
+      "routePath": "/api/admin/twilio-settings",
+      "source": "backend/index.js:4876:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/send-sms",
+      "routePath": "/api/send-sms",
+      "source": "backend/index.js:4973:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/llms.txt",
+      "routePath": "/llms.txt",
+      "source": "backend/index.js:5065:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/llms-full.txt",
+      "routePath": "/llms-full.txt",
+      "source": "backend/index.js:5066:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/sitemap.xml",
+      "routePath": "/sitemap.xml",
+      "source": "backend/index.js:5072:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payment/razorpay-order",
+      "routePath": "/api/payment/razorpay-order",
+      "source": "backend/index.js:5094:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice/generate",
+      "routePath": "/api/invoice/generate",
+      "source": "backend/index.js:5103:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices",
+      "routePath": "/api/invoices",
+      "source": "backend/index.js:5133:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/:paymentOrderId",
+      "routePath": "/api/invoices/:paymentOrderId",
+      "source": "backend/index.js:5148:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice",
+      "routePath": "/api/invoice",
+      "source": "backend/index.js:5164:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/export-docx",
+      "routePath": "/api/export-docx",
+      "source": "backend/index.js:5169:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/public-export-docx",
+      "routePath": "/api/public-export-docx",
+      "source": "backend/index.js:5240:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/rtl-font-config",
+      "routePath": "/api/rtl-font-config",
+      "source": "backend/index.js:5336:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-ai-cover-letter",
+      "routePath": "/api/generate-ai-cover-letter",
+      "source": "backend/index.js:5345:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/naukri",
+      "routePath": "/api/jobs/naukri",
+      "source": "backend/index.js:5388:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/service-availability",
+      "routePath": "/api/service-availability",
+      "source": "backend/index.js:5400:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/healthz",
+      "routePath": "/healthz",
+      "source": "backend/index.js:5468:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/healthz",
+      "routePath": "/api/healthz",
+      "source": "backend/index.js:5472:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "routePath": "/api/health",
+      "source": "backend/index.js:5476:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/databases",
+      "routePath": "/api/health/databases",
+      "source": "backend/index.js:5480:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/readyz",
+      "routePath": "/readyz",
+      "source": "backend/index.js:5530:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/readyz",
+      "routePath": "/api/readyz",
+      "source": "backend/index.js:5539:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/linkedin-scraper",
+      "routePath": "/api/linkedin-scraper",
+      "source": "backend/index.js:5872:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/firebase-service-account",
+      "routePath": "/api/admin/firebase-service-account",
+      "source": "backend/index.js:5900:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/firebase-service-account",
+      "routePath": "/api/admin/firebase-service-account",
+      "source": "backend/index.js:5917:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/custom-password-reset",
+      "routePath": "/api/auth/custom-password-reset",
+      "source": "backend/index.js:6029:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/send-verification-email",
+      "routePath": "/api/auth/send-verification-email",
+      "source": "backend/index.js:6066:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email-token",
+      "routePath": "/api/auth/verify-email-token",
+      "source": "backend/index.js:6093:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payments/refund",
+      "routePath": "/api/admin/payments/refund",
+      "source": "backend/index.js:6125:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/employer-applications",
+      "routePath": "/api/admin/employer-applications",
+      "source": "backend/index.js:6272:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/companies",
+      "routePath": "/api/admin/companies",
+      "source": "backend/index.js:6279:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/jobs",
+      "routePath": "/api/admin/jobs",
+      "source": "backend/index.js:6293:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/reviews",
+      "routePath": "/api/admin/reviews",
+      "source": "backend/index.js:6308:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ads",
+      "routePath": "/api/admin/ads",
+      "source": "backend/index.js:6317:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-orders",
+      "routePath": "/api/admin/payment-orders",
+      "source": "backend/index.js:6322:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/categories",
+      "routePath": "/api/admin/blog/categories",
+      "source": "backend/index.js:6412:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/posts",
+      "routePath": "/api/admin/blog/posts",
+      "source": "backend/index.js:6417:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/employer-applications/:uid",
+      "routePath": "/api/admin/employer-applications/:uid",
+      "source": "backend/index.js:6477:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/employer-applications/:uid/verify",
+      "routePath": "/api/admin/employer-applications/:uid/verify",
+      "source": "backend/index.js:6478:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ads",
+      "routePath": "/api/admin/ads",
+      "source": "backend/index.js:6488:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/ads/:adId",
+      "routePath": "/api/admin/ads/:adId",
+      "source": "backend/index.js:6505:11",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/public/custom-pages.json",
+      "routePath": "/public/custom-pages.json",
+      "source": "backend/index.js:6539:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/custom-pages",
+      "routePath": "/api/public/custom-pages",
+      "source": "backend/index.js:6539:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/custom-pages.json",
+      "routePath": "/api/custom-pages.json",
+      "source": "backend/index.js:6539:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/custom-pages.json",
+      "routePath": "/custom-pages.json",
+      "source": "backend/index.js:6539:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/custom-pages/:slug",
+      "routePath": "/api/public/custom-pages/:slug",
+      "source": "backend/index.js:6597:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pages",
+      "routePath": "/api/admin/pages",
+      "source": "backend/index.js:6623:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/pages/:slug",
+      "routePath": "/api/admin/pages/:slug",
+      "source": "backend/index.js:6632:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/pages/:slug",
+      "routePath": "/api/admin/pages/:slug",
+      "source": "backend/index.js:6660:11",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/website-meta",
+      "routePath": "/api/admin/website-meta",
+      "source": "backend/index.js:6676:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/public/trusted-by.json",
+      "routePath": "/public/trusted-by.json",
+      "source": "backend/index.js:6750:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/trusted-by",
+      "routePath": "/api/public/trusted-by",
+      "source": "backend/index.js:6750:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/trusted-by.json",
+      "routePath": "/api/trusted-by.json",
+      "source": "backend/index.js:6750:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/trusted-by.json",
+      "routePath": "/trusted-by.json",
+      "source": "backend/index.js:6750:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/trusted-by",
+      "routePath": "/api/admin/trusted-by",
+      "source": "backend/index.js:6765:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/trusted-by",
+      "routePath": "/api/admin/trusted-by",
+      "source": "backend/index.js:6774:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/trusted-by/:logoId",
+      "routePath": "/api/admin/trusted-by/:logoId",
+      "source": "backend/index.js:6788:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/trusted-by/:logoId",
+      "routePath": "/api/admin/trusted-by/:logoId",
+      "source": "backend/index.js:6806:11",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/reviews",
+      "routePath": "/api/admin/reviews",
+      "source": "backend/index.js:6822:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/reviews/:reviewId",
+      "routePath": "/api/admin/reviews/:reviewId",
+      "source": "backend/index.js:6846:11",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/companies/:companyId",
+      "routePath": "/api/admin/companies/:companyId",
+      "source": "backend/index.js:6862:5",
+      "mountTrail": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/jobs/:jobId",
+      "routePath": "/api/admin/jobs/:jobId",
+      "source": "backend/index.js:6888:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/jobs/:jobId/moderate",
+      "routePath": "/api/admin/jobs/:jobId/moderate",
+      "source": "backend/index.js:6912:5",
+      "mountTrail": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/jobs/:jobId",
+      "routePath": "/api/admin/jobs/:jobId",
+      "source": "backend/index.js:6930:11",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/status",
+      "routePath": "/api/platform/status",
+      "source": "backend/index.js:6948:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/export",
+      "routePath": "/api/account/export",
+      "source": "backend/index.js:6954:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/delete",
+      "routePath": "/api/account/delete",
+      "source": "backend/index.js:7059:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/delete-user",
+      "routePath": "/api/admin/delete-user",
+      "source": "backend/index.js:7087:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/purge-orphaned-auth",
+      "routePath": "/api/auth/purge-orphaned-auth",
+      "source": "backend/index.js:7087:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/set-user-password",
+      "routePath": "/api/auth/set-user-password",
+      "source": "backend/index.js:7178:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/user-signup",
+      "routePath": "/api/notify/user-signup",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/password-reset",
+      "routePath": "/api/notify/password-reset",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/send-verification-email",
+      "routePath": "/api/notify/send-verification-email",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/password-changed",
+      "routePath": "/api/notify/password-changed",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/email-otp",
+      "routePath": "/api/notify/email-otp",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/security-alert",
+      "routePath": "/api/notify/security-alert",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/portfolio-published",
+      "routePath": "/api/notify/portfolio-published",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/job-application",
+      "routePath": "/api/notify/job-application",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/job-status-update",
+      "routePath": "/api/notify/job-status-update",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/job-posted",
+      "routePath": "/api/notify/job-posted",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/subscription-cancelled",
+      "routePath": "/api/notify/subscription-cancelled",
+      "source": "backend/index.js:7224:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin",
+      "routePath": "/api/auth/linkedin",
+      "source": "backend/index.js:7392:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github",
+      "routePath": "/api/auth/github",
+      "source": "backend/index.js:7393:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/callback",
+      "routePath": "/api/auth/linkedin/callback",
+      "source": "backend/index.js:7395:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/callback",
+      "routePath": "/api/auth/github/callback",
+      "source": "backend/index.js:7426:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/oauth/exchange",
+      "routePath": "/api/auth/oauth/exchange",
+      "source": "backend/index.js:7462:5",
+      "mountTrail": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/preview-login",
+      "routePath": "/api/auth/preview-login",
+      "source": "backend/index.js:7495:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/test-credentials",
+      "routePath": "/api/auth/linkedin/test-credentials",
+      "source": "backend/index.js:7563:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/test-credentials",
+      "routePath": "/api/auth/github/test-credentials",
+      "source": "backend/index.js:7577:5",
+      "mountTrail": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/",
+      "routePath": "/",
+      "source": "backend/routes/resumes.js:21:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/public/:id",
+      "routePath": "/public/:id",
+      "source": "backend/routes/resumes.js:36:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/public/token/:token",
+      "routePath": "/public/token/:token",
+      "source": "backend/routes/resumes.js:56:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/resumes.js:124:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/resumes.js:156:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/resumes/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/resumes.js:183:14",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id/publish",
+      "routePath": "/:id/publish",
+      "source": "backend/routes/resumes.js:197:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/resumes/:id/unpublish",
+      "routePath": "/:id/unpublish",
+      "source": "backend/routes/resumes.js:230:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/resumes/:id/publication",
+      "routePath": "/:id/publication",
+      "source": "backend/routes/resumes.js:243:8",
+      "mountTrail": [
+        {
+          "path": "/api/resumes",
+          "source": "backend/index.js:519:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/public/:slug",
+      "routePath": "/public/:slug",
+      "source": "backend/routes/portfolios.js:38:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/public",
+      "routePath": "/public",
+      "source": "backend/routes/portfolios.js:51:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/",
+      "routePath": "/",
+      "source": "backend/routes/portfolios.js:63:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/slug-availability",
+      "routePath": "/slug-availability",
+      "source": "backend/routes/portfolios.js:82:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/portfolios/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/portfolios.js:104:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/portfolios/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/portfolios.js:115:8",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/portfolios/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/portfolios.js:137:14",
+      "mountTrail": [
+        {
+          "path": "/api/portfolios",
+          "source": "backend/index.js:520:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers/",
+      "routePath": "/",
+      "source": "backend/routes/covers.js:16:8",
+      "mountTrail": [
+        {
+          "path": "/api/covers",
+          "source": "backend/index.js:521:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/covers/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/covers.js:26:8",
+      "mountTrail": [
+        {
+          "path": "/api/covers",
+          "source": "backend/index.js:521:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/covers/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/covers.js:37:8",
+      "mountTrail": [
+        {
+          "path": "/api/covers",
+          "source": "backend/index.js:521:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/covers/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/covers.js:47:14",
+      "mountTrail": [
+        {
+          "path": "/api/covers",
+          "source": "backend/index.js:521:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/tickets",
+      "routePath": "/tickets",
+      "source": "backend/routes/support.js:15:12",
+      "mountTrail": [
+        {
+          "path": "/api/support",
+          "source": "backend/index.js:522:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/support/tickets",
+      "routePath": "/tickets",
+      "source": "backend/routes/support.js:30:12",
+      "mountTrail": [
+        {
+          "path": "/api/support",
+          "source": "backend/index.js:522:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/support/tickets/:ticketId",
+      "routePath": "/tickets/:ticketId",
+      "source": "backend/routes/support.js:40:12",
+      "mountTrail": [
+        {
+          "path": "/api/support",
+          "source": "backend/index.js:522:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/support/tickets/:ticketId/messages",
+      "routePath": "/tickets/:ticketId/messages",
+      "source": "backend/routes/support.js:54:12",
+      "mountTrail": [
+        {
+          "path": "/api/support",
+          "source": "backend/index.js:522:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/",
+      "routePath": "/",
+      "source": "backend/routes/jobsData.js:159:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/tracker",
+      "routePath": "/tracker",
+      "source": "backend/routes/jobsData.js:182:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/tracker",
+      "routePath": "/tracker",
+      "source": "backend/routes/jobsData.js:189:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs-data/tracker/:id",
+      "routePath": "/tracker/:id",
+      "source": "backend/routes/jobsData.js:200:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/tracker/:id",
+      "routePath": "/tracker/:id",
+      "source": "backend/routes/jobsData.js:216:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:229:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:245:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:264:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs-data/applications/list",
+      "routePath": "/applications/list",
+      "source": "backend/routes/jobsData.js:363:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs-data/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:402:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs-data/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:405:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs-data/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:408:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs-data",
+          "source": "backend/index.js:523:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/",
+      "routePath": "/",
+      "source": "backend/routes/jobsData.js:159:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/tracker",
+      "routePath": "/tracker",
+      "source": "backend/routes/jobsData.js:182:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/tracker",
+      "routePath": "/tracker",
+      "source": "backend/routes/jobsData.js:189:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs/tracker/:id",
+      "routePath": "/tracker/:id",
+      "source": "backend/routes/jobsData.js:200:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs/tracker/:id",
+      "routePath": "/tracker/:id",
+      "source": "backend/routes/jobsData.js:216:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:229:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:245:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/jobsData.js:264:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/applications/list",
+      "routePath": "/applications/list",
+      "source": "backend/routes/jobsData.js:363:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:402:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jobs/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:405:8",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jobs/applications/:id",
+      "routePath": "/applications/:id",
+      "source": "backend/routes/jobsData.js:408:14",
+      "mountTrail": [
+        {
+          "path": "/api/jobs",
+          "source": "backend/index.js:524:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/geo/regions",
+      "routePath": "/geo/regions",
+      "source": "backend/routes/publicDiscovery.js:66:8",
+      "mountTrail": [
+        {
+          "path": "/api/public",
+          "source": "backend/index.js:525:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/geo/regions/:kind/:slug",
+      "routePath": "/geo/regions/:kind/:slug",
+      "source": "backend/routes/publicDiscovery.js:80:8",
+      "mountTrail": [
+        {
+          "path": "/api/public",
+          "source": "backend/index.js:525:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/jobs/:jobId/og.png",
+      "routePath": "/jobs/:jobId/og.png",
+      "source": "backend/routes/publicDiscovery.js:108:8",
+      "mountTrail": [
+        {
+          "path": "/api/public",
+          "source": "backend/index.js:525:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/blog/:slug/og.png",
+      "routePath": "/blog/:slug/og.png",
+      "source": "backend/routes/publicDiscovery.js:131:8",
+      "mountTrail": [
+        {
+          "path": "/api/public",
+          "source": "backend/index.js:525:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/",
+      "routePath": "/",
+      "source": "backend/routes/blogData.js:46:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/categories",
+      "routePath": "/categories",
+      "source": "backend/routes/blogData.js:61:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/slug/:slug",
+      "routePath": "/slug/:slug",
+      "source": "backend/routes/blogData.js:88:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/posts",
+      "routePath": "/posts",
+      "source": "backend/routes/blogData.js:99:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:113:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/blog-data/posts",
+      "routePath": "/posts",
+      "source": "backend/routes/blogData.js:128:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/blog-data/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:144:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/blog-data/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:159:14",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:176:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/blog-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:187:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/blog-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:197:14",
+      "mountTrail": [
+        {
+          "path": "/api/blog-data",
+          "source": "backend/index.js:526:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/",
+      "routePath": "/",
+      "source": "backend/routes/blogData.js:46:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/categories",
+      "routePath": "/categories",
+      "source": "backend/routes/blogData.js:61:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/slug/:slug",
+      "routePath": "/slug/:slug",
+      "source": "backend/routes/blogData.js:88:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/posts",
+      "routePath": "/posts",
+      "source": "backend/routes/blogData.js:99:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:113:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/blog/posts",
+      "routePath": "/posts",
+      "source": "backend/routes/blogData.js:128:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/blog/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:144:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/blog/posts/:id",
+      "routePath": "/posts/:id",
+      "source": "backend/routes/blogData.js:159:14",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:176:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/blog/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:187:8",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/blog/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/blogData.js:197:14",
+      "mountTrail": [
+        {
+          "path": "/api/blog",
+          "source": "backend/index.js:527:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications-data/",
+      "routePath": "/",
+      "source": "backend/routes/notificationsData.js:16:8",
+      "mountTrail": [
+        {
+          "path": "/api/notifications-data",
+          "source": "backend/index.js:528:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/notificationsData.js:27:8",
+      "mountTrail": [
+        {
+          "path": "/api/notifications-data",
+          "source": "backend/index.js:528:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications-data/mark-all-read",
+      "routePath": "/mark-all-read",
+      "source": "backend/routes/notificationsData.js:52:8",
+      "mountTrail": [
+        {
+          "path": "/api/notifications-data",
+          "source": "backend/index.js:528:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications-data/contact/list",
+      "routePath": "/contact/list",
+      "source": "backend/routes/notificationsData.js:66:8",
+      "mountTrail": [
+        {
+          "path": "/api/notifications-data",
+          "source": "backend/index.js:528:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/users-data/profile",
+      "routePath": "/profile",
+      "source": "backend/routes/usersData.js:25:8",
+      "mountTrail": [
+        {
+          "path": "/api/users-data",
+          "source": "backend/index.js:529:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/users-data/profile",
+      "routePath": "/profile",
+      "source": "backend/routes/usersData.js:40:8",
+      "mountTrail": [
+        {
+          "path": "/api/users-data",
+          "source": "backend/index.js:529:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/users-data/:id",
+      "routePath": "/:id",
+      "source": "backend/routes/usersData.js:119:8",
+      "mountTrail": [
+        {
+          "path": "/api/users-data",
+          "source": "backend/index.js:529:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/users-data/mfa/disable",
+      "routePath": "/mfa/disable",
+      "source": "backend/routes/usersData.js:149:8",
+      "mountTrail": [
+        {
+          "path": "/api/users-data",
+          "source": "backend/index.js:529:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/m2m/context",
+      "routePath": "/context",
+      "source": "backend/routes/enterpriseM2m.js:22:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise/m2m",
+          "source": "backend/index.js:530:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/status",
+      "routePath": "/status",
+      "source": "backend/routes/enterprise.js:22:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/support-grants",
+      "routePath": "/support-grants",
+      "source": "backend/routes/enterprise.js:287:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/support-grants/:grantId/revoke",
+      "routePath": "/support-grants/:grantId/revoke",
+      "source": "backend/routes/enterprise.js:298:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/support-grants",
+      "routePath": "/support-grants",
+      "source": "backend/routes/enterprise.js:307:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/support/context",
+      "routePath": "/support/context",
+      "source": "backend/routes/enterprise.js:316:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/tenants",
+      "routePath": "/tenants",
+      "source": "backend/routes/enterprise.js:336:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/roles-matrix",
+      "routePath": "/roles-matrix",
+      "source": "backend/routes/enterprise.js:345:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/context",
+      "routePath": "/context",
+      "source": "backend/routes/enterprise.js:385:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/context",
+      "routePath": "/context",
+      "source": "backend/routes/enterprise.js:386:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/workspaces",
+      "routePath": "/workspaces",
+      "source": "backend/routes/enterprise.js:388:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces",
+      "routePath": "/workspaces",
+      "source": "backend/routes/enterprise.js:404:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/workspaces/:workspaceId",
+      "routePath": "/workspaces/:workspaceId",
+      "source": "backend/routes/enterprise.js:413:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/archive",
+      "routePath": "/workspaces/:workspaceId/archive",
+      "source": "backend/routes/enterprise.js:422:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/restore",
+      "routePath": "/workspaces/:workspaceId/restore",
+      "source": "backend/routes/enterprise.js:431:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/workspaces/:workspaceId/members",
+      "routePath": "/workspaces/:workspaceId/members",
+      "source": "backend/routes/enterprise.js:440:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/workspaces/:workspaceId/members",
+      "routePath": "/workspaces/:workspaceId/members",
+      "source": "backend/routes/enterprise.js:449:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/workspaces/:workspaceId/members/:principalId",
+      "routePath": "/workspaces/:workspaceId/members/:principalId",
+      "source": "backend/routes/enterprise.js:458:14",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/memberships",
+      "routePath": "/memberships",
+      "source": "backend/routes/enterprise.js:467:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/memberships",
+      "routePath": "/memberships",
+      "source": "backend/routes/enterprise.js:476:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/memberships/:principalId",
+      "routePath": "/memberships/:principalId",
+      "source": "backend/routes/enterprise.js:489:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/memberships/:principalId/invitation-resend",
+      "routePath": "/memberships/:principalId/invitation-resend",
+      "source": "backend/routes/enterprise.js:498:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/memberships/:principalId",
+      "routePath": "/memberships/:principalId",
+      "source": "backend/routes/enterprise.js:511:14",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts",
+      "routePath": "/service-accounts",
+      "source": "backend/routes/enterprise.js:520:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/service-accounts",
+      "routePath": "/service-accounts",
+      "source": "backend/routes/enterprise.js:538:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts/:serviceAccountId/revoke",
+      "routePath": "/service-accounts/:serviceAccountId/revoke",
+      "source": "backend/routes/enterprise.js:547:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/service-accounts/:serviceAccountId/rotate",
+      "routePath": "/service-accounts/:serviceAccountId/rotate",
+      "source": "backend/routes/enterprise.js:556:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/tenants/:tenantId/reactivate",
+      "routePath": "/tenants/:tenantId/reactivate",
+      "source": "backend/routes/enterprise.js:574:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/tenant",
+      "routePath": "/tenant",
+      "source": "backend/routes/enterprise.js:585:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/data/export",
+      "routePath": "/data/export",
+      "source": "backend/routes/enterprise.js:594:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/platform/tenants",
+      "routePath": "/platform/tenants",
+      "source": "backend/routes/enterprise.js:608:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/platform/tenants/:tenantId/suspend",
+      "routePath": "/platform/tenants/:tenantId/suspend",
+      "source": "backend/routes/enterprise.js:621:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/platform/tenants/:tenantId/reactivate",
+      "routePath": "/platform/tenants/:tenantId/reactivate",
+      "source": "backend/routes/enterprise.js:630:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/lifecycle/suspend",
+      "routePath": "/lifecycle/suspend",
+      "source": "backend/routes/enterprise.js:639:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/audit",
+      "routePath": "/audit",
+      "source": "backend/routes/enterprise.js:648:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/teams",
+      "routePath": "/teams",
+      "source": "backend/routes/enterprise.js:671:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams",
+      "routePath": "/teams",
+      "source": "backend/routes/enterprise.js:684:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/teams/:teamId",
+      "routePath": "/teams/:teamId",
+      "source": "backend/routes/enterprise.js:693:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/archive",
+      "routePath": "/teams/:teamId/archive",
+      "source": "backend/routes/enterprise.js:702:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/restore",
+      "routePath": "/teams/:teamId/restore",
+      "source": "backend/routes/enterprise.js:711:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/teams/:teamId/members",
+      "routePath": "/teams/:teamId/members",
+      "source": "backend/routes/enterprise.js:720:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/teams/:teamId/members",
+      "routePath": "/teams/:teamId/members",
+      "source": "backend/routes/enterprise.js:729:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/teams/:teamId/members/:principalId",
+      "routePath": "/teams/:teamId/members/:principalId",
+      "source": "backend/routes/enterprise.js:738:14",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/configuration",
+      "routePath": "/configuration",
+      "source": "backend/routes/enterprise.js:747:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/configuration",
+      "routePath": "/configuration",
+      "source": "backend/routes/enterprise.js:756:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/ai/generate-content",
+      "routePath": "/ai/generate-content",
+      "source": "backend/routes/enterprise.js:765:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/ai/generate-interview",
+      "routePath": "/ai/generate-interview",
+      "source": "backend/routes/enterprise.js:817:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/usage/ai",
+      "routePath": "/usage/ai",
+      "source": "backend/routes/enterprise.js:881:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/usage/ai/events",
+      "routePath": "/usage/ai/events",
+      "source": "backend/routes/enterprise.js:890:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/resources",
+      "routePath": "/resources",
+      "source": "backend/routes/enterprise.js:899:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/resources",
+      "routePath": "/resources",
+      "source": "backend/routes/enterprise.js:911:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/resources/:resourceId",
+      "routePath": "/resources/:resourceId",
+      "source": "backend/routes/enterprise.js:920:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/enterprise/resources/:resourceId",
+      "routePath": "/resources/:resourceId",
+      "source": "backend/routes/enterprise.js:930:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/enterprise/resources/:resourceId",
+      "routePath": "/resources/:resourceId",
+      "source": "backend/routes/enterprise.js:940:14",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/observability/metrics",
+      "routePath": "/observability/metrics",
+      "source": "backend/routes/enterprise.js:950:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/data-plane/status",
+      "routePath": "/data-plane/status",
+      "source": "backend/routes/enterprise.js:963:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/queue/status",
+      "routePath": "/queue/status",
+      "source": "backend/routes/enterprise.js:994:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/enterprise/queue/jobs",
+      "routePath": "/queue/jobs",
+      "source": "backend/routes/enterprise.js:1006:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/queue/jobs",
+      "routePath": "/queue/jobs",
+      "source": "backend/routes/enterprise.js:1017:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/queue/replay",
+      "routePath": "/queue/replay",
+      "source": "backend/routes/enterprise.js:1039:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/storage/token",
+      "routePath": "/storage/token",
+      "source": "backend/routes/enterprise.js:1051:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/storage/verify",
+      "routePath": "/storage/verify",
+      "source": "backend/routes/enterprise.js:1067:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/test-email",
+      "routePath": "/test-email",
+      "source": "backend/routes/enterprise.js:1082:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/enterprise/tenants",
+      "routePath": "/tenants",
+      "source": "backend/routes/enterprise.js:1150:8",
+      "mountTrail": [
+        {
+          "path": "/api/enterprise",
+          "source": "backend/index.js:531:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/version",
+      "routePath": "/version",
+      "source": "backend/routes/platform.js:207:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/public-config",
+      "routePath": "/public-config",
+      "source": "backend/routes/platform.js:227:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/health",
+      "routePath": "/health",
+      "source": "backend/routes/platform.js:263:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status",
+      "routePath": "/operational-status",
+      "source": "backend/routes/platform.js:287:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status/api-matrix",
+      "routePath": "/operational-status/api-matrix",
+      "source": "backend/routes/platform.js:305:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operational-status/:serviceId",
+      "routePath": "/operational-status/:serviceId",
+      "source": "backend/routes/platform.js:317:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operational-status/:serviceId/test",
+      "routePath": "/operational-status/:serviceId/test",
+      "source": "backend/routes/platform.js:368:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operational-status/refresh",
+      "routePath": "/operational-status/refresh",
+      "source": "backend/routes/platform.js:403:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/overview",
+      "routePath": "/overview",
+      "source": "backend/routes/platform.js:431:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/queues",
+      "routePath": "/queues",
+      "source": "backend/routes/platform.js:465:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/queues/retry",
+      "routePath": "/queues/retry",
+      "source": "backend/routes/platform.js:504:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/queues/purge",
+      "routePath": "/queues/purge",
+      "source": "backend/routes/platform.js:543:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/maintenance",
+      "routePath": "/maintenance",
+      "source": "backend/routes/platform.js:547:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/maintenance",
+      "routePath": "/maintenance",
+      "source": "backend/routes/platform.js:576:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/command-center",
+      "routePath": "/command-center",
+      "source": "backend/routes/platform.js:621:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/security-events",
+      "routePath": "/security-events",
+      "source": "backend/routes/platform.js:789:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/encryption",
+      "routePath": "/encryption",
+      "source": "backend/routes/platform.js:836:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/observability",
+      "routePath": "/observability",
+      "source": "backend/routes/platform.js:860:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/backup-status",
+      "routePath": "/backup-status",
+      "source": "backend/routes/platform.js:876:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payments-health",
+      "routePath": "/payments-health",
+      "source": "backend/routes/platform.js:901:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/search",
+      "routePath": "/search",
+      "source": "backend/routes/platform.js:921:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/announcements",
+      "routePath": "/announcements",
+      "source": "backend/routes/platform.js:977:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/announcements",
+      "routePath": "/announcements",
+      "source": "backend/routes/platform.js:999:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/platform/announcements/:id",
+      "routePath": "/announcements/:id",
+      "source": "backend/routes/platform.js:1035:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/platform/announcements/:id",
+      "routePath": "/announcements/:id",
+      "source": "backend/routes/platform.js:1091:14",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/attention",
+      "routePath": "/attention",
+      "source": "backend/routes/platform.js:1229:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/health-indicator",
+      "routePath": "/health-indicator",
+      "source": "backend/routes/platform.js:1270:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/enterprise-queue",
+      "routePath": "/enterprise-queue",
+      "source": "backend/routes/platform.js:1289:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/operators",
+      "routePath": "/operators",
+      "source": "backend/routes/platform.js:1304:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operators",
+      "routePath": "/operators",
+      "source": "backend/routes/platform.js:1342:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/operators/:uid/revoke-sessions",
+      "routePath": "/operators/:uid/revoke-sessions",
+      "source": "backend/routes/platform.js:1402:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/tenants/:tenantId",
+      "routePath": "/tenants/:tenantId",
+      "source": "backend/routes/platform.js:1444:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/platform/tenants/:tenantId",
+      "routePath": "/tenants/:tenantId",
+      "source": "backend/routes/platform.js:1534:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/tenants/:tenantId/decommission",
+      "routePath": "/tenants/:tenantId/decommission",
+      "source": "backend/routes/platform.js:1547:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/tenants/garbage-collect",
+      "routePath": "/tenants/garbage-collect",
+      "source": "backend/routes/platform.js:1587:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/feature-flags",
+      "routePath": "/feature-flags",
+      "source": "backend/routes/platform.js:1637:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/platform/feature-flags/:flagKey",
+      "routePath": "/feature-flags/:flagKey",
+      "source": "backend/routes/platform.js:1646:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/configuration",
+      "routePath": "/configuration",
+      "source": "backend/routes/platform.js:1670:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-settings",
+      "routePath": "/payment-settings",
+      "source": "backend/routes/platform.js:1699:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/platform/payment-webhooks",
+      "routePath": "/payment-webhooks",
+      "source": "backend/routes/platform.js:1719:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/payment-webhooks/:eventId/replay",
+      "routePath": "/payment-webhooks/:eventId/replay",
+      "source": "backend/routes/platform.js:1806:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/platform/role-view-audit",
+      "routePath": "/role-view-audit",
+      "source": "backend/routes/platform.js:1847:8",
+      "mountTrail": [
+        {
+          "path": "/api/platform",
+          "source": "backend/index.js:532:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/favourites",
+      "routePath": "/favourites",
+      "source": "backend/routes/miscData.js:87:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/favourites",
+      "routePath": "/favourites",
+      "source": "backend/routes/miscData.js:102:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/favourites/:itemId",
+      "routePath": "/favourites/:itemId",
+      "source": "backend/routes/miscData.js:119:14",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/favourites/:itemId/check",
+      "routePath": "/favourites/:itemId/check",
+      "source": "backend/routes/miscData.js:129:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/user-stats",
+      "routePath": "/user-stats",
+      "source": "backend/routes/miscData.js:151:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "routePath": "/stats",
+      "source": "backend/routes/miscData.js:205:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/stats/increment",
+      "routePath": "/stats/increment",
+      "source": "backend/routes/miscData.js:221:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/reviews",
+      "routePath": "/reviews",
+      "source": "backend/routes/miscData.js:246:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phrases",
+      "routePath": "/phrases",
+      "source": "backend/routes/miscData.js:267:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phrases",
+      "routePath": "/phrases",
+      "source": "backend/routes/miscData.js:278:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phrases/:category",
+      "routePath": "/phrases/:category",
+      "source": "backend/routes/miscData.js:298:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/phrases/:category",
+      "routePath": "/phrases/:category",
+      "source": "backend/routes/miscData.js:309:14",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:533:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/",
+      "routePath": "/",
+      "source": "backend/routes/databaseAdmin.js:40:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/sync-status",
+      "routePath": "/sync-status",
+      "source": "backend/routes/databaseAdmin.js:90:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/sync-now",
+      "routePath": "/sync-now",
+      "source": "backend/routes/databaseAdmin.js:91:60",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/verify-parity",
+      "routePath": "/verify-parity",
+      "source": "backend/routes/databaseAdmin.js:91:60",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/prune-outbox",
+      "routePath": "/prune-outbox",
+      "source": "backend/routes/databaseAdmin.js:93:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/conflicts",
+      "routePath": "/conflicts",
+      "source": "backend/routes/databaseAdmin.js:143:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/database-settings/dead-letter",
+      "routePath": "/dead-letter",
+      "source": "backend/routes/databaseAdmin.js:145:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/retry-dead-letter",
+      "routePath": "/retry-dead-letter",
+      "source": "backend/routes/databaseAdmin.js:157:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/test-connection",
+      "routePath": "/test-connection",
+      "source": "backend/routes/databaseAdmin.js:162:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/initialize-schema",
+      "routePath": "/initialize-schema",
+      "source": "backend/routes/databaseAdmin.js:174:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/database-settings/",
+      "routePath": "/",
+      "source": "backend/routes/databaseAdmin.js:187:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/database-settings",
+          "source": "backend/index.js:534:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai-usage",
+      "routePath": "/ai-usage",
+      "source": "backend/routes/ai.js:50:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-resume",
+      "routePath": "/generate-resume",
+      "source": "backend/routes/ai.js:394:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-summary",
+      "routePath": "/generate-summary",
+      "source": "backend/routes/ai.js:394:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-work-description",
+      "routePath": "/generate-work-description",
+      "source": "backend/routes/ai.js:394:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-education-description",
+      "routePath": "/generate-education-description",
+      "source": "backend/routes/ai.js:394:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-skills",
+      "routePath": "/generate-skills",
+      "source": "backend/routes/ai.js:394:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-interview",
+      "routePath": "/generate-interview",
+      "source": "backend/routes/ai.js:808:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions",
+      "routePath": "/live-interview/sessions",
+      "source": "backend/routes/ai.js:1010:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-interview/sessions/:sessionId",
+      "routePath": "/live-interview/sessions/:sessionId",
+      "source": "backend/routes/ai.js:1037:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions/:sessionId/turns",
+      "routePath": "/live-interview/sessions/:sessionId/turns",
+      "source": "backend/routes/ai.js:1050:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/sessions/:sessionId/complete",
+      "routePath": "/live-interview/sessions/:sessionId/complete",
+      "source": "backend/routes/ai.js:1076:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/live-interview/sessions/:sessionId",
+      "routePath": "/live-interview/sessions/:sessionId",
+      "source": "backend/routes/ai.js:1102:14",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-interview/guide",
+      "routePath": "/live-interview/guide",
+      "source": "backend/routes/ai.js:1115:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/check-grammar",
+      "routePath": "/check-grammar",
+      "source": "backend/routes/ai.js:1204:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-content",
+      "routePath": "/generate-content",
+      "source": "backend/routes/ai.js:1249:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/parse-resume",
+      "routePath": "/parse-resume",
+      "source": "backend/routes/ai.js:1282:8",
+      "mountTrail": [
+        {
+          "path": "/api",
+          "source": "backend/index.js:2670:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/circuit-breaker-status",
+      "routePath": "/admin/circuit-breaker-status",
+      "source": "backend/routes/email.js:1420:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/reset-circuit-breaker",
+      "routePath": "/admin/reset-circuit-breaker",
+      "source": "backend/routes/email.js:1433:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/save-template-customization",
+      "routePath": "/admin/save-template-customization",
+      "source": "backend/routes/email.js:1515:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/custom-templates",
+      "routePath": "/admin/custom-templates",
+      "source": "backend/routes/email.js:1516:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/test-connection",
+      "routePath": "/admin/test-connection",
+      "source": "backend/routes/email.js:1524:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/settings",
+      "routePath": "/admin/settings",
+      "source": "backend/routes/email.js:1662:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/admin/deliverability",
+      "routePath": "/admin/deliverability",
+      "source": "backend/routes/email.js:1691:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/save-smtp",
+      "routePath": "/admin/save-smtp",
+      "source": "backend/routes/email.js:1829:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/admin/test-imap",
+      "routePath": "/admin/test-imap",
+      "source": "backend/routes/email.js:1930:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/send-email",
+      "routePath": "/send-email",
+      "source": "backend/routes/email.js:1966:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/send-invoice-email",
+      "routePath": "/send-invoice-email",
+      "source": "backend/routes/email.js:2025:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/logs",
+      "routePath": "/logs",
+      "source": "backend/routes/email.js:2034:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/resend",
+      "routePath": "/resend",
+      "source": "backend/routes/email.js:2052:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/email/templates",
+      "routePath": "/templates",
+      "source": "backend/routes/email.js:2087:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/email/templates",
+      "routePath": "/templates",
+      "source": "backend/routes/email.js:2088:8",
+      "mountTrail": [
+        {
+          "path": "/api/email",
+          "source": "backend/index.js:2671:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs",
+      "routePath": "/audit-logs",
+      "source": "backend/routes/adminAudit.js:14:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:3298:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs/stats",
+      "routePath": "/audit-logs/stats",
+      "source": "backend/routes/adminAudit.js:49:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:3298:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/audit-logs/:id",
+      "routePath": "/audit-logs/:id",
+      "source": "backend/routes/adminAudit.js:90:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:3298:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets",
+      "routePath": "/tickets",
+      "source": "backend/routes/support.js:71:13",
+      "mountTrail": [
+        {
+          "path": "/api/admin/support",
+          "source": "backend/index.js:6945:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets/:ticketId",
+      "routePath": "/tickets/:ticketId",
+      "source": "backend/routes/support.js:81:13",
+      "mountTrail": [
+        {
+          "path": "/api/admin/support",
+          "source": "backend/index.js:6945:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/tickets/:ticketId/messages",
+      "routePath": "/tickets/:ticketId/messages",
+      "source": "backend/routes/support.js:95:13",
+      "mountTrail": [
+        {
+          "path": "/api/admin/support",
+          "source": "backend/index.js:6945:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/support/tickets/:ticketId",
+      "routePath": "/tickets/:ticketId",
+      "source": "backend/routes/support.js:110:13",
+      "mountTrail": [
+        {
+          "path": "/api/admin/support",
+          "source": "backend/index.js:6945:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/",
+      "routePath": "/",
+      "source": "backend/routes/adminUsers.js:101:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/bulk",
+      "routePath": "/bulk",
+      "source": "backend/routes/adminUsers.js:249:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/",
+      "routePath": "/",
+      "source": "backend/routes/adminUsers.js:312:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/details",
+      "routePath": "/:uid/details",
+      "source": "backend/routes/adminUsers.js:405:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:userId/audit",
+      "routePath": "/:userId/audit",
+      "source": "backend/routes/adminUsers.js:605:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid",
+      "routePath": "/:uid",
+      "source": "backend/routes/adminUsers.js:635:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/:uid",
+      "routePath": "/:uid",
+      "source": "backend/routes/adminUsers.js:673:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/status",
+      "routePath": "/:uid/status",
+      "source": "backend/routes/adminUsers.js:864:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/tenants",
+      "routePath": "/:uid/tenants",
+      "source": "backend/routes/adminUsers.js:952:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:uid/tenants/:tenantId",
+      "routePath": "/:uid/tenants/:tenantId",
+      "source": "backend/routes/adminUsers.js:1004:14",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "routePath": "/:uid/ai-entitlement",
+      "source": "backend/routes/adminUsers.js:1024:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "routePath": "/:uid/ai-entitlement",
+      "source": "backend/routes/adminUsers.js:1030:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:uid/ai-entitlement",
+      "routePath": "/:uid/ai-entitlement",
+      "source": "backend/routes/adminUsers.js:1052:14",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/ai-quota-reset",
+      "routePath": "/:uid/ai-quota-reset",
+      "source": "backend/routes/adminUsers.js:1069:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/send-password-reset",
+      "routePath": "/:uid/send-password-reset",
+      "source": "backend/routes/adminUsers.js:1087:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/password-reset",
+      "routePath": "/:uid/password-reset",
+      "source": "backend/routes/adminUsers.js:1087:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/verify-email",
+      "routePath": "/:uid/verify-email",
+      "source": "backend/routes/adminUsers.js:1124:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/revoke-sessions",
+      "routePath": "/:uid/revoke-sessions",
+      "source": "backend/routes/adminUsers.js:1146:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:uid/unenroll-mfa",
+      "routePath": "/:uid/unenroll-mfa",
+      "source": "backend/routes/adminUsers.js:1166:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:uid/export",
+      "routePath": "/:uid/export",
+      "source": "backend/routes/adminUsers.js:1188:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin/users",
+          "source": "backend/index.js:6946:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/platform/currency",
+      "routePath": "/platform/currency",
+      "source": "backend/routes/adminPlatformOperations.js:65:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/platform/currency",
+      "routePath": "/platform/currency",
+      "source": "backend/routes/adminPlatformOperations.js:73:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/subscriptions",
+      "routePath": "/subscriptions",
+      "source": "backend/routes/adminPlatformOperations.js:94:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/subscriptions/:uid/reconcile",
+      "routePath": "/subscriptions/:uid/reconcile",
+      "source": "backend/routes/adminPlatformOperations.js:186:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/entitlements",
+      "routePath": "/ai/entitlements",
+      "source": "backend/routes/adminPlatformOperations.js:287:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/platform/tenants/:tenantId/members",
+      "routePath": "/platform/tenants/:tenantId/members",
+      "source": "backend/routes/adminPlatformOperations.js:295:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/platform/tenants/:tenantId/members/:principalId",
+      "routePath": "/platform/tenants/:tenantId/members/:principalId",
+      "source": "backend/routes/adminPlatformOperations.js:338:14",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/members/:principalId",
+      "routePath": "/platform/tenants/:tenantId/members/:principalId",
+      "source": "backend/routes/adminPlatformOperations.js:352:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/commercials",
+      "routePath": "/platform/tenants/:tenantId/commercials",
+      "source": "backend/routes/adminPlatformOperations.js:369:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/platform/tenants/:tenantId/ai-policy",
+      "routePath": "/platform/tenants/:tenantId/ai-policy",
+      "source": "backend/routes/adminPlatformOperations.js:392:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/platform/tenants/:tenantId/ai-keys/test",
+      "routePath": "/platform/tenants/:tenantId/ai-keys/test",
+      "source": "backend/routes/adminPlatformOperations.js:450:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/platform/status",
+      "routePath": "/platform/status",
+      "source": "backend/routes/adminPlatformOperations.js:533:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/operations/feature-flags",
+      "routePath": "/operations/feature-flags",
+      "source": "backend/routes/adminPlatformOperations.js:576:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/operations/feature-flags/:flagKey",
+      "routePath": "/operations/feature-flags/:flagKey",
+      "source": "backend/routes/adminPlatformOperations.js:588:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/operations/feature-flags/:flagKey",
+      "routePath": "/operations/feature-flags/:flagKey",
+      "source": "backend/routes/adminPlatformOperations.js:609:8",
+      "mountTrail": [
+        {
+          "path": "/api/admin",
+          "source": "backend/index.js:6947:5"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+Repository: bhaskarbeyond-creator/ResumePilotAi
+Observed UTC: 2026-10-29T18:07:14Z
+
+[git branch --show-current]
+arena/76eeea4d-resumepilotai
+
+[git rev-parse HEAD]
+aa24147245daa6c027d046f1f7ae6f8fc703be46
+
+[git status --short before this evidence record was written]
+ M backend/index.js
+ M backend/routes/platform.js
+ M backend/security/adminAudit.js
+ M backend/security/policy.js
+ M backend/test/payment-settings-rbac.test.js
+ M developer-implemented/README.md
+ M developer-implemented/RELEASE-READINESS/LOCAL-DEVELOPER-HANDOVER.md
+ M developer-implemented/RELEASE-READINESS/acceptance-matrix.md
+ M developer-implemented/RELEASE-READINESS/finding-completion-table.md
+ M developer-implemented/RELEASE-READINESS/open-blockers.md
+ M developer-implemented/REPORTS/FORENSIC-DELTA.md
+ M developer-implemented/REPORTS/NEW-FINDINGS.md
+ M developer-implemented/REPORTS/contract-dispositions.md
+ M developer-implemented/REPORTS/discrepancy-status-index.md
+ M developer-implemented/REPORTS/verification-reports/backend-failure-inventory.md
+ M developer-implemented/REPORTS/verification-reports/current.md
+ M frontend/playwright.config.ts
+ M frontend/tests/mandate9.config.ts
+?? backend/test/payment-webhook-replay.test.js
+?? backend/test/platform-route-registration.test.js
+?? developer-implemented/EVIDENCE/BASELINE/
+?? developer-implemented/EVIDENCE/BROWSER-E2E/
+?? developer-implemented/EVIDENCE/BUILD/
+?? developer-implemented/EVIDENCE/CONCURRENCY/
+?? developer-implemented/EVIDENCE/FORENSIC/
+?? developer-implemented/EVIDENCE/REGISTERS/
+?? developer-implemented/EVIDENCE/REGRESSION/
+?? developer-implemented/EVIDENCE/REMOTE/
+?? developer-implemented/EVIDENCE/SECURITY/
+?? developer-implemented/EVIDENCE/STATIC/
+?? developer-implemented/EVIDENCE/UNIT/
+?? developer-implemented/REGISTERS/
+?? developer-implemented/REPORTS/BACKEND-ROUTE-REGISTRATION-RECONCILIATION-20261029.md
+?? developer-implemented/REPORTS/IMPLEMENTATION-LOG-20261029.md
+?? developer-implemented/REPORTS/PRODUCTION-RECOVERY-BASELINE.md
+?? developer-implemented/REPORTS/verification-reports/backend-failure-triage-20261029.md
+?? developer-implemented/tools/
+
+[git ls-remote origin refs/heads/main refs/heads/dev refs/heads/arena/76eeea4d-resumepilotai]
+aa24147245daa6c027d046f1f7ae6f8fc703be46	refs/heads/dev
+aa24147245daa6c027d046f1f7ae6f8fc703be46	refs/heads/main
+
+[gh pr list --repo bhaskarbeyond-creator/ResumePilotAi --state open]
+[]
+
+[gh api branch protection]
+{"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/branches/branch-protection#get-branch-protection","status":"403"}gh: Resource not accessible by integration (HTTP 403)
+Branch protection query failed with exit 1; state remains unknown.

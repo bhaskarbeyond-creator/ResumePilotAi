@@ -1,0 +1,15 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[Firebase Admin] Initialized without credentials (limited local mode)
+Backend exact method+literal-path inventory
+Entry point: backend/index.js
+Registrations: 457
+Distinct keys: 457
+Duplicate keys: 0
+Unresolved route patterns: 0
+Unresolved mount patterns: 0
+Completeness: COMPLETE_FOR_LITERAL_EXPRESS_ROUTES
+JSON report: developer-implemented/EVIDENCE/REGRESSION/backend-exact-route-duplicates-20261029.json
+
+EXIT_CODE=0

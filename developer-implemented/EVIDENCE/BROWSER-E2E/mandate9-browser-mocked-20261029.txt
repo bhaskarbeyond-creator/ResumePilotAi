@@ -1,0 +1,56 @@
+
+Running 7 tests using 1 worker
+
+[1/7] tests/mandate9.spec.ts:9:1 › contact success requires server response and preserves subject
+[2/7] tests/mandate9.spec.ts:17:3 › contact validation response does not show success
+  1) tests/mandate9.spec.ts:17:3 › contact validation response does not show success ───────────────
+
+    Error: browserContext.newPage: Target page, context or browser has been closed
+    Browser logs:
+
+    <launching> /tmp/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --disable-dev-shm-usage --single-process --no-zygote --user-data-dir=/tmp/playwright_chromiumdev_profile-46cA0e --remote-debugging-pipe --no-startup-window
+    <launched> pid=5315
+    [pid=5315][err] [1029/173453.702395:ERROR:../net/socket/ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -100
+    [pid=5315][err] [1029/173453.703859:ERROR:../net/socket/ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -100
+    [pid=5315][err] [1029/173453.960506:INFO:CONSOLE:935] "[vite] connecting...", source: http://127.0.0.1:4000/@vite/client (935)
+    [pid=5315][err] [1029/173453.978146:INFO:CONSOLE:1048] "[vite] connected.", source: http://127.0.0.1:4000/@vite/client (1048)
+    [pid=5315][err] [1029/173454.081292:INFO:CONSOLE:15805] "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold", source: http://127.0.0.1:4000/node_modules/.vite/deps/react-dom_client.js?v=bbb73e8c (15805)
+
+    Error Context: test-results/mandate9-contact-validation-response-does-not-show-success/error-context.md
+
+
+[3/7] tests/mandate9.spec.ts:17:3 › contact server response does not show success
+[4/7] tests/mandate9.spec.ts:17:3 › contact malformed response does not show success
+  2) tests/mandate9.spec.ts:17:3 › contact malformed response does not show success ────────────────
+
+    Error: browserContext.newPage: Target page, context or browser has been closed
+    Browser logs:
+
+    <launching> /tmp/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --disable-dev-shm-usage --single-process --no-zygote --user-data-dir=/tmp/playwright_chromiumdev_profile-AnFUx6 --remote-debugging-pipe --no-startup-window
+    <launched> pid=5368
+    [pid=5368][err] [1029/173455.186748:ERROR:../net/socket/ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -100
+    [pid=5368][err] [1029/173455.187616:ERROR:../net/socket/ssl_client_socket_impl.cc:944] handshake failed; returned -1, SSL error code 1, net_error -100
+    [pid=5368][err] [1029/173455.203537:INFO:CONSOLE:935] "[vite] connecting...", source: http://127.0.0.1:4000/@vite/client (935)
+    [pid=5368][err] [1029/173455.269952:INFO:CONSOLE:1048] "[vite] connected.", source: http://127.0.0.1:4000/@vite/client (1048)
+    [pid=5368][err] [1029/173455.522867:INFO:CONSOLE:15805] "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold", source: http://127.0.0.1:4000/node_modules/.vite/deps/react-dom_client.js?v=bbb73e8c (15805)
+
+    Error Context: test-results/mandate9-contact-malformed-response-does-not-show-success/error-context.md
+
+
+[5/7] tests/mandate9.spec.ts:23:1 › network uncertainty allows retry
+[6/7] tests/mandate9.spec.ts:32:1 › jobs browse uses public data route and filters the returned jobs
+  3) tests/mandate9.spec.ts:32:1 › jobs browse uses public data route and filters the returned jobs 
+
+    Test timeout of 30000ms exceeded while setting up "page".
+
+    Error Context: test-results/mandate9-jobs-browse-uses--cbf4c-d-filters-the-returned-jobs/error-context.md
+
+
+[7/7] tests/mandate9.spec.ts:40:1 › blog list requests only published posts and shows errors instead of empty success
+  3 failed
+    tests/mandate9.spec.ts:17:3 › contact validation response does not show success ────────────────
+    tests/mandate9.spec.ts:17:3 › contact malformed response does not show success ─────────────────
+    tests/mandate9.spec.ts:32:1 › jobs browse uses public data route and filters the returned jobs ─
+  4 passed (37.0s)
+
+EXIT_CODE=1

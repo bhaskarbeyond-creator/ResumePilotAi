@@ -1,0 +1,3 @@
+PASS: 393 historical files unchanged (paths, sizes, SHA-256)
+
+EXIT_CODE=0

@@ -1,20 +1,14 @@
 'use strict';
 
 /**
- * Regression coverage for the forensic-audit finding:
+ * Regression coverage for payment-settings read authorization and projection:
+ * payment managers (`payments.manage`) and explicit system-config readers may
+ * load the secret-free settings projection. Read-only payment access (`payments.read`)
+ * alone must not disclose provider configuration to an AUDITOR. The canonical
+ * platform route and backwards-compatible admin alias must enforce the same gate.
  *
- *   "Subscriptions & Gateways" is rendered by the ADMIN console
- *   (src/components/admin/settings/Settings.jsx -> subscriptionsSettings.jsx) but
- *   its read endpoint GET /api/platform/payment-settings was gated
- *   `requireSuperAdmin`, while the identical secret-free projection was served to
- *   any ADMIN via the /api/admin/payment-settings alias. The consequence for a
- *   plain ADMIN was a 403 that the component swallowed with a bare
- *   `console.warn`, rendering every gateway field empty with revision 0 — the
- *   reported "Razorpay values disappeared" symptom.
- *
- * These tests drive the real Express app over HTTP (supertest) rather than
- * string-matching source, so they fail if the route guard, the projection or the
- * secret redaction regress.
+ * These tests drive the real Express app over HTTP (supertest), so they fail if
+ * either route's authorization or the secret redaction regresses.
  */
 
 process.env.NODE_ENV = 'test';
@@ -47,6 +41,15 @@ setTokenVerifierForTests(async token => {
   if (token === 'user') {
     return { uid: 'u-01', email: 'user@example.com', email_verified: true, role: 'USER', auth_time: now };
   }
+  if (token === 'auditor') {
+    return { uid: 'auditor-01', email: 'auditor@example.com', email_verified: true, role: 'AUDITOR', auth_time: now };
+  }
+  if (token === 'config-reader') {
+    return { uid: 'config-reader-01', email: 'config-reader@example.com', email_verified: true, role: 'USER', permissions: ['system.config.read'], auth_time: now };
+  }
+  if (token === 'admin-config-reader') {
+    return { uid: 'admin-config-reader-01', email: 'admin-config-reader@example.com', email_verified: true, role: 'ADMIN', permissions: ['system.config.read'], auth_time: now };
+  }
   throw new Error('INVALID_TOKEN');
 });
 
@@ -62,16 +65,20 @@ const SECRETS = {
 };
 
 const { setRepositoryForTests } = require('../repositories');
+const adminAuditRecords = [];
 setRepositoryForTests({
   async getSetting(category) {
     return SECRETS[`settings/${category}`] || SECRETS[`data/${category}`] || null;
   },
-  async recordAdminAuditLog() { return true; },
+  async recordAdminAuditLog(record) {
+    adminAuditRecords.push(record);
+    return true;
+  },
 });
 
 const app = require('../index');
 
-test('REGRESSION: ADMIN (system.config.read) can READ the secret-free payment projection', async () => {
+test('REGRESSION: ADMIN with built-in payments.manage can READ the secret-free payment projection', async () => {
   const res = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer admin');
   assert.equal(res.status, 200, `ADMIN must be able to load the payment panel, got ${res.status}: ${JSON.stringify(res.body)}`);
   assert.ok(res.body.publicKeys?.razorpayKeyId, 'public identifier must be returned');
@@ -89,6 +96,22 @@ test('REGRESSION: the payment projection never exposes a raw secret over HTTP', 
   assert.doesNotMatch(body, /paypal-secret-DO_NOT_LEAK/);
 });
 
+test('REGRESSION: AUDITOR with payments.read alone is denied on both payment-settings routes', async () => {
+  const canonical = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer auditor');
+  const alias = await request(app).get('/api/admin/payment-settings').set('Authorization', 'Bearer auditor');
+  assert.equal(canonical.status, 403);
+  assert.equal(alias.status, 403);
+});
+
+test('REGRESSION: ADMIN with explicit system.config.read and delegated config reader can READ', async () => {
+  const admin = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer admin-config-reader');
+  const delegatedReader = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer config-reader');
+  assert.equal(admin.status, 200);
+  assert.equal(delegatedReader.status, 200);
+  assert.ok(admin.body.publicKeys?.razorpayKeyId);
+  assert.ok(delegatedReader.body.publicKeys?.razorpayKeyId);
+});
+
 test('REGRESSION: a plain USER cannot read the payment projection', async () => {
   const res = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer user');
   assert.equal(res.status, 403);
@@ -104,6 +127,20 @@ test('REGRESSION: the alias and the canonical route expose the same gate and pay
   const alias = await request(app).get('/api/admin/payment-settings').set('Authorization', 'Bearer admin');
   assert.equal(canonical.status, alias.status, 'the two read routes must not diverge in authorisation');
   assert.deepEqual(canonical.body, alias.body, 'the two read routes must return an identical projection');
+});
+
+test('REGRESSION: audit middleware records invalid platform mutations before route responses', async () => {
+  adminAuditRecords.length = 0;
+  const res = await request(app)
+    .post('/api/platform/role-view-audit')
+    .set('Authorization', 'Bearer superadmin-mfa')
+    .send({ targetRole: 'NOT_A_ROLE' });
+  assert.equal(res.status, 400);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(adminAuditRecords.some(record =>
+    record.pathname === '/api/platform/role-view-audit'
+    && record.statusCode === 400
+    && record.outcome === 'FAILURE'), 'platform mutation attempt must be logged by the application audit middleware');
 });
 
 test('REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_ADMIN + MFA + recent auth)', async () => {

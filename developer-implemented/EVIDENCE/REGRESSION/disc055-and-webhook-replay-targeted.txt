@@ -1,0 +1,153 @@
+TAP version 13
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: ADMIN with built-in payments.manage can READ the secret-free payment projection
+ok 1 - REGRESSION: ADMIN with built-in payments.manage can READ the secret-free payment projection
+  ---
+  duration_ms: 22.761628
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: the payment projection never exposes a raw secret over HTTP
+ok 2 - REGRESSION: the payment projection never exposes a raw secret over HTTP
+  ---
+  duration_ms: 10.456111
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: AUDITOR with payments.read alone is denied on both payment-settings routes
+ok 3 - REGRESSION: AUDITOR with payments.read alone is denied on both payment-settings routes
+  ---
+  duration_ms: 6.565134
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: ADMIN with explicit system.config.read and delegated config reader can READ
+ok 4 - REGRESSION: ADMIN with explicit system.config.read and delegated config reader can READ
+  ---
+  duration_ms: 7.439604
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: a plain USER cannot read the payment projection
+ok 5 - REGRESSION: a plain USER cannot read the payment projection
+  ---
+  duration_ms: 3.257197
+  type: 'test'
+  ...
+# Subtest: REGRESSION: unauthenticated read is rejected
+ok 6 - REGRESSION: unauthenticated read is rejected
+  ---
+  duration_ms: 2.441192
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: the alias and the canonical route expose the same gate and payload
+ok 7 - REGRESSION: the alias and the canonical route expose the same gate and payload
+  ---
+  duration_ms: 10.754939
+  type: 'test'
+  ...
+# Subtest: REGRESSION: audit middleware records invalid platform mutations before route responses
+ok 8 - REGRESSION: audit middleware records invalid platform mutations before route responses
+  ---
+  duration_ms: 8.627525
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_ADMIN + MFA + recent auth)
+ok 9 - REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_ADMIN + MFA + recent auth)
+  ---
+  duration_ms: 4.908897
+  type: 'test'
+  ...
+# Subtest: REGRESSION: SUPER_ADMIN without a verified second factor still cannot WRITE
+ok 10 - REGRESSION: SUPER_ADMIN without a verified second factor still cannot WRITE
+  ---
+  duration_ms: 3.169532
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# Subtest: payment webhook replay refuses to claim processing when the ledger stores metadata only
+ok 11 - payment webhook replay refuses to claim processing when the ledger stores metadata only
+  ---
+  duration_ms: 26.483414
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: payment webhook replay still enforces Super Admin authorization and event existence
+ok 12 - payment webhook replay still enforces Super Admin authorization and event existence
+  ---
+  duration_ms: 7.644866
+  type: 'test'
+  ...
+# [Platform] payment-webhooks error: Error: connect ECONNREFUSED 127.0.0.1:3306
+#     at TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/payment-webhook-replay.test.js:116:32)
+#     at Test.runInAsyncScope (node:async_hooks:214:14)
+#     at Test.run (node:internal/test_runner/test:1047:25)
+#     at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+#     at Test.postRun (node:internal/test_runner/test:1173:19)
+#     at Test.run (node:internal/test_runner/test:1101:12)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+#   code: 'ECONNREFUSED'
+# }
+# Subtest: payment webhook diagnostic maps MariaDB connection failures to 503
+ok 13 - payment webhook diagnostic maps MariaDB connection failures to 503
+  ---
+  duration_ms: 3.671315
+  type: 'test'
+  ...
+# [Platform] payment-webhook replay error: Error: connect ECONNREFUSED 127.0.0.1:3306
+#     at TestContext.<anonymous> (/home/user/ResumePilotAi/backend/test/payment-webhook-replay.test.js:130:32)
+#     at Test.runInAsyncScope (node:async_hooks:214:14)
+#     at Test.run (node:internal/test_runner/test:1047:25)
+#     at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+#     at Test.postRun (node:internal/test_runner/test:1173:19)
+#     at Test.run (node:internal/test_runner/test:1101:12)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+#   code: 'ECONNREFUSED'
+# }
+# Subtest: webhook replay maps unavailable event storage to 503 without a false success
+ok 14 - webhook replay maps unavailable event storage to 503 without a false success
+  ---
+  duration_ms: 4.091287
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# Subtest: DISC-055: each platform configuration/payment route has one router registration
+ok 15 - DISC-055: each platform configuration/payment route has one router registration
+  ---
+  duration_ms: 2.736793
+  type: 'test'
+  ...
+# Subtest: control-plane routers are mounted once and platform audit middleware runs first
+ok 16 - control-plane routers are mounted once and platform audit middleware runs first
+  ---
+  duration_ms: 0.64723
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2448.076079
+
+EXIT_CODE=0

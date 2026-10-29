@@ -1,6 +1,6 @@
-# Historical discrepancy status index — incomplete triage
+# Historical discrepancy status index — recovery snapshot (2026-10-29)
 
-Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. IDs and headings transcribed from `developer-review/DISCREPANCY-LOG.md`. This index does not establish acceptance, deduplication, root cause, or complete per-finding acceptance criteria; consult the historical register. The aliases DISC-042 and DISC-046 are recorded there as merged into DISC-030. All other historical findings are NOT STARTED unless explicitly listed below.
+Current source base `aa24147245daa6c027d046f1f7ae6f8fc703be46` with recovery changes on the active Arena task branch. IDs and headings are transcribed from the protected `developer-review/DISCREPANCY-LOG.md`; the historical source is unchanged. This is an implementation-status index, not a full acceptance or production-readiness certificate. The aliases DISC-042 and DISC-046 remain separately traceable as merged into DISC-030. Capability parity is recorded separately in `developer-implemented/REGISTERS/capabilities.csv` and must not be inferred from finding closure.
 
 | ID | Historical title | Current status |
 |---|---|---|
@@ -59,4 +59,10 @@ Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. IDs and headings transcribe
 | DISC-053 | The shared unread-message poller and the global unread badge are gone; what replaced them stops polling on error | NOT STARTED |
 | DISC-054 | Three team-management operations have no production implementation, and team leads have nowhere to be stored | NOT STARTED |
 | DISC-056 | The in-memory test double ignores repository query options, so acceptance runs cannot validate visibility | NOT STARTED |
-| DISC-055 | Four route blocks are declared twice in `backend/routes/platform.js`, the second copy can never run, and the two copies of the payment-settings read disagree on authorization | NOT STARTED |
+| DISC-055 | Four route blocks are declared twice in `backend/routes/platform.js`, the second copy can never run, and the two copies of the payment-settings read disagree on authorization | IMPLEMENTED — LOCALLY VERIFIED for exact registration, RBAC and audit ordering; live DB/provider workflow remains unverified |
+
+## Recovery amendment — 2026-10-29
+
+- `DISC-055`: removed the four duplicate platform route blocks, duplicate control-plane mounts, and an additional exact duplicate `POST /api/notify/user-signup` found by the whole-backend runtime detector. Canonical payment-settings read policy now denies an AUDITOR with `payments.read` alone. Targeted route/RBAC/replay tests pass 16/16; whole-backend runtime inventory finds 457 exact method+literal-path registrations, 457 distinct pairs, zero duplicates, and zero unresolved route/mount patterns. Evidence: `developer-implemented/EVIDENCE/REGRESSION/disc055-and-webhook-replay-release-20261029.txt`, `backend-exact-route-duplicates-20261029.json`, and `backend-route-reconciliation-20261029.json`.
+- The webhooks replay action remains unavailable by design: metadata-only stored records do not contain a provider-signed event or a shared idempotent reprocessing input. Stored-event replay requests return 409 `WEBHOOK_REPLAY_UNAVAILABLE` with no payment-state change; DB storage failures return 503. This is not a claim of completed replay capability.
+- Other rows retain their previously recorded dispositions; they were not all revalidated in this recovery. M9-P01 remains a separate provisional finding and the accepted capability denominator remains 112. See `developer-implemented/REGISTERS/` and the final readiness certification.

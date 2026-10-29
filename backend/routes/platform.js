@@ -1685,26 +1685,18 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
 });
 
 /* ------------------------------------------------------------------
- * Payment Settings GET — system.config.read (ADMIN and above)
+ * Payment Settings GET — payments.manage or system.config.read
  * Returns public settings + configured/masked state for secrets.
  * Never returns raw secrets.
  *
- * RCA (forensic audit): this projection is secret-free by construction —
- * `publicPaymentSettings()` strips every credential-shaped key and only
- * `maskedKeys` (••••last4) plus PUBLIC client-side identifiers (Razorpay
- * key_id, Stripe publishable key, PayPal client id, Paytm MID, PhonePe id)
- * leave the server. The identical payload was already served to any ADMIN
- * holding `system.config.read` by the /api/admin/payment-settings alias in
- * index.js, so the SUPER_ADMIN gate here never actually restricted access —
- * it only made the canonical route unreachable for the Admin console that
- * renders it, producing a silently empty payment panel.
- *
- * Read stays at `system.config.read`; the WRITE
- * (POST /api/admin/payment-settings) is unchanged and still requires
+ * `payments.read` alone is intentionally insufficient: read-only payment
+ * reporting (including the AUDITOR role) must not expose provider configuration.
+ * Payment managers and principals explicitly granted system.config.read can
+ * load the secret-free projection. Writes remain unchanged and still require
  * SUPER_ADMIN + verified second factor + recent authentication.
  * ------------------------------------------------------------------ */
 
-router.get('/payment-settings', requirePermission(['payments.read', 'system.config.read']), async (req, res) => {
+router.get('/payment-settings', requirePermission(['payments.manage', 'system.config.read']), async (req, res) => {
   try {
     const projection = await getPaymentSettingsProjection(process.env);
     res.setHeader('Cache-Control', 'no-store');
@@ -1796,10 +1788,15 @@ router.get('/payment-webhooks', requirePermission('system.config.read'), async (
     });
   } catch (error) {
     console.error('[Platform] payment-webhooks error:', error);
-    return res.status(500).json({
+    const databaseUnavailable = ['ECONNREFUSED', 'ECONNRESET', 'PROTOCOL_CONNECTION_LOST', 'ER_NO_SUCH_TABLE']
+      .includes(String(error?.code || '').toUpperCase());
+    const status = Number(error?.status) || (databaseUnavailable ? 503 : 500);
+    return res.status(status).json({
       error: {
-        code: 'PAYMENT_WEBHOOKS_QUERY_FAILED',
-        message: 'Could not fetch payment webhook events.',
+        code: databaseUnavailable ? 'PAYMENT_WEBHOOKS_STORAGE_UNAVAILABLE' : 'PAYMENT_WEBHOOKS_QUERY_FAILED',
+        message: databaseUnavailable
+          ? 'Webhook event storage is unavailable.'
+          : 'Could not fetch payment webhook events.',
         requestId: res.locals?.requestId,
       }
     });
@@ -1815,206 +1812,29 @@ router.post('/payment-webhooks/:eventId/replay', requireSuperAdmin, async (req, 
       return res.status(404).json({ error: { code: 'WEBHOOK_EVENT_NOT_FOUND', message: 'Webhook event not found.' } });
     }
 
-    const event = rows[0];
-    await recordAdminAuditLog(req, {
-      action: 'PAYMENT_WEBHOOK_REPLAYED',
-      category: 'PAYMENTS',
-      details: { eventId, provider: event.provider, eventType: event.event_type, orderId: event.order_id },
-      severity: 'HIGH'
-    });
-
-    return res.json({
-      success: true,
-      eventId,
-      provider: event.provider,
-      eventType: event.event_type,
-      orderId: event.order_id,
-      status: 'REPLAY_PROCESSED',
-      message: `Webhook event ${eventId} successfully re-evaluated and processed for ${event.provider}.`
-    });
-  } catch (error) {
-    return res.status(500).json({ error: { code: 'REPLAY_FAILED', message: error.message || 'Webhook replay failed' } });
-  }
-});
-
-
-/* ------------------------------------------------------------------
- * Platform Configuration — SUPER_ADMIN only
- * Read-only configuration census for the Admin UI.
- * ------------------------------------------------------------------ */
-
-router.get('/configuration', requireSuperAdmin, async (req, res) => {
-  try {
-    const configuration = await getPlatformConfiguration({ env: process.env });
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(configuration);
-  } catch (error) {
-    console.error('[PlatformConfiguration] census failed:', error?.message || error);
-    return res.status(503).json({
+    // The current ledger stores only idempotency metadata (event ID/provider/type/order),
+    // not the signed provider event or a replay processor. Returning success here would
+    // falsely claim that a payment state transition was re-applied. Fail explicitly
+    // until provider retrieval and the shared, idempotent event processor are available.
+    return res.status(409).json({
       error: {
-        code: 'CONFIGURATION_UNAVAILABLE',
-        message: 'The server-side configuration census could not be collected.',
+        code: 'WEBHOOK_REPLAY_UNAVAILABLE',
+        message: 'The stored webhook record cannot be replayed. No payment state was changed.',
         requestId: res.locals?.requestId,
       },
-    });
-  }
-});
-
-/* ------------------------------------------------------------------
- * Payment Settings GET — system.config.read (ADMIN and above)
- * Returns public settings + configured/masked state for secrets.
- * Never returns raw secrets.
- *
- * RCA (forensic audit): this projection is secret-free by construction —
- * `publicPaymentSettings()` strips every credential-shaped key and only
- * `maskedKeys` (••••last4) plus PUBLIC client-side identifiers (Razorpay
- * key_id, Stripe publishable key, PayPal client id, Paytm MID, PhonePe id)
- * leave the server. The identical payload was already served to any ADMIN
- * holding `system.config.read` by the /api/admin/payment-settings alias in
- * index.js, so the SUPER_ADMIN gate here never actually restricted access —
- * it only made the canonical route unreachable for the Admin console that
- * renders it, producing a silently empty payment panel.
- *
- * Read stays at `system.config.read`; the WRITE
- * (POST /api/admin/payment-settings) is unchanged and still requires
- * SUPER_ADMIN + verified second factor + recent authentication.
- * ------------------------------------------------------------------ */
-
-router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
-  try {
-    const projection = await getPaymentSettingsProjection(process.env);
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(projection);
-  } catch (error) {
-    return res.status(Number(error.status) || 503).json({
-      error: {
-        code: error.code || 'PAYMENT_SETTINGS_UNAVAILABLE',
-        message: 'Could not load payment settings.',
-        requestId: res.locals?.requestId,
-      },
-    });
-  }
-});
-
-/* ------------------------------------------------------------------
- * Inbound Payment Webhooks Diagnostic Stream & Replay
- * ------------------------------------------------------------------ */
-
-router.get('/payment-webhooks', requirePermission('system.config.read'), async (req, res) => {
-  try {
-    const pool = getPool();
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
-    const provider = req.query.provider ? String(req.query.provider).trim().toLowerCase() : null;
-    const search = req.query.q ? String(req.query.q).trim() : null;
-
-    let query = 'SELECT event_id, provider, event_type, order_id, payload, received_at FROM payment_webhook_events WHERE 1=1';
-    const params = [];
-
-    if (provider && provider !== 'all') {
-      query += ' AND provider = ?';
-      params.push(provider);
-    }
-    if (search) {
-      query += ' AND (event_id LIKE ? OR order_id LIKE ? OR event_type LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-    }
-
-    query += ' ORDER BY received_at DESC LIMIT ?';
-    params.push(limit);
-
-    const [rows] = await pool.query(query, params);
-    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM payment_webhook_events');
-
-    // Helper to sanitize/redact sensitive keys from stored JSON payloads
-    const sanitizePayload = (raw) => {
-      if (!raw) return null;
-      try {
-        const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        const redact = (target) => {
-          if (!target || typeof target !== 'object') return target;
-          const cleaned = Array.isArray(target) ? [] : {};
-          for (const [k, v] of Object.entries(target)) {
-            const keyLower = k.toLowerCase();
-            if (['key', 'secret', 'password', 'token', 'authorization', 'cvc', 'signature'].some(s => keyLower.includes(s))) {
-              cleaned[k] = '••••[REDACTED_SECRET]';
-            } else if (v && typeof v === 'object') {
-              cleaned[k] = redact(v);
-            } else {
-              cleaned[k] = v;
-            }
-          }
-          return cleaned;
-        };
-        return redact(obj);
-      } catch {
-        return { note: 'Unparseable raw payload' };
-      }
-    };
-
-    const events = rows.map(r => ({
-      eventId: r.event_id,
-      provider: r.provider,
-      eventType: r.event_type,
-      orderId: r.order_id,
-      receivedAt: r.received_at,
-      payload: sanitizePayload(r.payload),
-      status: 'LOGGED_IDEMPOTENT',
-      signatureVerified: true
-    }));
-
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json({
-      success: true,
-      events,
-      total,
-      providers: ['razorpay', 'stripe', 'paypal', 'paytm', 'phonepe'],
-      source: 'payment_webhook_events'
-    });
-  } catch (error) {
-    console.error('[Platform] payment-webhooks error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'PAYMENT_WEBHOOKS_QUERY_FAILED',
-        message: 'Could not fetch payment webhook events.',
-        requestId: res.locals?.requestId,
-      }
-    });
-  }
-});
-
-router.post('/payment-webhooks/:eventId/replay', requireSuperAdmin, async (req, res) => {
-  try {
-    const { eventId } = req.params;
-    const pool = getPool();
-    const [rows] = await pool.query('SELECT * FROM payment_webhook_events WHERE event_id = ? LIMIT 1', [eventId]);
-    if (!rows.length) {
-      return res.status(404).json({ error: { code: 'WEBHOOK_EVENT_NOT_FOUND', message: 'Webhook event not found.' } });
-    }
-
-    const event = rows[0];
-    await recordAdminAuditLog(req, {
-      action: 'PAYMENT_WEBHOOK_REPLAYED',
-      category: 'PAYMENTS',
-      details: { eventId, provider: event.provider, eventType: event.event_type, orderId: event.order_id },
-      severity: 'HIGH'
-    });
-
-    return res.json({
-      success: true,
-      eventId,
-      provider: event.provider,
-      eventType: event.event_type,
-      orderId: event.order_id,
-      status: 'REPLAY_PROCESSED',
-      message: `Webhook event ${eventId} successfully re-evaluated and processed for ${event.provider}.`
     });
   } catch (error) {
     console.error('[Platform] payment-webhook replay error:', error);
-    return res.status(500).json({
+    const databaseUnavailable = ['ECONNREFUSED', 'ECONNRESET', 'PROTOCOL_CONNECTION_LOST', 'ER_NO_SUCH_TABLE']
+      .includes(String(error?.code || '').toUpperCase());
+    const status = Number(error?.status) || (databaseUnavailable ? 503 : 500);
+    return res.status(status).json({
       error: {
-        code: 'WEBHOOK_REPLAY_FAILED',
-        message: error.message || 'Webhook replay failed.',
-        requestId: res.locals?.requestId
+        code: databaseUnavailable ? 'WEBHOOK_EVENT_STORAGE_UNAVAILABLE' : 'WEBHOOK_REPLAY_FAILED',
+        message: databaseUnavailable
+          ? 'Webhook event storage is unavailable. No replay was attempted.'
+          : 'Webhook replay could not be completed. No replay was attempted.',
+        requestId: res.locals?.requestId,
       }
     });
   }

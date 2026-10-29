@@ -1,0 +1,7 @@
+Historical: 405 instances / 399 normalized keys
+Current: 457 exact literals / 449 normalized keys
+Current-only keys: 50; historical-only keys: 0
+Exact duplicates: 0; unresolved routes/mounts: 0/0
+Wrote developer-implemented/EVIDENCE/REGRESSION/backend-route-reconciliation-20261029.json and developer-implemented/REPORTS/BACKEND-ROUTE-REGISTRATION-RECONCILIATION-20261029.md
+
+EXIT_CODE=0

@@ -150,7 +150,7 @@ async function recordAdminAuditLog(requestOrEvent, explicitEvent) {
 }
 
 function createAdminAuditMiddleware() {
-  return (req, res, next) => {
+  return function adminAuditMiddleware(req, res, next) {
     const startTime = Date.now();
     const originalEnd = res.end;
 

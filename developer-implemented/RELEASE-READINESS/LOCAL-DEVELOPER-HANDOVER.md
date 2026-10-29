@@ -1,3 +1,5 @@
+> **Historical local handover — superseded by the Arena recovery snapshot dated 2026-10-29.** This document records claims from a different local host/branch and is retained as historical evidence, not as current release approval. Its stated MariaDB 11.4 instance, 1,365/1,365 backend pass, and `COMPLETE & VERIFIED` release status were not reproduced in this environment; the protected 393-file integrity check was independently rerun here and passed. Here `127.0.0.1:3306` refuses connections; the current default backend suite is 1,290 pass / 57 fail / 0 skip; full Playwright stopped at the disposable-DB preflight. Current authoritative verdict and evidence are in `FINAL-READINESS-CERTIFICATION-20261029.md`, `../REPORTS/verification-reports/current.md`, and `../EVIDENCE/evidence-index-20261029.md`.
+
 # Mandate 9B — Local Developer Handover & Release Readiness Report
 
 **Repository:** `https://github.com/bhaskarbeyond-creator/ResumePilotAi.git`  

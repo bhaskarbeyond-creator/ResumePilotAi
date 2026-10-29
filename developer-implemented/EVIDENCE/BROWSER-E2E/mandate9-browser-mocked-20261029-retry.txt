@@ -1,0 +1,13 @@
+
+Running 7 tests using 1 worker
+
+[1/7] tests/mandate9.spec.ts:9:1 › contact success requires server response and preserves subject
+[2/7] tests/mandate9.spec.ts:17:3 › contact validation response does not show success
+[3/7] tests/mandate9.spec.ts:17:3 › contact server response does not show success
+[4/7] tests/mandate9.spec.ts:17:3 › contact malformed response does not show success
+[5/7] tests/mandate9.spec.ts:23:1 › network uncertainty allows retry
+[6/7] tests/mandate9.spec.ts:32:1 › jobs browse uses public data route and filters the returned jobs
+[7/7] tests/mandate9.spec.ts:40:1 › blog list requests only published posts and shows errors instead of empty success
+  7 passed (7.2s)
+
+EXIT_CODE=0

@@ -1,3 +1,5 @@
+> **Historical contract disposition — current acceptance is not established by the older labels below.** The `IMPLEMENTED AND VERIFIED` entries record earlier route/mock/test claims; they do not prove current full workflow, real MariaDB persistence, Firebase identity, provider behavior, or browser E2E. In the current Arena snapshot the default backend suite fails 57 tests, MariaDB at `127.0.0.1:3306` is unavailable, and full Playwright stops before tests at the disposable-DB preflight. Current adjudication is in `developer-implemented/REGISTERS/capabilities.csv`, `developer-implemented/REGISTERS/findings.csv`, `developer-implemented/REPORTS/verification-reports/current.md`, and `developer-implemented/RELEASE-READINESS/FINAL-READINESS-CERTIFICATION-20261029.md`.
+
 # Eleven reported wrong-URL contract shapes — disposition
 
 Historical source: `developer-review/Evidence/artifacts/m8-contract-gap-revalidation.json` at audit revision `8fce71518d1dc957c3c8cefa9867445edb35f438`; implementation baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. Historical equivalent is a lead, not a verified semantic equivalence. All browser/database verification remains blocked.

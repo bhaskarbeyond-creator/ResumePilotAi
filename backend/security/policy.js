@@ -62,7 +62,7 @@ function resolveAdminReadPermission(pathname) {
   if (pathname === '/admin/tenants' || pathname.startsWith('/admin/tenants/') || pathname === '/platform/tenants') return 'tenants.read';
   if (pathname === '/email/logs') return 'email.logs.read';
   if (pathname === '/email/admin/deliverability' || pathname === '/email/admin/circuit-breaker-status') return 'email.logs.read';
-  if (pathname === '/admin/payment-settings' || pathname === '/platform/payment-settings') return 'payments.read';
+  if (pathname === '/admin/payment-settings' || pathname === '/platform/payment-settings') return ['payments.manage', 'system.config.read'];
   if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-orders') return 'payments.read';
   if (pathname.startsWith('/admin/subscriptions')) return 'payments.read';
   if (pathname === '/admin/ai/entitlements') return 'ai.usage.read';

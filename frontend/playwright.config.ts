@@ -4,10 +4,17 @@ if (!process.env.TEST_AUTH_HMAC_SECRET) {
   process.env.TEST_AUTH_HMAC_SECRET = 'local-test-auth-hmac-secret-super-secure-32chars';
 }
 
+const configuredChromiumArgs = process.env.PLAYWRIGHT_CHROMIUM_ARGS
+  ?.split(/\s+/)
+  .map(argument => argument.trim())
+  .filter(Boolean);
+
 const chromiumLaunchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
   ? {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
-      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+      args: configuredChromiumArgs?.length
+        ? configuredChromiumArgs
+        : ['--no-sandbox', '--disable-dev-shm-usage'],
     }
   : {};
 

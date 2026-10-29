@@ -1,0 +1,578 @@
+{
+  "generatedAt": "2026-10-29T17:57:38.560572+00:00",
+  "historicalArtifact": "developer-review/Evidence/artifacts/m8-registration-reconciliation.json",
+  "historicalRevision": "8fce71518d1dc957c3c8cefa9867445edb35f438",
+  "currentRuntimeArtifact": "developer-implemented/EVIDENCE/REGRESSION/backend-exact-route-duplicates-20261029.json",
+  "currentBranch": "arena/76eeea4d-resumepilotai",
+  "currentBaseSha": "aa24147245daa6c027d046f1f7ae6f8fc703be46",
+  "historical": {
+    "registrationInstances": 405,
+    "distinctNormalizedMethodPathKeys": 399
+  },
+  "current": {
+    "exactLiteralMethodPathRegistrations": 457,
+    "exactLiteralMethodPathKeys": 457,
+    "exactDuplicateKeys": 0,
+    "distinctNormalizedMethodPathKeys": 449,
+    "normalizedAliasInstances": 8,
+    "unresolvedRoutePatterns": 0,
+    "unresolvedMountPatterns": 0
+  },
+  "delta": {
+    "newNormalizedKeys": 50,
+    "historicalKeysNotPresentCurrently": 0,
+    "historicalRowsMinusCurrentRows": -52
+  },
+  "historicalOnlyKeys": [],
+  "currentOnlyKeys": [
+    {
+      "normalizedKey": "DELETE /blog-data/posts/{X}",
+      "literalPaths": [
+        "/api/blog-data/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "DELETE /blog/posts/{X}",
+      "literalPaths": [
+        "/api/blog/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "DELETE /blog/{X}",
+      "literalPaths": [
+        "/api/blog/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "DELETE /jobs/applications/{X}",
+      "literalPaths": [
+        "/api/jobs/applications/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "DELETE /jobs/tracker/{X}",
+      "literalPaths": [
+        "/api/jobs/tracker/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "DELETE /jobs/{X}",
+      "literalPaths": [
+        "/api/jobs/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog",
+      "literalPaths": [
+        "/api/blog/"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog-data/posts",
+      "literalPaths": [
+        "/api/blog-data/posts"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog-data/posts/{X}",
+      "literalPaths": [
+        "/api/blog-data/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog/categories",
+      "literalPaths": [
+        "/api/blog/categories"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog/posts",
+      "literalPaths": [
+        "/api/blog/posts"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog/posts/{X}",
+      "literalPaths": [
+        "/api/blog/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog/slug/{X}",
+      "literalPaths": [
+        "/api/blog/slug/:slug"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /blog/{X}",
+      "literalPaths": [
+        "/api/blog/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /jobs",
+      "literalPaths": [
+        "/api/jobs/"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /jobs/applications/list",
+      "literalPaths": [
+        "/api/jobs/applications/list"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /jobs/tracker",
+      "literalPaths": [
+        "/api/jobs/tracker"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /jobs/{X}",
+      "literalPaths": [
+        "/api/jobs/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "GET /platform/status",
+      "literalPaths": [
+        "/api/platform/status"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "PATCH /jobs/applications/{X}",
+      "literalPaths": [
+        "/api/jobs/applications/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "PATCH /jobs/tracker/{X}",
+      "literalPaths": [
+        "/api/jobs/tracker/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /admin/database-settings/sync-now",
+      "literalPaths": [
+        "/api/admin/database-settings/sync-now"
+      ],
+      "sources": [
+        "backend/routes/databaseAdmin.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /admin/database-settings/verify-parity",
+      "literalPaths": [
+        "/api/admin/database-settings/verify-parity"
+      ],
+      "sources": [
+        "backend/routes/databaseAdmin.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /admin/employer-applications/{X}/verify",
+      "literalPaths": [
+        "/api/admin/employer-applications/:uid/verify"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /admin/jobs/{X}/moderate",
+      "literalPaths": [
+        "/api/admin/jobs/:jobId/moderate"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /admin/users/{X}/status",
+      "literalPaths": [
+        "/api/admin/users/:uid/status"
+      ],
+      "sources": [
+        "backend/routes/adminUsers.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /billing/validate-coupon",
+      "literalPaths": [
+        "/api/billing/validate-coupon"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /blog-data/posts",
+      "literalPaths": [
+        "/api/blog-data/posts"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /blog/posts",
+      "literalPaths": [
+        "/api/blog/posts"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /blog/{X}",
+      "literalPaths": [
+        "/api/blog/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /generate-education-description",
+      "literalPaths": [
+        "/api/generate-education-description"
+      ],
+      "sources": [
+        "backend/routes/ai.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /generate-resume",
+      "literalPaths": [
+        "/api/generate-resume"
+      ],
+      "sources": [
+        "backend/routes/ai.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /generate-skills",
+      "literalPaths": [
+        "/api/generate-skills"
+      ],
+      "sources": [
+        "backend/routes/ai.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /generate-summary",
+      "literalPaths": [
+        "/api/generate-summary"
+      ],
+      "sources": [
+        "backend/routes/ai.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /generate-work-description",
+      "literalPaths": [
+        "/api/generate-work-description"
+      ],
+      "sources": [
+        "backend/routes/ai.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /jobs/applications/{X}",
+      "literalPaths": [
+        "/api/jobs/applications/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /jobs/tracker",
+      "literalPaths": [
+        "/api/jobs/tracker"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /jobs/{X}",
+      "literalPaths": [
+        "/api/jobs/:id"
+      ],
+      "sources": [
+        "backend/routes/jobsData.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/email-otp",
+      "literalPaths": [
+        "/api/notify/email-otp"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/job-application",
+      "literalPaths": [
+        "/api/notify/job-application"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/job-posted",
+      "literalPaths": [
+        "/api/notify/job-posted"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/job-status-update",
+      "literalPaths": [
+        "/api/notify/job-status-update"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/password-changed",
+      "literalPaths": [
+        "/api/notify/password-changed"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/password-reset",
+      "literalPaths": [
+        "/api/notify/password-reset"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/portfolio-published",
+      "literalPaths": [
+        "/api/notify/portfolio-published"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/security-alert",
+      "literalPaths": [
+        "/api/notify/security-alert"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/send-verification-email",
+      "literalPaths": [
+        "/api/notify/send-verification-email"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "POST /notify/subscription-cancelled",
+      "literalPaths": [
+        "/api/notify/subscription-cancelled"
+      ],
+      "sources": [
+        "backend/index.js"
+      ]
+    },
+    {
+      "normalizedKey": "PUT /blog-data/posts/{X}",
+      "literalPaths": [
+        "/api/blog-data/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    },
+    {
+      "normalizedKey": "PUT /blog/posts/{X}",
+      "literalPaths": [
+        "/api/blog/posts/:id"
+      ],
+      "sources": [
+        "backend/routes/blogData.js"
+      ]
+    }
+  ],
+  "currentNormalizedAliasCollisions": {
+    "POST /v1/chat/completions": [
+      {
+        "path": "/v1/chat/completions",
+        "source": "backend/index.js:2877:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "source": "backend/index.js:2877:5",
+        "mountTrail": []
+      }
+    ],
+    "POST /v1/messages": [
+      {
+        "path": "/v1/messages",
+        "source": "backend/index.js:3077:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/v1/messages",
+        "source": "backend/index.js:3077:5",
+        "mountTrail": []
+      }
+    ],
+    "POST /v1/search": [
+      {
+        "path": "/v1/search",
+        "source": "backend/index.js:3146:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/v1/search",
+        "source": "backend/index.js:3146:5",
+        "mountTrail": []
+      }
+    ],
+    "GET /v1/status": [
+      {
+        "path": "/v1/status",
+        "source": "backend/index.js:3236:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/v1/status",
+        "source": "backend/index.js:3236:5",
+        "mountTrail": []
+      }
+    ],
+    "GET /healthz": [
+      {
+        "path": "/healthz",
+        "source": "backend/index.js:5468:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/healthz",
+        "source": "backend/index.js:5472:5",
+        "mountTrail": []
+      }
+    ],
+    "GET /readyz": [
+      {
+        "path": "/readyz",
+        "source": "backend/index.js:5530:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/api/readyz",
+        "source": "backend/index.js:5539:5",
+        "mountTrail": []
+      }
+    ],
+    "GET /custom-pages.json": [
+      {
+        "path": "/api/custom-pages.json",
+        "source": "backend/index.js:6539:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/custom-pages.json",
+        "source": "backend/index.js:6539:5",
+        "mountTrail": []
+      }
+    ],
+    "GET /trusted-by.json": [
+      {
+        "path": "/api/trusted-by.json",
+        "source": "backend/index.js:6750:5",
+        "mountTrail": []
+      },
+      {
+        "path": "/trusted-by.json",
+        "source": "backend/index.js:6750:5",
+        "mountTrail": []
+      }
+    ]
+  },
+  "interpretation": "Historical M8 counts are a source-parser census at its recorded revision and apply the historical /api-stripping and parameter-shape normalization. The current census walks routes reachable from backend/index.js at runtime, expands every actual mount prefix, preserves literal aliases, and distinguishes ALL from individual methods. Exact method+literal-path uniqueness is checked separately from normalized alias collisions; aliases are not reported as literal duplicate handlers."
+}

@@ -1,0 +1,1590 @@
+17:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+18:# Subtest: F-13: unauthenticated and non-super-admin callers are rejected
+24:# Subtest: F-13: empty body resets BOTH cooldowns and cache, and the mutation is audited
+30:# Subtest: F-13: selective flags reset only the requested state
+36:# Subtest: F-13: invalid flag combinations are rejected 400 without touching state
+42:# Subtest: F-13: durable metrics are NOT resettable through the operator path
+50:# Subtest: admin audit search filters records and redacts raw credential values at read time
+56:# Subtest: Admin -> DB -> Backend -> API -> Frontend -> Runtime Control Plane Lifecycle
+66:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+67:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+68:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+69:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+70:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+71:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+72:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+74:# Subtest: ordinary Admin cannot replace secrets or run external provider tests
+80:# Subtest: an explicitly unsupported email test type still returns validation, not a misleading auth result
+90:# Subtest: F-22: super-admin reads tenant-scoped telemetry entries, stats and health snapshot
+96:# Subtest: F-22: omitted tenantId reads the platform scope only — never an enumeration of tenants
+102:# Subtest: F-22: limit and sinceMs are honored and clamped
+108:# Subtest: F-22: authorization — anonymous 401, non-super-admin 403
+114:# Subtest: F-22: decisionId surfaces for correlation; secret-shaped text is redacted before the wire
+124:# Subtest: GAP-22: Super Admin tenant assignment resolves the default workspace and persists membership
+130:# Subtest: GAP-22: assignment surfaces workspace context and is visible to User 360 refresh path
+136:# Subtest: GAP-22: tenant with no usable workspace fails with actionable 409, not a generic 400
+142:# Subtest: GAP-22: invalid tenant id fails deterministically
+148:# Subtest: GAP-22: suspended tenant cannot receive members
+154:# Subtest: GAP-22: workspace from another tenant is rejected — cross-tenant isolation holds
+160:# Subtest: GAP-22: malformed explicit workspace id returns 400 INVALID_WORKSPACE_ID
+166:# Subtest: GAP-22: explicit tenant-owned workspace is honored and validated
+172:# Subtest: GAP-22: duplicate assignment is an honest idempotent update, alreadyMember is reported
+178:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+179:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+180:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+181:# Subtest: GAP-22: RBAC — USER/SUPPORT/AUDITOR receive 403 regardless of UI visibility
+187:# Subtest: GAP-22: unauthenticated request fails closed with 401
+193:# Subtest: GAP-22: invalid role and invalid uid are validated before any registry work
+199:# Subtest: GAP-22: removal revokes tenant + workspace membership atomically (lifecycle)
+205:# Subtest: GAP-22: tenant isolation — assigned member is invisible to other tenants
+211:# Subtest: GAP-22: platform member registry resolves default workspace and persists
+217:# Subtest: GAP-22: platform member registry rejects cross-tenant workspace and empty-workspace tenants
+223:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+224:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+225:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+226:# Subtest: GAP-22: platform member registry — SUPPORT and AUDITOR are denied, suspension blocks assignment
+236:# Subtest: ADVERSARIAL CERTIFICATION SUITE — 10/10 Verification
+245:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+290:# Subtest: daily AI quota is account-bound, durable, and fails closed after the basic limit
+296:# Subtest: AI quota fails closed when its authoritative MariaDB store is unavailable
+302:# Subtest: burst limiter cannot be bypassed by changing source address for one account
+308:# Subtest: burst limiter fails closed when the durable counter store is unavailable
+316:# Subtest: F-16: a disabled provider with a credential reports configured:true but enabled:false
+322:# Subtest: F-16: an enabled provider with a credential reports both true
+328:# Subtest: F-16: a provider without credentials reports configured:false
+334:# Subtest: F-16: both flat maps mirror the catalog for every provider id, as booleans
+342:# Subtest: F-15 unit: a fresh partial save fabricates no enable toggles
+348:# Subtest: F-15 unit: absent toggles preserve the previously stored value
+354:# Subtest: F-15 unit: present fields still win over the prior state
+360:# Subtest: F-15 save path: a fresh partial save persists without fabricated toggles
+366:# Subtest: F-15 save path: a stored disable survives later partial saves; absence stays absence
+374:# Subtest: AI Admin public settings preserve all six providers and fallback controls
+380:# Subtest: authorized AI settings save is revisioned, audited, split, and never returns secrets
+386:# Subtest: AI secret lifecycle preserves blank values and accepts only explicit clears
+392:# Subtest: AI settings load reports configured booleans without returning provider keys
+398:# Subtest: provider test succeeds for each supported provider using deterministic mocked contracts
+404:# Subtest: provider test distinguishes missing config, rejected credentials, invalid model, outage, and timeout without mutating settings
+410:# Subtest: manual pin for an environment-enabled local primary persists without copying deployment credentials
+416:# Subtest: credential-only saves preserve the locked manual policy, model pin, fallback and generation controls
+422:# Subtest: registered local endpoint overrides persist, blank preserves, none clears, and embedded credentials fail closed
+428:# Subtest: admin discovery honors configured endpoints and authoritative model removal rather than reviving static defaults
+434:# Subtest: maskApiKey enforces strict non-reversible masking without prefix leak
+440:# Subtest: maskedKeys populates from secretPool first else envPool without persisting env keys to MariaDB
+446:# Subtest: temperature [0, 2], maxTokens [256, 8192], and enabled:false / disabled:true persist across all 75 providers
+452:# Subtest: enabledProviders overrides merged legacy fields and persists correctly on both public_config and ai_providers
+458:# Subtest: disabling the active primary provider throws 400 CANNOT_DISABLE_PRIMARY_PROVIDER
+464:# Subtest: saveAiAdminSettings requires expectedRevision for administrative writes unless force: true
+470:# Subtest: sanitizeAuditValue redacts sensitive keys and secret value patterns in audit metadata
+476:# Subtest: A1 Assertion 2: candidate key passed to testAiProvider is never logged or leaked to server-side stdout/stderr
+482:# Subtest: GAP 7 audit: mask pattern ^•{8,}\\S{4}$ prevents plaintext prefix leaks while accepting valid non-alphanumeric suffix characters
+490:# Subtest: Adversarial: Prompt injection & instruction override attempts are sanitized and strictly bound
+496:# Subtest: Adversarial: Client API key and identity spoofing are strictly rejected with 400
+502:# Subtest: Adversarial: Payloads exceeding 50,000 bytes are rejected with 413 AI_INPUT_TOO_LARGE
+508:# Subtest: JSON Stress: extractJson handles unescaped newlines, prose wrapping, and malformed markers
+514:# Subtest: Fallback Cascade: Step-by-step failover through all providers with deterministic recovery
+520:# Subtest: Concurrency: 20 simultaneous AI requests execute safely without state corruption
+526:# Subtest: Concurrency: Admin settings optimistic concurrency control with revision conflict (409)
+532:# Subtest: Cache Invalidation: Saving settings immediately flushes configuration cache
+538:# Subtest: Isolation: Role-based access control blocks unauthorized and unverified users
+645:# Subtest: 1. Concurrent execution of Tenant A vs Tenant B strictly isolates context, prompts, and credentials
+653:# Subtest: 2. Same-Tenant User Isolation: User A1 (Alice) session is completely inaccessible to User A2 (Charlie)
+659:# Subtest: 3. Same-User Multi-Session Isolation: Interview 1 facts and state do not bleed into Interview 2
+665:# Subtest: 4. Cache Isolation: tenantCacheKey incorporates tenant, workspace, subject, domain, resource, and revision
+671:# Subtest: 5. Retry Isolation: Failed/timed-out requests preserve per-request context and never mix with concurrent callers
+677:# Subtest: 6. Prompt Injection Resistance: Malicious instructions in candidate fields are fenced as untrusted data
+683:# Subtest: 7. Long Interview Memory: Maintains earlier concrete claims and bounds prompt size over 30 turns
+689:# Subtest: 8. Output Validation: Clamps out-of-range scores (e.g. 100 -> 98, 20 -> 50) and rejects malformed fields
+699:# Subtest: extractJson parses clean, wrapped, and malformed JSON with raw control characters
+705:# Subtest: grounded prompt builder validates operations, source facts, and evidence contracts
+741:# Subtest: AI gateway enforces security boundary, identity protections, and size constraints
+761:# Subtest: AI endpoints support multi-language routing and deterministic fallbacks
+769:# Subtest: F-05 default: freellm is authoritative and aiRouting is not invoked
+775:# Subtest: F-05 AI_ENGINE=aiRouting: the selector serves end-to-end without touching freellm
+781:# Subtest: F-05 AI_ENGINE=shadow: matching decisions log diverged=false and the response is freellm
+787:# Subtest: F-05 AI_ENGINE=shadow: a different provider/model decision logs diverged=true
+793:# Subtest: F-05 AI_ENGINE=shadow: a failing selector is logged as divergence and never surfaces
+799:# Subtest: F-05: resolveAiEngineChoice normalizes input and defaults to freellm
+805:# Subtest: F-05 observability: the super-admin settings surface reports the engine mode and shadow log
+813:# Subtest: Acceptance Gate 1: 50 concurrent provider calls preserve per-request results without shared-state corruption
+819:# Subtest: Acceptance Gate 2: Concurrent Admin settings update + User AI generation race test
+825:# Subtest: Acceptance Gate 3: 12 provider failure contracts fail over once without retry storms
+831:# Subtest: Acceptance Gate 4: AI settings RBAC and secret-redaction boundaries are enforced
+837:# Subtest: Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Verification
+845:# Subtest: Rule B: a user with no organization membership resolves to the INDIVIDUAL plan
+851:# Subtest: Rule B: the individual plan limit is enforced server-side and fails closed
+857:# Subtest: Rule A (P0-1): an organization member is charged to the ORGANIZATION budget, not their own
+863:# Subtest: Rule A (P0-5): the organization budget is SHARED across all members
+869:# Subtest: P0-3: a SUSPENDED organization membership grants no organization entitlement
+875:# Subtest: P0-3: a DECOMMISSIONED tenant grants no organization entitlement
+881:# Subtest: P0-3: a non-ACTIVE tenant lifecycle state grants no organization entitlement
+887:# Subtest: P0-3: isTenantEntitlementValid fails closed on explicit invalidity
+893:# Subtest: Rule B: a PERSONAL tenant is not an organization entitlement
+899:# Subtest: P0-2: two active memberships are AMBIGUOUS and are never resolved arbitrarily
+905:# Subtest: DIR-106: allowAmbiguousSelection resolves a multi-tenant caller to its PRIMARY organization
+911:# Subtest: DIR-106: the strict default is unchanged by the telemetry opt-in
+917:# Subtest: DIR-106: enforceDailyAiQuota still fails closed on ambiguity (execution stays strict)
+923:# Subtest: P0-2: enforceDailyAiQuota refuses ambiguous active tenant with 400 TENANT_CONTEXT_REQUIRED
+929:# Subtest: P0-2: an explicit x-tenant-id deterministically selects one eligible tenant
+935:# Subtest: P0-2: requesting a tenant the user is not eligible for is refused
+941:# Subtest: P0-2: enforceDailyAiQuota refuses ineligible tenant request with 403 TENANT_ACCESS_DENIED
+947:# Subtest: P1-1: a tenant limit below 1000 is respected, not silently raised
+953:# Subtest: P1-1: an unusable tenant limit falls back to the enterprise baseline, not to zero
+959:# Subtest: P1-2: a personal aiQuotaOverride does NOT alter an organization allowance
+965:# Subtest: P0-4: the AI settings READ is mapped to an explicit permission
+971:# Subtest: P0-4: the AI settings read and write no longer demand different permissions
+977:# Subtest: Rule C: Admin role with Basic tier does not receive administrative candidate quota override
+983:# Subtest: Rule A: organization exhaustion NEVER falls back to the personal plan
+989:# Subtest: Rule A: a per-user limit is enforced in addition to the shared limit when configured
+995:# Subtest: P1: providerHttp exposes a keep-alive agent for provider URLs
+1001:# Subtest: P2: withPooledAgent adds agent only for node-fetch v2, never mutates options
+1007:# Subtest: P3: two sequential AI calls reuse ONE pooled connection (node-fetch v2)
+1013:# Subtest: P4: concurrent requests from two tenants over the pooled layer — zero credential cross-talk
+1019:# Subtest: P5: timeout on the pooled fetch still aborts and does not poison the pool
+1025:# Subtest: R1: latency-critical op retries with FAST bounded backoff (150ms, not 3s)
+1031:# Subtest: R2: long Retry-After on a 429 is NOT waited out — immediate failover to next candidate
+1037:# Subtest: R3: short Retry-After (<=2s) IS respected on latency-critical retry
+1043:# Subtest: R4: latency budget bounds total candidate spend on a degraded provider
+1049:# Subtest: R4b: budget exhaustion is recorded when failover occurs mid-attempt-plan
+1055:# Subtest: R5: non-latency-critical operations keep exactly ONE attempt (no retry storms)
+1061:# Subtest: R6: client abort during backoff sleep is honored (no orphaned retry)
+1168:# Subtest: 1. Concurrent Tenant A vs Tenant B: every call carries its own tenant's BYOK credential
+1270:# Subtest: 2. Tenant A failure NEVER falls back to Tenant B credential/provider (same-tenant only)
+1315:# Subtest: 3. Tenant policy bounds the fallback path: a disallowed provider is never used to "save" a failing request
+1417:# Subtest: 4. User-controlled X-Tenant-Id naming another tenant fails closed (no credential selection by payload)
+1461:# Subtest: 5. Credentials never appear in responses, headers, routing telemetry, or health snapshots
+1474:# Subtest: 6. Platform (non-tenant) request uses platform credentials — control case
+1577:# Subtest: 7. Tenant-scoped routing state does not leak across tenants (telemetry + health isolation)
+1583:# Subtest: 1. OpenAI-compatible discovery normalizes metadata into the capability model without fabrication
+1589:# Subtest: 2. Brand-new model from a registered future provider participates end-to-end via the generic path
+1595:# Subtest: 3. Gemini-native discovery and request shapes work through the same engine
+1601:# Subtest: 4. Discovery 401/403 marks credentials rejected for THAT tenant only (cache isolation)
+1607:# Subtest: 5. Transient discovery failures (429 / network / malformed / 400) preserve last-known-good
+1613:# Subtest: 6. Discovery refresh is deduped and rate-limited; getCachedState is synchronous (selection never blocks on network)
+1619:# Subtest: 7. Discovery timeouts are bounded and produce safe errors (never fabricated models)
+1625:# Subtest: 8. Provider adapter registry is the ONLY provider-specific extension point (no provider names in the selection core)
+1631:# Subtest: 9. Credential-rejected state persists safely (no secret material in discovery state)
+1637:# Subtest: 10. Bounded catalog size (LRU eviction) keeps memory predictable
+1643:# Subtest: 1. Rolling/decaying health stats: percentiles, success rate, and TTL expiry
+1649:# Subtest: 2. 429 → tenant-scoped rate-limit cooldown honoring Retry-After; recovery after the window
+1655:# Subtest: 3. 404 model_not_found → 30min model-unavailable block for the tenant; other tenants unaffected
+1661:# Subtest: 4. Consecutive hard failures → exponential backoff; a success resets the chain
+1668:# Subtest: 5. Retry policy: latency-critical ops retry transient 5xx once with bounded backoff; non-critical ops never retry
+1674:# Subtest: 6. Fallback candidates must re-satisfy the original requirement (structured output)
+1680:# Subtest: 7. Zero fabricated content on total failure: honest error contract + explicit AI-unavailable state
+1686:# Subtest: 8. External cancellation is honored at every hop (no orphaned provider work)
+1692:# Subtest: 9. Telemetry on failure paths: tenant-scoped, explainable, prompt-free
+1698:# Subtest: 10. Requirement derivation drives the execution path (operation-aware generation parameters)
+1704:# Subtest: 1. Requirement profiles are operation-driven data with explicit token math
+1710:# Subtest: 2. Provider order: primary first; fallback disabled pins the primary; disabled providers never appear
+1716:# Subtest: 3. Hard eligibility gates reject before ranking (each with an explainable reason)
+1722:# Subtest: 4. Context capacity: insufficient is a violation; unverified long context is a hard rejection; verified short stays eligible
+1728:# Subtest: 5. Selection is explainable: configured intent dominates; reasons and rationale are recorded
+1734:# Subtest: 6. Determinism: identical inputs produce identical ordering across repeated runs
+1740:# Subtest: 7. A brand-new discovered model with verified long-context capacity outranks a configured model that cannot fit
+1746:# Subtest: 8. Runtime health cooldowns exclude models per tenant; last-resort releases the earliest expiry
+1752:# Subtest: 9. Model-not-found blocks for the tenant until the catalog refreshes (30min), then recovers
+1758:# Subtest: 10. Tenant primary-model policy is the strongest selection signal (governance, not ranking of unknowns)
+1764:# Subtest: 11. Verified capability evidence and tenant health refine ranking without overriding eligibility
+1770:# Subtest: 12. Auto option (model: "auto" / "dynamic") unpins candidate selection so discovered models compete dynamically
+1776:# Subtest: PG-1: 3-tenant concurrent connection reuse — zero credential cross-talk across 12 requests
+1782:# Subtest: PG-2: Operation token limits strictly clamp generation parameters
+1788:# Subtest: PG-3: live-interview-guide is latency-critical with fast bounded backoff and 15s budget
+1794:# Subtest: PG-4: Model selector penalizes >8s p50 models on latency-sensitive operations
+1800:# Subtest: PG-5: Opening and turn prompts include suggested_talking_points and negative metric directives
+1806:# Subtest: PG-6: Latency benchmark — steady-state, degraded failover, and token clamping metrics
+1814:# Subtest: F1: work-description prompt no longer instructs the model to invent benchmark metrics
+1820:# Subtest: F2: the turn prompt contains the exact question being answered
+1826:# Subtest: F2: buildTurnPrompt tolerates a missing current question
+1832:# Subtest: F4: provider-outage fallbacks ask questions instead of fabricating metrics or coursework
+1838:# Subtest: F4 (Phase 3): summary fallback never assembles template sentences from structured facts
+1844:# Subtest: F6: out-of-band turn scores are clamped to the 50-98 rubric
+1850:# Subtest: F6: MCQs whose correctAnswer does not reference a real option are dropped
+1856:# Subtest: F7: non-question prose is not promoted into the interview question
+1862:# Subtest: F7: a real question in the message is still recovered
+1868:# Subtest: F10: interviewer output echoing an injection is rejected, not shown to the candidate
+1874:# Subtest: F10: detector flags override attempts without flagging ordinary interview language
+1880:# Subtest: F10: grammar suggestions carrying override text are dropped
+1886:# Subtest: F8: live turn output budget leaves headroom for the full JSON contract
+1892:# Subtest: F12: provider token usage is surfaced to callers
+1898:# Subtest: F3: tenant configuration helpers are exported for every AI route
+1907:# Subtest: P3-1 generate-projects outage returns an explicit empty unavailable state, no role templates
+1913:# Subtest: P3-2 generate-job-description outage returns empty text, never a synthesized JD
+1919:# Subtest: P3-3 summary outage preserves candidate text verbatim, otherwise asks — never assembles a template
+1925:# Subtest: P3-4 bullet outage without a draft asks; with a draft returns it unchanged
+1931:# Subtest: P3-5 executeContentOperation marks provider-outage fallbacks aiUnavailable (so clients never cache/present them as AI)
+1937:# Subtest: P3-6 clarification starter chips never offer canned outcome metrics
+1943:# Subtest: P3-7 cover letter prompt carries only supplied facts, fenced as untrusted data
+1949:# Subtest: P3-8 cover letter years are only accepted when explicitly numeric (no heuristic years)
+1955:# Subtest: P3-9 cover letter validator rejects fabricated metrics, placeholders, truncation and injection echoes
+1961:# Subtest: P3-10 answer guide prompt fences untrusted input and forbids invented figures
+1967:# Subtest: P3-11 answer guide validator: grounded figures pass, invented figures and malformed output fail
+1973:# Subtest: P3-12 a missing turn score stays null (unscored) — no invented 74/78/84 baseline
+1979:# Subtest: P3-13 a missing report score is derived from real turn scores only, else rejected (no keyword-guessed score)
+1985:# Subtest: P3-14 report competencies are kept only with cited evidence and valid scores
+1991:# Subtest: P3-15 assistant filler is stripped from interviewer lines and no canned acknowledgement is substituted
+1997:# Subtest: P3-16 claims ledger keeps early concrete facts verbatim and ignores injected instructions
+2003:# Subtest: P3-17 conflicting later quantities are flagged neutrally for clarification
+2009:# Subtest: P3-18 ledger stays bounded and keeps the earliest anchors on long interviews
+2015:# Subtest: P3-19 long interview (F13): early facts reach late prompts, conflicts surface, questions are not repeated, prompt stays bounded
+2021:# Subtest: P3-20 a repeated question triggers one side-effect-free regeneration
+2027:# Subtest: P3-21 model answers with figures absent from the candidate material: graduated grounding
+2033:# Subtest: P3-22 a live session is bound to its starting tenant; switching tenant mid-interview is refused before any AI call
+2039:# Subtest: P3-23 concurrent interviews for two tenants/users keep claims and prompts fully separate
+2045:# Subtest: P3-24 turn prompt states voice, grounding, injection boundary and memory blocks
+2051:# Subtest: P3-25 grammar prompt fences the user text as untrusted and strips tag spoofing
+2057:# Subtest: P3-26 grammar outage never claims the text is well-written; findings are exact and marked unavailable
+2063:# Subtest: P3-27 summary/bullet output with a number absent from the candidate input is rejected
+2069:# Subtest: P3-28 education/work starter chips contain no claim-like items (numbers, awards, publications)
+2075:# Subtest: P3-29 bullet metric helpers ask for the candidate number and never inject invented figures
+2081:# Subtest: P3-30 grammar parse without a model summary gives no canned quality verdict
+2087:# Subtest: P3-31 bullet rewrite prompt example adds no method or result absent from the notes
+2099:# Subtest: AI generation requires a verified authenticated Firebase identity
+2112:# Subtest: AI route preserves prompt context and response contract through the authenticated provider boundary
+2118:# Subtest: ungrounded whole-resume generation is explicitly retired without calling a provider
+2131:# Subtest: resume parser strips provider hallucinations and exposes extraction grounding
+2158:# Subtest: AI route rejects client credentials, cross-account identity fields, and oversized context
+2172:# Subtest: provider failures return source-preserving content without leaking provider details
+2315:# Subtest: 1. Injection: user-controlled fields cannot select another tenant credential or privileged config
+2357:# Subtest: 2. Injection: prompt-injection text in sourceFacts cannot change credentials or leak secrets
+2539:# Subtest: 3. Cache poisoning: a poisoned global catalog (Tenant A credential) cannot reach Tenant B or the platform
+2627:# Subtest: 4. Config cache isolation: platform -> tenant -> platform never cross-pollutes credentials
+2670:# Subtest: 5. Telemetry leakage: provider error echoing a secret stays out of responses, telemetry, health, and audit
+2680:# Subtest: content prompts are built only from verified candidate evidence (no profession taxonomy)
+2686:# Subtest: response normalization preserves UI contracts across markdown, aliases, and cleanup
+2692:# Subtest: grammar responses are deterministically bounded and invalid indexes are rejected
+2698:# Subtest: server configuration preserves primary provider, model, controls, and fallback order without exposing keys
+2704:# Subtest: provider configuration cache avoids cross-request mutation of generation controls
+2710:# Subtest: legacy server-side provider settings remain migration-compatible without returning secrets to browsers
+2716:# Subtest: provider failure falls back in configured order and returns the original normalized contract
+2722:# Subtest: disabled fallback fails after the selected provider and never spends against another provider
+2728:# Subtest: resume extraction returns only source-contained values with grounding metadata
+2734:# Subtest: grounded factual responses reject uncited and lexically unsupported wording
+2740:# Subtest: resume grounding drops hallucinations, unsupported associations, and implicit proficiency
+2746:# Subtest: provider requests honor cancellation and bounded timeout controls
+2752:# Subtest: getContentOperationFallback is source-preserving, asks questions, or returns honest empties — never taxonomy filler
+2758:# Subtest: executeContentOperation gracefully falls back on provider failure without throwing 502
+2764:# Subtest: registered account-required providers use the same saved credentials/models/endpoints in product runtime
+2770:# Subtest: registered credential pools cannot be mutated across cached runtime callers
+2776:# Subtest: D1-1: inspectSecretStore returns AI_SECRETS_EMPTY on empty or null input
+2782:# Subtest: D1-2: Plaintext store returns AI_SECRETS_PLAINTEXT with 0 envelopes
+2788:# Subtest: D1-3: Envelope present + no key returns AI_ENCRYPTION_KEY_MISSING_FOR_STORED_ENVELOPE
+2794:# Subtest: D1-4: Envelope present + correct key cleanly decrypts in memory
+2800:# Subtest: D1-5: Envelope present + wrong key throws AI_ENCRYPTION_KEY_MISMATCH
+2808:# Subtest: F-19 save: with encryption configured the store holds envelopes, never plaintext
+2814:# Subtest: F-19 load: decryption is in-memory only — mask shows the true last-4, response carries no secret
+2820:# Subtest: F-19 fail-closed: a stored envelope without a usable key is never served as a credential
+2826:# Subtest: F-19 keyless deployment: legacy plaintext contract keeps working, status says unavailable
+2832:# Subtest: F-19 migration: a legacy plaintext row is sealed by the next authorized save
+2838:# Subtest: F-19 engine builder: buildFreeLlmPlatformConfig consumes the decrypted pool
+2846:# Subtest: F-29: CAS conflict throws the platform-wide REVISION_CONFLICT with currentRevision
+2852:# Subtest: F-29: expectedRevision -1 no longer bypasses CAS — the undocumented backdoor is closed
+2858:# Subtest: F-29: force:true bypasses CAS and is recorded as forced in the audit trail
+2864:# Subtest: F-29: forceReason is sanitized (control chars stripped, bounded) and persisted
+2870:# Subtest: F-29: normal saves record no forced field
+2876:# Subtest: F-29: force:true exempts expectedRevision; without it the requirement stands
+2884:# Subtest: F-24: the dead ai_settings_v2_enabled switch is unregistered and unresolvable
+2890:# Subtest: F-24: admin ai-settings payload carries no featureFlags field; the rest of the contract is intact
+2896:# Subtest: F-24: the generic feature-flag mechanism still serves living flags
+2909:# Subtest: D3-1: getContentOperationFallback provides helpful operation-specific notes
+2915:# Subtest: D3-2: executeContentOperation preserves diagnosticCode and remediation from provider failure
+2921:# Subtest: D3-3: executeContentOperation preserves encryption key missing diagnostic
+2927:# Subtest: D3-4: Truthful diagnostic mapping prevents generic message overwrites
+2933:# Subtest: the applicant and the employer each keep their own notification
+2939:# Subtest: notification ids are deterministic per recipient, and the applicant id is unchanged
+2945:# Subtest: the applicant's message names the company from the jobs row
+2951:# Subtest: a job without an owner notifies only the applicant
+2957:# Subtest: a job with no company name still produces a readable message
+2963:# Subtest: password reset token and encrypted notification commit in one MariaDB transaction
+2969:# Subtest: email verification token rolls back when its notification cannot enqueue
+2975:# Subtest: sensitive token creation cannot commit when encryption is unavailable
+2983:# Subtest: anonymous and ordinary users cannot discover draft rows or categories
+2989:# Subtest: editor can read drafts, explicit published-only remains honored
+2995:# Subtest: D4-1: buildEvidencePayload extracts structured candidateRoles and computes accurate tenure
+3001:# Subtest: D4-2: candidateRoles parity with context.facts.roles produces identical tenure
+3007:# Subtest: D4-3: buildEvidencePayload extracts structured candidateEducations
+3013:# Subtest: D4-4: calculateDetailedExperience accurately merges overlapping tenures
+3019:# Subtest: D4-5: Backward compatibility: flat recentRoles and companies arrays are handled gracefully
+3025:# Subtest: D4-6: Schema validation: all candidate dashboard operations receive valid non-empty evidence
+3033:# Subtest: notification route contract: validation, owner scope, duplicate and outage recovery
+3082:# Subtest: canonical dates: Firestore Timestamp-like toDate()
+3088:# Subtest: canonical dates: toMillis()
+3094:# Subtest: canonical dates: JavaScript Date
+3100:# Subtest: canonical dates: ISO string
+3106:# Subtest: canonical dates: RFC 2822
+3112:# Subtest: canonical dates: epoch milliseconds
+3118:# Subtest: canonical dates: epoch seconds
+3124:# Subtest: canonical dates: {seconds, nanoseconds}
+3130:# Subtest: canonical dates: {_seconds, _nanoseconds}
+3136:# Subtest: canonical dates: null/undefined/invalid never throw
+3142:# Subtest: canonicalizeRecord converts membershipEnds without leaking Timestamp
+3148:# Subtest: paid membership tiers include Premium, Pro, Enterprise
+3154:# Subtest: toCanonicalUser + isMembershipActive works with ISO membershipEnds
+3160:# Subtest: toCanonicalUser does not expose toDate() on membershipEnds
+3166:# Subtest: expired membership is not active
+3172:# Subtest: boolean canonicalization
+3178:# Subtest: mutation IDs are unique and prefixed
+3186:# Subtest: trusted CMS scheduler transaction publishes only due revisions and is idempotent
+3192:# Subtest: CMS scheduler rolls back and surfaces a concurrent revision conflict
+3198:# Subtest: CMS scheduler fails closed when the atomic repository adapter is absent
+3208:# Subtest: CROSS-APPLICATION AUDIT: Entitlement, Download, Share & Security Invariants
+3229:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+3286:# Subtest: 1. Unauthenticated request to /api/admin/database-settings is rejected with 401
+3292:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:1
+3293:# Subtest: 2. Plain USER request to /api/admin/database-settings is rejected with 403
+3299:# Subtest: 3. SUPER ADMIN can read truthful MariaDB and Firebase Authentication ownership telemetry
+3305:# Subtest: 4. Test connection endpoint rejects every non-MariaDB engine
+3311:# Subtest: 5. Runtime database-owner switching is rejected fail-closed
+3317:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:1
+3318:# Subtest: 6. Admin jobs fail closed when the authoritative MariaDB is unavailable
+3324:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:1
+3325:# Subtest: 7. Public jobs fail closed without fabricated fallback data when MariaDB is unavailable
+3331:# Subtest: authority starts NORMAL with MariaDB as the only application-data owner
+3337:# Subtest: consecutive MariaDB failures reject writes without silent fallback
+3343:# Subtest: a report about an unsupported engine cannot alter MariaDB authority
+3349:# Subtest: authoritative outage never produces fake acceptance
+3355:# Subtest: recovery threshold restores the same owner and records the transition
+3361:# Subtest: runtime switching and secondary fallback are explicitly rejected
+3367:# Subtest: every migrated application table has exactly one declared MariaDB domain owner
+3373:# Subtest: ownership declarations do not point at nonexistent or renamed tables
+3379:# Subtest: non-MariaDB owners are limited to identity and immutable code policy
+3385:# Subtest: 1: ids are UUIDv4-shaped, unique across 10k generations, one per routed request (not per attempt)
+3391:# Subtest: 2: attaching decisionId to routingDecision preserves every existing field (additive wire contract)
+3397:# Subtest: 3: a fallback chain yields ONE decisionId with outcome fallback; per-attempt rows are the request_log business
+3403:# Subtest: 4: telemetry receives {decisionId, tenantId} — real routingTelemetry sanitizes and defaults exactly as before
+3409:# Subtest: 5: a failed dispatch with no usage carries promptTokens/completionTokens null and the real status — never 0
+3415:# Subtest: 6: a throwing sink never propagates — the routed response and the charge are unaffected
+3421:# Subtest: 7: the writer emits NOTHING when supportsDecisionLedger() is false (never emit unknown-column SQL pre-028)
+3427:# Subtest: G1: flag ON success — UUID on result + routingDecision, ONE ring row, request_log rows carry the id
+3433:# Subtest: G2: fallback chain — attempts share ONE id; the ring row says fallback and names the serving destination
+3439:# Subtest: G3: all-fail — the thrown error carries the id; the ring records outcome failure with the honest status
+3445:# Subtest: G4: ledger+scope flags ON — a dedicated-BYOK failure rings in the tenant scope with the shared id
+3451:# Subtest: G5: flag OFF — no ids anywhere, no ring rows, request_log decision ids stay NULL
+3457:# Subtest: G6: a cache replay keeps the ORIGINAL request out of the replay — no new id, ring stays at one row
+3463:# Subtest: G7: flag ON stream — meta carries the decisionId; ONE ring row at resolution
+3469:# Subtest: G8: two routed requests produce two distinct ids and two ring rows
+3479:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3481:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3483:# Subtest: OAuth begin redirects with an explanatory reason instead of a blank 503
+3489:# Subtest: legacy client-authored notification dispatchers are permanently retired
+3495:# Subtest: Naukri ingestion returns a coded 501 rather than fabricating listings
+3496:not ok 348 - Naukri ingestion returns a coded 501 rather than fabricating listings
+3518:# [CMS publish-due] connect ECONNREFUSED 127.0.0.1:3306
+3520:# Subtest: the CMS scheduler distinguishes not-configured from a failed run
+3526:# [PayPal create] connect ECONNREFUSED 127.0.0.1:3306
+3527:# [Paytm create] connect ECONNREFUSED 127.0.0.1:3306
+3528:# [PhonePe create] connect ECONNREFUSED 127.0.0.1:3306
+3529:# Subtest: unconfigured payment gateways return a coded, explained response
+3538:# [Paytm create] connect ECONNREFUSED 127.0.0.1:3306
+3539:# [PhonePe create] connect ECONNREFUSED 127.0.0.1:3306
+3540:# Subtest: no audited endpoint returns an empty body alongside an error status
+3547:# Subtest: the firebase service-account status endpoint reports configuration without leaking key material
+3557:# Subtest: share tokens are stable, unguessable and reject tampering
+3563:# Subtest: production without a dedicated secret fails closed
+3569:# Subtest: public projection drops owner and internals
+3575:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3576:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3577:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3578:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3579:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3580:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3581:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3582:# Subtest: publish → anonymous token read → unpublish → 404
+3588:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3589:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3590:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3591:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3592:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3593:# Subtest: publication status exposes a token only while published
+3599:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3600:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3601:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3602:# Subtest: another owner cannot publish, unpublish or read the draft
+3608:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3609:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3610:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3611:# Subtest: publishing a resume twice keeps the same link and advances the publication revision
+3621:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3622:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3623:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3624:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3625:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3626:# Subtest: a resume can be created, read, renamed and deleted by its owner
+3632:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3633:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3634:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3635:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3636:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3637:# Subtest: a duplicate is an independent document with its own identity and revision
+3643:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3644:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3645:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3646:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3647:# Subtest: a stale revision is rejected with 409 and the authoritative revision
+3653:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3654:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3655:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3657:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3658:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3659:# Subtest: cross-owner reads, writes and deletes are indistinguishable from not found
+3665:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3666:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3667:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3668:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3669:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+3670:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+3671:# Subtest: clients cannot set server-owned publication or ownership fields through save
+3677:# Subtest: prototype-pollution keys are stripped at every depth and never reach Object.prototype
+3683:# Subtest: a raw Buffer body (Stripe webhook) survives byte-for-byte so HMAC verification still works
+3689:# Subtest: candidate text that merely mentions dangerous syntax is NOT corrupted
+3695:# Subtest: a value that IS entirely an active-content URL is neutralized
+3701:# Subtest: neutralization survives HTML entity decoding (the real browser href pipeline)
+3707:# Subtest: NUL bytes and C0 controls are stripped but tabs/newlines survive
+3713:# Subtest: query and params are sanitized too
+3719:# Subtest: deeply nested bodies are bounded instead of exhausting the stack
+3728:# Subtest: every response carries the full enterprise header set with A+ values
+3734:# Subtest: the API surface emits transport headers without a document CSP it cannot enforce
+3740:# Subtest: the Express header table matches the canonical policy value-for-value
+3746:# Subtest: CSP script-src carries no unsafe-inline or unsafe-eval
+3752:# Subtest: CSP still permits every integration the product genuinely depends on
+3758:# Subtest: each response gets a fresh high-entropy nonce bound into script-src
+3764:# Subtest: createNonce is base64 random and honours no external input
+3770:# Subtest: limiters emit the RFC RateLimit family with a sane reset
+3776:# Subtest: brute force past the threshold yields 429 with Retry-After
+3782:# Subtest: the limiter fails CLOSED with 503 when the counter store is unavailable
+3788:# Subtest: invalid limiter configuration is rejected rather than silently widened
+3794:# Subtest: a coarse tier fails OPEN when the counter store is unavailable
+3800:# Subtest: a spend budget still fails CLOSED when the counter store is unavailable
+3806:# Subtest: SuperAdmins bypass the coarse tiers so management work is never locked out
+3812:# Subtest: infrastructure probes are never throttled
+3818:# Subtest: the linter is inert outside production so CI and local runs are never blocked
+3824:# Subtest: production with no DB password fails loudly
+3830:# Subtest: production rejects placeholder secrets
+3836:# Subtest: a real-looking secret is accepted and a suspiciously short one is not
+3842:# Subtest: findings reference variable NAMES only, never values (zero plaintext secrets in logs)
+3848:# Subtest: DB_PASSWORD is the only required production secret
+3854:# Subtest: RateLimit-Reset never goes negative
+3860:# Subtest: superAdminExemption reads verified token claims, never a client-supplied header
+3866:# Subtest: LLM discovery publication is default-off and retains only its canonical fields
+3872:# Subtest: LLM discovery publication requires meaningful concise content and accepts an optional full document
+3878:# Subtest: LLM discovery rejects unsupported rankings, ratings, social proof, and outcomes
+3884:# Subtest: LLM discovery normalizes line endings and rejects controls or oversized payloads
+3890:# Subtest: DIR-024 default crawler documents pass the same strict publication guard
+3896:# Subtest: Geo-SEO normalizer is default-off, allow-listed, and only emits safe canonical URLs
+3902:# Subtest: DOCX export is a valid Word package containing meaningful resume sections
+3908:# Subtest: DOCX export strictly sanitizes raw editor HTML and prevents markup leakage
+3914:# Subtest: rich text becomes native Word formatting rather than stripped plaintext only
+3920:# Subtest: DOCX export renders authentic 2-column layout tables (<w:tbl>) for 2-column templates
+3926:# Subtest: DOCX export applies authentic template color identity from the PDF theme preset for Cv1
+3932:# Subtest: client-supplied colors cannot override the authoritative theme palette
+3938:# Subtest: DOCX export successfully generates valid OOXML packages for all 51 templates
+3944:# Subtest: DOCX export correctly renders Unicode scripts (Telugu, Devanagari, European accents)
+3950:# Subtest: DOCX export renders distinct layout structures for all 5 archetypes
+3956:# Subtest: native Word numbering is emitted for bullets
+3962:# Subtest: two-column templates stay two-column and ATS stays single-column
+3968:# Subtest: content cannot disappear across archetypes
+3974:# Subtest: theme registry stays synchronized with the PDF themePresets source
+3980:# Subtest: resolveExportTemplate rejects client spoofing and mismatch
+3986:# Subtest: layoutFamily maps archetypes the way the PDF composer does
+3992:# Subtest: HTML parser never returns raw tags and stripAllHtmlTags is complete
+3998:# Subtest: long dense resumes stay valid OOXML without dropping later sections
+4004:# Subtest: Cv1 split uses the PDF 34/66 column architecture without overflowing nested tables
+4010:# Subtest: cover letters remain valid editable OOXML
+4016:# Subtest: all 51 templates produce forensic-grade DOCX matching PDF architecture
+4022:# Subtest: DIR-063: DOCX keeps a stable section ORDER matching the PDF composer
+4028:# Subtest: DIR-063: DOCX typography ranks the name above every section heading
+4034:# Subtest: DIR-063: bullet lists use native numbering WITH a defined indent
+4040:# Subtest: DIR-063: employment dates survive as a normalised range
+4046:# Subtest: DIR-063: no contact channel is dropped from the DOCX
+4052:# Subtest: flat skills ({ name, category }) are exported
+4058:# Subtest: grouped skills saved by the earlier builder ({ category, skills: [...] }) are exported
+4064:# Subtest: grouped skills stored as a JSON string are exported
+4070:# Subtest: hidden skills stay hidden for both shapes
+4078:# Subtest: an unconfigured sender reports NOT_CONFIGURED, not a healthy default
+4084:# Subtest: every record carries a real state drawn from the health vocabulary
+4090:# Subtest: the overall verdict is the worst record, so one bad record cannot be averaged away
+4096:# Subtest: a p=none DMARC policy is reported as DEGRADED, not as enforced
+4102:# Subtest: the fabricated deliverability claims are gone from the Admin UI
+4110:# Subtest: Email Resilience & Anti-Spam Test Suite
+4143:# Subtest: blank mail password preserves a local credential and never invents one
+4149:# Subtest: mail settings projection is allowlisted and exposes only credential state
+4155:# Subtest: mail runtime validation rejects plaintext transport, malformed hosts and invalid toggles
+4161:# Subtest: Email Verification & AI Access Lifecycle Suite
+4204:# Subtest: v3 export uses one consistent read-only transaction and includes invitation delivery state
+4210:# Subtest: export rolls back rather than returning a partial snapshot when any required table fails
+4216:# Subtest: snapshot verification rejects missing tables, duplicate keys and broken invitation references
+4222:# Subtest: dry-run validates a snapshot without acquiring a write connection
+4230:# Subtest: enterprise invitation HTML uses the configured public origin, not a hardcoded host
+4236:# Subtest: development invitation links stay on the development origin
+4242:# Subtest: custom invitation body turns the raw URL into a working CTA plus fallback text URL
+4248:# Subtest: enterprise role update, workspace assignment, security alert, quota alert, and password reset render actionable CTA and fallback text links
+4254:# Subtest: membership, workspace binding, invitation state and email outbox commit in one transaction
+4260:# Subtest: outbox enqueue failure rolls back the membership and invitation transaction
+4266:# Subtest: invitation recipient cannot differ from the Firebase identity bound to the membership
+4277:# Subtest: Enterprise Role View & Simulation Security Architecture
+4278:not ok 452 - Enterprise Role View & Simulation Security Architecture
+4284:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+4285:  code: 'ECONNREFUSED'
+4300:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4311:# Subtest: public export serves an explicitly published resume rather than rejecting it
+4317:# Subtest: public export still refuses revoked, implicit, and unknown publications
+4325:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4336:# Subtest: cover-letter templates are accepted and resolved from the owner-scoped covers table
+4342:# Subtest: template identifiers outside the rendered registry are rejected
+4348:# Subtest: private export enforces authentication, ownership, and entitlement server-side
+4354:# Subtest: cross-account DOCX export is refused for both owner-scoped tables
+4360:# Subtest: owner DOCX export resolves cover documents and returns a real OOXML package
+4366:# Subtest: DOCX export rejects invalid template identifiers and template mismatches
+4372:# Subtest: DOCX export ignores client-supplied colors and still returns authentic Cv1 navy
+4378:# Subtest: render-data endpoint is one-time, rejects malformed tokens, and never caches
+4386:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4397:# Subtest: export errors return a stable code without leaking internal render diagnostics
+4405:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4418:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4431:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4444:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4457:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+4468:# Subtest: the concurrency ceiling is claimed before awaiting so parallel exports cannot overshoot
+4474:# Subtest: the PDF pipeline writes no temporary artifacts into the backend directory
+4480:# Subtest: export bearer creation has no memory fallback and persists only an encrypted payload
+4486:# Subtest: export bearer redemption locks and deletes MariaDB row before returning decrypted PII
+4492:# Subtest: authoritative export-token store outages fail closed for create, consume and discard
+4500:# Subtest: every favourites route requires a valid sign-in
+4506:# Subtest: the list shows the stored columns over the saved payload, the payload as data, and the live job
+4512:# Subtest: a saved job shows its details only while GET /api/jobs-data/:id would show it to the same caller
+4518:# Subtest: a saved document shows its title only while it is still the caller's
+4524:# Subtest: removing is scoped to the owner and reports whether anything was removed
+4530:# Subtest: item ids with reserved characters round-trip when the client encodes them
+4536:# Subtest: saving the same item again (Undo) restores it with the same payload and keeps one row
+4542:# Subtest: the type filter still works, and a payload that is not an object is stored as an empty one
+4548:# Subtest: a database outage is reported as unavailable, never as an empty list
+4554:# Subtest: MariaDB: the list is one owner-scoped query joined to the job and to the owner's own documents
+4560:# Subtest: MariaDB: the stored columns win over the saved payload in getFavourites and in the save response
+4566:# Subtest: MariaDB: removing is one DELETE scoped to the owner and reports whether a row went
+4572:# Subtest: the list is a read: it is served while MariaDB refuses writes
+4582:# Subtest: feature flags: definition contract and default values
+4588:# Subtest: feature flags: getFlagValue priority resolution (MySQL > Env > Default)
+4594:# Subtest: feature flags: getAllFlags returns structured metadata and effective source
+4600:# Subtest: feature flags: setFlagValue validates parameters, persists to MySQL, and logs audit
+4606:# Subtest: feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync helpers
+4612:# Subtest: feature flags: Express API RBAC enforcement
+4623:# Subtest: Forensic MariaDB ↔ API Data Lineage Validation Suite
+4624:not ok 488 - Forensic MariaDB ↔ API Data Lineage Validation Suite
+4630:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+4631:  code: 'ECONNREFUSED'
+4640:# Subtest: 1. Free User Contract: PDF click triggers Premium modal, not direct download or redirect
+4646:# Subtest: 2. Free User Contract: Direct backend API call is denied with HTTP 402
+4652:# Subtest: 3. Free User Contract: Spoofed or modified client entitlement payload is rejected
+4658:# Subtest: 4. Premium User Contract: PDF click grants download immediately without upgrade modal
+4664:# Subtest: 5. Enterprise User Contract: PDF click grants download, preserving Enterprise identity
+4670:# Subtest: 6. Payment Lifecycle: Upgrade -> Payment Success -> Entitlement -> Original Download Resumption
+4676:# Subtest: 7. Payment Lifecycle: Payment failure leaves user as Free with no download access
+4682:# Subtest: 8. Payment Lifecycle: User selects Maybe Later — keeps builder state with zero loss
+4688:# Subtest: 9. State Transitions: Free -> Premium -> Expired -> Enterprise Removed
+4694:# Subtest: 10. DOCX Export Contract: Free users gated, Premium & Enterprise granted direct export
+4700:# Subtest: 11. Coupon Engine: Valid, Invalid, Expired, Disabled, and Max-Uses Validation
+4706:# Subtest: 12. Payment Amount Integrity: Client manipulation of discount or price is rejected
+4712:# Subtest: 13. Phase 5 UX Theme Consistency: SubscriptionModal matches light design tokens
+4718:# Subtest: F-02 engine: identical messages under different cacheScope never share a cache entry
+4724:# Subtest: F-02 engine: scoped and unscoped requests have distinct cache identities
+4730:# Subtest: F-02 agent: handleAnthropicMessages forwards cacheScope for per-principal isolation
+4736:# Subtest: F-02 runtime: generateWithProviders binds the cache to principalId
+4742:# Subtest: catalog coalesces concurrent refreshes and records freshness without fabricated context
+4748:# Subtest: upstream addition, rename and removal reconcile instead of accumulating stale IDs
+4754:# Subtest: malformed refresh preserves bounded stale catalog and backs off repeated manual probes
+4760:# Subtest: failed initial discovery backs off and cannot report registry hints as live
+4766:# Subtest: credential identities cannot collide by suffix and do not expose raw credentials
+4772:# Subtest: auto selection consults discovery before registry default and respects empty catalogs
+4778:# Subtest: all cooled-down providers stay excluded; invalid keys cannot re-enter via fallback
+4784:# Subtest: discovery errors never echo provider response bodies
+4790:# Subtest: llama.cpp uses discovered model and the shared keyless inference adapter
+4796:# Subtest: local providers are opt-in and environment endpoints are used only when enabled
+4802:# Subtest: platform mesh enforces tenant destination restrictions including explicit deny-all
+4808:# Subtest: cached completion cannot bypass changed tenant destination policy
+4814:# Subtest: ranking ignores unmeasured registry scores and expired or other-model observations
+4820:# Subtest: upstream deprecated and explicitly inactive models are ineligible for new auto selection
+4826:# Subtest: Pollinations is no longer eligible as an anonymous provider
+4832:# Subtest: catalog stops streaming before buffering an oversized provider response
+4838:# Subtest: unknown capabilities are null, explicit evidence is retained, and name size never manufactures quality
+4844:# Subtest: credential rotation cannot grow catalog cache without bound
+4850:# Subtest: malformed capability objects are unknown, not retained or treated as support
+4856:# Subtest: concurrent distinct-credential discovery is bounded while same-credential requests coalesce
+4862:# Subtest: PH4-ENGINE-030 constants: interval 20, maturity gate stays at 3
+4868:# Subtest: PH4-ENGINE-030 picker: diverts ONLY on interval ticks
+4874:# Subtest: PH4-ENGINE-030 picker: fewest observations first, ties keep rank order
+4880:# Subtest: PH4-ENGINE-030 picker: mature field, single candidate and winner-already-under-evidenced are no-ops
+4886:# Subtest: PH4-ENGINE-030 picker: circuit-breaker-demoted candidates are never exploration targets
+4892:# Subtest: PH4-ENGINE-030 router: speed mode diverts on tick 20/40 to the under-evidenced candidate and marks it
+4898:# Subtest: PH4-ENGINE-030 router: manual pins and quality mode NEVER explore
+4904:# Subtest: PH4-ENGINE-030 router: dedicated-BYOK sanctuary and fallback-disabled configs never explore
+4910:# Subtest: PH4-ENGINE-030 end-to-end: the bounded tick diverts, the diverted call MATURES the frozen window, and a matured fast window still flips on merit
+4920:# Subtest: FreeLLMAPI: Engine status exports all supported providers
+4926:# Subtest: FreeLLMAPI: LRU Cache stores and retrieves completions
+4932:# Subtest: FreeLLMAPI: Cooldown manager sets backoff and expires
+4938:# Subtest: FreeLLMAPI: Fallback cascade switches to second provider when first fails with 429
+4944:# Subtest: FreeLLMAPI: Tenant Dedicated BYOK strictly isolates routing to tenant key
+4950:# Subtest: FreeLLMAPI: All providers are registered in catalog
+4956:# Subtest: FreeLLMAPI: Dynamic live model discovery pulls models from provider /models endpoint
+4962:# Subtest: FreeLLMAPI: Claude Code Agent handles Anthropic /v1/messages wire format
+4968:# Subtest: FreeLLMAPI: Autonomous self-healing maintenance starts and stops cleanly
+4974:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+4975:# Subtest: FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status
+4976:not ok 544 - FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status
+4998:# Subtest: FreeLLMAPI: streaming generator yields OpenAI-compatible deltas and [DONE]-less finish
+5004:# Subtest: FreeLLMAPI: streaming fails over to the next provider before the first token
+5010:# Subtest: FreeLLMAPI: compression pipeline reduces prompt tokens without breaking JSON
+5016:# Subtest: FreeLLMAPI: compression is skipped on request when disabled
+5022:# Subtest: FreeLLMAPI: multi-key pool rotates to the next key on 429 before benching the provider
+5028:# Subtest: FreeLLMAPI: a provider is benched only after every pooled key is rate-limited
+5034:# Subtest: FreeLLMAPI: search and media providers are excluded from the chat cascade
+5040:# Subtest: FreeLLMAPI: search cascade calls Tavily /search (never /chat/completions) and falls back on 429
+5046:# Subtest: FreeLLMAPI: plaintext tool-call dialects are rescued into structured tool_calls
+5052:# Subtest: FreeLLMAPI: an unparseable tool dialect is a dead turn, not prose
+5058:# Subtest: FreeLLMAPI: durable metrics + cooldowns persist to node:sqlite and hydrate across restarts
+5064:# Subtest: FreeLLMAPI: persistence falls back to memory when node:sqlite is disabled
+5070:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+5071:# Subtest: FreeLLMAPI: POST /v1/chat/completions returns an OpenAI-shaped completion
+5072:not ok 557 - FreeLLMAPI: POST /v1/chat/completions returns an OpenAI-shaped completion
+5094:# Subtest: FreeLLMAPI: POST /v1/chat/completions rejects bad and missing credentials
+5100:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+5101:# Subtest: FreeLLMAPI: POST /v1/chat/completions streams text/event-stream chunks
+5102:not ok 559 - FreeLLMAPI: POST /v1/chat/completions streams text/event-stream chunks
+5124:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+5125:# Subtest: FreeLLMAPI: POST /v1/messages handles Anthropic format and SSE streaming
+5126:not ok 560 - FreeLLMAPI: POST /v1/messages handles Anthropic format and SSE streaming
+5148:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+5149:# Subtest: FreeLLMAPI: POST /v1/search exposes Tavily results with the platform key
+5150:not ok 561 - FreeLLMAPI: POST /v1/search exposes Tavily results with the platform key
+5172:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+5173:# Subtest: FreeLLMAPI: transparent 429 failover through the public HTTP surface
+5174:not ok 562 - FreeLLMAPI: transparent 429 failover through the public HTTP surface
+5196:# Subtest: official anonymous async API queues once, polls, returns actual generated text, and discloses no usage estimate
+5202:# Subtest: queue timeout cancels work and reports timeout rather than fake success
+5208:# Subtest: anonymous restriction/429 is surfaced with no priority evasion or repeated submission
+5214:# Subtest: mismatched executed model is rejected and queued work cleaned up
+5220:# Subtest: Horde discovery uses official live text workers, not the removed compatibility proxy/default ID
+5226:# Subtest: unsupported structured output is rejected before any community worker sees the prompt
+5232:# Subtest: private/default candidate traffic never reaches public community discovery or workers
+5238:# Subtest: trusted synthetic verification may explicitly use opted-in anonymous community workers
+5246:# Subtest: F-04 routing: manual with an empty model pin routes to the provider default instead of 503
+5252:# Subtest: F-04 routing: the literal "auto" pin is treated as an empty pin, not as a model id
+5258:# Subtest: F-04 routing: a real pin that matches no catalog model is refused with an honest, specific 503
+5264:# Subtest: F-04 save: manual without an explicit pinned model is rejected 400
+5270:# Subtest: F-04 save: manual with a flat MODEL_FIELDS pin saves, and a nested registry pin saves too
+5276:# Subtest: F-04 save: a previously stored pin satisfies the validation on credential-only saves
+5284:# Subtest: F-03 strict manual: pinned-provider outage is an honest 503 provider_unavailable with Retry-After
+5290:# Subtest: F-03 opt-in manualAllowFallback: pin is tried first, fallback serves, deviation is marked
+5296:# Subtest: F-03 enableFallback:false vetoes the opt-in: strict pin semantics hold
+5302:# Subtest: F-03 explicit provider pin in the request stays strict even with manualAllowFallback
+5308:# Subtest: F-03 config plumbing: manualAllowFallback round-trips admin validation and the platform builder
+5316:# Subtest: F-06 registry: curated tiers resolve exactly and unknown models stay null
+5322:# Subtest: F-06 ranking: quality mode prefers the premium tier over primary preference
+5328:# Subtest: F-06 ranking: premium > standard > economy with equal observations
+5334:# Subtest: F-06 ranking: uncurated models keep the old conservative behaviour and unknown evidence
+5340:# Subtest: F-06 ranking: non-quality modes ignore tiers entirely
+5346:# Subtest: F-06 router: quality mode end-to-end selects the premium-tier catalog model
+5352:# Subtest: F-06 status: engine status and admin catalog report the curated tier instead of bare null
+5358:# Subtest: F-07 weighted p50: recency weights pull the median toward current behaviour
+5364:# Subtest: F-07 ranking: one lucky 4ms blip no longer beats a consistently fast destination
+5370:# Subtest: F-07 ranking: fewer than 3 observations give no boost — the last row is only a circuit breaker
+5376:# Subtest: F-07 ranking: one blip failure among many successes does not reroute traffic
+5382:# Subtest: F-07 persistence: getRollingAggregates windows, aggregates and caps samples
+5388:# Subtest: F-07 router: speed mode end-to-end prefers the windowed-p50 winner over a stale lucky sample
+5396:# Subtest: capability gates reject unknown tools/vision/JSON and incompatible context/output
+5402:# Subtest: speed prefers measured latency, quality prefers documented capability fit without fabricated quality
+5408:# Subtest: unknown/stale observations remain unknown and ranking is deterministic
+5414:# Subtest: admin validates every selection mode and permits a registered local primary
+5420:# Subtest: auto: discovery feeds executed model, requirements exclude an incapable first choice
+5426:# Subtest: quality: discovery feeds executed model, requirements exclude an incapable first choice
+5432:# Subtest: speed: discovery feeds executed model, requirements exclude an incapable first choice
+5438:# Subtest: balanced: discovery feeds executed model, requirements exclude an incapable first choice
+5444:# Subtest: manual pin refuses removed models and never crosses providers
+5450:# Subtest: balanced fallback excludes incompatible models, records actual fallback, and honors 429 cooldown
+5456:# Subtest: discovery expansion cannot escape tenant model allowlists or denylists
+5462:# Subtest: a tenant manual pin is not replaced by an unrelated platform primary or its model
+5468:# Subtest: intelligent discovery survives an expired first credential without borrowing its catalog
+5474:# Subtest: a discovered capability cannot authorize a different credential; manual destinations stay pinned
+5480:# Subtest: credential-specific candidates do not bench the destination before remaining keys (completion)
+5486:# Subtest: credential-specific candidates do not bench the destination before remaining keys (stream)
+5492:# Subtest: PH4-ENGINE-031 — tier registry wave-2 expansion
+5537:# Subtest: F-28: the constants module is frozen and carries the documented values
+5543:# Subtest: F-28: both configuration builders fall back to the SAME defaults when settings omit the fields
+5549:# Subtest: F-28: engine-internal parameter defaults share the source (actual request body)
+5555:# Subtest: F-28: explicit configured values still win in both builders
+5563:# Subtest: DIR-024 region taxonomy is fixed, resolves aliases, and never derives a region from input text
+5569:# Subtest: DIR-024 location aliases become bound LIKE values and never SQL fragments
+5575:# Subtest: DIR-024 empty regions remain empty and salaries stay grouped by their recorded currency
+5581:# Subtest: DIR-024 MariaDB query uses the indexed projection, active status, expiry and bounded parameters
+5587:# Subtest: DIR-024 saveJob synchronizes post-migration regional projections and tolerates legacy schemas
+5593:# Subtest: DIR-024 falls back only for a missing projection and binds the complete alias set
+5599:# Subtest: DIR-024 aggregate repository results are authoritative and currency-specific
+5605:# Subtest: DIR-024 resilient repository exposes regional reads as MariaDB read methods
+5611:# Subtest: DIR-024 public region endpoints are opt-in, truthful and fail closed
+5617:# Subtest: DIR-024 sitemap includes only enabled regional URLs with live active rows
+5623:# Subtest: DIR-024 social cards escape user-supplied XML and render a real PNG preview
+5629:# Subtest: DIR-024 share-preview endpoint hides non-public jobs and emits only a raster card for active jobs
+5635:# Subtest: executable backend drains its listener and closes cleanly on SIGTERM
+5641:# Subtest: indian gateway webhook activation
+5702:# Subtest: supported enums match the product configuration surface exactly
+5708:# Subtest: normalizeSeniority maps aliases and free text to canonical bands; garbage falls back deterministically
+5714:# Subtest: normalizeDifficulty and normalizeTrack only accept supported values
+5720:# Subtest: clampAdaptiveDifficulty: model-reported difficulty can never exceed the configured ceiling
+5726:# Subtest: difficulty guidance is seniority-conditional: hard never means "senior-level content" for early bands
+5732:# Subtest: seniorityCeilingDirective is binding, defines the band, and locks precedence against untrusted context
+5738:# Subtest: track category guidance is track-conditional and scale-bounded per seniority
+5744:# Subtest: adaptive policy declares start, trigger, ceiling, floor and seniority boundary
+5750:# Subtest: assessQuestionFit deterministically flags over-band questions per seniority
+5762:# Subtest: 1. cleanInterviewMetadataArtifacts strips all forms of leaked metadata, UI headers, and robotic preambles
+5768:# Subtest: 2. cleanInterviewMetadataArtifacts preserves authentic candidate scenario questions without over-stripping
+5774:# Subtest: 3. Candidate Profile extraction structures verified facts without hallucination
+5780:# Subtest: 4. Job Requirements extraction cleans raw input and preserves technical keywords
+5786:# Subtest: 5. Blueprint identifies high-value skill intersections between Candidate and JD
+5792:# Subtest: 6. Prompt Builder enforces 4-Level Hierarchy and strict anti-leakage directives
+5798:# Subtest: 7. isGenericQuestion reliably detects banned superficial questions
+5804:# Subtest: 8. normalizeQuestions cleans and validates options, questions, and bounds in frontend
+5810:# Subtest: 9. Dynamic generation never exposes a static question-bank fallback
+5816:# Subtest: 10. Multi-Scenario Validation: Ad Operations / Programmatic (DV360 / CM360)
+5824:# Subtest: interview generation helper exports exist
+5830:# Subtest: difficulty distribution is exact and meaningfully changes with difficulty
+5836:# Subtest: prompt builder injects a fresh per-request nonce and a difficulty distribution
+5842:# Subtest: dedupeQuestions removes within-set duplicates and recent-history exact matches
+5848:# Subtest: AI path is invoked and returns distinct sets across identical-input attempts
+5865:# Subtest: provider failure returns a recoverable error instead of predefined interview content
+5883:# Subtest: 1. Standard non-tenant candidate uses platform AI configuration without tenant headers
+5889:# Subtest: 2. Unauthenticated request with X-Tenant-Id fails closed with 401 AUTH_REQUIRED
+5905:# Subtest: 3. Unauthorized caller with another tenant X-Tenant-Id fails closed with 403 TENANT_ACCESS_DENIED
+5950:# Subtest: 4. Authorized tenant candidate with BYOK custom keys generates questions using tenant AI policy
+6070:# Subtest: 5. Live Interview Session propagates Tenant BYOK configuration across opening, turn, and complete
+6076:# Subtest: 6. Enterprise namespace /api/enterprise/ai/generate-interview executes within tenant context
+6082:# Subtest: 7. Legacy UID route /api/generate-summary continues to reject X-Tenant-Id with 400 TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE
+6090:# Subtest: matrix: every supported seniority × difficulty produces a band-bound, in-band-difficulty prompt
+6096:# Subtest: fresher + hard is challenging but still fresher-appropriate (no silent upgrade)
+6102:# Subtest: seniority ceiling is identical authority regardless of difficulty
+6108:# Subtest: every supported track keeps its own assessment style without losing the ceiling
+6114:# Subtest: multiple materially different roles keep role-specific framing and the ceiling
+6120:# Subtest: advanced JD and advanced resume enrich topics but never raise the fresher band
+6126:# Subtest: prompt injection inside JD/resume is fenced as untrusted data and cannot change configuration
+6132:# Subtest: live prompts fence poisoned context and keep the ceiling in front of it
+6138:# Subtest: live parse layer clamps model-reported difficulty to the configured ceiling
+6144:# Subtest: live session: 10 turns of excellent answers with expert-drifting model output never exceed the configured difficulty or seniority
+6150:# Subtest: live session: weak, short, contradictory and candidate-question answers do not rewrite the configuration
+6156:# Subtest: live session: over-band follow-up triggers a corrective regeneration, then safe failure rather than serving a mismatch
+6162:# Subtest: live session: repeated questions trigger the existing corrective retry (dedupe preserved)
+6168:# Subtest: long conversation keeps role/seniority/difficulty/track stable (30-turn simulated history on the assessment path + full live session)
+6174:# Subtest: question count and duration survive the constraint changes (assessment)
+6180:# Subtest: malformed live output is rejected (no canned fallback), invalid difficulty is clamped, missing question is fatal
+6186:# Subtest: question-level difficulty labels are normalized to the schema vocabulary (malformed labels never leak)
+6192:# Subtest: report prompt judges readiness at the configured band, not above it
+6198:# Subtest: normalizeStartInput validates enums like the product surface
+6204:# Subtest: route /generate-interview drops over-band questions with one corrective top-up and keeps the exact count
+6210:# Subtest: semantic rubric detects obvious seniority mismatch (fresher + senior architecture question)
+6216:# Subtest: no hardcoded question bank exists anywhere in the interview AI path
+6222:# Subtest: difficulty distribution monotonicity is preserved (regression of the control shape)
+6228:# Subtest: semantic rubric catches indirect/subtle over-band architectural and operational questions
+6234:# Subtest: semantic rubric avoids over-rejection for valid questions with advanced vocabulary
+6240:# Subtest: live session: opening question is fit-gated with corrective retry and safe failure
+6246:# Subtest: route /generate-interview fails safely when persistent over-band model cannot reach exact count
+6263:# Subtest: GST state registry uses current Andhra Pradesh and Ladakh codes
+6269:# Subtest: supplier projection rejects incomplete or mismatched legal configuration
+6275:# Subtest: customer GST state is derived and conflicting state input is rejected
+6281:# Subtest: amount words preserve rupees and paise without accepting a client total
+6289:# Subtest: the list shows only the caller's applications, with the job applied to and none of the employer's columns
+6295:# Subtest: another candidate cannot take over an application through POST
+6301:# Subtest: POST cannot create an application outside the apply workflow
+6307:# Subtest: the owner cannot set the employer's decisions or move an application to another job or employer
+6313:# Subtest: the owner can correct their own name and phone, validated like the apply form, and nothing else changes
+6319:# Subtest: withdrawal stays owner-scoped
+6325:# Subtest: MariaDB: the applicant list is one owner-scoped query joined to the job, without the employer's columns
+6331:# Subtest: MariaDB: a contact correction is one UPDATE scoped to the application and its applicant
+6337:# Subtest: MariaDB: the phone a candidate enters when applying is stored
+6343:# Subtest: in-memory fallback: the applicant list and the legacy filter are scoped to the applicant
+6349:# Subtest: the applicant list is a read: it is served while MariaDB refuses writes
+6357:# Subtest: a tracked job created without a work mode stores none instead of "Remote"
+6363:# Subtest: clearing optional fields in an update clears them
+6369:# Subtest: an update that leaves fields out keeps every stored value
+6375:# Subtest: notes keep their line breaks; other control characters are removed
+6381:# Subtest: a created job reports the timestamps the database recorded
+6387:# Subtest: an update keeps the stored interview time on a server that is not on UTC
+6395:# Subtest: public and non-owner listing cannot select drafts, paused, tombstoned, or expired jobs
+6401:# Subtest: single-job reads hide every non-active record from non-owners while preserving owner access
+6407:# Subtest: legacy job mutation routes deny primary-key takeover and ownerless deletion
+6413:# Subtest: tracker ownership, revision conflicts, and partial status/order moves are enforced behaviorally
+6419:# Subtest: MariaDB failures return stable unavailable contracts without leaking driver details
+6425:# Subtest: MariaDB tracker update uses owner-scoped locking and preserves omitted fields
+6431:# Subtest: MariaDB job writes and deletes keep ownership in the SQL predicate
+6437:# Subtest: F-14 release: single benched provider is retried instead of a hard 503, marked lastResort
+6443:# Subtest: F-14 release: the earliest-expiring cooldown wins, the other stays benched
+6449:# Subtest: F-14 no release: credential rejections are never retried
+6455:# Subtest: F-14 no release: a strict manual pin keeps the honest 503 contract
+6461:# Subtest: F-14 release: legacy pinned config (no selectionMode) recovers via the same release
+6467:# Subtest: F-14 no release: legacy credential rejections stay benched
+6473:# Subtest: F-14 no release: policy rejections (not cooldowns) do not trigger the release
+6481:# Subtest: live interview routes are authenticated, owner-scoped, revision-safe, and never return canned content
+6490:# Subtest: provider outages say whether anything was saved: start and guide never claim a saved session
+6496:# Subtest: live interview service generates a server-owned adaptive session and only sends bounded relevant context per turn
+6502:# Subtest: live interview safely handles short, long, and candidate-question responses without expanding prompt context
+6508:# Subtest: live interview state rejects stale/out-of-order turns and produces a dynamic completion report
+6514:# Subtest: expired active and completed sessions are removed rather than retained as interview records
+6520:# Subtest: live interview closes at its server-calculated duration bound when a provider keeps asking
+6526:# Subtest: invalid model output does not fall back to a predefined question or answer
+6532:# Subtest: live prompt builders keep static controls separate from untrusted data
+6542:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6543:# Subtest: Mandate 9B Contract Coverage
+6551:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6552:# [Employer review] connect ECONNREFUSED 127.0.0.1:3306
+6572:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+6573:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6574:# [Employer review] connect ECONNREFUSED 127.0.0.1:3306
+6614:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6652:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6676:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6708:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6741:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6768:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6792:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6793:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6800:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6834:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+6881:not ok 733 - Mandate 9B Contract Coverage
+6890:# Subtest: clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+6891:not ok 734 - clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+6897:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+6898:  code: 'ECONNREFUSED'
+6910:# Subtest: CERTIFICATION: application starts and reports MySQL-only authority with the retired data plane absent
+6916:# Subtest: CERTIFICATION: public configuration loads from MariaDB only
+6917:not ok 736 - CERTIFICATION: public configuration loads from MariaDB only
+6943:#   code: 'ECONNREFUSED',
+6946:# Subtest: CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed
+6947:not ok 737 - CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed
+6972:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6973:# Subtest: CERTIFICATION: authentication is enforced on protected routes (identity-plane only)
+6974:not ok 738 - CERTIFICATION: authentication is enforced on protected routes (identity-plane only)
+6992:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+6993:# Subtest: CERTIFICATION: user profile create/read/update with optimistic revision guard (MySQL transactions)
+6994:not ok 739 - CERTIFICATION: user profile create/read/update with optimistic revision guard (MySQL transactions)
+7019:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7021:# Subtest: CERTIFICATION: resume create -> list -> load -> edit -> publish -> delete (MySQL persistence)
+7022:not ok 740 - CERTIFICATION: resume create -> list -> load -> edit -> publish -> delete (MySQL persistence)
+7047:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7049:# Subtest: CERTIFICATION: cross-user access is denied (multi-tenant zero-trust)
+7050:not ok 741 - CERTIFICATION: cross-user access is denied (multi-tenant zero-trust)
+7075:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7076:# Subtest: CERTIFICATION: favourites are MySQL-backed and owner-scoped
+7077:not ok 742 - CERTIFICATION: favourites are MySQL-backed and owner-scoped
+7102:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+7103:# Subtest: CERTIFICATION: stats read + authenticated increments (MySQL)
+7104:not ok 743 - CERTIFICATION: stats read + authenticated increments (MySQL)
+7130:# Subtest: CERTIFICATION: public reviews use relational owner and phrases use canonical documents
+7131:not ok 744 - CERTIFICATION: public reviews use relational owner and phrases use canonical documents
+7156:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+7157:# [Rate limit store] contact connect ECONNREFUSED 127.0.0.1:3306
+7158:# Subtest: CERTIFICATION: contact messages persist to MySQL
+7159:not ok 745 - CERTIFICATION: contact messages persist to MySQL
+7184:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7185:# [Rate limit store] ai connect ECONNREFUSED 127.0.0.1:3306
+7186:# Subtest: CERTIFICATION: AI endpoints fail with controlled configuration errors (not retired data plane errors)
+7192:# Subtest: CERTIFICATION: export render token lifecycle is MySQL-durable
+7193:not ok 747 - CERTIFICATION: export render token lifecycle is MySQL-durable
+7199:  error: 'Export token store unavailable: connect ECONNREFUSED 127.0.0.1:3306'
+7208:# Subtest: CERTIFICATION: OAuth state & exchange codes are MySQL-backed (single-use)
+7209:not ok 748 - CERTIFICATION: OAuth state & exchange codes are MySQL-backed (single-use)
+7215:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7216:  code: 'ECONNREFUSED'
+7225:# Subtest: CERTIFICATION: password-reset token store is MySQL-backed and latest-token-wins
+7226:not ok 749 - CERTIFICATION: password-reset token store is MySQL-backed and latest-token-wins
+7232:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7233:  code: 'ECONNREFUSED'
+7237:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7238:# [Account export section unavailable] profile ECONNREFUSED
+7239:# [Account export section unavailable] resumes ECONNREFUSED
+7240:# [Account export section unavailable] portfolios ECONNREFUSED
+7241:# [Account export section unavailable] covers ECONNREFUSED
+7242:# [Account export section unavailable] favourites ECONNREFUSED
+7243:# [Account export section unavailable] transactions ECONNREFUSED
+7244:# [Account export section unavailable] notifications ECONNREFUSED
+7245:# [Account export section unavailable] applications ECONNREFUSED
+7246:# [Account export section unavailable] jobs ECONNREFUSED
+7247:# [Account export section unavailable] companies ECONNREFUSED
+7248:# [Account export section unavailable] jobTracker ECONNREFUSED
+7249:# [Account export section unavailable] invoices ECONNREFUSED
+7250:# [Account export section unavailable] messaging ECONNREFUSED
+7251:# Subtest: CERTIFICATION: GDPR account export assembles owner data from MySQL
+7257:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+7261:#   code: 'ECONNREFUSED',
+7265:# Subtest: CERTIFICATION: admin surfaces operate with MySQL (users list, audit write)
+7266:not ok 751 - CERTIFICATION: admin surfaces operate with MySQL (users list, audit write)
+7319:# Subtest: payment reconciliation reads provider credentials once per provider, not once per order
+7325:# Subtest: an unconfigured gateway no longer multiplies configuration reads across the batch
+7331:# Subtest: a credential resolution failure is reported per row exactly as before
+7337:# Subtest: reconciliation bounds the batch size it requests from the pool
+7343:# Subtest: conversation list issues a constant three round trips regardless of conversation count
+7349:# Subtest: conversation list preserves per-conversation participants and latest message shape
+7355:# Subtest: an empty conversation list performs no per-conversation queries at all
+7361:# Subtest: conversation list is unauthenticated without a verified token
+7367:# Subtest: a full administrative page is served by batched reads, not per-identity round trips
+7374:# Subtest: administrative directory falls back to per-identity reads when no batch reader exists
+7380:# Subtest: tenant memberships are projected per identity from the batched reader
+7386:# Subtest: batch membership read attributes every row only to its own principal
+7392:# Subtest: batch membership read is empty and query-free for an empty page
+7398:# Subtest: indian gateway status probes carry an enforced request deadline
+7404:# Subtest: operational-status snapshot is bounded and served from cache on repeat reads
+7412:# Subtest: Master Configuration Control: Canonical Membership Normalization & Non-Flattening
+7418:# Subtest: Master Configuration Control: Dynamic AI Quotas & Context Isolation
+7424:# Subtest: Master Configuration Control: Enterprise Role Inventory Verification
+7430:# Subtest: Master Configuration Control: Server-Side Module Gate for Portfolios
+7436:# Subtest: Master Configuration Control: Dynamic Pricing & Zero Client Price Authority
+7442:# Subtest: Master Configuration Control: PDF Export Policy Gating (Free vs Pro vs Free Mode)
+7448:# Subtest: B2C Pro subscriber with ISO membershipEnds is Premium-entitled
+7454:# Subtest: B2C Enterprise string membership is entitled without tenant document
+7460:# Subtest: membershipEnds as {seconds} does not crash entitlements
+7466:# Subtest: expired Premium is Basic
+7472:# Subtest: activation / renewal / cancellation semantics
+7480:# Subtest: 028/029 are applied by the runner with checksums matching the checked-in files
+7481:not ok 778 - 028/029 are applied by the runner with checksums matching the checked-in files
+7487:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7488:  code: 'ECONNREFUSED'
+7492:# Subtest: ai_routing_decisions matches the proposal shape: PK, columns, three indexes
+7493:not ok 779 - ai_routing_decisions matches the proposal shape: PK, columns, three indexes
+7499:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7500:  code: 'ECONNREFUSED'
+7504:# Subtest: enterprise_ai_usage gains the nullable indexed decision_id join column
+7505:not ok 780 - enterprise_ai_usage gains the nullable indexed decision_id join column
+7511:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7512:  code: 'ECONNREFUSED'
+7516:# Subtest: legacy column-explicit INSERTs keep working post-029; decision_id rides along when present
+7517:not ok 781 - legacy column-explicit INSERTs keep working post-029; decision_id rides along when present
+7523:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7524:  code: 'ECONNREFUSED'
+7528:# Subtest: down round-trip: 029.down -> 028.down -> re-up restores the baseline exactly
+7529:not ok 782 - down round-trip: 029.down -> 028.down -> re-up restores the baseline exactly
+7535:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7536:  code: 'ECONNREFUSED'
+7540:# Subtest: parallel runMigrations under GET_LOCK: the second concurrent run is a clean no-op
+7541:not ok 783 - parallel runMigrations under GET_LOCK: the second concurrent run is a clean no-op
+7547:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+7548:  code: 'ECONNREFUSED'
+7552:# Subtest: internal notifier durably queues and never claims provider delivery
+7558:# Subtest: notification enqueue failure is surfaced instead of falling back to synchronous SMTP
+7564:# Subtest: notification outbox identity and retry policy are deterministic and bounded
+7570:# Subtest: outbox is MySQL-backed: zero Firestore primitives in the delivery queue
+7576:# Subtest: queued email stores trusted recipient, explicit initial state, and is idempotent
+7582:# Subtest: sensitive lifecycle variables are encrypted at rest and decrypt only in the worker projection
+7588:# Subtest: sensitive enqueue and encrypted payload reads fail closed without key continuity
+7594:# Subtest: an unreadable encrypted payload is never dispatched and reaches the DLQ after bounded retries
+7600:# Subtest: OAuth state is session-bound, constant-time comparable, provider-bound, expiring, and replay detectable
+7606:# Subtest: PKCE challenge is deterministic and rejects weak verifier input
+7612:# Subtest: cookie parser handles encoded values and rejects malformed encoding
+7618:# Subtest: verified provider identity is mandatory
+7624:# Subtest: email auto-link, provider identity conflict, and custom-token MFA bypass are blocked
+7630:# Subtest: one-time OAuth exchange codes reject expiration and replay
+7638:# Subtest: Platform Operators IAM Suite: GET /api/platform/operators lists operators with verified claims & MFA
+7644:# Subtest: Platform Operators IAM Suite: POST /api/platform/operators assigns ADMIN role to target user
+7650:# Subtest: Platform Operators IAM Suite: POST /api/platform/operators rejects assignment of SUPER_ADMIN role
+7656:# Subtest: Platform Operators IAM Suite: POST /api/platform/operators/:uid/revoke-sessions invalidates all tokens
+7662:# Subtest: Platform Operators IAM Suite: POST /api/platform/operators rejects self-demotion by Super Admin
+7668:# Subtest: P1 gap source contracts
+7713:# Subtest: activation atomically grants entitlement and issues an invoice from pre-provider snapshots
+7719:# Subtest: snapshot integrity failure rolls back entitlement writes and emits no invoice
+7725:# Subtest: audit failure after invoice enqueue rolls back the complete activation transaction
+7731:# Subtest: legacy orders without pre-provider evidence cannot activate or synthesize invoices
+7737:# Subtest: activateVerifiedOrder is idempotent for duplicate webhooks
+7743:# Subtest: duplicate provider event claim is a no-op
+7749:# Subtest: webhook claim is released so a failed activation can retry
+7755:# Subtest: conflicting providerPaymentId on an ACTIVE order is refused
+7761:# Subtest: refund of latest order reverses entitlement; older order does not
+7767:# Subtest: membership write failure rolls back the atomic payment activation
+7773:# Subtest: Pro membership is preserved on activation (not forced to Premium string only)
+7779:# Subtest: durable webhook ledger is consulted before in-memory claim
+7785:# Subtest: createOrder idempotency key replays PAYMENT_CREATED client secret
+7791:# Subtest: createOrder refuses provider contact without versioned immutable billing evidence
+7797:# Subtest: same idempotency key cannot be replayed with changed legal billing evidence
+7805:# Subtest: payment secret lifecycle preserves blank and masked reload values
+7811:# Subtest: payment status exposes only configuration state and a non-reversible mask
+7817:# Subtest: payment projection ignores retired legacy settings and never mixes incomplete credential sources
+7825:# Subtest: new payment order persists verified versioned billing evidence in a transaction
+7831:# Subtest: new payment order without valid billing evidence is rejected before any write
+7837:# Subtest: payment owner, plan, provider, amount, and currency cannot change after creation
+7843:# Subtest: billing snapshots cannot be replaced, removed, or backfilled after order creation
+7868:# Subtest: stale payment update fails compare-and-swap instead of overwriting provider state
+7874:# Subtest: AC-2: Stripe signature accepts an authentic delivery and rejects tampering
+7880:# Subtest: AC-2: replay window is enforced at exactly 300 seconds and cannot be widened
+7886:# Subtest: AC-2: malformed and absent Stripe headers are rejected structurally
+7892:# Subtest: AC-2: a missing signing secret fails closed with a non-retryable status
+7898:# Subtest: AC-2: Razorpay HMAC-SHA256 accepts the authentic order|payment pair only
+7904:# Subtest: INV-2: a webhook rejection exposes only a fixed code, never a provider message or secret
+7910:# Subtest: timing-safe comparison is length-safe and does not throw on unequal lengths
+7916:# Subtest: AC-1: a duplicate delivery is suppressed and never double-credits entitlement
+7922:# Subtest: AC-1: a failed activation releases its claim so a gateway retry can still settle
+7928:# Subtest: AC-4: PAST_DUE is a canonical payment status with a bounded three-day grace
+7934:# Subtest: AC-4: a PAST_DUE candidate inside the grace window keeps full entitlement
+7940:# Subtest: AC-4: the grace boundary is exact — entitled to the millisecond, not after it
+7946:# Subtest: AC-4: a PAST_DUE account with no readable deadline fails CLOSED, never open
+7952:# Subtest: INV-5: grace never resurrects a genuinely non-paying account
+7958:# Subtest: INV-5: an ordinary ACTIVE Premium account is unaffected by the grace changes
+7964:# Subtest: AC-3: a gateway-confirmed renewal failure opens a grace window and emits one audit row
+7970:# Subtest: AC-3: a gateway outage leaves the account untouched — the INV-5 guarantee
+7976:# Subtest: AC-3: an in-flight payment writes nothing at all
+7982:# Subtest: AC-3: a provider with no verifiable probe is skipped, never guessed at
+7988:# Subtest: AC-4: an absent gateway credential never manufactures an outcome
+7994:# Subtest: AC-4: Razorpay captured/authorized/failed map to the correct outcomes
+8000:# Subtest: AC-6: a rolled-back transaction emits no audit row claiming a transition that never committed
+8006:# Subtest: AC-5: the operator reconcile reports the gateway answer honestly
+8012:# Subtest: AC-5: an unknown user is a 404, not a silent no-op
+8018:# Subtest: AC-3: the reconciler refuses to run without an atomic adapter (no silent fallback)
+8024:# Subtest: AC-3: a work-queue limit is honoured so one pass cannot sweep the whole user table
+8034:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8035:# Subtest: REGRESSION: ADMIN (system.config.read) can READ the secret-free payment projection
+8041:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8042:# Subtest: REGRESSION: the payment projection never exposes a raw secret over HTTP
+8048:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8049:# Subtest: REGRESSION: a plain USER cannot read the payment projection
+8055:# Subtest: REGRESSION: unauthenticated read is rejected
+8061:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8062:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8063:# Subtest: REGRESSION: the alias and the canonical route expose the same gate and payload
+8069:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8070:# Subtest: REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_ADMIN + MFA + recent auth)
+8076:# Subtest: REGRESSION: SUPER_ADMIN without a verified second factor still cannot WRITE
+8082:# Subtest: Stripe webhook cryptography accepts authentic payload and rejects tampering
+8088:# Subtest: Stripe intent binding validates order, UID, plan, amount, currency, and intent
+8094:# Subtest: PayPal completed order validates exact internal binding
+8100:# Subtest: Razorpay requires timing-safe HMAC and captured provider payment
+8106:# Subtest: Paytm and PhonePe provider states require exact amount/currency/completion
+8112:# Subtest: order ownership, replay states, refund targeting, and renewal math fail safely
+8122:# Subtest: operational status rejects unauthenticated callers
+8128:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8129:# Subtest: operational status rejects an ordinary authenticated user
+8135:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8136:# Subtest: SUPPORT cannot read the platform health control plane
+8142:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8145:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8146:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8147:# Subtest: ADMIN may read operational status and the API matrix
+8153:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8154:# Subtest: ADMIN is denied the SUPER_ADMIN-only provider test
+8160:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8161:# Subtest: an ordinary user is denied the provider test
+8167:# Subtest: the provider test rejects unauthenticated callers
+8173:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8174:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8175:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8176:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8177:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8178:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8179:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8180:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8181:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8182:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8183:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8184:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8185:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8186:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8187:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8188:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8189:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8190:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8191:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8192:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8193:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8194:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8195:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8196:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8197:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8198:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8199:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8200:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8201:# Subtest: SUPER_ADMIN may read every operational-status surface
+8207:# Subtest: an unknown service id yields 404 with a stable error code, not a 500
+8213:# Subtest: a malformed service id is rejected as 400, never reaching the collector
+8219:# Subtest: a service with no safe automated test is refused rather than faked
+8225:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8226:# Subtest: no operational-status payload leaks configured secret values
+8232:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8233:# Subtest: host-level diagnostics are withheld from ADMIN and shown to SUPER_ADMIN
+8239:# Subtest: service availability is public, uncached and secret-free
+8245:# [PlatformHealth] service detail failed: connect ECONNREFUSED 127.0.0.1:3306
+8246:# Subtest: a disabled enterprise tenancy is reported as DISABLED, never inferred during collector failure
+8254:# Subtest: anonymous portfolio detail is an explicit public allowlist
+8260:# Subtest: public gallery projection excludes full content and parameterizes theme filtering
+8266:# Subtest: unpublished slug rows do not become public through repository projection
+8276:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+8277:# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+8278:# Subtest: only exact validated published-portfolio paths bypass authentication
+8284:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8285:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8286:# Subtest: draft and owner portfolio surfaces require Firebase authentication and use token ownership
+8292:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8293:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8294:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8295:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8296:# Subtest: portfolio writes reject owner injection and require optimistic revisions
+8302:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8303:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8304:# Subtest: portfolio deletion is owner-scoped and revision-required
+8312:# Subtest: D2-1: probeSingleProvider reports not-configured when key is empty
+8318:# Subtest: D2-2: probeSingleProvider detects alive model on HTTP 200
+8324:# Subtest: D2-3: probeSingleProvider detects retired model on HTTP 410
+8330:# Subtest: D2-4: probeSingleProvider detects not-found model on HTTP 404
+8336:# Subtest: D2-5: probeSingleProvider detects auth-invalid on HTTP 401
+8342:# Subtest: D2-6: probeSingleProvider detects upstream timeout
+8348:# Subtest: D2-7: probeAiFleet returns aggregated summary with alive and dead counts
+8354:# Subtest: in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+8360:# Subtest: concurrent in-memory initial creates do not both succeed
+8368:# Subtest: guarded creation uses insert-only and preserves atomic welcome event
+8374:# Subtest: existing guarded update still uses row lock and rejects stale revision
+8380:# Subtest: competing insert rolls back and maps duplicate UID to authoritative conflict
+8386:# Subtest: unrelated duplicate is not hidden as profile conflict
+8394:# Subtest: new profile and deterministic welcome event commit atomically
+8400:# Subtest: new profile rolls back when welcome enqueue fails
+8406:# Subtest: profile updates do not enqueue duplicate welcome events
+8412:# Subtest: first portfolio publication and publication event commit atomically
+8418:# Subtest: portfolio publication rolls back if its outbox event cannot enqueue
+8424:# Subtest: portfolio CAS rejects stale revisions before mutation or notification
+8430:# Subtest: portfolio identifiers cannot be reassigned across owners
+8436:# Subtest: profile sanitizer preserves bounded Unicode content and recognized resume-profile sections
+8442:# Subtest: profile sanitizer rejects every server-owned authorization and billing field
+8448:# Subtest: profile sanitizer rejects identity-email mismatch, unknown fields, active image content, and oversize payloads
+8454:# Subtest: profile projection excludes legacy role and billing data and exposes the authoritative revision
+8460:# Subtest: profile sanitizer supports 100% parity sections: achievements, references, customSections, and credential URLs
+8466:# Subtest: profile sanitizer preserves newlines, tabs, and multiline bullet points in descriptions and summaries
+8472:# Subtest: F-11: cleanExpired purges expired entries, keeps fresh ones, returns the count
+8478:# Subtest: F-11: cleanExpired is safe on an empty cache and purges malformed entries
+8484:# Subtest: F-11: the maintenance cycle actually purges the prompt cache (the method now exists)
+8494:# Subtest: F-11: a throwing maintenance step no longer skips the next one
+8502:# Subtest: F-23: ai_providers.groq.enabled=false disables the provider in the PRODUCT engine too (legacy boolean absent)
+8508:# Subtest: F-23: disabled=true in ai_providers disables in both engines
+8514:# Subtest: F-23: legacy enableGroq=false now disables in the /v1 MESH as well (audit repro direction)
+8520:# Subtest: F-23: both engines agree across the full flag matrix
+8526:# Subtest: F-23: flags never enable a keyless provider (Boolean(key) still gates)
+8532:# Subtest: stripe maps completed, pending, failed, and unknown refund states without guessing
+8563:# Subtest: paypal maps completed, pending, failed, and unknown refund states without guessing
+8594:# Subtest: razorpay maps completed, pending, failed, and unknown refund states without guessing
+8625:# Subtest: paytm maps completed, pending, failed, and unknown refund states without guessing
+8656:# Subtest: phonepe maps completed, pending, failed, and unknown refund states without guessing
+8687:# Subtest: new refund commands use the durable idempotency identity for every provider
+8693:# Subtest: reconciliation retrieves the original logical refund instead of issuing a second money command
+8699:# Subtest: Paytm response signature failure is ambiguous and never restores entitlement
+8705:# Subtest: rate limiting and unknown statuses stay non-terminal
+8711:# Subtest: GHSA-jqcg-44mw-7w3h: IPv4-mapped short IPv6 prefix must not trust arbitrary IPv4 clients
+8717:# Subtest: untrusted peer cannot spoof client IP through X-Forwarded-For
+8723:# Subtest: development uses PROTOCOL + WEBSITE_NAME without a hardcoded production host
+8729:# Subtest: staging/production-like env uses https + WEBSITE_NAME
+8735:# Subtest: PUBLIC_APP_URL wins over WEBSITE_NAME
+8741:# Subtest: production rejects placeholder and loopback hosts
+8747:# Subtest: enterprise console URLs encode tenant and tab without localhost
+8753:# Subtest: publicAppUrl never invents a production domain
+8761:# Subtest: Public Review Link & Published Resume Architecture
+8826:# Subtest: the durable account limiter is not lifted by an x-e2e-test request header
+8832:# Subtest: the durable account limiter is not lifted by a .test email on the verified identity
+8838:# Subtest: the durable account limiter is not lifted by a .test email in the request body
+8844:# Subtest: the auth burst limiter applies its configured limit to requests carrying client test signals
+8854:# [Admin settings read] connect ECONNREFUSED 127.0.0.1:3306
+8855:# Subtest: RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints
+8856:not ok 945 - RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints
+8878:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8881:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8882:# Subtest: RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked
+8883:not ok 946 - RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked
+8905:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8906:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8907:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8908:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8909:# Subtest: RBAC Forensic: Support role is strictly limited to Help Desk and User directory; Settings, Audit and Operators are blocked
+8915:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8916:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8917:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8918:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8919:# Subtest: RBAC Forensic: Plain USER role is completely rejected on all administrative routes
+8925:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8926:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8927:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8928:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8929:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8930:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8931:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8932:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8933:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+8934:# Subtest: RBAC Forensic: Enterprise roles are strictly scoped and blocked from platform-wide system configuration
+8940:# Subtest: RBAC Forensic: Unauthenticated requests are rejected fail-closed with 401
+8946:# [Admin settings read] connect ECONNREFUSED 127.0.0.1:3306
+8947:# Subtest: RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked)
+8948:not ok 951 - RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked)
+8970:# Subtest: readyz consecutive-failure admin alerts
+9003:# Subtest: completed full refund issues one immutable credit note from the source invoice snapshot
+9009:# Subtest: aggregate refund credit note distinguishes reconciliation reference from child provider ids
+9015:# Subtest: refund without an issued invoice does not fabricate a credit note
+9021:# Subtest: Stripe refund pagination follows has_more and cursor evidence exactly once per page
+9027:# Subtest: single completed full Stripe refund retains its provider reference
+9033:# Subtest: multiple completed Stripe refunds receive an order-bound deterministic aggregate reference and retain every child
+9039:# Subtest: Stripe reconciliation uses a complete embedded list without making a second provider request
+9045:# Subtest: Stripe aggregate reconciliation rejects total, state, currency, charge, ID, and duplicate mismatches
+9088:# Subtest: Stripe reconciliation independently refuses a charge that is not authoritative and fully refunded
+9119:# Subtest: Stripe pagination fails closed on a non-advancing cursor
+9127:# Subtest: new refund claim creates one durable attempt key and audits the lease transaction
+9133:# Subtest: stale pending refund reuses its original idempotency key instead of creating a second money command
+9139:# Subtest: fresh refund lease rejects concurrent provider contact with Retry-After evidence
+9145:# Subtest: ambiguous provider failure preserves pending state and idempotency key
+9151:# Subtest: explicit terminal provider failure can restore ACTIVE and clear the failed attempt
+9157:# Subtest: pending provider acceptance and normalized refund evidence commit in one transaction
+9163:# Subtest: terminal aggregate reconciliation persists every child before entitlement reversal
+9169:# Subtest: a provider refund reference owned by another order aborts and rolls back
+9175:# Subtest: audit failure rolls back refund evidence and payment state instead of partially committing
+9181:# Subtest: aggregate evidence must be unique and exactly equal the authoritative payment amount
+9191:# Subtest: C.4: default (no scope) wipes ONLY the platform bench — tenant scopes survive, response is scope-honest
+9197:# Subtest: C.4: scope "all" keeps the legacy full wipe — every scope is cleared
+9203:# Subtest: C.4: scope "tenant:t1" wipes exactly one scope — platform and other tenants untouched
+9209:# Subtest: C.4: invalid scopes are rejected 400 without touching any state
+9215:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9216:# Subtest: C.4: the super-admin gate covers scoped resets; cooldowns:false keeps every bench
+9222:# Subtest: reset tokens use the exact 256-bit base64url shape and hash deterministically
+9228:# Subtest: password policy rejects short, oversized, malformed-email, and email-derived passwords
+9234:# Subtest: token record is email/state/expiry/single-use bound and blocks active concurrent leases
+9240:# Subtest: lease completion is owner-only and cannot reuse an already consumed token
+9246:# Subtest: enumeration delay has a fixed floor and bounded jitter
+9252:# Subtest: reads from MariaDB when primary is healthy
+9258:# Subtest: read fails with a controlled error when MariaDB is down — no Firestore read failover
+9264:# Subtest: writes are rejected with a controlled error during MariaDB outage — no Firestore write path
+9270:# Subtest: ordinary business write errors do not trip MariaDB availability state
+9276:# Subtest: MariaDB down: write throws SERVICE_DEGRADED and does not fake success
+9282:# Subtest: duplicate-safe delete while secondary is conceptually offline still succeeds on primary
+9292:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9293:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9294:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9295:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9296:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9297:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9298:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9299:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9300:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9301:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9302:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+9303:# Subtest: every legacy client-authored notification dispatcher is authenticated and retired
+9309:# Subtest: F-12: parseRetryAfterMs — delta-seconds, HTTP-date, garbage and past dates
+9315:# Subtest: F-12: classifyError carries the header value only for rate limits
+9321:# Subtest: F-12: setCooldown never waits less than Retry-After and clamps to MAX_COOLDOWN_MS
+9327:# Subtest: F-12: router e2e — a 429 with Retry-After: 120 benches the provider for ~120s, not 60s
+9333:# Subtest: F-12: router e2e — a pathological Retry-After: 3600 is clamped to the 300s ceiling
+9343:# Subtest: minimal health endpoint is public and does not cache
+9349:# Subtest: readiness is truthful: reflects the MySQL data plane, never a secondary store
+9355:# Subtest: protected endpoint rejects absent and invalid Firebase tokens
+9362:#   message: 'connect ECONNREFUSED 127.0.0.1:3306',
+9365:# Subtest: one-time export render data endpoint is public only through an opaque token
+9366:not ok 998 - one-time export render data endpoint is public only through an opaque token
+9388:# Subtest: valid authenticated user reaches an ordinary route
+9394:# Subtest: admin aliases and mail logs reject an ordinary authenticated user
+9400:# Subtest: stale admin sessions cannot perform sensitive destructive account deletion
+9408:# Subtest: unverified admin cannot load or mutate protected configuration
+9414:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+9415:# Subtest: admin lacking super-admin role cannot mutate or test AI provider settings
+9421:# Subtest: email settings projections expose configured state without runtime credentials
+9422:not ok 1004 - email settings projections expose configured state without runtime credentials
+9444:# Subtest: Twilio settings persist in the canonical MySQL secret namespace without response disclosure
+9445:not ok 1005 - Twilio settings persist in the canonical MySQL secret namespace without response disclosure
+9451:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9452:  code: 'ECONNREFUSED'
+9463:# Subtest: Ads create and revision-safe delete persist through audited backend routes
+9464:not ok 1006 - Ads create and revision-safe delete persist through audited backend routes
+9470:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9471:  code: 'ECONNREFUSED'
+9482:# Subtest: job application submission and employer status transitions are atomic, audited, and revision safe
+9483:not ok 1007 - job application submission and employer status transitions are atomic, audited, and revision safe
+9489:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9490:  code: 'ECONNREFUSED'
+9501:# Subtest: employer job create, pause, edit, and delete routes are owned, audited, and revision safe
+9502:not ok 1008 - employer job create, pause, edit, and delete routes are owned, audited, and revision safe
+9508:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9509:  code: 'ECONNREFUSED'
+9520:# Subtest: generic settings preserve omitted and blank backend secrets without browser disclosure
+9521:not ok 1009 - generic settings preserve omitted and blank backend secrets without browser disclosure
+9527:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9528:  code: 'ECONNREFUSED'
+9540:#   code: 'ECONNREFUSED',
+9543:# Subtest: email runtime save rejects unencrypted or malformed transport configuration
+9544:not ok 1010 - email runtime save rejects unencrypted or malformed transport configuration
+9566:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+9569:# Subtest: Firebase credential status loads without recent auth but runtime rotation remains recent-auth protected
+9575:# Subtest: loading non-secret AI settings does not require recent authentication
+9576:not ok 1012 - loading non-secret AI settings does not require recent authentication
+9598:# Subtest: fresh authorized admin reaches revisioned AI settings persistence without secret disclosure
+9599:not ok 1013 - fresh authorized admin reaches revisioned AI settings persistence without secret disclosure
+9605:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+9606:  code: 'ECONNREFUSED'
+9618:# Subtest: legacy shared provider-test endpoint is retired instead of reporting false success
+9625:# Subtest: fresh authorized admin provider test reaches the dedicated AI route with useful errors
+9626:not ok 1015 - fresh authorized admin provider test reaches the dedicated AI route with useful errors
+9648:# Subtest: unverified users cannot consume paid AI or payment endpoints
+9654:# Subtest: password reset request is generic and timing-equalized for malformed accounts
+9660:# Subtest: verification requires authentication and legacy notification dispatch is retired
+9666:# Subtest: CORS grants only exact configured origins
+9672:# Subtest: public contact endpoint uses validation, honeypot and per-source throttling
+9678:# Subtest: Stripe webhook fails closed without a configured signature secret
+9684:# [Razorpay create] ECONNREFUSED
+9685:# Subtest: legacy/demo payment bypasses fail closed and client entitlement dates are ignored
+9691:# Subtest: payment verification rejects malformed or unbound provider orders
+9698:# Subtest: JSON body limit rejects oversized payloads before route work
+9704:# Subtest: Runtime Journey 1: Free Candidate PDF Click -> Modal -> Upgrade -> Auto-Resumed Export
+9710:# Subtest: Runtime Journey 2: Premium Candidate 1-Click Vector PDF and Native DOCX
+9716:# Subtest: Runtime Journey 3: Enterprise Candidate Isolation & Full Export Privileges
+9722:# Subtest: E1: platform behaviour and key shapes are byte-identical to the legacy contract
+9728:# Subtest: E2: scope isolation — a tenant bench is invisible to the platform, a platform bench applies to everyone
+9734:# Subtest: E3: F-14 scope guard — clears and releases never cross scopes
+9740:# Subtest: E4: hydration preserves every scope across a restart (memory-backed durable store)
+9746:# Subtest: E5: strike escalation is per scoped key — tenant strikes never inherit platform history
+9752:# Subtest: E6: lazy expiry cleanup deletes in the ENTRY scope and persists the scoped clear
+9758:# Subtest: E7: resetAll is scope-honest — platform reset keeps tenant benches, null reset clears everything
+9764:# Subtest: E8: getStatus carries the scope fields additively; hasAvailableProvider accepts a scope
+9770:# Subtest: L1: flag ON — dedicated-BYOK failure records tenant-scoped metrics + tenant-scoped cooldown; platform stores stay empty
+9776:# Subtest: L2: flag ON — two-tenant divergence: A flips on A-scoped evidence, B keeps the default order, platform stays empty
+9782:# Subtest: L3: flag ON — A bursting into 429s benches A only; B is served; a PLATFORM bench still applies to everyone
+9788:# Subtest: L4: flag ON — scoped last-resort release clears the tenant row only; the platform bench survives
+9794:# Subtest: L5: flag OFF — dedicated-BYOK failure produces zero metrics and zero cooldowns anywhere (legacy sink-hole)
+9800:# Subtest: L6: flag ON — platform-key tenant traffic still trains the platform scope exactly as before
+9806:# Subtest: A1: legacy file DB rebuilds once — row parity, platform scope, counters verbatim, integrity ok
+9812:# Subtest: A2: rebuild is restart-idempotent — three reopens, counts stable, no double-apply
+9818:# Subtest: A3: scoped writes are isolated — tenant rows never touch platform counters
+9824:# Subtest: A4: .bak-restore rollback drill — pre-open copy returns the store to its snapshot
+9830:# Subtest: A5: fresh database (no legacy file) opens directly in the scoped shape
+9836:# Subtest: A6: memory backend is scope-native — parity with the sqlite contract
+9842:# Subtest: A7: platform aggregate values are byte-equal to the pre-021 contract
+9848:# Subtest: A8: scoped reset wipes exactly one scope (C.4 seam, persistence half)
+9854:# Subtest: B1: legacy cooldown rows rebuild verbatim into the platform scope with credential_kind=platform
+9860:# Subtest: B2: both legacy tables rebuild in one open — mixed metrics+cooldowns parity
+9866:# Subtest: B3: scoped cooldown isolation — tenant row never touches platform, scoped clear never clears platform (F-14 persistence half)
+9872:# Subtest: B4: expiry filter composes with scope filter
+9878:# Subtest: B5: memory backend cooldown scoping parity
+9884:# Subtest: C1: legacy ring gains scope_key + decision_id in place — parity, platform defaults, NULL history, idempotent
+9890:# Subtest: C2: aggregates are scope-isolated — the platform window never sees tenant rows and vice versa
+9896:# Subtest: C3: sample cap applies within a scope — tenant volume never evicts platform samples
+9902:# Subtest: C4: decision_id round-trip through the ring, scoped reads
+9908:# Subtest: D1: routing_decisions exists after open with the exact proposed shape + indexes + integrity ok
+9914:# Subtest: D2: recordDecision round-trip — NULL-when-unknown, no fabricated values, missing id records nothing
+9920:# Subtest: D3: one decision per request — a repeated decision_id upserts the outcome, never duplicates
+9926:# Subtest: D4: ring bound — pruneDecisions keeps the newest 5000 deterministically
+9932:# Subtest: D5: decision-ring scope filter + scoped reset wipes exactly one scope
+9938:# Subtest: D6: memory backend decision-ring parity (bounded, scoped, NULL-honest)
+9944:# Subtest: private and reserved IP encodings are rejected
+9950:# Subtest: network target guard rejects literal metadata, loopback, local names, and malformed hosts
+9956:# Subtest: HTTPS allowlist rejects credentials, insecure schemes and suffix confusion
+9962:# Subtest: role permissions are normalized but ordinary users receive none
+9968:# Subtest: route policy classifies aliases and sensitive operations
+9974:# Subtest: route policy blocks normal user from admin alias
+9980:# Subtest: ordinary ADMIN cannot rotate Firebase credentials
+9986:# Subtest: stale admin sessions can mutate or test AI provider configuration
+9992:# Subtest: route policy requires verified email for paid AI and payments
+9998:# Subtest: account limiter cannot be bypassed by changing IP for an authenticated account
+10004:# Subtest: rate-limit test-provider: POST /api/admin/ai/test-provider rate limits after abuse budget
+10012:# Subtest: MFA unenrolment requires a recent sign-in (auth_time), like account deletion
+10018:# Subtest: the route policy keeps account deletion behind the same recent sign-in rule
+10024:# Subtest: a fresh session unenrols every factor, revokes sessions and audits both steps
+10031:# Subtest: identity-provider failures are reported as a controlled outage without provider internals
+10038:# Subtest: an account without an identity-provider record gets a precise 404, not an outage
+10049:# Subtest: Authentication, Token Lifecycle & Re-Authentication Architecture
+10050:not ok 1081 - Authentication, Token Lifecycle & Re-Authentication Architecture
+10056:  error: 'connect ECONNREFUSED 127.0.0.1:3306'
+10057:  code: 'ECONNREFUSED'
+10066:# Subtest: Shared Hosting: .htaccess rewrite rules route /api and /v1 to api/index.php
+10072:# Subtest: Shared Hosting: api/index.php includes dynamic port, socket, and SSE streaming bypass
+10078:# Subtest: Shared Hosting: backend deployment scripts package backend/freellmapi
+10084:# Subtest: Shared Hosting: backend index.js supports Passenger Unix domain socket and TCP numeric port
+10090:# Subtest: Shared Hosting: backend dependencies are 100% pure JS or prebuilt binaries
+10100:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10101:# Subtest: Super Admin User Directory: rejects anonymous and unprivileged users
+10107:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10110:# Subtest: Super Admin User Directory: returns users with pagination metadata when available
+10116:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10117:# Subtest: Super Admin Platform Currency: returns platform currency configuration when available
+10123:# Subtest: Super Admin Platform Currency: updates platform currency when authorized
+10129:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+10130:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10131:# [Admin subscriptions query] { code: 'ECONNREFUSED', requestId: 'req-admin' }
+10132:# Subtest: Super Admin Subscriptions: allows payment administrators to query active subscribers
+10138:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10139:# Subtest: Super Admin AI Entitlements: allows querying global AI dashboard data when available
+10145:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10146:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+10147:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10149:# Subtest: Super Admin User Creation: rejects invalid email and role escalation deterministically
+10155:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10157:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10159:# Subtest: Super Admin User PATCH: rejects invalid role and SUPER_ADMIN role grants deterministically
+10165:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10167:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10169:# Subtest: Super Admin User PATCH: rejects invalid membership and empty changes deterministically
+10175:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10176:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10177:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10178:# Subtest: Super Admin User PATCH: unprivileged and read-only roles cannot mutate users
+10184:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10187:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10189:# Subtest: Super Admin User PATCH: mutation requires the user directory and fails closed when unavailable
+10195:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10198:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10201:# Subtest: Super Admin User PATCH: membership update handles expectedRevision and invalid revisions
+10211:# Subtest: Super Admin & Platform Module: Sanitization protects secrets
+10217:# Subtest: Super Admin & Platform Module: Action & Category Derivation
+10223:# Subtest: Super Admin & Platform Module: Severity derivation matches operational risk
+10229:# Subtest: Super Admin & Platform Module: isSuperAdmin correctly identifies role & wildcard
+10235:# Subtest: Super Admin & Platform Module: recordAdminAuditLog persists through the repository contract
+10241:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10244:# Subtest: Platform API: /api/platform/health returns structured diagnostic data
+10250:# Subtest: Platform API: /api/platform/version exposes both halves of the release identity
+10256:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10257:# Subtest: Platform API: /api/platform/health rejects unauthenticated & non-admin callers
+10263:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10264:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10265:# Subtest: Platform API: /api/platform/maintenance status is readable by Admin and editable only by Super Admin
+10271:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10272:# [Platform command center] Query failed: connect ECONNREFUSED 127.0.0.1:3306
+10273:# [Platform command center] stats table query notice: connect ECONNREFUSED 127.0.0.1:3306
+10274:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10275:# Subtest: Platform API: command center returns telemetry or a controlled database failure, and rejects users
+10281:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10282:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10283:# Subtest: Platform API: encryption and observability are read-only control-plane views
+10289:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10290:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10291:# Subtest: Platform API: tenant decommission and announcements require Super Admin
+10297:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10298:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10299:# Subtest: Platform API: announcement delete and operator assignment require Super Admin
+10305:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10306:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10307:# Subtest: Platform API: attention and enterprise-queue are readable or fail closed for Admin
+10313:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10314:# Subtest: Platform API: search rejects one-character queries
+10320:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10321:# Subtest: Platform API: search executes the MariaDB SQL contract and escapes LIKE metacharacters
+10327:# Subtest: Platform API: Super Admin mutations require MFA when SUPER_ADMIN_MFA_REQUIRED=true
+10337:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10338:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10339:# Subtest: Super Admin Bulk Operations: rejects unauthorized callers and self-modification
+10345:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+10346:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10347:# [AdminAudit] Post-response audit persistence failed: connect ECONNREFUSED 127.0.0.1:3306
+10348:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10350:# Subtest: Super Admin Bulk Operations: validates action parameter and uid bounds
+10358:# [Platform command center] Query failed: connect ECONNREFUSED 127.0.0.1:3306
+10359:# [Platform command center] stats table query notice: connect ECONNREFUSED 127.0.0.1:3306
+10360:# Subtest: Super Admin Command Center: returns extended telemetry with growth and subscription metrics
+10366:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10367:# Subtest: Super Admin Global Search: returns multi-entity search results including orders and tickets
+10373:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10374:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10375:# [Platform] payment-webhooks error: Error: connect ECONNREFUSED 127.0.0.1:3306
+10387:#   code: 'ECONNREFUSED',
+10393:# Subtest: Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers
+10394:not ok 1120 - Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers
+10416:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10417:# Subtest: Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID
+10418:not ok 1121 - Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID
+10440:# Subtest: support ticket RBAC and ownership source contracts
+10471:# Subtest: F-17 live engine: routing carries real executed facts and honest nulls, zero undefined
+10477:# Subtest: F-17 audit mapping: persisted aiRouting metadata keeps all eight fields with a real model
+10483:# Subtest: F-17 cached serve: attempts honestly report zero network calls
+10489:# Subtest: F-17 fallback: counts and attempted providers propagate into routing
+10495:# Subtest: F-17 aiRouting engine: the selector summary survives with an engine stamp
+10501:# Subtest: F-17 last-resort release is visible in the audit metadata
+10507:# Subtest: F-27: one documented default set for every tenant AI route
+10513:# Subtest: F-27: explicit finite limits are preserved; invalid values fall back
+10519:# Subtest: F-27: explicit 0 means BLOCKED, never fallback — 429 before any consumption
+10525:# Subtest: F-27: consumption is unconditional and fail-closed when coordination is missing
+10531:# Subtest: F-27: happy path consumes minute then day with the resolved limits and windows
+10537:# Subtest: P1: policy config — a delimited pool splits into credential-specific single-key candidates, deduped, in order
+10543:# Subtest: P1b: non-policy config — the candidate keeps the WHOLE pool for sequential dispatch
+10549:# Subtest: P2: an array envelope ({apiKeys:[...]}) passes through the F-08 loader untouched
+10555:# Subtest: P3: non-policy — the pool is tried sequentially within the candidate (keys[0] rejected, keys[1] serves)
+10561:# Subtest: P3b: policy — failover runs across the split single-key candidates
+10567:# Subtest: P4: non-policy exhausted pool — single-candidate sanctuary throws the provider error and benches the tenant scope only
+10573:# Subtest: P4-policy: policy exhausted pool — split candidates exhaust into ALL_PROVIDERS_FAILED and still bench the tenant scope only
+10579:# Subtest: P4b: flag OFF — an exhausted BYOK pool benches nothing anywhere (byte-identical legacy sanctuary)
+10585:# Subtest: P4c: a per-key failure with a remaining credential never benches (credential-specific rule holds for pools)
+10591:# Subtest: P5: single-key loader shapes pass through byte-identically; empty pools yield no entry
+10597:# Subtest: P6: normalizeKeyPool dedupes, trims and splits — the platform contract the tenant path reuses
+10608:# Subtest: A1: returns stored keys for allowed providers; skips providers with no stored credential
+10614:# Subtest: A2: string credentials and case-insensitive provider ids are normalized
+10620:# Subtest: A3: results are cached per tenant for the TTL, then re-read
+10626:# Subtest: A4: unreadable credential store fails CLOSED with 503 and is not negatively cached
+10632:# Subtest: A5: registry without credential-store capability yields {} (BYOK not deployed)
+10638:# Subtest: A6: without allowedProviders the loader enumerates stored providers
+10682:# Subtest: B1: tenant key stored ONLY in the credential store wins over the platform key
+10695:# Subtest: B2: platform (non-tenant) requests keep using platform credentials
+10701:# Subtest: A1: platform-key tenant config stamps tenantByokProviders=[] and keeps platform keys
+10707:# Subtest: A2: genuine BYOK keys are stamped per provider (source: encrypted store, F-08)
+10713:# Subtest: B1: platform-key tenant traffic synthesizes EMPTY customProviderKeys (no forced BYOK tier)
+10719:# Subtest: B2: genuine BYOK tenant traffic synthesizes ONLY the tenant-owned keys
+10725:# Subtest: C1: tenant with empty customProviderKeys routes through the PLATFORM tier (policy still bounds it)
+10731:# Subtest: C2: genuine tenant keys select the dedicated BYOK sanctuary as before
+10737:# Subtest: D1: platform-key tenant failure RECORDS METRICS and SETS COOLDOWN
+10743:# Subtest: D2: dedicated BYOK failure stays ISOLATED — no shared metrics, no shared cooldown
+10754:# Subtest: POST /api/enterprise/tenants: 201 Created on valid input by platform admin
+10760:# Subtest: POST /api/enterprise/tenants: 400 INVALID_TENANT for invalid name or slug
+10766:# Subtest: POST /api/enterprise/tenants: 409 TENANT_SLUG_CONFLICT for duplicate organization slug
+10772:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10773:# Subtest: POST /api/enterprise/tenants: 403 FORBIDDEN for non-platform-provisioner callers
+10781:# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+10782:# Subtest: POST /api/enterprise/tenants: 403 EMAIL_VERIFICATION_REQUIRED for unverified emails
+10789:# Subtest: POST /api/enterprise/tenants: 503 TENANT_CONTROL_PLANE_UNAVAILABLE when registry is uninitialized
+10795:# Subtest: 1: unscoped recording and reading yields the exact legacy aggregate shape
+10801:# Subtest: 2: tenant A observations never appear in tenant B or platform aggregates; counts per scope exact
+10807:# Subtest: 3: scoped writes leave the platform window byte-identical to an unscoped control
+10813:# Subtest: 4: the scope decision table routes dedicated-BYOK to tenant scope, platform-key to platform, never cross
+10819:# Subtest: 5: recency-weighted p50 and the n>=3 maturity gate are computed per scope
+10825:# Subtest: 6: the maxSamples cap applies within a scope — A filling its window never evicts B seeds
+10831:# Subtest: 7: tenant penalty benches the provider for that tenant only; platform credential cooldowns bench everyone
+10837:# Subtest: 8: a dedicated-BYOK failure produces a cooldown visible only to that scope; platform stores receive nothing
+10843:# Subtest: 9: F-14 scope guard — a scoped last-resort release clears only the requesting scope; platform rows survive
+10854:# Subtest: P0 TOTP MFA: Authenticated normal user CANNOT access Super Admin endpoints (AUTHENTICATED != MFA AUTHENTICATED)
+10860:# Subtest: P0 TOTP MFA: Super Admin WITHOUT second factor is REJECTED with SUPER_ADMIN_MFA_REQUIRED (RECENT AUTH != MFA VERIFIED)
+10866:# Subtest: P0 TOTP MFA: Super Admin with MFA but STALE auth_time is REJECTED with RECENT_AUTH_REQUIRED
+10872:# Subtest: P0 TOTP MFA: Super Admin WITH valid TOTP MFA and recent auth SUCCEEDS and records audit log
+10878:# Subtest: Recent-auth MFA (Assertion 1): quota-limits rejects Super Admin without MFA (SUPER_ADMIN_MFA_REQUIRED) (-)
+10884:# Subtest: Recent-auth MFA (Assertion 2): quota-limits rejects Super Admin with stale auth_time (RECENT_AUTH_REQUIRED) (-)
+10890:# Subtest: Recent-auth MFA (Assertion 3): reset-quota rejects Super Admin without MFA (SUPER_ADMIN_MFA_REQUIRED) (-)
+10896:# Subtest: Recent-auth MFA (Assertion 4): reset-quota rejects Super Admin with stale auth_time (RECENT_AUTH_REQUIRED) (-)
+10902:# Subtest: Unified Entitlements Matrix: Admin user receives full administrative entitlement and 10,000/day quota
+10908:# Subtest: Unified Entitlements Matrix: Enterprise tenant member (with Basic personal profile) inherits Enterprise tier and elevated quota
+10914:# Subtest: Unified Entitlements Matrix: B2C Pro subscriber receives Premium tier and 100/day quota
+10920:# Subtest: Unified Entitlements Matrix: Free/Basic user without enterprise tenant is restricted to Basic tier (10/day, no DOCX)
+10926:# Subtest: Unified Entitlements Matrix: Suspended enterprise membership does NOT grant Enterprise tier
+10932:# Subtest: Unified Entitlements Matrix: Individual AI quota override takes precedence when active and unexpired
+10938:# Subtest: F-18 pricing: known models compute exact micros, unknown price is null and never 0
+10944:# Subtest: F-18 sqlite ledger: attempts persist real tokens; missing usage stays null, never 0
+10950:# Subtest: F-18 migration: a pre-existing metrics DB gains the token columns in place
+10956:# Subtest: F-18 memory ledger: the in-memory backend carries the same token fields
+10962:# Subtest: F-18 router: a served completion records the provider-reported tokens in the durable ledger
+10972:# Subtest: USER Dashboard & Export Pipeline Forensic Suite
+10993:#   message: "browserType.launch: Executable doesn't exist at /home/user/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell\\n" +
+11018:# Subtest: profile API requires an explicit revision and rejects protected-field mass assignment
+11024:# Subtest: profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+11030:# Subtest: profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+11036:# Subtest: profile API stale write returns authoritative revision/profile and performs no mutation
+11042:# Subtest: UX-Entitlement Alignment: Tier Resolution & Privilege Inheritance
+11048:# Subtest: UX-Entitlement Alignment: Zero Customer-Facing AI Provider Leakage
+11054:# Subtest: UX-Entitlement Alignment: Accurate Feature Copy (No Fake "Unlimited" Claims)
+11060:# Subtest: UX-Entitlement Alignment: Multi-Currency Pricing Dynamic Mapping
+11070:# Subtest: F-01 guard: every /v1 route is registered behind the admission mount
+11076:# Subtest: F-01: anonymous /v1 inference is rejected 401 by default (non-production)
+11082:# Subtest: F-01: production rejects anonymous /v1 even with ALLOW_ANON_V1=true
+11088:# Subtest: F-01: the documented dev flag ALLOW_ANON_V1=true admits anonymous local callers
+11094:# Subtest: F-01: user-token /v1 completions are metered in the durable ai_usage ledger
+11100:# Subtest: F-01: exceeding the daily quota rejects /v1 with 429 AI_DAILY_QUOTA_EXCEEDED
+11106:# Subtest: F-01: platform-key calls are burst-limited (429 RATE_LIMITED) and never touch the user quota ledger
+11112:# Subtest: F-01: an invalid bearer token is rejected 401 invalid_api_key
+11118:# Subtest: F-01: catalog reads require a principal and do not consume AI quota
+11124:# Subtest: F-01: the /api/v1 alias enforces the same admission chain
+11130:# Subtest: F-10: unauthenticated /v1/status is rejected 401 (no internals)
+11136:# Subtest: F-10: a plain user token is rejected 403 status_forbidden and is not charged
+11142:# Subtest: F-10: the dev anonymous-local principal never sees engine internals
+11148:# Subtest: F-10: platform key reads the reduced status payload (no counts, cooldowns, paths)
+11154:# Subtest: F-10: super-admin session reads the same reduced payload on /v1/status
+11160:# Subtest: F-10: the full engine view lives on super-admin-only /api/freellmapi/status
+11170:# Subtest: F-20 mapping: internal detail becomes the public message; client-caused text passes through
+11176:# Subtest: F-20 OpenAI wire body: message sanitized, code/status/type preserved
+11182:# Subtest: F-20 Anthropic wire body: same boundary, native error shape
+11188:# Subtest: F-20 fallback entries: machine-readable fields stay, free-text error goes
+11195:# tests 1338
+11197:# pass 1281
+11198:# fail 57
+11199:# cancelled 0
+11200:# skipped 0
+11202:# duration_ms 76498.165171
+11203:exit_code: 1

@@ -1,0 +1,4 @@
+accepted_capabilities=112; accepted_denominator=112
+proposals_not_accepted=5; historical_DISC_ids=56; provisional_new_findings=1
+traceability_rows=174; FP-A12/DISC-055_conflict_flagged=True
+VALIDATION=PASS; counts, IDs, cross-references, source paths, and explicit no-remap conflict checked
