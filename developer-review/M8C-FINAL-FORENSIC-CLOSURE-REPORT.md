@@ -30,6 +30,7 @@ Companion documents:
 | Merges | none |
 | Working tree at start | clean |
 | Audited source revision | `69a3ed4` |
+| M8C commits (no force-push, no rewrite) | `801f348` verifier closure · `5222477` deliverables |
 
 Baseline was captured **before any edit** into `Evidence/logs/m8c-baseline/` (`EXITCODES.txt` +
 4 logs): integrity verifier **exit 1, 6 PASS / 5 FAIL**; fixture harness 8/8; audit package 61/61;
