@@ -1,16 +1,25 @@
 /**
  * Settings → Account & Data: personal data export and account deletion.
  *
- * Export: POST /api/account/export returns the owner-scoped archive, saved as a
- * JSON file; sections the server could not read are listed, never hidden.
+ * Export: POST /api/account/export returns the owner-scoped archive, saved as
+ * ime365-data-export-YYYY-MM-DD.json (application/json). Sections the server
+ * could not read (exportWarnings) are listed and the download is labelled
+ * incomplete, never complete.
+ *
  * Deletion: POST /api/account/delete runs the backend saga. Personal data is
  * removed in one MariaDB transaction, then the sign-in identity is deleted.
- * 503 ACCOUNT_IDENTITY_DELETE_FAILED means the data is gone and only the
- * identity step is pending (retryable); 403 RECENT_AUTH_REQUIRED means nothing
- * was deleted because the sign-in is older than the server's window.
+ *  - 200 { success: true }: finished. The session and this account's browser
+ *    state are cleared and the home page loads.
+ *  - 503 ACCOUNT_IDENTITY_DELETE_FAILED: the data is gone and only identity
+ *    removal is pending. "Retry identity removal" re-sends the same request,
+ *    which the saga's durable ledger makes safe: it skips the data step when
+ *    the state is IDENTITY_PENDING (backend/services/accountDeletion.js).
+ *  - 403 RECENT_AUTH_REQUIRED: nothing was deleted; sign in again first.
+ *  - anything else, including a 2xx without `success: true`: not reported as
+ *    deleted.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Download, LogIn, LogOut, RotateCcw, Trash2 } from 'lucide-react';
+import { Download, LogIn, LogOut, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,12 +35,18 @@ import { Input } from '@/components/ui/input';
 import { NoticeRegions, type Notice } from '@/components/settings/notice-regions';
 import { useRestoreFocusWhenIdle } from '@/hooks/use-restore-focus-when-idle';
 import {
+  DELETION_CONFIRMATION_WORD,
+  classifyDeletionFailure,
+  clearAccountLocalState,
+  isDeletionConfirmed,
   requestAccountDeletion,
   requestDataExport,
   toAccountError,
+  type DataExport,
   type ExportWarning,
 } from '@/lib/account-settings';
 import { useAuth } from '@/providers/auth-provider';
+import { cn } from '@/lib/utils';
 
 export function AccountPanel() {
   return (
@@ -42,16 +57,23 @@ export function AccountPanel() {
   );
 }
 
-function saveJsonFile(fileName: string, json: string) {
-  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+/**
+ * Start the download, then release the object URL on a later task: revoking
+ * synchronously can cancel the download in some browsers.
+ */
+function saveJsonFile(archive: DataExport) {
+  const url = URL.createObjectURL(new Blob([archive.json], { type: archive.mimeType }));
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = fileName;
+  anchor.download = archive.fileName;
+  anchor.rel = 'noopener';
   document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  // Revoking synchronously can cancel the download in some browsers.
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  try {
+    anchor.click();
+  } finally {
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
 }
 
 function ExportCard() {
@@ -70,14 +92,14 @@ function ExportCard() {
     setWarnings([]);
     try {
       const archive = await requestDataExport();
-      saveJsonFile(archive.fileName, archive.json);
+      saveJsonFile(archive);
       setWarnings(archive.warnings);
-      setNotice({
-        tone: 'success',
-        text: archive.warnings.length
-          ? `Downloaded ${archive.fileName}. ${archive.warnings.length} ${archive.warnings.length === 1 ? 'section' : 'sections'} could not be included; see the list below.`
-          : `Downloaded ${archive.fileName}.`,
-      });
+      setNotice(archive.warnings.length
+        ? {
+          tone: 'warning',
+          text: `Downloaded ${archive.fileName}, but the export is incomplete: ${archive.warnings.length} ${archive.warnings.length === 1 ? 'section' : 'sections'} could not be fully included. See the list below.`,
+        }
+        : { tone: 'success', text: `Downloaded ${archive.fileName}.` });
     } catch (error) {
       setNotice({ tone: 'error', text: `Your data was not exported. ${toAccountError(error).message}` });
     } finally {
@@ -105,13 +127,21 @@ function ExportCard() {
         </Button>
         <NoticeRegions notice={notice} />
         {warnings.length > 0 && (
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink-secondary" aria-label="Sections not included">
-            {warnings.map((warning) => (
-              <li key={`${warning.section}-${warning.status}`}>
-                <span className="font-medium text-ink">{warning.section}</span>: {warning.message}
-              </li>
-            ))}
-          </ul>
+          <section aria-labelledby="settings-export-warning-title" className="space-y-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800">
+            <h3 id="settings-export-warning-title" className="flex items-center gap-2 font-semibold">
+              <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+              This download may be incomplete
+            </h3>
+            <p>Everything else in the file was exported. These sections are missing or partial:</p>
+            <ul className="list-disc space-y-1 pl-5" aria-label="Sections not included">
+              {warnings.map((warning, index) => (
+                <li key={`${warning.section}-${warning.status}-${index}`}>
+                  <span className="font-medium">{warning.section}</span>
+                  {' '}({warning.status === 'PARTIAL' ? 'partly exported' : 'not exported'}): {warning.message}
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </CardContent>
     </Card>
@@ -135,8 +165,7 @@ function DeleteAccountCard() {
   );
 }
 
-type DeletePhase = 'confirm' | 'busy' | 'partial' | 'sign-in';
-const CONFIRMATION_WORD = 'DELETE';
+type DeletePhase = 'confirm' | 'busy' | 'partial' | 'sign-in' | 'leaving';
 
 function DeleteAccountDialog() {
   const { signOut } = useAuth();
@@ -149,18 +178,26 @@ function DeleteAccountDialog() {
   const busyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
-  const busy = phase === 'busy';
+  const busy = phase === 'busy' || phase === 'leaving';
+  const confirmed = isDeletionConfirmed(typed);
+  const deleteBlocked = busy || (!identityPending && !confirmed);
 
   // The footer actions change with the outcome; keep focus on the next step.
   useEffect(() => {
     if (phase === 'partial' || phase === 'sign-in') primaryRef.current?.focus();
   }, [phase]);
 
-  // End the session and reload at the home page, so nothing cached from this
-  // account stays in memory.
+  // End the session, drop this account's browser state and reload at the home
+  // page, so nothing cached from this account stays in memory.
   const leave = async () => {
-    await signOut();
-    window.location.assign('/');
+    busyRef.current = true;
+    setPhase('leaving');
+    try {
+      await signOut();
+    } finally {
+      clearAccountLocalState(safeStorage('local'), safeStorage('session'));
+      window.location.assign('/');
+    }
   };
 
   const onOpenChange = (next: boolean) => {
@@ -179,8 +216,8 @@ function DeleteAccountDialog() {
     event?.preventDefault();
     if (busyRef.current) return;
     const retrying = identityPending;
-    if (!retrying && typed.trim() !== CONFIRMATION_WORD) {
-      setInputError(`Type ${CONFIRMATION_WORD} in capital letters to confirm.`);
+    if (!retrying && !isDeletionConfirmed(typed)) {
+      setInputError(`Type ${DELETION_CONFIRMATION_WORD} in capital letters to confirm.`);
       inputRef.current?.focus();
       return;
     }
@@ -189,11 +226,11 @@ function DeleteAccountDialog() {
     setNotice(null);
     try {
       await requestAccountDeletion();
-      await leave();
-      return;
     } catch (error) {
+      busyRef.current = false;
+      const outcome = classifyDeletionFailure(error);
       const failure = toAccountError(error);
-      if (failure.code === 'ACCOUNT_IDENTITY_DELETE_FAILED') {
+      if (outcome === 'identity-pending') {
         setIdentityPending(true);
         setPhase('partial');
         setNotice({
@@ -202,22 +239,33 @@ function DeleteAccountDialog() {
             ? 'The retry did not finish either. Removing your sign-in identity is still pending. Try again in a moment, or sign out and contact support.'
             : 'Your personal data was deleted, but removing your sign-in identity is still pending. Retry now. If it keeps failing, sign out and contact support.',
         });
-      } else if (failure.needsRecentSignIn) {
+      } else if (outcome === 'recent-auth') {
         setPhase('sign-in');
         setNotice({
           tone: 'error',
-          text: `For your security, ${retrying ? 'finishing the deletion' : 'deleting your account'} needs a sign-in from the last 10 minutes. ${retrying ? '' : 'Nothing was deleted. '}Sign in again, then return here.`,
+          text: retrying
+            ? 'For your security, finishing the deletion needs a sign-in from the last 10 minutes. Sign in again, then return here.'
+            : 'For your security, deleting your account needs a sign-in from the last 10 minutes. Nothing was deleted. Sign in again, then return here.',
+        });
+      } else if (outcome === 'unconfirmed') {
+        setPhase(retrying ? 'partial' : 'confirm');
+        setNotice({
+          tone: 'error',
+          text: 'The server did not confirm the deletion, so your account may not be deleted. Try again; repeating the request is safe.',
         });
       } else {
         setPhase(retrying ? 'partial' : 'confirm');
         setNotice({ tone: 'error', text: retrying ? `Removing your sign-in identity failed. ${failure.message}` : `Your account was not deleted. ${failure.message}` });
       }
-    } finally {
-      busyRef.current = false;
+      return;
     }
+    // Confirmed by the server: only now is the session ended.
+    await leave();
   };
 
   const title = identityPending ? 'Your personal data was deleted' : 'Delete your account?';
+  const hintVisible = !identityPending && typed.length > 0 && !confirmed && !inputError;
+  const describedBy = inputError ? 'settings-delete-confirmation-error' : 'settings-delete-confirmation-hint';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -230,6 +278,11 @@ function DeleteAccountDialog() {
       <DialogContent
         onEscapeKeyDown={(event) => { if (busyRef.current) event.preventDefault(); }}
         onPointerDownOutside={(event) => { if (busyRef.current) event.preventDefault(); }}
+        onOpenAutoFocus={(event) => {
+          // Focus the confirmation field, never the destructive button.
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
       >
         <form noValidate onSubmit={(event) => void remove(event)} className="space-y-4">
           <DialogHeader>
@@ -243,7 +296,7 @@ function DeleteAccountDialog() {
           {!identityPending && phase !== 'sign-in' && (
             <div>
               <label htmlFor="settings-delete-confirmation" className="mb-1.5 block text-sm font-medium text-ink">
-                Type {CONFIRMATION_WORD} to confirm
+                Type {DELETION_CONFIRMATION_WORD} to confirm
               </label>
               <Input
                 ref={inputRef}
@@ -253,11 +306,19 @@ function DeleteAccountDialog() {
                 autoCapitalize="characters"
                 spellCheck={false}
                 error={Boolean(inputError)}
-                aria-describedby={inputError ? 'settings-delete-confirmation-error' : undefined}
+                aria-describedby={describedBy}
                 readOnly={busy}
                 onChange={(event) => { setTyped(event.target.value); setInputError(''); }}
               />
-              {inputError && <p id="settings-delete-confirmation-error" className="mt-1 text-xs font-medium text-error-700">{inputError}</p>}
+              {inputError
+                ? <p id="settings-delete-confirmation-error" className="mt-1 text-xs font-medium text-error-700">{inputError}</p>
+                : (
+                  <p id="settings-delete-confirmation-hint" className={cn('mt-1 text-xs', hintVisible ? 'font-medium text-error-700' : 'text-ink-muted')}>
+                    {hintVisible
+                      ? `Type ${DELETION_CONFIRMATION_WORD} in capital letters to confirm.`
+                      : `The delete button stays unavailable until you type ${DELETION_CONFIRMATION_WORD} exactly.`}
+                  </p>
+                )}
             </div>
           )}
           <NoticeRegions notice={notice} />
@@ -276,17 +337,23 @@ function DeleteAccountDialog() {
                   <LogOut className="size-4" aria-hidden="true" />
                   Sign out
                 </Button>
-                <Button ref={primaryRef} type="submit" variant="destructive" aria-disabled={busy || undefined} aria-busy={busy || undefined}>
+                <Button ref={primaryRef} type="submit" variant="destructive" aria-disabled={busy || undefined} aria-busy={phase === 'busy' || undefined}>
                   <RotateCcw className="size-4" aria-hidden="true" />
-                  {busy ? 'Retrying…' : 'Retry identity removal'}
+                  {phase === 'busy' ? 'Retrying…' : 'Retry identity removal'}
                 </Button>
               </>
             ) : (
               <>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} aria-disabled={busy || undefined}>Cancel</Button>
-                <Button type="submit" variant="destructive" aria-disabled={busy || undefined} aria-busy={busy || undefined}>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  aria-disabled={deleteBlocked || undefined}
+                  aria-busy={phase === 'busy' || undefined}
+                  className={cn(deleteBlocked && 'opacity-60')}
+                >
                   <Trash2 className="size-4" aria-hidden="true" />
-                  {busy ? 'Deleting…' : 'Delete my account'}
+                  {phase === 'busy' ? 'Deleting…' : 'Delete my account'}
                 </Button>
               </>
             )}
@@ -295,4 +362,12 @@ function DeleteAccountDialog() {
       </DialogContent>
     </Dialog>
   );
+}
+
+function safeStorage(kind: 'local' | 'session'): Storage | null {
+  try {
+    return kind === 'local' ? window.localStorage : window.sessionStorage;
+  } catch {
+    return null;
+  }
 }

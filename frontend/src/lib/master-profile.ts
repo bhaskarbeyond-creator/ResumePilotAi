@@ -15,6 +15,13 @@
  *    UI can show an honest status instead of an unqualified success toast.
  */
 
+import {
+  PROFILE_FIELDS,
+  normalizeProfileValue,
+  type ProfileFieldKey,
+  type ProfileFields,
+} from './account-settings';
+
 export interface MasterProfileSource {
   /** The `user` object returned by `/users-data/profile`. */
   user?: any;
@@ -451,4 +458,83 @@ export function describeMasterCompleteness(source: MasterProfileSource | any): M
     revision: typeof profile.__revision === 'number' ? profile.__revision : null,
     empty: filled === 0,
   };
+}
+
+/* ─────────────────── Settings form: conflicts, saves, completeness ─────────────────── */
+
+export interface ProfileConflictRow {
+  key: ProfileFieldKey;
+  label: string;
+  /** The value in this form (unsaved). */
+  local: string;
+  /** The value in the newer saved version. */
+  remote: string;
+}
+
+/**
+ * Fields whose value in this form differs from the newer saved version, in
+ * form order. Only Master Profile fields are compared, so nothing else from
+ * the account is shown. With no readable remote version the list is empty and
+ * the caller says so instead of implying "no differences".
+ */
+export function describeProfileConflict(local: ProfileFields, remote: ProfileFields | null): ProfileConflictRow[] {
+  if (!remote) return [];
+  return PROFILE_FIELDS
+    .filter((field) => normalizeProfileValue(field.key, local[field.key]) !== normalizeProfileValue(field.key, remote[field.key]))
+    .map((field) => ({
+      key: field.key,
+      label: field.label,
+      local: normalizeProfileValue(field.key, local[field.key]),
+      remote: normalizeProfileValue(field.key, remote[field.key]),
+    }));
+}
+
+/**
+ * The form after a save resolved. `submitted` is what the form held when the
+ * request was sent and `saved` what the server stored. A field the user edited
+ * while the request was in flight keeps the newer typing; every other field
+ * shows the stored value. No argument is modified.
+ */
+export function rebaseDraftAfterSave(current: ProfileFields, submitted: ProfileFields, saved: ProfileFields): ProfileFields {
+  return Object.fromEntries(PROFILE_FIELDS.map((field) => [
+    field.key,
+    current[field.key] !== submitted[field.key] ? current[field.key] : saved[field.key],
+  ])) as ProfileFields;
+}
+
+export interface SettingsCompletenessItem {
+  key: ProfileFieldKey;
+  label: string;
+  suggestion: string;
+}
+
+export interface SettingsProfileCompleteness {
+  filled: number;
+  total: number;
+  percent: number;
+  missing: SettingsCompletenessItem[];
+}
+
+/**
+ * The fields a resume or cover letter needs from the Master Profile. Street
+ * address, postal code, website and GitHub are optional extras and are not
+ * counted, so leaving them blank never lowers the score.
+ */
+export const COMPLETENESS_FIELDS: readonly SettingsCompletenessItem[] = [
+  { key: 'firstname', label: 'First name', suggestion: 'Add your first name so resumes start with your name.' },
+  { key: 'lastname', label: 'Last name', suggestion: 'Add your last name.' },
+  { key: 'occupation', label: 'Professional headline', suggestion: 'Add a headline such as "Senior Data Analyst".' },
+  { key: 'phone', label: 'Phone', suggestion: 'Add a phone number recruiters can call.' },
+  { key: 'city', label: 'City', suggestion: 'Add your city so location-based roles can find you.' },
+  { key: 'country', label: 'Country', suggestion: 'Add your country.' },
+  { key: 'linkedinUrl', label: 'LinkedIn profile', suggestion: 'Link your LinkedIn profile.' },
+  { key: 'summary', label: 'Professional summary', suggestion: 'Write a short professional summary.' },
+];
+
+/** Counts only real, saved content: whitespace-only values never count. */
+export function settingsProfileCompleteness(fields: ProfileFields): SettingsProfileCompleteness {
+  const missing = COMPLETENESS_FIELDS.filter((item) => !normalizeProfileValue(item.key, fields[item.key]));
+  const total = COMPLETENESS_FIELDS.length;
+  const filled = total - missing.length;
+  return { filled, total, percent: Math.round((filled / total) * 100), missing };
 }
