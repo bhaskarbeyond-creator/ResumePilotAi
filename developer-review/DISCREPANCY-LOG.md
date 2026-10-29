@@ -14,7 +14,7 @@ Candidates that remain **plausible but unproven** live in
 > deleted; DISC-016 keeps its published numbers and is now annotated as superseded by DISC-024.
 
 > **Update 2026-10-29 (Mandate 8 — independent audit validation, revision `a2ecb96`).** Five entries added
-> (DISC-049 … DISC-054). DISC-049 corrects the M7 provenance claim: `a7d08a2` is **not** byte-identical to
+> (DISC-049 … DISC-055). DISC-049 corrects the M7 provenance claim: `a7d08a2` is **not** byte-identical to
 > `8a6e03bb` (264 files differ, all under `developer-review/`; 0 outside) and the ref the package says
 > preserves it does not exist. DISC-050 … DISC-053 are product findings that M7's row-level work surfaced
 > only in part: the contact form reports success without a request, the public jobs page requests an
@@ -30,8 +30,8 @@ Candidates that remain **plausible but unproven** live in
 > workflows cannot succeed — while showing success messages (DISC-027). The V6 subfeature evidence, the 10-check
 > detector output and its adjudicated false positives are in `FEATURE-DEPTH-EVIDENCE-REGISTER.md`.
 
-Total confirmed findings in this log: **52** (54 IDs: DISC-001 … DISC-054, of which DISC-042 and DISC-046
-are merged into DISC-030 and labelled as stubs). DISC-049 … DISC-054 were raised by Mandate 8 at
+Total confirmed findings in this log: **53** (55 IDs: DISC-001 … DISC-055, of which DISC-042 and DISC-046
+are merged into DISC-030 and labelled as stubs). DISC-049 … DISC-055 were raised by Mandate 8 at
 `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`. DISC-027 … DISC-040 were raised by V6 at revision
 `a5835ff6`; DISC-041 and DISC-043 … DISC-048 by V7 at `8a6e03bb`; earlier entries keep their published
 numbers and reasoning, with V7 revisions appended in place (DISC-025, DISC-026, DISC-029). DISC-019 … DISC-022 were
@@ -2212,3 +2212,26 @@ cache-clear and dead-letter purge, where nothing exists server-side at all.
 | **Regression acceptance** | With MariaDB: create a team with a lead → `GET /teams` returns that lead; `PATCH` renames and re-leads it; `archive` then `restore` round-trips the status; the completeness suite passes when pointed at the MySQL registry, and fails if `updateTeam` is removed |
 | **Closure** | Not met |
 
+
+## [DISC-055] Four route blocks are declared twice in `backend/routes/platform.js`, the second copy can never run, and the two copies of the payment-settings read disagree on authorization
+
+| Field | Value |
+|---|---|
+| **Finding ID** | `DISC-055` |
+| **Feature** | Platform configuration surface (FP-A12 / admin system settings); no client is required to trigger it |
+| **Severity** | P2 — High. Not a data leak by itself, but the live authorization gate is broader than the one documented in the file and broader than the shadowed copy, and the dead copies are a trap for the next editor |
+| **Raised by** | Mandate 8 §3/§6 at revision `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9`, while reconciling why parser B counted 405 registrations for 399 distinct keys |
+| **Surface** | `backend/routes/platform.js` — `GET /configuration` declared at `:1670` and again at `:1846`; `GET /payment-settings` at `:1707` and `:1883`; `GET /payment-webhooks` at `:1727` and `:1903`; `POST /payment-webhooks/:eventId/replay` at `:1809` and `:1985`. All four are on the same `express.Router()` (`:22`), mounted at `/api/platform` (`backend/index.js:522`, and again at `:3299`) |
+| **Why the second copy is dead** | Express dispatches the first matching handler for a method+path pair and answers inside it; the later copy is registered but unreachable. The `:1670` and `:1846` configuration handlers are **byte-identical** (compared line by line, 14 lines, no diff), which is the signature of an accidental duplication rather than a deliberate second route |
+| **The authorization divergence** | `requirePermission` treats an array as *any-of* (`backend/security/auth.js:198-207`: `required.some(p => permissions.has(p))`). `GET /payment-settings` at `:1707` requires `['payments.read', 'system.config.read']`; the dead copy at `:1883` requires `'system.config.read'` only. The comment block above both copies says *"Read stays at `system.config.read`"*. The live gate is therefore the broader one, and the roles that hold `payments.read` but not `system.config.read` are `ADMIN` and `AUDITOR` (`backend/security/auth.js:63-79`), so an AUDITOR — the least-privileged admin role — can read the platform payment-settings projection |
+| **Reproduction (static)** | `grep -n "router.get('/configuration'\\|router.get('/payment-settings'\\|router.get('/payment-webhooks'\\|payment-webhooks/:eventId/replay'" backend/routes/platform.js` → eight lines, two per path. `sed -n '1707p;1883p'` → the two different guards. `sed -n '198,207p' backend/security/auth.js` → any-of semantics |
+| **Evidence levels** | L1 (static). Runtime at `a2ecb96` could not reach the route: `/api/platform/*` requires an admin token and the platform router answers `404 ENTERPRISE_DISABLED` in this deployment (recorded in `M8-RUNTIME-VERIFICATION.md` §2.3). So the any-of behaviour is read, not exercised |
+| **Impact** | (a) Four dead handlers inflate every registration count (this is what made 405 look like a backend disagreement) and will silently do nothing if someone edits them. (b) A payment-configuration read is reachable by a role the file's own comment says should not reach it. (c) The same double-registration pattern exists for `app.get('/healthz')` / `app.get('/api/healthz')` and the readyz pair, where it is *not* a defect — those are two different paths — and that distinction is why the reconciliation counts them separately |
+| **Remediation spec** | Delete the later copy of each block; keep one guard per route and state it once; if `payments.read` is intended to grant this read, correct the comment and the test matrix, otherwise drop `payments.read` from the array. Add a route-table test asserting `router.stack` contains each method+path exactly once |
+| **Regression acceptance** | For each of the four paths, exactly one handler is registered; an AUDITOR token receives `403` on `GET /api/platform/payment-settings`; an ADMIN token with `system.config.read` receives `200`; the duplicate-registration detector reports zero pairs across `backend/` |
+| **Closure** | Not met |
+
+**Note on scope of the claim.** No secret value is asserted to have leaked, and no live response was
+observed. What is asserted is what the code says: the live guard is the any-of form, the roles that satisfy
+it are ADMIN and AUDITOR, and the file documents a narrower intent. Treating that as "fine because nothing
+broke" is exactly the reasoning this audit exists to refuse.

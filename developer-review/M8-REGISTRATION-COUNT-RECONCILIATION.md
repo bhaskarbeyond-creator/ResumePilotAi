@@ -1,20 +1,31 @@
 # M8 — Registration Count Reconciliation (`397` vs `413`)
 
-**Revision audited:** `a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9` · **Generated:** 2026-10-29T07:56:08.669Z (generator clock, UTC) · **Tool:** `tools/m8-registration-reconciliation.cjs`
+**Revision audited:** `8fce71518d1dc957c3c8cefa9867445edb35f438` · **Generated:** 2026-10-29T08:09:03.810Z (generator clock, UTC) · **Tool:** `tools/m8-registration-reconciliation.cjs`
 **Machine-readable twin:** `Evidence/artifacts/m8-registration-reconciliation.json` (all 405+ rows)
 **Mandate 8 gate:** B — registration integrity.
 
 ## 1. Answer
 
 The 16-registration difference is **resolved**, and it was **not** a disagreement about the backend.
-It was 2 false positives, 6 duplicate instances (one handler registered as both `/x` and `/api/x` on the same line) and 8 standalone endpoints that sit outside the canonical register's documented `/api` scope — all of them in the *independent* parser, none of them in the backend.
+There are **three different sixes and eights** in this reconciliation, and conflating them is what made the original figure look unreconcilable. They are separated here once:
 
-In arithmetic (every term computed this run): **413 = 405 + 6 + 2**, and **405 = 397 + 8**. The 14 non-`/api` *literals* therefore split into 8 standalone endpoints + 6 compatibility aliases of an `/api` twin (accounting closes).
+1. **8 B-only rows.** 8 rows exist in parser B and not in the register at row level (file+line+verb+shape). Separately, the legacy replay differed from the repaired parser by 6 same-line alias literals and 2 false positives.
+2. **6 endpoints only in B, by key.** Of those 8 rows, 6 are genuinely absent from the register: `GET /llms-full.txt`, `GET /llms.txt`, `GET /public/custom-pages.json`, `GET /public/trusted-by.json`, `GET /sitemap.xml`, `GET /v1/models`. The other **2 are line-attribution differences**: the register holds `/healthz` and `/readyz` at the later of two declarations, so B's earlier rows look exclusive.
+3. **6 duplicate instances inside B.** 405 instances collapse to 399 distinct keys; the six repeated keys are `GET /healthz`, `GET /readyz`, `GET /platform/configuration`, `GET /platform/payment-settings`, `GET /platform/payment-webhooks`, `POST /platform/payment-webhooks/{X}/replay`. Four of them are the same block declared twice in `backend/routes/platform.js`; two are the `/healthz` + `/api/healthz` and `/readyz` + `/api/readyz` pairs, which B merges when it strips `/api`.
+
+In arithmetic (every term computed this run):
+
+- **413 = 405 + 6 + 2** — the legacy replay, reproduced from the old rules
+- **405 = 397 + 8** — repaired parser, instance level (397 matched + 8 B-only rows)
+- **399 = 393 + 6** — repaired parser, key level (393 shared + 6 only-B)
+- **405 - 6 = 399** — duplicate instances inside B
+
+The 14 non-`/api` *literals* split into 8 row-level B-only literals + 6 compatibility aliases of an `/api` twin (accounting closes).
 
 | Component | Count | What it is |
 |---|---:|---|
 | Aliases registered under `/api` (canonical, parser A) | **397** | 393 call sites, 397 alias literals, 393 unique `METHOD+path` |
-| + real routes outside `/api` | **+8** | `/healthz`, `/readyz`, `/llms.txt`, `/llms-full.txt`, `/sitemap.xml`, `/v1/models`, `/public/custom-pages.json`, `/public/trusted-by.json` |
+| + rows that exist only in parser B | **+8** | 6 endpoints the register lacks + 2 line-attribution rows (`/healthz`, `/readyz`) |
 | = contract parser after repair (parser B) | **405** | same corpus, same unit, wider scope |
 | + duplicate instances the old parser counted twice | **+6** | one handler registered as `['/api/v1/status','/v1/status']` counted as two |
 | + non-route text the old parser accepted | **+2** | `Promise.all([fetch('https://api.github.com/user'), …])` |
@@ -26,12 +37,13 @@ In arithmetic (every term computed this run): **413 = 405 + 6 + 2**, and **405 =
 |---|---|---|
 | the published 413 is reproducible | replay the **old** parser rules over current source | **yes** — 413 literals |
 | the published 397/393 are reproducible | read the canonical artifact produced this run | **yes** — 397 alias registrations, 393 unique |
-| the remaining delta is scope, not disagreement | A's alias registrations + standalone non-`/api` endpoints == B's total | **yes** — 397 + 8 = 405 |
+| the remaining delta is scope, not disagreement | A's alias registrations + B-only rows == B's total | **yes** — 397 + 8 = 405 |
+| B's instances collapse to a key set | instances − duplicate keys == A's keys + only-B keys | **yes** — 405 − 6 = 399 = 393 + 6 |
 | the two parsers agree **inside** the `/api` scope | diff on `file|line|verb|normalised shape` | **yes** — 0 B-only in scope, 0 A-only |
 | the non-`/api` literals split cleanly | standalone endpoints + duplicate alias literals == literals | **yes** — 8 + 6 = 14 |
 | duplicate instances are aliases, not path-shape noise | collapse `:param`/`${…}` over the 393 register operations and look for merged keys | **0 collisions** — the 393-operation register is already parameter-normalised |
 
-**Unit note for readers of the older narrative.** Two numbers that were previously conflated are kept apart here. *Duplicate instances* are alias pairs — one handler registered under two literals on one line — and there are exactly 6. *Path-shape collisions* would be two distinct operations sharing a key after `:param`/`${…}` collapse; measured over the 393 register operations that is **0**, because the register's paths are already normalised. Parameter-name variants such as `/:uid` vs `/:id` live in pre-mount router literals, resolve to different mount prefixes, and are never counted as duplicates. An earlier M8 draft cited "70 path-shape collisions"; that figure is not reproducible from the artefacts and is withdrawn.
+**Unit note for readers of the older narrative.** Three different things were called "duplicates". (a) *Same-line alias literals* — one handler registered as both `/x` and `/api/x` in one array; exactly 6 of them, and they are what the legacy parser over-counted. (b) *Duplicate registrations* — a key registered more than once in the source; 6 such keys inside B, of which four are literal copies of a block (see DISC-055). (c) *Path-shape collisions* — two distinct operations sharing a key after `:param`/`${…}` collapse; measured over the 393 register operations that is **0**, because the register's paths are already normalised. Parameter-name variants such as `/:uid` vs `/:id` live in pre-mount router literals, resolve to different mount prefixes, and are never counted as duplicates. An earlier M8 draft cited "70 path-shape collisions"; that figure is not reproducible from the artefacts and is withdrawn.
 
 ## 3. Defects found and corrected (audit instruments only)
 

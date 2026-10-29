@@ -16,10 +16,10 @@ absent database, an absent browser and absent provider credentials, each measure
 | § | Requirement | Outcome | Where |
 |---|---|---|---|
 | §2 | Provenance | ff-only to `a2ecb96`; remote/branch/HEAD/parent/tree recorded; **M7's "byte-identical" claim falsified** and corrected; the ref M7 said preserved does not exist | §2, DISC-049 |
-| §3 | P0 registration reconcilation first | **Proved**: 413 = 397 + 8 + 6 + 2; two instruments repaired; 393 operations unchanged; in-scope disagreement 0/0 | `M8-REGISTRATION-COUNT-RECONCILIATION.md` |
+| §3 | P0 registration reconciliation first | **Proved**: 413 = 405 + 6 + 2 and 405 = 399 + 6 = (393 + 6) + 6; two instruments repaired; 393 operations unchanged; in-scope disagreement 0/0; the exercise exposed **DISC-055** (four route blocks declared twice) | `M8-REGISTRATION-COUNT-RECONCILIATION.md` |
 | §4 | P0 20 residual leads | **All 20 adjudicated** (21 lead judgements), 0 unresolved: 14 missing / 4 equivalent / 2 preserved / 1 mixed; 0 row classifications changed; **1 new P1 raised** (DISC-054) | `M8-SUBFEATURE-CLOSURE.md`, `Evidence/adjudications-m8.json` |
 | §5 | P0 all 112 parity rows | 112 revalidated by independent derivation; 8 flagged rows read; **3 classifications changed** with evidence | `M8-PARITY-REVALIDATION.md` |
-| §6 | P0 contract revalidation | 212 sites / 190 matched / 8 mismatch / 14 unresolved = **15 gap paths, 11 wrong-URL, 4 missing-backend**, 12 false-success sites (7 paths) | §6 |
+| §6 | P0 contract revalidation | 212 sites / 190 matched / 8 mismatch / 14 unresolved = **15 gap paths, 11 wrong-URL, 4 missing-backend**, 12 false-success sites (11 distinct request paths) | §6 |
 | §7 | P1 runtime | **Executed**: 1,315 backend tests, `tsc -b`, real HTTP probes incl. authenticated; **blocked**: MariaDB, browser, providers | `M8-RUNTIME-VERIFICATION.md` |
 | §8 | P1 verifier quality | Each check classified; 4 weaknesses published; 3 derived checks added; nothing weakened | `M8-VERIFIER-QUALITY-REVIEW.md` |
 | §9 | Deliverables | 6 M8 documents + 2 M8 tools + 4 artefacts + 6 logs + index/metrics/history/plan/handover/README updates | this file, §9 |
@@ -91,27 +91,41 @@ Full derivation: `M8-REGISTRATION-COUNT-RECONCILIATION.md` + `Evidence/artifacts
 | **Alias registrations** (call site × path literal × mount prefix) | **397** |
 | **Unique `METHOD+path`** (the operation register) | **393** |
 | Collapsed aliases | 4 |
-| **Non-`/api` route literals** (real endpoints outside the register's scope) | **14 literals across 12 call sites: 8 standalone + 6 compatibility aliases of an `/api` twin** |
-| Repaired parser B registrations | **405** |
-| Arithmetic | 413 = 405 + 6 + 2 → 405 = 397 matched alias registrations + 8 standalone non-`/api` endpoints |
+| **Non-`/api` route literals** (real endpoints outside the register's scope) | **14 literals across 12 call sites: 8 B-only at row level + 6 compatibility aliases of an `/api` twin** |
+| Repaired parser B registrations (instances) | **405** |
+| Repaired parser B distinct keys | **399** = 393 shared + 6 only-B |
+| Arithmetic, instance level | 413 = 405 + 6 + 2, and 405 = 397 + 8 |
+| Arithmetic, key level | 405 − 6 duplicate instances = 399 = 393 + 6 |
 | In-scope disagreements between the two parsers | **0** |
 | Operation set / reachability classes changed by the repair | **0 / 0** |
 
-The 16-row difference is itemised row by row in the reconciliation artefact and closes as
-**413 = 405 + 6 + 2**: 2 false positives at `backend/index.js:7419` (`Promise.all([...fetch('https://api.github.com/…')])`
-feeds mistaken for route registrations), 6 duplicate instances where one handler is registered as both
-`/x` and `/api/x` in the same array (`backend/index.js:2867`, `3067`, `3136`, `3226`, `6537`, `6748`), and
-405 surviving instances = 397 matched alias registrations + 8 standalone non-`/api` endpoints. Rounding
-out the scope note: 12 non-`/api` *call sites* carry 14 path *literals* — the 6 compatibility aliases above
-plus 8 standalone endpoints (`/v1/models`, `/llms.txt`, `/llms-full.txt`, `/sitemap.xml`, `/healthz`,
-`/readyz`, `/public/custom-pages.json`, `/public/trusted-by.json`). **A word on aliases vs. path shapes**,
-because the earlier narrative mixed them: the six duplicate instances above are the *only* alias
-double-counts. The register's own paths are already parameter-normalised, so collapsing `:param` /
-`${…}` to `{X}` a second time re-measures **0 collisions over the 393 operations** (verified this pass:
-393 unique `METHOD+path`, 0 keys shared by two distinct operations). Parameter-name variants such as
-`/:uid` vs `/:id` occur only in *pre-mount router literals*, where they are the same handler under
-different names in different route files — never separate operations. No "70" figure is asserted here:
-that number could not be reproduced from the artefacts and is withdrawn.
+The 16-row difference closes at **two different levels**, and the earlier confusion came from mixing
+them. At the **instance** level: **413 = 405 + 6 + 2** — 2 false positives (`Promise.all([...fetch('https://api.github.com/…')])`
+at `backend/index.js:7419` parsed as routes), 6 same-line alias literals (one handler registered as both
+`/x` and `/api/x` in one array: `backend/index.js:2867`, `3067`, `3136`, `3226`, `6537`, `6748`), and 405
+surviving instances = 397 matched alias registrations + **8** B-only rows. At the **key** level: those 405
+instances collapse to **399** distinct `METHOD+shape` keys because six keys are registered twice
+(`/healthz`, `/readyz`, `/platform/configuration`, `/platform/payment-settings`,
+`/platform/payment-webhooks`, `POST /platform/payment-webhooks/{X}/replay`), and 399 = **393 shared + 6
+endpoints the register lacks** (`/v1/models`, `/llms.txt`, `/llms-full.txt`, `/sitemap.xml`,
+`/public/custom-pages.json`, `/public/trusted-by.json`).
+
+Of the 8 row-level B-only rows, **2 are line-attribution artefacts**: the register records `/healthz` and
+`/readyz` at the later of two declarations (`backend/index.js:5470`, `5537`) while parser B also lists the
+earlier pair (`5466`, `5528`), so those two rows look exclusive although the register holds the
+operations. The other 6 are genuine.
+
+**Duplicate registrations are not aliases.** Four of the six repeated keys are the *same block declared
+twice* in `backend/routes/platform.js` (`1670`/`1846` configuration, `1707`/`1883` payment-settings,
+`1727`/`1903` payment-webhooks, `1809`/`1985` replay); the other two are the `/healthz` + `/api/healthz`
+and `/readyz` + `/api/readyz` pairs that parser B merges once it strips `/api`. The four duplicated blocks
+are a product finding in their own right — the later copy can never run, and for `payment-settings` the two
+copies **disagree on authorization** — raised as **DISC-055**.
+
+**Path-shape collisions are a third thing.** Collapsing `:param` / `${…}` to `{X}` over the 393 register
+operations merges **0** keys, because the register is already parameter-normalised; parameter-name variants
+such as `/:uid` vs `/:id` live only in pre-mount router literals. No "70" figure is asserted here: it could
+not be reproduced from the artefacts and is withdrawn.
 
 Two instrument defects were repaired
 (**instruments only, no application change**): counting units mixed call sites with path literals,
@@ -195,11 +209,26 @@ re-reviewed".
 | False-success sites | **12** across **7** paths |
 | Parser B registrations | 405 (393 shared with the register, 6 non-`/api` exclusive, 0 only-in-register) |
 
-Gap dispositions, re-resolved independently against the 393-operation register and then adjudicated
-in source (never by string similarity). The resolver emits **two** resolution classes and this report
-does not claim more: every gap path receives exactly one of them, and the remaining properties the
-mandate names (mock-vs-real, catalog-vs-design, UI-vs-persisted-state, HTTP-200-vs-correct,
-static-vs-runtime) are recorded per workflow in §6.1, where each has a citation:
+`tools/m8-contract-gap-revalidation.cjs` (new this mandate) re-resolves **all 15 shapes** against the
+393-operation register without reading the audit's own `candidate` field. Its structural verdict is
+deliberately weaker than the final one, and both are published:
+
+| Structural verdict (no string similarity, tail/prefix/verb only) | Shapes |
+|---|---:|
+| `ANOTHER_CONTRACT` — same tail segment under a different prefix | 5 |
+| `AMBIGUOUS` — several equally plausible structural candidates | 5 |
+| `NO_OPERATION` — no registered operation shares the request's tail | 5 |
+
+Structure alone cannot pair `/billing/validate-coupon` with `/coupons/validate`, or `/blog/posts` with
+`/blog-data`, so each mapping was established by **reading the handling code** and is recorded with the
+operation that settles it in the artefact (`gaps[].equivalent`). Two shapes that *look* structurally
+satisfiable are explicitly **not** equivalents (`NOT_EQUIVALENT`): the dead-letter purge's same-word
+counterpart is a deliberate `410` retirement, and no send-email operation exists at all.
+
+Gap dispositions after that adjudication — the resolver emits **two** classes and this report does not
+claim more; every gap path receives exactly one of them, and the remaining properties the mandate names
+(mock-vs-real, catalog-vs-design, UI-vs-persisted-state, HTTP-200-vs-correct, static-vs-runtime) are
+recorded per workflow in §6.1, where each has a citation:
 
 | Class | Count | Paths |
 |---|---:|---|
@@ -232,12 +261,24 @@ no": `{"code":"NOT_FOUND","message":"API route not found"}` versus
 `{"code":"NOT_FOUND","error":"Job not found."}` or `{"valid":false,"error":"Coupon code … does not
 exist."}`. Static analysis predicted this; HTTP confirmed it for all 10 gap paths probed.
 
-**False success (gate F).** 12 call sites across 7 paths swallow the failure and then report success —
-the two largest are the employer-approval and job-moderation controls (`AdminModerationTab`), whose
-writes cannot succeed. **M8 adds a new one**: the marketing contact form (`pages/cms/index.tsx`), which
-never issues a request at all — the only false-success path where there is not even a failed request to
-swallow. Gate F is **FAIL on the product property** (12 false-success sites remain; remediation is not
-authorised in M8) and **PASS on identification and tracing**.
+**False success (gate F), counted per call site rather than per path.** 21 call sites swallow a failure;
+**12 of them then report success**, across **11 distinct request paths**. Split by what the request
+resolves to: **4** on registered-and-matched paths (a real operation answered and was ignored), **2** on
+contract mismatches, **6** on paths with no operation at all. An earlier M8 draft said "7 paths" — that
+was the count of *unresolved shapes* carrying a false success (7 shapes / 8 sites), not the count of
+paths; the corrected figures are in `Evidence/artifacts/m8-contract-gap-revalidation.json`
+(`counts.falseSuccessSites`, `falseSuccessDistinctPaths`, `falseSuccessSitesOn*`).
+
+The detector's 12 sites are the ones where a request was made, failed or was swallowed, and a success
+state was still shown; the two largest are the employer-approval and job-moderation controls
+(`AdminModerationTab`), whose writes cannot succeed.
+
+**M8 adds a thirteenth surface the detector cannot see at all**: the marketing contact form
+(`pages/cms/index.tsx:234-243`) shows "We have logged your request" without issuing *any* request, so
+there is no `.catch()` to find and no failure to swallow. It is counted separately, and it is why gate F
+is stated as "12 detected + 1 undetectable" rather than "12". Gate F is **FAIL on the product property**
+(13 false-success surfaces; remediation is not authorised in M8) and **PASS on identification and
+tracing**.
 
 ---
 
@@ -305,11 +346,11 @@ migration, no production database, no public exposure.
 | Gate | Score | Basis |
 |---|---|---|
 | **A Provenance** | **PARTIAL** | revision authority established by fast-forward and recorded; M7's byte-identical claim falsified and corrected; the stated preservation ref is absent. The record is now correct; the earlier claim was not. |
-| **B Registration** | **PASS** | 393/397/405/413 reconciled arithmetically; 16 rows itemised; in-scope disagreement 0; operation set unchanged; instruments repaired (not the expected values) |
+| **B Registration** | **PASS** | 393/397/405/413 reconciled arithmetically at instance **and** key level; 16 rows itemised; in-scope disagreement 0; operation set unchanged; instruments repaired (not the expected values); the reconciliation also exposed DISC-055 |
 | **C Capability** | **PASS (static)** | all 20 leads adjudicated with chains (21 judgements), 0 unresolved; no row classification changed; one lead that *looked* preserved was refuted by tracing it into the registry (**DISC-054**); nothing closed on name similarity |
 | **D Parity** | **PASS (static)** | 112 rows revalidated by independent derivation; 3 changes with evidence and prior verdict retained |
 | **E Contract** | **PASS** | 212 sites re-resolved; all 15 gap paths dispositioned by the resolver into **2** resolution classes (`WRONG_URL` 11, `MISSING_BACKEND` 4) and then adjudicated in source; the other dimensions the mandate asks for — mock-vs-real, UI-vs-persisted-state, HTTP-200-vs-correct, static-vs-runtime — are recorded per workflow in §6.1, not in the resolver's two-value field; **10 of 15** gap paths confirmed at runtime |
-| **F False success** | **FAIL (product) / PASS (identification)** | 12 false-success sites across 7 paths remain, including one new (contact form). Remediation not authorised in M8. |
+| **F False success** | **FAIL (product) / PASS (identification)** | 12 false-success sites across 11 distinct request paths remain, including one new (contact form). Remediation not authorised in M8. |
 | **G Runtime** | **BLOCKED** | HTTP + tests executed; MariaDB, browser and providers impossible and evidenced |
 | **H Verifier** | **PASS (with published weaknesses)** | 61/61, 20/20; three derived checks added; no expected value moved |
 | **I Evidence** | **PASS** | 6 new documents, 4 artefacts, 2 tools, 6 logs; every number traceable to a command or a file:line |
@@ -366,7 +407,7 @@ limit rejects a 400 KB photo with 413. The frontend typechecks and 1,269 backend
 receiver restriction, two-file adjudication merge); artefacts regenerated at `a2ecb96`; two derived
 M8 verifier checks added and one existing check tightened from SHA equality to prefix comparison;
 parity distribution 13/51/28/**0**/12/5/3; subfeature register
-ADJUDICATED 40 → 50; six new discrepancies (DISC-049 … DISC-054); README, evidence index, metrics,
+ADJUDICATED 40 → 50; seven new discrepancies (DISC-049 … DISC-055); README, evidence index, metrics,
 change history, repair plan and handover updated with dated M8 amendments. **No application source,
 config, schema or manifest was changed**; no expected value was moved.
 
@@ -384,10 +425,15 @@ M7-era artefacts that remain are labelled as such; none is presented as M8 execu
    passes, so the build pipeline is the next thing to exercise.
 3. **Providers (blocking AI/payment/email verification).** Needs real sandbox credentials; absent by
    design in this environment.
-4. **Enterprise team verbs are broken in a way only a MySQL run can show** (DISC-054). `MySqlTenantRegistry`
+4. **Platform config routes are declared twice, and the live guard is the broader one** (DISC-055).
+   `GET /api/platform/payment-settings` is registered at `routes/platform.js:1707` (any of
+   `payments.read` / `system.config.read`) and again at `:1883` (`system.config.read` only); the first wins,
+   so an AUDITOR can read it. Delete the dead copies, state one guard, and add a duplicate-registration
+   test. Not fixable by this mandate.
+5. **Enterprise team verbs are broken in a way only a MySQL run can show** (DISC-054). `MySqlTenantRegistry`
    lacks `updateTeam` / `archiveTeam` / `restoreTeam` and `enterprise_teams` lacks a lead column, so a
    MariaDB-backed run of `PATCH /api/enterprise/teams/:teamId` should return
    `503 TENANT_TEAM_UPDATE_FAILED`. Confirm it, then implement (R-A8-06).
-5. **Remediation is a separate mandate.** The 12 false-success sites, 15 contract gaps and 176
+6. **Remediation is a separate mandate.** The 12 false-success sites, 15 contract gaps and 176
    unreachable operations are documented with acceptance criteria in `REPAIR-ACTION-PLAN.md`; none was
    fixed here, because M8 authorises audit and verification only.

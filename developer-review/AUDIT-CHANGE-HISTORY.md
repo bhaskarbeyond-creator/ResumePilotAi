@@ -189,8 +189,8 @@ re-measured at `a2ecb96` before it was compared with what M7 published.
 
 `M8-INDEPENDENT-ACCEPTANCE-REPORT.md`, `M8-REGISTRATION-COUNT-RECONCILIATION.md`, `M8-SUBFEATURE-CLOSURE.md`,
 `M8-PARITY-REVALIDATION.md`, `M8-RUNTIME-VERIFICATION.md`, `M8-VERIFIER-QUALITY-REVIEW.md` (all new) ·
-`DISCREPANCY-LOG.md` (DISC-049 … DISC-054; header 46 → **52 distinct / 54 IDs**) ·
-`V4-COVERAGE-RECONCILIATION.md` (findings 46 → 52, total 1,537 → **1,543**, new §15) ·
+`DISCREPANCY-LOG.md` (DISC-049 … DISC-054; header 46 → **53 distinct / 55 IDs**) ·
+`V4-COVERAGE-RECONCILIATION.md` (findings 46 → 53, total 1,537 → **1,544**, new §15) ·
 `BACKEND-OPERATION-REACHABILITY.md` (M8 counting-unit correction) · `REPAIR-ACTION-PLAN.md` (Phase 7) ·
 `EVIDENCE-INDEX.md` (E-365 … E-372) · `README.md` · `HANDOVER.md` · `FINAL-AUDIT-HANDOVER.md` ·
 `FEATURE-PARITY-MATRIX.md` (regenerated) · `Evidence/logs/m8-*.log` (new) · `Evidence/artifacts/m8-*.json` (new).

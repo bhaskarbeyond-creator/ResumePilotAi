@@ -1,6 +1,6 @@
 {
- "revision": "a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9",
- "generatedAt": "2026-10-29T07:56:08.669Z",
+ "revision": "8fce71518d1dc957c3c8cefa9867445edb35f438",
+ "generatedAt": "2026-10-29T08:09:03.810Z",
  "countingUnits": {
   "routeCallSite": "one <router>.<verb>(...) / app.<verb>(...) expression, counted once per (receiver, mount prefix)",
   "aliasRegistration": "one (call site, path literal, mount prefix) tuple; `['/a','/b']` is 1 call site, 2 alias registrations",
@@ -38,6 +38,61 @@
   "deltaExplained": true,
   "inScopeAgrees": true,
   "nonApiAccounting": true
+ },
+ "keyLevel": {
+  "parserBDistinctKeys": 399,
+  "parserADistinctKeys": 393,
+  "sharedKeys": 393,
+  "onlyBKeys": [
+   "GET /llms-full.txt",
+   "GET /llms.txt",
+   "GET /public/custom-pages.json",
+   "GET /public/trusted-by.json",
+   "GET /sitemap.xml",
+   "GET /v1/models"
+  ],
+  "onlyAKeys": [],
+  "duplicateInstances": [
+   {
+    "key": "GET /healthz",
+    "instances": 2
+   },
+   {
+    "key": "GET /readyz",
+    "instances": 2
+   },
+   {
+    "key": "GET /platform/configuration",
+    "instances": 2
+   },
+   {
+    "key": "GET /platform/payment-settings",
+    "instances": 2
+   },
+   {
+    "key": "GET /platform/payment-webhooks",
+    "instances": 2
+   },
+   {
+    "key": "POST /platform/payment-webhooks/{X}/replay",
+    "instances": 2
+   }
+  ],
+  "rowLevelOnlyBWithSharedKey": [
+   {
+    "file": "backend/index.js",
+    "line": 5466,
+    "key": "/healthz",
+    "note": "same METHOD+shape as a register row, different line"
+   },
+   {
+    "file": "backend/index.js",
+    "line": 5528,
+    "key": "/readyz",
+    "note": "same METHOD+shape as a register row, different line"
+   }
+  ],
+  "identity": "405 instances - 6 duplicates = 399 distinct = 393 shared + 6 only-B"
  },
  "aliasVsShape": {
   "duplicateInstances": 6,

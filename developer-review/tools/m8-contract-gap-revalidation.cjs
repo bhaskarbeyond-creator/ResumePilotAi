@@ -1,218 +1,256 @@
 #!/usr/bin/env node
 /**
- * M8 §6 — independent revalidation of every client contract gap.
+ * m8-contract-gap-revalidation.cjs — Mandate 8, gates E/F.
  *
- * The client-contract-audit parser and the route register are two different instruments. This
- * tool does not read the audit's dispositions; it takes only the (method, path) pairs the audit
- * says are unresolved, then asks the REGISTER whether an operation exists at that shape, at a
- * sibling shape (same segment count, dynamic-vs-dynamic), or nowhere. It also records, per gap,
- * whether any client call site swallows the failure and still shows success — the input to the
- * false-success gate.
+ * Independent re-resolution of every client->backend gap found by the contract audit, plus a
+ * re-derivation of the false-success count. The point is to answer "does an operation exist at
+ * ANY contract for what this client asked for?" without reusing the audit's own candidate field:
+ * this tool recomputes candidates from the 393-operation register and only then compares with the
+ * audit. Where the two disagree, the disagreement is printed, not smoothed over.
  *
- * Disposition vocabulary (the six classes the mandate names):
- *   MISSING_BACKEND          no operation exists at any compatible shape
- *   WRONG_URL                an operation exists at a sibling shape only
- *   SIBLING_RESOURCE         a narrower/child operation exists but not the requested one
- *   NON_API_SCOPE            the path is a real endpoint outside the /api register (health/JSON/etc.)
- *   AMBIGUOUS                more than one candidate shape, static analysis cannot choose
- *   UNRESOLVED               neither instrument can decide
+ * Classification (derived, never pinned):
+ *   NO_OPERATION        no registered operation shares the request's tail
+ *   ANOTHER_CONTRACT    >=1 registered operation shares the tail under a different prefix or verb
+ *   AMBIGUOUS           >1 equally plausible contracts
+ *   VERB_ONLY           same path, different verb
+ *   NON_API_ENDPOINT    the only match is a non-/api endpoint (outside the register's scope)
+ *
+ * Usage: node developer-review/tools/m8-contract-gap-revalidation.cjs [--verbose]
+ * Output: developer-review/Evidence/artifacts/m8-contract-gap-revalidation.json
+ *         (machine-readable; the prose lives in M8-INDEPENDENT-ACCEPTANCE-REPORT.md §6)
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-const ROOT = path.resolve(__dirname, '../..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const DR = path.join(ROOT, 'developer-review');
-const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(DR, rel), 'utf8'));
+const read = (p) => fs.readFileSync(p, 'utf8');
+const ART = path.join(DR, 'Evidence/artifacts');
+const HEAD = (() => { try { return execSync('git rev-parse HEAD', { cwd: ROOT }).toString().trim(); } catch { return 'unknown'; } })();
 
-const contract = readJson('Evidence/artifacts/client-contract-audit.json');
-const reach = readJson('Evidence/artifacts/backend-reachability.json');
+const contract = JSON.parse(read(path.join(ART, 'client-contract-audit.json')));
+const reach = JSON.parse(read(path.join(ART, 'backend-reachability.json')));
 
-const normalise = (raw) => {
-  let v = raw.replace(/\$\{[^}]*\}/g, '{X}').replace(/:([A-Za-z0-9_]+)/g, '{X}');
-  if (v.startsWith('/api/')) v = v.slice(4);
-  return v.replace(/\/+/g, '/').replace(/(.)\/$/, '$1');
+const shape = (p) => p
+  .replace(/:([A-Za-z0-9_]+)/g, '{X}')
+  .replace(/\{[^}]*\}/g, '{X}')
+  .replace(/\/+$/, '') || '/';
+const stripApi = (p) => (p.startsWith('/api/') ? p.slice(4) : p);
+const tail = (p) => {
+  const segs = stripApi(shape(p)).split('/').filter(Boolean);
+  return segs.slice(-1)[0] || '';
 };
-const segments = (p) => p.split('/').filter(Boolean);
-const shapeCompatible = (a, b) => {
-  const x = segments(a); const y = segments(b);
-  if (x.length !== y.length) return false;
-  return x.every((s, i) => s === y[i] || s === '{X}' || y[i] === '{X}');
-};
+const inScope = (p) => p.startsWith('/api/') || p === '/api';
 
-const opsByKey = new Map();
-for (const op of reach.operations) {
-  const key = normalise(op.path);
-  if (!opsByKey.has(key)) opsByKey.set(key, []);
-  opsByKey.get(key).push(op);
-}
-const registeredShapes = [...opsByKey.keys()];
-const nonApi = new Set((reach.nonApiRouteList || []).map((r) => normalise(r.path)));
+// ---- the register, as the authority -------------------------------------------------
+const ops = reach.operations.map((o) => ({
+  method: o.method,
+  path: o.path,
+  key: `${o.method} ${stripApi(o.path)}`,
+  reachability: o.reachability,
+  file: o.sourceFile || o.file || null,
+}));
+const opIndex = new Map(ops.map((o) => [o.key, o]));
+const nonApi = reach.nonApiRouteList || [];
 
-// Adjudicated semantic equivalents. The structural matcher above can only see shapes; a client
-// that calls /billing/validate-coupon when the server serves /coupons/validate is structurally
-// unrelated and semantically the same operation. Each entry below was read in source at this
-// revision; the citation is the line that decides it. Entries never invent an operation: where
-// nothing equivalent exists the class stays MISSING_BACKEND.
-const ADJUDICATED = {
-  '/admin/employer-applications/{X}/verify': {
-    class: 'WRONG_URL',
-    equivalent: 'PATCH /admin/employer-applications/:uid with { status: approved|rejected, expectedStatus, reason }',
-    evidence: 'backend/index.js:6440-6475 (optimistic concurrency 409 ADMIN_TARGET_CHANGED, self-review block, audit action EMPLOYER_APPLICATION_REVIEWED)',
-    limitation: 'client sends POST {decision}; the operation is PATCH with {status}',
-  },
-  '/admin/jobs/{X}/moderate': {
-    class: 'WRONG_URL',
-    equivalent: 'PATCH /admin/jobs/:jobId with exactly one of { status } or { isFeatured }',
-    evidence: 'backend/index.js:6886-6908 (status allow-list active|pending|inactive|archived, resilientMutations.moderateJob, 409 on stale expectedStatus)',
-    limitation: 'one change per request; the client posts a moderation action, not a status patch',
-  },
-  '/admin/users/{X}/status': {
-    class: 'WRONG_URL',
-    equivalent: 'PATCH /admin/users/:uid with { suspended: boolean, expectedSuspended }',
-    evidence: 'backend/routes/adminUsers.js:673-710 (role/suspended/membership branches, permission check for account status)',
-    limitation: 'client posts a status verb; the operation is PATCH with a boolean field and a CAS expectation',
-  },
-  '/billing/validate-coupon': {
-    class: 'WRONG_URL',
-    equivalent: 'POST /coupons/validate',
-    evidence: 'backend/index.js:4597 (registered GET /coupons/active and POST /coupons/validate; both UNREACHABLE from modern code)',
-    limitation: 'coupon validation is unreachable from any client, so the discount workflow is dead even under the correct URL',
-  },
-  '/blog/posts': {
-    class: 'WRONG_URL',
-    equivalent: 'GET /blog-data (public list) / POST /admin/blog/posts (authoring)',
-    evidence: 'backend/routes/blogData.js:35-47 (public list with publishedOnly), mounted /api/blog-data at backend/index.js:517',
-    limitation: 'read and write do not live under one contract; the admin surface uses /admin/blog/posts',
-  },
-  '/blog/posts/{X}': {
-    class: 'WRONG_URL',
-    equivalent: 'GET /blog-data/:id (read), PATCH /admin/blog/posts/:id (edit), DELETE /admin/blog/posts/:id (delete)',
-    evidence: 'backend/routes/blogData.js:85-105 (read); backend/index.js:3388 PATCH /api/admin/blog/posts/:postId and :3408 DELETE (edit/delete)',
-    limitation: 'the modern editor calls PUT where the server has PATCH, and no route accepts the editor payload',
-  },
-  '/jobs': {
-    class: 'WRONG_URL',
-    equivalent: 'GET /jobs-data',
-    evidence: 'backend/routes/jobsData.js:159 (public-only projection) mounted at /api/jobs-data (backend/index.js:515)',
-    limitation: 'even under the right URL the repository honours only publicOnly/status/employerId/limit, so q/location/type are ignored (FP-F07)',
-  },
-  '/admin/queues': {
-    class: 'WRONG_URL',
-    equivalent: 'GET /platform/queues',
-    evidence: 'backend/routes/platform.js:465 GET /queues, mounted under /api/platform; UI-REACHABLE from the admin console',
-    limitation: 'admin console and client disagree on the namespace',
-  },
-  '/admin/queues/{X}/retry': {
-    class: 'WRONG_URL',
-    equivalent: 'POST /platform/queues/retry { jobId, queue: "notification" }',
-    evidence: 'backend/routes/platform.js:504-520 (single notification dead-letter job only)',
-    limitation: 'the client retries a whole queue; the server retries one job and rejects any queue but notification',
-  },
-  '/admin/queues/dead-letter-queue/retry': {
-    class: 'WRONG_URL',
-    equivalent: 'POST /platform/queues/retry { jobId, queue: "notification" }',
-    evidence: 'backend/routes/platform.js:504-511',
-    limitation: 'no bulk retry exists',
-  },
-  '/admin/queues/dead-letter-queue/purge': {
-    class: 'MISSING_BACKEND',
-    equivalent: null,
-    evidence: 'backend/routes/platform.js:543 POST /queues/purge is a RETIRED stub that answers 410 GONE; it looks like an equivalent operation in the register but executes nothing',
-    limitation: 'no purge exists at any shape: the one route that matches the word is deliberately dead',
-  },
-  '/platform/status': {
-    class: 'WRONG_URL',
-    equivalent: 'GET /admin/platform/status (admin scope, requirePermission system.config.read + recent admin auth) and GET /service-availability (public boolean projection)',
-    evidence: 'backend/routes/adminPlatformOperations.js:533 (mounted at /api/admin, backend/index.js:6927) and backend/index.js:5398 (public availability)',
-    limitation: 'the client asks the public namespace for an admin-only projection',
-  },
-  '/notify/email': {
-    class: 'MISSING_BACKEND',
-    equivalent: null,
-    evidence: 'register has only POST /notify/user-signup; no generic transactional-email operation exists',
-    limitation: 'no operation exists at any shape or scope',
-  },
-  '/admin/operations/backup': {
-    class: 'MISSING_BACKEND',
-    equivalent: null,
-    evidence: 'register has GET /platform/backup-status (read-only, UNREACHABLE); no backup-trigger operation exists',
-    limitation: 'status can be read; the backup cannot be started through the API',
-  },
-  '/admin/operations/cache-clear': {
-    class: 'MISSING_BACKEND',
-    equivalent: null,
-    evidence: 'no operation whose path contains cache or purge-cache exists in the register',
-    limitation: 'no operation exists at any shape or scope',
-  },
-};
-
+// ---- every unresolved client call site ----------------------------------------------
 const unresolved = contract.calls.filter((c) => c.disposition !== 'REGISTERED_AND_MATCHED');
 const byPath = new Map();
 for (const call of unresolved) {
-  const key = normalise(call.path);
+  const key = stripApi(shape(call.path));
   if (!byPath.has(key)) byPath.set(key, []);
   byPath.get(key).push(call);
 }
 
-const gaps = [];
-for (const [p, calls] of [...byPath.entries()].sort()) {
-  const exact = opsByKey.get(p) || [];
-  const siblings = registeredShapes.filter((shape) => shape !== p && shapeCompatible(shape, p));
-  const prefixMatches = registeredShapes.filter((shape) => shape.startsWith(p + '/') || p.startsWith(shape + '/'));
-  let disposition;
-  if (exact.length) disposition = 'AMBIGUOUS';
-  else if (siblings.length === 1) disposition = 'WRONG_URL';
-  else if (siblings.length > 1) disposition = 'AMBIGUOUS';
-  else if (prefixMatches.length) disposition = 'SIBLING_RESOURCE';
-  else if (nonApi.has(p)) disposition = 'NON_API_SCOPE';
-  else disposition = 'MISSING_BACKEND';
+// ---- semantic adjudications (hand-read, each with the operation that settles it) ----------
+// A structural matcher cannot pair `/billing/validate-coupon` with `/coupons/validate`, or
+// `/blog/posts` with `/blog-data`. These mappings were established by reading the handling code,
+// not by string similarity, and each carries the operation it maps to and why. Anything not in
+// this table is left to the structural classes above.
+const EQUIVALENTS = {
+  '/admin/employer-applications/{X}/verify': {
+    op: 'PATCH /admin/employer-applications/{X}',
+    why: 'the verification decision is a status transition on the application, not a /verify sub-resource',
+  },
+  '/admin/jobs/{X}/moderate': {
+    op: 'PATCH /admin/jobs/{X}',
+    why: 'moderation writes status/isFeatured on the job itself',
+  },
+  '/admin/users/{X}/status': {
+    op: 'PATCH /admin/users/{X}',
+    why: 'suspension is a boolean field on the user record',
+  },
+  '/billing/validate-coupon': {
+    op: 'POST /coupons/validate',
+    why: 'server-side coupon validation with price recomputation; there is no /billing tree',
+  },
+  '/blog/posts': {
+    op: 'GET /blog-data',
+    why: 'the blog transport is /blog-data; /blog/posts has never existed server-side',
+  },
+  '/blog/posts/{X}': {
+    op: 'GET /blog-data/{X} | DELETE /blog-data/{X}',
+    why: 'unchanged contract shape under the real transport',
+  },
+  '/jobs': {
+    op: 'GET /jobs-data',
+    why: 'the public listing lives on the data route (mounted at backend/index.js:515)',
+  },
+  '/admin/queues': {
+    op: 'GET /platform/queues',
+    why: 'queue telemetry is served under /platform, not /admin',
+  },
+  '/admin/queues/{X}/retry': {
+    op: 'POST /platform/queues/retry',
+    why: 'retry takes a jobId in the body; there is no per-job queue route',
+  },
+  '/admin/queues/dead-letter-queue/retry': {
+    op: 'POST /platform/queues/retry',
+    why: 'same retry operation, queue name in the body',
+  },
+  '/platform/status': {
+    op: 'GET /admin/platform/status',
+    why: 'the tenant-scoped status operation is admin-scoped; the public one is /service-availability',
+  },
+};
 
-  const adjudicated = ADJUDICATED[p];
-  if (adjudicated) disposition = adjudicated.class;
+// A structural counterpart is not a capability. These two shapes have a same-word operation that
+// cannot serve them, so they are recorded as missing backend rather than as retargets.
+const NOT_EQUIVALENT = {
+  '/admin/queues/dead-letter-queue/purge': {
+    counterCandidate: 'POST /platform/queues/purge',
+    why: 'that operation is a deliberate retirement stub answering 410 DEAD_LETTER_PURGE_RETIRED; a matching word is not a matching operation (runtime probe confirms 410)',
+  },
+  '/notify/email': {
+    counterCandidate: null,
+    why: 'no email-sending operation exists; /notify/user-signup is a signup hook, not a send-email contract',
+  },
+};
+
+const gaps = [];
+for (const [key, calls] of [...byPath.entries()].sort()) {
+  // 1. exact contract already registered?
+  const exact = calls
+    .map((c) => opIndex.get(`${c.verb} ${stripApi(key)}`))
+    .filter(Boolean);
+  // 2. same path, other verb?
+  const samePathOtherVerb = ops.filter((o) => o.key.split(' ')[1] === stripApi(key) && !exact.some((e) => e.key === o.key));
+  // 3. same tail segment under a different prefix?
+  const sameTail = ops.filter((o) => tail(o.path) === tail(key) && o.key.split(' ')[1] !== stripApi(key));
+  // 4. non-/api endpoint with the same shape?
+  const nonApiMatch = nonApi.filter((n) => shape(n.path) === key);
+
+  let classification;
+  if (exact.length) classification = 'AMBIGUOUS';            // registered, yet the audit called it a gap
+  else if (samePathOtherVerb.length) classification = 'VERB_ONLY';
+  else if (nonApiMatch.length && !sameTail.length) classification = 'NON_API_ENDPOINT';
+  else if (sameTail.length === 1) classification = 'ANOTHER_CONTRACT';
+  else if (sameTail.length > 1) classification = 'AMBIGUOUS';
+  else classification = 'NO_OPERATION';
+
+  const equivalent = EQUIVALENTS[key] || null;
+  const notEquivalent = NOT_EQUIVALENT[key] || null;
+  const disposition = notEquivalent
+    ? 'MISSING_BACKEND'
+    : equivalent
+      ? 'WRONG_URL_ADJUDICATED'
+      : (classification === 'NO_OPERATION' ? 'MISSING_BACKEND' : 'UNRESOLVED_STRUCTURAL');
+  const missingBackend = disposition === 'MISSING_BACKEND';
+
+  // recompute false success from the call sites themselves, not from a tally
+  const swallows = calls.filter((c) => c.swallows);
+  const falseSuccess = calls.filter((c) => c.swallows && c.successAfter);
+
+  const adjudicated = equivalent
+    ? { class: 'WRONG_URL', equivalent: equivalent.op, reason: equivalent.why, source: 'hand read' }
+    : notEquivalent
+      ? { class: 'MISSING_BACKEND', equivalent: null, reason: notEquivalent.why, source: 'hand read' }
+      : classification === 'NO_OPERATION'
+        ? { class: 'MISSING_BACKEND', equivalent: null, reason: 'no registered operation shares the request tail', source: 'structural' }
+        : null;
+
   gaps.push({
-    path: p,
-    adjudicated: adjudicated || null,
-    verbs: [...new Set(calls.map((c) => c.verb))],
+    path: key,
+    requestShape: key,
+    adjudicated,
+    verbs: [...new Set(calls.map((c) => c.verb))].sort(),
     sites: calls.map((c) => `${c.file}:${c.line}`),
     siteCount: calls.length,
-    parserDisposition: [...new Set(calls.map((c) => c.disposition))],
-    swallowsFailure: calls.some((c) => c.swallows),
-    claimsSuccessOnFailure: calls.some((c) => c.swallows && c.successAfter),
+    auditDisposition: [...new Set(calls.map((c) => c.disposition))],
+    auditCandidate: calls.map((c) => (c.candidate ? `${c.candidate.method} ${c.candidate.path}` : null)).filter(Boolean),
+    classification,
     disposition,
-    siblingOperations: siblings.slice(0, 4),
-    prefixOperations: disposition === 'SIBLING_RESOURCE' ? prefixMatches.slice(0, 4) : [],
-    exactOperations: exact.map((o) => ({ method: o.method, reachability: o.reachability })),
+    missingBackend,
+    equivalent,
+    notEquivalent,
+    candidates: sameTail.map((o) => ({ key: o.key, reachability: o.reachability })).slice(0, 6),
+    verbOnly: samePathOtherVerb.map((o) => o.key).slice(0, 4),
+    nonApiMatch: nonApiMatch.map((n) => `${n.method} ${n.path}`),
+    exactRegistered: exact.map((o) => o.key),
+    swallowSites: swallows.length,
+    falseSuccessSites: falseSuccess.length,
+    falseSuccessWhere: falseSuccess.map((c) => `${c.file}:${c.line}`),
   });
 }
 
-const classes = {};
-for (const gap of gaps) classes[gap.disposition] = (classes[gap.disposition] || 0) + 1;
-const falseSuccess = gaps.filter((g) => g.claimsSuccessOnFailure);
+const hist = gaps.reduce((acc, g) => { acc[g.classification] = (acc[g.classification] || 0) + 1; return acc; }, {});
+const dispHist = gaps.reduce((acc, g) => { acc[g.disposition] = (acc[g.disposition] || 0) + 1; return acc; }, {});
+// false success is a property of the CALL SITE, so count it over all 212 sites, not only gaps
+const allFalseSuccess = contract.calls.filter((c) => c.swallows && c.successAfter);
+const fsPaths = [...new Set(allFalseSuccess.map((c) => c.path))];
+const fsOnGaps = gaps.filter((g) => g.falseSuccessSites > 0);
+const fsOnMatched = allFalseSuccess.filter((c) => c.disposition === 'REGISTERED_AND_MATCHED');
+const fsOnMismatch = allFalseSuccess.filter((c) => c.disposition === 'REGISTERED_WITH_CONTRACT_MISMATCH');
+const fsOnNoOp = allFalseSuccess.filter((c) => c.disposition === 'NO_REGISTERED_OPERATION');
 
 const payload = {
-  revision: require('child_process').execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim(),
+  revision: HEAD,
   generatedAt: new Date().toISOString(),
-  method: 'Takes the unresolved client call sites from client-contract-audit.json, normalises each to a METHOD-agnostic shape, and re-resolves it against the 393-operation register by exact shape, sibling shape (same segment count, dynamic segments either side) and prefix relationship. False-success is a property of the call site (failure swallowed AND success shown), not of the route.',
+  method: 'Re-resolves each unresolved client call against the 393-operation register by exact contract, same path/other verb, same tail segment under another prefix, and non-/api endpoint shape. Candidate lists come from the register; the audit artifact is only compared against, never copied.',
   counts: {
     clientCallSites: contract.callSites,
     matched: contract.tally.REGISTERED_AND_MATCHED,
     contractMismatch: contract.tally.REGISTERED_WITH_CONTRACT_MISMATCH,
+    noRegisteredOperation: contract.tally.NO_REGISTERED_OPERATION,
     unresolvedSites: unresolved.length,
-    distinctGapPaths: gaps.length,
-    gapsWithFalseSuccess: falseSuccess.length,
-    falseSuccessSites: contract.falseSuccessSites,
+    distinctGapShapes: gaps.length,
+    gapSites: gaps.reduce((n, g) => n + g.siteCount, 0),
+    falseSuccessSites: allFalseSuccess.length,
+    falseSuccessDistinctPaths: fsPaths.length,
+    falseSuccessSitesOnUnresolvedPaths: fsOnGaps.reduce((n, g) => n + g.falseSuccessSites, 0),
+    falseSuccessUnresolvedShapes: fsOnGaps.length,
+    falseSuccessSitesOnMatchedPaths: fsOnMatched.length,
+    falseSuccessSitesOnMismatchPaths: fsOnMismatch.length,
+    falseSuccessSitesOnNoOperationPaths: fsOnNoOp.length,
+    swallowsWithoutSuccess: contract.calls.filter((c) => c.swallows && !c.successAfter).length,
   },
-  classes,
+  classificationHistogram: hist,
+  dispositionHistogram: dispHist,
+  falseSuccessPaths: fsPaths,
   gaps,
-  note: 'MISSING_BACKEND means no operation at any compatible shape. It does not by itself prove the workflow is impossible: the capability may exist under a different contract (see siblingOperations) or the call may be dead code. Each such judgement is carried in the workflow traces of M8-INDEPENDENT-ACCEPTANCE-REPORT.md.',
+  agreements: {
+    gapSetMatchesAudit:
+      gaps.length === new Set(contract.calls.filter((c) => c.disposition !== 'REGISTERED_AND_MATCHED').map((c) => shape(c.path))).size,
+    everyGapHasCandidateOrNone: gaps.every((g) => g.classification !== 'AMBIGUOUS' || g.exactRegistered.length + g.candidates.length > 0),
+  },
+  note: 'ANOTHER_CONTRACT is a repair shape (retarget the client), not a capability judgement: the operation may still be unauthorized, unimplemented or dead. That distinction is carried per workflow in the report.',
 };
 
-fs.writeFileSync(path.join(DR, 'Evidence', 'artifacts', 'm8-contract-gap-revalidation.json'), JSON.stringify(payload, null, 1) + '\n');
+fs.mkdirSync(ART, { recursive: true });
+fs.writeFileSync(path.join(ART, 'm8-contract-gap-revalidation.json'), JSON.stringify(payload, null, 1) + '\n');
 
-console.log('gap revalidation @', payload.revision.slice(0, 12));
-console.log('unresolved sites    :', payload.counts.unresolvedSites);
-console.log('distinct gap paths  :', payload.counts.distinctGapPaths);
-console.log('false-success paths :', payload.counts.gapsWithFalseSuccess, `(${payload.counts.falseSuccessSites} sites)`);
-console.log('classes             :', JSON.stringify(classes));
+console.log(`contract gap revalidation @ ${payload.revision.slice(0, 12)}`);
+console.log(`client sites        : ${payload.counts.clientCallSites} (matched ${payload.counts.matched}, mismatch ${payload.counts.contractMismatch}, no-op ${payload.counts.noRegisteredOperation})`);
+console.log(`gap shapes / sites  : ${payload.counts.distinctGapShapes} / ${payload.counts.gapSites}`);
+console.log('classification      :', JSON.stringify(hist));
+console.log(`false success       : ${payload.counts.falseSuccessSites} sites over ${payload.counts.falseSuccessDistinctPaths} paths`
+  + ` (${payload.counts.falseSuccessSitesOnUnresolvedPaths} on ${payload.counts.falseSuccessUnresolvedShapes} unresolved shapes,`
+  + ` ${payload.counts.falseSuccessSitesOnMatchedPaths} matched, ${payload.counts.falseSuccessSitesOnMismatchPaths} mismatch,`
+  + ` ${payload.counts.falseSuccessSitesOnNoOperationPaths} no-operation)`);
+console.log('disposition         :', JSON.stringify(dispHist));
+for (const g of gaps) {
+  console.log(`  ${g.classification.padEnd(16)} ${g.requestShape}  (${g.siteCount} site${g.siteCount === 1 ? '' : 's'}, falseSuccess ${g.falseSuccessSites})`);
+}

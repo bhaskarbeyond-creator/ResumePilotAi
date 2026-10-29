@@ -86,15 +86,16 @@ working tree        clean outside developer-review/ (§6)
       -> exit 0
          revision a2ecb96d2b194df25d5cd8ce2ece23ef65068fd9
          routeCallSites 393 | aliasRegistrations 397 | uniqueMethodPath 393 | nonApiRouteLiterals 14
-         parser B registrations 405
+         parser B registrations 405 instances | 399 distinct keys | 6 duplicate instances
+         key level: 399 = 393 shared + 6 only-B; 405 - 6 duplicates = 399
          legacy replay (old rules over current source): 413 literals
          falsePositives 2 | aliasCollisions (duplicate instances) 6 | distinctShapes 405
-         sharedInstances 397 | onlyA 0 | onlyB 8 (all non-/api) | onlyB_inScope 0
+         sharedInstances 397 | onlyA 0 | onlyB 8 rows (6 endpoints + 2 line-attribution) | onlyB_inScope 0
          verifications: reproduces413 true | reproduces397 true | deltaExplained true
                         inScopeAgrees true | nonApiAccounting true
          registerShapeCollisions 0
       -> wrote M8-REGISTRATION-COUNT-RECONCILIATION.md (regenerated, not hand-edited)
-      -> wrote Evidence/artifacts/m8-registration-reconciliation.json (405 per-instance rows)
+      -> wrote Evidence/artifacts/m8-registration-reconciliation.json (405 per-instance rows + keyLevel)
 
 2.2 The arithmetic, and what each term is
     413 = 405 + 6 + 2
@@ -245,10 +246,11 @@ parity                13 FULL / 51 PARTIAL / 28 MISSING / 0 STUB / 12 MOCK / 5 R
 subfeatures           ADJUDICATED 50 / EQUIVALENCE_LEAD 33 / SIGNAL_CLEAN 21 / DEEP_READ_M6 8;
                       open leads 0 (was 10 rows / 20 items)
 contract              212 client sites: 190 matched / 8 contract-mismatch / 14 no registered
-                      operation; 15 distinct gap paths (WRONG_URL 11, MISSING_BACKEND 4);
-                      false success 7 paths / 12 sites
-findings              52 distinct / 54 IDs (DISC-042 and DISC-046 are merged stubs into DISC-030)
-coverage arithmetic   1,543 = 650 + 206 + 112 + 393 + 48 + 52 + 65 + 17
+                      operation; 15 distinct gap shapes (WRONG_URL 11, MISSING_BACKEND 4);
+                      false success 12 sites over 11 paths (4 matched, 2 mismatch, 6 no-op)
+                      + 1 surface the detector cannot see (contact form, no request at all)
+findings              53 distinct / 55 IDs (DISC-042 and DISC-046 are merged stubs into DISC-030)
+coverage arithmetic   1,544 = 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17
 tests                 1,315 discovered / 1,269 pass / 46 fail (exit 1); tsc -b exit 0
 gates                 A PARTIAL | B PASS | C PASS (static) | D PASS (static) | E PASS |
                       F FAIL (product) / PASS (identification) | G BLOCKED | H PASS with published
@@ -278,6 +280,10 @@ DISC-052  The create-ticket modal lost Escape handling, focus trap, scroll lock 
           while a Radix Dialog primitive sits unused. P2. Open.
 DISC-053  The shared unread-message poller, its backoff ladder and the global unread badge are
           gone; per-page polling stops entirely after one error. P3. Open.
+DISC-055  Four route blocks in backend/routes/platform.js are declared twice; the second copies are
+          unreachable, and for GET /payment-settings the live guard (any of payments.read /
+          system.config.read) is broader than both the dead copy and the file's own comment, so an
+          AUDITOR role can read the platform payment-settings projection. P2. Open.
 DISC-054  PATCH/archive/restore for enterprise teams call three registry methods that
           MySqlTenantRegistry does not implement (only the in-memory test double does), and
           enterprise_teams has no lead column, so lead assignment cannot persist. The suite is

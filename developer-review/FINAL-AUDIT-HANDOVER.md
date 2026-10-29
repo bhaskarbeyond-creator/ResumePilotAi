@@ -249,7 +249,7 @@ Detail: `M8-REGISTRATION-COUNT-RECONCILIATION.md`.
 | Parity mix | 12 / 49 / 30 / 12 / 6 / 3 | **13 / 51 / 28 / 0 / 12 / 5 / 3** (FULL / PARTIAL / MISSING / **STUB** / MOCK / REPLACED / UNVERIFIED) | three rows re-classified with anchors: `FP-D07` → PARTIAL, `FP-A12` → PARTIAL, `FP-C06` → FULL; the STUB label is now reported explicitly and holds **0** rows |
 | Open subfeature leads | 10 rows / 20 items | **0 rows / 0 items** (ADJUDICATED 50 / EQUIVALENCE_LEAD 33 / SIGNAL_CLEAN 21 / DEEP_READ_M6 8) | 20 leads closed with call→route→persistence→authz→test chains |
 | Contract | 212 sites → 190 / 8 / 14; 15 gap paths; 12 false-success sites | **same**, re-derived independently; gaps dispositioned **WRONG_URL 11 / MISSING_BACKEND 4** | `/admin/queues/dead-letter-queue/purge` reclassified: the "matching" `POST /platform/queues/purge` is a deliberate **410 GONE** stub |
-| Findings | 46 distinct / 48 IDs | **52 distinct / 54 IDs** | DISC-049 … DISC-054; coverage arithmetic **1,537 → 1,543** |
+| Findings | 46 distinct / 48 IDs | **53 distinct / 55 IDs** | DISC-049 … DISC-055; coverage arithmetic **1,537 → 1,544** |
 | Runtime | 0 executed | **executed, partially**: suite 1,315 / 1,269 pass / 46 fail; `tsc -b` exit 0; **43 HTTP probes**; 4 scenarios PASS, 4 PARTIAL, 2 BLOCKED | backend really starts with `IN_MEMORY_REPOSITORY=1` and a local HMAC secret |
 
 ### 14.4 The three corrections a reader must not miss
@@ -289,7 +289,7 @@ both gitignored) to *execute* tests, with `--ignore-scripts`; nothing from them 
 **`PARTIAL — BLOCKED`** — a different label from §13's `PARTIAL — INCOMPLETE`, and deliberately so. The
 audit work the mandate asked for was completed (nothing is *incomplete* about the audit); what remains is
 **environmentally blocked**: no MariaDB, no browser binary, no provider credentials, no reachable package
-CDN. Gate F additionally **fails on the product** (12 false-success sites across 7 paths), which this
+CDN. Gate F additionally **fails on the product** (12 false-success sites across 11 distinct request paths), which this
 mandate is not authorised to repair. Production readiness: **NOT ESTABLISHED**, unchanged.
 
 The gate-by-gate scoring, the runtime evidence and the verifier-quality caveats are in

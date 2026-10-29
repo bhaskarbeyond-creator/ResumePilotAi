@@ -28,12 +28,12 @@ security compliance. It asserts *traceability*.
 | Capability rows | 112 | **112 (100 %)** | `FEATURE-PARITY-MATRIX.md`, `feature-parity.json` |
 | Backend operations (unique METHOD+path) | 393 | **393 (100 %)** | `backend-reachability.json`, `backend-operations.tsv` |
 | Allegations | 48 | **48 (100 %)** | `ALLEGATION-RESOLUTION-REGISTER.md` |
-| Findings | 52 | **52 (100 %)** | `DISCREPANCY-LOG.md` (54 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
+| Findings | 53 | **53 (100 %)** | `DISCREPANCY-LOG.md` (55 IDs; DISC-042 and DISC-046 are merged into DISC-030 and not counted twice) |
 | Requirements | 65 | **65 (100 %)** | `REQUIREMENT-REGISTER.md` §P |
 | Environment gaps + a11y defects | 12 + 5 | **17 (100 %)** | `EG-REVALIDATION-REGISTER.md` |
-| **Total items** | **1,543** | **1,543** | — |
+| **Total items** | **1,544** | **1,544** | — |
 
-Arithmetic: 650 + 206 + 112 + 393 + 48 + 52 + 65 + 17 = **1,543**. (V5 shipped 1,496, V6 1,523 and V7
+Arithmetic: 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17 = **1,544**. (V5 shipped 1,496, V6 1,523 and V7
 1,537; each step is reconciled line by line in §14 and §15.)
 
 The aggregate moved twice, both times disclosed: V4 → 1,492 after the legacy baseline lost one file and
@@ -311,9 +311,9 @@ six ticket rows struck through.
 
 ---
 
-## 15. M8 amendment (`a2ecb96`) — six findings joined, nothing else moved
+## 15. M8 amendment (`a2ecb96`) — seven findings joined, nothing else moved
 
-The headline arithmetic is now **1,543** = 650 + 206 + 112 + 393 + 48 + 52 + 65 + 17. Only one component
+The headline arithmetic is now **1,544** = 650 + 206 + 112 + 393 + 48 + 53 + 65 + 17. Only one component
 changed:
 
 | Component | V7 | M8 | Δ | Cause |
@@ -323,17 +323,23 @@ changed:
 | Capability rows | 112 | **112** | 0 | unchanged; three classifications moved inside the 112 (`M8-PARITY-REVALIDATION.md`) |
 | Backend operations | 393 | **393** | 0 | unchanged; the counting *units* were repaired and reconciled (`M8-REGISTRATION-COUNT-RECONCILIATION.md`) |
 | Allegations | 48 | **48** | 0 | unchanged |
-| Findings | 46 | **52** | **+6** | DISC-049 … DISC-054 raised in M8; no merged stubs added |
+| Findings | 46 | **53** | **+7** | DISC-049 … DISC-055 raised in M8; no merged stubs added |
 | Requirements | 65 | **65** | 0 | unchanged |
 | Environment gaps + a11y | 17 | **17** | 0 | unchanged |
-| **Total** | **1,537** | **1,543** | **+6** | six findings only |
+| **Total** | **1,537** | **1,544** | **+7** | seven findings only |
 
 As in V7, a rising total is not evidence of better coverage. M8's own conclusion is unchanged by this
 number: the verdict rests on the gates in `M8-INDEPENDENT-ACCEPTANCE-REPORT.md`, not on this sum.
 
-**Amendment to this section (same revision).** It first read "+5 / 1,542" because M8 had raised five
-findings. The subfeature-closure pass then produced a sixth: tracing `FP-B05`'s lead-assignment lead past the
-route and into the production registry showed that `PATCH /api/enterprise/teams/:teamId` (and its archive and
-restore siblings) call registry methods that `MySqlTenantRegistry` does not implement, and that
-`enterprise_teams` has no lead column (**DISC-054**). The total moved to **1,543** for the same reason it
-moved before: one finding, one item, no double counting.
+**Amendments to this section (same revision).** It first read "+5 / 1,542" because M8 had raised five
+findings; it then read "+6 / 1,543" and now reads "+7 / 1,544". The two later findings came from the work
+that follows a number to its end:
+
+- **DISC-054** — tracing `FP-B05`'s lead-assignment lead past the route and into the production registry
+  showed that `PATCH /api/enterprise/teams/:teamId` (and its archive and restore siblings) call registry
+  methods that `MySqlTenantRegistry` does not implement, and that `enterprise_teams` has no lead column.
+- **DISC-055** — reconciling why the independent parser counted 405 registrations for 399 distinct keys
+  showed four route blocks declared twice in `backend/routes/platform.js`, whose dead second copies include
+  a `payment-settings` guard that disagrees with the live one.
+
+The total moved for the same reason each time: one finding, one item, no double counting.

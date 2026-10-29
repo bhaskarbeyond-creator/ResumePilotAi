@@ -372,7 +372,11 @@ _Creation, listing, replies and status filters all work; the modal's accessibili
    'healthy' service rows when `/platform/operational-status` does not return the expected shape
    (`frontend/src/hooks/use-api-hooks.ts:466-473`) — recorded as a loss *and* as a false-state risk,
    not as a clean equivalent.
-4. **No row classification moved.** All ten rows keep their M7 class because the leads were subfeatures
+4. **A fourth item surfaced from the count reconciliation rather than from this section**, and is recorded
+   here for the reader who arrives from the other direction: four route blocks in `routes/platform.js` are
+   declared twice, with divergent guards on `payment-settings` (**DISC-055**). It matters to FP-A12 because
+   the *live* platform-config read is the broader of the two copies.
+5. **No row classification moved.** All ten rows keep their M7 class because the leads were subfeatures
    inside rows whose headline verdicts already accounted for this kind of loss. The parity distribution
    therefore changes for the three rows in `M8-PARITY-REVALIDATION.md`, and not here.
 

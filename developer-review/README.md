@@ -96,7 +96,7 @@ Start here:
 | [`M8-RUNTIME-VERIFICATION.md`](M8-RUNTIME-VERIFICATION.md) | what was actually executed (backend suite, typecheck, 43 HTTP probes), what is blocked and the exact gate |
 | [`M8-VERIFIER-QUALITY-REVIEW.md`](M8-VERIFIER-QUALITY-REVIEW.md) | what each verifier check proves and, more importantly, what it does not |
 | [`Evidence/logs/m8-toolchain.log`](Evidence/logs/m8-toolchain.log) | every M8 command, raw exit code, tool versions and the reconciliation result |
-| [`DISCREPANCY-LOG.md`](DISCREPANCY-LOG.md) | **DISC-049 … DISC-054** added (52 distinct findings / 54 IDs); DISC-049 corrects an M7 provenance claim, DISC-054 a broken enterprise team chain |
+| [`DISCREPANCY-LOG.md`](DISCREPANCY-LOG.md) | **DISC-049 … DISC-054** added (53 distinct findings / 55 IDs); DISC-049 corrects an M7 provenance claim, DISC-054 a broken enterprise team chain |
 
 **Current reported M8 results** (all measured at `a2ecb96`, none carried forward): **393** route call sites /
 **397** alias registrations / **393** unique `METHOD+path`; independent contract parser **405** after repair;

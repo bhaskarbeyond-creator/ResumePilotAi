@@ -367,9 +367,10 @@ the `397` vs `413` confusion (**DISC-049**'s sibling defect, closed in `M8-REGIS
 | Independent contract-parser instances | what `client-contract-audit.cjs` counts after repair | **405** |
 | Duplicate alias instances | one handler registered as both `/x` and `/api/x` on one line | **6** |
 | False positives | non-route text the old parser accepted | **2** |
-| Standalone non-`/api` endpoints | real endpoints outside the register's declared scope | **8** |
+| Standalone non-`/api` endpoints | endpoints parser B holds that the register lacks, **by key** (row-level shows 8 because 2 are line-attribution artefacts for `/healthz` and `/readyz`) | **6** |
 
-Identity, recomputed every run: **413 = 405 + 6 + 2** and **405 = 397 + 8**. Path-shape collisions after a
+Identity, recomputed every run: **413 = 405 + 6 + 2** (instance level), **405 = 397 + 8** (instance level, B-only rows),
+and **405 − 6 duplicates = 399 = 393 + 6** (key level). Path-shape collisions after a
 *second* parameter collapse over the 393 operations: **0** (the register is already normalised) — the "70"
 figure an M8 draft cited is **withdrawn**.
 

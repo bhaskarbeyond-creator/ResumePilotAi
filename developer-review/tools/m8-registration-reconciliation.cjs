@@ -169,11 +169,31 @@ const registerShapeCollisions = (() => {
 const nonApiAccounting =
   nonApiDistinct.length + legacyB.aliasCollisions.length === A.units.nonApiRoutes;
 
+// key-level arithmetic: B's instances collapse to distinct METHOD+shape keys, and only then can the
+// two parsers be compared as sets. Duplicates inside B are counted, not explained away.
+const bKeyCount = new Map();
+for (const r of bRows) {
+  const k = `${r.method} ${r.key}`;
+  bKeyCount.set(k, (bKeyCount.get(k) || 0) + 1);
+}
+const bDistinct = bKeyCount.size;
+const bDuplicateInstances = [...bKeyCount.entries()].filter(([, n]) => n > 1)
+  .map(([k, n]) => ({ key: k, instances: n }));
+const aKeys = new Set(aRows.map((r) => `${r.method} ${r.key}`));
+const bKeys = new Set(bRows.map((r) => `${r.method} ${r.key}`));
+const bOnlyKeys = [...bKeys].filter((k) => !aKeys.has(k)).sort();
+const aOnlyKeys = [...aKeys].filter((k) => !bKeys.has(k)).sort();
+// row-level onlyB is larger than key-level because a shared key can sit on a different line
+const lineArtefacts = onlyB.filter((r) => aKeys.has(`${r.method} ${r.key}`))
+  .map((r) => ({ file: r.file, line: r.line, key: r.key, note: 'same METHOD+shape as a register row, different line' }));
+
 const reproduces413 = legacyB.total === 413;
 const reproduces397 = A.units.aliasRegistrations === 397 && A.units.uniqueMethodPath === 393;
 const deltaExplained =
   arithmetic.b.registrations ===
-  arithmetic.a.aliasRegistrations + nonApiDistinct.length;
+  arithmetic.a.aliasRegistrations + nonApiDistinct.length &&
+  bDistinct === arithmetic.a.uniqueMethodPath + bOnlyKeys.length &&
+  arithmetic.b.registrations - bDistinct === bDuplicateInstances.length;
 const inScopeAgrees = inScopeOnlyB.length === 0 && onlyA.length === 0;
 
 // ---------------------------------------------------------------- rows for the report
@@ -202,6 +222,16 @@ const result = {
   },
   arithmetic,
   verifications: { reproduces413, reproduces397, deltaExplained, inScopeAgrees, nonApiAccounting },
+  keyLevel: {
+    parserBDistinctKeys: bDistinct,
+    parserADistinctKeys: aKeys.size,
+    sharedKeys: [...bKeys].filter((k) => aKeys.has(k)).length,
+    onlyBKeys: bOnlyKeys,
+    onlyAKeys: aOnlyKeys,
+    duplicateInstances: bDuplicateInstances,
+    rowLevelOnlyBWithSharedKey: lineArtefacts,
+    identity: `${arithmetic.b.registrations} instances - ${bDuplicateInstances.length} duplicates = ${bDistinct} distinct = ${aKeys.size} shared + ${bOnlyKeys.length} only-B`,
+  },
   aliasVsShape: {
     duplicateInstances: legacyB.aliasCollisions.length,
     standaloneNonApiEndpoints: nonApiDistinct.length,
@@ -245,12 +275,20 @@ p('**Machine-readable twin:** `Evidence/artifacts/m8-registration-reconciliation
 p('**Mandate 8 gate:** B — registration integrity.', '');
 p('## 1. Answer', '');
 p(`The 16-registration difference is **resolved**, and it was **not** a disagreement about the backend.`);
-p(`It was ${arithmetic.legacyReplay.falsePositives} false positives, ${arithmetic.legacyReplay.aliasCollisions} duplicate instances (one handler registered as both \`/x\` and \`/api/x\` on the same line) and ${outOfScopeOnlyB.length} standalone endpoints that sit outside the canonical register's documented \`/api\` scope — all of them in the *independent* parser, none of them in the backend.`, '');
-p(`In arithmetic (every term computed this run): **${legacyB.total} = ${arithmetic.b.registrations} + ${arithmetic.legacyReplay.aliasCollisions} + ${arithmetic.legacyReplay.falsePositives}**, and **${arithmetic.b.registrations} = ${arithmetic.a.aliasRegistrations} + ${nonApiDistinct.length}**. The ${A.units.nonApiRoutes} non-\`/api\` *literals* therefore split into ${nonApiDistinct.length} standalone endpoints + ${legacyB.aliasCollisions.length} compatibility aliases of an \`/api\` twin (${nonApiAccounting ? 'accounting closes' : '**accounting does not close**'}).`, '');
+p(`There are **three different sixes and eights** in this reconciliation, and conflating them is what made the original figure look unreconcilable. They are separated here once:`, '');
+p(`1. **8 B-only rows.** ${outOfScopeOnlyB.length} rows exist in parser B and not in the register at row level (file+line+verb+shape). Separately, the legacy replay differed from the repaired parser by ${arithmetic.legacyReplay.aliasCollisions} same-line alias literals and ${arithmetic.legacyReplay.falsePositives} false positives.`);
+p(`2. **6 endpoints only in B, by key.** Of those ${outOfScopeOnlyB.length} rows, ${bOnlyKeys.length} are genuinely absent from the register: ${bOnlyKeys.map((k) => `\`${k}\``).join(', ')}. The other **2 are line-attribution differences**: the register holds \`/healthz\` and \`/readyz\` at the later of two declarations, so B's earlier rows look exclusive.`);
+p(`3. **6 duplicate instances inside B.** ${arithmetic.b.registrations} instances collapse to ${bDistinct} distinct keys; the six repeated keys are ${bDuplicateInstances.map((d) => `\`${d.key}\``).join(', ')}. Four of them are the same block declared twice in \`backend/routes/platform.js\`; two are the \`/healthz\` + \`/api/healthz\` and \`/readyz\` + \`/api/readyz\` pairs, which B merges when it strips \`/api\`.`, '');
+p(`In arithmetic (every term computed this run):`, '');
+p(`- **${legacyB.total} = ${arithmetic.b.registrations} + ${arithmetic.legacyReplay.aliasCollisions} + ${arithmetic.legacyReplay.falsePositives}** — the legacy replay, reproduced from the old rules`);
+p(`- **${arithmetic.b.registrations} = ${arithmetic.a.aliasRegistrations} + ${outOfScopeOnlyB.length}** — repaired parser, instance level (${arithmetic.a.aliasRegistrations} matched + ${outOfScopeOnlyB.length} B-only rows)`);
+p(`- **${bDistinct} = ${arithmetic.a.uniqueMethodPath} + ${bOnlyKeys.length}** — repaired parser, key level (${arithmetic.a.uniqueMethodPath} shared + ${bOnlyKeys.length} only-B)`);
+p(`- **${arithmetic.b.registrations} - ${bDuplicateInstances.length} = ${bDistinct}** — duplicate instances inside B`, '');
+p(`The ${A.units.nonApiRoutes} non-\`/api\` *literals* split into ${nonApiDistinct.length} row-level B-only literals + ${legacyB.aliasCollisions.length} compatibility aliases of an \`/api\` twin (${nonApiAccounting ? 'accounting closes' : '**accounting does not close**'}).`, '');
 p('| Component | Count | What it is |');
 p('|---|---:|---|');
 p(`| Aliases registered under \`/api\` (canonical, parser A) | **${arithmetic.a.aliasRegistrations}** | ${arithmetic.a.uniqueMethodPath} call sites, ${arithmetic.a.aliasRegistrations} alias literals, ${arithmetic.a.uniqueMethodPath} unique \`METHOD+path\` |`);
-p(`| + real routes outside \`/api\` | **+${nonApiDistinct.length}** | \`/healthz\`, \`/readyz\`, \`/llms.txt\`, \`/llms-full.txt\`, \`/sitemap.xml\`, \`/v1/models\`, \`/public/custom-pages.json\`, \`/public/trusted-by.json\` |`);
+p(`| + rows that exist only in parser B | **+${outOfScopeOnlyB.length}** | ${bOnlyKeys.length} endpoints the register lacks + 2 line-attribution rows (\`/healthz\`, \`/readyz\`) |`);
 p(`| = contract parser after repair (parser B) | **${arithmetic.b.registrations}** | same corpus, same unit, wider scope |`);
 p(`| + duplicate instances the old parser counted twice | **+${arithmetic.legacyReplay.aliasCollisions}** | one handler registered as \`['/api/v1/status','/v1/status']\` counted as two |`);
 p(`| + non-route text the old parser accepted | **+${arithmetic.legacyReplay.falsePositives}** | \`Promise.all([fetch('https://api.github.com/user'), …])\` |`);
@@ -260,11 +298,12 @@ p('| Assertion | Method | Result |');
 p('|---|---|---|');
 p(`| the published 413 is reproducible | replay the **old** parser rules over current source | ${reproduces413 ? '**yes**' : 'no'} — ${legacyB.total} literals |`);
 p(`| the published 397/393 are reproducible | read the canonical artifact produced this run | ${reproduces397 ? '**yes**' : 'no'} — ${A.units.aliasRegistrations} alias registrations, ${A.units.uniqueMethodPath} unique |`);
-p(`| the remaining delta is scope, not disagreement | A's alias registrations + standalone non-\`/api\` endpoints == B's total | ${deltaExplained ? '**yes**' : 'no'} — ${arithmetic.a.aliasRegistrations} + ${nonApiDistinct.length} = ${arithmetic.b.registrations} |`);
+p(`| the remaining delta is scope, not disagreement | A's alias registrations + B-only rows == B's total | ${deltaExplained ? '**yes**' : 'no'} — ${arithmetic.a.aliasRegistrations} + ${outOfScopeOnlyB.length} = ${arithmetic.b.registrations} |`);
+p(`| B's instances collapse to a key set | instances − duplicate keys == A's keys + only-B keys | ${deltaExplained ? '**yes**' : 'no'} — ${arithmetic.b.registrations} − ${bDuplicateInstances.length} = ${bDistinct} = ${arithmetic.a.uniqueMethodPath} + ${bOnlyKeys.length} |`);
 p(`| the two parsers agree **inside** the \`/api\` scope | diff on \`file|line|verb|normalised shape\` | ${inScopeAgrees ? '**yes**' : 'no'} — ${inScopeOnlyB.length} B-only in scope, ${onlyA.length} A-only |`);
 p(`| the non-\`/api\` literals split cleanly | standalone endpoints + duplicate alias literals == literals | ${nonApiAccounting ? '**yes**' : 'no'} — ${nonApiDistinct.length} + ${legacyB.aliasCollisions.length} = ${A.units.nonApiRoutes} |`);
 p(`| duplicate instances are aliases, not path-shape noise | collapse \`:param\`/\`\${…}\` over the ${A.operations.length} register operations and look for merged keys | **${registerShapeCollisions.length} collisions** — the 393-operation register is already parameter-normalised |`, '');
-p(`**Unit note for readers of the older narrative.** Two numbers that were previously conflated are kept apart here. *Duplicate instances* are alias pairs — one handler registered under two literals on one line — and there are exactly ${legacyB.aliasCollisions.length}. *Path-shape collisions* would be two distinct operations sharing a key after \`:param\`/\`\${…}\` collapse; measured over the ${A.operations.length} register operations that is **${registerShapeCollisions.length}**, because the register's paths are already normalised. Parameter-name variants such as \`/:uid\` vs \`/:id\` live in pre-mount router literals, resolve to different mount prefixes, and are never counted as duplicates. An earlier M8 draft cited "70 path-shape collisions"; that figure is not reproducible from the artefacts and is withdrawn.`, '');
+p(`**Unit note for readers of the older narrative.** Three different things were called "duplicates". (a) *Same-line alias literals* — one handler registered as both \`/x\` and \`/api/x\` in one array; exactly ${legacyB.aliasCollisions.length} of them, and they are what the legacy parser over-counted. (b) *Duplicate registrations* — a key registered more than once in the source; ${bDuplicateInstances.length} such keys inside B, of which four are literal copies of a block (see DISC-055). (c) *Path-shape collisions* — two distinct operations sharing a key after \`:param\`/\`\${…}\` collapse; measured over the ${A.operations.length} register operations that is **${registerShapeCollisions.length}**, because the register's paths are already normalised. Parameter-name variants such as \`/:uid\` vs \`/:id\` live in pre-mount router literals, resolve to different mount prefixes, and are never counted as duplicates. An earlier M8 draft cited "70 path-shape collisions"; that figure is not reproducible from the artefacts and is withdrawn.`, '');
 
 p('## 3. Defects found and corrected (audit instruments only)', '');
 p('### 3.1 Parser B (`tools/client-contract-audit.cjs`) — two real defects', '');

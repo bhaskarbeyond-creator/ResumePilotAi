@@ -374,7 +374,7 @@ gate fails on the product).
 ### 13.2 What a new reader should trust, in order
 
 1. `M8-INDEPENDENT-ACCEPTANCE-REPORT.md` — gates A–K, verdict, blockers. If you read one file, read this.
-2. `DISCREPANCY-LOG.md` — **52 distinct findings / 54 IDs**; DISC-050, DISC-051 and DISC-054 are the three P1s a
+2. `DISCREPANCY-LOG.md` — **53 distinct findings / 55 IDs**; DISC-050, DISC-051 and DISC-054 are the three P1s a
    product owner must see (contact enquiries silently discarded; the public jobs page requests a route that
    does not exist and its filters are ignored even where it does).
 3. `REPAIR-ACTION-PLAN.md` — Phase 7 (R-A8-01 … R-A8-05) sits alongside Phase 6; the first two rows are
@@ -386,7 +386,7 @@ gate fails on the product).
 
 - **Runtime**: no browser binary, no MariaDB, no provider credentials, no reachable package CDN. Six of the
   ten R-scenarios still cannot be completed. Production readiness remains **NOT ESTABLISHED**.
-- **Product**: 12 false-success sites across 7 paths, 4 of them with no backend capability at all. M8 was
+- **Product**: 12 false-success sites across 11 distinct request paths, 4 of them with no backend capability at all. M8 was
   an audit mandate; **it made no application change**, and repairs remain authorised work for someone else.
 - **Audit**: the missing preservation ref (DISC-049) is recorded, not fabricated. If the base commit matters
   to you, create the ref deliberately and date it.
