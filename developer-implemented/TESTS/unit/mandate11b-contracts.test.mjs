@@ -1,13 +1,14 @@
 import { register } from 'node:module';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
 const loaderCode = `
 import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
-const frontendSrcDir = ${JSON.stringify(new URL('../../../frontend/src/', import.meta.url).pathname)};
+const frontendSrcDir = ${JSON.stringify(fileURLToPath(new URL('../../../frontend/src/', import.meta.url)))};
 
 export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith('@/')) {
