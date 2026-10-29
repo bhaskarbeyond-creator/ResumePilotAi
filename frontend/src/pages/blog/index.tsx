@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
 import { get } from '@/lib/api-client';
+import { parsePublicBlogPosts, type PublicBlogPost } from './blog-contract';
 import { cn } from '@/lib/utils';
 import {
   Search,
@@ -18,24 +19,12 @@ import {
   CalendarDays,
 } from 'lucide-react';
 
-interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  author: string;
-  category: string;
-  readTime: number;
-  publishedAt: string;
-  coverImage?: string;
-  tags: string[];
-  featured?: boolean;
-}
-
 const CATEGORIES = ['All', 'Career Tips', 'Resume Writing', 'Interview Prep', 'Job Search', 'Industry News'];
 
 export function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<PublicBlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -43,10 +32,10 @@ export function BlogPage() {
     let cancelled = false;
     async function load() {
       try {
-        const data = await get<{ posts: BlogPost[] }>('/blog/posts');
-        if (!cancelled) setPosts(data.posts ?? []);
+        const data = await get<unknown>('/blog-data?publishedOnly=true');
+        if (!cancelled) { setPosts(parsePublicBlogPosts(data)); setError(false); }
       } catch {
-        if (!cancelled) setPosts([]);
+        if (!cancelled) { setPosts([]); setError(true); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -109,7 +98,9 @@ export function BlogPage() {
           </div>
         )}
 
-        {!loading && filtered.length === 0 && (
+        {error && <p role="alert">Articles are currently unavailable. Please try again later.</p>}
+
+        {!loading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center py-16 text-center">
             <BookOpen className="mb-4 size-12 text-ink-subtle" />
             <h3 className="text-lg font-semibold text-ink">No articles found</h3>
@@ -119,7 +110,7 @@ export function BlogPage() {
           </div>
         )}
 
-        {!loading && filtered.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((post) => (
               <Card key={post.id} className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer">
@@ -138,7 +129,7 @@ export function BlogPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 text-xs text-ink-muted mb-2">
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-600">{post.category}</span>
-                    <span className="flex items-center gap-1"><Clock className="size-3" />{post.readTime} min read</span>
+                    {post.readTime !== null && <span className="flex items-center gap-1"><Clock className="size-3" />{post.readTime} min read</span>}
                   </div>
 
                   <h3 className="text-base font-semibold text-ink line-clamp-2 group-hover:text-brand-600 transition-colors">
@@ -154,7 +145,7 @@ export function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                       <CalendarDays className="size-3" />
-                      {new Date(post.publishedAt).toLocaleDateString()}
+                      {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : 'Date unavailable'}
                     </div>
                   </div>
                 </CardContent>
