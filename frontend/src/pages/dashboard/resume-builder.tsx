@@ -33,6 +33,7 @@ import { bucketForScore, bucketTone } from '@/lib/resume-metrics';
 import { resumeQualityScore, scoreResume } from '@/lib/resume-score';
 import { applyMasterProfile, describeMasterSync } from '@/lib/master-profile';
 import { cn } from '@/lib/utils';
+import { compressHeadshot, validateImageFile } from '@/lib/image-compression';
 import { PreviewModal } from '@/components/ui/preview-modal';
 import { ShareModal } from '@/components/ui/share-modal';
 import {
@@ -2597,20 +2598,22 @@ function HeadingStep({
     onChange({ ...heading, [field]: value });
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Photo must be under 5MB');
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      alert(validationError);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        update('photo', reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    try {
+      const compressed = await compressHeadshot(file);
+      update('photo', compressed.dataUrl);
+    } catch {
+      alert('Failed to compress photo. Please try a different image.');
+    }
   };
 
   const handleRemovePhoto = () => {

@@ -93,6 +93,7 @@ export function CandidateReviewDrawer({
   const [messageBody, setMessageBody] = useState('');
   const [messageSending, setMessageSending] = useState(false);
   const [messageSuccess, setMessageSuccess] = useState(false);
+  const [messageError, setMessageError] = useState('');
 
   // Sync internal state when application changes
   useEffect(() => {
@@ -155,6 +156,7 @@ export function CandidateReviewDrawer({
     if (!messageSubject.trim() || !messageBody.trim() || messageSending) return;
 
     setMessageSending(true);
+    setMessageError('');
     try {
       await post('/notify/email', {
         to: application.applicantEmail,
@@ -163,8 +165,6 @@ export function CandidateReviewDrawer({
         recipientName: application.applicantName,
         jobId,
         applicationId: application.id,
-      }).catch(() => {
-        // Fallback: log notification to application record
       });
       setMessageSuccess(true);
       setTimeout(() => {
@@ -173,12 +173,12 @@ export function CandidateReviewDrawer({
         setMessageSubject('');
         setMessageBody('');
       }, 1500);
-    } catch {
-      setMessageSuccess(true);
-      setTimeout(() => {
-        setMessageSuccess(false);
-        setMessageModalOpen(false);
-      }, 1500);
+    } catch (err: any) {
+      setMessageError(
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        'Failed to send message. Please try again.'
+      );
     } finally {
       setMessageSending(false);
     }
@@ -754,6 +754,12 @@ export function CandidateReviewDrawer({
                   />
                 </div>
 
+                {messageError && (
+                  <div className="p-2.5 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-medium flex items-center gap-2">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>{messageError}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-edge">
                   <Button
                     type="button"
