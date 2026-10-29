@@ -413,12 +413,17 @@ Six dimensions, kept separate:
 
 ## 12. What was proved, what was changed, what remains uncertain
 
-**Proved.** The two instruments count different things and the difference is exactly 16 rows, itemised;
-the operation set is 393 and is unchanged by the repair. Twenty residual leads are closed with
-chains, not names. Three parity classifications were wrong and are corrected, each with its prior
-verdict retained. Ten of the fifteen contract gaps were confirmed over HTTP as genuine 404s on the
-client's exact paths, distinguished from "route answered no" by response shape. The 256 KB body
-limit rejects a 400 KB photo with 413. The frontend typechecks and 1,269 backend tests pass.
+**Proved.** The two instruments count different things and the difference closes at two levels —
+**413 = 405 + 6 + 2** in instances and **405 − 6 = 399 = 393 + 6** in keys — with every term itemised;
+the operation set is 393 and is unchanged by the repair. Twenty residual leads are closed with chains,
+not names, and one of them **refuted itself** the moment it was traced past the route (DISC-054). Three
+parity classifications were wrong and are corrected, each with its prior verdict retained. Ten of the
+fifteen contract gaps were confirmed over HTTP as genuine 404s on the client's exact paths,
+distinguished from "route answered no" by response shape. The 256 KB body limit rejects a ~400 KB photo
+with 413 while accepting 120 KB. The frontend typechecks and 1,269 backend tests pass. And two product
+defects that no row-level exercise was looking for fell out of the counting itself: duplicated route
+blocks with divergent guards (DISC-055) and a false-success count that had been measured per path
+instead of per call site.
 
 **Changed.** Instruments (counting units, `/api` scope, legacy `apiJson` extraction, alias collapse,
 receiver restriction, two-file adjudication merge); artefacts regenerated at `a2ecb96`; two derived
@@ -429,9 +434,12 @@ change history, repair plan and handover updated with dated M8 amendments. **No 
 config, schema or manifest was changed**; no expected value was moved.
 
 **Uncertain.** Everything that needs a database, a browser or a provider: persistence of any write,
-Firebase identity, any upload beyond the body limit, DOCX export, support-ticket round trips, the 46
-DB-attributable test failures, and every DOM-level claim about the three reclassifications. The
-M7-era artefacts that remain are labelled as such; none is presented as M8 execution.
+Firebase identity, any upload beyond the limit, DOCX export, support-ticket round trips, the 46
+DB-attributable test failures, the predicted `503` on the enterprise team verbs, the any-of guard on
+`payment-settings`, and every DOM-level claim about the three reclassifications. The M7-era artefacts
+that remain are labelled as such; none is presented as M8 execution. The two residual test failures
+(indexes 748 and 1112) are labelled residual because their cause is not proven, not because it is
+known to be the database.
 
 ## 13. Blockers and next actions
 
