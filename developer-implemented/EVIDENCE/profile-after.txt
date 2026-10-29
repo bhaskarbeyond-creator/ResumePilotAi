@@ -1,0 +1,93 @@
+TAP version 13
+# Subtest: in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+ok 1 - in-memory profile creation, conflict, retry and subsequent update use revision zero for absence
+  ---
+  duration_ms: 1.400397
+  type: 'test'
+  ...
+# Subtest: concurrent in-memory initial creates do not both succeed
+ok 2 - concurrent in-memory initial creates do not both succeed
+  ---
+  duration_ms: 0.279143
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: ⚙️  override existing env vars with { override: true }
+# Subtest: new profile and deterministic welcome event commit atomically
+ok 3 - new profile and deterministic welcome event commit atomically
+  ---
+  duration_ms: 2.014735
+  type: 'test'
+  ...
+# Subtest: new profile rolls back when welcome enqueue fails
+ok 4 - new profile rolls back when welcome enqueue fails
+  ---
+  duration_ms: 0.808862
+  type: 'test'
+  ...
+# Subtest: profile updates do not enqueue duplicate welcome events
+ok 5 - profile updates do not enqueue duplicate welcome events
+  ---
+  duration_ms: 0.22641
+  type: 'test'
+  ...
+# Subtest: first portfolio publication and publication event commit atomically
+ok 6 - first portfolio publication and publication event commit atomically
+  ---
+  duration_ms: 0.970396
+  type: 'test'
+  ...
+# Subtest: portfolio publication rolls back if its outbox event cannot enqueue
+ok 7 - portfolio publication rolls back if its outbox event cannot enqueue
+  ---
+  duration_ms: 0.676277
+  type: 'test'
+  ...
+# Subtest: portfolio CAS rejects stale revisions before mutation or notification
+ok 8 - portfolio CAS rejects stale revisions before mutation or notification
+  ---
+  duration_ms: 0.268957
+  type: 'test'
+  ...
+# Subtest: portfolio identifiers cannot be reassigned across owners
+ok 9 - portfolio identifiers cannot be reassigned across owners
+  ---
+  duration_ms: 0.468705
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [dotenv@17.2.3] injecting env (0) from backend/.env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# Subtest: profile API requires an explicit revision and rejects protected-field mass assignment
+ok 10 - profile API requires an explicit revision and rejects protected-field mass assignment
+  ---
+  duration_ms: 30.511595
+  type: 'test'
+  ...
+# Subtest: profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+ok 11 - profile API rejects owner mismatch, identity-email mismatch, and malformed envelope
+  ---
+  duration_ms: 6.917771
+  type: 'test'
+  ...
+# Subtest: profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+ok 12 - profile API applies a valid owner update, preserves billing state, and returns nested profile revision
+  ---
+  duration_ms: 5.839732
+  type: 'test'
+  ...
+# Subtest: profile API stale write returns authoritative revision/profile and performs no mutation
+ok 13 - profile API stale write returns authoritative revision/profile and performs no mutation
+  ---
+  duration_ms: 3.46646
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 449.376485
+exit code: 0

@@ -1,0 +1,28 @@
+
+> my-app@0.0.0 test:frontend
+> npm --prefix frontend test
+
+
+> frontend@0.0.0 test
+> playwright test
+
+[WebServer] /home/user/ResumePilotAi/scripts/start-ai-engine-e2e.cjs:5
+[WebServer]   throw new Error('Authenticated AI E2E requires explicitly disposable MariaDB and the test-only signed identity verifier');
+[WebServer]   ^
+[WebServer] 
+[WebServer] Error: Authenticated AI E2E requires explicitly disposable MariaDB and the test-only signed identity verifier
+[WebServer]     at Object.<anonymous> (/home/user/ResumePilotAi/scripts/start-ai-engine-e2e.cjs:5:9)
+[WebServer]     at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[WebServer]     at Object..js (node:internal/modules/cjs/loader:1913:10)
+[WebServer]     at Module.load (node:internal/modules/cjs/loader:1505:32)
+[WebServer]     at Function._load (node:internal/modules/cjs/loader:1309:12)
+[WebServer]     at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+[WebServer]     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+[WebServer]     at node:internal/main/run_main_module:36:49
+
+[WebServer] 
+[WebServer] Node.js v22.22.3
+
+Error: Process from config.webServer was not able to start. Exit code: 1
+
+exit code: 1

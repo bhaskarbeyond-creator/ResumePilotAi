@@ -1,0 +1,11 @@
+
+> my-app@0.0.0 lint
+> npm --prefix frontend run lint
+
+
+> frontend@0.0.0 lint
+> oxlint
+
+Found 0 warnings and 0 errors.
+Finished in 144ms on 239 files with 96 rules using 2 threads.
+exit code: 0

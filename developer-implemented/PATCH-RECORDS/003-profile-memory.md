@@ -1,0 +1,4 @@
+# Profile in-memory revision parity
+Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. Files: `backend/repositories/InMemoryRepository.js`, `backend/test/profile-memory-revision.test.js`. The observed initial `STALE_WRITE` for revision zero reproduced in memory (`EVIDENCE/profile-memory-reproduction.txt`); absent rows defaulted to one. Align memory's absent revision and conflict shape with MySQL repository; preserve stale-write rejection. `node --test backend/test/profile-memory-revision.test.js backend/test/users-data-profile.integration.test.js backend/test/profile-portfolio-outbox.test.js`: 13 pass (`EVIDENCE/profile-after.txt`). Tests use in-memory or SQL doubles, not MariaDB. Concurrent creation against actual MariaDB and actual persisted state remain BLOCKED. IMPLEMENTED — NOT VERIFIED.
+
+Application implementation commit(s): `e40784c`. The acceptance status and blocked tests above are unchanged by committing.

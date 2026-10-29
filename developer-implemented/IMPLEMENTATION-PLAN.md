@@ -1,0 +1,3 @@
+# Implementation plan — IN PROGRESS
+
+Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. First: prevent checkout false success, then complete provider-integrated payment with server-owned order/invoice and idempotency, then contact and real-database CAS reproduction. Investigate each of the 11 contract reports individually and continue accepted findings by risk. Before each batch check branch/worktree and inventory; record tests and distinguish real services from doubles. Do not interpret the temporary fail-closed checkout as functional payment. Full finding inventory, prerequisites and regression suite remain to be completed.

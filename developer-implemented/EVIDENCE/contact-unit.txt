@@ -1,0 +1,59 @@
+TAP version 13
+# Subtest: sends persisted subject and accepts only documented response
+ok 1 - sends persisted subject and accepts only documented response
+  ---
+  duration_ms: 18.418003
+  type: 'test'
+  ...
+# Subtest: validation rejected
+ok 2 - validation rejected
+  ---
+  duration_ms: 0.632523
+  type: 'test'
+  ...
+# Subtest: server failure
+ok 3 - server failure
+  ---
+  duration_ms: 0.474659
+  type: 'test'
+  ...
+# Subtest: network failure
+ok 4 - network failure
+  ---
+  duration_ms: 0.221152
+  type: 'test'
+  ...
+# Subtest: malformed
+ok 5 - malformed
+  ---
+  duration_ms: 0.563512
+  type: 'test'
+  ...
+# Subtest: false success
+ok 6 - false success
+  ---
+  duration_ms: 1.024817
+  type: 'test'
+  ...
+# Subtest: wrong status
+ok 7 - wrong status
+  ---
+  duration_ms: 0.362691
+  type: 'test'
+  ...
+# Subtest: local validation and retry after failure
+ok 8 - local validation and retry after failure
+  ---
+  duration_ms: 0.439654
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 129.116906
+exit code: 0

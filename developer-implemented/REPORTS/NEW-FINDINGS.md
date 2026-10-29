@@ -1,0 +1,8 @@
+# New findings and observations
+
+Baseline/current source baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`, plus uncommitted checkout patch. No new IDs assigned: deduplication against the full canonical register is incomplete.
+
+- Existing profile CAS observation (M8B open blockers): static inspection shows `InMemoryRepository.js:saveUserWithRevisionGuard` defaults absent user revision to 1 and emits `STALE_WRITE`, whereas `MySQLRepository.js` defaults absence to 0 and emits `PROFILE_CONFLICT`. This supports the existing forensic uncertainty that the reported failure may be test-double-specific; it does not establish MariaDB concurrent-create behavior. Real-database reproduction BLOCKED. No patch.
+- Payment UI tiers `starter/pro/executive/enterprise` do not match backend `monthly/halfYear/yearly` in `backend/index.js:getDynamicPlan`; `/api/pay` returns `PAYMENT_PENDING`, not success. Related to existing FS-M8A-01 and contract findings; full duplicate search and independent classification NOT STARTED. This reinforces why blindly treating a successful create-order response as paid is unsafe.
+
+Further status: the in-memory revision mismatch has now been reproduced and corrected, with in-memory tests passing; real MariaDB behavior remains unverified. It is linked to the existing M8B observation, not assigned a new ID. The `/api/contact` contract has no idempotency key: an uncertain network result followed by a retry may produce two records, and a warning is shown. This is an implementation observation, not yet deduplicated as a distinct finding. No arbitrary identifier has been assigned.

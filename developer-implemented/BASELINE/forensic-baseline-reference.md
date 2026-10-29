@@ -1,0 +1,3 @@
+# Historical references
+
+Source snapshot: `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. `developer-review/M8E-FINAL-FORENSIC-CLOSURE-REPORT.md` states static audit closure, not product readiness; it distinguishes 112 accepted capabilities from five proposals and reports dynamic verification blocked. Read alongside `DISCREPANCY-LOG.md`, `CAPABILITY-SUBFEATURE-REGISTER.md`, `M8A-FALSE-SUCCESS-AND-MOCK-DATA.md`, `M8B-RUNTIME-CLOSURE-MATRIX.md`, `M8D-41-ROW-SOURCE-RECONSTRUCTION.md`, `M8D-LOCAL-RUNTIME-HANDOFF.md` and `M8D-REMAINING-FINDINGS-AND-BLOCKERS.md`. M8E's claimed local MariaDB cannot be assumed in this separate environment: local port check here was refused. Review and full reconciliation remain incomplete.

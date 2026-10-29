@@ -1,0 +1,1529 @@
+
+> my-app@0.0.0 test:enterprise
+> npm --prefix backend run test:enterprise
+
+
+> backend@1.0.0 test:enterprise
+> node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js
+
+TAP version 13
+# Subtest: enterprise rollout uses a single canonical server feature-flag implementation
+ok 1 - enterprise rollout uses a single canonical server feature-flag implementation
+  ---
+  duration_ms: 1.297943
+  type: 'test'
+  ...
+# Subtest: enterprise configuration separates browser UX flag from server-only data-plane secret
+ok 2 - enterprise configuration separates browser UX flag from server-only data-plane secret
+  ---
+  duration_ms: 0.367604
+  type: 'test'
+  ...
+# Subtest: tenant identity conventions distinguish Firebase subject from canonical MariaDB principal
+ok 3 - tenant identity conventions distinguish Firebase subject from canonical MariaDB principal
+  ---
+  duration_ms: 1.882157
+  type: 'test'
+  ...
+# Subtest: tenant-sensitive downstream paths consume canonical shared helpers rather than ambient identifiers
+ok 4 - tenant-sensitive downstream paths consume canonical shared helpers rather than ambient identifiers
+  ---
+  duration_ms: 0.321458
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant owner can create and list a new workspace
+ok 5 - tenant owner can create and list a new workspace
+  ---
+  duration_ms: 45.492635
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: service account create, list, and revoke lifecycle is tenant scoped
+ok 6 - service account create, list, and revoke lifecycle is tenant scoped
+  ---
+  duration_ms: 41.088406
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: service account and workspace operations cannot cross tenant boundaries
+ok 7 - service account and workspace operations cannot cross tenant boundaries
+  ---
+  duration_ms: 16.114088
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: support grants can be created, listed, and revoked by a tenant owner within the active tenant
+ok 8 - support grants can be created, listed, and revoked by a tenant owner within the active tenant
+  ---
+  duration_ms: 22.733805
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant owner can update roles and remove a member, but not the last owner
+ok 9 - tenant owner can update roles and remove a member, but not the last owner
+  ---
+  duration_ms: 45.164491
+  type: 'test'
+  ...
+# Subtest: MariaDB is the sole enterprise application-data provider; PostgreSQL clients and routing are absent
+ok 10 - MariaDB is the sole enterprise application-data provider; PostgreSQL clients and routing are absent
+  ---
+  duration_ms: 2.648224
+  type: 'test'
+  ...
+# Subtest: enterprise runtime contains no Firestore adapter, import, collection call, or hidden alternate owner
+ok 11 - enterprise runtime contains no Firestore adapter, import, collection call, or hidden alternate owner
+  ---
+  duration_ms: 3.160605
+  type: 'test'
+  ...
+# Subtest: durable job queue uses MariaDB leases, retries, idempotency, and dead-letter state—not process memory
+ok 12 - durable job queue uses MariaDB leases, retries, idempotency, and dead-letter state—not process memory
+  ---
+  duration_ms: 0.300696
+  type: 'test'
+  ...
+# Subtest: Redis is not a correctness dependency or package
+ok 13 - Redis is not a correctness dependency or package
+  ---
+  duration_ms: 1.100413
+  type: 'test'
+  ...
+# Subtest: startup describes MariaDB ownership and never logs environment secrets
+ok 14 - startup describes MariaDB ownership and never logs environment secrets
+  ---
+  duration_ms: 1.680317
+  type: 'test'
+  ...
+# Subtest: service construction wires only MySql registry/repository and a server-side encryption provider
+ok 15 - service construction wires only MySql registry/repository and a server-side encryption provider
+  ---
+  duration_ms: 0.791642
+  type: 'test'
+  ...
+# Subtest: alternate enterprise provider selection fails closed instead of falling back
+ok 16 - alternate enterprise provider selection fails closed instead of falling back
+  ---
+  duration_ms: 0.343901
+  type: 'test'
+  ...
+# Subtest: missing encryption key is reported truthfully and private resource writes fail before SQL
+ok 17 - missing encryption key is reported truthfully and private resource writes fail before SQL
+  ---
+  duration_ms: 0.647666
+  type: 'test'
+  ...
+# Subtest: environment example documents immutable MariaDB ownership and server-only keys
+ok 18 - environment example documents immutable MariaDB ownership and server-only keys
+  ---
+  duration_ms: 0.424847
+  type: 'test'
+  ...
+# Subtest: tenant snapshot export contains every MariaDB tenant table and verifies its checksum
+ok 19 - tenant snapshot export contains every MariaDB tenant table and verifies its checksum
+  ---
+  duration_ms: 3.660075
+  type: 'test'
+  ...
+# Subtest: tenant export audit describes the MariaDB snapshot rather than retired document metadata
+ok 20 - tenant export audit describes the MariaDB snapshot rather than retired document metadata
+  ---
+  duration_ms: 2.38168
+  type: 'test'
+  ...
+# Subtest: snapshot tampering and structural drift are detected before restore
+ok 21 - snapshot tampering and structural drift are detected before restore
+  ---
+  duration_ms: 3.699715
+  type: 'test'
+  ...
+# Subtest: restore dry-run writes nothing; apply recovers catastrophic tenant loss and reconciles every row
+ok 22 - restore dry-run writes nothing; apply recovers catastrophic tenant loss and reconciles every row
+  ---
+  duration_ms: 4.18587
+  type: 'test'
+  ...
+# Subtest: append-only restore rejects an alternate-unique collision and rolls back all table writes
+ok 23 - append-only restore rejects an alternate-unique collision and rolls back all table writes
+  ---
+  duration_ms: 2.454282
+  type: 'test'
+  ...
+# Subtest: restore refuses a checksum-valid snapshot containing a cross-tenant row
+ok 24 - restore refuses a checksum-valid snapshot containing a cross-tenant row
+  ---
+  duration_ms: 1.80737
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: team lifecycle completeness: archive then restore returns the team to the roster
+ok 25 - team lifecycle completeness: archive then restore returns the team to the roster
+  ---
+  duration_ms: 80.649216
+  type: 'test'
+  ...
+# Subtest: team lead: assignment, validation, and audit trail
+ok 26 - team lead: assignment, validation, and audit trail
+  ---
+  duration_ms: 33.854826
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: service account key rotation invalidates the old key and returns a new one exactly once
+ok 27 - service account key rotation invalidates the old key and returns a new one exactly once
+  ---
+  duration_ms: 39.640988
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: invitation lifecycle: invited member cannot access until they accept by first sign-in
+ok 28 - invitation lifecycle: invited member cannot access until they accept by first sign-in
+  ---
+  duration_ms: 25.850273
+  type: 'test'
+  ...
+# Subtest: invitation validation requires an address and rejects invalid emails
+ok 29 - invitation validation requires an address and rejects invalid emails
+  ---
+  duration_ms: 19.388675
+  type: 'test'
+  ...
+# Subtest: invitation resend works while pending and cancel removes access
+ok 30 - invitation resend works while pending and cancel removes access
+  ---
+  duration_ms: 16.698582
+  type: 'test'
+  ...
+# Subtest: custom roles: define, assign, effective permissions resolve, workspace scope stays bounded
+ok 31 - custom roles: define, assign, effective permissions resolve, workspace scope stays bounded
+  ---
+  duration_ms: 24.715157
+  type: 'test'
+  ...
+# Subtest: custom role normalization rejects invalid ids, wildcards, and unknown permissions
+ok 32 - custom role normalization rejects invalid ids, wildcards, and unknown permissions
+  ---
+  duration_ms: 1.062859
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: ssoMode SAML rejects password sign-ins at context resolution and accepts federated ones
+ok 33 - ssoMode SAML rejects password sign-ins at context resolution and accepts federated ones
+  ---
+  duration_ms: 22.054114
+  type: 'test'
+  ...
+# Subtest: break-glass scopes are restricted to diagnostic scopes by default
+ok 34 - break-glass scopes are restricted to diagnostic scopes by default
+  ---
+  duration_ms: 7.905521
+  type: 'test'
+  ...
+# Subtest: explicitly disabling support approval permits repair scopes as a recorded decision
+ok 35 - explicitly disabling support approval permits repair scopes as a recorded decision
+  ---
+  duration_ms: 12.146354
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant profile rename is permissioned, audited, and leaves the slug immutable
+ok 36 - tenant profile rename is permissioned, audited, and leaves the slug immutable
+  ---
+  duration_ms: 19.044776
+  type: 'test'
+  ...
+# Subtest: audit list exposes actor, severity, and category filters plus a pagination cursor
+ok 37 - audit list exposes actor, severity, and category filters plus a pagination cursor
+  ---
+  duration_ms: 1.575765
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant data export produces a checksum-verified MariaDB snapshot and refuses without settings permission
+ok 38 - tenant data export produces a checksum-verified MariaDB snapshot and refuses without settings permission
+  ---
+  duration_ms: 14.292169
+  type: 'test'
+  ...
+# Subtest: usage summary includes per-user rollups and the generation ledger is listable
+ok 39 - usage summary includes per-user rollups and the generation ledger is listable
+  ---
+  duration_ms: 1.010841
+  type: 'test'
+  ...
+# Subtest: applyTenantAiPolicy enforces the model allowlist and primary model
+ok 40 - applyTenantAiPolicy enforces the model allowlist and primary model
+  ---
+  duration_ms: 0.761398
+  type: 'test'
+  ...
+# Subtest: aiPolicy.allowedModels persists through the configuration API
+ok 41 - aiPolicy.allowedModels persists through the configuration API
+  ---
+  duration_ms: 6.007212
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: platform tenant registry and lifecycle are gated on the platform capability
+ok 42 - platform tenant registry and lifecycle are gated on the platform capability
+  ---
+  duration_ms: 31.90171
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: platform provisioning endpoint stays available to provisioners
+ok 43 - platform provisioning endpoint stays available to provisioners
+  ---
+  duration_ms: 7.947414
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: context response reports the server-derived platformAdmin capability
+ok 44 - context response reports the server-derived platformAdmin capability
+  ---
+  duration_ms: 16.474826
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# Subtest: enqueue is idempotent: duplicate submissions collapse onto one durable job
+ok 45 - enqueue is idempotent: duplicate submissions collapse onto one durable job
+  ---
+  duration_ms: 5.462826
+  type: 'test'
+  ...
+# Subtest: expired jobs are terminally rejected by the sweeper and never executed
+ok 46 - expired jobs are terminally rejected by the sweeper and never executed
+  ---
+  duration_ms: 0.972706
+  type: 'test'
+  ...
+# Subtest: membership revocation between enqueue and execution rejects the job
+ok 47 - membership revocation between enqueue and execution rejects the job
+  ---
+  duration_ms: 2.69214
+  type: 'test'
+  ...
+# Subtest: stale principal binding (identity swap) rejects the job at execution time
+ok 48 - stale principal binding (identity swap) rejects the job at execution time
+  ---
+  duration_ms: 0.769384
+  type: 'test'
+  ...
+# Subtest: DLQ: persistent failures dead-letter after max attempts and replay re-queues them
+ok 49 - DLQ: persistent failures dead-letter after max attempts and replay re-queues them
+  ---
+  duration_ms: 2.826733
+  type: 'test'
+  ...
+# Subtest: replay is tenant-scoped: tenant B cannot replay tenant A dead letters
+ok 50 - replay is tenant-scoped: tenant B cannot replay tenant A dead letters
+  ---
+  duration_ms: 0.988882
+  type: 'test'
+  ...
+# Subtest: tampered envelopes (payload or signature swap) are rejected without execution
+ok 51 - tampered envelopes (payload or signature swap) are rejected without execution
+  ---
+  duration_ms: 1.09956
+  type: 'test'
+  ...
+# Subtest: job listing is tenant-scoped and ordered
+ok 52 - job listing is tenant-scoped and ordered
+  ---
+  duration_ms: 1.073102
+  type: 'test'
+  ...
+# Subtest: missing handlers retry and dead-letter instead of dropping jobs silently
+ok 53 - missing handlers retry and dead-letter instead of dropping jobs silently
+  ---
+  duration_ms: 0.909902
+  type: 'test'
+  ...
+# Subtest: outbox status fails closed when MariaDB is unavailable
+ok 54 - outbox status fails closed when MariaDB is unavailable
+  ---
+  duration_ms: 0.504497
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M resource read: authorized scope returns 200, missing scope returns 403
+ok 55 - M2M resource read: authorized scope returns 200, missing scope returns 403
+  ---
+  duration_ms: 129.532848
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M resource create: authorized scope returns 201, missing scope returns 403
+ok 56 - M2M resource create: authorized scope returns 201, missing scope returns 403
+  ---
+  duration_ms: 46.674361
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M resource update and delete honour resource.update and fail closed without it
+ok 57 - M2M resource update and delete honour resource.update and fail closed without it
+  ---
+  duration_ms: 58.524295
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M usage and audit reads are scope-gated
+ok 58 - M2M usage and audit reads are scope-gated
+  ---
+  duration_ms: 43.473217
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Enterprise Request Audit]: {"timestamp":"2026-10-29T12:07:57.368Z","level":"ERROR","requestId":"2726526d-10dc-4f17-8d9f-3de85536c481","correlationId":"2726526d-10dc-4f17-8d9f-3de85536c481","tenantId":"tenant:1e7a356e...","workspaceId":"workspace:38b0651c","method":"POST","path":"/ai/generate-content","status":503,"durationMs":17}
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M AI generation passes auth+RBAC only with ai.use (provider-independent reachability)
+ok 59 - M2M AI generation passes auth+RBAC only with ai.use (provider-independent reachability)
+  ---
+  duration_ms: 48.278452
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M keys can NEVER reach control-plane endpoints, even with elevated scopes
+ok 60 - M2M keys can NEVER reach control-plane endpoints, even with elevated scopes
+  ---
+  duration_ms: 84.784265
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: invalid, missing and ambiguous credentials fail closed
+ok 61 - invalid, missing and ambiguous credentials fail closed
+  ---
+  duration_ms: 34.874627
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: plaintext key material is never persisted, logged, returned twice, or included in audit
+ok 62 - plaintext key material is never persisted, logged, returned twice, or included in audit
+  ---
+  duration_ms: 29.662978
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: rotation kills the old key immediately; revocation kills the new key immediately
+ok 63 - rotation kills the old key immediately; revocation kills the new key immediately
+  ---
+  duration_ms: 104.653517
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant isolation: key A can never see, touch or spoof tenant B
+ok 64 - tenant isolation: key A can never see, touch or spoof tenant B
+  ---
+  duration_ms: 71.349184
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: workspace-scoped accounts are pinned; tenant-scoped accounts span the tenant
+ok 65 - workspace-scoped accounts are pinned; tenant-scoped accounts span the tenant
+  ---
+  duration_ms: 70.510803
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: M2M operations are audited as service principals, distinct from users and support
+ok 66 - M2M operations are audited as service principals, distinct from users and support
+  ---
+  duration_ms: 18.015912
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: support grants authorize real operations: workspace-scoped and tenant-scoped
+ok 67 - support grants authorize real operations: workspace-scoped and tenant-scoped
+  ---
+  duration_ms: 41.226
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: support repair scopes respect the tenant approval policy (fail closed by default)
+ok 68 - support repair scopes respect the tenant approval policy (fail closed by default)
+  ---
+  duration_ms: 55.567064
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: expired support grants fail closed
+ok 69 - expired support grants fail closed
+  ---
+  duration_ms: 10.768074
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: a suspended tenant cuts off its service keys immediately
+ok 70 - a suspended tenant cuts off its service keys immediately
+  ---
+  duration_ms: 23.816419
+  type: 'test'
+  ...
+# Subtest: MariaDB repository contract: tenant reads and mutations cannot cross a tenant boundary
+ok 71 - MariaDB repository contract: tenant reads and mutations cannot cross a tenant boundary
+  ---
+  duration_ms: 4.218882
+  type: 'test'
+  ...
+# Subtest: MariaDB repository contract: workspace-scoped principals see only their workspace
+ok 72 - MariaDB repository contract: workspace-scoped principals see only their workspace
+  ---
+  duration_ms: 1.520442
+  type: 'test'
+  ...
+# Subtest: MariaDB repository contract: optimistic revisions serialize concurrent updates
+ok 73 - MariaDB repository contract: optimistic revisions serialize concurrent updates
+  ---
+  duration_ms: 2.205764
+  type: 'test'
+  ...
+# Subtest: encrypted resource contract seals private payloads and detects ciphertext tampering
+ok 74 - encrypted resource contract seals private payloads and detects ciphertext tampering
+  ---
+  duration_ms: 0.754678
+  type: 'test'
+  ...
+# Subtest: encrypted resource contract supports explicit server-key rotation
+ok 75 - encrypted resource contract supports explicit server-key rotation
+  ---
+  duration_ms: 1.084074
+  type: 'test'
+  ...
+# Subtest: private payloads fail closed without keys while explicitly public payloads remain readable
+ok 76 - private payloads fail closed without keys while explicitly public payloads remain readable
+  ---
+  duration_ms: 0.497207
+  type: 'test'
+  ...
+# Subtest: encryption provider factory rejects malformed or unsupported configuration
+ok 77 - encryption provider factory rejects malformed or unsupported configuration
+  ---
+  duration_ms: 0.521731
+  type: 'test'
+  ...
+# Subtest: repository factory is immutable to MariaDB and interface-complete
+ok 78 - repository factory is immutable to MariaDB and interface-complete
+  ---
+  duration_ms: 0.366992
+  type: 'test'
+  ...
+# Subtest: audit events remain tenant-partitioned
+ok 79 - audit events remain tenant-partitioned
+  ---
+  duration_ms: 0.786479
+  type: 'test'
+  ...
+# Subtest: AI ledger contract is idempotent and tenant-isolated
+ok 80 - AI ledger contract is idempotent and tenant-isolated
+  ---
+  duration_ms: 5.110014
+  type: 'test'
+  ...
+# Subtest: AI accounting contract does not lose distinct parallel events
+ok 81 - AI accounting contract does not lose distinct parallel events
+  ---
+  duration_ms: 0.886267
+  type: 'test'
+  ...
+# Subtest: MariaDB payload validation rejects malformed or oversized input before SQL
+ok 82 - MariaDB payload validation rejects malformed or oversized input before SQL
+  ---
+  duration_ms: 1.116715
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: IDOR/BOLA: cross-tenant resource access is structurally impossible through the API
+ok 83 - IDOR/BOLA: cross-tenant resource access is structurally impossible through the API
+  ---
+  duration_ms: 54.571967
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: workspace isolation: members cannot read, write, or cross into other workspaces
+ok 84 - workspace isolation: members cannot read, write, or cross into other workspaces
+  ---
+  duration_ms: 34.355959
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: RBAC: role escalation and admin operations are denied without the role
+ok 85 - RBAC: role escalation and admin operations are denied without the role
+  ---
+  duration_ms: 28.348852
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [EnterpriseAuth] Failed to persist M2M authentication failure: Unexpected in-memory outbox SQL: INSERT INTO security_audit_logs (id, actor_uid, action, category, severity, target_type, metadata, request_id) VALUES (?, ?, 'M2M_AUTH_FAILED', 'iam.service_accounts', 'HIGH', 'SERVICE_ACCOUNT', ?, ?)
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: service accounts: tenant A key cannot act in tenant B and revocation is immediate
+ok 86 - service accounts: tenant A key cannot act in tenant B and revocation is immediate
+  ---
+  duration_ms: 19.478747
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: support grants: expired, revoked, wrong-tenant, and wrong-workspace access all fail closed
+ok 87 - support grants: expired, revoked, wrong-tenant, and wrong-workspace access all fail closed
+  ---
+  duration_ms: 6.192333
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Enterprise Request Audit]: {"timestamp":"2026-10-29T12:07:58.870Z","level":"ERROR","requestId":"bd685390-4348-4ce0-9342-3203c848b14d","correlationId":"bd685390-4348-4ce0-9342-3203c848b14d","tenantId":"tenant:28fc0cb0...","workspaceId":"workspace:cfd7fad8","method":"POST","path":"/ai/generate-content","status":502,"durationMs":4}
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Enterprise Request Audit]: {"timestamp":"2026-10-29T12:07:58.877Z","level":"ERROR","requestId":"d6dadb2f-a34c-4a45-b94f-33f1845ae303","correlationId":"d6dadb2f-a34c-4a45-b94f-33f1845ae303","tenantId":"tenant:1b3a1f80...","workspaceId":"workspace:5284b6af","method":"POST","path":"/ai/generate-content","status":502,"durationMs":1}
+# Subtest: AI quota enforcement is durable and tenant-isolated without any Redis in the process
+ok 88 - AI quota enforcement is durable and tenant-isolated without any Redis in the process
+  ---
+  duration_ms: 25.129606
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: durable queue endpoints enforce tenant scoping for listing and replay
+ok 89 - durable queue endpoints enforce tenant scoping for listing and replay
+  ---
+  duration_ms: 30.663554
+  type: 'test'
+  ...
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: usage endpoint reports real durable accounting for the active tenant only
+ok 90 - usage endpoint reports real durable accounting for the active tenant only
+  ---
+  duration_ms: 7.621884
+  type: 'test'
+  ...
+# Subtest: enterprise MariaDB migrations are contiguous and each forward migration has an explicit rollback
+ok 91 - enterprise MariaDB migrations are contiguous and each forward migration has an explicit rollback
+  ---
+  duration_ms: 6.664126
+  type: 'test'
+  ...
+# Subtest: migration SQL contains no Firestore bridge, document path, or alternate data owner
+ok 92 - migration SQL contains no Firestore bridge, document path, or alternate data owner
+  ---
+  duration_ms: 1.135755
+  type: 'test'
+  ...
+# Subtest: invitation and notification migration enforces relational ownership and delivery idempotency
+ok 93 - invitation and notification migration enforces relational ownership and delivery idempotency
+  ---
+  duration_ms: 1.442678
+  type: 'test'
+  ...
+# Subtest: AI ledger migration enforces tenant-scoped idempotency and API projection metadata
+ok 94 - AI ledger migration enforces tenant-scoped idempotency and API projection metadata
+  ---
+  duration_ms: 0.548255
+  type: 'test'
+  ...
+# Subtest: job tracker migration adds compare-and-swap revision metadata with rollback
+ok 95 - job tracker migration adds compare-and-swap revision metadata with rollback
+  ---
+  duration_ms: 0.270923
+  type: 'test'
+  ...
+# Subtest: notification lifecycle migration constrains implemented states and has an evidence-preserving rollback
+ok 96 - notification lifecycle migration constrains implemented states and has an evidence-preserving rollback
+  ---
+  duration_ms: 0.281868
+  type: 'test'
+  ...
+# Subtest: refund reconciliation migration persists idempotency and immutable credit-note accounting
+ok 97 - refund reconciliation migration persists idempotency and immutable credit-note accounting
+  ---
+  duration_ms: 0.450636
+  type: 'test'
+  ...
+# Subtest: billing snapshot and aggregate refund migration preserves complete financial evidence
+ok 98 - billing snapshot and aggregate refund migration preserves complete financial evidence
+  ---
+  duration_ms: 0.497332
+  type: 'test'
+  ...
+# Subtest: isolated migration verifier targets latest version 017 and requires rollback, failure, and reapply
+ok 99 - isolated migration verifier targets latest version 017 and requires rollback, failure, and reapply
+  ---
+  duration_ms: 0.434183
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: workspace rename: owner renames, response and list reflect the change, viewer is denied
+ok 100 - workspace rename: owner renames, response and list reflect the change, viewer is denied
+  ---
+  duration_ms: 116.638956
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: workspace archive/restore lifecycle with default-workspace protection
+ok 101 - workspace archive/restore lifecycle with default-workspace protection
+  ---
+  duration_ms: 55.430181
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: archive/restore is denied for members and for cross-tenant actors
+ok 102 - archive/restore is denied for members and for cross-tenant actors
+  ---
+  duration_ms: 27.813649
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: workspace member administration: add, list, primary-workspace guard, remove
+ok 103 - workspace member administration: add, list, primary-workspace guard, remove
+  ---
+  duration_ms: 58.260457
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: workspace member add rejects unknown and suspended tenant principals
+ok 104 - workspace member add rejects unknown and suspended tenant principals
+  ---
+  duration_ms: 26.544708
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: team lifecycle: create, rename, archive; archived teams leave the roster
+ok 105 - team lifecycle: create, rename, archive; archived teams leave the roster
+  ---
+  duration_ms: 54.050896
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: team membership: assign, list, remove; only active tenant members may join
+ok 106 - team membership: assign, list, remove; only active tenant members may join
+  ---
+  duration_ms: 37.544737
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: team ids are tenant scoped: another tenant cannot read or mutate them
+ok 107 - team ids are tenant scoped: another tenant cannot read or mutate them
+  ---
+  duration_ms: 22.194598
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant admin can create workspaces and teams through tenant.workspaces.manage
+ok 108 - tenant admin can create workspaces and teams through tenant.workspaces.manage
+  ---
+  duration_ms: 16.900509
+  type: 'test'
+  ...
+# Subtest: server-side audit filters narrow by outcome, action, actor, and time window
+ok 109 - server-side audit filters narrow by outcome, action, actor, and time window
+  ---
+  duration_ms: 1.447764
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: security policy enforcement: requireMfaForAdmins blocks admin context without a verified second factor
+ok 110 - security policy enforcement: requireMfaForAdmins blocks admin context without a verified second factor
+  ---
+  duration_ms: 16.910019
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: identity policy enforcement: sessions older than sessionMaxMinutes must re-authenticate
+ok 111 - identity policy enforcement: sessions older than sessionMaxMinutes must re-authenticate
+  ---
+  duration_ms: 12.800773
+  type: 'test'
+  ...
+# Subtest: Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite
+    # Subtest: MariaDB contract: Tenant A1 Admin creates resource and Member queries it
+    ok 1 - MariaDB contract: Tenant A1 Admin creates resource and Member queries it
+      ---
+      duration_ms: 1.971208
+      type: 'test'
+      ...
+    # Subtest: MariaDB contract: Tenant B cannot read Tenant A documents and writes only to its own partition
+    ok 2 - MariaDB contract: Tenant B cannot read Tenant A documents and writes only to its own partition
+      ---
+      duration_ms: 1.099844
+      type: 'test'
+      ...
+    # Subtest: Cache Isolation: Identical logical resource IDs generate distinct, non-colliding keys
+    ok 3 - Cache Isolation: Identical logical resource IDs generate distinct, non-colliding keys
+      ---
+      duration_ms: 0.250658
+      type: 'test'
+      ...
+    # Subtest: Storage Isolation: Signed artifact tokens enforce purpose, tenant binding, and expiry
+    ok 4 - Storage Isolation: Signed artifact tokens enforce purpose, tenant binding, and expiry
+      ---
+      duration_ms: 1.019922
+      type: 'test'
+      ...
+    # Subtest: Enterprise AI Policy: Cross-tenant source access is denied and provider allowlist is enforced
+    ok 5 - Enterprise AI Policy: Cross-tenant source access is denied and provider allowlist is enforced
+      ---
+      duration_ms: 0.407673
+      type: 'test'
+      ...
+    # Subtest: Job Queue & Worker: Signed envelopes enforce tenant binding and worker reauthorization
+    ok 6 - Job Queue & Worker: Signed envelopes enforce tenant binding and worker reauthorization
+      ---
+      duration_ms: 0.545025
+      type: 'test'
+      ...
+    # Subtest: Data Portability: canonical backup values preserve a deterministic checksum
+    ok 7 - Data Portability: canonical backup values preserve a deterministic checksum
+      ---
+      duration_ms: 0.412196
+      type: 'test'
+      ...
+    1..7
+ok 112 - Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite
+  ---
+  duration_ms: 9.799984
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# Subtest: enterprise routes are dark by default until an explicit server-side enablement
+ok 113 - enterprise routes are dark by default until an explicit server-side enablement
+  ---
+  duration_ms: 1.341427
+  type: 'test'
+  ...
+# [Rate limit store] public-browse connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: authenticated rollout status is explicit without resolving or creating tenant data
+ok 114 - authenticated rollout status is explicit without resolving or creating tenant data
+  ---
+  duration_ms: 24.98076
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: enterprise context provisions a personal tenant only through authenticated server context resolution
+ok 115 - enterprise context provisions a personal tenant only through authenticated server context resolution
+  ---
+  duration_ms: 16.29988
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: a caller cannot spoof another tenant through x-tenant-id
+ok 116 - a caller cannot spoof another tenant through x-tenant-id
+  ---
+  duration_ms: 24.176312
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant configuration is revisioned, server-authorized, and rejects stale updates
+ok 117 - tenant configuration is revisioned, server-authorized, and rejects stale updates
+  ---
+  duration_ms: 29.274528
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant teams are workspace-scoped and management is permission-gated
+ok 118 - tenant teams are workspace-scoped and management is permission-gated
+  ---
+  duration_ms: 28.584467
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [EnterpriseAuth] Failed to persist M2M authentication failure: connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: service accounts issue one-time API keys and M2M context cannot be spoofed across tenants
+ok 119 - service accounts issue one-time API keys and M2M context cannot be spoofed across tenants
+  ---
+  duration_ms: 29.269267
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: support access is explicit, time-limited, workspace-bound and cannot become a tenant backdoor
+ok 120 - support access is explicit, time-limited, workspace-bound and cannot become a tenant backdoor
+  ---
+  duration_ms: 45.006758
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant owners can suspend their active tenant and future context resolution fails closed
+ok 121 - tenant owners can suspend their active tenant and future context resolution fails closed
+  ---
+  duration_ms: 29.09908
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: tenant owners can grant an explicit multi-organization membership without tenant spoofing
+ok 122 - tenant owners can grant an explicit multi-organization membership without tenant spoofing
+  ---
+  duration_ms: 31.928049
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: legacy APIs reject tenant headers rather than silently mixing UID and tenant contexts
+ok 123 - legacy APIs reject tenant headers rather than silently mixing UID and tenant contexts
+  ---
+  duration_ms: 18.52451
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Enterprise Request Audit]: {"timestamp":"2026-10-29T12:08:01.334Z","level":"ERROR","requestId":"49d0b515-86cd-4577-9eb0-af51295c184b","correlationId":"49d0b515-86cd-4577-9eb0-af51295c184b","tenantId":"tenant:d556ac23...","workspaceId":"workspace:75a695f1","method":"POST","path":"/ai/generate-content","status":503,"durationMs":2}
+# Subtest: tenant AI route rejects client-controlled scope and fails closed without a MariaDB usage ledger
+ok 124 - tenant AI route rejects client-controlled scope and fails closed without a MariaDB usage ledger
+  ---
+  duration_ms: 16.794532
+  type: 'test'
+  ...
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Enterprise Request Audit]: {"timestamp":"2026-10-29T12:08:01.346Z","level":"ERROR","requestId":"a64a17f1-aafa-4755-bd68-5065b5c85b4a","correlationId":"a64a17f1-aafa-4755-bd68-5065b5c85b4a","tenantId":"tenant:dd37fe90...","workspaceId":"workspace:db706ad7","method":"GET","path":"/resources","status":503,"durationMs":1}
+# Subtest: resource routes fail closed when no enterprise data-plane repository is configured
+ok 125 - resource routes fail closed when no enterprise data-plane repository is configured
+  ---
+  duration_ms: 11.877318
+  type: 'test'
+  ...
+# (node:5079) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# [Rate limit store] general-api connect ECONNREFUSED 127.0.0.1:3306
+# Subtest: enterprise foundation requires verified identity and tenant provisioning requires platform permission
+ok 126 - enterprise foundation requires verified identity and tenant provisioning requires platform permission
+  ---
+  duration_ms: 50.776812
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+# Subtest: durable queue status is truthful when the signing secret is missing
+ok 127 - durable queue status is truthful when the signing secret is missing
+  ---
+  duration_ms: 1.319328
+  type: 'test'
+  ...
+# Subtest: queue status fails closed when MariaDB is unavailable
+ok 128 - queue status fails closed when MariaDB is unavailable
+  ---
+  duration_ms: 0.423513
+  type: 'test'
+  ...
+# Subtest: artifact signing fails closed without a runtime secret
+ok 129 - artifact signing fails closed without a runtime secret
+  ---
+  duration_ms: 0.765737
+  type: 'test'
+  ...
+# Subtest: encryption fails closed when no server-side key is configured
+ok 130 - encryption fails closed when no server-side key is configured
+  ---
+  duration_ms: 0.56932
+  type: 'test'
+  ...
+# Subtest: requesting the managed KMS provider fails explicitly instead of pretending
+ok 131 - requesting the managed KMS provider fails explicitly instead of pretending
+  ---
+  duration_ms: 0.199709
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+# [Firebase Admin] Initialized without credentials (limited local mode)
+# [Enterprise Architecture] {"enterpriseTenancy":"ENABLED","dataProvider":"Enterprise Data Provider: mysql","dataPlaneConfigured":true,"cache":"Cache: none (MySQL/MariaDB is the authoritative store)","queue":"Queue: MariaDB transactional outbox","encryption":"Encryption Provider: none","encryptionSecurityLevel":"ENCRYPTION_UNAVAILABLE_FAIL_CLOSED","quotaStore":"mariadb-atomic"}
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [EnterpriseAuth] Failed to persist M2M authentication failure: Unexpected in-memory outbox SQL: INSERT INTO security_audit_logs (id, actor_uid, action, category, severity, target_type, metadata, request_id) VALUES (?, ?, 'M2M_AUTH_FAILED', 'iam.service_accounts', 'HIGH', 'SERVICE_ACCOUNT', ?, ?)
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: complete console workflow: every module performs a real, verified state change
+ok 132 - complete console workflow: every module performs a real, verified state change
+  ---
+  duration_ms: 162.160836
+  type: 'test'
+  ...
+# [Rate limit store] public-browse Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# [Rate limit store] general-api Unexpected in-memory outbox SQL: SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = ? FOR UPDATE
+# Subtest: feature flags stay consistent: enterprise disabled keeps legacy routes and hides enterprise APIs
+ok 133 - feature flags stay consistent: enterprise disabled keeps legacy routes and hides enterprise APIs
+  ---
+  duration_ms: 11.696085
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+# Subtest: MariaDB chaos contract: data-store outage fails closed — the quota guard errors instead of allowing unbounded use
+ok 134 - MariaDB chaos contract: data-store outage fails closed — the quota guard errors instead of allowing unbounded use
+  ---
+  duration_ms: 1.989074
+  type: 'test'
+  ...
+# Subtest: MariaDB chaos contract: worker crash mid-execution is recovered after lease expiry by another worker
+ok 135 - MariaDB chaos contract: worker crash mid-execution is recovered after lease expiry by another worker
+  ---
+  duration_ms: 3.116929
+  type: 'test'
+  ...
+# Subtest: MariaDB chaos contract: transient handler failures retry with backoff and eventually succeed
+ok 136 - MariaDB chaos contract: transient handler failures retry with backoff and eventually succeed
+  ---
+  duration_ms: 3.360315
+  type: 'test'
+  ...
+# Subtest: MariaDB chaos contract: suspended or revoked tenants are terminally rejected at execution time
+ok 137 - MariaDB chaos contract: suspended or revoked tenants are terminally rejected at execution time
+  ---
+  duration_ms: 1.253054
+  type: 'test'
+  ...
+# Subtest: MariaDB chaos contract: Artifact storage token rejects expired credentials and mismatched purpose
+ok 138 - MariaDB chaos contract: Artifact storage token rejects expired credentials and mismatched purpose
+  ---
+  duration_ms: 1.060188
+  type: 'test'
+  ...
+# Subtest: MariaDB DR contract simulation: consistent snapshot survives tenant loss and reconciles after restore
+ok 139 - MariaDB DR contract simulation: consistent snapshot survives tenant loss and reconciles after restore
+  ---
+  duration_ms: 8.567753
+  type: 'test'
+  ...
+# Subtest: MariaDB contract concurrency: 10 tenants × 10 parallel writes maintain strict isolation and exact counts
+ok 140 - MariaDB contract concurrency: 10 tenants × 10 parallel writes maintain strict isolation and exact counts
+  ---
+  duration_ms: 18.663229
+  type: 'test'
+  ...
+# Subtest: MariaDB contract concurrency: parallel revision updates produce exactly one winner per round
+ok 141 - MariaDB contract concurrency: parallel revision updates produce exactly one winner per round
+  ---
+  duration_ms: 2.81047
+  type: 'test'
+  ...
+# Subtest: MariaDB contract concurrency: parallel quota consumption never exceeds the configured limit
+ok 142 - MariaDB contract concurrency: parallel quota consumption never exceeds the configured limit
+  ---
+  duration_ms: 1.565696
+  type: 'test'
+  ...
+# Subtest: AI usage retries collapse only when the idempotency key has identical immutable intent
+ok 143 - AI usage retries collapse only when the idempotency key has identical immutable intent
+  ---
+  duration_ms: 2.044288
+  type: 'test'
+  ...
+# Subtest: AI usage idempotency is tenant-scoped and non-duplicate SQL failures propagate
+ok 144 - AI usage idempotency is tenant-scoped and non-duplicate SQL failures propagate
+  ---
+  duration_ms: 0.416054
+  type: 'test'
+  ...
+# Subtest: AI usage rejects malformed or overflowing accounting values before SQL
+ok 145 - AI usage rejects malformed or overflowing accounting values before SQL
+  ---
+  duration_ms: 0.478354
+  type: 'test'
+  ...
+# Subtest: resource create and its immutable audit event commit or roll back together
+ok 146 - resource create and its immutable audit event commit or roll back together
+  ---
+  duration_ms: 2.94835
+  type: 'test'
+  ...
+# Subtest: resource update uses revision CAS and rolls back when audit persistence fails
+ok 147 - resource update uses revision CAS and rolls back when audit persistence fails
+  ---
+  duration_ms: 1.326734
+  type: 'test'
+  ...
+# Subtest: resource deletion is revision-bound and rolls back if its audit event cannot be written
+ok 148 - resource deletion is revision-bound and rolls back if its audit event cannot be written
+  ---
+  duration_ms: 2.039963
+  type: 'test'
+  ...
+# [dotenv@17.2.3] injecting env (0) from ../.env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# Subtest: Queue & Worker: HMAC-SHA256 signed envelope rejects tampered or expired payload
+ok 149 - Queue & Worker: HMAC-SHA256 signed envelope rejects tampered or expired payload
+  ---
+  duration_ms: 2.822538
+  type: 'test'
+  ...
+# Subtest: Queue & Worker: retry backoff grows deterministically and stays bounded
+ok 150 - Queue & Worker: retry backoff grows deterministically and stays bounded
+  ---
+  duration_ms: 0.621466
+  type: 'test'
+  ...
+# Subtest: adversarial tenant A to B matrix denies resource, cache, file, AI, and job forgery paths
+ok 151 - adversarial tenant A to B matrix denies resource, cache, file, AI, and job forgery paths
+  ---
+  duration_ms: 4.292445
+  type: 'test'
+  ...
+# Subtest: personal tenants are deterministic per principal and cross-tenant membership is denied
+ok 152 - personal tenants are deterministic per principal and cross-tenant membership is denied
+  ---
+  duration_ms: 2.483956
+  type: 'test'
+  ...
+# Subtest: enterprise data ownership is immutable to MariaDB for personal and organization tenants
+ok 153 - enterprise data ownership is immutable to MariaDB for personal and organization tenants
+  ---
+  duration_ms: 0.923376
+  type: 'test'
+  ...
+# Subtest: verified Firebase identity subjects map deterministically to canonical UUID principals for MariaDB
+ok 154 - verified Firebase identity subjects map deterministically to canonical UUID principals for MariaDB
+  ---
+  duration_ms: 0.48407
+  type: 'test'
+  ...
+# Subtest: a principal can safely belong to multiple tenants through explicit membership records
+ok 155 - a principal can safely belong to multiple tenants through explicit membership records
+  ---
+  duration_ms: 1.202271
+  type: 'test'
+  ...
+# Subtest: membership grants verify known server-side identities when an identity provider is available
+ok 156 - membership grants verify known server-side identities when an identity provider is available
+  ---
+  duration_ms: 82.82755
+  type: 'test'
+  ...
+# Subtest: workspace access consistently uses external subject for control-plane membership and canonical principal for data rows
+ok 157 - workspace access consistently uses external subject for control-plane membership and canonical principal for data rows
+  ---
+  duration_ms: 1.363889
+  type: 'test'
+  ...
+# Subtest: tenant lifecycle transitions suspend access and reject unsafe direct deletion jumps
+ok 158 - tenant lifecycle transitions suspend access and reject unsafe direct deletion jumps
+  ---
+  duration_ms: 0.560161
+  type: 'test'
+  ...
+# Subtest: tenant context is immutable, policy-derived, and cannot be created for a suspended tenant
+ok 159 - tenant context is immutable, policy-derived, and cannot be created for a suspended tenant
+  ---
+  duration_ms: 0.489608
+  type: 'test'
+  ...
+# Subtest: tenant cache keys cannot collide while intentionally global keys remain distinct
+ok 160 - tenant cache keys cannot collide while intentionally global keys remain distinct
+  ---
+  duration_ms: 0.623366
+  type: 'test'
+  ...
+# Subtest: tenant telemetry carries audit correlation while avoiding raw tenant IDs in broad metric labels
+ok 161 - tenant telemetry carries audit correlation while avoiding raw tenant IDs in broad metric labels
+  ---
+  duration_ms: 0.663617
+  type: 'test'
+  ...
+# Subtest: tenant quota guard partitions noisy-neighbor limits by tenant and principal scope
+ok 162 - tenant quota guard partitions noisy-neighbor limits by tenant and principal scope
+  ---
+  duration_ms: 0.77705
+  type: 'test'
+  ...
+# Subtest: tenant file namespace rejects cross-tenant storage keys
+ok 163 - tenant file namespace rejects cross-tenant storage keys
+  ---
+  duration_ms: 0.480659
+  type: 'test'
+  ...
+# Subtest: tenant artifact tokens are purpose-bound, short-lived, signed and unavailable to another tenant
+ok 164 - tenant artifact tokens are purpose-bound, short-lived, signed and unavailable to another tenant
+  ---
+  duration_ms: 1.060975
+  type: 'test'
+  ...
+# Subtest: service-account API keys are tenant-bound, scoped, hashed, expirable and never verified by prefix alone
+ok 165 - service-account API keys are tenant-bound, scoped, hashed, expirable and never verified by prefix alone
+  ---
+  duration_ms: 0.440679
+  type: 'test'
+  ...
+# Subtest: tenant AI policy rejects client-controlled authority and prevents cross-tenant source/cache contamination
+ok 166 - tenant AI policy rejects client-controlled authority and prevents cross-tenant source/cache contamination
+  ---
+  duration_ms: 0.819908
+  type: 'test'
+  ...
+# Subtest: tenant repository contract enforces tenant partitioning and workspace scope in queries
+ok 167 - tenant repository contract enforces tenant partitioning and workspace scope in queries
+  ---
+  duration_ms: 1.618179
+  type: 'test'
+  ...
+# Subtest: tenant jobs are signed, context complete, tamper resistant, and expire
+ok 168 - tenant jobs are signed, context complete, tamper resistant, and expire
+  ---
+  duration_ms: 0.902843
+  type: 'test'
+  ...
+# Subtest: tenant-bound notification outbox records persist immutable tenant context for worker reauthorization
+ok 169 - tenant-bound notification outbox records persist immutable tenant context for worker reauthorization
+  ---
+  duration_ms: 0.551006
+  type: 'test'
+  ...
+# Subtest: tenant outbox reauthorization resolves current membership, lifecycle and route before dispatch
+ok 170 - tenant outbox reauthorization resolves current membership, lifecycle and route before dispatch
+  ---
+  duration_ms: 0.491136
+  type: 'test'
+  ...
+# Subtest: logical MariaDB backup values are canonical and checksums expose ownership drift
+ok 171 - logical MariaDB backup values are canonical and checksums expose ownership drift
+  ---
+  duration_ms: 0.286322
+  type: 'test'
+  ...
+# Subtest: removed Firestore migration providers fail closed instead of creating an adapter fallback
+ok 172 - removed Firestore migration providers fail closed instead of creating an adapter fallback
+  ---
+  duration_ms: 0.121504
+  type: 'test'
+  ...
+# Subtest: database, job, artifact, cache, queue and AI profiles derive from one canonical infrastructure route
+ok 173 - database, job, artifact, cache, queue and AI profiles derive from one canonical infrastructure route
+  ---
+  duration_ms: 0.211659
+  type: 'test'
+  ...
+# Subtest: hard purge locks a DELETING tenant and removes every tenant-owned MariaDB domain in FK-safe order
+ok 174 - hard purge locks a DELETING tenant and removes every tenant-owned MariaDB domain in FK-safe order
+  ---
+  duration_ms: 2.701205
+  type: 'test'
+  ...
+# Subtest: hard purge refuses an active tenant before any destructive statement
+ok 175 - hard purge refuses an active tenant before any destructive statement
+  ---
+  duration_ms: 0.794776
+  type: 'test'
+  ...
+# Subtest: hard purge is idempotent when the tenant row is already absent
+ok 176 - hard purge is idempotent when the tenant row is already absent
+  ---
+  duration_ms: 0.220808
+  type: 'test'
+  ...
+# Subtest: a mid-purge database failure rolls back the whole tenant transaction
+ok 177 - a mid-purge database failure rolls back the whole tenant transaction
+  ---
+  duration_ms: 0.268894
+  type: 'test'
+  ...
+# Subtest: garbage collection honors grace periods and isolates one tenant purge failure from others
+ok 178 - garbage collection honors grace periods and isolates one tenant purge failure from others
+  ---
+  duration_ms: 0.770999
+  type: 'test'
+  ...
+# Subtest: logical tenant namespacing remains collision-free across 1,000 simulated tenants
+ok 179 - logical tenant namespacing remains collision-free across 1,000 simulated tenants
+  ---
+  duration_ms: 6.668914
+  type: 'test'
+  ...
+# Subtest: a noisy simulated tenant cannot consume another tenant quota bucket
+ok 180 - a noisy simulated tenant cannot consume another tenant quota bucket
+  ---
+  duration_ms: 1.269365
+  type: 'test'
+  ...
+1..180
+# tests 187
+# suites 0
+# pass 187
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9896.746837
+exit code: 0

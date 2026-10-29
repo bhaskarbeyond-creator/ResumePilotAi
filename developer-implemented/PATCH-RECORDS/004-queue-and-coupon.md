@@ -1,0 +1,6 @@
+# FS-M8A-05 / DISC-025 / DISC-045 — queue and coupon
+Baseline `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`. Queue files `frontend/src/components/admin/AdminQueuesTab.tsx`, `queue-contract.ts`, and `developer-implemented/TESTS/unit/queue-contract.test.mjs`: eliminate fabricated telemetry and fake purge/replay results; use sampled outbox endpoint and only server-supported individual notification retry. Real server diagnostic `lastError` is retained; malformed and unauthorized/unavailable telemetry is not treated as success. Parser tests pass, browser/auth and DB tests blocked.
+
+Coupon files `frontend/src/pages/billing/checkout-modal.tsx`, `coupon-contract.ts`, `frontend/tests/billing-checkout.spec.ts`, `developer-implemented/TESTS/unit/coupon-contract.test.mjs`: replace nonexistent endpoint and local fake codes with actual coupon response schema. Coupon parser unit test passes; Playwright test now explicitly mocks a valid response, not a fabricated fallback; it has not executed here. `EVIDENCE/queue-unit.txt`, `coupon-unit.txt`, `build-final.txt`. Both IMPLEMENTED — NOT VERIFIED.
+
+Application implementation commit(s): `f86e9b6 (queue); 4ec5af2 (coupon)`. The acceptance status and blocked tests above are unchanged by committing.

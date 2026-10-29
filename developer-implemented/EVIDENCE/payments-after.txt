@@ -1,0 +1,277 @@
+
+> my-app@0.0.0 test:payments
+> npm --prefix backend run test:payments
+
+
+> backend@1.0.0 test:payments
+> node --test --test-concurrency=1 --test-force-exit test/payment-reconciliation.test.js test/payments.test.js test/payment-activation.test.js
+
+TAP version 13
+# Subtest: activateVerifiedOrder is idempotent for duplicate webhooks
+ok 1 - activateVerifiedOrder is idempotent for duplicate webhooks
+  ---
+  duration_ms: 2.435052
+  type: 'test'
+  ...
+# Subtest: duplicate provider event claim is a no-op
+ok 2 - duplicate provider event claim is a no-op
+  ---
+  duration_ms: 0.256752
+  type: 'test'
+  ...
+# Subtest: webhook claim is released so a failed activation can retry
+ok 3 - webhook claim is released so a failed activation can retry
+  ---
+  duration_ms: 0.168737
+  type: 'test'
+  ...
+# Subtest: conflicting providerPaymentId on an ACTIVE order is refused
+ok 4 - conflicting providerPaymentId on an ACTIVE order is refused
+  ---
+  duration_ms: 0.543641
+  type: 'test'
+  ...
+# Subtest: refund of latest order reverses entitlement; older order does not
+ok 5 - refund of latest order reverses entitlement; older order does not
+  ---
+  duration_ms: 0.327178
+  type: 'test'
+  ...
+# Subtest: membership write failure rolls back the atomic payment activation
+ok 6 - membership write failure rolls back the atomic payment activation
+  ---
+  duration_ms: 0.594084
+  type: 'test'
+  ...
+# Subtest: Pro membership is preserved on activation (not forced to Premium string only)
+ok 7 - Pro membership is preserved on activation (not forced to Premium string only)
+  ---
+  duration_ms: 0.506548
+  type: 'test'
+  ...
+# Subtest: durable webhook ledger is consulted before in-memory claim
+ok 8 - durable webhook ledger is consulted before in-memory claim
+  ---
+  duration_ms: 0.20275
+  type: 'test'
+  ...
+# Subtest: createOrder idempotency key replays PAYMENT_CREATED client secret
+ok 9 - createOrder idempotency key replays PAYMENT_CREATED client secret
+  ---
+  duration_ms: 1.084639
+  type: 'test'
+  ...
+# Subtest: createOrder refuses provider contact without versioned immutable billing evidence
+ok 10 - createOrder refuses provider contact without versioned immutable billing evidence
+  ---
+  duration_ms: 0.430387
+  type: 'test'
+  ...
+# Subtest: same idempotency key cannot be replayed with changed legal billing evidence
+ok 11 - same idempotency key cannot be replayed with changed legal billing evidence
+  ---
+  duration_ms: 0.426816
+  type: 'test'
+  ...
+# Subtest: AC-2: Stripe signature accepts an authentic delivery and rejects tampering
+ok 12 - AC-2: Stripe signature accepts an authentic delivery and rejects tampering
+  ---
+  duration_ms: 2.377326
+  type: 'test'
+  ...
+# Subtest: AC-2: replay window is enforced at exactly 300 seconds and cannot be widened
+ok 13 - AC-2: replay window is enforced at exactly 300 seconds and cannot be widened
+  ---
+  duration_ms: 0.989113
+  type: 'test'
+  ...
+# Subtest: AC-2: malformed and absent Stripe headers are rejected structurally
+ok 14 - AC-2: malformed and absent Stripe headers are rejected structurally
+  ---
+  duration_ms: 1.58036
+  type: 'test'
+  ...
+# Subtest: AC-2: a missing signing secret fails closed with a non-retryable status
+ok 15 - AC-2: a missing signing secret fails closed with a non-retryable status
+  ---
+  duration_ms: 1.582434
+  type: 'test'
+  ...
+# Subtest: AC-2: Razorpay HMAC-SHA256 accepts the authentic order|payment pair only
+ok 16 - AC-2: Razorpay HMAC-SHA256 accepts the authentic order|payment pair only
+  ---
+  duration_ms: 0.476788
+  type: 'test'
+  ...
+# Subtest: INV-2: a webhook rejection exposes only a fixed code, never a provider message or secret
+ok 17 - INV-2: a webhook rejection exposes only a fixed code, never a provider message or secret
+  ---
+  duration_ms: 0.976683
+  type: 'test'
+  ...
+# Subtest: timing-safe comparison is length-safe and does not throw on unequal lengths
+ok 18 - timing-safe comparison is length-safe and does not throw on unequal lengths
+  ---
+  duration_ms: 0.134192
+  type: 'test'
+  ...
+# Subtest: AC-1: a duplicate delivery is suppressed and never double-credits entitlement
+ok 19 - AC-1: a duplicate delivery is suppressed and never double-credits entitlement
+  ---
+  duration_ms: 0.311092
+  type: 'test'
+  ...
+# Subtest: AC-1: a failed activation releases its claim so a gateway retry can still settle
+ok 20 - AC-1: a failed activation releases its claim so a gateway retry can still settle
+  ---
+  duration_ms: 0.436716
+  type: 'test'
+  ...
+# Subtest: AC-4: PAST_DUE is a canonical payment status with a bounded three-day grace
+ok 21 - AC-4: PAST_DUE is a canonical payment status with a bounded three-day grace
+  ---
+  duration_ms: 0.347781
+  type: 'test'
+  ...
+# Subtest: AC-4: a PAST_DUE candidate inside the grace window keeps full entitlement
+ok 22 - AC-4: a PAST_DUE candidate inside the grace window keeps full entitlement
+  ---
+  duration_ms: 1.082331
+  type: 'test'
+  ...
+# Subtest: AC-4: the grace boundary is exact — entitled to the millisecond, not after it
+ok 23 - AC-4: the grace boundary is exact — entitled to the millisecond, not after it
+  ---
+  duration_ms: 0.25278
+  type: 'test'
+  ...
+# Subtest: AC-4: a PAST_DUE account with no readable deadline fails CLOSED, never open
+ok 24 - AC-4: a PAST_DUE account with no readable deadline fails CLOSED, never open
+  ---
+  duration_ms: 0.215382
+  type: 'test'
+  ...
+# Subtest: INV-5: grace never resurrects a genuinely non-paying account
+ok 25 - INV-5: grace never resurrects a genuinely non-paying account
+  ---
+  duration_ms: 0.169559
+  type: 'test'
+  ...
+# Subtest: INV-5: an ordinary ACTIVE Premium account is unaffected by the grace changes
+ok 26 - INV-5: an ordinary ACTIVE Premium account is unaffected by the grace changes
+  ---
+  duration_ms: 0.172545
+  type: 'test'
+  ...
+# Subtest: AC-3: a gateway-confirmed renewal failure opens a grace window and emits one audit row
+ok 27 - AC-3: a gateway-confirmed renewal failure opens a grace window and emits one audit row
+  ---
+  duration_ms: 1.030386
+  type: 'test'
+  ...
+# Subtest: AC-3: a gateway outage leaves the account untouched — the INV-5 guarantee
+ok 28 - AC-3: a gateway outage leaves the account untouched — the INV-5 guarantee
+  ---
+  duration_ms: 0.456773
+  type: 'test'
+  ...
+# Subtest: AC-3: an in-flight payment writes nothing at all
+ok 29 - AC-3: an in-flight payment writes nothing at all
+  ---
+  duration_ms: 0.186586
+  type: 'test'
+  ...
+# Subtest: AC-3: a provider with no verifiable probe is skipped, never guessed at
+ok 30 - AC-3: a provider with no verifiable probe is skipped, never guessed at
+  ---
+  duration_ms: 0.09825
+  type: 'test'
+  ...
+# Subtest: AC-4: an absent gateway credential never manufactures an outcome
+ok 31 - AC-4: an absent gateway credential never manufactures an outcome
+  ---
+  duration_ms: 0.121224
+  type: 'test'
+  ...
+# Subtest: AC-4: Razorpay captured/authorized/failed map to the correct outcomes
+ok 32 - AC-4: Razorpay captured/authorized/failed map to the correct outcomes
+  ---
+  duration_ms: 0.50524
+  type: 'test'
+  ...
+# Subtest: AC-6: a rolled-back transaction emits no audit row claiming a transition that never committed
+ok 33 - AC-6: a rolled-back transaction emits no audit row claiming a transition that never committed
+  ---
+  duration_ms: 0.347606
+  type: 'test'
+  ...
+# Subtest: AC-5: the operator reconcile reports the gateway answer honestly
+ok 34 - AC-5: the operator reconcile reports the gateway answer honestly
+  ---
+  duration_ms: 0.404878
+  type: 'test'
+  ...
+# Subtest: AC-5: an unknown user is a 404, not a silent no-op
+ok 35 - AC-5: an unknown user is a 404, not a silent no-op
+  ---
+  duration_ms: 0.143259
+  type: 'test'
+  ...
+# Subtest: AC-3: the reconciler refuses to run without an atomic adapter (no silent fallback)
+ok 36 - AC-3: the reconciler refuses to run without an atomic adapter (no silent fallback)
+  ---
+  duration_ms: 0.182041
+  type: 'test'
+  ...
+# Subtest: AC-3: a work-queue limit is honoured so one pass cannot sweep the whole user table
+ok 37 - AC-3: a work-queue limit is honoured so one pass cannot sweep the whole user table
+  ---
+  duration_ms: 0.108274
+  type: 'test'
+  ...
+# Subtest: Stripe webhook cryptography accepts authentic payload and rejects tampering
+ok 38 - Stripe webhook cryptography accepts authentic payload and rejects tampering
+  ---
+  duration_ms: 4.421036
+  type: 'test'
+  ...
+# Subtest: Stripe intent binding validates order, UID, plan, amount, currency, and intent
+ok 39 - Stripe intent binding validates order, UID, plan, amount, currency, and intent
+  ---
+  duration_ms: 0.474296
+  type: 'test'
+  ...
+# Subtest: PayPal completed order validates exact internal binding
+ok 40 - PayPal completed order validates exact internal binding
+  ---
+  duration_ms: 0.432749
+  type: 'test'
+  ...
+# Subtest: Razorpay requires timing-safe HMAC and captured provider payment
+ok 41 - Razorpay requires timing-safe HMAC and captured provider payment
+  ---
+  duration_ms: 0.399679
+  type: 'test'
+  ...
+# Subtest: Paytm and PhonePe provider states require exact amount/currency/completion
+ok 42 - Paytm and PhonePe provider states require exact amount/currency/completion
+  ---
+  duration_ms: 0.383438
+  type: 'test'
+  ...
+# Subtest: order ownership, replay states, refund targeting, and renewal math fail safely
+ok 43 - order ownership, replay states, refund targeting, and renewal math fail safely
+  ---
+  duration_ms: 1.037502
+  type: 'test'
+  ...
+1..43
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 293.945321
+exit code: 0

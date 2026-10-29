@@ -1,0 +1,2 @@
+initial expectedRevision 0: STALE_WRITE 409
+stored user: null

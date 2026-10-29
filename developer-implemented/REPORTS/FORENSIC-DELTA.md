@@ -1,0 +1,5 @@
+# Forensic delta
+
+Baseline/current source `0512c0cfbca7a2fd6a3911e65b72621385f9b10f`, checkout patch uncommitted. No historical conclusion is formally corrected. M8E local-runtime handoff mentions a running MariaDB on its original machine; in the current environment 127.0.0.1:3306 refused connections. This is an environmental difference, not evidence the historical observation was false. Profile test-double vs MariaDB difference in `NEW-FINDINGS.md` remains an observation, not a verified correction.
+
+The M8B profile uncertainty now has positive in-memory reproduction (`EVIDENCE/profile-memory-reproduction.txt`): expected revision 0 was rejected as STALE_WRITE with no record, while MySQL source initializes absence to 0. This narrows attribution to an independently confirmed test-double defect but does not disprove a real database race. The in-memory implementation is corrected in the working tree; no historical report is changed. Severity/parity denominator unchanged; real-db verification remains blocked.
