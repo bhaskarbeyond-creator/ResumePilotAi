@@ -28,7 +28,7 @@ Everything else below is executed evidence, not intent.
 
 ## 2. File boundary audit (exactly 13 files)
 
-All paths are relative to the repository root. Nothing outside this list changed; `git status --short` lists exactly these 13 (plus this report and the evidence directory, which are deliverables, not code).
+All paths are relative to the repository root. The commit contains exactly these 13 code/test files, plus this report and `developer-implemented/EVIDENCE/mandate11j/` (deliverables, not code). No other path in the repository changed — in particular `backend/**`, `components/settings/**`, the resume and job-tracker files, all `package.json` files and shared config are untouched.
 
 **Modified (9)**
 
