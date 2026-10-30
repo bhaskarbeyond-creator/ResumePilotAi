@@ -15,6 +15,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
+const express = require('express');
+const request = require('supertest');
 const {
   createVoiceRoom,
   getVoiceRoom,
@@ -24,6 +26,7 @@ const {
   mintWebRtcToken,
   verifyWebRtcToken,
 } = require('../services/voiceInterviewService');
+const { voiceInterviewRouter } = require('../routes/voiceInterview');
 const { getPool } = require('../database/mysql');
 
 const TEST_SECRET = 'super_secret_test_livekit_key_at_least_32_chars';
@@ -84,8 +87,9 @@ test('Module 29: Live MariaDB Voice Room & Transcription Integration Suite', asy
 
   t.after(async () => {
     // Teardown: deleting users cascades through sessions, rooms, transcripts
-    await pool.query('DELETE FROM users WHERE id IN (?, ?)', [testUserId, otherUserId]);
-    await pool.end();
+    try {
+      await pool.query('DELETE FROM users WHERE id IN (?, ?)', [testUserId, otherUserId]);
+    } catch (_) {}
   });
 
   let createdRoomId = null;
@@ -202,5 +206,119 @@ test('Module 29: Live MariaDB Voice Room & Transcription Integration Suite', asy
     // Verify transcripts are deleted via CASCADE
     const [transcriptsAfter] = await pool.query('SELECT COUNT(*) AS count FROM voice_interview_transcripts WHERE room_id = ?', [createdRoomId]);
     assert.equal(Number(transcriptsAfter[0].count), 0, 'Transcripts must be deleted via foreign key cascade');
+  });
+
+  await t.test('6. HTTP API Suite: /api/candidate/voice-interview endpoints', async (subT) => {
+    const app = express();
+    app.use(express.json());
+    // Test auth middleware
+    app.use((req, res, next) => {
+      const uid = req.headers['x-test-user-id'];
+      if (uid) {
+        req.user = { uid, id: uid, email: `${uid}@example.com` };
+      }
+      next();
+    });
+    app.use('/api/candidate/voice-interview', voiceInterviewRouter);
+
+    // Recreate a session for HTTP tests
+    const httpSessionId = `live_sess_http_${crypto.randomUUID().substring(0, 14)}`;
+    await pool.query(
+      `INSERT INTO live_interview_sessions (id, user_id, status, revision, state_json, expires_at, created_at)
+       VALUES (?, ?, 'active', 1, '{}', DATE_ADD(NOW(3), INTERVAL 2 HOUR), NOW(3))`,
+      [httpSessionId, testUserId]
+    );
+
+    // 6a: 401 when unauthenticated
+    await subT.test('6a. Anonymous request is rejected with 401 AUTH_REQUIRED', async () => {
+      const res = await request(app).post('/api/candidate/voice-interview/rooms').send({ sessionId: httpSessionId });
+      assert.equal(res.status, 401);
+      assert.equal(res.body.error.code, 'AUTH_REQUIRED');
+    });
+
+    // 6b: 201 Room creation
+    let httpRoomId = null;
+    await subT.test('6b. POST /rooms creates room and returns SFU participant token', async () => {
+      const res = await request(app)
+        .post('/api/candidate/voice-interview/rooms')
+        .set('x-test-user-id', testUserId)
+        .send({ sessionId: httpSessionId, sfuProvider: 'livekit', maxDurationSeconds: 1200 });
+
+      assert.equal(res.status, 201);
+      assert.equal(res.body.success, true);
+      assert.ok(res.body.data.roomId.startsWith('vroom_'));
+      assert.ok(res.body.data.participantToken);
+      httpRoomId = res.body.data.roomId;
+    });
+
+    // 6c: GET /rooms/:roomId
+    await subT.test('6c. GET /rooms/:roomId returns room metadata and active status', async () => {
+      const res = await request(app)
+        .get(`/api/candidate/voice-interview/rooms/${httpRoomId}`)
+        .set('x-test-user-id', testUserId);
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.data.roomId, httpRoomId);
+      assert.equal(res.body.data.status, 'active');
+    });
+
+    // 6d: POST /rooms/:roomId/transcription
+    await subT.test('6d. POST /rooms/:roomId/transcription persists turn into MariaDB', async () => {
+      const res = await request(app)
+        .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/transcription`)
+        .set('x-test-user-id', testUserId)
+        .send({
+          turnIndex: 0,
+          speaker: 'candidate',
+          transcriptText: 'I engineered the streaming interview architecture with zero simulated latency.',
+          confidence: 0.991,
+          durationMs: 5400,
+        });
+
+      assert.equal(res.status, 201);
+      assert.equal(res.body.success, true);
+      assert.ok(res.body.data.transcriptId.startsWith('vtx_'));
+    });
+
+    // 6e: GET /rooms/:roomId/transcripts
+    await subT.test('6e. GET /rooms/:roomId/transcripts returns chronological transcript history', async () => {
+      const res = await request(app)
+        .get(`/api/candidate/voice-interview/rooms/${httpRoomId}/transcripts`)
+        .set('x-test-user-id', testUserId);
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.data.length, 1);
+      assert.equal(res.body.data[0].speaker, 'candidate');
+    });
+
+    // 6f: Cross-user access rejected
+    await subT.test('6f. Cross-user access to another candidate room is rejected with 404', async () => {
+      const res = await request(app)
+        .get(`/api/candidate/voice-interview/rooms/${httpRoomId}`)
+        .set('x-test-user-id', otherUserId);
+
+      assert.equal(res.status, 404);
+    });
+
+    // 6g: POST /rooms/:roomId/close
+    await subT.test('6g. POST /rooms/:roomId/close completes the room and subsequent writes are 409', async () => {
+      const closeRes = await request(app)
+        .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/close`)
+        .set('x-test-user-id', testUserId);
+
+      assert.equal(closeRes.status, 200);
+      assert.equal(closeRes.body.data.status, 'completed');
+
+      const lateTurnRes = await request(app)
+        .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/transcription`)
+        .set('x-test-user-id', testUserId)
+        .send({
+          turnIndex: 1,
+          speaker: 'candidate',
+          transcriptText: 'Attempting write after closure',
+        });
+
+      assert.equal(lateTurnRes.status, 409);
+    });
   });
 });
