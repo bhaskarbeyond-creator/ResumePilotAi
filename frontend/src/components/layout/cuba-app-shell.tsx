@@ -17,6 +17,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
 import {
+  KeyRound,
   LayoutDashboard,
   FileText,
   Briefcase,
@@ -169,6 +170,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { id: 'ai-settings', label: 'AI Multi-Provider Engine', href: '/admin/ai-settings', icon: Brain, matchPaths: ['/admin/ai-settings'] },
       { id: 'email', label: 'Email & SMTP Deliverability', href: '/admin/email', icon: Mail, matchPaths: ['/admin/email'] },
+      { id: 'sso', label: 'Enterprise SSO (SAML)', href: '/admin/sso', icon: KeyRound, matchPaths: ['/admin/sso'] },
       { id: 'settings', label: 'Platform Settings & Modules', href: '/admin/settings', icon: Settings, matchPaths: ['/admin/settings', '/admin/modules'] },
     ],
   },
