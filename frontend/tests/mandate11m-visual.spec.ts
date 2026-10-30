@@ -631,22 +631,26 @@ test.describe('AdminEnterpriseTenantsModal', () => {
     });
   }
 
-  test('tenant lifecycle confirmation dialog fits and is keyboard dismissible', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-    await installAdminFixtures(page);
-    await openTenantsRegistry(page);
+  for (const viewport of VIEWPORTS) {
+    test(`tenant lifecycle confirmation fits and is keyboard dismissible at ${viewport.label}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await installAdminFixtures(page);
+      await openTenantsRegistry(page);
 
-    const trigger = page.getByRole('button', { name: 'Suspend tenant', exact: true });
-    await trigger.click();
-    const dialog = page.getByRole('dialog', { name: /Suspend tenant access\?/ });
-    await expect(dialog).toBeVisible();
-    await expectDialogGeometry(page, dialog, 'Suspend tenant @ 375px');
-    await expect(dialog.getByRole('button', { name: 'Confirm lifecycle change' })).toBeDisabled();
+      const trigger = page.getByRole('button', { name: 'Suspend tenant', exact: true });
+      await trigger.click();
+      const dialog = page.getByRole('dialog', { name: /Suspend tenant access\?/ });
+      await expect(dialog).toBeVisible();
+      await expectDialogGeometry(page, dialog, `Suspend tenant @ ${viewport.label}`);
+      await expect(dialog.getByRole('button', { name: 'Confirm lifecycle change' })).toBeDisabled();
+      await capture(page, `tenant-suspend-${viewport.width}`);
 
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(trigger).toBeFocused();
-  });
+      // One Escape dismisses the confirmation only, and focus returns to its trigger.
+      await page.keyboard.press('Escape');
+      await expect(dialog).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+    });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
