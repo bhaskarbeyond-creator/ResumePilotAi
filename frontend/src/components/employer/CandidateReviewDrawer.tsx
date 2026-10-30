@@ -426,6 +426,20 @@ export function CandidateReviewDrawer({
                 >
                   {currentStatus}
                 </span>
+                {application.matchScore != null && (
+                  <span
+                    className={cn(
+                      'text-[10px] font-bold px-2 py-0.5 rounded border',
+                      application.matchScore >= 75
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        : application.matchScore >= 50
+                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                        : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
+                    )}
+                  >
+                    {application.matchScore}% ATS Match
+                  </span>
+                )}
               </div>
               <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
                 {application.applicantEmail && (
@@ -519,6 +533,112 @@ export function CandidateReviewDrawer({
               </span>
             </div>
           </div>
+
+          {/* ATS Compatibility & Ranking Breakdown */}
+          {application.matchBreakdown && (
+            <div className="space-y-3 p-4 rounded-xl border border-edge bg-surface shadow-2xs">
+              <div className="flex items-center justify-between border-b border-edge pb-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                  <Star className="size-3.5 text-amber-500" />
+                  <span>ATS Match Breakdown</span>
+                </div>
+                {application.matchScore != null && (
+                  <span
+                    className={cn(
+                      'text-xs font-extrabold px-2 py-0.5 rounded border',
+                      application.matchScore >= 75
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        : application.matchScore >= 50
+                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                        : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30'
+                    )}
+                  >
+                    {application.matchScore}% Overall Match
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-canvas-soft border border-edge/60 space-y-1">
+                  <div className="flex justify-between text-ink-muted">
+                    <span>Skills Match (40%)</span>
+                    <span className="font-bold text-ink">{application.matchBreakdown.skillsScore ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-edge overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full"
+                      style={{ width: `${Math.min(100, application.matchBreakdown.skillsScore ?? 0)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-canvas-soft border border-edge/60 space-y-1">
+                  <div className="flex justify-between text-ink-muted">
+                    <span>Experience (30%)</span>
+                    <span className="font-bold text-ink">{application.matchBreakdown.experienceScore ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-edge overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${Math.min(100, application.matchBreakdown.experienceScore ?? 0)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-canvas-soft border border-edge/60 space-y-1">
+                  <div className="flex justify-between text-ink-muted">
+                    <span>Education (15%)</span>
+                    <span className="font-bold text-ink">{application.matchBreakdown.educationScore ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-edge overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 rounded-full"
+                      style={{ width: `${Math.min(100, application.matchBreakdown.educationScore ?? 0)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-canvas-soft border border-edge/60 space-y-1">
+                  <div className="flex justify-between text-ink-muted">
+                    <span>Keywords (15%)</span>
+                    <span className="font-bold text-ink">{application.matchBreakdown.keywordScore ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-edge overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full"
+                      style={{ width: `${Math.min(100, application.matchBreakdown.keywordScore ?? 0)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {Array.isArray(application.matchBreakdown.matchedSkills) && application.matchBreakdown.matchedSkills.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Matched Skills</span>
+                  <div className="flex flex-wrap gap-1">
+                    {application.matchBreakdown.matchedSkills.map((skill: string) => (
+                      <span key={skill} className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                        ✓ {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {Array.isArray(application.matchBreakdown.missingSkills) && application.matchBreakdown.missingSkills.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Missing Requisition Skills</span>
+                  <div className="flex flex-wrap gap-1">
+                    {application.matchBreakdown.missingSkills.map((skill: string) => (
+                      <span key={skill} className="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                        — {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Cover Letter Section */}
           <div className="space-y-2">

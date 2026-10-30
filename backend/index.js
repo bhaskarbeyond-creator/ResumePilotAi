@@ -1712,6 +1712,8 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
             resume = await repo.getResume(req.user.uid, resumeId);
             if (!resume) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
         }
+        const { calculateAtsScore } = require('./services/atsMatching');
+        const atsResult = calculateAtsScore(job, resume || {}, coverLetter);
         const result = await resilientMutations.createApplication({
             applicationId, job, user: req.user,
             payload: {
@@ -1721,10 +1723,17 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
                 selectedResume: resume ? { id: resumeId, name: String(resume.title || resume.name || 'Resume').slice(0, 120) } : null,
                 resumeId: resumeId || '',
                 jobSnapshot: { title: job.title, company: job.company, location: job.location },
+                atsScore: atsResult.matchScore,
+                atsBreakdown: atsResult.breakdown,
             },
             actorUid: req.user.uid, requestId: res.locals.requestId,
         });
-        return res.status(201).json({ success: true, ...result });
+        return res.status(201).json({
+            success: true,
+            ...result,
+            matchScore: atsResult.matchScore,
+            atsBreakdown: atsResult.breakdown,
+        });
     } catch (error) {
         const status = error.code === 'ALREADY_APPLIED' ? 409 : ['JOB_UNAVAILABLE', 'RESUME_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'RESUME_TOO_LARGE' ? 413 : 500;
         return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to submit application.' : error.message });
@@ -1783,9 +1792,164 @@ app.get('/api/jobs/:jobId/applications', async (req, res) => {
         const applications = await repo.getApplications({ jobId });
         // Applicants see their own applications only; the owner sees all.
         const visible = isOwner ? applications : (applications || []).filter(app => String(app.applicant_id || app.applicantId || '') === req.user.uid);
-        return res.json({ success: true, applications: visible });
+        
+        // Map canonical application shape with ATS match score and breakdown
+        const mapped = visible.map(app => {
+            let score = app.ats_score != null ? Number(app.ats_score) : (app.atsScore != null ? Number(app.atsScore) : null);
+            let breakdown = null;
+            if (app.ats_breakdown) {
+                try {
+                    breakdown = typeof app.ats_breakdown === 'string' ? JSON.parse(app.ats_breakdown) : app.ats_breakdown;
+                } catch {
+                    breakdown = null;
+                }
+            } else if (app.atsBreakdown) {
+                breakdown = app.atsBreakdown;
+            }
+            return {
+                id: app.id,
+                jobId: app.job_id || app.jobId,
+                applicantId: app.applicant_id || app.applicantId,
+                applicantName: app.applicant_name || app.applicantName || 'Applicant',
+                applicantEmail: app.applicant_email || app.applicantEmail || '',
+                applicantPhone: app.applicant_phone || app.applicantPhone || '',
+                status: (app.status || 'pending').toLowerCase(),
+                coverLetter: app.cover_letter || app.coverLetter || '',
+                resumeId: app.resume_id || app.resumeId || null,
+                resumeUrl: app.resume_url || app.resumeUrl || null,
+                appliedAt: app.applied_at || app.appliedAt || app.created_at || null,
+                revision: Number(app.revision || 0),
+                matchScore: score,
+                matchBreakdown: breakdown,
+            };
+        });
+
+        return res.json({ success: true, applications: mapped });
     } catch (_error) {
         return res.status(503).json({ success: false, error: 'Applications are unavailable.' });
+    }
+});
+
+// GET /api/jobs/:jobId/applications/ranked (and /api/employer/jobs/:jobId/ranked-candidates)
+// Automated Candidate Ranking Endpoint (FP-F16)
+// Strictly employer-scoped: computes & returns applicants ranked by multi-dimensional ATS score
+app.get(['/api/jobs/:jobId/applications/ranked', '/api/employer/jobs/:jobId/ranked-candidates'], async (req, res) => {
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job.' });
+    try {
+        const repo = resilientMutations.repoFor();
+        const job = await repo.getJob(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+        const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
+        if (!isOwner) {
+            return res.status(403).json({ success: false, error: 'Access denied: Only the employer who posted this job may view candidate rankings.' });
+        }
+
+        const rawApplications = await repo.getApplications({ jobId }) || [];
+        const { rankCandidatesForJob } = require('./services/atsMatching');
+
+        // Hydrate resumes for any applications that need live scoring
+        const appsWithResumes = await Promise.all(rawApplications.map(async (app) => {
+            const applicantId = String(app.applicant_id || app.applicantId || '');
+            const resumeId = String(app.resume_id || app.resumeId || '');
+            let resume = null;
+            if (resumeId && applicantId && typeof repo.getResume === 'function') {
+                resume = await repo.getResume(applicantId, resumeId).catch(() => null);
+            }
+            return {
+                id: app.id,
+                jobId: app.job_id || app.jobId,
+                applicantId,
+                applicantName: app.applicant_name || app.applicantName || 'Applicant',
+                applicantEmail: app.applicant_email || app.applicantEmail || '',
+                applicantPhone: app.applicant_phone || app.applicantPhone || '',
+                status: (app.status || 'pending').toLowerCase(),
+                coverLetter: app.cover_letter || app.coverLetter || '',
+                resumeId: resumeId || null,
+                resumeUrl: app.resume_url || app.resumeUrl || null,
+                appliedAt: app.applied_at || app.appliedAt || app.created_at || null,
+                revision: Number(app.revision || 0),
+                ats_score: app.ats_score != null ? Number(app.ats_score) : null,
+                ats_breakdown: app.ats_breakdown || null,
+                resume,
+            };
+        }));
+
+        const ranking = rankCandidatesForJob(job, appsWithResumes);
+
+        // Update database records for applications where ats_score was freshly calculated
+        try {
+            const { getPool } = require('./database/mysql');
+            const pool = getPool();
+            for (const cand of ranking.rankedCandidates) {
+                if (cand.id && cand.matchScore != null && (cand.ats_score == null || cand.ats_score === undefined)) {
+                    await pool.query(
+                        'UPDATE applications SET ats_score = ?, ats_breakdown = ? WHERE id = ?',
+                        [cand.matchScore, JSON.stringify(cand.matchBreakdown), cand.id]
+                    ).catch(() => {});
+                }
+            }
+        } catch {}
+
+        return res.json({
+            success: true,
+            jobId,
+            jobTitle: job.title,
+            ...ranking,
+        });
+    } catch (error) {
+        console.error('[Candidate Ranking Failed]', error);
+        return res.status(503).json({ success: false, error: 'Candidate ranking is temporarily unavailable.' });
+    }
+});
+
+// POST /api/jobs/:jobId/applications/:applicationId/recalculate-ats
+// On-demand ATS score recalculation for an application
+app.post('/api/jobs/:jobId/applications/:applicationId/recalculate-ats', async (req, res) => {
+    const jobId = String(req.params.jobId || '');
+    const applicationId = String(req.params.applicationId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) {
+        return res.status(400).json({ success: false, error: 'Invalid job or application ID.' });
+    }
+    try {
+        const repo = resilientMutations.repoFor();
+        const job = await repo.getJob(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+        const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
+        if (!isOwner) {
+            return res.status(403).json({ success: false, error: 'Access denied: Only the employer may trigger ATS recalculation.' });
+        }
+
+        const application = typeof repo.getApplication === 'function' ? await repo.getApplication(applicationId) : null;
+        if (!application) return res.status(404).json({ success: false, error: 'Application not found.' });
+
+        const applicantId = String(application.applicantId || application.applicant_id || '');
+        const resumeId = String(application.resumeId || application.resume_id || '');
+        let resume = null;
+        if (resumeId && applicantId && typeof repo.getResume === 'function') {
+            resume = await repo.getResume(applicantId, resumeId).catch(() => null);
+        }
+
+        const { calculateAtsScore } = require('./services/atsMatching');
+        const atsResult = calculateAtsScore(job, resume || {}, application.cover_letter || application.coverLetter || '');
+
+        const { getPool } = require('./database/mysql');
+        const pool = getPool();
+        await pool.query(
+            'UPDATE applications SET ats_score = ?, ats_breakdown = ? WHERE id = ?',
+            [atsResult.matchScore, JSON.stringify(atsResult.breakdown), applicationId]
+        );
+
+        return res.json({
+            success: true,
+            applicationId,
+            matchScore: atsResult.matchScore,
+            grade: atsResult.grade,
+            breakdown: atsResult.breakdown,
+        });
+    } catch (error) {
+        console.error('[Recalculate ATS Failed]', error);
+        return res.status(503).json({ success: false, error: 'ATS recalculation failed.' });
     }
 });
 

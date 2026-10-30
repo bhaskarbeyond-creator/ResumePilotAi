@@ -230,6 +230,7 @@ export function EmployerPortalPage() {
   const [showCreateJobModal, setShowCreateJobModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pipelineSort, setPipelineSort] = useState<'match' | 'date' | 'name'>('match');
 
   // Messages are server-authoritative. A conversation is never synthesized from a candidate list.
   type EmployerConversation = {
@@ -427,17 +428,52 @@ export function EmployerPortalPage() {
     }
   };
 
-  // Filter applications by search
+  // Filter and sort applications by search and ATS score
   const filteredApplications = useMemo(() => {
-    if (!searchQuery.trim()) return applications;
-    const q = searchQuery.toLowerCase();
-    return applications.filter(
-      (app) =>
-        app.applicantName.toLowerCase().includes(q) ||
-        app.applicantEmail.toLowerCase().includes(q) ||
-        (app.coverLetter && app.coverLetter.toLowerCase().includes(q))
+    let list = applications;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = applications.filter(
+        (app) =>
+          app.applicantName.toLowerCase().includes(q) ||
+          app.applicantEmail.toLowerCase().includes(q) ||
+          (app.coverLetter && app.coverLetter.toLowerCase().includes(q))
+      );
+    }
+    return list.slice().sort((a, b) => {
+      if (pipelineSort === 'match') {
+        const scoreA = a.matchScore ?? -1;
+        const scoreB = b.matchScore ?? -1;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+      } else if (pipelineSort === 'name') {
+        return (a.applicantName || '').localeCompare(b.applicantName || '');
+      }
+      const dateA = a.appliedAt ? new Date(a.appliedAt).getTime() : 0;
+      const dateB = b.appliedAt ? new Date(b.appliedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [applications, searchQuery, pipelineSort]);
+
+  const getMatchScoreBadge = (score: number | null | undefined) => {
+    if (score == null) {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-500/15 text-neutral-700 dark:text-neutral-400 border border-neutral-500/30">
+          Evaluating
+        </span>
+      );
+    }
+    const color =
+      score >= 75
+        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+        : score >= 50
+        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+        : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30';
+    return (
+      <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', color)}>
+        {score}%
+      </span>
     );
-  }, [applications, searchQuery]);
+  };
 
   // Summary Metrics
   const totalApplicants = useMemo(() => {
@@ -865,6 +901,17 @@ export function EmployerPortalPage() {
                 />
               </div>
 
+              <select
+                aria-label="Sort applicants by"
+                value={pipelineSort}
+                onChange={(e) => setPipelineSort(e.target.value as typeof pipelineSort)}
+                className="text-xs h-8 px-2.5 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option value="match">Sort: ATS Match (High)</option>
+                <option value="date">Sort: Applied Date</option>
+                <option value="name">Sort: Name (A-Z)</option>
+              </select>
+
               <div className="flex items-center rounded-lg border border-edge p-0.5 bg-canvas-soft shrink-0">
                 <button
                   type="button"
@@ -953,9 +1000,7 @@ export function EmployerPortalPage() {
                               <h4 className="text-xs font-bold text-ink hover:text-accent transition-colors">
                                 {app.applicantName}
                               </h4>
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                                88%
-                              </span>
+                              {getMatchScoreBadge(app.matchScore)}
                             </div>
 
                             <p className="text-[11px] text-ink-muted truncate">
@@ -1020,9 +1065,7 @@ export function EmployerPortalPage() {
                         {app.applicantEmail}
                       </td>
                       <td className="p-3.5 text-center">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                          88%
-                        </span>
+                        {getMatchScoreBadge(app.matchScore)}
                       </td>
                       <td className="p-3.5">
                         <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-canvas-soft border border-edge text-ink">

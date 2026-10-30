@@ -1645,6 +1645,14 @@ class MySQLRepository {
             rating: Number(data.rating || 0),
             notes: data.notes || '',
         };
+        if (data.atsScore !== undefined || data.ats_score !== undefined) {
+            const rawScore = data.atsScore ?? data.ats_score;
+            values.ats_score = rawScore != null ? Number(rawScore) : null;
+        }
+        if (data.atsBreakdown !== undefined || data.ats_breakdown !== undefined) {
+            const rawBd = data.atsBreakdown ?? data.ats_breakdown;
+            values.ats_breakdown = rawBd != null ? (typeof rawBd === 'object' ? JSON.stringify(rawBd) : String(rawBd)) : null;
+        }
         const keys = Object.keys(values);
         const placeholders = keys.map(() => '?').join(', ');
         const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');

@@ -84,6 +84,8 @@ export const JobApplicationSchema = z.object({
   resumeUrl: z.string().nullable().optional(),
   appliedAt: z.string().nullable().optional(),
   revision: z.number().optional().default(0),
+  matchScore: z.number().nullable().optional(),
+  matchBreakdown: z.any().optional(),
 });
 export type JobApplication = z.infer<typeof JobApplicationSchema>;
 

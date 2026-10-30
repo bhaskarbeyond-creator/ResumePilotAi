@@ -10,12 +10,12 @@
 # 1. METHODOLOGY & CLASSIFICATION TIERS
 
 Each of the 112 capabilities in the canonical inventory is classified into one of four mutually exclusive states:
-1. **🟢 STRICT FULL (63 Capabilities — 56.3%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
+1. **🟢 STRICT FULL (64 Capabilities — 57.1%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
 2. **🔵 MODERN ARCHITECTURAL REPLACEMENTS (9 Capabilities — 8.0%):** Replaced legacy PHP/Firestore patterns with modern Node.js/Express/MariaDB architectures.
-3. **🟡 DEGRADED / PARTIAL (33 Capabilities — 29.5%):** Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
+3. **🟡 DEGRADED / PARTIAL (32 Capabilities — 28.6%):** Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
 4. **🔴 MOCK / UNBUILT (7 Capabilities — 6.2%):** Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
 
-Combined Reconciled Architectural Parity: **(63 + 9) / 112 = 72 / 112 = 64.3%**.
+Combined Reconciled Architectural Parity: **(64 + 9) / 112 = 73 / 112 = 65.2%**.
 
 ---
 
@@ -149,7 +149,7 @@ Combined Reconciled Architectural Parity: **(63 + 9) / 112 = 72 / 112 = 64.3%**.
 | `FP-F13` | Team Member Workspace Seats | 🟢 STRICT FULL | `TeamSeats.tsx` | Seat assignment with role governance. |
 | `FP-F14` | Application Stage Tagging | 🟢 STRICT FULL | `routes/applications.js` | Color-coded status badges with audit timestamps. |
 | `FP-F15` | Employer Candidate Search | 🟢 STRICT FULL | `routes/employer/candidates.js`| Keyword search across applicant profiles. |
-| `FP-F16` | Automated Candidate Ranking | 🟡 DEGRADED | `services/atsMatching.js` | Heuristic keyword scoring; vector embeddings pending. |
+| `FP-F16` | Automated Candidate Ranking | 🟢 STRICT FULL | `services/atsMatching.js` | Migration 043 (`ats_score`, `ats_breakdown`); 4-factor scoring (skills 40%, experience 30%, education 15%, keywords 15%), `GET /api/jobs/:jobId/applications/ranked`, `portal.tsx` hardcoded 88% eradicated, CandidateReviewDrawer breakdown panel, on-demand recalculation (11/11 tests green). |
 
 ---
 

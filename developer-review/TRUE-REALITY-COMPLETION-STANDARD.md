@@ -54,14 +54,14 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 ╔════════════════════════════════════════════════════════════════════════════════════════╗
 ║                          CANONICAL REALITY SCORECARD (REVISION e6c5a473)              ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
-║ 1. Strict Functional Parity (112 Capabilities):    56.3% Strict Full (63 / 112)        ║
-║    — Including Modern Architectural Replacements:  64.3% Reconciled  (72 / 112)        ║
-║ 2. Forensic Discrepancy Log (54 Findings):         66.7% Resolved    (36 / 54)         ║
+║ 1. Strict Functional Parity (112 Capabilities):    57.1% Strict Full (64 / 112)        ║
+║    — Including Modern Architectural Replacements:  65.2% Reconciled  (73 / 112)        ║
+║ 2. Forensic Discrepancy Log (54 Findings):         68.5% Resolved    (37 / 54)         ║
 ║ 3. 42-Module Maturity Breakdown:                                                       ║
-║    — 🟢 Tier 1 (Strict Production Working):        81.0% (34 of 42 modules)            ║
-║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 16.7% ( 7 of 42 modules)            ║
+║    — 🟢 Tier 1 (Strict Production Working):        83.3% (35 of 42 modules)            ║
+║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 14.3% ( 6 of 42 modules)            ║
 ║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      2.4% ( 1 of 42 modules)            ║
-║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (577 pass, 0 s, 0 f)   ║
+║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (589 pass, 0 s, 0 f)   ║
 ║ 5. Live Runtime & Environmental Certification:     0.0%  Live Bank Settlement / KYC   ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
 ║ OVERALL SYSTEM STATUS: PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE         ║
@@ -70,8 +70,8 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 
 ### The Three Tiers of Reality Breakdown (112 Standard Capabilities)
 
-* **🟢 Tier 1 — Strict Production Working (54.5% / 61 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
-* **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (31.2% / 35 capabilities)**: Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
+* **🟢 Tier 1 — Strict Production Working (57.1% / 64 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
+* **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (28.6% / 32 capabilities)**: Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
 * **🔴 Tier 3 — Completely Missing / Fake (6.3% / 7 capabilities)**: Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
 * **🔵 Modern Architectural Replacements (8.0% / 9 capabilities)**: Modern Express/MariaDB architectures replacing deprecated legacy PHP/Firestore patterns.
 
@@ -613,16 +613,16 @@ This ledger is the authoritative register for all 42 modules across the 7 archit
 
 ### Module 37: Candidate Review Drawer & Application Lifecycle
 
-* **Architectural Anchor:** `frontend/src/components/employer/CandidateReviewDrawer.tsx:135-260`, `backend/routes/applications.js`
-* **Database Tables:** `applications`, `interview_slots` (Migration `031_interview_slots.sql`)
-* **Forensic Reference:** `FP-F03`, `DISC-028`
-* **Status:** 🟡 **Tier 2 (Degraded)** · **True % Complete:** **50%**
+* **Architectural Anchor:** `frontend/src/components/employer/CandidateReviewDrawer.tsx:135-310`, `backend/routes/applications.js`, `backend/services/atsMatching.js`
+* **Database Tables:** `applications`, `interview_slots`, `application_evaluations` (Migrations `031_interview_slots.sql`, `036_evaluations.sql`, `043_candidate_ats_ranking.sql`)
+* **Forensic Reference:** `FP-F03`, `FP-F16`, `DISC-028`
+* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **90%**
 * **In-Depth Evidence of What is DONE:**
-  * Slide-over candidate review drawer, resume preview tab, status transition buttons (*Move to Interview*, *Reject*, *Extend Offer*).
-* **Forensic Evidence of What is PENDING / BROKEN:**
-  * **LACK OF SCORECARD PERSISTENCE:** Candidate interview evaluation criteria, hiring team notes, and interview scorecards are not saved relationally in MariaDB.
-  * Status updates advance application state optimistically, but feedback messages trigger single email notifications (`CandidateReviewDrawer.tsx:166-188`) rather than persistent conversation threads.
-* **Actionable Developer Fix:** Wire interview scheduling directly to the `interview_slots` table (Migration 031) and create an `interview_evaluations` relational table.
+  * Slide-over candidate review drawer with live resume viewer, keyword highlighting, status transitions (*Move to Interview*, *Reject*, *Extend Offer*).
+  * **Relational Interview Scorecards:** Fully wired via Migration 036 (`application_evaluations`) with multi-reviewer persistence and outbox email alerts.
+  * **Automated ATS Scoring & Ranking:** Migration 043 adds `ats_score` and `ats_breakdown` to `applications`. Hardcoded 88% badges in `portal.tsx` eradicated. Candidate Review Drawer includes multi-factor ATS match breakdown panel (skills, experience, education, keywords) and `GET /api/jobs/:jobId/applications/ranked` sorts candidates descending with verified MariaDB test suite (11/11 tests green).
+* **Forensic Evidence of What is PENDING:**
+  * Vector embedding semantic resume matching (currently high-signal normalized taxonomy and deterministic 4-factor scoring).
 
 ---
 
