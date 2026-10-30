@@ -18,6 +18,7 @@ const {
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
 const { applyTenantAiPolicy, consumeTenantAiQuota, loadTenantByokKeys } = require('../enterprise/tenantAi');
+const aiCoach = require('../services/aiCoach');
 const router = express.Router();
 
 /**
@@ -360,6 +361,7 @@ const AI_ROUTE_PATHS = new Set([
     '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
     '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
     '/parse-resume', '/live-interview/sessions', '/live-interview/guide',
+    '/candidate/interview-coach/stream-questions', '/candidate/interview-coach/stream-turn', '/live-interview/guide/stream',
 ]);
 function isAiRoutePath(pathname) {
     return AI_ROUTE_PATHS.has(pathname) || /^\/live-interview\/sessions\/[A-Za-z0-9_-]{16,128}(?:\/(?:turns|complete))?$/.test(pathname);
@@ -1137,6 +1139,149 @@ router.post('/live-interview/guide', async (req, res) => {
         return sendLiveInterviewError(res, error, {
             unavailableMessage: 'AI answer guidance is temporarily unavailable. Please try again in a moment.',
         });
+    }
+});
+
+// ─── Module 28: Streaming AI Interview Coach & Domain Question Generator ──────────────
+
+router.post('/candidate/interview-coach/stream-questions', requireAuthLazy, async (req, res) => {
+    const sseHeaders = {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform, private',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+    };
+    res.writeHead(200, sseHeaders);
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res).catch(() => ({ configuration: {} }));
+        const body = req.body || {};
+
+        res.write(`data: ${JSON.stringify({ type: 'start', role: body.role || 'Full Stack Engineer', track: body.track || 'technical' })}\n\n`);
+
+        const result = await aiCoach.streamInterviewQuestions({
+            role: body.role,
+            track: body.track,
+            seniority: body.seniority || body.experienceLevel,
+            difficulty: body.difficulty,
+            count: body.count || body.questionCount || 5,
+            resumeFacts: body.resumeFacts,
+            platformConfig: tenantResolution?.configuration,
+            onChunk: (chunk) => {
+                if (!res.writableEnded) {
+                    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                }
+            },
+            signal: abortController.signal,
+        });
+
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'complete', questions: result.questions, usedFallback: result.usedFallback, total: result.total })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
+        }
+    } catch (error) {
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', code: error.code || 'STREAM_ERROR', message: error.message })}\n\n`);
+            res.end();
+        }
+    }
+});
+
+router.post('/candidate/interview-coach/stream-turn', requireAuthLazy, async (req, res) => {
+    const sseHeaders = {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform, private',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+    };
+    res.writeHead(200, sseHeaders);
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res).catch(() => ({ configuration: {} }));
+        const body = req.body || {};
+
+        res.write(`data: ${JSON.stringify({ type: 'start' })}\n\n`);
+
+        const evaluation = await aiCoach.streamTurnEvaluation({
+            question: body.question,
+            answer: body.answer,
+            role: body.role,
+            seniority: body.seniority || body.experienceLevel,
+            platformConfig: tenantResolution?.configuration,
+            onChunk: (chunk) => {
+                if (!res.writableEnded) {
+                    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                }
+            },
+            signal: abortController.signal,
+        });
+
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'complete', evaluation })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
+        }
+    } catch (error) {
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', code: error.code || 'STREAM_ERROR', message: error.message })}\n\n`);
+            res.end();
+        }
+    }
+});
+
+router.post('/live-interview/guide/stream', requireAuthLazy, async (req, res) => {
+    const sseHeaders = {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform, private',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+    };
+    res.writeHead(200, sseHeaders);
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res).catch(() => ({ configuration: {} }));
+        const body = req.body || {};
+
+        res.write(`data: ${JSON.stringify({ type: 'start' })}\n\n`);
+
+        const guide = await aiCoach.streamAnswerGuide({
+            question: body.question,
+            role: body.role,
+            topic: body.topic,
+            resumeFacts: body.resumeFacts,
+            regenerate: Boolean(body.regenerate),
+            platformConfig: tenantResolution?.configuration,
+            onChunk: (chunk) => {
+                if (!res.writableEnded) {
+                    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                }
+            },
+            signal: abortController.signal,
+        });
+
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'complete', guide })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
+        }
+    } catch (error) {
+        if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', code: error.code || 'STREAM_ERROR', message: error.message })}\n\n`);
+            res.end();
+        }
     }
 });
 

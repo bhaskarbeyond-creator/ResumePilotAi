@@ -295,6 +295,7 @@ mariaTest('the seat limit returns 409 SEAT_LIMIT_REACHED and writes nothing', as
   const blocked = await invite(tenant.tenantId, 'owner', { email: target.email, role: 'MEMBER' });
   assert.equal(blocked.status, 409, JSON.stringify(blocked.body));
   assert.equal(blocked.body.error.code, 'SEAT_LIMIT_REACHED');
+  assert.equal(blocked.body.error.quotaCode, 'QUOTA_EXCEEDED');
   assert.match(blocked.body.error.message, /seat limit/i);
 
   assert.equal(await membershipRow(tenant.tenantId, target.uid), null);

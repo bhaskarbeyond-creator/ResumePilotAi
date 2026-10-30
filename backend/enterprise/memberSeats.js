@@ -149,6 +149,7 @@ function seatLimitReachedError(usage = {}) {
     'Workspace seat limit reached. Please upgrade your enterprise tier.',
     409,
     {
+      quotaCode: 'QUOTA_EXCEEDED',
       seatLimit: usage.seatLimit ?? null,
       seatsUsed: usage.seatsUsed ?? null,
       seatsRemaining: 0,

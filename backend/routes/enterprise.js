@@ -569,7 +569,17 @@ router.post('/members/invite', resolveTenantContext, requireTenantPermission('te
     const status = Number(error?.status) >= 400 && Number(error?.status) < 600 ? Number(error.status) : 503;
     const code = error?.code || 'TENANT_INVITATION_FAILED';
     const message = status < 500 ? error.message : 'The invitation could not be created';
-    return res.status(status).json({ error: { code, message, requestId: res.locals?.requestId } });
+    return res.status(status).json({
+      error: {
+        code,
+        quotaCode: error?.quotaCode || (code === 'SEAT_LIMIT_REACHED' ? 'QUOTA_EXCEEDED' : undefined),
+        message,
+        requestId: res.locals?.requestId,
+        seatLimit: error?.seatLimit,
+        seatsUsed: error?.seatsUsed,
+        seatsRemaining: error?.seatsRemaining,
+      },
+    });
   }
 });
 
