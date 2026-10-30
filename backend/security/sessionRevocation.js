@@ -44,6 +44,8 @@ const crypto = require('crypto');
 
 // uid -> cutoff epoch ms for revocations performed by this process.
 const localCutoffs = new Map();
+// jti -> Set of locally revoked token IDs
+const localRevokedJtis = new Set();
 
 const DEFAULT_HORIZON_SECONDS = 24 * 60 * 60;
 
@@ -117,9 +119,32 @@ async function persistedCutoffSeconds(uid) {
  * Reject a revoked session. Throws SESSION_REVOKED or SESSION_REVOCATION_UNAVAILABLE.
  * Never silently allows a token it could not evaluate.
  */
-async function assertSessionActive({ uid, issuedAt }) {
-  if (!uid) return;
+async function assertSessionActive({ uid, issuedAt, jti = null }) {
+  if (!uid && !jti) return;
   if (!enforced()) return;
+
+  // JTI instant blacklist check
+  if (jti) {
+    const tokenJti = String(jti).trim();
+    if (localRevokedJtis.has(tokenJti)) {
+      throw sessionRevoked(0);
+    }
+    try {
+      const [jtiRows] = await pool().query(
+        "SELECT id FROM revoked_sessions WHERE user_id = ? AND scope = 'JTI' AND (expires_at IS NULL OR expires_at > NOW(3)) LIMIT 1",
+        [tokenJti]
+      );
+      if (jtiRows && jtiRows.length > 0) {
+        localRevokedJtis.add(tokenJti);
+        throw sessionRevoked(0);
+      }
+    } catch (err) {
+      if (err?.code === 'SESSION_REVOKED') throw err;
+      throw revocationUnavailable(err?.code || 'jti_lookup_failed');
+    }
+  }
+
+  if (!uid) return;
 
   const localCutoff = localCutoffs.get(uid);
   const localCutoffSeconds = localCutoff ? Math.floor(localCutoff / 1000) : null;
@@ -224,6 +249,30 @@ async function latestRevocation(uid) {
   };
 }
 
+/**
+ * Explicitly revokes a specific JWT token by its JTI claim.
+ * Persists into MariaDB revoked_sessions with scope 'JTI' and applies immediately locally.
+ */
+async function revokeTokenJti({ jti, _uid = null, reason = null, actorUid = null, expiresInSeconds = null }) {
+  const tokenJti = String(jti || '').trim();
+  if (!tokenJti || tokenJti.length > 128) {
+    throw Object.assign(new Error('A valid token JTI identifier is required'), { code: 'INVALID_JTI', status: 400 });
+  }
+  const id = `rvs_jti_${crypto.randomUUID()}`;
+  const horizon = Number.isSafeInteger(Number(expiresInSeconds)) && Number(expiresInSeconds) > 0
+    ? Number(expiresInSeconds)
+    : horizonSeconds();
+  const safeReason = reason ? String(reason).slice(0, 255) : null;
+  const db = pool();
+  await db.query(
+    `INSERT INTO revoked_sessions (id, user_id, scope, revoked_at, expires_at, reason, revoked_by)
+     VALUES (?, ?, 'JTI', CURRENT_TIMESTAMP(3), DATE_ADD(CURRENT_TIMESTAMP(3), INTERVAL ? SECOND), ?, ?)`,
+    [id, tokenJti, horizon, safeReason, actorUid ? String(actorUid).slice(0, 128) : null]
+  );
+  localRevokedJtis.add(tokenJti);
+  return { id, jti: tokenJti, scope: 'JTI', reason: safeReason };
+}
+
 // ─── Test seams ─────────────────────────────────────────────────────────────
 // Only reachable from NODE_ENV=test (or when the platform explicitly allows the
 // auth test seams), so a production process can never be talked out of a
@@ -237,6 +286,7 @@ function assertTestSeam() {
 function resetForTests() {
   assertTestSeam();
   localCutoffs.clear();
+  localRevokedJtis.clear();
 }
 
 function applyLocalRevocationForTests(uid, cutoffMs) {
@@ -244,8 +294,14 @@ function applyLocalRevocationForTests(uid, cutoffMs) {
   applyLocalRevocation(String(uid), Number(cutoffMs) || Date.now());
 }
 
+function applyLocalJtiRevocationForTests(jti) {
+  assertTestSeam();
+  localRevokedJtis.add(String(jti));
+}
+
 module.exports = {
   DEFAULT_HORIZON_SECONDS,
+  applyLocalJtiRevocationForTests,
   applyLocalRevocationForTests,
   assertSessionActive,
   enforced,
@@ -253,6 +309,8 @@ module.exports = {
   issuedAtSeconds,
   latestRevocation,
   resetForTests,
+  revokeTokenJti,
   revokeUserSessions,
   _localCutoffs: localCutoffs,
+  _localRevokedJtis: localRevokedJtis,
 };

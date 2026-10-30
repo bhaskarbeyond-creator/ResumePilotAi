@@ -43,6 +43,8 @@ const explicitFiles = [
   path.join(repoRoot, 'backend/test/payment-reconciliation.test.js'),
   path.join(repoRoot, 'backend/test/payment-order-immutability.test.js'),
   path.join(repoRoot, 'backend/test/payments.test.js'),
+  path.join(repoRoot, 'backend/test/ip-filter-jail-integration.test.js'),
+  path.join(repoRoot, 'backend/test/tenant-retention-purge-integration.test.js'),
 ];
 
 const allFiles = [...unitFiles, ...explicitFiles];

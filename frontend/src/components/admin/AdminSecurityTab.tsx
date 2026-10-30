@@ -197,8 +197,19 @@ export function AdminSecurityTab() {
       confirmText: 'Block IP Address',
       danger: true,
       action: () => {
-        setOpNotice(`Edge IP block rule added for ${ip}.`);
-        setTimeout(() => setOpNotice(null), 4000);
+        void (async () => {
+          try {
+            await post('/platform/ip-rules', {
+              ipOrCidr: ip,
+              ruleType: 'DENY',
+              reason: 'Administrative block from security event inspector',
+            });
+            setOpNotice(`Network block rule persisted in MariaDB for ${ip}.`);
+            setTimeout(() => setOpNotice(null), 4000);
+          } catch (err) {
+            setOpError(err instanceof Error ? err.message : `Failed to block IP ${ip}`);
+          }
+        })();
       },
     });
   };

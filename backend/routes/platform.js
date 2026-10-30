@@ -2135,4 +2135,98 @@ router.post('/role-view-audit', requireAuth, requireSuperAdmin, async (req, res)
   }
 });
 
+/* ------------------------------------------------------------------
+ * IP Access Control & Automated Jail (Module 5 / FP-A07)
+ * ------------------------------------------------------------------ */
+
+const ipAccessService = require('../services/ipAccessService');
+
+router.get('/ip-rules', requireSuperAdmin, async (_req, res) => {
+  try {
+    const rules = await ipAccessService.listRules();
+    return res.json({ success: true, rules });
+  } catch (error) {
+    console.error('[Platform IP rules] list error:', error?.message);
+    return res.status(500).json({ error: { code: 'IP_RULES_FETCH_FAILED', message: 'Could not fetch IP access rules' } });
+  }
+});
+
+router.post('/ip-rules', requireRecentAdminAuthentication, async (req, res) => {
+  const { ipOrCidr, ruleType, reason, expiresInMinutes } = req.body || {};
+  if (!ipOrCidr || typeof ipOrCidr !== 'string') {
+    return res.status(400).json({ error: { code: 'INVALID_IP_OR_CIDR', message: 'ipOrCidr is required' } });
+  }
+  try {
+    const rule = await ipAccessService.addRule({
+      ipOrCidr,
+      ruleType: ruleType || 'DENY',
+      reason,
+      actorUid: req.user?.uid || 'super-admin',
+      expiresInMinutes: expiresInMinutes ? Number(expiresInMinutes) : null,
+    });
+
+    await recordAdminAuditLog({
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_IP_RULE_MUTATED',
+      category: 'security.network',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { rule },
+      requestId: res.locals?.requestId,
+    }).catch(() => {});
+
+    return res.json({ success: true, rule });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: { code: error.code || 'IP_RULE_MUTATION_FAILED', message: error.message || 'Could not save IP rule' }
+    });
+  }
+});
+
+router.delete('/ip-rules/:id', requireRecentAdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await ipAccessService.removeRule(id);
+
+    await recordAdminAuditLog({
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_IP_RULE_DELETED',
+      category: 'security.network',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'DELETE',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      metadata: { ruleId: id },
+      requestId: res.locals?.requestId,
+    }).catch(() => {});
+
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: { code: error.code || 'IP_RULE_DELETE_FAILED', message: error.message || 'Could not delete IP rule' }
+    });
+  }
+});
+
+router.post('/ip-rules/test', requireSuperAdmin, async (req, res) => {
+  const { ip } = req.body || {};
+  if (!ip || typeof ip !== 'string') {
+    return res.status(400).json({ error: { code: 'INVALID_IP', message: 'ip address is required' } });
+  }
+  try {
+    const check = await ipAccessService.isIpBlocked(ip);
+    return res.json({ success: true, ip, ...check });
+  } catch (error) {
+    return res.status(500).json({ error: { code: 'IP_TEST_FAILED', message: error.message } });
+  }
+});
+
 module.exports = { platformRouter: router };

@@ -146,6 +146,7 @@ const { aiGovernanceMiddleware } = require('./security/aiGovernance');
 // the universal request sanitizer, and the boot-time secret-integrity linter.
 const { securityHeaders } = require('./security/headers');
 const { sanitizeRequest } = require('./security/sanitize');
+const { ipFilter } = require('./middleware/ipFilter');
 const { assertSecretIntegrity } = require('./security/secretVault');
 const port = process.env.PORT || 8080;
 const configuredWebsiteName = String(process.env.WEBSITE_NAME || process.env.APP_DOMAIN || 'ai-resume-builder.local').trim().toLowerCase();
@@ -384,6 +385,7 @@ app.use(securityHeaders());
 // neutralizes pollution keys and active-content URLs without HTML-escaping
 // resume text, which would corrupt legitimate candidate code samples.
 app.use(sanitizeRequest());
+app.use(ipFilter);
 
 // Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage).
 // GLOBAL_RATE_LIMIT_MAX overrides in every environment (previously ignored in

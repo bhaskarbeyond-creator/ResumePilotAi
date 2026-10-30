@@ -44,6 +44,7 @@ function verifyLocalTestToken(token) {
   if (Number(payload.exp || 0) > 0 && Number(payload.exp) < nowSec) throw new Error('Test token expired');
   return {
     uid: payload.uid,
+    jti: payload.jti || null,
     email: payload.email || null,
     email_verified: payload.email_verified !== false,
     auth_time: Number(payload.auth_time || nowSec),
@@ -137,6 +138,7 @@ async function resolveUser(decoded) {
   await sessionRevocation.assertSessionActive({
     uid: decoded.uid,
     issuedAt: sessionRevocation.issuedAtSeconds(decoded),
+    jti: decoded.jti || decoded.token_id || null,
   });
   let emailVerified = decoded.email_verified === true;
 
