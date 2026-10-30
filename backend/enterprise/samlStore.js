@@ -58,7 +58,7 @@ function createMysqlSamlStore({ pool = null } = {}) {
         `INSERT INTO enterprise_sso_config
            (tenant_id, provider, entity_id, sso_url, slo_url, certificates, name_id_format,
             default_role, jit_provisioning, enabled)
-         VALUES (?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            entity_id = VALUES(entity_id), sso_url = VALUES(sso_url), slo_url = VALUES(slo_url),
            certificates = VALUES(certificates), name_id_format = VALUES(name_id_format),
