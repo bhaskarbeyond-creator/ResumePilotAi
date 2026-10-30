@@ -11,7 +11,7 @@
  * - Confirmation dialogs for Rejections and Offers
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Mail,
@@ -87,6 +87,16 @@ export function CandidateReviewDrawer({
   const [documentOpen, setDocumentOpen] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
+  // The drawer is a custom (non-Radix) modal: it must move focus inside on open
+  // so keyboard users are not left behind on the underlying pipeline table.
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!application) return;
+    previousFocus.current = (document.activeElement as HTMLElement | null) ?? null;
+    panelRef.current?.focus();
+    return () => { previousFocus.current?.focus?.(); };
+  }, [application]);
 
   // Direct Message Modal State
   const [messageModalOpen, setMessageModalOpen] = useState(false);
@@ -317,24 +327,27 @@ export function CandidateReviewDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="candidate-drawer-name"
     >
       <div
-        className="h-full w-full max-w-xl bg-surface border-l border-edge shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300"
+        ref={panelRef}
+        tabIndex={-1}
+        data-testid="candidate-review-drawer"
+        className="flex h-full w-full max-w-xl min-w-0 flex-col overflow-hidden border-l border-border bg-surface/95 shadow-2xl outline-none backdrop-blur-xl animate-in slide-in-from-right duration-300 motion-reduce:animate-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Banner */}
-        <div className="p-6 border-b border-edge bg-canvas-soft/80 flex items-start justify-between shrink-0">
-          <div className="flex items-start gap-3.5">
-            <div className="size-12 rounded-full bg-accent/15 text-accent font-extrabold text-lg flex items-center justify-center shrink-0 border border-accent/20">
+        <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 p-5 sm:p-6">
+          <div className="flex min-w-0 items-start gap-3.5">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-lg font-extrabold text-brand-600">
               {application.applicantName.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 id="candidate-drawer-name" className="text-lg font-bold text-ink">
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <h3 id="candidate-drawer-name" className="min-w-0 break-words text-lg font-bold text-ink">
                   {application.applicantName}
                 </h3>
                 <span
@@ -352,7 +365,7 @@ export function CandidateReviewDrawer({
                   {currentStatus}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted mt-1.5">
+              <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
                 {application.applicantEmail && (
                   <span className="flex items-center gap-1">
                     <Mail className="size-3 text-accent" />
@@ -392,10 +405,10 @@ export function CandidateReviewDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-canvas transition-colors"
+            className="shrink-0 rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
             aria-label="Close candidate drawer"
           >
-            <X className="size-5" />
+            <X className="size-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -414,7 +427,7 @@ export function CandidateReviewDrawer({
         )}
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
           {/* ATS Compatibility Meter */}
           <div className="p-4 rounded-xl border border-edge bg-canvas-soft/60 flex items-center justify-between">
             <div className="space-y-1">
@@ -573,8 +586,8 @@ export function CandidateReviewDrawer({
 
           {/* Internal Notes */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="candidate-internal-notes" className="text-xs font-semibold text-ink flex items-center gap-1.5">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+              <label htmlFor="candidate-internal-notes" className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-ink">
                 <span>Hiring Team Notes</span>
                 <span className="text-[10px] text-ink-muted font-normal">
                   (Internal only)
@@ -602,11 +615,11 @@ export function CandidateReviewDrawer({
         </div>
 
         {/* Stage Transition Footer Actions */}
-        <div className="p-4 border-t border-edge bg-canvas-soft/90 space-y-2 shrink-0">
-          <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
+        <div className="min-w-0 shrink-0 space-y-2 border-t border-border bg-neutral-50/60 p-4">
+          <p className="break-words text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
             Advance Candidate Stage
           </p>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {getAvailableTransitions().map((action) => {
               const variant = action.tone === 'rose' ? 'destructive' : action.tone === 'emerald' ? 'primary' : 'outline';
               return (
@@ -617,7 +630,7 @@ export function CandidateReviewDrawer({
                   disabled={updateStatusMutation.isPending}
                   onClick={() => handleTransitionClick(action.status)}
                   className={cn(
-                    'text-xs font-semibold',
+                    'min-w-0 whitespace-normal text-xs font-semibold',
                     action.tone === 'emerald' && 'bg-emerald-700 hover:bg-emerald-800 text-white',
                     action.tone === 'accent' && 'bg-accent hover:bg-accent/90 text-white'
                   )}
@@ -696,22 +709,19 @@ export function CandidateReviewDrawer({
       {/* Direct Candidate Messaging Modal */}
       {messageModalOpen && (
         <Dialog open={!!messageModalOpen} onOpenChange={value => { if (!value) setMessageModalOpen(false); }}>
-          <DialogContent hideCloseButton aria-label="Direct Message Candidate" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-label="Direct Message Candidate" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col max-h-[92vh] overflow-hidden motion-reduce:animate-none">
             <DialogTitle className="sr-only">Direct Message Candidate</DialogTitle>
-          <div
-            className="bg-surface border border-edge rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-edge bg-surface-raised/60 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="size-9 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
-                  <Mail className="size-5" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 p-5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
+                  <Mail className="size-5" aria-hidden="true" />
                 </div>
-                <div>
-                  <h4 id="direct-message-title" className="text-sm font-bold text-ink">
+                <div className="min-w-0">
+                  <h4 id="direct-message-title" className="break-words text-sm font-bold text-ink">
                     Direct Message Candidate
                   </h4>
-                  <p className="text-[11px] text-ink-muted">
+                  <p className="break-words text-[11px] text-ink-muted">
                     To: {application.applicantName} ({application.applicantEmail})
                   </p>
                 </div>
@@ -720,9 +730,10 @@ export function CandidateReviewDrawer({
                 type="button"
                 onClick={() => setMessageModalOpen(false)}
                 disabled={messageSending}
-                className="p-1 text-ink-muted hover:text-ink rounded-lg"
+                aria-label="Close message dialog"
+                className="shrink-0 rounded-lg p-1 text-ink-muted hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -735,7 +746,7 @@ export function CandidateReviewDrawer({
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} className="p-5 space-y-4 text-xs">
+              <form onSubmit={handleSendMessage} className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-5 text-xs">
                 {messageError && (
                   <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
                     <AlertTriangle className="size-4 shrink-0" />
@@ -770,8 +781,8 @@ export function CandidateReviewDrawer({
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-bold text-ink block">Subject Line</label>
+                <div className="min-w-0 space-y-1.5">
+                  <label htmlFor="candidate-message-subject" className="font-bold text-ink block">Subject Line</label>
                   <Input
                     required
                     value={messageSubject}
@@ -781,8 +792,8 @@ export function CandidateReviewDrawer({
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-bold text-ink block">Message Body</label>
+                <div className="min-w-0 space-y-1.5">
+                  <label htmlFor="candidate-message-body" className="font-bold text-ink block">Message Body</label>
                   <Textarea
                     required
                     rows={6}
@@ -799,7 +810,7 @@ export function CandidateReviewDrawer({
                     <span>{messageError}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-edge">
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
                   <Button
                     type="button"
                     variant="outline"
@@ -809,8 +820,8 @@ export function CandidateReviewDrawer({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" size="sm" disabled={messageSending} className="gap-1.5">
-                    <Send className="size-3.5" />
+                  <Button type="submit" size="sm" disabled={messageSending} className="min-w-0 whitespace-normal gap-1.5">
+                    <Send className="size-3.5 shrink-0" />
                     {messageSending ? 'Transmitting…' : 'Send Direct Message'}
                   </Button>
                 </div>
@@ -824,13 +835,10 @@ export function CandidateReviewDrawer({
       {/* Confirmation Modal */}
       {confirmModal && (
         <Dialog open={!!confirmModal} onOpenChange={value => { if (!value) setConfirmModal(null); }}>
-          <DialogContent hideCloseButton aria-label="Confirm Candidate Status Change" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-label="Confirm Candidate Status Change" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-md p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col max-h-[92vh] overflow-hidden motion-reduce:animate-none">
             <DialogTitle className="sr-only">Confirm Candidate Status Change</DialogTitle>
-          <div
-            className="bg-surface border border-edge rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start gap-3">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
+            <div className="flex min-w-0 items-start gap-3">
               <div
                 className={cn(
                   'size-10 rounded-xl flex items-center justify-center shrink-0',
@@ -845,9 +853,9 @@ export function CandidateReviewDrawer({
                   <CheckCircle2 className="size-5" />
                 )}
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-ink">{confirmModal.title}</h4>
-                <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+              <div className="min-w-0">
+                <h4 className="break-words text-sm font-bold text-ink">{confirmModal.title}</h4>
+                <p className="mt-1 break-words text-xs leading-relaxed text-ink-muted">
                   {confirmModal.description}
                 </p>
               </div>
@@ -869,7 +877,7 @@ export function CandidateReviewDrawer({
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 pt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -883,7 +891,7 @@ export function CandidateReviewDrawer({
                 variant={confirmModal.targetStatus === 'rejected' ? 'destructive' : 'primary'}
                 onClick={() => executeTransition(confirmModal.targetStatus)}
                 disabled={updateStatusMutation.isPending}
-                className="text-xs font-semibold"
+                className="min-w-0 whitespace-normal text-xs font-semibold"
               >
                 {updateStatusMutation.isPending ? 'Updating...' : 'Confirm Action'}
               </Button>

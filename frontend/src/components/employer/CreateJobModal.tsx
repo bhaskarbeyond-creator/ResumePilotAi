@@ -259,37 +259,37 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
 
   return (
     <Dialog open onOpenChange={value => { if (!value && !createJobMutation.isPending) onClose(); }}>
-      <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col overflow-hidden motion-reduce:animate-none">
+      <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl max-h-[92vh] p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col overflow-hidden motion-reduce:animate-none">
         {/* Header */}
-        <div className="p-5 border-b border-edge bg-canvas-soft/80 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center font-bold">
-              <Briefcase className="size-5" />
+        <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 p-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 font-bold text-brand-600">
+              <Briefcase className="size-5" aria-hidden="true" />
             </div>
-            <div>
-              <DialogTitle id="create-job-modal-title" className="text-base font-bold text-ink flex items-center gap-2">
+            <div className="min-w-0">
+              <DialogTitle className="flex min-w-0 flex-wrap items-center gap-2 break-words text-base font-bold text-ink">
                 Post Job Requisition
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
+                <span className="shrink-0 rounded border border-brand-200 bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-600">
                   Full ATS Parity
                 </span>
               </DialogTitle>
-              <p className="text-xs text-ink-muted">
-                Create a verified job posting with structured screening questions & salary bands
+              <p className="break-words text-xs text-ink-muted">
+                Create a verified job posting with structured screening questions &amp; salary bands
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-canvas transition-colors"
+            className="shrink-0 rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
             aria-label="Close modal"
           >
-            <X className="size-5" />
+            <X className="size-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Form Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
           {formError && (
             <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium">
               <AlertCircle className="size-4 shrink-0" />
@@ -313,8 +313,8 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="job-company" className="mb-1 block break-words text-xs font-semibold text-ink">
                     Hiring Company <span className="text-red-500">*</span>
                   </label>
                   {companiesLoading ? (
@@ -325,9 +325,10 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                     </div>
                   ) : (
                     <select
+                      id="job-company"
                       value={selectedCompanyId}
                       onChange={(e) => setSelectedCompanyId(e.target.value)}
-                      className="w-full text-xs h-9 px-3 rounded-md border border-edge bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="block w-full min-w-0 max-w-full rounded-md border border-edge bg-surface px-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent h-9"
                       required
                     >
                       <option value="" disabled>Select Company</option>
@@ -340,11 +341,12 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="job-department" className="mb-1 block break-words text-xs font-semibold text-ink">
                     Department
                   </label>
                   <Input
+                    id="job-department"
                     placeholder="e.g. Engineering, Product, Sales"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
@@ -353,11 +355,12 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">
+              <div className="min-w-0">
+                <label htmlFor="job-title" className="mb-1 block break-words text-xs font-semibold text-ink">
                   Job Requisition Title <span className="text-red-500">*</span>
                 </label>
                 <Input
+                  id="job-title"
                   required
                   placeholder="e.g. Senior Full-Stack Engineer (React 19 & Node)"
                   value={title}
@@ -375,14 +378,15 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="job-work-mode" className="mb-1 block break-words text-xs font-semibold text-ink">
                     Workplace Policy
                   </label>
                   <select
+                    id="job-work-mode"
                     value={workMode}
                     onChange={(e) => setWorkMode(e.target.value)}
-                    className="w-full text-xs h-9 px-3 rounded-md border border-edge bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="block w-full min-w-0 max-w-full rounded-md border border-edge bg-surface px-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent h-9"
                   >
                     {WORK_MODES.map((m) => (
                       <option key={m.value} value={m.value}>{m.label}</option>
@@ -390,14 +394,15 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="job-type" className="mb-1 block break-words text-xs font-semibold text-ink">
                     Employment Type
                   </label>
                   <select
+                    id="job-type"
                     value={jobType}
                     onChange={(e) => setJobType(e.target.value)}
-                    className="w-full text-xs h-9 px-3 rounded-md border border-edge bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="block w-full min-w-0 max-w-full rounded-md border border-edge bg-surface px-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent h-9"
                   >
                     {JOB_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -405,14 +410,15 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="job-experience-level" className="mb-1 block break-words text-xs font-semibold text-ink">
                     Experience Level
                   </label>
                   <select
+                    id="job-experience-level"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full text-xs h-9 px-3 rounded-md border border-edge bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="block w-full min-w-0 max-w-full rounded-md border border-edge bg-surface px-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent h-9"
                   >
                     {EXPERIENCE_LEVELS.map((l) => (
                       <option key={l.value} value={l.value}>{l.label}</option>
@@ -455,13 +461,14 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                 <span>3. Compensation & Application Deadline</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Currency</label>
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="min-w-0">
+                  <label htmlFor="job-currency" className="mb-1 block text-xs font-semibold text-ink">Currency</label>
                   <select
+                    id="job-currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full text-xs h-9 px-2 rounded-md border border-edge bg-surface text-ink"
+                    className="block w-full min-w-0 max-w-full rounded-md border border-edge bg-surface px-2 text-xs text-ink h-9"
                   >
                     {CURRENCIES.map((cur) => (
                       <option key={cur} value={cur}>{cur}</option>
@@ -469,9 +476,10 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Min Salary</label>
+                <div className="min-w-0">
+                  <label htmlFor="job-min-salary" className="mb-1 block text-xs font-semibold text-ink">Min Salary</label>
                   <Input
+                    id="job-min-salary"
                     type="number"
                     placeholder="120000"
                     value={minSalary}
@@ -480,9 +488,10 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Max Salary</label>
+                <div className="min-w-0">
+                  <label htmlFor="job-max-salary" className="mb-1 block text-xs font-semibold text-ink">Max Salary</label>
                   <Input
+                    id="job-max-salary"
                     type="number"
                     placeholder="160000"
                     value={maxSalary}
@@ -491,9 +500,10 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Deadline</label>
+                <div className="min-w-0">
+                  <label htmlFor="job-deadline" className="mb-1 block text-xs font-semibold text-ink">Deadline</label>
                   <Input
+                    id="job-deadline"
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
@@ -510,11 +520,12 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                 <span>4. Job Overview & Responsibilities</span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">
+              <div className="min-w-0">
+                <label htmlFor="job-description" className="mb-1 block break-words text-xs font-semibold text-ink">
                   Full Description <span className="text-red-500">*</span>
                 </label>
                 <Textarea
+                  id="job-description"
                   required
                   rows={5}
                   placeholder="Outline the core responsibilities, team structure, tech stack, and daily work expectations..."
@@ -527,26 +538,27 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
 
             {/* Section 5: Requirements */}
             <div className="space-y-3.5 pt-4 border-t border-edge">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
-                  <Check className="size-3.5 text-accent" />
-                  <span>5. Key Requirements & Qualifications</span>
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+                  <Check className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
+                  <span className="break-words">5. Key Requirements &amp; Qualifications</span>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addRequirement}
-                  className="h-7 text-xs px-2 gap-1 text-accent border-accent/30"
+                  className="h-7 shrink-0 whitespace-normal text-xs px-2 gap-1 text-accent border-accent/30"
                 >
-                  <Plus className="size-3" /> Add Requirement
+                  <Plus className="size-3 shrink-0" /> Add Requirement
                 </Button>
               </div>
 
               <div className="space-y-2">
                 {requirements.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="flex min-w-0 items-center gap-2">
                     <Input
+                      aria-label={`Requirement ${idx + 1}`}
                       placeholder={`e.g. 5+ years building distributed cloud applications (Requirement #${idx + 1})`}
                       value={req}
                       onChange={(e) => handleRequirementChange(idx, e.target.value)}
@@ -596,8 +608,9 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                 })}
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 pt-1">
                 <Input
+                  aria-label="Add custom perk"
                   placeholder="Add custom perk (e.g. Monthly book allowance)"
                   value={customBenefit}
                   onChange={(e) => setCustomBenefit(e.target.value)}
@@ -623,11 +636,11 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
 
             {/* Section 7: Screening Questions Builder */}
             <div className="space-y-3.5 pt-4 border-t border-edge">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
-                    <HelpCircle className="size-3.5 text-accent" />
-                    <span>7. Custom Candidate Screening Questions</span>
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+                    <HelpCircle className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
+                    <span className="break-words">7. Custom Candidate Screening Questions</span>
                   </div>
                   <p className="text-[11px] text-ink-muted mt-0.5">
                     Applicants will answer these during job application submission
@@ -638,9 +651,9 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                   variant="outline"
                   size="sm"
                   onClick={addScreeningQuestion}
-                  className="h-7 text-xs px-2 gap-1 text-accent border-accent/30"
+                  className="h-7 shrink-0 whitespace-normal text-xs px-2 gap-1 text-accent border-accent/30"
                 >
-                  <Plus className="size-3" /> Add Question
+                  <Plus className="size-3 shrink-0" /> Add Question
                 </Button>
               </div>
 
@@ -667,19 +680,20 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
                       </div>
 
                       <Input
+                        aria-label={`Screening question ${idx + 1}`}
                         placeholder="e.g. How many years of production Kubernetes experience do you have?"
                         value={q.question}
                         onChange={(e) => updateQuestion(q.id, { question: e.target.value })}
                         className="text-xs h-8"
                       />
 
-                      <div className="flex items-center justify-between gap-4 pt-1">
-                        <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="flex min-w-0 items-center gap-2">
                           <label className="text-[11px] text-ink-muted">Type:</label>
                           <select
                             value={q.type}
                             onChange={(e) => updateQuestion(q.id, { type: e.target.value as any })}
-                            className="text-xs h-7 px-2 rounded border border-edge bg-surface text-ink"
+                            className="min-w-0 max-w-full rounded border border-edge bg-surface px-2 text-xs text-ink h-7"
                           >
                             <option value="short_text">Short Text</option>
                             <option value="yes_no">Yes / No</option>
@@ -706,11 +720,11 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-edge bg-canvas-soft/80 flex items-center justify-between shrink-0">
-          <p className="text-[11px] text-ink-muted">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-neutral-50/50 p-4">
+          <p className="min-w-0 break-words text-[11px] text-ink-muted">
             Posts to MariaDB jobs table with active status
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"

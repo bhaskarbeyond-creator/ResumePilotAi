@@ -568,23 +568,20 @@ export function AdminModerationTab() {
       {/* ─── Modal 1: Employer Verification Dossier Modal ─── */}
       {inspectApplication && (
         <Dialog open={!!inspectApplication} onOpenChange={value => { if (!value) setInspectApplication(null); }}>
-          <DialogContent hideCloseButton aria-label="Employer Verification Dossier" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-label="Employer Verification Dossier" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-2xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col max-h-[90vh] overflow-hidden motion-reduce:animate-none">
             <DialogTitle className="sr-only">Employer Verification Dossier</DialogTitle>
-          <div
-            className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Header */}
-            <div className="bg-neutral-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-neutral-800">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
-                  <Building2 className="size-5" />
+            <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
+                  <Building2 className="size-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <h3 id="employer-dossier-title" className="text-base font-extrabold text-white truncate font-mono">
+                  <h3 id="employer-dossier-title" className="break-words text-base font-extrabold text-ink">
                     {inspectApplication.companyName}
                   </h3>
-                  <p className="text-xs text-neutral-400 font-mono mt-0.5">
+                  <p className="mt-0.5 break-words text-xs text-ink-muted">
                     Application ID: {inspectApplication.id} · Submitted: {inspectApplication.submittedAt}
                   </p>
                 </div>
@@ -592,27 +589,27 @@ export function AdminModerationTab() {
               <button
                 type="button"
                 onClick={() => setInspectApplication(null)}
-                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition cursor-pointer"
+                className="shrink-0 rounded-lg p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
                 aria-label="Close dossier"
               >
-                <X className="size-5" />
+                <X className="size-5" aria-hidden="true" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto p-5 text-xs">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Verification Status</span>
-                  <p className="font-extrabold text-ink mt-0.5">{inspectApplication.status}</p>
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Verification Status</span>
+                  <p className="mt-0.5 break-words font-extrabold text-ink">{inspectApplication.status}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Tax ID / VAT</span>
-                  <p className="font-extrabold text-ink mt-0.5 font-mono">{inspectApplication.taxId ? `••••${inspectApplication.taxId.slice(-4)}` : 'Not disclosed'}</p>
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Tax ID / VAT</span>
+                  <p className="mt-0.5 break-words font-mono font-extrabold text-ink">{inspectApplication.taxId ? `••••${inspectApplication.taxId.slice(-4)}` : 'Not disclosed'}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
-                  <span className="text-[10px] font-bold uppercase text-ink-muted">Company Size</span>
-                  <p className="font-extrabold text-ink mt-0.5">{inspectApplication.companySize || 'N/A'}</p>
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Company Size</span>
+                  <p className="mt-0.5 break-words font-extrabold text-ink">{inspectApplication.companySize || 'N/A'}</p>
                 </div>
               </div>
 
@@ -628,9 +625,9 @@ export function AdminModerationTab() {
                       href={inspectApplication.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-brand-600 font-medium hover:underline flex items-center gap-1 mt-0.5"
+                      className="mt-0.5 flex min-w-0 items-start gap-1 font-medium text-brand-600 hover:underline"
                     >
-                      <Globe className="size-3" /> {inspectApplication.website}
+                      <Globe className="mt-0.5 size-3 shrink-0" aria-hidden="true" /> <span className="break-all">{inspectApplication.website}</span>
                     </a>
                   </div>
                   <div>
@@ -661,7 +658,7 @@ export function AdminModerationTab() {
                   </div>
                   <div>
                     <span className="text-ink-muted block font-semibold">Contact Channels</span>
-                    <span className="text-ink font-mono text-[11px] block mt-0.5">{inspectApplication.contactEmail}</span>
+                    <span className="mt-0.5 block break-all font-mono text-[11px] text-ink">{inspectApplication.contactEmail}</span>
                     <span className="text-ink-muted font-mono text-[10px]">{inspectApplication.contactPhone || '—'}</span>
                   </div>
                 </div>
@@ -669,12 +666,12 @@ export function AdminModerationTab() {
             </div>
 
             {/* Footer Actions */}
-            <div className="p-4 bg-neutral-50 border-t border-border flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => setInspectApplication(null)} className="text-xs">
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border bg-neutral-50/50 p-4">
+              <Button variant="outline" size="sm" onClick={() => setInspectApplication(null)} className="min-w-0 whitespace-normal text-xs">
                 Close Dossier
               </Button>
               {inspectApplication.status === 'PENDING' && (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Button
                     variant="destructive"
                     size="sm"
@@ -683,9 +680,9 @@ export function AdminModerationTab() {
                       setInspectApplication(null);
                       setReviewConfirmation({ app, action: 'reject' });
                     }}
-                    className="text-xs"
+                    className="min-w-0 whitespace-normal text-xs"
                   >
-                    <X className="size-3 mr-1" />
+                    <X className="size-3 mr-1 shrink-0" />
                     Reject Application
                   </Button>
                   <Button
@@ -696,10 +693,10 @@ export function AdminModerationTab() {
                       setInspectApplication(null);
                       setReviewConfirmation({ app, action: 'approve' });
                     }}
-                    className="text-xs font-semibold"
+                    className="min-w-0 whitespace-normal text-xs font-semibold"
                   >
-                    <Check className="size-3 mr-1" />
-                    Approve & Verify Organization
+                    <Check className="size-3 mr-1 shrink-0" />
+                    Approve &amp; Verify Organization
                   </Button>
                 </div>
               )}
@@ -712,12 +709,9 @@ export function AdminModerationTab() {
       {/* ─── Modal 2: Audited Approval/Rejection Reason Confirmation Modal ─── */}
       {reviewConfirmation && (
         <Dialog open={!!reviewConfirmation} onOpenChange={value => { if (!value) setReviewConfirmation(null); }}>
-          <DialogContent hideCloseButton aria-label="Review Application Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-label="Review Application Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col max-h-[90vh] overflow-hidden motion-reduce:animate-none">
             <DialogTitle className="sr-only">Review Application Confirmation</DialogTitle>
-          <div
-            className="w-full max-w-md bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <div
               className={cn(
                 'p-4 border-b flex items-center gap-3',
@@ -733,7 +727,7 @@ export function AdminModerationTab() {
                 {reviewConfirmation.action === 'reject' ? 'Reject Employer Application?' : 'Approve & Verify Employer?'}
               </h3>
             </div>
-            <div className="p-5 space-y-3 text-xs">
+            <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto p-5 text-xs">
               <p className="text-ink-muted leading-relaxed">
                 Target organization: <strong className="text-ink">{reviewConfirmation.app.companyName}</strong> (Tax ID: {reviewConfirmation.app.taxId ? `••••${reviewConfirmation.app.taxId.slice(-4)}` : 'Not disclosed'}).
                 {reviewConfirmation.action === 'approve'
@@ -742,23 +736,24 @@ export function AdminModerationTab() {
               </p>
 
               {reviewConfirmation.action === 'reject' && (
-                <div>
-                  <label className="font-semibold text-ink block mb-1">
+                <div className="min-w-0">
+                  <label htmlFor="moderation-rejection-justification" className="mb-1 block break-words font-semibold text-ink">
                     Audited Rejection Justification <span className="text-rose-600">*</span>
                   </label>
                   <textarea
+                    id="moderation-rejection-justification"
                     rows={3}
                     autoFocus
                     required
                     placeholder="e.g. Invalid commercial Tax ID, unverified domain, or failed background check..."
                     value={reviewReason}
                     onChange={(e) => setReviewReason(e.target.value)}
-                    className="w-full rounded-lg border border-border p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="block w-full min-w-0 max-w-full rounded-lg border border-border p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                 </div>
               )}
             </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border bg-neutral-50/50 p-4">
               <Button variant="outline" size="sm" onClick={() => setReviewConfirmation(null)} className="text-xs">
                 Cancel
               </Button>
@@ -779,7 +774,7 @@ export function AdminModerationTab() {
                   }
                 }}
                 disabled={pendingApplicationId !== null || (reviewConfirmation.action === 'reject' && !reviewReason.trim())}
-                className={cn('text-xs font-bold', reviewConfirmation.action === 'approve' && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
+                className={cn('min-w-0 whitespace-normal text-xs font-bold', reviewConfirmation.action === 'approve' && 'bg-emerald-600 hover:bg-emerald-700 text-white')}
               >
                 {reviewConfirmation.action === 'reject' ? 'Confirm Rejection' : 'Confirm Verification'}
               </Button>
@@ -792,12 +787,9 @@ export function AdminModerationTab() {
       {/* ─── Modal 3: Job Spam Moderation Confirmation Dialog ─── */}
       {jobSpamModal && (
         <Dialog open={!!jobSpamModal} onOpenChange={value => { if (!value) setJobSpamModal(null); }}>
-          <DialogContent hideCloseButton aria-label="Job Spam Moderation Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-label="Job Spam Moderation Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-md p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col max-h-[90vh] overflow-hidden motion-reduce:animate-none">
             <DialogTitle className="sr-only">Job Spam Moderation Confirmation</DialogTitle>
-          <div
-            className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <div
               className={cn(
                 'p-4 border-b flex items-center gap-3',
@@ -809,13 +801,13 @@ export function AdminModerationTab() {
                 {jobSpamModal.action === 'flag' ? 'Flag Job Listing as Spam?' : 'Clear Spam Flag & Restore Job?'}
               </h3>
             </div>
-            <div className="p-5 text-xs text-ink-muted leading-relaxed">
-              Job listing: <strong className="text-ink">{jobSpamModal.job.title}</strong> by {jobSpamModal.job.company}.
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5 text-xs leading-relaxed text-ink-muted">
+              Job listing: <strong className="break-words text-ink">{jobSpamModal.job.title}</strong> by {jobSpamModal.job.company}.
               {jobSpamModal.action === 'flag'
                 ? ' This listing will be immediately suppressed from the candidate job board.'
                 : ' This listing will be restored to active visibility across candidate searches.'}
             </div>
-            <div className="p-4 pt-2 flex justify-end gap-2 bg-neutral-50/50 border-t border-border">
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border bg-neutral-50/50 p-4">
               <Button variant="outline" size="sm" onClick={() => setJobSpamModal(null)} className="text-xs">
                 Cancel
               </Button>
@@ -825,7 +817,7 @@ export function AdminModerationTab() {
                 onClick={() => void handleToggleJobSpam(jobSpamModal.job.id, jobSpamModal.action === 'flag')}
                 disabled={pendingJobId !== null}
                 loading={pendingJobId !== null}
-                className="text-xs font-bold"
+                className="min-w-0 whitespace-normal text-xs font-bold"
               >
                 {jobSpamModal.action === 'flag' ? 'Flag as Spam' : 'Restore Listing'}
               </Button>

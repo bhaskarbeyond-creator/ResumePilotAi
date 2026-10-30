@@ -649,55 +649,55 @@ export function AdminBillingTab() {
 
       {/* ─── Order Inspection Dialog ─── */}
       <Dialog open={Boolean(inspectedOrder)} onOpenChange={(open) => !open && setInspectedOrder(null)}>
-        <DialogContent className="max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-ink flex items-center gap-2">
-              <Receipt className="size-4 text-brand-600" />
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border-border bg-surface/95 p-6 backdrop-blur-xl motion-reduce:animate-none md:rounded-3xl">
+          <DialogHeader className="min-w-0 text-left">
+            <DialogTitle className="flex min-w-0 items-center gap-2 break-words text-base font-bold text-ink">
+              <Receipt className="size-4 shrink-0 text-brand-600" aria-hidden="true" />
               Order Transaction #{inspectedOrder?.id}
             </DialogTitle>
-            <DialogDescription className="text-xs text-ink-muted">
+            <DialogDescription className="break-words text-xs text-ink-muted">
               Authoritative transaction record stored in MariaDB payment_orders ledger.
             </DialogDescription>
           </DialogHeader>
 
           {inspectedOrder && (
-            <div className="space-y-4 pt-2 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-border">
-                <div>
-                  <span className="text-[10px] text-ink-muted uppercase font-bold block">Plan Entitlement</span>
-                  <strong className="text-ink text-sm">{inspectedOrder.planId}</strong>
+            <div className="min-w-0 space-y-4 pt-2 text-xs">
+              <div className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-border bg-neutral-50 p-3.5 sm:grid-cols-2 dark:bg-neutral-800/60">
+                <div className="min-w-0">
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Plan Entitlement</span>
+                  <strong className="break-words text-sm text-ink">{inspectedOrder.planId}</strong>
                 </div>
-                <div>
-                  <span className="text-[10px] text-ink-muted uppercase font-bold block">Amount Invoiced</span>
-                  <strong className="text-ink text-sm">
+                <div className="min-w-0">
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Amount Invoiced</span>
+                  <strong className="break-words text-sm text-ink">
                     {inspectedOrder.formattedAmount || `${inspectedOrder.currency} ${inspectedOrder.amount}`}
                   </strong>
                 </div>
-                <div>
-                  <span className="text-[10px] text-ink-muted uppercase font-bold block">Gateway Provider</span>
-                  <strong className="text-ink uppercase">{inspectedOrder.provider || 'Gateway'}</strong>
+                <div className="min-w-0">
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Gateway Provider</span>
+                  <strong className="break-words uppercase text-ink">{inspectedOrder.provider || 'Gateway'}</strong>
                 </div>
-                <div>
-                  <span className="text-[10px] text-ink-muted uppercase font-bold block">Current Status</span>
-                  <strong className="text-emerald-600 font-bold uppercase">{inspectedOrder.status}</strong>
+                <div className="min-w-0">
+                  <span className="block break-words text-[10px] font-bold uppercase text-ink-muted">Current Status</span>
+                  <strong className="break-words font-bold uppercase text-emerald-600">{inspectedOrder.status}</strong>
                 </div>
               </div>
 
               <div>
                 <span className="text-[10px] text-ink-muted uppercase font-bold block mb-1">Customer Identifier (UID)</span>
-                <p className="font-mono p-2 rounded-lg bg-canvas text-ink text-xs border border-border">
+                <p className="break-all rounded-lg border border-border bg-canvas p-2 font-mono text-xs text-ink">
                   {inspectedOrder.uid || 'Anonymous Guest Session'}
                 </p>
               </div>
 
               <div>
                 <span className="text-[10px] text-ink-muted uppercase font-bold block mb-1">Created At</span>
-                <p className="p-2 rounded-lg bg-canvas text-ink text-xs border border-border">
+                <p className="break-words rounded-lg border border-border bg-canvas p-2 text-xs text-ink">
                   {inspectedOrder.createdAt ? new Date(inspectedOrder.createdAt).toLocaleString() : 'N/A'}
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
                 <Button variant="outline" size="sm" onClick={() => setInspectedOrder(null)}>
                   Close
                 </Button>
@@ -705,7 +705,7 @@ export function AdminBillingTab() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-rose-600 border-rose-200 hover:bg-rose-50 text-xs font-semibold"
+                    className="min-w-0 whitespace-normal text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50"
                     onClick={() => {
                       const target = inspectedOrder;
                       setInspectedOrder(null);
@@ -723,13 +723,13 @@ export function AdminBillingTab() {
 
       {/* ─── Refund Confirmation Dialog ─── */}
       <Dialog open={Boolean(refundConfirmOrder)} onOpenChange={(open) => !open && setRefundConfirmOrder(null)}>
-        <DialogContent className="max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-ink flex items-center gap-2 text-rose-600">
-              <RotateCcw className="size-4" />
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border-border bg-surface/95 p-6 backdrop-blur-xl motion-reduce:animate-none md:rounded-3xl">
+          <DialogHeader className="min-w-0 text-left">
+            <DialogTitle className="flex min-w-0 items-center gap-2 break-words text-base font-bold text-rose-600">
+              <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
               Process Order Refund
             </DialogTitle>
-            <DialogDescription className="text-xs text-ink-muted">
+            <DialogDescription className="break-words text-xs text-ink-muted">
               Confirm refund for Order #{refundConfirmOrder?.id} ({refundConfirmOrder?.formattedAmount || `${refundConfirmOrder?.currency} ${refundConfirmOrder?.amount}`}).
             </DialogDescription>
           </DialogHeader>
@@ -741,7 +741,7 @@ export function AdminBillingTab() {
               <p className="text-xs text-ink-muted">{refundSuccessMessage}</p>
             </div>
           ) : (
-            <form onSubmit={handleProcessRefund} className="space-y-4 pt-2 text-xs">
+            <form onSubmit={handleProcessRefund} className="min-w-0 space-y-4 pt-2 text-xs">
               {refundErrorMessage && (
                 <div role="alert" className="p-3 rounded-xl bg-error-50 border border-error-200 text-error-800 text-xs">
                   {refundErrorMessage}
@@ -754,18 +754,19 @@ export function AdminBillingTab() {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1">Refund Reason / Support Ticket Ref</label>
+              <div className="min-w-0">
+                <label htmlFor="refund-reason" className="mb-1 block break-words text-xs font-semibold text-ink">Refund Reason / Support Ticket Ref</label>
                 <Input
+                  id="refund-reason"
                   required
                   placeholder="e.g. Customer requested cancellation within 48h SLA (Ticket #821)"
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
-                  className="text-xs"
+                  className="w-full min-w-0 max-w-full text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -779,7 +780,7 @@ export function AdminBillingTab() {
                   type="submit"
                   size="sm"
                   disabled={refundProcessing}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+                  className="min-w-0 whitespace-normal bg-rose-600 font-bold text-white hover:bg-rose-700"
                 >
                   {refundProcessing ? 'Processing Refund...' : 'Confirm & Issue Refund'}
                 </Button>
