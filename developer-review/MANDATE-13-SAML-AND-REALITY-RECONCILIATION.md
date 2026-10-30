@@ -231,3 +231,94 @@ unreachable. This was re-confirmed, not assumed.
 I did not move the project to 100%, and no honest report could. What changed is that
 one of the four blockers is now closed with code that can be audited, and the other
 three are stated precisely enough to be closed by whoever holds the credentials.
+
+---
+
+## 8. Addendum — Enterprise SSO console (directive: "SAML Admin Console UI")
+
+Commit `0df3a9b`. The directive asked for the console tab; it also restated two
+details that do not match the shipped API, so both are recorded here rather than
+silently accommodated.
+
+### 8.1 Corrections
+
+| Directive statement | Reality |
+|---|---|
+| "Baseline Git Revision: `38055e69` on `dev` and `main`" | **No such commit.** `git cat-file -t 38055e69` → `fatal: Not a valid object name`. The branch tip before this turn was `fca0df0`; `3150c2db`/`fca0df09` do exist, as stated. |
+| "Save config via `POST /api/auth/saml/:tenantSlug/config`" | The canonical verb is **PUT** (`POST` would have been a 404). `POST` is now accepted as an alias of the identical handler, so both work; PUT remains documented as canonical. |
+| "371/371 tests green" | Consistent with what was reported: 338 unit + 33 SAML. It is now 359 unit + 33 SAML + 14 SSRF + … see §8.4. |
+
+### 8.2 What was built
+
+**Console** (`frontend/src/components/admin/AdminEnterpriseSsoTab.tsx`, tab `/admin/sso`):
+
+- tenant slug entry with server-matching validation, and a **Load configuration** action
+  bound to `GET /api/auth/saml/:tenantId/config`;
+- status badge — `SSO ACTIVE` / `CONFIGURED · DISABLED` / `UNCONFIGURED`;
+- **ACS URL** display with one-click copy, and **Download SP metadata**, which fetches
+  `GET /api/auth/saml/:tenantId/metadata` and saves it as `sp-metadata-<tenant>.xml`;
+- radio choice between **IdP metadata** (XML paste *or* metadata URL) and **manual entry**
+  (entity id, SSO URL, optional SLO URL, one or more certificates);
+- enable / just-in-time provisioning / default role switches, per-field errors, and
+  mapping of server errors (`SAML_METADATA_INVALID`, `SAML_CERT_INVALID`, …) to plain text;
+- hidden from non-Super-Admin staff, matching the server's own guard.
+
+**Logic** (`frontend/src/lib/saml-admin.ts`) is pure — no React, no network — so every
+decision the console makes is unit-tested directly.
+
+**Backend additions the directive implies:**
+
+- `POST` alias for the config endpoint (same handler, no behavioural difference);
+- SSO/SLO URLs are now rejected at **write** time unless they are absolute https
+  without embedded credentials. Without this, a plaintext SSO URL could be stored and
+  would downgrade every subsequent sign-in — the console's own validation is not a
+  security boundary;
+- `enterprise/samlMetadataFetch.js`: server-side metadata import for the "metadata URL"
+  mode. This is an SSRF primitive unless constrained, so it is constrained: https only,
+  no credentials or fragments, every resolved address checked against private /
+  loopback / link-local / CGNAT / unique-local ranges (IPv4, IPv6 and IPv4-mapped
+  IPv6), the TCP connection **pinned to the address that was checked** so a
+  DNS-rebinding answer between check and connect cannot redirect it, redirects followed
+  manually with every hop re-validated (max 3), body capped while streaming, hard timeout.
+
+### 8.3 Verification (executed here)
+
+| Check | Result |
+|---|---|
+| Console contract tests — `developer-implemented/TESTS/unit/mandate13-saml-admin.test.mjs` | **21 / 21 pass** |
+| SSRF guard tests — `backend/test/saml-metadata-fetch.test.js` | **14 / 14 pass** |
+| SAML SP suite — `backend/test/saml-sp.test.js` | **33 / 33 pass** (unchanged) |
+| Unit suite (all) | **359 / 359 pass** (was 338) |
+| Backend suite | 1,635 tests · **1,511 pass** · 116 fail · 8 skipped |
+| Enterprise suite | 187 tests · **186 pass** · 1 fail (pre-existing) |
+| `npx tsc -b` | exit 0 |
+| `npm --prefix frontend run build` | exit 0, `✓ built in 1.64s`, 353 files synced |
+
+Failure attribution against the pristine `5dd54cf` baseline is again **empty in both
+directions** by failing-test name: no new failures, nothing fixed by accident.
+
+The console tests are not source-text assertions: they import the shipped
+`saml-admin.ts` (Node strips the types), build the payload with the same function the
+component uses, and push it through the real router with supertest — including the
+round trip a reload performs, the POST alias, the metadata-XML path, and the
+metadata-URL path with the fetcher injected. One test does read source, to guarantee
+the component cannot introduce an endpoint that does not exist.
+
+### 8.4 What is still not verified for this addendum
+
+- **No browser session.** The tab type-checks, bundles and its logic is covered, but it
+  was not rendered in a browser here. Layout, focus behaviour and the download gesture
+  are unverified. That is the one honest gap in "the UI is done".
+- **No live IdP metadata URL was fetched.** Every SSRF rule is tested with an injected
+  resolver and transport; the real `https.request` path has not been exercised against
+  a public endpoint from this host.
+- **The trust store still cannot be observed in MariaDB** (no server here): saving from
+  the console is verified against the in-memory store with production semantics, not
+  against `enterprise_sso_config`.
+
+### 8.5 Exit criteria for the console
+
+1. One manual browser pass: load a tenant, paste real Okta/Azure metadata, save, attempt
+   a sign-in, confirm the IdP round trip.
+2. A MariaDB-backed save (`PUT` then `GET`, restart-safe).
+3. Optional: fetch one real public metadata URL to exercise the production transport.
