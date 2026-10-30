@@ -417,38 +417,140 @@ function parseApplicationExtra(value) {
     catch { return {}; }
 }
 
+/**
+ * Interview scorecard vocabulary (Mandate 12 workstream 3).
+ *
+ * The relational authority is `application_evaluations` (migration 036), one row
+ * per (application, reviewer). The five canonical recommendations below are the
+ * stored vocabulary. The three labels the pre-existing UI shipped
+ * ('Move to Offer', 'Reject', 'Hold') are still ACCEPTED and are mapped onto the
+ * canonical values, so an older client keeps working without writing an
+ * out-of-contract row.
+ */
+const EVALUATION_RECOMMENDATIONS = Object.freeze(['STRONG_YES', 'YES', 'NEUTRAL', 'NO', 'STRONG_NO']);
+const LEGACY_RECOMMENDATION_ALIASES = Object.freeze({
+    MOVE_TO_OFFER: 'STRONG_YES',
+    OFFER: 'STRONG_YES',
+    STRONG_YES: 'STRONG_YES',
+    YES: 'YES',
+    HOLD: 'NEUTRAL',
+    NEUTRAL: 'NEUTRAL',
+    NO: 'NO',
+    REJECT: 'NO',
+    STRONG_NO: 'STRONG_NO',
+});
+
+function normalizeRecommendation(raw) {
+    const key = String(raw ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    return LEGACY_RECOMMENDATION_ALIASES[key] || null;
+}
+
+/** Deterministic evaluation id: one row per (application, reviewer) by construction. */
+function evaluationId(applicationId, reviewerId) {
+    const digest = crypto.createHash('sha256').update(`${applicationId}\u0000${reviewerId}`).digest('hex');
+    return `ael_${digest.slice(0, 60)}`;
+}
+
 function scorecardView(row) {
     if (!row) return null;
     const extra = parseApplicationExtra(row.extra_json);
     const recommendation = extra.evaluationRecommendation;
     if ((Number(row.rating) < 1 || Number(row.rating) > 5) && !String(row.notes || '').trim() && !recommendation) return null;
-    return { applicationId: row.id, rating: Number(row.rating) || null, notes: row.notes || '', recommendation: recommendation || null, updatedAt: row.updated_at || null };
+    return {
+        applicationId: row.id,
+        rating: Number(row.rating) || null,
+        notes: row.notes || '',
+        recommendation: normalizeRecommendation(recommendation),
+        updatedAt: row.updated_at || null,
+        source: 'LEGACY_APPLICATION',
+    };
 }
 
-// Employer-owned relational scorecard. The current schema has no
-// application_evaluations table; rating and notes use existing applications
-// columns and recommendation is preserved under applications.extra_json.
+/** Projection of one relational evaluation row. */
+function evaluationView(row) {
+    if (!row) return null;
+    const recommendation = normalizeRecommendation(row.recommendation);
+    if (!recommendation) return null;
+    const rating = Number(row.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null;
+    return {
+        id: row.id,
+        applicationId: row.application_id,
+        reviewerId: row.reviewer_id,
+        rating,
+        notes: row.notes || '',
+        recommendation,
+        createdAt: row.created_at || null,
+        updatedAt: row.updated_at || null,
+        source: 'APPLICATION_EVALUATIONS',
+    };
+}
+
+/**
+ * GET /api/jobs-data/applications/:id/evaluate
+ *
+ * Reviewer-isolated read: the caller must own the application
+ * (`applications.employer_id = req.user.uid`) and the relational row is looked up
+ * for the CALLER as reviewer, so one reviewer can never read another's scorecard.
+ * When the caller has no relational row yet, the legacy single-slot projection on
+ * the application row is returned so pre-migration evaluations stay visible.
+ */
 router.get('/applications/:id/evaluate', requireEmployer, async (req, res) => {
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(String(req.params.id || ''))) return res.status(400).json({ success: false, error: 'Invalid application ID.' });
+    const applicationId = String(req.params.id || '');
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) return res.status(400).json({ success: false, code: 'INVALID_APPLICATION_ID', error: 'Invalid application ID.' });
     try {
-        const [rows] = await getPool().query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [req.params.id, req.user.uid]);
-        if (!rows.length) return res.status(404).json({ success: false, error: 'Application not found.' });
-        return res.json({ success: true, evaluation: scorecardView(rows[0]) });
+        const pool = getPool();
+        const [applications] = await pool.query(
+            'SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1',
+            [applicationId, req.user.uid]
+        );
+        if (!applications.length) return res.status(404).json({ success: false, code: 'APPLICATION_NOT_FOUND', error: 'Application not found.' });
+        const [evaluations] = await pool.query(
+            `SELECT id, application_id, reviewer_id, rating, recommendation, notes, created_at, updated_at
+               FROM application_evaluations
+              WHERE application_id = ? AND reviewer_id = ?
+              LIMIT 1`,
+            [applicationId, req.user.uid]
+        );
+        const relational = evaluationView(evaluations[0]);
+        const legacy = scorecardView(applications[0]);
+        return res.json({
+            success: true,
+            evaluation: relational || legacy,
+            // Both projections are returned so a caller can tell a relational
+            // scorecard from a legacy row without guessing.
+            relational: relational || null,
+            legacy: legacy || null,
+        });
     } catch (error) {
         console.error('[Application evaluation read]', error?.code || error?.message || error);
-        return res.status(503).json({ success: false, error: 'Evaluation is temporarily unavailable.' });
+        return res.status(503).json({ success: false, code: 'EVALUATION_UNAVAILABLE', error: 'Evaluation is temporarily unavailable.' });
     }
 });
 
+/**
+ * PUT /api/jobs-data/applications/:id/evaluate
+ *
+ * One transaction writes:
+ *   1. the caller's relational scorecard (upsert on the unique
+ *      (application_id, reviewer_id) key, so a second reviewer cannot overwrite
+ *      the first and a repeated save by the same reviewer updates in place), and
+ *   2. the legacy compatibility columns `applications.rating` / `notes` /
+ *      `extra_json.evaluationRecommendation`, which existing exports and the
+ *      candidate drawer still read.
+ * The application row is locked FOR UPDATE first, so concurrent saves for one
+ * application serialize and cannot leave the relational row and the legacy
+ * columns disagreeing. Any failure rolls both writes back.
+ */
 router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
     const applicationId = String(req.params.id || '');
     const rating = Number(req.body?.rating);
     const notes = String(req.body?.notes ?? '').replace(/\r\n?/g, '\n').trim();
-    const recommendation = String(req.body?.recommendation || '').trim();
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) return res.status(400).json({ success: false, error: 'Invalid application ID.' });
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be an integer from 1 to 5.' });
-    if (!notes || notes.length > 1000) return res.status(400).json({ success: false, error: 'Hiring notes are required and must be 1,000 characters or fewer.' });
-    if (!['Move to Offer', 'Reject', 'Hold'].includes(recommendation)) return res.status(400).json({ success: false, error: 'Choose Move to Offer, Reject, or Hold.' });
+    const recommendation = normalizeRecommendation(req.body?.recommendation);
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) return res.status(400).json({ success: false, code: 'INVALID_APPLICATION_ID', error: 'Invalid application ID.' });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, code: 'INVALID_RATING', error: 'Rating must be an integer from 1 to 5.' });
+    if (!notes || notes.length > 1000) return res.status(400).json({ success: false, code: 'INVALID_NOTES', error: 'Hiring notes are required and must be 1,000 characters or fewer.' });
+    if (!recommendation) return res.status(400).json({ success: false, code: 'INVALID_RECOMMENDATION', error: 'Choose a stage recommendation: STRONG_YES, YES, NEUTRAL, NO or STRONG_NO.' });
     const pool = getPool();
     const connection = await pool.getConnection();
     try {
@@ -456,7 +558,7 @@ router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
         const [rows] = await connection.query('SELECT id, extra_json FROM applications WHERE id = ? AND employer_id = ? FOR UPDATE', [applicationId, req.user.uid]);
         if (!rows.length) {
             await connection.rollback();
-            return res.status(404).json({ success: false, error: 'Application not found.' });
+            return res.status(404).json({ success: false, code: 'APPLICATION_NOT_FOUND', error: 'Application not found.' });
         }
         const extra = parseApplicationExtra(rows[0].extra_json);
         extra.evaluationRecommendation = recommendation;
@@ -465,13 +567,41 @@ router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
             [rating, notes, JSON.stringify(extra), applicationId, req.user.uid]
         );
         if (Number(result?.affectedRows || 0) !== 1) throw new Error('Evaluation persistence did not update one application.');
-        const [savedRows] = await connection.query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [applicationId, req.user.uid]);
+
+        const reviewerId = String(req.user.uid);
+        const [upsert] = await connection.query(
+            `INSERT INTO application_evaluations (id, application_id, reviewer_id, rating, recommendation, notes)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               rating = VALUES(rating),
+               recommendation = VALUES(recommendation),
+               notes = VALUES(notes),
+               updated_at = CURRENT_TIMESTAMP`,
+            [evaluationId(applicationId, reviewerId), applicationId, reviewerId, rating, recommendation, notes]
+        );
+        // MariaDB reports 1 for insert, 2 for a duplicate-key update and 0 when the
+        // update is a no-op; anything else means the relational write did not land.
+        const affected = Number(upsert?.affectedRows);
+        if (![0, 1, 2].includes(affected)) throw new Error('Relational evaluation persistence failed.');
+
+        const [saved] = await connection.query(
+            `SELECT id, application_id, reviewer_id, rating, recommendation, notes, created_at, updated_at
+               FROM application_evaluations WHERE application_id = ? AND reviewer_id = ? LIMIT 1`,
+            [applicationId, reviewerId]
+        );
+        const evaluation = evaluationView(saved[0]);
+        if (!evaluation) throw new Error('Relational evaluation could not be read back after write.');
+        const [savedApplication] = await connection.query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [applicationId, req.user.uid]);
         await connection.commit();
-        return res.json({ success: true, evaluation: scorecardView(savedRows[0]) });
+        return res.json({
+            success: true,
+            evaluation,
+            legacy: scorecardView(savedApplication[0]),
+        });
     } catch (error) {
         await connection.rollback().catch(() => {});
         console.error('[Application evaluation write]', error?.code || error?.message || error);
-        return res.status(503).json({ success: false, error: 'Evaluation could not be saved.' });
+        return res.status(503).json({ success: false, code: 'EVALUATION_WRITE_FAILED', error: 'Evaluation could not be saved.' });
     } finally {
         connection.release();
     }
@@ -544,4 +674,11 @@ module.exports = {
     lifecycleStatusFor,
     TRACKER_COLUMNS,
     APPLICATION_LIFECYCLE,
+    // Mandate 12 workstream 3 contract surface (consumed by the contract tests).
+    EVALUATION_RECOMMENDATIONS,
+    LEGACY_RECOMMENDATION_ALIASES,
+    evaluationId,
+    evaluationView,
+    normalizeRecommendation,
+    scorecardView,
 };

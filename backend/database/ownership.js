@@ -59,7 +59,8 @@ const ENTITIES = Object.freeze({
     job_tracker: maria('job_tracker', 'job_tracker'),
     company: maria('company', 'companies'),
     conversation: maria('conversation', 'conversations'),
-    conversation_participant: maria('conversation_participant', 'conversation_participants'),
+    conversation_participant: maria('conversation_participant', 'conversation_participants',
+        'Holds each participant corpus read cursor (last_read_message_id / last_read_at); the cursor is server-authoritative and monotonic.'),
     message: maria('message', 'conversation_messages'),
     notification: maria('notification', 'notifications'),
     notification_delivery: maria('notification_delivery', 'notification_outbox'),
@@ -91,6 +92,19 @@ const ENTITIES = Object.freeze({
     enterprise_tenant_credential: maria('enterprise_tenant_credential', 'enterprise_tenant_credentials', 'Encrypted, tenant-owned provider credentials.'),
     enterprise_tenant: maria('enterprise_tenant', 'enterprise_tenants'),
     enterprise_tenant_configuration: maria('enterprise_tenant_configuration', 'enterprise_tenant_configurations'),
+    // Mandate 12 workstream 4 (FP-B01/FP-B02): purchased seat quota, monthly AI
+    // credit allowance and the customer-owned domain live on the tenant record.
+    enterprise_tenant_quota: maria('enterprise_tenant_quota', 'enterprise_tenants',
+        'seat_quota / monthly_ai_credits / custom_domain columns; written only by the platform console, read inside the seat-enforcement transaction.'),
+    // Mandate 12 workstream 6 (FP-A06): durable per-user revocation cutoffs.
+    operator_session_revocation: maria('operator_session_revocation', 'revoked_sessions',
+        'Server-authoritative revocation cutoff compared against the signed token issue time; consulted on every authenticated request.'),
+    // Mandate 12 workstream 2: one preferences row per verified employer.
+    employer_settings: maria('employer_settings', 'employer_settings',
+        'Single source of truth for employer hiring preferences; the companies row stays the branding authority.'),
+    // Mandate 12 workstream 3: one relational scorecard per (application, reviewer).
+    application_evaluation: maria('application_evaluation', 'application_evaluations',
+        'Relational interview scorecards; applications.rating/notes remain the dual-written legacy projection.'),
     enterprise_principal_tenant: maria('enterprise_principal_tenant', 'enterprise_principal_tenants'),
     enterprise_workspace: maria('enterprise_workspace', 'enterprise_workspaces'),
     enterprise_workspace_membership: maria('enterprise_workspace_membership', 'enterprise_workspace_memberships'),
@@ -127,6 +141,7 @@ const ALIASES = Object.freeze({
     covers: 'cover_letter', favourites: 'favourite', jobs: 'job', job_tracker: 'job_tracker',
     applications: 'job_application', companies: 'company', conversations: 'conversation',
     conversation_participants: 'conversation_participant', conversation_messages: 'message', messages: 'message',
+    employer_settings: 'employer_settings', application_evaluations: 'application_evaluation', revoked_sessions: 'operator_session_revocation',
     notifications: 'notification', notification_outbox: 'notification_delivery',
     email_logs: 'email_log', email_verification_tokens: 'email_verification_token', email_verification_state: 'email_verification_state',
     password_reset_tokens: 'password_reset_token', password_reset_state: 'password_reset_state',

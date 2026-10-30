@@ -656,7 +656,7 @@ export function CandidateReviewDrawer({
             <div className="space-y-1.5">
               <label htmlFor="evaluation-recommendation" className="text-xs font-semibold text-ink">Stage recommendation</label>
               <select id="evaluation-recommendation" value={recommendation} onChange={(event) => setRecommendation(event.target.value)} className="h-9 w-full rounded-lg border border-edge bg-canvas-soft px-3 text-xs text-ink">
-                <option value="">Select recommendation</option><option value="Move to Offer">Move to Offer</option><option value="Reject">Reject</option><option value="Hold">Hold</option>
+                <option value="">Select recommendation</option><option value="STRONG_YES">Strong yes — move to offer</option><option value="YES">Yes — advance</option><option value="NEUTRAL">Neutral — hold</option><option value="NO">No — do not advance</option><option value="STRONG_NO">Strong no — reject</option>
               </select>
             </div>
             <div className="flex items-center gap-2">

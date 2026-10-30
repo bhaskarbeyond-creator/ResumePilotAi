@@ -609,6 +609,11 @@ class TenantService {
     return this.registry.getTenantConfiguration(context.tenantId);
   }
 
+  /**
+   * Tenant-scoped profile update. Quotas and the custom domain are commercial
+   * fields owned by the platform console, so this path only forwards the display
+   * name: a tenant administrator must never be able to raise their own seat cap.
+   */
   async updateTenantProfile({ context, displayName }) {
     const tenant = await this.registry.updateTenantProfile({ tenantId: context.tenantId, displayName });
     await this.writeAudit(context, {
@@ -769,16 +774,41 @@ class TenantService {
     return tenant;
   }
 
-  async updateTenantProfileAsPlatform({ user, tenantId, displayName, requestId }) {
+  /**
+   * Platform (SUPER_ADMIN) tenant profile update: display name, purchased seat
+   * quota, monthly AI credits and the customer-owned custom domain.
+   *
+   * Fields that are `undefined` are omitted from the write, so a partial update
+   * can never reset a quota or clear a domain by accident. The audit metadata
+   * names every field that actually changed.
+   */
+  async updateTenantProfileAsPlatform({ user, tenantId, displayName, seatQuota, monthlyAiCredits, customDomain, requestId }) {
     if (!isPlatformTenantProvisioner(user)) {
       throw Object.assign(new Error('Platform tenant profile permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
-    const tenant = await this.registry.updateTenantProfile({ tenantId, displayName });
+    const before = await this.registry.getTenant(tenantId);
+    const tenant = await this.registry.updateTenantProfile({
+      tenantId, displayName, seatQuota, monthlyAiCredits, customDomain,
+    });
+    const changed = ['displayName', 'seatQuota', 'monthlyAiCredits', 'customDomain']
+      .filter(field => JSON.stringify(before[field] ?? null) !== JSON.stringify(tenant[field] ?? null));
+    // A rename keeps its historical audit action so existing audit queries and
+    // dashboards continue to match; any wider profile change is separately named.
+    const action = changed.length === 1 && changed[0] === 'displayName'
+      ? 'PLATFORM_TENANT_RENAMED'
+      : 'PLATFORM_TENANT_PROFILE_UPDATED';
     await this.writePlatformAudit({
       user, tenantId: tenant.id,
-      action: 'PLATFORM_TENANT_RENAMED', category: 'tenant.lifecycle', severity: 'HIGH',
+      action, category: 'tenant.lifecycle', severity: 'HIGH',
       resource: { type: 'tenant', id: tenant.id },
-      metadata: { displayName: tenant.displayName, requestId: requestId || '' },
+      metadata: {
+        displayName: tenant.displayName,
+        seatQuota: tenant.seatQuota,
+        monthlyAiCredits: tenant.monthlyAiCredits,
+        customDomain: tenant.customDomain,
+        changed,
+        requestId: requestId || '',
+      },
     });
     return tenant;
   }

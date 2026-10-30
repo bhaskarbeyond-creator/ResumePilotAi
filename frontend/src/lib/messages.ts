@@ -160,11 +160,17 @@ export async function getParticipantProfile(conversationId: string, signal?: Abo
   };
 }
 
-/** Marks everything up to and including `message` as read for the signed-in user only. */
+/**
+ * Marks everything up to and including `message` as read for the signed-in user only.
+ *
+ * Only the message ID is sent: the read timestamp is the persisted
+ * `conversation_messages.timestamp` of that row, resolved server-side. Sending a
+ * client timestamp would let a caller claim they had read messages that do not
+ * exist yet (Mandate 12, DIR-026).
+ */
 export async function markConversationRead(conversationId: string, message: ChatMessage): Promise<void> {
   await call(() => apiClient.post(`/messages/conversations/${encodeURIComponent(conversationId)}/read`, {
     lastReadMessageId: message.id,
-    lastReadAt: message.timestamp,
   }));
 }
 
