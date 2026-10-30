@@ -117,12 +117,16 @@ test('team lead: assignment, validation, and audit trail', async () => {
   assert.equal(setLead.status, 200);
   assert.equal(setLead.body.team.leadPrincipalId, tokens.member.uid);
 
-  // A non-member outsider cannot become the lead.
+  // A non-member outsider cannot become the lead. TenantService is the
+  // adapter-agnostic guard and runs before either registry, so the observable
+  // contract is 403/TEAM_LEAD_NOT_MEMBER — the same code the MariaDB adapter
+  // raises. (This expectation previously named the in-memory double's
+  // 400/INVALID_TEAM_LEAD branch, which is unreachable through the service.)
   const invalidLead = await request(app).patch(`/api/enterprise/teams/${teamId}`)
     .set('Authorization', bearer('owner')).set('X-Tenant-Id', tenantId)
     .send({ name: 'Led Pod', leadPrincipalId: tokens.outsider.uid });
-  assert.equal(invalidLead.status, 400);
-  assert.equal(invalidLead.body.error.code, 'INVALID_TEAM_LEAD');
+  assert.equal(invalidLead.status, 403);
+  assert.equal(invalidLead.body.error.code, 'TEAM_LEAD_NOT_MEMBER');
 
   const cleared = await request(app).patch(`/api/enterprise/teams/${teamId}`)
     .set('Authorization', bearer('owner')).set('X-Tenant-Id', tenantId)

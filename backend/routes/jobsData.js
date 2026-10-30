@@ -652,7 +652,12 @@ router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
             notificationQueued,
         });
     } catch (error) {
-        await connection.rollback().catch(() => {});
+        // Rollback stays best-effort so a rollback failure never masks the
+        // original write failure, but it is logged rather than swallowed: the
+        // connection is returned to the pool by the finally block regardless.
+        await connection.rollback().catch(rollbackErr => {
+            console.error('[Application evaluation rollback]', rollbackErr?.code || rollbackErr?.message || rollbackErr);
+        });
         console.error('[Application evaluation write]', error?.code || error?.message || error);
         return res.status(503).json({ success: false, code: 'EVALUATION_WRITE_FAILED', error: 'Evaluation could not be saved.' });
     } finally {

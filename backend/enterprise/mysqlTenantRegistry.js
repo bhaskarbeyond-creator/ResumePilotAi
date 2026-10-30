@@ -406,6 +406,20 @@ function assertWorkspaceTransition(current, next) {
   return to;
 }
 
+// Team rows are persisted with snake_case columns (`team_lead_uid`) while the
+// public API contract and both enterprise frontends consume the camelCase
+// `leadPrincipalId` field. Normalising on read keeps the MariaDB adapter and the
+// in-memory adapter on a single contract, so the lead survives a round trip
+// through the database instead of being silently dropped from the response.
+function normalizeTeamRow(row) {
+  if (!row || typeof row !== 'object') return row;
+  const rawLead = row.leadPrincipalId !== undefined ? row.leadPrincipalId : row.team_lead_uid;
+  const lead = rawLead === undefined || rawLead === null || String(rawLead).trim() === ''
+    ? null
+    : String(rawLead).trim();
+  return { ...row, leadPrincipalId: lead };
+}
+
 function personalTenantName(profile = {}) {
   const name = compact(profile.displayName || profile.firstname || '', 100);
   return name ? `${name}'s Personal Workspace` : 'Personal Workspace';
@@ -1793,18 +1807,40 @@ class MySqlTenantRegistry {
     return rows.length > 0;
   }
 
-  async createTeam({ tenantId, workspaceId = null, name, description = '' }) {
+  async createTeam({ tenantId, workspaceId = null, name, description = '', teamLeadUid = undefined }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const cleanName = compact(name, 120);
     if (!cleanName || cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM_NAME', status: 400 });
+    const leadPrincipalId = teamLeadUid === undefined || teamLeadUid === null || String(teamLeadUid).trim() === ''
+      ? null
+      : String(teamLeadUid).trim();
+    if (leadPrincipalId) await this.assertActiveTeamLead(tenantId, leadPrincipalId);
     const id = crypto.randomUUID();
     await this.pool.query(
-      `INSERT INTO enterprise_teams (id, tenantId, workspaceId, name, description)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, tenantId, workspaceId || null, cleanName, description || '']
+      `INSERT INTO enterprise_teams (id, tenantId, workspaceId, name, description, team_lead_uid)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, tenantId, workspaceId || null, cleanName, description || '', leadPrincipalId]
     );
-    return { id, tenantId, workspaceId: workspaceId || null, name: cleanName, description: description || '' };
+    return normalizeTeamRow({ id, tenantId, workspaceId: workspaceId || null, name: cleanName, description: description || '', team_lead_uid: leadPrincipalId });
+  }
+
+  // A team lead must be an active member of the tenant; anything else fails
+  // closed with 403 so a stale or foreign principal can never own a team.
+  async assertActiveTeamLead(tenantId, leadPrincipalId) {
+    let membership;
+    try {
+      membership = await this.getMembership(tenantId, leadPrincipalId);
+    } catch (error) {
+      if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
+        throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+      }
+      throw error;
+    }
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+    }
+    return leadPrincipalId;
   }
 
   async getTeam(teamId, tenantId) {
@@ -1813,7 +1849,7 @@ class MySqlTenantRegistry {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const [rows] = await this.pool.query('SELECT * FROM enterprise_teams WHERE id = ? AND tenantId = ?', [teamId, tenantId]);
     if (rows.length === 0) throw Object.assign(new Error('Team was not found'), { code: 'TEAM_NOT_FOUND', status: 404 });
-    return rows[0];
+    return normalizeTeamRow(rows[0]);
   }
 
   async listTeams(tenantIdOrOpts, opts = {}) {
@@ -1831,7 +1867,7 @@ class MySqlTenantRegistry {
       : 'SELECT * FROM enterprise_teams WHERE tenantId = ? ORDER BY name ASC';
     const params = workspaceId ? [tenantId, workspaceId] : [tenantId];
     const [rows] = await this.pool.query(sql, params);
-    return rows;
+    return rows.map(normalizeTeamRow);
   }
 
   async deleteTeam(teamId, tenantId) {
@@ -1866,20 +1902,7 @@ class MySqlTenantRegistry {
     if (teamLeadUid !== undefined && teamLeadUid !== null) {
       leadPrincipalId = String(teamLeadUid).trim();
       if (leadPrincipalId === '') leadPrincipalId = null;
-      if (leadPrincipalId) {
-        let membership;
-        try {
-          membership = await this.getMembership(tenantId, leadPrincipalId);
-        } catch (error) {
-          if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
-            throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
-          }
-          throw error;
-        }
-        if (membership.status !== 'ACTIVE') {
-          throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
-        }
-      }
+      if (leadPrincipalId) await this.assertActiveTeamLead(tenantId, leadPrincipalId);
     }
 
     const updates = [];

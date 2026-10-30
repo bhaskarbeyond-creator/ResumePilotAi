@@ -558,13 +558,26 @@ class InMemoryTenantRegistry {
       .map(team => ({ ...team }));
   }
 
-  async createTeam({ tenantId, workspaceId, name }) {
+  async createTeam({ tenantId, workspaceId, name, leadPrincipalId = undefined, teamLeadUid = undefined }) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     workspaceId = assertUuid(workspaceId, 'Workspace identifier');
     await this.getWorkspace(workspaceId, tenantId);
     const cleanName = compact(name, 100);
     if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
-    const team = { id: crypto.randomUUID(), tenantId, workspaceId, name: cleanName, status: 'ACTIVE' };
+    const requestedLead = teamLeadUid !== undefined ? teamLeadUid : leadPrincipalId;
+    const lead = requestedLead === undefined || requestedLead === null || requestedLead === ''
+      ? null
+      : assertPrincipalId(requestedLead);
+    if (lead) {
+      const membership = await this.getMembership(tenantId, lead).catch(() => null);
+      const workspaceMember = membership
+        ? await this.hasWorkspaceAccess({ tenantId, workspaceId, principalId: lead, roles: membership.roles })
+        : false;
+      if (!membership || String(membership.status || '').toUpperCase() !== 'ACTIVE' || !workspaceMember) {
+        throw Object.assign(new Error('A team lead must be an active member of the team workspace'), { code: 'INVALID_TEAM_LEAD', status: 400 });
+      }
+    }
+    const team = { id: crypto.randomUUID(), tenantId, workspaceId, name: cleanName, status: 'ACTIVE', leadPrincipalId: lead };
     this.teams.set(team.id, team);
     return { ...team };
   }
@@ -577,14 +590,20 @@ class InMemoryTenantRegistry {
     return { ...team };
   }
 
-  async updateTeam({ tenantId, teamId, name, leadPrincipalId = undefined }) {
+  async updateTeam({ tenantId, teamId, name, description, leadPrincipalId = undefined, teamLeadUid = undefined }) {
     // An omitted name keeps the current name (partial update contract).
     const team = await this.getTeam(teamId, tenantId);
     const cleanName = compact(name === undefined || name === null ? team.name : name, 100);
     if (cleanName.length < 2) throw Object.assign(new Error('Team name is invalid'), { code: 'INVALID_TEAM', status: 400 });
-    let lead = Object.hasOwn(team, 'leadPrincipalId') ? team.leadPrincipalId : null;
-    if (leadPrincipalId !== undefined) {
-      lead = leadPrincipalId === null || leadPrincipalId === '' ? null : assertPrincipalId(leadPrincipalId);
+    // TenantService hands the lead over under the internal `teamLeadUid` key, the
+    // same key the MariaDB adapter consumes. Accepting only `leadPrincipalId`
+    // here let this double silently drop the lead while the real adapter
+    // persisted it, so the two adapters disagreed on the contract.
+    const requestedLead = teamLeadUid !== undefined ? teamLeadUid : leadPrincipalId;
+    const leadProvided = teamLeadUid !== undefined || leadPrincipalId !== undefined;
+    let lead = team.leadPrincipalId !== undefined ? team.leadPrincipalId : null;
+    if (leadProvided) {
+      lead = requestedLead === null || requestedLead === '' ? null : assertPrincipalId(requestedLead);
       if (lead) {
         const membership = await this.getMembership(tenantId, lead).catch(() => null);
         const workspaceMember = membership
@@ -595,7 +614,12 @@ class InMemoryTenantRegistry {
         }
       }
     }
-    const updated = { ...team, name: cleanName, leadPrincipalId: lead };
+    const updated = {
+      ...team,
+      name: cleanName,
+      leadPrincipalId: lead,
+      ...(description !== undefined ? { description: description === null ? '' : String(description) } : {}),
+    };
     this.teams.set(team.id, updated);
     return { ...updated };
   }

@@ -1,0 +1,184 @@
+/home/user/ResumePilotAi/backend/test/support-live-chat-integration.test.js
+028/029 are applied by the runner with checksums matching the checked-in files
+1. Bitwise CIDR parsing and range calculation for IPv4
+1. Dry-run mode identifies churned tenants >90 days without altering MariaDB
+1. GET /api/support/live-chat/session requires authentication
+1. Valid token with unique JTI is authorized on protected routes
+10. Employer triggers on-demand recalculation POST /recalculate-ats
+10. GET /api/admin/support/live-chat/sessions lists active chats with preview
+11. POST /api/support/live-chat/typing broadcasts typing indicators
+12. SSE Stream Handshake: GET /api/support/live-chat/stream
+2. GET /api/support/live-chat/session creates and returns a new session for user A
+2. Revoking specific JTI persists into MariaDB and immediately invalidates token with 401
+2. Tenant archival snapshot generates valid JSON with SHA-256 checksum on disk
+2. Unauthenticated request to /api/platform/ip-rules is rejected with 401
+3. GET /api/support/live-chat/session reuses existing session without duplicating ticket
+3. Live retention purge cascades across relational partitions and writes platform audit log
+3. Super Admin adds CIDR /24 DENY rule into MariaDB ip_access_rules
+4. POST /api/support/live-chat/messages rejects missing or empty message
+4. Recently deleted tenant (<90 days) and active tenant are strictly preserved
+4. Request originating from blocked subnet IP returns HTTP 403 Forbidden
+4. Seed test job and candidate resumes in MariaDB
+5. Candidate submits application with auto-calculated ATS score persisted in MariaDB
+5. Hard-purge operation is idempotent when tenant is already purged
+5. POST /api/support/live-chat/messages rejects message over 2000 chars
+5. Request from outside subnet succeeds with HTTP 200 OK
+6. Explicit ALLOW rule takes precedence over broader DENY subnet
+6. POST /api/support/live-chat/messages prevents cross-user access (user B posting to user A)
+6. Second candidate submits application with lower ATS score
+7. Automated Fail2ban rate-limit jail triggers on 10 failed auth events in 60s
+7. Employer retrieves applications with matchScore and matchBreakdown mapped
+7. POST /api/support/live-chat/messages successfully sends and stores candidate message
+8. Admin deletes rule / unjails IP restoring normal access
+8. Employer retrieves ranked applications via GET /api/jobs/:jobId/applications/ranked
+8. HTTP SSE: POST /api/live-interview/guide/stream streams answer guide events
+8. Staff endpoints reject non-staff users (RBAC tickets.manage)
+9. Staff sends message, transitions status to PENDING and persists with SUPPORT role
+9. Unauthorized user cannot access candidate rankings
+Admin can create, fetch, update, and delete a blog post via /api/blog/posts
+Ads create and revision-safe delete persist through audited backend routes
+Anonymous users can only see published posts on /api/blog/posts
+Authentication, Token Lifecycle & Re-Authentication Architecture
+Billing Coupon Validation Alias Contract
+Blog API & Confidentiality Contract
+CERTIFICATION: OAuth state & exchange codes are MySQL-backed (single-use)
+CERTIFICATION: admin surfaces operate with MySQL (users list, audit write)
+CERTIFICATION: authentication is enforced on protected routes (identity-plane only)
+CERTIFICATION: contact messages persist to MySQL
+CERTIFICATION: cross-user access is denied (multi-tenant zero-trust)
+CERTIFICATION: export render token lifecycle is MySQL-durable
+CERTIFICATION: favourites are MySQL-backed and owner-scoped
+CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed
+CERTIFICATION: password-reset token store is MySQL-backed and latest-token-wins
+CERTIFICATION: public configuration loads from MariaDB only
+CERTIFICATION: public reviews use relational owner and phrases use canonical documents
+CERTIFICATION: resume create -> list -> load -> edit -> publish -> delete (MySQL persistence)
+CERTIFICATION: stats read + authenticated increments (MySQL)
+CERTIFICATION: user profile create/read/update with optimistic revision guard (MySQL transactions)
+Cleanup test records from MariaDB
+DNS TXT verification transitions state only on a matching record
+Employer Application Verification Contract
+Enterprise Role View & Simulation Security Architecture
+FP-A04: /api/platform/operational-status/cache-store detail route returns 200 for SUPER_ADMIN
+FP-C10 & FP-C07: Portfolio Password Protection & Case Study Media Gallery Integration
+FP-F16: Automated Candidate Ranking & ATS Scoring Suite
+FP-G15: automatically batches and reconciles unsettled active orders
+FP-G15: enforces durable idempotency on duplicate settlement submissions
+FP-G15: lists bank settlements with pagination and provider filtering
+FP-G15: processes inbound gateway settlement webhook payload
+FP-G15: records verified bank settlement payout with mathematical integrity and UTR
+FP-G15: retrieves settlement details with linked order items and fee breakdown
+FP-G15: returns 404 for non-existent settlement identifier
+Forensic MariaDB ↔ API Data Lineage Validation Suite
+FreeLLMAPI: Express app mounts /v1/models and the operator-gated /v1/status
+FreeLLMAPI: POST /v1/chat/completions returns an OpenAI-shaped completion
+FreeLLMAPI: POST /v1/chat/completions streams text/event-stream chunks
+FreeLLMAPI: POST /v1/messages handles Anthropic format and SSE streaming
+FreeLLMAPI: POST /v1/search exposes Tavily results with the platform key
+FreeLLMAPI: transparent 429 failover through the public HTTP surface
+GET /api/blog/posts is mounted and accessible
+GET /api/jobs is mounted alongside /api/jobs-data
+GET /members/seats reports the quota for the caller tenant only
+GET /slots is scoped to the caller and honours a bounded date window
+Job Moderation Contract
+Jobs Endpoint Alias Contract
+Mandate 9B Contract Coverage
+Module 12 & 21: Tenant Custom Domains & Automated SSL Suite
+Module 14: Enterprise SAML 2.0 Live IdP Validation & MariaDB Integration
+Module 15: Dynamic Tenant Branding & Whitelabel Suite
+Module 16: Churned Tenant Data Retention Archival & Hard Purge Engine
+Module 28: AI Interview Coach & Streaming Question Generator Suite
+Module 29: Live MariaDB Voice Room & Transcription Integration Suite
+Module 37: Relational Scorecard & Email Notification Workflow Suite
+Module 4: JTI Token Blacklisting & Immediate Session Revocation
+Module 5: IP Access Control, CIDR Range Matching & Automated Rate-Limit Jail
+Module 6 & 1: Storage Infrastructure Telemetry Suite
+Naukri ingestion returns a coded 501 rather than fabricating listings
+PATCH /api/admin/employer-applications/:uid accepts decision field
+PATCH /api/admin/users/:uid handles body.status normalization
+POST /api/admin/employer-applications/:uid/verify accepts decision payload for admin
+POST /api/admin/jobs/:jobId/moderate delegates to resilientMutations with proper status
+POST /api/admin/users/:uid/status accepts status payload for admin
+POST /api/billing/validate-coupon is mounted alongside /api/coupons/validate
+Payment Webhooks Diagnostic: returns sanitized events stream and rejects unauthorized callers
+Payment Webhooks Replay: requires SuperAdmin authorization and validates event ID
+RBAC Forensic: Auditor is strictly limited to Audit, Security, and Read-Only domains; System Configuration and Operators are blocked
+RBAC Forensic: Sensitive Credentials Redaction Contract (Zero Plaintext Secrets Leaked)
+RBAC Forensic: Super Admin has authoritative access to all platform and system configuration endpoints
+Twilio settings persist in the canonical MySQL secret namespace without response disclosure
+User Status & Suspension Contract
+a calendar invitation travels as an iCalendar MIME alternative
+a delivery failure increments the attempt count and stores a bounded error
+a domain cannot be claimed twice
+a failed invitation leaves no seat reservation behind
+a pending invitation holds a seat until it expires
+a slug owned by another portfolio is a database-level conflict
+a tenant without a configured cap reports an unlimited quota
+administrative ledger requires an administrative permission
+administrative ledger supports search and date filters before pagination
+ai_routing_decisions matches the proposal shape: PK, columns, three indexes
+an expired invitation stops consuming a seat and the freed seat is reusable
+an expired lease is recovered and the message is delivered by the next worker
+an owner invitation reserves one seat and persists the pending invitation
+an unbooked slot can be deleted and is unreachable to another employer
+anonymous portfolio detail is an explicit public allowlist
+billing endpoints reject anonymous callers with 401
+booking is atomic: exactly one concurrent caller can win the slot
+booking requires a slot, an owned application and an eligible status
+both public aliases serve the same DTO and preserve the frontend contract
+clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration
+concurrent invitations cannot oversubscribe the workspace
+concurrent slug reservations cannot both succeed
+cross-user isolation: another account can neither list nor read the invoice
+custom-domain registration validates input and stores only a token digest
+database failure is reported without disclosing driver internals
+delivery state is durable across database connections
+down round-trip: 029.down -> 028.down -> re-up restores the baseline exactly
+drafts and unknown slugs are 404 on both public routes
+email runtime save rejects unencrypted or malformed transport configuration
+email settings projections expose configured state without runtime credentials
+employer job create, pause, edit, and delete routes are owned, audited, and revision safe
+enterprise_ai_usage gains the nullable indexed decision_id join column
+every migrated application table has exactly one declared MariaDB domain owner
+fresh authorized admin provider test reaches the dedicated AI route with useful errors
+fresh authorized admin reaches revisioned AI settings persistence without secret disclosure
+frontend contracts — real data, no mock fallbacks, safe rendering
+generic settings preserve omitted and blank backend secrets without browser disclosure
+has no empty catch blocks
+inter-state supply is taxed with IGST and no CGST/SGST
+invitations are addressed from persisted data only, never from the request
+job application submission and employer status transitions are atomic, audited, and revision safe
+legacy column-explicit INSERTs keep working post-029; decision_id rides along when present
+loading non-secret AI settings does not require recent authentication
+messages are processed oldest-due first and the batch size is enforced
+missing and malformed invoice identifiers return 404 without leaking existence
+one failing message does not stop the rest of the batch
+one-time export render data endpoint is public only through an opaque token
+only exact validated published-portfolio paths bypass authentication
+outbox administration requires administrator authority
+overlapping slots are refused while adjacent slots are allowed
+owner lists and reads their own invoices with exact financial fields
+pagination and status values are validated
+parallel runMigrations under GET_LOCK: the second concurrent run is a clean no-op
+printable invoice is standalone HTML with tax content and escaped payloads
+publishing requires authentication and portfolio ownership
+re-inviting an active member or a pending invitee does not consume a second seat
+removing a member frees the seat for a new invitation
+role vocabulary, email validation and role-grant authorization are enforced
+seat endpoints require authentication and refuse unauthorized roles
+slot creation validates duration, interval, timezone awareness and future start
+slot management requires an approved employer with a verified email
+slug formatting and reserved words are rejected with stable codes
+statistics report persisted state counts only
+status filters partition the ledger accurately and totals follow the filter
+successful delivery persists DELIVERED with the mailer payload and delivery timestamp
+successful publication persists slug, state and timestamp
+the booking queues an RFC 5545 invitation and the outbox delivers it via the mailer
+the calendar download is a text/calendar attachment for the owning employer
+the fifth failed attempt dead-letters the message and it is never retried
+the seat limit returns 409 SEAT_LIMIT_REACHED and writes nothing
+the tracker and applied-jobs pages use the real API modules and reconcile failures
+the verification route fails closed when DNS cannot be reached
+unpublishing removes public access immediately
+unsupported message types are never recorded as delivered
+verification is throttled and expired tokens cannot be verified

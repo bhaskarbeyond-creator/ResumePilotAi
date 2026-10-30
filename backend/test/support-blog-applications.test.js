@@ -1238,9 +1238,14 @@ describe('frontend contracts — real data, no mock fallbacks, safe rendering', 
   it('the tracker and applied-jobs pages use the real API modules and reconcile failures', () => {
     const tracker = readFrontend('pages/dashboard/job-tracker.tsx');
     assert.match(tracker, /listTrackedJobs/);
-    assert.match(tracker, /updateTrackedJob/);
+    // Stage moves go through the real API module with an explicit rollback plan.
+    // Form edits are delegated to TrackerFormDialog, which owns
+    // updateTrackedJob/createTrackedJob, so the page itself binds
+    // move/reconcile/rollback rather than calling updateTrackedJob directly.
+    assert.match(tracker, /moveTrackedJobStage/);
     assert.match(tracker, /TRACKER_STAGES/);
-    assert.match(tracker, /setJobs\(\(current\) => current\.map/);
+    assert.match(tracker, /reconcileTrackedJob/);
+    assert.match(tracker, /rollbackTrackedJob/);
     // A conflict or a failed reload must be announced, never swallowed.
     assert.doesNotMatch(tracker, /catch\(\(\) => undefined\)/);
     assert.doesNotMatch(tracker, /catch\(\(\) => null\)/);

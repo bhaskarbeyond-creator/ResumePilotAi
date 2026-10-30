@@ -921,26 +921,11 @@ class TenantService {
     const team = await this.registry.getTeam(teamId, context.tenantId);
     this.assertWorkspaceScopeFor(context, team.workspaceId, 'Workspace team access is not permitted');
 
-    const rawLead = input && (input.teamLeadUid !== undefined ? input.teamLeadUid : input.leadPrincipalId);
     const leadChanged = input && (Object.hasOwn(input, 'teamLeadUid') || Object.hasOwn(input, 'leadPrincipalId'));
-    let leadPrincipalId = null;
-    if (leadChanged) {
-      leadPrincipalId = rawLead === undefined || rawLead === '' ? null : String(rawLead);
-      if (leadPrincipalId) {
-        let membership;
-        try {
-          membership = await this.registry.getMembership(context.tenantId, leadPrincipalId);
-        } catch (error) {
-          if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
-            throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
-          }
-          throw error;
-        }
-        if (membership.status !== 'ACTIVE') {
-          throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
-        }
-      }
-    }
+    // `leadChanged` distinguishes "field omitted" (keep the current lead) from
+    // "field supplied empty" (clear the lead); resolveTeamLead validates that any
+    // supplied principal is an active tenant member.
+    const leadPrincipalId = leadChanged ? await this.resolveTeamLead(context, input) : null;
 
     const updated = await this.registry.updateTeam({
       tenantId: context.tenantId,
@@ -953,7 +938,7 @@ class TenantService {
       action: 'TEAM_UPDATED', category: 'tenant.team',
       resource: { type: 'team', id: updated.id }, metadata: {
         name: updated.name,
-        ...(leadChanged ? { teamLeadUid: updated.teamLeadUid || null } : {}),
+        ...(leadChanged ? { teamLeadUid: updated.leadPrincipalId ?? updated.teamLeadUid ?? null } : {}),
       },
     });
     return updated;
@@ -1119,17 +1104,49 @@ class TenantService {
     if (context.workspaceScope !== 'TENANT' && workspaceId !== context.workspaceId) {
       throw Object.assign(new Error('Workspace team access is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
     }
-    const team = await this.registry.createTeam({ tenantId: context.tenantId, workspaceId, name: input?.name });
+    const leadPrincipalId = await this.resolveTeamLead(context, input);
+    const team = await this.registry.createTeam({
+      tenantId: context.tenantId,
+      workspaceId,
+      name: input?.name,
+      teamLeadUid: leadPrincipalId,
+    });
     const event = buildTenantAuditEvent({
       context,
       action: 'TEAM_CREATED',
       category: 'tenant.team',
       resource: { type: 'team', id: team.id },
-      metadata: { workspaceId: team.workspaceId },
+      metadata: { workspaceId: team.workspaceId, ...(leadPrincipalId ? { teamLeadUid: team.leadPrincipalId || leadPrincipalId } : {}) },
     });
     await writeTenantAuditEvent(this.repository, event);
 
     return team;
+  }
+
+  // Accepts either the public `leadPrincipalId` field or the internal
+  // `teamLeadUid` alias, and validates that the principal is an active member of
+  // the tenant before the lead reaches the data plane. Returns null when no lead
+  // was supplied.
+  async resolveTeamLead(context, input) {
+    if (!input || typeof input !== 'object') return null;
+    const rawLead = input.teamLeadUid !== undefined ? input.teamLeadUid : input.leadPrincipalId;
+    const leadPrincipalId = rawLead === undefined || rawLead === null || String(rawLead).trim() === ''
+      ? null
+      : String(rawLead).trim();
+    if (!leadPrincipalId) return null;
+    let membership;
+    try {
+      membership = await this.registry.getMembership(context.tenantId, leadPrincipalId);
+    } catch (error) {
+      if (error.code === 'TENANT_MEMBERSHIP_NOT_FOUND') {
+        throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+      }
+      throw error;
+    }
+    if (membership.status !== 'ACTIVE') {
+      throw Object.assign(new Error('Team lead must be an active member of this tenant'), { code: 'TEAM_LEAD_NOT_MEMBER', status: 403 });
+    }
+    return leadPrincipalId;
   }
 
   async grantMembership({ context, input, actor = null }) {
