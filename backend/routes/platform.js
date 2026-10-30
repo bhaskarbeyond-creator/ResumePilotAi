@@ -260,6 +260,56 @@ router.get('/public-config', async (req, res) => {
 
 router.use(requireAuth);
 
+// Stable administrative KPI contract. A missing or invalid count is an error,
+// not an empty database. These tables are the authoritative MariaDB records.
+router.get('/stats', requirePermission(['system.config.read', 'system.config.write']), async (_req, res) => {
+  try {
+    const pool = getPool();
+    const results = await Promise.all([
+      pool.query('SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL', []),
+      pool.query('SELECT COUNT(*) AS total FROM resumes WHERE deleted_at IS NULL', []),
+      pool.query('SELECT COUNT(*) AS total FROM enterprise_tenants', []),
+    ]);
+    const counts = results.map(([rows]) => {
+      const raw = rows?.[0]?.total;
+      if (raw === null || raw === undefined || !/^[0-9]+$/.test(String(raw))) throw new Error('Invalid count');
+      const value = Number(raw);
+      if (!Number.isSafeInteger(value)) throw new Error('Invalid count');
+      return value;
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ users: counts[0], resumes: counts[1], tenants: counts[2] });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'PLATFORM_STATS_UNAVAILABLE', message: 'Platform statistics are unavailable.', requestId: res.locals?.requestId } });
+  }
+});
+
+// No infrastructure details or raw errors cross this boundary. Every request
+// runs new probes; an unconfigured identity client is explicitly unknown.
+router.get('/health/probes', requirePermission('security.read'), async (req, res) => {
+  const services = [{ id: 'api', name: 'API process', state: 'HEALTHY' }];
+  try {
+    const [rows] = await getPool().query('SELECT 1 AS alive', []);
+    if (Number(rows?.[0]?.alive) !== 1) throw new Error('Invalid probe result');
+    services.push({ id: 'database', name: 'MariaDB', state: 'HEALTHY' });
+  } catch (_error) {
+    services.push({ id: 'database', name: 'MariaDB', state: 'DEGRADED' });
+  }
+  const admin = req.app?.get('firebaseAdmin');
+  if (!admin?.auth) {
+    services.push({ id: 'authentication', name: 'Authentication directory', state: 'UNKNOWN' });
+  } else {
+    try {
+      await admin.auth().listUsers(1);
+      services.push({ id: 'authentication', name: 'Authentication directory', state: 'HEALTHY' });
+    } catch (_error) {
+      services.push({ id: 'authentication', name: 'Authentication directory', state: 'DEGRADED' });
+    }
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ services, checkedAt: new Date().toISOString() });
+});
+
 router.get('/health', async (req, res) => {
   return res.json(await buildHealthPayload(req));
 });

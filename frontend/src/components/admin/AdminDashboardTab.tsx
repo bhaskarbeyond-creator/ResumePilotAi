@@ -5,26 +5,21 @@
  * quick action dispatchers, and system metrics.
  */
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
-import { usePlatformStats } from '@/hooks/use-api-hooks';
+import { get } from '@/lib/api-client';
+import { ServiceDegradedBanner } from './ServiceDegradedBanner';
 import { Link } from 'react-router-dom';
 import {
   Users,
   FileText,
-  Briefcase,
-  Zap,
   Server,
   Activity,
   Shield,
-  AlertTriangle,
   Brain,
   Edit3,
-  Database,
-  CheckCircle2,
   ArrowRight,
   ExternalLink,
 } from 'lucide-react';
@@ -34,17 +29,32 @@ interface AdminDashboardTabProps {
 }
 
 export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
-  const { data: stats, isLoading } = usePlatformStats();
+  const [stats, setStats] = useState<{ users: number; resumes: number; tenants: number } | null>(null);
+  const [isLoading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [roleView, setRoleView] = useState<'super_admin' | 'candidate' | 'employer' | 'enterprise'>('super_admin');
-
-  const statCards = [
-    { label: 'Total Platform Users', value: stats?.totalUsers ?? '48,290', icon: Users, color: 'bg-brand-50 text-brand-600' },
-    { label: 'Monthly Active Candidates', value: stats?.activeUsers ?? '14,820', icon: Activity, color: 'bg-success-50 text-success-600' },
-    { label: 'Resumes Created (12-Step)', value: stats?.totalResumes ?? '102,450', icon: FileText, color: 'bg-info-50 text-info-600' },
-    { label: 'Job Applications Managed', value: stats?.totalJobApplications ?? '28,190', icon: Briefcase, color: 'bg-warning-50 text-warning-600' },
-    { label: 'AI LLM Generations', value: stats?.aiGenerations ?? '420,910', icon: Zap, color: 'bg-purple-50 text-purple-600' },
-    { label: 'Cloud Storage Used', value: stats?.storageUsed ?? '184.2 GB', icon: Database, color: 'bg-neutral-100 text-neutral-600' },
-  ];
+  const loadStats = async () => {
+    setLoading(true);
+    setError(false);
+    setStats(null);
+    try {
+      const data = await get<unknown>('/platform/stats');
+      if (!data || typeof data !== 'object') throw new Error('Invalid statistics');
+      const candidate = data as Record<string, unknown>;
+      if (!['users', 'resumes', 'tenants'].every(key => typeof candidate[key] === 'number' && Number.isSafeInteger(candidate[key]) && (candidate[key] as number) >= 0)) throw new Error('Invalid statistics');
+      setStats(candidate as unknown as { users: number; resumes: number; tenants: number });
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { void loadStats(); }, []);
+  const statCards = stats ? [
+    { label: 'Total Platform Users', value: stats.users, icon: Users, color: 'bg-brand-50 text-brand-600' },
+    { label: 'Resumes Created', value: stats.resumes, icon: FileText, color: 'bg-info-50 text-info-600' },
+    { label: 'Enterprise Tenants', value: stats.tenants, icon: Shield, color: 'bg-purple-50 text-purple-600' },
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -88,15 +98,19 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
           <h2 className="text-base font-bold text-ink">Command Center Telemetry & Metrics</h2>
-          <span className="text-xs text-ink-muted">Bound to /api/platform/operational-status</span>
+          <span className="text-xs text-ink-muted">Source: /api/platform/stats</span>
         </div>
 
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
+        ) : error ? (
+          <ServiceDegradedBanner message="Platform statistics are unavailable." onRetry={() => void loadStats()} />
+        ) : stats && statCards.every(card => card.value === 0) ? (
+          <p role="status">No users, resumes, or enterprise tenants found.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {statCards.map((stat) => {
@@ -149,8 +163,8 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
               </div>
               <ArrowRight className="size-4 text-ink-muted group-hover:text-brand-600 transition-colors" />
             </div>
-            <h4 className="text-sm font-bold text-ink">28-Service Health Probes</h4>
-            <p className="text-xs text-ink-muted mt-1">Run live diagnostic pings against MariaDB, Redis, and workers.</p>
+            <h4 className="text-sm font-bold text-ink">Service Health Probes</h4>
+            <p className="text-xs text-ink-muted mt-1">View available live dependency checks.</p>
           </button>
 
           <button
@@ -183,78 +197,6 @@ export function AdminDashboardTab({ onNavigateTab }: AdminDashboardTabProps) {
         </div>
       </div>
 
-      {/* ─── Platform Health & Attention Snapshot ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-success-600" />
-                Subsystem Health Summary
-              </CardTitle>
-              <CardDescription>28 active platform services and cloud adapters</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => onNavigateTab('health')}>
-              View Matrix
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2.5">
-              {[
-                { name: 'MariaDB Primary Cluster', status: 'HEALTHY', latency: '4ms' },
-                { name: 'Redis Cache & Session Store', status: 'HEALTHY', latency: '1ms' },
-                { name: 'NVIDIA NIM Vision / LLM Endpoint', status: 'HEALTHY', latency: '92ms' },
-                { name: 'Durable Outbox Queue Dispatcher', status: 'HEALTHY', latency: '2ms' },
-                { name: 'Reverse Proxy (Nginx / Cloudflare)', status: 'HEALTHY', latency: '12ms' },
-              ].map((svc) => (
-                <div key={svc.name} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-canvas-soft border border-border/60">
-                  <span className="font-semibold text-ink">{svc.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-ink-muted">{svc.latency}</span>
-                    <span className="rounded-full bg-success-50 dark:bg-emerald-950/60 px-2 py-0.5 font-bold text-success-700 dark:text-emerald-300">
-                      {svc.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="size-4 text-amber-500" />
-                Attention Needed Snapshot
-              </CardTitle>
-              <CardDescription>Priority queues and pending verifications</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => onNavigateTab('attention')}>
-              View All Signals
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2.5">
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/30 p-3">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200 mb-1">
-                  <span>Employer Verification Pending</span>
-                  <span>14m ago</span>
-                </div>
-                <p className="text-xs text-amber-800 dark:text-amber-300">Vertex AI Labs has submitted enterprise employer documents awaiting approval.</p>
-              </div>
-
-              <div className="rounded-lg border border-border p-3 bg-canvas-soft">
-                <div className="flex items-center justify-between text-xs font-bold text-ink mb-1">
-                  <span>Open Help Desk Ticket (#TK-1002)</span>
-                  <span>1h ago</span>
-                </div>
-                <p className="text-xs text-ink-muted">Candidate reported DOCX font substitution on custom Arabic typography template.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
