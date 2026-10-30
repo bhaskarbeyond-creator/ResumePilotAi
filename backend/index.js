@@ -450,7 +450,8 @@ const publicApiPaths = new Set([
     '/paytm/callback', '/phonepe/callback',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
     '/stats', '/reviews', '/phrases', '/portfolios/public',
-    '/coupons/active', '/coupons/validate', '/billing/validate-coupon'
+    '/coupons/active', '/coupons/validate', '/billing/validate-coupon',
+    '/billing/settlement-webhook',
 ]);
 function isPublicApiPath(pathname) {
     if (pathname.startsWith('/jobs-data/tracker') || pathname.startsWith('/jobs/tracker')) return false;

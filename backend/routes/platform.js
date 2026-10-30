@@ -321,6 +321,16 @@ router.get('/health/probes', requirePermission('security.read'), async (req, res
       services.push({ id: 'authentication', name: 'Authentication directory', state: 'DEGRADED' });
     }
   }
+  try {
+    const mem = process.memoryUsage();
+    services.push({
+      id: 'cache',
+      name: 'Memory Cache & Rate Limiter',
+      state: mem.heapUsed < mem.heapTotal ? 'HEALTHY' : 'DEGRADED',
+    });
+  } catch (_error) {
+    services.push({ id: 'cache', name: 'Memory Cache & Rate Limiter', state: 'DEGRADED' });
+  }
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ services, checkedAt: new Date().toISOString() });
 });

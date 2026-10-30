@@ -20,6 +20,7 @@
 const express = require('express');
 const { requireAuth, requirePermission } = require('../security/auth');
 const billing = require('../services/billingDocuments');
+const settlements = require('../services/paymentReconciliation');
 
 const router = express.Router();
 const adminRouter = express.Router();
@@ -109,6 +110,99 @@ adminRouter.get('/invoices', requireAuth, requirePermission('payments.read'), as
     return res.json({ success: true, invoices: result.invoices, total: result.total, limit: result.limit, offset: result.offset });
   } catch (error) {
     return respondError(res, error, 'The billing ledger could not be loaded.');
+  }
+});
+
+// Bank Gateway Settlement Ledger (FP-G15)
+adminRouter.get('/settlements', requireAuth, requirePermission('payments.read'), async (req, res) => {
+  try {
+    const result = await settlements.listSettlements({
+      provider: req.query.provider,
+      status: req.query.status,
+      limit: req.query.limit,
+      offset: req.query.offset,
+    });
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return respondError(res, error, 'The bank settlement ledger could not be loaded.');
+  }
+});
+
+adminRouter.get('/settlements/:id', requireAuth, requirePermission('payments.read'), async (req, res) => {
+  try {
+    const record = await settlements.getSettlement(req.params.id);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'SETTLEMENT_NOT_FOUND', message: 'Settlement record not found', requestId: requestId(res) },
+      });
+    }
+    return res.json({ success: true, settlement: record });
+  } catch (error) {
+    return respondError(res, error, 'The settlement record could not be loaded.');
+  }
+});
+
+adminRouter.post('/settlements/record', requireAuth, requirePermission('payments.manage'), async (req, res) => {
+  try {
+    const result = await settlements.recordGatewaySettlement(req.body);
+    return res.status(result.duplicate ? 200 : 201).json({ success: true, ...result });
+  } catch (error) {
+    return respondError(res, error, 'Failed to record bank settlement.');
+  }
+});
+
+adminRouter.post('/settlements/reconcile', requireAuth, requirePermission('payments.manage'), async (req, res) => {
+  try {
+    const result = await settlements.reconcileUnsettledOrders({
+      provider: req.body?.provider,
+      batchLimit: req.body?.batchLimit,
+      feePercentage: req.body?.feePercentage,
+    });
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return respondError(res, error, 'Failed to reconcile unsettled orders.');
+  }
+});
+
+// Bank settlement webhook receiver for gateways (Stripe payout.paid, Razorpay settlement.processed, etc.)
+router.post('/settlement-webhook', async (req, res) => {
+  try {
+    const provider = String(req.body?.provider || req.headers['x-gateway-provider'] || 'razorpay').toLowerCase();
+    const event = req.body?.event || req.body?.type;
+    const payload = req.body?.payload || req.body?.data || req.body;
+
+    if (!payload?.settlementId && !payload?.id && !payload?.settlement_id) {
+      return res.status(400).json({ error: { code: 'INVALID_SETTLEMENT_PAYLOAD', message: 'Missing settlement identifier' } });
+    }
+
+    const settlementId = payload.settlementId || payload.id || payload.settlement_id;
+    const gross = payload.grossAmount || payload.amount || 0;
+    const fee = payload.feeAmount || payload.fee || 0;
+    const tax = payload.taxAmount || payload.tax || 0;
+    const net = payload.netAmount || (gross - fee - tax);
+    const bankUtr = payload.bankUtr || payload.utr || null;
+    const status = payload.status === 'failed' ? 'FAILED' : 'SETTLED';
+
+    const result = await settlements.recordGatewaySettlement({
+      provider,
+      settlementId,
+      grossAmount: gross,
+      feeAmount: fee,
+      taxAmount: tax,
+      netAmount: net,
+      currency: payload.currency || 'INR',
+      status,
+      bankUtr,
+      bankAccountLast4: payload.accountLast4 || null,
+      settledAt: payload.settledAt || new Date(),
+      orderIds: payload.orderIds || [],
+      metadata: { webhookEvent: event, receivedAt: new Date().toISOString() },
+    });
+
+    return res.json({ received: true, ...result });
+  } catch (error) {
+    return respondError(res, error, 'Settlement webhook processing failed.');
   }
 });
 

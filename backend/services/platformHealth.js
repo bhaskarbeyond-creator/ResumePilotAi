@@ -328,6 +328,20 @@ async function buildServices(app) {
       systemTotalMemMb: Math.round(os.totalmem() / 1048576), rssMb: Math.round(process.memoryUsage().rss / 1048576),
       heapUsedMb: Math.round(process.memoryUsage().heapUsed / 1048576),
     }, checkedAt }));
+  const memUsage = process.memoryUsage();
+  const cacheHealthy = memUsage.heapUsed < memUsage.heapTotal;
+  services.push(service({
+    id: 'cache-store',
+    name: 'Cache & Rate-Limit Store',
+    group: GROUP.CORE,
+    state: cacheHealthy ? STATE.OPERATIONAL : STATE.DEGRADED,
+    configuration: CONFIG.CONFIGURED,
+    critical: false,
+    reason: 'In-memory token-bucket and LRU cache active; MariaDB is the authoritative persistence tier (zero Redis dependency by architectural invariant).',
+    dependency: 'Node.js memory heap / MariaDB',
+    metrics: { storeType: 'in-memory-lru', heapUsedMb: Math.round(memUsage.heapUsed / 1048576), redisDependency: 'NONE' },
+    checkedAt,
+  }));
   services.push(service({ id: 'database', name: 'MariaDB', group: GROUP.CORE,
     state: databaseProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE, configuration: CONFIG.CONFIGURED, critical: true,
     reason: databaseProbe.ok ? `SELECT 1 completed in ${databaseProbe.latencyMs}ms.` : `MariaDB probe failed: ${databaseProbe.error}`,

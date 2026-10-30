@@ -82,6 +82,7 @@ function resolveAdminReadPermission(pathname) {
   // default, which is a permission bypass: an operator holding only platform
   // configuration rights must not be able to read every customer's invoices.
   if (pathname === '/admin/billing/invoices' || pathname.startsWith('/admin/billing/invoices/')) return 'payments.read';
+  if (pathname === '/admin/billing/settlements' || pathname.startsWith('/admin/billing/settlements/')) return 'payments.read';
   if (pathname === '/admin/system/outbox/stats') return ['system.config.read', 'system.config.write'];
   // Admin reads require system.config.read OR system.config.write: holding write
   // authority implies read authority on the same administrative surface.
@@ -94,7 +95,7 @@ function resolveAdminMutationPermission(pathname) {
   // payments mutations → payments.manage (covers payment-settings POST,
   // payment/test-provider, /admin/payments/*); the elevated-permission
   // check earlier in enforceApiPolicy already gates these.
-  if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider') return 'payments.manage';
+  if (pathname.startsWith('/admin/payments/') || pathname.startsWith('/admin/billing/settlements') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider') return 'payments.manage';
   // DIR-022 / AC-5: POST /admin/subscriptions/:uid/reconcile WRITES entitlement
   // state, so it must not fall through to the generic system.config.write
   // default and must never be reachable with read-only payments access.
