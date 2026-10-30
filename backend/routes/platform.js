@@ -18,6 +18,7 @@ const {
 const { getPool } = require('../database/mysql');
 const { getRepository } = require('../repositories');
 const { getPlatformCurrencyConfig } = require('../services/platformCurrency');
+const { getPlatformStorageTelemetry } = require('../services/storageTelemetry');
 
 const router = express.Router();
 
@@ -281,6 +282,20 @@ router.get('/stats', requirePermission(['system.config.read', 'system.config.wri
     return res.json({ users: counts[0], resumes: counts[1], tenants: counts[2] });
   } catch (_error) {
     return res.status(503).json({ error: { code: 'PLATFORM_STATS_UNAVAILABLE', message: 'Platform statistics are unavailable.', requestId: res.locals?.requestId } });
+  }
+});
+
+// Real infrastructure storage telemetry (Module 6 & Module 1 / FP-A08 / DISC-012)
+router.get('/storage/telemetry', requirePermission('system.config.read'), async (_req, res) => {
+  try {
+    const telemetry = await getPlatformStorageTelemetry();
+    res.setHeader('Cache-Control', 'no-store, private');
+    return res.json({ success: true, data: telemetry });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      success: false,
+      error: { code: error.code || 'STORAGE_TELEMETRY_UNAVAILABLE', message: 'Storage telemetry is unavailable.', requestId: res.locals?.requestId },
+    });
   }
 });
 

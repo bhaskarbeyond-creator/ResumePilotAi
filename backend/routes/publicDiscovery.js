@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { getPool } = require('../database/mysql');
 const { normalizeGeoSeoSettings } = require('../services/discoveryMetadata');
 const {
     buildLocationMatch,
@@ -146,6 +147,75 @@ router.get('/blog/:slug/og.png', async (req, res) => {
     } catch (error) {
         console.error('[blog social preview]', { code: error.code || 'SOCIAL_PREVIEW_UNAVAILABLE', requestId: res.locals.requestId });
         return res.status(503).type('text/plain').send('Preview temporarily unavailable.\n');
+    }
+});
+
+// Dynamic Tenant Branding & Whitelabel Discovery (Module 15 / FP-A15)
+router.get('/tenant-branding/:slugOrDomain', async (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    try {
+        const identifier = String(req.params.slugOrDomain || '').trim().toLowerCase();
+        if (!/^[a-z0-9_.-]{2,120}$/.test(identifier)) {
+            return res.status(400).json({ success: false, error: 'Invalid tenant identifier' });
+        }
+
+        const pool = getPool();
+        const [rows] = await pool.query(
+            `SELECT t.id, t.displayName, t.slug, t.custom_domain, c.branding
+             FROM enterprise_tenants t
+             LEFT JOIN enterprise_tenant_configurations c ON t.id = c.tenantId
+             WHERE (t.slug = ? OR t.custom_domain = ? OR t.id = ?)
+               AND t.lifecycleState = 'ACTIVE'
+             LIMIT 1`,
+            [identifier, identifier, identifier]
+        );
+
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Tenant branding not found' });
+        }
+
+        const tenant = rows[0];
+        let branding = {
+            brandName: tenant.displayName,
+            logoUrl: '',
+            darkLogoUrl: '',
+            faviconUrl: '',
+            primaryColor: '',
+            accentColor: '',
+            customCss: '',
+            hidePlatformBadge: false,
+        };
+
+        if (tenant.branding) {
+            try {
+                const parsed = typeof tenant.branding === 'string' ? JSON.parse(tenant.branding) : tenant.branding;
+                branding = {
+                    brandName: parsed.brandName || tenant.displayName,
+                    logoUrl: parsed.logoUrl || '',
+                    darkLogoUrl: parsed.darkLogoUrl || '',
+                    faviconUrl: parsed.faviconUrl || '',
+                    primaryColor: parsed.primaryColor || '',
+                    accentColor: parsed.accentColor || '',
+                    customCss: parsed.customCss || '',
+                    hidePlatformBadge: parsed.hidePlatformBadge === true,
+                };
+            } catch {
+                // use defaults
+            }
+        }
+
+        return res.json({
+            success: true,
+            tenant: {
+                id: tenant.id,
+                name: tenant.displayName,
+                slug: tenant.slug,
+                customDomain: tenant.custom_domain,
+            },
+            branding,
+        });
+    } catch (_error) {
+        return res.status(500).json({ success: false, error: 'Branding discovery temporarily unavailable' });
     }
 });
 

@@ -2,11 +2,24 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
+export interface TenantBranding {
+  brandName?: string;
+  logoUrl?: string;
+  darkLogoUrl?: string;
+  faviconUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  customCss?: string;
+  hidePlatformBadge?: boolean;
+}
+
 interface ThemeContextType {
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  tenantBranding: TenantBranding | null;
+  applyTenantBranding: (branding: TenantBranding | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -27,6 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -71,6 +85,60 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mq.removeEventListener('change', handler);
   }, [theme]);
 
+  // Dynamic Tenant Branding & Whitelabel Injection (Module 15 / FP-A15)
+  useEffect(() => {
+    const root = document.documentElement;
+    const styleId = 'ime365-tenant-branding-style';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+
+    if (!tenantBranding) {
+      root.style.removeProperty('--color-tenant-primary');
+      root.style.removeProperty('--color-tenant-accent');
+      if (styleEl && styleEl.parentNode) {
+        styleEl.parentNode.removeChild(styleEl);
+      }
+      return;
+    }
+
+    if (tenantBranding.primaryColor) {
+      root.style.setProperty('--color-tenant-primary', tenantBranding.primaryColor);
+    } else {
+      root.style.removeProperty('--color-tenant-primary');
+    }
+
+    if (tenantBranding.accentColor) {
+      root.style.setProperty('--color-tenant-accent', tenantBranding.accentColor);
+    } else {
+      root.style.removeProperty('--color-tenant-accent');
+    }
+
+    if (tenantBranding.faviconUrl) {
+      let iconLink = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      if (!iconLink) {
+        iconLink = document.createElement('link');
+        iconLink.rel = 'icon';
+        document.head.appendChild(iconLink);
+      }
+      iconLink.href = tenantBranding.faviconUrl;
+    }
+
+    if (tenantBranding.customCss) {
+      // Security guard: verify no script or expression injection
+      const sanitizedCss = tenantBranding.customCss
+        .replace(/expression|javascript|<script|<\/script|@import/gi, '')
+        .slice(0, 5000);
+
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = sanitizedCss;
+    } else if (styleEl && styleEl.parentNode) {
+      styleEl.parentNode.removeChild(styleEl);
+    }
+  }, [tenantBranding]);
+
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
   };
@@ -79,8 +147,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  const applyTenantBranding = (branding: TenantBranding | null) => {
+    setTenantBranding(branding);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        resolvedTheme,
+        setTheme,
+        toggleTheme,
+        tenantBranding,
+        applyTenantBranding,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

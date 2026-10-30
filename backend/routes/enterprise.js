@@ -10,6 +10,12 @@ const { buildGroundedPrompt, extractJson, generateWithProviders, loadProviderCon
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { getPool } = require('../database/mysql');
 const { M2M_ALLOWED_ENDPOINTS, SUPPORT_ALLOWED_ENDPOINTS, endpointAllowed } = require('../enterprise/enterpriseAuth');
+const {
+  registerTenantCustomDomain,
+  verifyTenantCustomDomainDns,
+  getTenantCustomDomain,
+  removeTenantCustomDomain,
+} = require('../services/tenantCustomDomains');
 
 const router = express.Router();
 
@@ -818,6 +824,49 @@ router.patch('/configuration', resolveTenantContext, requireTenantPermission('te
     return res.json({ configuration });
   } catch (error) {
     return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_CONFIGURATION_UPDATE_FAILED', message: error.status === 409 ? 'Tenant configuration changed. Reload before saving.' : 'Tenant configuration could not be updated', requestId: res.locals?.requestId } });
+  }
+});
+
+// ─── Custom Domains & Automated SSL Lifecycle (Module 12 & 21 / FP-A12 / FP-A21) ───────────────
+router.get('/domains/custom', resolveTenantContext, requireAnyTenantPermission('tenant.settings.read', 'tenant.read'), async (req, res) => {
+  try {
+    const domainInfo = await getTenantCustomDomain({ tenantId: req.tenantContext.tenantId });
+    return res.json({ success: true, customDomain: domainInfo });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: { code: error.code || 'CUSTOM_DOMAIN_GET_FAILED', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/domains/custom', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const result = await registerTenantCustomDomain({
+      tenantId: req.tenantContext.tenantId,
+      domain: req.body?.domain,
+    });
+    return res.status(201).json(result);
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: { code: error.code || 'CUSTOM_DOMAIN_REGISTRATION_FAILED', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/domains/custom/verify', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const result = await verifyTenantCustomDomainDns({
+      tenantId: req.tenantContext.tenantId,
+      domain: req.body?.domain,
+    });
+    return res.json(result);
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: { code: error.code || 'CUSTOM_DOMAIN_VERIFICATION_FAILED', message: error.message, requestId: res.locals?.requestId } });
+  }
+});
+
+router.delete('/domains/custom', resolveTenantContext, requireTenantPermission('tenant.settings.write'), async (req, res) => {
+  try {
+    const result = await removeTenantCustomDomain({ tenantId: req.tenantContext.tenantId });
+    return res.json(result);
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: { code: error.code || 'CUSTOM_DOMAIN_REMOVAL_FAILED', message: error.message, requestId: res.locals?.requestId } });
   }
 });
 

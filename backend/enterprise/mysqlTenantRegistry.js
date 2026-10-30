@@ -136,6 +136,68 @@ function defaultTenantConfiguration(tenantId) {
     identityPolicy: { ssoMode: 'NONE', scimEnabled: false, sessionMaxMinutes: 480 },
     customRoles: {},
     commercials: null,
+    branding: {
+      brandName: '',
+      logoUrl: '',
+      darkLogoUrl: '',
+      faviconUrl: '',
+      primaryColor: '',
+      accentColor: '',
+      customCss: '',
+      hidePlatformBadge: false,
+    },
+  };
+}
+
+function normalizeTenantBranding(input, existing = {}) {
+  const defaults = {
+    brandName: '',
+    logoUrl: '',
+    darkLogoUrl: '',
+    faviconUrl: '',
+    primaryColor: '',
+    accentColor: '',
+    customCss: '',
+    hidePlatformBadge: false,
+  };
+  const base = { ...defaults, ...(existing || {}) };
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return base;
+  }
+
+  const cleanUrl = (u) => {
+    if (!u || typeof u !== 'string') return '';
+    const s = u.trim();
+    if (/^(https:\/\/|\/)[^\s<>"'`]+$/.test(s) && s.length <= 500) return s;
+    return '';
+  };
+
+  const cleanColor = (c) => {
+    if (!c || typeof c !== 'string') return '';
+    const s = c.trim();
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(s) || /^rgba?\([\d\s,.]+\)$/.test(s) || /^hsla?\([\d\s%,.]+\)$/.test(s)) {
+      return s;
+    }
+    return '';
+  };
+
+  const cleanCss = (css) => {
+    if (!css || typeof css !== 'string') return '';
+    if (/expression|javascript|<script|<\/script|@import/i.test(css)) {
+      return '';
+    }
+    return css.slice(0, 5000);
+  };
+
+  return {
+    brandName: typeof input.brandName === 'string' ? input.brandName.trim().slice(0, 100) : base.brandName,
+    logoUrl: cleanUrl(input.logoUrl !== undefined ? input.logoUrl : base.logoUrl),
+    darkLogoUrl: cleanUrl(input.darkLogoUrl !== undefined ? input.darkLogoUrl : base.darkLogoUrl),
+    faviconUrl: cleanUrl(input.faviconUrl !== undefined ? input.faviconUrl : base.faviconUrl),
+    primaryColor: cleanColor(input.primaryColor !== undefined ? input.primaryColor : base.primaryColor),
+    accentColor: cleanColor(input.accentColor !== undefined ? input.accentColor : base.accentColor),
+    customCss: cleanCss(input.customCss !== undefined ? input.customCss : base.customCss),
+    hidePlatformBadge: input.hidePlatformBadge === true,
   };
 }
 
@@ -214,6 +276,7 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
     } : { ...(existing.identityPolicy || {}) },
     customRoles: Object.hasOwn(input, 'customRoles') ? normalizeCustomRoles(input.customRoles, existing) : { ...(existing.customRoles || {}) },
     commercials,
+    branding: normalizeTenantBranding(input.branding, existing.branding),
   };
 }
 
@@ -621,6 +684,7 @@ class MySqlTenantRegistry {
       securityPolicy: parseJsonField(row.securityPolicy, defaults.securityPolicy),
       identityPolicy: parseJsonField(row.identityPolicy, defaults.identityPolicy),
       commercials: parseJsonField(row.commercials, null),
+      branding: parseJsonField(row.branding, defaults.branding),
     };
   }
 
@@ -654,13 +718,13 @@ class MySqlTenantRegistry {
       const normalized = normalizeTenantConfiguration(tenantId, input, existing);
       await connection.query(
         `INSERT INTO enterprise_tenant_configurations
-           (tenantId, revision, customRoles, aiPolicy, quotaPolicy, retentionPolicy, securityPolicy, identityPolicy, commercials)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           (tenantId, revision, customRoles, aiPolicy, quotaPolicy, retentionPolicy, securityPolicy, identityPolicy, commercials, branding)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            revision = VALUES(revision), customRoles = VALUES(customRoles), aiPolicy = VALUES(aiPolicy),
            quotaPolicy = VALUES(quotaPolicy), retentionPolicy = VALUES(retentionPolicy),
            securityPolicy = VALUES(securityPolicy), identityPolicy = VALUES(identityPolicy),
-           commercials = VALUES(commercials)`,
+           commercials = VALUES(commercials), branding = VALUES(branding)`,
         [
           tenantId,
           normalized.revision,
@@ -671,6 +735,7 @@ class MySqlTenantRegistry {
           JSON.stringify(normalized.securityPolicy),
           JSON.stringify(normalized.identityPolicy),
           normalized.commercials ? JSON.stringify(normalized.commercials) : null,
+          normalized.branding ? JSON.stringify(normalized.branding) : null,
         ]
       );
       await connection.commit();
