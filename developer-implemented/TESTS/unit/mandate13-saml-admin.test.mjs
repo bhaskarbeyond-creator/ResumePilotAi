@@ -50,12 +50,24 @@ const { createInMemorySamlStore } = require('./enterprise/samlStore');
 
 const BASE = 'https://app.example.test/api/auth/saml';
 
+function resolveOpenssl() {
+  if (process.env.OPENSSL_BIN) return process.env.OPENSSL_BIN;
+  for (const candidate of ['openssl', 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe', 'D:\\xampp\\apache\\bin\\openssl.exe']) {
+    try {
+      execFileSync(candidate, ['version'], { stdio: 'ignore' });
+      return candidate;
+    } catch (_) {}
+  }
+  return 'openssl';
+}
+const OPENSSL_BIN = resolveOpenssl();
+
 // A real certificate, so the server-side normaliser is exercised for real.
 let certificate;
 test.before(() => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'saml-admin-ui-'));
   const certPath = path.join(directory, 'idp.crt.pem');
-  execFileSync('openssl', [
+  execFileSync(OPENSSL_BIN, [
     'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
     '-keyout', path.join(directory, 'idp.key.pem'), '-out', certPath,
     '-days', '2', '-subj', '/CN=idp.example.test',
