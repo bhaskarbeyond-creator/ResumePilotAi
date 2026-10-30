@@ -116,21 +116,7 @@ const INITIAL_EVENTS: SecurityEvent[] = [
       storageVault: 'SECURE_ENV_VAULT',
     },
   },
-  {
-    id: 'ev_004',
-    type: 'SESSION_REVOKED',
-    severity: 'INFO',
-    principal: 'security_gatekeeper',
-    ip: '127.0.0.1',
-    action: 'Mass operator session revocation dispatched post-deployment',
-    timestamp: '2026-10-18 16:30:11',
-    category: 'POLICY_ENFORCEMENT',
-    outcome: 'SUCCESS',
-    metadata: {
-      revocationScope: 'ALL_ACTIVE_JWT_REFRESH',
-      issuedBy: 'RELEASE_GATEKEEPER',
-    },
-  },
+
 ];
 
 const INITIAL_OPERATORS: OperatorUser[] = [
@@ -197,19 +183,6 @@ export function AdminSecurityTab() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [confirmModal, selectedEvent, showAnnModal]);
-
-  const handleRevokeSessions = (uid: string, name: string) => {
-    setConfirmModal({
-      title: 'Revoke Active Sessions & Invalidate Tokens',
-      message: `Are you sure you want to forcibly revoke all active JWT tokens and refresh credentials for operator "${name}" (${uid})? Their current session will terminate immediately.`,
-      confirmText: 'Revoke All Sessions',
-      danger: true,
-      action: () => {
-        setOpNotice(`Active tokens & refresh tokens revoked for ${name} (${uid}). Next request will return 401.`);
-        setTimeout(() => setOpNotice(null), 4000);
-      },
-    });
-  };
 
   const handleBlockIp = (ip: string) => {
     setConfirmModal({
@@ -422,7 +395,7 @@ export function AdminSecurityTab() {
                 Staff Directory & Role-Based Access Control (RBAC)
               </CardTitle>
               <CardDescription>
-                Manage platform permissions, enforce 2-Factor Authentication, and revoke active sessions.
+                Example directory only. Operator session revocation is unavailable here; no credentials are revoked by this screen.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -471,10 +444,11 @@ export function AdminSecurityTab() {
                           <Button
                             variant="destructive"
                             size="xs"
-                            onClick={() => handleRevokeSessions(op.uid, op.name)}
+                            disabled
+                            title="Session revocation is unavailable"
                           >
                             <LogOut className="mr-1 size-3.5" />
-                            Revoke Sessions
+                            Session revocation unavailable
                           </Button>
                         </td>
                       </tr>
@@ -742,11 +716,12 @@ export function AdminSecurityTab() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleRevokeSessions(selectedEvent.principal, selectedEvent.principal)}
+                  disabled
+                  title="Session revocation is unavailable"
                   className="text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
                 >
                   <LogOut className="size-3 mr-1" />
-                  Revoke Principal Sessions
+                  Session revocation unavailable
                 </Button>
               </div>
               <Button variant="outline" size="sm" onClick={() => setSelectedEvent(null)} className="text-xs">
