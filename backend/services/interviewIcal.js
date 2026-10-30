@@ -47,6 +47,16 @@ function safeToken(value, field, pattern) {
   return text;
 }
 
+// Parameter values use RFC 6868 encoding, not TEXT backslash escaping.
+// Quoting keeps commas, colons and semicolons inside the CN value.
+function quoteIcalParameter(value) {
+  return `"${String(value == null ? '' : value)
+    .replace(/\^/g, '^^')
+    .replace(/\r\n|\r|\n/g, '^n')
+    .replace(/"/g, "^'")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')}"`;
+}
+
 const UID_PATTERN = /^[A-Za-z0-9._:@-]{1,120}$/;
 const EMAIL_PATTERN = /^[^\s@,;:<>"]{1,64}@[^\s@,;:<>"]{1,190}$/;
 
@@ -164,17 +174,16 @@ function buildInterviewInvite({
     `DTSTART:${start}`,
     `DTEND:${end}`,
     `SEQUENCE:${normalizedSequence}`,
-    'STATUS:CONFIRMED',
+    `STATUS:${normalizedMethod === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'}`,
     `SUMMARY:${escapeIcalText(summary)}`,
   ];
   if (description) lines.push(`DESCRIPTION:${escapeIcalText(description)}`);
   if (location) lines.push(`LOCATION:${escapeIcalText(location)}`);
-  if (organizer) lines.push(`ORGANIZER;CN=${escapeIcalText('IME365 Employer')}:mailto:${organizer}`);
+  if (organizer) lines.push(`ORGANIZER;CN=${quoteIcalParameter('IME365 Employer')}:mailto:${organizer}`);
   if (attendee) {
-    lines.push(`ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE;CN=${escapeIcalText(attendeeName || attendee)}:mailto:${attendee}`);
+    lines.push(`ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE;CN=${quoteIcalParameter(attendeeName || attendee)}:mailto:${attendee}`);
   }
   lines.push(`X-IME365-BOOKING-ID:${safeToken(bookingId, 'Booking identifier', UID_PATTERN)}`);
-  if (normalizedMethod === 'CANCEL') lines.push('STATUS:CANCELLED');
   lines.push('END:VEVENT', 'END:VCALENDAR');
 
   return lines.map(foldIcalLine).join(CRLF) + CRLF;

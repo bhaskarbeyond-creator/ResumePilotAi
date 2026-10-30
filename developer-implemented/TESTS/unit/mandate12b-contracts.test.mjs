@@ -126,3 +126,24 @@ test('settings and shared read route scope blockers are not disguised as success
   assert.equal(/setTimeout\(\(\) => setSettingsSaved/.test(portal), false);
   assert.equal(/88%/.test(drawer), false);
 });
+
+test('slot instants reject normalized impossible dates and invalid clock values', () => {
+  for (const value of ['2031-02-29T08:00:00Z', '2032-02-30T08:00:00Z', '2031-04-31T08:00:00Z', '2031-01-01T24:00:00Z', '2031-01-01T08:60:00Z', '2031-01-01T08:00:00+24:00']) {
+    assert.throws(() => interviewService.parseInstant(value, 'startTime'), { code: 'INVALID_TIMESTAMP' }, value);
+  }
+  assert.equal(interviewService.parseInstant('2032-02-29T08:00:00+05:30', 'startTime').toISOString(), '2032-02-29T02:30:00.000Z');
+});
+
+test('calendar safely encodes parameter values and emits one cancellation status', () => {
+  const invite = ical.buildInterviewInvite({
+    bookingId: 'islot_test_12345678', startTime: '2031-03-03T08:00:00Z', endTime: '2031-03-03T08:30:00Z',
+    stamp: '2031-03-01T00:00:00Z', method: 'CANCEL', attendeeEmail: 'candidate@example.com',
+    attendeeName: 'A;B,"C"^\r\nBEGIN:VEVENT',
+  });
+  const unfolded = invite.replace(/\r\n[ \t]/g, '');
+  assert.match(unfolded, /CN="A;B,\^'C\^'\^\^\^nBEGIN:VEVENT":mailto:candidate@example\.com/);
+  assert.equal((unfolded.match(/\r\nSTATUS:/g) || []).length, 1);
+  assert.match(unfolded, /\r\nSTATUS:CANCELLED\r\n/);
+  assert.equal((unfolded.match(/\r\nBEGIN:VEVENT\r\n/g) || []).length, 1);
+  assert.ok(invite.split('\r\n').filter(Boolean).every(line => Buffer.byteLength(line, 'utf8') <= 75));
+});

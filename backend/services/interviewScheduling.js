@@ -47,6 +47,16 @@ function parseInstant(value, field) {
   if (!ZONED_INSTANT.test(text)) {
     throw scheduleError('INVALID_TIMESTAMP', `${field} must be an ISO 8601 timestamp with an explicit timezone (for example 2026-11-02T09:00:00Z).`);
   }
+  // Date.parse normalizes impossible dates such as February 30. Validate the
+  // calendar components before parsing the explicitly offset instant.
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-](\d{2}):(\d{2}))$/.exec(text);
+  const [, year, month, day, hour, minute, second = '0', zone, offsetHour = '0', offsetMinute = '0'] = parts;
+  const calendar = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (calendar.getUTCFullYear() !== Number(year) || calendar.getUTCMonth() !== Number(month) - 1 ||
+      calendar.getUTCDate() !== Number(day) || Number(hour) > 23 || Number(minute) > 59 ||
+      Number(second) > 59 || (zone !== 'Z' && (Number(offsetHour) > 23 || Number(offsetMinute) > 59))) {
+    throw scheduleError('INVALID_TIMESTAMP', `${field} is not a valid instant.`);
+  }
   const date = new Date(text);
   if (!Number.isFinite(date.getTime())) {
     throw scheduleError('INVALID_TIMESTAMP', `${field} is not a valid instant.`);
