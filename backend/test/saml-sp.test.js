@@ -36,10 +36,22 @@ const IDP_ENTITY = 'https://idp.example.test/metadata';
 // Fixtures: two independent key pairs
 // ---------------------------------------------------------------------------
 
+function resolveOpenssl() {
+  if (process.env.OPENSSL_BIN) return process.env.OPENSSL_BIN;
+  for (const candidate of ['openssl', 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe', 'D:\\xampp\\apache\\bin\\openssl.exe']) {
+    try {
+      execFileSync(candidate, ['version'], { stdio: 'ignore' });
+      return candidate;
+    } catch (_) {}
+  }
+  return 'openssl';
+}
+const OPENSSL_BIN = resolveOpenssl();
+
 function makeCertificate(directory, name, commonName) {
   const keyPath = path.join(directory, `${name}.key.pem`);
   const certPath = path.join(directory, `${name}.crt.pem`);
-  execFileSync('openssl', [
+  execFileSync(OPENSSL_BIN, [
     'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
     '-keyout', keyPath, '-out', certPath,
     '-days', '2', '-subj', `/CN=${commonName}`,
