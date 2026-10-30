@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api-client';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/loading';
 import {
@@ -29,7 +30,6 @@ import {
   SUPPORTED_INTERVIEW_DURATIONS,
   bookEmployerInterviewSlot,
   computeSlotEndTime,
-  createEmployerInterviewSlot,
   deleteEmployerInterviewSlot,
   fetchEmployerInterviewSlots,
   formatSlotDateLabel,
@@ -37,9 +37,29 @@ import {
   isSlotConflictError,
   isSlotTimeoutError,
   normalizeError,
-  resolveLocalTimezone,
   validateInterviewSlotInput,
 } from '@/lib/employer-interviews';
+
+function localTimeToUtcIso(date: string, time: string, timezone: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const timeMatch = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match || !timeMatch) throw new Error('Enter a valid local date and time.');
+  const [year, month, day, hour, minute] = [...match.slice(1), ...timeMatch.slice(1)].map(Number);
+  const desiredUtc = Date.UTC(year, month - 1, day, hour, minute);
+  const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  let candidate = desiredUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = Object.fromEntries(formatter.formatToParts(new Date(candidate)).map((part) => [part.type, part.value]));
+    const renderedAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
+    candidate += desiredUtc - renderedAsUtc;
+  }
+  const result = new Date(candidate);
+  const parts = Object.fromEntries(formatter.formatToParts(result).map((part) => [part.type, part.value]));
+  if (Number(parts.year) !== year || Number(parts.month) !== month || Number(parts.day) !== day || Number(parts.hour) !== hour || Number(parts.minute) !== minute) {
+    throw new Error('That local time does not exist in the selected time zone because of a daylight-saving transition.');
+  }
+  return result.toISOString();
+}
 
 export interface EmployerInterviewSlotPanelProps {
   applicationId?: string | null;
@@ -58,7 +78,7 @@ export function EmployerInterviewSlotPanel({
   const endFieldId = useId();
   const bookedDeleteHintId = useId();
 
-  const localTimezone = useMemo(() => resolveLocalTimezone(), []);
+  const localTimezone = useMemo(() => 'UTC', []);
 
   // Slot list state (`GET /api/employer/interviews/slots`)
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
@@ -82,6 +102,7 @@ export function EmployerInterviewSlotPanel({
   // Candidate booking state (`POST /api/employer/interviews/slots/:id/book`)
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [bookingInFlight, setBookingInFlight] = useState(false);
+  const [calendarDownloadId, setCalendarDownloadId] = useState<string | null>(null);
   const [actionBanner, setActionBanner] = useState<{
     tone: 'success' | 'warning' | 'error';
     text: string;
@@ -168,13 +189,14 @@ export function EmployerInterviewSlotPanel({
     setActionBanner(null);
 
     try {
-      await createEmployerInterviewSlot({
-        date: slotDate,
-        startTime: slotStart,
-        endTime: slotEnd,
-        duration: slotDuration,
-        timezone: localTimezone,
+      const zonedStart = localTimeToUtcIso(slotDate, slotStart, localTimezone);
+      const zonedEnd = localTimeToUtcIso(slotDate, slotEnd, localTimezone);
+      const created = await apiClient.post<{ success: boolean; slot: unknown }>('/employer/interviews/slots', {
+        startTime: zonedStart,
+        endTime: zonedEnd,
+        durationMinutes: slotDuration,
       });
+      if (!created.data?.success || !created.data.slot) throw new Error('The server did not confirm slot creation.');
       setShowCreateForm(false);
       setActionBanner({
         tone: 'success',
@@ -275,6 +297,27 @@ export function EmployerInterviewSlotPanel({
       }
     } finally {
       setBookingInFlight(false);
+    }
+  };
+
+  const downloadCalendar = async (slot: InterviewSlot) => {
+    setCalendarDownloadId(slot.id);
+    setActionBanner(null);
+    try {
+      const response = await apiClient.get(`/employer/interviews/slots/${encodeURIComponent(slot.id)}/calendar`, { responseType: 'blob' });
+      const contentType = String(response.headers['content-type'] || '');
+      if (!contentType.toLowerCase().includes('text/calendar')) throw new Error('The server returned an invalid calendar content type.');
+      const blob = new Blob([response.data], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `interview-${slot.id}.ics`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setActionBanner({ tone: 'error', text: normalizeError(error).message || 'Calendar invite could not be downloaded.' });
+    } finally {
+      setCalendarDownloadId(null);
     }
   };
 
@@ -559,7 +602,7 @@ export function EmployerInterviewSlotPanel({
           <ul className="space-y-2" aria-label="Employer interview slots">
             {slots.map((slot) => {
               const isSelected = selectedSlotId === slot.id;
-              const canSelectForBooking = Boolean(applicationId) && !slot.isBooked;
+              const canSelectForBooking = Boolean(applicationId) && !slot.isBooked && slot.sortEpochMs > Date.now();
 
               return (
                 <li
@@ -614,6 +657,7 @@ export function EmployerInterviewSlotPanel({
                   </div>
 
                   <div className="flex items-center justify-end gap-1.5 shrink-0">
+                    {slot.isBooked && <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={calendarDownloadId === slot.id} aria-busy={calendarDownloadId === slot.id} onClick={() => void downloadCalendar(slot)}>{calendarDownloadId === slot.id ? 'Preparing…' : 'Calendar invite'}</Button>}
                     {canSelectForBooking && !isSelected && (
                       <Button
                         type="button"
