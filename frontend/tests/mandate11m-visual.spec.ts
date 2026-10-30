@@ -785,8 +785,27 @@ const EMPLOYER_PIPELINE_APPLICATION = {
   status: 'pending',
   coverLetter:
     'A deliberately long cover letter body used to prove that long-form candidate content wraps inside the drawer instead of widening it.',
+  resumeId: 'resume-1',
   appliedAt: '2026-10-20T10:00:00.000Z',
   revision: 1,
+};
+
+// Minimal but template-valid resume payload so the authorised document viewer
+// renders a real document instead of its "template not supported" fallback.
+const EMPLOYER_RESUME_DOCUMENT = {
+  id: 'resume-1',
+  template: 'Cv1',
+  title: 'Principal Platform Engineer — Curriculum Vitae',
+  targetRole: 'Principal Platform Engineer',
+  firstName: 'Priya',
+  lastName: 'Sharma',
+  email: 'priya.sharma@a-very-long-candidate-domain.example.test',
+  phone: '+91 98765 43210',
+  location: 'Vijayawada, Andhra Pradesh, India',
+  summary:
+    'Platform engineer with a deliberately long summary that must wrap inside the document canvas rather than widening the viewer shell.',
+  updatedAt: '2026-10-20T10:00:00.000Z',
+  skills: ['Kubernetes', 'PostgreSQL', 'TypeScript'],
 };
 
 const EMPLOYER_COMPANY = {
@@ -813,6 +832,15 @@ async function installEmployerFixtures(page: Page) {
   await page.route('**/api/employer/jobs', (route) => route.fulfill({ json: { jobs: [EMPLOYER_JOB] } }));
   await page.route('**/api/jobs/job-1/applications', (route) =>
     route.fulfill({ json: { applications: [EMPLOYER_PIPELINE_APPLICATION] } }),
+  );
+  await page.route('**/api/employer/jobs/job-1/applications/application-1/resume', (route) =>
+    route.fulfill({
+      json: {
+        success: true,
+        application: EMPLOYER_PIPELINE_APPLICATION,
+        resume: EMPLOYER_RESUME_DOCUMENT,
+      },
+    }),
   );
   await page.route('**/api/employer/companies', (route) => route.fulfill({ json: { companies: [EMPLOYER_COMPANY] } }));
   await page.route('**/api/enterprise/members/seats', (route) =>
@@ -870,6 +898,21 @@ test.describe('CandidateReviewDrawer', () => {
       if (viewport.label === '375px') await capture(page, 'candidate-message-375');
       await message.getByRole('button', { name: 'Cancel' }).click();
       await expect(message).toHaveCount(0);
+
+      // Authorised full-document viewer (zoom / print / fit toolbar)
+      // Both the header link and the resume-card button open the same viewer.
+      const viewerTrigger = drawer
+        .getByRole('button', { name: /View Full Document|Inspect Full Document/ })
+        .first();
+      await expect(viewerTrigger).toBeVisible();
+      await viewerTrigger.click();
+      const viewer = page.getByTestId('candidate-document-viewer');
+      await expect(viewer).toBeVisible();
+      await expectDialogGeometry(page, viewer, `Candidate document viewer @ ${viewport.label}`);
+      await capture(page, `candidate-document-viewer-${viewport.width}`);
+      await page.keyboard.press('Escape');
+      await expect(viewer).toHaveCount(0);
+      await expect(drawer).toBeVisible();
 
       await drawer.getByRole('button', { name: 'Close candidate drawer' }).click();
       await expect(drawer).toHaveCount(0);

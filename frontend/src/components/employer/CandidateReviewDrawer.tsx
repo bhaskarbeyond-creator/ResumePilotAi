@@ -124,6 +124,10 @@ export function CandidateReviewDrawer({
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Nested Radix dialogs (document viewer, message, confirm) close themselves
+      // on Escape and mark the event handled. Bail out so a single Escape press
+      // dismisses only the topmost layer instead of also tearing down the drawer.
+      if (e.defaultPrevented) return;
       if (e.key === 'Escape' && application) {
         if (messageModalOpen) {
           setMessageModalOpen(false);
@@ -645,9 +649,12 @@ export function CandidateReviewDrawer({
 
       {/* Authorized full-document viewer with Zoom, Print, and Fit controls */}
       <Dialog open={documentOpen} onOpenChange={setDocumentOpen}>
-        <DialogContent className="max-w-5xl h-[94vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="border-b border-edge px-5 py-3 flex flex-row items-center justify-between gap-4">
-            <div>
+        <DialogContent
+          data-testid="candidate-document-viewer"
+          className="flex h-[94vh] max-h-[94vh] w-[calc(100%-2rem)] max-w-5xl flex-col overflow-hidden rounded-2xl p-0 md:rounded-3xl"
+        >
+          <DialogHeader className="flex flex-col items-start justify-between gap-3 border-b border-edge px-5 py-3 sm:flex-row sm:items-center">
+            <div className="min-w-0">
               <DialogTitle className="text-sm font-bold text-ink">
                 {resumeData?.resume?.title || `${application.applicantName}'s Resume`}
               </DialogTitle>
@@ -655,7 +662,7 @@ export function CandidateReviewDrawer({
                 Authorized recruiter preview. Verified against platform credentials.
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-2 mr-6">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 sm:mr-6">
               {/* Zoom Controls */}
               <div className="flex items-center gap-1 bg-surface border border-edge rounded-lg p-0.5 text-xs">
                 <button
@@ -700,7 +707,7 @@ export function CandidateReviewDrawer({
               </Button>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-auto bg-neutral-200/80 p-6 flex justify-center">
+          <div className="flex min-h-0 min-w-0 flex-1 justify-center overflow-auto bg-neutral-200/80 p-4 sm:p-6">
             {renderFullDocument()}
           </div>
         </DialogContent>
