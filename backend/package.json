@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@xmldom/xmldom": "^0.9.12",
     "cors": "^2.8.5",
     "docx": "^9.5.1",
     "dotenv": "^17.2.3",
@@ -27,7 +28,8 @@
     "paytmchecksum": "1.5.1",
     "playwright": "^1.62.1",
     "sharp": "^0.35.5",
-    "stripe": "^22.5.0"
+    "stripe": "^22.5.0",
+    "xml-crypto": "^6.4.0"
   },
   "overrides": {
     "picomatch": "2.3.2",
