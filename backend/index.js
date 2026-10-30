@@ -75,6 +75,7 @@ const { publicPortfoliosRouter } = require('./routes/publicPortfolios');
 const { billingRouter, adminBillingRouter } = require('./routes/billing');
 const { outboxAdminRouter } = require('./routes/outboxAdmin');
 const { interviewsRouter } = require('./routes/interviews');
+const { voiceInterviewRouter } = require('./routes/voiceInterview');
 // Mandate 12 workstream 2: persistent employer hiring preferences.
 const { router: employerSettingsRouter } = require('./routes/employerSettings');
 const { coversRouter } = require('./routes/covers');
@@ -542,6 +543,8 @@ app.use('/api/admin/billing', adminBillingRouter);
 app.use('/api/admin/system/outbox', outboxAdminRouter);
 // Employer interview scheduling (FP-A15 / DISC-028).
 app.use('/api/employer/interviews', interviewsRouter);
+// Candidate WebRTC Voice Interview & Real-Time Audio Infrastructure (Module 29 / DISC-038)
+app.use('/api/candidate/voice-interview', voiceInterviewRouter);
 // Employer hiring preferences (Mandate 12 workstream 2). Mounted before the
 // inline /api/employer/* handlers; the paths are disjoint (/settings).
 app.use('/api/employer', employerSettingsRouter);
