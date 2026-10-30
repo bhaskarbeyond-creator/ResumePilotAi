@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const admin = require('../services/firebaseAdmin');
+const sessionRevocation = require('./sessionRevocation');
 
 // ---------------------------------------------------------------------------
 // Non-production identity verifier (certification/E2E harness only).
@@ -128,6 +129,15 @@ function bearerTokenFrom(req) {
  * the employer-ownership checks would drift apart.
  */
 async function resolveUser(decoded) {
+  // FP-A06 — session revocation is evaluated for EVERY token type, at the single
+  // point both `requireAuth` and `optionalAuth` funnel through. Signature,
+  // issuer, audience and expiry have already been validated by `verifyToken`;
+  // this is the durable, server-side revocation decision that a JWT alone cannot
+  // express.
+  await sessionRevocation.assertSessionActive({
+    uid: decoded.uid,
+    issuedAt: sessionRevocation.issuedAtSeconds(decoded),
+  });
   let emailVerified = decoded.email_verified === true;
 
   // Real-time verification fallback: If client JWT was minted prior to verification,
@@ -153,7 +163,30 @@ async function requireAuth(req, res, next) {
   try {
     req.user = await resolveUser(await verifyToken(token));
     return next();
-  } catch (_) {
+  } catch (error) {
+    // A revoked session is an authentication failure, but it is NOT the same
+    // failure as a bad token: the caller must be told to authenticate again
+    // rather than retry the same credential.
+    if (error?.code === 'SESSION_REVOKED') {
+      return res.status(401).json({
+        error: {
+          code: 'SESSION_REVOKED',
+          message: 'This session has been revoked. Sign in again.',
+          requestId: res.locals?.requestId,
+        },
+      });
+    }
+    // Revocation state could not be established. Fail CLOSED: never let an
+    // unverifiable credential through because a lookup broke.
+    if (error?.code === 'SESSION_REVOCATION_UNAVAILABLE') {
+      return res.status(503).json({
+        error: {
+          code: 'SESSION_REVOCATION_UNAVAILABLE',
+          message: 'Authentication is temporarily unavailable.',
+          requestId: res.locals?.requestId,
+        },
+      });
+    }
     return unauthorized(res, 'INVALID_AUTH_TOKEN');
   }
 }
@@ -326,6 +359,8 @@ module.exports = {
   // Non-production certification harness helpers (inert in NODE_ENV=production).
   issueLocalTestToken,
   testVerifierEnabled,
+  // FP-A06 seam so contract tests can observe the revocation path directly.
+  resolveUser,
 };
 
 

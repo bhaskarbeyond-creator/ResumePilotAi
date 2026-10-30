@@ -75,6 +75,8 @@ const { publicPortfoliosRouter } = require('./routes/publicPortfolios');
 const { billingRouter, adminBillingRouter } = require('./routes/billing');
 const { outboxAdminRouter } = require('./routes/outboxAdmin');
 const { interviewsRouter } = require('./routes/interviews');
+// Mandate 12 workstream 2: persistent employer hiring preferences.
+const { router: employerSettingsRouter } = require('./routes/employerSettings');
 const { coversRouter } = require('./routes/covers');
 const { supportUserRouter, supportAdminRouter } = require('./routes/support');
 const indianGatewayActivation = require('./services/indianGatewayActivation');
@@ -535,6 +537,9 @@ app.use('/api/admin/billing', adminBillingRouter);
 app.use('/api/admin/system/outbox', outboxAdminRouter);
 // Employer interview scheduling (FP-A15 / DISC-028).
 app.use('/api/employer/interviews', interviewsRouter);
+// Employer hiring preferences (Mandate 12 workstream 2). Mounted before the
+// inline /api/employer/* handlers; the paths are disjoint (/settings).
+app.use('/api/employer', employerSettingsRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/support', supportUserRouter);
 app.use('/api', notificationsRouter);
@@ -2200,62 +2205,72 @@ app.get('/api/messages/conversations/:conversationId/messages', async (req, res)
     }
 });
 
-// DIR-026 / AC-2: advance this caller's read cursor for one conversation.
-// Membership is verified FIRST and independently, so a non-participant gets the
-// same 404 an unknown conversation gets — the endpoint never confirms that a
-// conversation exists to someone who is not in it (INV-3).
+// DIR-026 / Mandate 12 workstream 1: advance this caller's read cursor.
 //
-// The cursor is the newest message timestamp the caller has consumed, and it is
-// written for THIS participant row only. It is monotonic by construction: a
-// stale or replayed advance (a second tab that was open before a refresh) can
-// only ever move the cursor FORWARD, never rewind it and resurrect an already
-// read message as unread.
+// The decision logic lives in `services/messageReadCursor.js` and is executed
+// inside one transaction:
+//   1. the conversation must exist                     -> 404 CONVERSATION_NOT_FOUND
+//   2. the caller must be a participant                -> 403 FORBIDDEN_CONVERSATION_PARTICIPANT
+//   3. a supplied message must belong to THIS thread   -> 400 MESSAGE_NOT_IN_CONVERSATION
+//   4. the written timestamp comes from the stored message row, never the body
+//   5. the participant row is locked FOR UPDATE and the composite
+//      (timestamp, id) cursor can only ever move forward
+//
+// `lastReadAt` in the request body is intentionally ignored: it was previously
+// written verbatim, which let any participant mark messages they had never seen
+// as read (and manufacture a future cursor). The response now echoes the cursor
+// the database actually holds so callers never have to guess.
 app.post('/api/messages/conversations/:conversationId/read', async (req, res) => {
     const conversationId = String(req.params.conversationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
-        return res.status(404).json({ success: false, error: 'Conversation not found.' });
+    res.setHeader('Cache-Control', 'no-store, private');
+    const readCursor = require('./services/messageReadCursor');
+    const uid = String(req.user?.uid || '');
+    if (!uid) {
+        return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Authentication required.' });
     }
+    // Malformed identifiers are rejected before any database work.
+    if (!readCursor.isValidConversationId(conversationId)) {
+        return res.status(400).json({
+            success: false,
+            code: readCursor.OUTCOME.INVALID_CONVERSATION_ID,
+            error: readCursor.MESSAGES[readCursor.OUTCOME.INVALID_CONVERSATION_ID],
+        });
+    }
+    const pool = require('./database/mysql').getPool();
+    const connection = await pool.getConnection();
     try {
-        const pool = require('./database/mysql').getPool();
-        const uid = req.user.uid;
-        // Message ids are `msg_<epochMs>_<hex>` (see the send route), so the id
-        // is validated against that exact shape rather than the looser
-        // conversation-id pattern. Anything else is treated as "no cursor".
-        const rawReadId = String(req.body?.lastReadMessageId || '');
-        const lastReadMessageId = /^msg_\d{10,20}_[a-f0-9]{8,64}$/.test(rawReadId) ? rawReadId : '';
-        const [membership] = await pool.query(
-            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-            [conversationId, uid]
-        );
-        if (!membership.length) {
-            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        await connection.beginTransaction();
+        const result = await readCursor.markConversationRead({
+            connection,
+            conversationId,
+            uid,
+            // `req.body.lastReadAt` is deliberately never forwarded.
+            requestedMessageId: req.body?.lastReadMessageId,
+        });
+        if (result.outcome !== readCursor.OUTCOME.OK) {
+            await connection.rollback().catch(() => {});
+            return res.status(readCursor.httpStatusFor(result.outcome)).json({
+                success: false,
+                code: result.outcome,
+                error: readCursor.MESSAGES[result.outcome],
+                lastReadMessageId: result.cursor.lastReadMessageId,
+                lastReadAt: result.cursor.lastReadAt,
+            });
         }
-        // GREATEST() keeps the cursor monotonic and makes this endpoint
-        // idempotent, so concurrent tab opens cannot lower a newer cursor. The
-        // CASE guard matters: an empty id (a conversation that genuinely has no
-        // messages yet) must leave the stored cursor untouched, because
-        // GREATEST('', '') = '' would otherwise erase a real cursor.
-        await pool.query(
-            `UPDATE conversation_participants
-             SET last_read_message_id = CASE
-                     WHEN ? <> '' THEN GREATEST(COALESCE(last_read_message_id, ''), ?)
-                     ELSE last_read_message_id
-                 END,
-                 last_read_at = GREATEST(COALESCE(last_read_at, 0), ?)
-             WHERE conversation_id = ? AND user_id = ?`,
-            [
-                lastReadMessageId,
-                lastReadMessageId,
-                Number(req.body?.lastReadAt) || Date.now(),
-                conversationId,
-                uid,
-            ]
-        );
-        res.setHeader('Cache-Control', 'no-store, private');
-        return res.json({ success: true });
+        await connection.commit();
+        return res.json({
+            success: true,
+            advanced: result.advanced === true,
+            lastReadMessageId: result.cursor.lastReadMessageId,
+            lastReadAt: result.cursor.lastReadAt,
+        });
     } catch (error) {
-        console.error('[Mark conversation read]', error.message);
-        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
+        await connection.rollback().catch(() => {});
+        // Driver/detail text is never returned to the caller.
+        console.error('[Mark conversation read]', error?.code || error?.message);
+        return res.status(503).json({ success: false, code: 'MESSAGING_UNAVAILABLE', error: 'Messaging service unavailable.' });
+    } finally {
+        connection.release();
     }
 });
 

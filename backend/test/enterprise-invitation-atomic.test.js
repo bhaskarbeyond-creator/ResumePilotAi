@@ -78,6 +78,13 @@ function grantHarness({ failOutbox = false } = {}) {
       if (/^SELECT id FROM enterprise_tenants WHERE id = \? FOR UPDATE/.test(sql)) {
         return [[{ id: TENANT_ID }]];
       }
+      // Mandate 12 (FP-B01): the purchased quota now lives on the tenant row and
+      // the most restrictive positive cap wins. NULL here means "not configured
+      // on the tenant record", so the commercial JSON cap below still governs —
+      // i.e. existing behaviour is unchanged for tenants that never set it.
+      if (/^SELECT seat_quota FROM enterprise_tenants WHERE id = \?/.test(sql)) {
+        return [[{ seat_quota: null }]];
+      }
       if (/^SELECT commercials FROM enterprise_tenant_configurations/.test(sql)) {
         return [[{ commercials: JSON.stringify({ plan: 'enterprise-scale', seatLimit: 10, currency: 'INR', billingStatus: 'ACTIVE' }) }]];
       }
@@ -136,6 +143,16 @@ test('membership, workspace binding, invitation state and email outbox commit in
   const outboxInsert = harness.calls.find(call => call?.sql && /INSERT INTO notification_outbox/.test(call.sql));
   const invitationInsert = harness.calls.find(call => call?.sql && /INSERT INTO enterprise_membership_invitations/.test(call.sql));
   assert.ok(membershipInsert && workspaceInsert && outboxInsert && invitationInsert);
+  // The seat cap is resolved from BOTH commercial sources inside the same
+  // transaction, before the seat count that guards this write.
+  const tenantQuotaRead = harness.calls.findIndex(call => call?.sql && /^SELECT seat_quota FROM enterprise_tenants/.test(call.sql));
+  const seatCount = harness.calls.findIndex(call => call?.sql && /SUM\(CASE WHEN m\.status/.test(call.sql));
+  const tenantLock = harness.calls.findIndex(call => call?.sql && /^SELECT id FROM enterprise_tenants WHERE id = \? FOR UPDATE/.test(call.sql));
+  assert.ok(tenantQuotaRead >= 0, 'the tenant quota must be read inside the enforcement transaction');
+  assert.ok(seatCount >= 0, 'the seat count must run inside the same transaction');
+  assert.ok(tenantLock >= 0 && tenantLock < seatCount && tenantLock < tenantQuotaRead,
+    'the tenant row lock precedes both the count and the quota resolution');
+  assert.ok(seatCount < harness.calls.findIndex(call => call?.sql && /INSERT INTO enterprise_memberships/.test(call.sql)));
   assert.equal(outboxInsert.params[2], 'invitee@example.com');
   assert.equal(outboxInsert.params[3], 'enterprise-invitation');
   assert.equal(invitationInsert.params[7], outboxInsert.params[0]);

@@ -460,7 +460,10 @@ test('Task 5 (messaging): the page uses the documented endpoints and read-cursor
   assert.match(lib, /`\/messages\/conversations\/\$\{encodeURIComponent\(conversationId\)\}\/messages`/);
   assert.match(lib, /`\/messages\/conversations\/\$\{encodeURIComponent\(conversationId\)\}\/read`/);
   assert.match(lib, /'\/messages\/send', \{ conversationId, text \}/);
-  assert.match(lib, /lastReadMessageId: message\.id,\s*\n\s*lastReadAt: message\.timestamp,/);
+  // Mandate 12 (DIR-026): the cursor timestamp is server-authoritative, so the
+  // client sends only the message id.
+  assert.match(lib, /lastReadMessageId: message\.id/);
+  assert.equal(/lastReadAt/.test(lib), false);
 
   // The page never shows an empty inbox when messaging is off, and never claims a
   // message was sent before the server acknowledged it.

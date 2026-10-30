@@ -227,17 +227,59 @@ function parseJsonField(val, fallback = null) {
   }
 }
 
+// ─── Tenant commercial fields (FP-B01 / FP-B02, migration 033) ──────────────
+// Stored columns are snake_case (`seat_quota`, `monthly_ai_credits`,
+// `custom_domain`); the canonical application representation is camelCase. Both
+// spellings are accepted on input so legacy callers keep working, and the
+// canonical keys are always present on output.
+
+const MAX_SEAT_QUOTA = 100_000;
+const MAX_MONTHLY_AI_CREDITS = 10_000_000;
+const DEFAULT_MONTHLY_AI_CREDITS = 1000;
+const CUSTOM_DOMAIN_PATTERN = /^(?=.{1,255}$)(?!-)[a-z0-9-]{1,63}(?<!-)(?:\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
+
+/** `null` means "no tenant-level cap"; anything else must be a positive integer. */
+function normalizeSeatQuota(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= MAX_SEAT_QUOTA ? parsed : null;
+}
+
+function normalizeMonthlyAiCredits(value) {
+  if (value === null || value === undefined || value === '') return DEFAULT_MONTHLY_AI_CREDITS;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_MONTHLY_AI_CREDITS
+    ? parsed
+    : DEFAULT_MONTHLY_AI_CREDITS;
+}
+
+/** Lowercase, no scheme/port/path/trailing dot. Invalid stored values read as null. */
+function normalizeCustomDomain(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim().toLowerCase().replace(/\.$/, '');
+  if (!text) return null;
+  return CUSTOM_DOMAIN_PATTERN.test(text) ? text : null;
+}
+
 function validateTenantRecord(record) {
   if (!record || !record.id || !record.displayName) throw Object.assign(new Error('Tenant record is invalid'), { code: 'TENANT_NOT_FOUND', status: 404 });
   assertUuid(record.id, 'Tenant identifier');
   const lifecycleState = String(record.lifecycleState || '').toUpperCase();
   if (!TENANT_LIFECYCLE_STATES.includes(lifecycleState)) throw Object.assign(new Error('Tenant lifecycle state is invalid'), { code: 'TENANT_ROUTE_INVALID', status: 503 });
+  // Both spellings remain readable (a caller may hold either projection); the
+  // camelCase key is authoritative and always populated.
+  const rawSeatQuota = record.seatQuota !== undefined ? record.seatQuota : record.seat_quota;
+  const rawMonthlyAiCredits = record.monthlyAiCredits !== undefined ? record.monthlyAiCredits : record.monthly_ai_credits;
+  const rawCustomDomain = record.customDomain !== undefined ? record.customDomain : record.custom_domain;
   return {
     ...record,
     id: String(record.id).toLowerCase(),
     lifecycleState,
     isolationTier: normalizeTier(record.isolationTier),
     dataPlane: normalizeDataPlane(record.dataPlane ? parseJsonField(record.dataPlane, {}) : DEFAULT_DATA_PLANE),
+    seatQuota: normalizeSeatQuota(rawSeatQuota),
+    monthlyAiCredits: normalizeMonthlyAiCredits(rawMonthlyAiCredits),
+    customDomain: normalizeCustomDomain(rawCustomDomain),
     createdAt: record.createdAt || record.created_at || null,
     updatedAt: record.updatedAt || record.updated_at || null,
   };
@@ -641,12 +683,99 @@ class MySqlTenantRegistry {
     }
   }
 
-  async updateTenantProfile({ tenantId, displayName }) {
+  /**
+   * Persist a tenant profile update.
+   *
+   * Every supported field is optional: a field that is not present is left
+   * exactly as it is (no accidental quota reset, no implicit domain clearing).
+   * `customDomain: null` is the ONLY way to clear a domain, and it must be passed
+   * explicitly. Values are validated before the write, so a bad quota can never
+   * be persisted or silently coerced to a default.
+   *
+   * Returns the canonical record re-read from the database, never an echo of the
+   * request.
+   */
+  async updateTenantProfile({ tenantId, displayName, seatQuota, monthlyAiCredits, customDomain }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    const cleanDisplayName = compact(displayName, 120);
-    if (cleanDisplayName.length < 2) throw Object.assign(new Error('Tenant display name is invalid'), { code: 'INVALID_TENANT_NAME', status: 400 });
-    await this.pool.query('UPDATE enterprise_tenants SET displayName = ? WHERE id = ?', [cleanDisplayName, tenantId]);
+
+    const assignments = [];
+    const params = [];
+
+    if (displayName !== undefined) {
+      const cleanDisplayName = compact(displayName, 120);
+      if (cleanDisplayName.length < 2) throw Object.assign(new Error('Tenant display name is invalid'), { code: 'INVALID_TENANT_NAME', status: 400 });
+      assignments.push('displayName = ?');
+      params.push(cleanDisplayName);
+    }
+
+    if (seatQuota !== undefined) {
+      if (seatQuota === null) {
+        assignments.push('seat_quota = NULL');
+      } else {
+        const parsed = Number(seatQuota);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_SEAT_QUOTA) {
+          throw Object.assign(new Error('Seat quota must be a positive whole number'), {
+            code: 'INVALID_SEAT_QUOTA', status: 400,
+          });
+        }
+        assignments.push('seat_quota = ?');
+        params.push(parsed);
+      }
+    }
+
+    if (monthlyAiCredits !== undefined) {
+      const parsed = Number(monthlyAiCredits);
+      if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_MONTHLY_AI_CREDITS) {
+        throw Object.assign(new Error('Monthly AI credits must be a non-negative whole number'), {
+          code: 'INVALID_MONTHLY_AI_CREDITS', status: 400,
+        });
+      }
+      assignments.push('monthly_ai_credits = ?');
+      params.push(parsed);
+    }
+
+    if (customDomain !== undefined) {
+      if (customDomain === null || customDomain === '') {
+        assignments.push('custom_domain = NULL');
+      } else {
+        const normalizedDomain = String(customDomain).trim().toLowerCase().replace(/\.$/, '');
+        if (!CUSTOM_DOMAIN_PATTERN.test(normalizedDomain) || normalizedDomain.length > 255) {
+          throw Object.assign(new Error('A valid custom domain is required'), {
+            code: 'INVALID_CUSTOM_DOMAIN', status: 400,
+          });
+        }
+        assignments.push('custom_domain = ?');
+        params.push(normalizedDomain);
+      }
+    }
+
+    // A profile update with nothing to change is a read, not a write: this keeps
+    // the CAS-free UPDATE from bumping `updated_at` for an empty PATCH.
+    if (!assignments.length) {
+      return this.getTenant(tenantId);
+    }
+
+    try {
+      const [result] = await this.pool.query(
+        `UPDATE enterprise_tenants SET ${assignments.join(', ')} WHERE id = ?`,
+        [...params, tenantId]
+      );
+      if (Number(result?.affectedRows || 0) === 0) {
+        // affectedRows is 0 when the row is missing AND when every value is
+        // identical; only the missing-row case is a failure.
+        const tenant = await this.getTenant(tenantId);
+        return tenant;
+      }
+    } catch (error) {
+      if (error && error.code === 'ER_DUP_ENTRY') {
+        throw Object.assign(new Error('That custom domain is already assigned to another tenant'), {
+          code: 'CUSTOM_DOMAIN_TAKEN', status: 409,
+        });
+      }
+      throw error;
+    }
+
     return this.getTenant(tenantId);
   }
 
@@ -859,14 +988,31 @@ class MySqlTenantRegistry {
     return validateMembership(rows[0], principalId);
   }
 
-  /** Commercial seat cap for a tenant, resolved from its configuration. */
+  /**
+   * Commercial seat cap for a tenant.
+   *
+   * TWO legitimate sources exist and both must be honoured:
+   *   * `enterprise_tenants.seat_quota` — the purchased quota persisted by the
+   *     platform console (migration 033). NULL means "not configured".
+   *   * `enterprise_tenant_configurations.commercials.seatLimit` — the pre-existing
+   *     JSON commercial record.
+   * `resolveSeatLimit` returns the MOST RESTRICTIVE positive cap, so a tenant can
+   * never exceed either record, and a NULL quota never manufactures a cap of zero.
+   */
   async _readSeatLimitInTransaction(connection, tenantId) {
+    const [tenantRows] = await connection.query(
+      'SELECT seat_quota FROM enterprise_tenants WHERE id = ?',
+      [tenantId]
+    );
     const [rows] = await connection.query(
       'SELECT commercials FROM enterprise_tenant_configurations WHERE tenantId = ?',
       [tenantId]
     );
     const commercials = rows[0] ? parseJsonField(rows[0].commercials, null) : null;
-    return resolveSeatLimit({ tenantSeatLimit: commercials?.seatLimit ?? null });
+    return resolveSeatLimit({
+      tenantSeatLimit: tenantRows[0] ? normalizeSeatQuota(tenantRows[0].seat_quota) : null,
+      subscriptionSeatLimit: commercials?.seatLimit ?? null,
+    });
   }
 
   /**
@@ -2060,7 +2206,10 @@ module.exports = {
   defaultTenantConfiguration,
   membershipDocumentId,
   normalizeCustomRoles,
+  normalizeCustomDomain,
+  normalizeMonthlyAiCredits,
   normalizeRoles,
+  normalizeSeatQuota,
   normalizeTenantConfiguration,
   validateMembership,
   validateTenantRecord,

@@ -1449,47 +1449,108 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
   }
 });
 
-router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication, async (req, res) => {
+/**
+ * FP-A06 — immediate operator session revocation.
+ *
+ * Both the canonical `revoke-session` path and the historical `revoke-sessions`
+ * path run the SAME handler, so neither can be used to "revoke" without the
+ * durable cutoff that actually invalidates already-issued tokens.
+ *
+ * Order matters:
+ *   1. authorize (SUPER_ADMIN + recent authentication, enforced by the middleware);
+ *   2. prove the target operator exists (no silent 200 for a typo'd uid);
+ *   3. persist the revocation cutoff — this is the step that makes existing ID
+ *      tokens stop working, and it is written BEFORE any success is reported;
+ *   4. also revoke Firebase refresh tokens (defence in depth: no new token can be
+ *      minted from a refresh token either);
+ *   5. audit both the request and the outcome.
+ *
+ * Repeating the call is safe: each execution writes an additional cutoff at or
+ * after the previous one, and the effective policy (reject anything issued at or
+ * before the newest cutoff) is unchanged. A failure at step 3 returns 503 and
+ * never claims success.
+ */
+async function revokeOperatorSessions(req, res) {
   const uid = String(req.params.uid || '').trim();
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
-    return res.status(400).json({ error: { code: 'INVALID_UID', message: 'A valid uid is required' } });
+  if (!/^[A-Za-z0-9:_@.-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ error: { code: 'INVALID_UID', message: 'A valid uid is required', requestId: res.locals?.requestId } });
   }
+  const reason = req.body?.reason === undefined ? null : String(req.body.reason || '').slice(0, 255);
   const admin = req.app?.get('firebaseAdmin');
   if (!admin?.auth) {
-    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
+    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable', requestId: res.locals?.requestId } });
   }
+
+  let target;
   try {
-    const target = await admin.auth().getUser(uid);
-    await recordAdminAuditLog({
-      actorUid: req.user?.uid, actorEmail: req.user?.email, actorRole: 'SUPER_ADMIN',
-      action: 'PLATFORM_OPERATOR_SESSION_REVOCATION_REQUESTED', category: 'iam.operators',
-      severity: 'HIGH', outcome: 'SUCCESS', method: 'POST', pathname: req.originalUrl,
-      statusCode: 202, resourceType: 'firebase_auth_user', resourceId: uid,
-      metadata: {}, requestId: res.locals?.requestId,
-    });
-    await admin.auth().revokeRefreshTokens(uid);
-    await recordAdminAuditLog({
-      actorUid: req.user?.uid,
-      actorEmail: req.user?.email,
-      actorRole: 'SUPER_ADMIN',
-      action: 'PLATFORM_OPERATOR_SESSIONS_REVOKED',
-      category: 'iam.operators',
-      severity: 'HIGH',
-      outcome: 'SUCCESS',
-      method: 'POST',
-      pathname: req.originalUrl,
-      statusCode: 200,
-      resourceType: 'user',
-      resourceId: uid,
-      metadata: { targetEmail: target.email || null },
+    target = await admin.auth().getUser(uid);
+  } catch (error) {
+    if (error?.code === 'auth/user-not-found') {
+      return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'Operator not found', requestId: res.locals?.requestId } });
+    }
+    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable', requestId: res.locals?.requestId } });
+  }
+
+  const sessionRevocation = require('../security/sessionRevocation');
+  let revocation;
+  try {
+    revocation = await sessionRevocation.revokeUserSessions({
+      uid,
+      actorUid: req.user?.uid || null,
+      reason,
       requestId: res.locals?.requestId,
     });
-    return res.json({ success: true, message: `All active sessions and refresh tokens for operator ${target.email || uid} have been revoked.` });
   } catch (error) {
-    const status = error.code === 'auth/user-not-found' ? 404 : 500;
-    return res.status(status).json({ error: { code: status === 404 ? 'USER_NOT_FOUND' : 'SESSION_REVOCATION_FAILED', message: status === 404 ? 'User not found' : error.message } });
+    console.error('[Platform session revocation]', error?.code || error?.message);
+    return res.status(503).json({
+      error: {
+        code: 'SESSION_REVOCATION_FAILED',
+        message: 'The session revocation could not be persisted. Nothing was revoked.',
+        requestId: res.locals?.requestId,
+      },
+    });
   }
-});
+
+  try {
+    await recordAdminAuditLog({
+      actorUid: req.user?.uid, actorEmail: req.user?.email, actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_OPERATOR_SESSIONS_REVOKED', category: 'iam.operators',
+      severity: 'HIGH', outcome: 'SUCCESS', method: 'POST', pathname: req.originalUrl,
+      statusCode: 200, resourceType: 'user', resourceId: uid,
+      metadata: {
+        targetEmail: target.email || null,
+        revocationId: revocation.id,
+        cutoffEpochSeconds: revocation.cutoffSeconds,
+        reason: revocation.reason,
+        refreshTokensRevoked: true,
+      },
+      requestId: res.locals?.requestId,
+    });
+  } catch (_auditError) {
+    // Audit failure must not undo a completed revocation; the revocation row is
+    // itself the durable record.
+  }
+
+  // Refresh tokens are revoked only AFTER the durable cutoff exists, so there is
+  // no window in which refresh tokens are dead but ID tokens still work.
+  try {
+    await admin.auth().revokeRefreshTokens(uid);
+  } catch (error) {
+    console.error('[Platform session revocation] refresh token revocation failed', error?.code || error?.message);
+  }
+
+  return res.json({
+    success: true,
+    revokedUid: uid,
+    revokedAt: new Date(revocation.cutoffSeconds * 1000).toISOString(),
+    message: `All active sessions for operator ${target.email || uid} have been revoked.`,
+  });
+}
+
+router.post('/operators/:uid/revoke-session', requireRecentAdminAuthentication, revokeOperatorSessions);
+// Historical path, same semantics. Kept so existing console builds and runbooks
+// keep working without silently retaining the ineffective implementation.
+router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication, revokeOperatorSessions);
 
 router.get('/tenants/:tenantId', async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
@@ -1581,16 +1642,74 @@ router.get('/tenants/:tenantId', async (req, res) => {
   }
 });
 
+/**
+ * FP-B01 / FP-B02 — platform tenant profile update.
+ *
+ * Accepts the tenant display name and the commercial fields that were previously
+ * discarded on the floor (`seatQuota`, `monthlyAiCredits`, `customDomain`).
+ *
+ * Contract rules:
+ *   * a field that is absent from the body is left untouched, so a partial update
+ *     can never reset a purchased quota or clear a live domain;
+ *   * `customDomain: null` is the explicit way to release a domain;
+ *   * validation is per-field and rejects rather than coercing;
+ *   * the response is the record RE-READ from MariaDB, never an echo.
+ */
 router.patch('/tenants/:tenantId', requireRecentAdminAuthentication, async (req, res) => {
   const tenantService = req.app?.get('tenantService');
-  const displayName = String(req.body?.displayName || '').trim();
   if (!tenantService?.updateTenantProfileAsPlatform) return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant service unavailable', requestId: res.locals?.requestId } });
-  if (displayName.length < 2 || displayName.length > 120) return res.status(400).json({ error: { code: 'INVALID_TENANT_NAME', message: 'A tenant display name between 2 and 120 characters is required', requestId: res.locals?.requestId } });
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const has = field => Object.prototype.hasOwnProperty.call(body, field);
+
+  const allowed = ['displayName', 'seatQuota', 'monthlyAiCredits', 'customDomain'];
+  const refused = Object.keys(body).filter(key => !allowed.includes(key));
+  if (refused.length) {
+    return res.status(400).json({ error: { code: 'UNSUPPORTED_TENANT_FIELD', message: `These tenant fields cannot be updated here: ${refused.join(', ')}`, fields: refused, requestId: res.locals?.requestId } });
+  }
+  if (!allowed.some(has)) {
+    return res.status(400).json({ error: { code: 'EMPTY_TENANT_UPDATE', message: 'Provide at least one tenant field to update', requestId: res.locals?.requestId } });
+  }
+
+  const update = { user: req.user, tenantId: req.params.tenantId, requestId: res.locals?.requestId };
+  if (has('displayName')) {
+    const displayName = String(body.displayName ?? '').trim();
+    if (displayName.length < 2 || displayName.length > 120) {
+      return res.status(400).json({ error: { code: 'INVALID_TENANT_NAME', message: 'A tenant display name between 2 and 120 characters is required', requestId: res.locals?.requestId } });
+    }
+    update.displayName = displayName;
+  }
+  if (has('seatQuota')) {
+    // `null` deliberately clears an explicit cap (falling back to the commercial
+    // record); anything else must be a positive whole number.
+    update.seatQuota = body.seatQuota === null ? null : body.seatQuota;
+  }
+  if (has('monthlyAiCredits')) update.monthlyAiCredits = body.monthlyAiCredits;
+  if (has('customDomain')) update.customDomain = body.customDomain === null ? null : body.customDomain;
+
   try {
-    const tenant = await tenantService.updateTenantProfileAsPlatform({ user: req.user, tenantId: req.params.tenantId, displayName, requestId: res.locals?.requestId });
-    return res.json({ success: true, tenant: { id: tenant.id, slug: tenant.slug, displayName: tenant.displayName, lifecycleState: tenant.lifecycleState } });
+    const tenant = await tenantService.updateTenantProfileAsPlatform(update);
+    return res.json({
+      success: true,
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        displayName: tenant.displayName,
+        lifecycleState: tenant.lifecycleState,
+        seatQuota: tenant.seatQuota ?? null,
+        monthlyAiCredits: tenant.monthlyAiCredits ?? null,
+        customDomain: tenant.customDomain ?? null,
+      },
+    });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'TENANT_RENAME_FAILED', message: error.status === 400 || error.status === 404 ? error.message : 'Tenant could not be renamed', requestId: res.locals?.requestId } });
+    const status = Number(error.status) || 503;
+    const clientError = status >= 400 && status < 500;
+    return res.status(status).json({
+      error: {
+        code: error.code || 'TENANT_UPDATE_FAILED',
+        message: clientError ? error.message : 'Tenant profile could not be updated',
+        requestId: res.locals?.requestId,
+      },
+    });
   }
 });
 

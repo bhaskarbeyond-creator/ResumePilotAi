@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { get, post } from '@/lib/api-client';
 import {
   ShieldAlert,
   Users,
@@ -37,13 +38,19 @@ interface SecurityEvent {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Operator identity as reported by `GET /api/platform/operators`. There is no
+ * client-side operator directory: the previous hard-coded list was example data
+ * rendered as if it were the real staff roster.
+ */
 interface OperatorUser {
   uid: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'security_officer' | 'support_lead' | 'content_moderator';
+  role: string;
   mfaEnabled: boolean;
-  lastActive: string;
+  suspended: boolean;
+  emailVerified: boolean;
 }
 
 interface AuditRecord {
@@ -119,12 +126,7 @@ const INITIAL_EVENTS: SecurityEvent[] = [
 
 ];
 
-const INITIAL_OPERATORS: OperatorUser[] = [
-  { uid: 'op_01', name: 'Executive Lead', email: 'lead@ime365.ai', role: 'super_admin', mfaEnabled: true, lastActive: 'Just now' },
-  { uid: 'op_02', name: 'Sarah Connor', email: 'sarah.c@ime365.ai', role: 'security_officer', mfaEnabled: true, lastActive: '12m ago' },
-  { uid: 'op_03', name: 'David Kim', email: 'david.k@ime365.ai', role: 'support_lead', mfaEnabled: true, lastActive: '1h ago' },
-  { uid: 'op_04', name: 'Maya Lin', email: 'maya.l@ime365.ai', role: 'content_moderator', mfaEnabled: false, lastActive: '3h ago' },
-];
+
 
 const INITIAL_AUDITS: AuditRecord[] = [
   { id: 'aud_1', actor: 'lead@ime365.ai', action: 'update_provider_routing', target: 'NVIDIA NIM -> Gemini 1.5 Pro', ipAddress: '10.0.0.1', timestamp: '2026-10-18 21:05:12', status: 'SUCCESS' },
@@ -155,9 +157,13 @@ export function AdminSecurityTab() {
     action: () => void;
   } | null>(null);
 
-  // Operators
-  const [operators, setOperators] = useState<OperatorUser[]>(INITIAL_OPERATORS);
+  // Operators — always read from the platform directory, never assumed.
+  const [operators, setOperators] = useState<OperatorUser[]>([]);
+  const [operatorsLoading, setOperatorsLoading] = useState(false);
+  const [operatorsError, setOperatorsError] = useState<string | null>(null);
+  const [revokingUid, setRevokingUid] = useState<string | null>(null);
   const [opNotice, setOpNotice] = useState<string | null>(null);
+  const [opError, setOpError] = useState<string | null>(null);
 
   // Audits & CSV
   const [audits] = useState<AuditRecord[]>(INITIAL_AUDITS);
@@ -197,17 +203,71 @@ export function AdminSecurityTab() {
     });
   };
 
-  const handleRoleChange = (uid: string, newRole: OperatorUser['role']) => {
+  const loadOperators = async () => {
+    setOperatorsLoading(true);
+    setOperatorsError(null);
+    try {
+      const response = await get<{
+        operators?: Array<{ id: string; email: string | null; role: string; suspended?: boolean; emailVerified?: boolean; mfaEnabled?: boolean; displayName?: string | null }>;
+        source?: string;
+      }>('/platform/operators');
+      const rows = Array.isArray(response?.operators) ? response.operators : [];
+      setOperators(rows.map((item) => ({
+        uid: String(item.id),
+        name: item.displayName || item.email || String(item.id),
+        email: item.email || '',
+        role: String(item.role || 'UNKNOWN'),
+        mfaEnabled: item.mfaEnabled === true,
+        suspended: item.suspended === true,
+        emailVerified: item.emailVerified === true,
+      })));
+    } catch (error) {
+      setOperators([]);
+      setOperatorsError(error instanceof Error ? error.message : 'The operator directory could not be loaded.');
+    } finally {
+      setOperatorsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === 'operators' && operators.length === 0 && !operatorsLoading) void loadOperators();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subTab]);
+
+  /**
+   * FP-A06 — Force Revoke Session.
+   *
+   * The confirm dialog is the action's only entry point, the request is sent to
+   * the durable revocation endpoint (which invalidates already-issued ID tokens),
+   * and success is reported only from a confirmed server response.
+   */
+  const handleRevokeSessions = (operator: OperatorUser) => {
+    if (revokingUid) return;
     setConfirmModal({
-      title: 'Reassign Operator RBAC Role',
-      message: `Are you sure you want to change this operator's RBAC role to "${newRole}"? High-privilege actions will be immediately gated by this policy.`,
-      confirmText: 'Confirm Role Change',
-      danger: false,
-      action: () => {
-        setOperators(operators.map(op => op.uid === uid ? { ...op, role: newRole } : op));
-        setOpNotice(`RBAC role updated to ${newRole} for UID ${uid}.`);
-        setTimeout(() => setOpNotice(null), 3500);
-      },
+      title: 'Force Revoke Operator Sessions',
+      message: `Immediately invalidate every active session for ${operator.email || operator.uid}? Their existing tokens stop working on the next request and they must sign in again.`,
+      confirmText: 'Revoke All Sessions',
+      danger: true,
+      action: () => { void (async () => {
+        setRevokingUid(operator.uid);
+        setOpNotice(null);
+        setOpError(null);
+        try {
+          const response = await post<{ success?: boolean; revokedUid?: string; revokedAt?: string }>(
+            `/platform/operators/${encodeURIComponent(operator.uid)}/revoke-session`,
+            {},
+          );
+          if (!response?.success || response.revokedUid !== operator.uid) {
+            throw new Error('The server did not confirm the revocation.');
+          }
+          setOpNotice(`All sessions revoked for ${operator.email || operator.uid}${response.revokedAt ? ` at ${new Date(response.revokedAt).toLocaleString()}` : ''}.`);
+          await loadOperators();
+        } catch (error) {
+          setOpError(error instanceof Error ? error.message : 'Session revocation failed. No sessions were revoked.');
+        } finally {
+          setRevokingUid(null);
+        }
+      })(); },
     });
   };
 
@@ -382,10 +442,26 @@ export function AdminSecurityTab() {
       {subTab === 'operators' && (
         <div className="space-y-4">
           {opNotice && (
-            <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800 flex items-center gap-2">
+            <div role="status" className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800 flex items-center gap-2">
               <CheckCircle2 className="size-4 text-brand-600 shrink-0" />
               {opNotice}
             </div>
+          )}
+          {opError && (
+            <div role="alert" className="rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-800 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2"><AlertTriangle className="size-4 shrink-0" />{opError}</span>
+              <Button variant="outline" size="xs" onClick={() => { void loadOperators(); }}>Reload directory</Button>
+            </div>
+          )}
+          {operatorsLoading && <p role="status" className="text-xs text-ink-muted">Loading operator directory…</p>}
+          {operatorsError && !operatorsLoading && (
+            <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between gap-3">
+              <span>{operatorsError}</span>
+              <Button variant="outline" size="xs" onClick={() => { void loadOperators(); }}>Retry</Button>
+            </div>
+          )}
+          {!operatorsLoading && !operatorsError && operators.length === 0 && (
+            <p className="text-xs text-ink-muted">No operators are reported by the platform identity service.</p>
           )}
 
           <Card>
@@ -395,7 +471,7 @@ export function AdminSecurityTab() {
                 Staff Directory & Role-Based Access Control (RBAC)
               </CardTitle>
               <CardDescription>
-                Example directory only. Operator session revocation is unavailable here; no credentials are revoked by this screen.
+                Live operator directory from the platform identity service. Revoking a session invalidates every token already issued to that operator.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -417,16 +493,10 @@ export function AdminSecurityTab() {
                         <td className="px-4 py-3 font-semibold text-ink">{op.name}</td>
                         <td className="px-4 py-3 font-mono text-xs text-ink-secondary">{op.email}</td>
                         <td className="px-4 py-3">
-                          <select
-                            value={op.role}
-                            onChange={(e) => handleRoleChange(op.uid, e.target.value as OperatorUser['role'])}
-                            className="rounded-md border border-border bg-white px-2 py-1 text-xs font-medium text-ink focus:outline-none focus:ring-1 focus:ring-brand-500"
-                          >
-                            <option value="super_admin">Super Admin (*)</option>
-                            <option value="security_officer">Security Officer</option>
-                            <option value="support_lead">Support Lead</option>
-                            <option value="content_moderator">Content Moderator</option>
-                          </select>
+                          <span className="inline-flex items-center rounded-full border border-border bg-neutral-50 px-2 py-0.5 text-xs font-semibold uppercase text-ink">
+                            {op.role}
+                          </span>
+                          {op.suspended && <span className="ml-2 text-[11px] font-semibold text-error-700">Suspended</span>}
                         </td>
                         <td className="px-4 py-3">
                           {op.mfaEnabled ? (
@@ -439,16 +509,18 @@ export function AdminSecurityTab() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-ink-muted">{op.lastActive}</td>
+                        <td className="px-4 py-3 text-xs text-ink-muted" title="The identity directory does not report last-activity timestamps">Not reported</td>
                         <td className="px-4 py-3 text-right">
                           <Button
                             variant="destructive"
                             size="xs"
-                            disabled
-                            title="Session revocation is unavailable"
+                            disabled={revokingUid !== null}
+                            aria-busy={revokingUid === op.uid}
+                            onClick={() => handleRevokeSessions(op)}
+                            title="Immediately invalidate every issued token for this operator"
                           >
                             <LogOut className="mr-1 size-3.5" />
-                            Session revocation unavailable
+                            {revokingUid === op.uid ? 'Revoking…' : 'Force Revoke Session'}
                           </Button>
                         </td>
                       </tr>

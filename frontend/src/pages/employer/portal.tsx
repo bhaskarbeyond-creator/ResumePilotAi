@@ -1,5 +1,5 @@
 import { useAuth } from '@/providers/auth-provider';
-import { get, post } from '@/lib/api-client';
+import { get, post, patch } from '@/lib/api-client';
 /**
  * Employer Portal — Surface 3 Modernization
  *
@@ -56,6 +56,91 @@ import { CandidateReviewDrawer } from '@/components/employer/CandidateReviewDraw
 import { InterviewSlotManager } from '@/components/employer/InterviewSlotManager';
 import { CompanyProfile } from '@/components/employer/CompanyProfile';
 import { TeamSeats } from '@/components/employer/TeamSeats';
+
+const EMPLOYER_SETTINGS_PATH = '/employer/settings';
+const SUPPORTED_INTERVIEW_DURATIONS = [15, 30, 45, 60] as const;
+const AUTO_ARCHIVE_MAX_DAYS = 3650;
+const COMMON_TIMEZONES = [
+  'UTC', 'Asia/Kolkata', 'Asia/Dubai', 'Asia/Singapore', 'Asia/Tokyo',
+  'Europe/London', 'Europe/Dublin', 'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid',
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Sao_Paulo', 'Australia/Sydney', 'Africa/Johannesburg',
+];
+
+type EmployerSettings = {
+  companyName: string;
+  timezone: string;
+  notificationEmail: string | null;
+  defaultInterviewDuration: number;
+  autoArchiveDays: number;
+  updatedAt: string | null;
+};
+
+/** Form state is all strings so partial typing never fights the input element. */
+type EmployerSettingsForm = {
+  companyName: string;
+  timezone: string;
+  notificationEmail: string;
+  defaultInterviewDuration: string;
+  autoArchiveDays: string;
+};
+
+const EMPTY_SETTINGS_FORM: EmployerSettingsForm = {
+  companyName: '',
+  timezone: 'UTC',
+  notificationEmail: '',
+  defaultInterviewDuration: '30',
+  autoArchiveDays: '30',
+};
+
+function settingsToForm(settings: EmployerSettings): EmployerSettingsForm {
+  return {
+    companyName: settings.companyName ?? '',
+    timezone: settings.timezone || 'UTC',
+    notificationEmail: settings.notificationEmail ?? '',
+    defaultInterviewDuration: String(settings.defaultInterviewDuration ?? 30),
+    autoArchiveDays: String(settings.autoArchiveDays ?? 30),
+  };
+}
+
+function isValidIanaTimezone(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: trimmed });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Field-level validation; mirrors the server contract without replacing it. */
+function validateSettingsForm(form: EmployerSettingsForm): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const companyName = form.companyName.trim();
+  if (companyName.length < 2 || companyName.length > 160) errors.companyName = 'Company name must be between 2 and 160 characters.';
+  if (!isValidIanaTimezone(form.timezone)) errors.timezone = 'Enter a valid IANA timezone, for example Asia/Kolkata.';
+  const email = form.notificationEmail.trim();
+  if (email && !/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,189}\.[A-Za-z]{2,}$/.test(email)) errors.notificationEmail = 'Enter a valid email address, or leave it blank.';
+  if (!SUPPORTED_INTERVIEW_DURATIONS.includes(Number(form.defaultInterviewDuration) as 15 | 30 | 45 | 60)) errors.defaultInterviewDuration = 'Choose 15, 30, 45 or 60 minutes.';
+  const archiveDays = Number(form.autoArchiveDays);
+  if (!Number.isInteger(archiveDays) || archiveDays < 0 || archiveDays > AUTO_ARCHIVE_MAX_DAYS) errors.autoArchiveDays = `Choose a whole number of days from 0 to ${AUTO_ARCHIVE_MAX_DAYS}.`;
+  return errors;
+}
+
+/** Only fields that actually differ are sent, so a save can never reset the rest. */
+function settingsPatchFrom(baseline: EmployerSettingsForm, form: EmployerSettingsForm): Record<string, unknown> {
+  const patchBody: Record<string, unknown> = {};
+  if (form.companyName.trim() !== baseline.companyName.trim()) patchBody.companyName = form.companyName.trim();
+  if (form.timezone.trim() !== baseline.timezone.trim()) patchBody.timezone = form.timezone.trim();
+  if (form.notificationEmail.trim() !== baseline.notificationEmail.trim()) {
+    const email = form.notificationEmail.trim();
+    patchBody.notificationEmail = email === '' ? null : email.toLowerCase();
+  }
+  if (form.defaultInterviewDuration !== baseline.defaultInterviewDuration) patchBody.defaultInterviewDuration = Number(form.defaultInterviewDuration);
+  if (form.autoArchiveDays !== baseline.autoArchiveDays) patchBody.autoArchiveDays = Number(form.autoArchiveDays);
+  return patchBody;
+}
 
 export type EmployerTabId =
   | 'overview'
@@ -170,13 +255,19 @@ export function EmployerPortalPage() {
   const activeConversationIdRef = useRef<string | null>(null);
   activeConversationIdRef.current = activeConversationId;
 
-  // Settings cannot claim persistence until an employer-scoped backend contract exists.
+  // ─── Hiring preferences (GET/PATCH /api/employer/settings) ───────────────
+  // `settingsBaseline` is the last state the SERVER confirmed. The form is only
+  // ever populated from it, "unsaved" is derived by comparison, and a save is
+  // reported as successful only after the response contains the persisted row.
+  const [settingsForm, setSettingsForm] = useState<EmployerSettingsForm>(EMPTY_SETTINGS_FORM);
+  const [settingsBaseline, setSettingsBaseline] = useState<EmployerSettingsForm>(EMPTY_SETTINGS_FORM);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsError, setSettingsError] = useState('');
+  const [settingsValidation, setSettingsValidation] = useState<Record<string, string>>({});
+  const [settingsNotice, setSettingsNotice] = useState('');
+  const [settingsLoadFailed, setSettingsLoadFailed] = useState(false);
   const [showInterviewSlotManager, setShowInterviewSlotManager] = useState(false);
-  const [emailAlertFrequency, setEmailAlertFrequency] = useState('');
-  const [atsThreshold, setAtsThreshold] = useState('');
-  const [calendarMode, setCalendarMode] = useState<'native' | 'external'>('native');
-  const [calendarLink, setCalendarLink] = useState('');
 
   const loadConversations = useCallback(async () => {
     setConversationsLoading(true);
@@ -263,9 +354,77 @@ export function EmployerPortalPage() {
     }
   };
 
+  const loadEmployerSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    setSettingsLoadFailed(false);
+    setSettingsError('');
+    try {
+      const response = await get<{ success: boolean; settings: EmployerSettings }>(EMPLOYER_SETTINGS_PATH);
+      if (!response?.success || !response.settings) throw new Error('The server did not return stored preferences.');
+      const next = settingsToForm(response.settings);
+      setSettingsForm(next);
+      setSettingsBaseline(next);
+      setSettingsValidation({});
+    } catch (error) {
+      setSettingsLoadFailed(true);
+      setSettingsError(error instanceof Error ? error.message : 'Preferences could not be loaded.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'settings') void loadEmployerSettings();
+  }, [activeTab, loadEmployerSettings]);
+
+  const settingsDirty = useMemo(
+    () => (Object.keys(settingsForm) as Array<keyof EmployerSettingsForm>)
+      .some((field) => settingsForm[field] !== settingsBaseline[field]),
+    [settingsForm, settingsBaseline],
+  );
+
+  const updateSettingsField = (field: keyof EmployerSettingsForm, value: string) => {
+    setSettingsForm((previous) => ({ ...previous, [field]: value }));
+    setSettingsValidation((previous) => {
+      if (!previous[field]) return previous;
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
+    setSettingsNotice('');
+  };
+
   const handleSaveSettings = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSettingsError('Employer preferences are not available through an authorized persistence endpoint in this branch. No settings were saved.');
+    if (settingsSaving || settingsLoading) return;
+    setSettingsNotice('');
+    setSettingsError('');
+    const validation = validateSettingsForm(settingsForm);
+    setSettingsValidation(validation);
+    if (Object.keys(validation).length > 0) {
+      setSettingsError('Fix the highlighted preferences before saving. Nothing was saved.');
+      return;
+    }
+    const patchBody = settingsPatchFrom(settingsBaseline, settingsForm);
+    if (Object.keys(patchBody).length === 0) {
+      setSettingsNotice('No preference changes to save.');
+      return;
+    }
+    setSettingsSaving(true);
+    try {
+      const response = await patch<{ success: boolean; settings: EmployerSettings; updated: string[] }>(EMPLOYER_SETTINGS_PATH, patchBody);
+      // Success is claimed ONLY from the persisted row the server returned.
+      if (!response?.success || !response.settings) throw new Error('The server did not confirm the saved preferences.');
+      const persisted = settingsToForm(response.settings);
+      setSettingsForm(persisted);
+      setSettingsBaseline(persisted);
+      setSettingsNotice('Preferences saved.');
+    } catch (error) {
+      // The form is deliberately left untouched so the user's input is not lost.
+      setSettingsError(error instanceof Error ? error.message : 'Preferences could not be saved. Your changes are still here — retry.');
+    } finally {
+      setSettingsSaving(false);
+    }
   };
 
   // Filter applications by search
@@ -1072,7 +1231,7 @@ export function EmployerPortalPage() {
         </Card>
       )}
 
-      {/* ─── TAB 6: Hiring Preferences ─── */}
+      {/* ─── TAB 6: Hiring Preferences (persisted via /api/employer/settings) ─── */}
       {activeTab === 'settings' && (
         <Card className="border-edge shadow-xs bg-surface max-w-3xl">
           <CardHeader className="border-b border-edge pb-4">
@@ -1080,52 +1239,111 @@ export function EmployerPortalPage() {
               <Settings className="size-4 text-accent" /> Hiring & Pipeline Preferences
             </CardTitle>
             <CardDescription className="text-xs text-ink-muted">
-              Configure candidate notifications, automated ATS threshold alerts, and calendar links.
+              These preferences are stored against your employer account and reload from the server on every visit.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <form onSubmit={handleSaveSettings} className="space-y-5">
-              <p role="note" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">Hiring preference persistence is not exposed by the authorized backend routes in this branch. Values below are unsaved and will not be represented as saved.</p>
+            {settingsLoading && <p role="status" className="text-xs text-ink-muted">Loading saved preferences…</p>}
+            {settingsLoadFailed && (
+              <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between gap-3">
+                <span>Saved preferences could not be loaded. Nothing on this form has been stored yet.</span>
+                <Button type="button" size="sm" variant="outline" onClick={() => void loadEmployerSettings()} className="h-8 text-xs">Retry</Button>
+              </div>
+            )}
+            <form onSubmit={handleSaveSettings} className="space-y-5" aria-busy={settingsSaving}>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-ink">Applicant Email Alerts</label>
-                <select
-                  value={emailAlertFrequency}
-                  onChange={(e) => setEmailAlertFrequency(e.target.value)}
-                  className="w-full text-xs h-9 px-3 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold"
-                >
-                  <option value="">Choose alert frequency</option>
-                  <option value="instant">Instant — Notify on every applicant submission</option>
-                  <option value="daily">Daily Digest — Summary at 9:00 AM</option>
-                  <option value="off">Off — Review directly inside the ATS pipeline</option>
-                </select>
-                <p className="text-[11px] text-ink-muted">Sent to verified recruiter team seat addresses.</p>
+                <label htmlFor="settings-company-name" className="text-xs font-bold text-ink">Company Name</label>
+                <Input
+                  id="settings-company-name"
+                  value={settingsForm.companyName}
+                  onChange={(event) => updateSettingsField('companyName', event.target.value)}
+                  aria-invalid={Boolean(settingsValidation.companyName)}
+                  disabled={settingsSaving}
+                  className="text-xs h-9 max-w-sm"
+                />
+                {settingsValidation.companyName
+                  ? <p role="alert" className="text-[11px] text-red-700">{settingsValidation.companyName}</p>
+                  : <p className="text-[11px] text-ink-muted">Used on hiring correspondence sent to candidates.</p>}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-ink">ATS Highlight Threshold (%)</label>
+                <label htmlFor="settings-timezone" className="text-xs font-bold text-ink">Reporting Timezone (IANA)</label>
                 <Input
+                  id="settings-timezone"
+                  list="settings-timezone-options"
+                  value={settingsForm.timezone}
+                  onChange={(event) => updateSettingsField('timezone', event.target.value)}
+                  aria-invalid={Boolean(settingsValidation.timezone)}
+                  disabled={settingsSaving}
+                  className="text-xs h-9 max-w-sm"
+                />
+                <datalist id="settings-timezone-options">
+                  {COMMON_TIMEZONES.map((zone) => <option key={zone} value={zone} />)}
+                </datalist>
+                {settingsValidation.timezone
+                  ? <p role="alert" className="text-[11px] text-red-700">{settingsValidation.timezone}</p>
+                  : <p className="text-[11px] text-ink-muted">Pipeline dates and interview slots are shown in this timezone.</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="settings-notification-email" className="text-xs font-bold text-ink">Notification Email</label>
+                <Input
+                  id="settings-notification-email"
+                  type="email"
+                  value={settingsForm.notificationEmail}
+                  onChange={(event) => updateSettingsField('notificationEmail', event.target.value)}
+                  aria-invalid={Boolean(settingsValidation.notificationEmail)}
+                  disabled={settingsSaving}
+                  placeholder="hiring@yourcompany.com"
+                  className="text-xs h-9 max-w-sm"
+                />
+                {settingsValidation.notificationEmail
+                  ? <p role="alert" className="text-[11px] text-red-700">{settingsValidation.notificationEmail}</p>
+                  : <p className="text-[11px] text-ink-muted">Leave blank to use the signed-in account address.</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="settings-interview-duration" className="text-xs font-bold text-ink">Default Interview Duration</label>
+                <select
+                  id="settings-interview-duration"
+                  value={settingsForm.defaultInterviewDuration}
+                  onChange={(event) => updateSettingsField('defaultInterviewDuration', event.target.value)}
+                  disabled={settingsSaving}
+                  className="w-full max-w-sm text-xs h-9 px-3 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold"
+                >
+                  {SUPPORTED_INTERVIEW_DURATIONS.map((minutes) => (
+                    <option key={minutes} value={String(minutes)}>{minutes} minutes</option>
+                  ))}
+                </select>
+                {settingsValidation.defaultInterviewDuration
+                  ? <p role="alert" className="text-[11px] text-red-700">{settingsValidation.defaultInterviewDuration}</p>
+                  : <p className="text-[11px] text-ink-muted">Pre-selected when you create an interview slot.</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="settings-auto-archive" className="text-xs font-bold text-ink">Auto-Archive Closed Applications After (days)</label>
+                <Input
+                  id="settings-auto-archive"
                   type="number"
-                  min="50"
-                  max="100"
-                  value={atsThreshold}
-                  onChange={(e) => setAtsThreshold(e.target.value)}
+                  min="0"
+                  max={AUTO_ARCHIVE_MAX_DAYS}
+                  value={settingsForm.autoArchiveDays}
+                  onChange={(event) => updateSettingsField('autoArchiveDays', event.target.value)}
+                  aria-invalid={Boolean(settingsValidation.autoArchiveDays)}
+                  disabled={settingsSaving}
                   className="text-xs h-9 max-w-xs"
                 />
-                <p className="text-[11px] text-ink-muted">Candidates with ATS scores equal or above this value will be tagged "High Match".</p>
+                {settingsValidation.autoArchiveDays
+                  ? <p role="alert" className="text-[11px] text-red-700">{settingsValidation.autoArchiveDays}</p>
+                  : <p className="text-[11px] text-ink-muted">Use 0 to keep closed applications indefinitely.</p>}
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="calendar-mode" className="text-xs font-bold text-ink">Interview Scheduling Mode</label>
-                <select id="calendar-mode" value={calendarMode} onChange={(event) => setCalendarMode(event.target.value as 'native' | 'external')} className="w-full text-xs h-9 px-3 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold">
-                  <option value="native">Direct Native Slots</option><option value="external">External Calendar Link</option>
-                </select>
-                {calendarMode === 'external' && <><Input aria-label="External calendar link" type="url" value={calendarLink} onChange={(event) => setCalendarLink(event.target.value)} placeholder="Enter your configured HTTPS calendar URL" className="text-xs h-9" /><p className="text-[11px] text-ink-muted">External links are not operational until employer settings persistence is available.</p></>}
-              </div>
-
-              <div className="pt-3 border-t border-edge flex items-center gap-3">
-                <Button type="submit" size="sm" className="bg-accent hover:bg-accent/90 text-xs font-semibold">
-                  Save Hiring Preferences
+              <div className="pt-3 border-t border-edge flex flex-wrap items-center gap-3">
+                <Button type="submit" size="sm" disabled={settingsSaving || settingsLoading} aria-busy={settingsSaving} className="bg-accent hover:bg-accent/90 text-xs font-semibold">
+                  {settingsSaving ? 'Saving…' : 'Save Hiring Preferences'}
                 </Button>
+                {settingsDirty && !settingsSaving && <span className="text-[11px] font-semibold text-amber-700">Unsaved changes</span>}
+                {settingsNotice && <span role="status" className="text-xs font-semibold text-emerald-700">{settingsNotice}</span>}
                 {settingsError && <span role="alert" className="text-xs text-red-700">{settingsError}</span>}
               </div>
             </form>
