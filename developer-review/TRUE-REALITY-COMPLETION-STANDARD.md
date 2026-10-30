@@ -52,17 +52,20 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════════════════╗
-║                          CANONICAL REALITY SCORECARD (REVISION 616-GREEN)             ║
+║                          CANONICAL REALITY SCORECARD (REVISION 620-GREEN)             ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
-║ 1. Strict Functional Parity (112 Capabilities):    98.2% Strict Full (110 / 112)       ║
-║    — Including Modern Architectural Replacements: 100.0% Reconciled  (112 / 112)       ║
-║ 2. Forensic Discrepancy Log (54 Findings):         70.4% Resolved    (38 / 54)         ║
+║ 1. Strict Functional Parity (112 Capabilities):    91.1% Strict Full (102 / 112)       ║
+║    — Approved Modern Architectural Replacements:    1.8% Modern       (  2 / 112)       ║
+║    — Reconciled Operational Working Total:         92.9% Production  (104 / 112)       ║
+║    — Tier 2 External Dependency Degraded:           6.3% Degraded     (  7 / 112)       ║
+║    — Tier 3 SFU Media Server Bound:                 0.9% Incomplete   (  1 / 112)       ║
+║ 2. Forensic Discrepancy Log (54 Findings):         70.4% Resolved    ( 38 /  54)       ║
 ║ 3. 42-Module Maturity Breakdown:                                                       ║
 ║    — 🟢 Tier 1 (Strict Production Working):        81.0% (34 of 42 modules)            ║
-║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 16.7% ( 7 of 42 modules)            ║
-║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      2.4% ( 1 of 42 modules)            ║
-║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (616 pass, 0 s, 0 f)   ║
-║ 5. Live Runtime & Environmental Certification:     Bank Settlement Ledger Operational ║
+║    — 🟡 Tier 2 (Degraded / External Bound):        16.7% ( 7 of 42 modules)            ║
+║    — 🔴 Tier 3 (SFU Media Daemon Incomplete):       2.4% ( 1 of 42 modules)            ║
+║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (620 pass, 0 s, 0 f)   ║
+║ 5. Live Runtime & Environmental Certification:     Audio Streaming & Settlement Active║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
 ║ OVERALL SYSTEM STATUS: PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE         ║
 ╚════════════════════════════════════════════════════════════════════════════════════════╝
@@ -70,10 +73,10 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 
 ### The Three Tiers of Reality Breakdown (112 Standard Capabilities)
 
-* **🟢 Tier 1 — Strict Production Working (98.2% / 110 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
+* **🟢 Tier 1 — Strict Production Working (91.1% / 102 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
 * **🔵 Modern Architectural Replacements (1.8% / 2 capabilities)**: Modern Express/MariaDB architectures replacing deprecated legacy PHP/Firestore patterns (`FP-A13`, `FP-B14`).
-* **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (0.0% / 0 capabilities)**: All degraded fallbacks and probes remediated and verified.
-* **🔴 Tier 3 — Completely Missing / Fake (0.0% / 0 capabilities)**: All mock data and dead action buttons eradicated.
+* **🟡 Tier 2 — Degraded / External Dependency Bound (6.3% / 7 capabilities)**: Core logic and tests pass, but external infrastructure is pending: `FP-A08` (Wasabi S3 live API keys), `FP-B02` / `FP-C06` (Public wildcard DNS & ACME challenges), `FP-B11` (Custom font uploads), `FP-D15` / `FP-D16` (External LLM vendor API keys), `FP-G15` (External bank transfer clearance).
+* **🔴 Tier 3 — Missing Production Infrastructure (0.9% / 1 capability)**: `FP-D17` (Live WebRTC distributed SFU media relay server daemon LiveKit/Mediasoup). Room lifecycle, JWT token minting, and raw audio chunk VAD streaming are built and verified, but production SFU is not yet running.
 
 ---
 

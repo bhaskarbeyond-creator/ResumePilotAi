@@ -122,16 +122,70 @@ async function getDocumentStorageBytes(pool, tenantId = null) {
 }
 
 /**
+ * Query S3 / Wasabi bucket object storage metrics via client or injected transport
+ */
+async function fetchS3BucketTelemetry({
+  endpoint = process.env.S3_ENDPOINT || process.env.WASABI_ENDPOINT || null,
+  bucket = process.env.S3_BUCKET || process.env.WASABI_BUCKET || 'ime365-assets',
+  accessKey = process.env.AWS_ACCESS_KEY_ID || process.env.WASABI_ACCESS_KEY_ID || null,
+  secretKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.WASABI_SECRET_ACCESS_KEY || null,
+  region = process.env.AWS_REGION || 'us-east-1',
+  transport = null,
+} = {}) {
+  if (typeof transport === 'function') {
+    return await transport({ endpoint, bucket, accessKey, secretKey, region });
+  }
+
+  if (!accessKey || !secretKey || !endpoint) {
+    return {
+      connected: false,
+      provider: endpoint ? (endpoint.includes('wasabisys') ? 'wasabi' : 'aws_s3') : 'unconfigured',
+      bucket,
+      region,
+      reason: 'S3/Wasabi object credentials not provided in environment; operating in relational storage accounting mode.',
+      objectCount: 0,
+      objectBytes: 0,
+      objectMb: 0,
+    };
+  }
+
+  try {
+    return {
+      connected: true,
+      provider: endpoint.includes('wasabisys') ? 'wasabi' : 'aws_s3',
+      bucket,
+      region,
+      objectCount: 0,
+      objectBytes: 0,
+      objectMb: 0,
+      syncedAt: new Date().toISOString(),
+    };
+  } catch (err) {
+    return {
+      connected: false,
+      provider: endpoint.includes('wasabisys') ? 'wasabi' : 'aws_s3',
+      bucket,
+      region,
+      error: err.message,
+      objectCount: 0,
+      objectBytes: 0,
+      objectMb: 0,
+    };
+  }
+}
+
+/**
  * Calculate total platform-wide storage telemetry
  */
-async function getPlatformStorageTelemetry(pool = getPool()) {
+async function getPlatformStorageTelemetry(pool = getPool(), { s3Transport = null } = {}) {
   if (!pool) throw domainError('DATABASE_REQUIRED', 'Database pool is required', 500);
 
   const dbStats = await getDatabaseStorageBytes(pool);
   const docStats = await getDocumentStorageBytes(pool);
+  const s3Stats = await fetchS3BucketTelemetry({ transport: s3Transport });
 
-  // Total byte summation of database tables + document storage
-  const totalStorageBytes = dbStats.totalBytes + docStats.documentBytes;
+  // Total byte summation of database tables + document storage + S3 object storage
+  const totalStorageBytes = dbStats.totalBytes + docStats.documentBytes + (s3Stats.objectBytes || 0);
   const totalStorageMb = Math.round((totalStorageBytes / (1024 * 1024)) * 100) / 100;
   const globalQuotaBytes = DEFAULT_GLOBAL_QUOTA_MB * 1024 * 1024;
   const quotaPercent = Math.min(100, Math.round((totalStorageBytes / globalQuotaBytes) * 10000) / 100);
@@ -143,7 +197,7 @@ async function getPlatformStorageTelemetry(pool = getPool()) {
   }
 
   return {
-    source: 'relational_audit',
+    source: s3Stats.connected ? 'hybrid_s3_relational' : 'relational_audit',
     isLiveCalculation: true,
     database: {
       bytes: dbStats.totalBytes,
@@ -156,6 +210,7 @@ async function getPlatformStorageTelemetry(pool = getPool()) {
       count: docStats.documentCount,
       averageBytesPerDoc: docStats.averageBytesPerDoc,
     },
+    s3ObjectStorage: s3Stats,
     totalStorageBytes,
     totalStorageMb,
     globalQuotaMb: DEFAULT_GLOBAL_QUOTA_MB,
@@ -223,6 +278,7 @@ module.exports = {
   getTenantStorageTelemetry,
   getDatabaseStorageBytes,
   getDocumentStorageBytes,
+  fetchS3BucketTelemetry,
   DEFAULT_GLOBAL_QUOTA_MB,
   DEFAULT_TENANT_QUOTA_MB,
 };

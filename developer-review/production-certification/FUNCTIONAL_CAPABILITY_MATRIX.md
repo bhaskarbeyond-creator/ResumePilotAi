@@ -10,12 +10,13 @@
 # 1. METHODOLOGY & CLASSIFICATION TIERS
 
 Each of the 112 capabilities in the canonical inventory is classified into one of four mutually exclusive states:
-1. **🟢 STRICT FULL (110 Capabilities — 98.2%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
+1. **🟢 STRICT FULL (102 Capabilities — 91.1%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
 2. **🔵 MODERN ARCHITECTURAL REPLACEMENTS (2 Capabilities — 1.8%):** Replaced legacy PHP/Firestore patterns with modern Node.js/Express/MariaDB architectures (`FP-A13`, `FP-B14`).
-3. **🟡 DEGRADED / PARTIAL (0 Capabilities — 0.0%):** All degraded fallbacks and probes remediated and verified.
-4. **🔴 MOCK / UNBUILT (0 Capabilities — 0.0%):** All mock data and dead action buttons eradicated.
+3. **🟡 DEGRADED / EXTERNAL DEPENDENCY BOUND (7 Capabilities — 6.3%):** Core logic and tests pass against live MariaDB, but pending external cloud/DNS/vendor credentials (`FP-A08`, `FP-B02`, `FP-B11`, `FP-C06`, `FP-D15`, `FP-D16`, `FP-G15`).
+4. **🔴 INCOMPLETE / MISSING MEDIA SFU SERVER (1 Capability — 0.9%):** `FP-D17` (Live WebRTC distributed SFU streaming cluster).
 
-Combined Reconciled Architectural Parity: **(110 + 2) / 112 = 112 / 112 = 100.0%**.
+Combined Reconciled Architectural Working Total: **(102 + 2) / 112 = 104 / 112 = 92.9%**.
+Overall System Status: **PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE (Gated at G6)**.
 
 ---
 

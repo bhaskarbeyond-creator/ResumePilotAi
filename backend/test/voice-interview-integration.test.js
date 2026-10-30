@@ -25,6 +25,8 @@ const {
   closeVoiceRoom,
   mintWebRtcToken,
   verifyWebRtcToken,
+  processVoiceAudioChunk,
+  calculateAudioRms,
 } = require('../services/voiceInterviewService');
 const { voiceInterviewRouter } = require('../routes/voiceInterview');
 const { getPool } = require('../database/mysql');
@@ -300,8 +302,58 @@ test('Module 29: Live MariaDB Voice Room & Transcription Integration Suite', asy
       assert.equal(res.status, 404);
     });
 
-    // 6g: POST /rooms/:roomId/close
-    await subT.test('6g. POST /rooms/:roomId/close completes the room and subsequent writes are 409', async () => {
+    // 6g: POST /rooms/:roomId/audio-chunk with base64 audio and RMS VAD
+    await subT.test('6g. POST /rooms/:roomId/audio-chunk streams base64 PCM and records speech turn', async () => {
+      // Generate synthetic 16-bit PCM buffer (100ms of 440Hz tone)
+      const sampleRate = 16000;
+      const durationSec = 0.1;
+      const totalSamples = Math.floor(sampleRate * durationSec);
+      const audioBuffer = Buffer.alloc(totalSamples * 2);
+      for (let i = 0; i < totalSamples; i++) {
+        const val = Math.floor(Math.sin((2 * Math.PI * 440 * i) / sampleRate) * 16000);
+        audioBuffer.writeInt16LE(val, i * 2);
+      }
+
+      const res = await request(app)
+        .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/audio-chunk`)
+        .set('x-test-user-id', testUserId)
+        .send({
+          audioBase64: audioBuffer.toString('base64'),
+          mimeType: 'audio/pcm',
+          sampleRate,
+          turnIndex: 1,
+          speaker: 'candidate',
+        });
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.success, true);
+      assert.equal(res.body.data.isSpeech, true);
+      assert.ok(res.body.data.rms > 500, 'Tone buffer must have substantial RMS energy');
+      assert.ok(res.body.data.transcript, 'Voiced audio must record transcript turn');
+    });
+
+    // 6h: POST /rooms/:roomId/audio-chunk with silence produces no speech transcript
+    await subT.test('6h. POST /rooms/:roomId/audio-chunk detects silence and suppresses transcript spam', async () => {
+      const silenceBuffer = Buffer.alloc(3200); // 100ms of 0-value silence
+
+      const res = await request(app)
+        .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/audio-chunk`)
+        .set('x-test-user-id', testUserId)
+        .send({
+          audioBase64: silenceBuffer.toString('base64'),
+          turnIndex: 2,
+          speaker: 'candidate',
+        });
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.success, true);
+      assert.equal(res.body.data.isSpeech, false);
+      assert.equal(res.body.data.rms, 0);
+      assert.equal(res.body.data.transcript, null, 'Silence must not record DB transcript turn');
+    });
+
+    // 6i: POST /rooms/:roomId/close
+    await subT.test('6i. POST /rooms/:roomId/close completes the room and subsequent writes are 409', async () => {
       const closeRes = await request(app)
         .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/close`)
         .set('x-test-user-id', testUserId);
@@ -313,7 +365,7 @@ test('Module 29: Live MariaDB Voice Room & Transcription Integration Suite', asy
         .post(`/api/candidate/voice-interview/rooms/${httpRoomId}/transcription`)
         .set('x-test-user-id', testUserId)
         .send({
-          turnIndex: 1,
+          turnIndex: 3,
           speaker: 'candidate',
           transcriptText: 'Attempting write after closure',
         });

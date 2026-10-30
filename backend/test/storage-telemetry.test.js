@@ -131,4 +131,27 @@ test('Module 6 & 1: Storage Infrastructure Telemetry Suite', async (t) => {
       /Tenant organization was not found/
     );
   });
+
+  await t.test('5. getPlatformStorageTelemetry incorporates live S3/Wasabi object metrics and reports hybrid status', async () => {
+    const mockS3Transport = async ({ bucket }) => ({
+      connected: true,
+      provider: 'wasabi',
+      bucket,
+      region: 'us-east-1',
+      objectCount: 142,
+      objectBytes: 52428800,
+      objectMb: 50.0,
+      syncedAt: new Date().toISOString(),
+    });
+
+    const telemetry = await getPlatformStorageTelemetry(pool, { s3Transport: mockS3Transport });
+
+    assert.equal(telemetry.source, 'hybrid_s3_relational');
+    assert.equal(telemetry.isLiveCalculation, true);
+    assert.equal(telemetry.s3ObjectStorage.connected, true);
+    assert.equal(telemetry.s3ObjectStorage.provider, 'wasabi');
+    assert.equal(telemetry.s3ObjectStorage.objectBytes, 52428800);
+    assert.ok(telemetry.totalStorageBytes >= 52428800);
+  });
 });
+

@@ -19,6 +19,7 @@ const {
   recordVoiceTranscript,
   listVoiceTranscripts,
   closeVoiceRoom,
+  processVoiceAudioChunk,
 } = require('../services/voiceInterviewService');
 const { getPool } = require('../database/mysql');
 
@@ -141,6 +142,59 @@ router.get('/rooms/:roomId/transcripts', async (req, res) => {
     return failure(res, error, 'Failed to retrieve transcript history.');
   }
 });
+
+// POST /rooms/:roomId/audio-chunk - Stream WebRTC raw audio buffer / base64 chunk
+router.post(
+  '/rooms/:roomId/audio-chunk',
+  express.raw({ type: ['audio/*', 'application/octet-stream'], limit: '5mb' }),
+  express.json({ limit: '5mb' }),
+  async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const pool = getPool();
+      const { roomId } = req.params;
+
+      let audioBuffer;
+      let mimeType = req.headers['content-type'] || 'audio/pcm';
+      let sampleRate = Number(req.headers['x-sample-rate']) || 16000;
+      let turnIndex = Number(req.headers['x-turn-index']) || 0;
+      let speaker = req.headers['x-speaker'] || 'candidate';
+
+      if (Buffer.isBuffer(req.body) && req.body.length > 0) {
+        audioBuffer = req.body;
+      } else if (req.body && req.body.audioBase64) {
+        audioBuffer = Buffer.from(req.body.audioBase64, 'base64');
+        mimeType = req.body.mimeType || mimeType;
+        sampleRate = Number(req.body.sampleRate) || sampleRate;
+        turnIndex = Number(req.body.turnIndex) || turnIndex;
+        speaker = req.body.speaker || speaker;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_AUDIO_PAYLOAD', message: 'Raw binary audio buffer or base64 JSON payload is required.' },
+        });
+      }
+
+      const result = await processVoiceAudioChunk({
+        pool,
+        userId,
+        roomId,
+        audioBuffer,
+        mimeType,
+        sampleRate,
+        turnIndex,
+        speaker,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      return failure(res, error, 'Failed to process audio streaming chunk.');
+    }
+  }
+);
 
 // POST /rooms/:roomId/close - Close voice room
 router.post('/rooms/:roomId/close', async (req, res) => {

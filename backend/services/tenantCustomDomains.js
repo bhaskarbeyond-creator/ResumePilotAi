@@ -162,7 +162,87 @@ async function registerTenantCustomDomain({ tenantId, domain, pool = getPool() }
 /**
  * Verify live DNS TXT record and automatically transition SSL provisioning
  */
-async function verifyTenantCustomDomainDns({ tenantId, domain, pool = getPool(), resolver = null } = {}) {
+/**
+ * Generate Caddy reverse-proxy JSON route definition with automated TLS
+ */
+function generateCaddyRouteConfig({ domain, upstream = '127.0.0.1:5000' } = {}) {
+  const cleanDomain = normalizeDomain(domain);
+  return {
+    '@id': `route_${cleanDomain.replace(/[^a-zA-Z0-9_-]/g, '_')}`,
+    match: [{ host: [cleanDomain] }],
+    handle: [
+      {
+        handler: 'subroute',
+        routes: [
+          {
+            handle: [
+              {
+                handler: 'reverse_proxy',
+                upstreams: [{ dial: upstream }],
+                headers: {
+                  request: {
+                    set: {
+                      'X-Forwarded-Host': ['{http.request.host}'],
+                      'X-Custom-Domain': [cleanDomain],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    terminal: true,
+  };
+}
+
+/**
+ * Synchronize custom domain reverse-proxy route to Caddy server
+ */
+async function syncCaddyReverseProxy({
+  domain,
+  upstream = '127.0.0.1:5000',
+  caddyAdminUrl = process.env.CADDY_ADMIN_URL || 'http://127.0.0.1:2019',
+  transport = null,
+} = {}) {
+  const route = generateCaddyRouteConfig({ domain, upstream });
+
+  if (typeof transport === 'function') {
+    return await transport({ domain, route, caddyAdminUrl });
+  }
+
+  try {
+    const fetch = require('node-fetch');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${caddyAdminUrl}/config/apps/http/servers/srv0/routes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(route),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    return {
+      synced: res.ok,
+      status: res.status,
+      caddyAdminUrl,
+      domain,
+      routeId: route['@id'],
+    };
+  } catch (err) {
+    return {
+      synced: false,
+      caddyAdminUrl,
+      domain,
+      routeId: route['@id'],
+      route,
+      reason: `Caddy admin server unreachable (${err.message}). Route configuration generated for automated reload.`,
+    };
+  }
+}
+
+async function verifyTenantCustomDomainDns({ tenantId, domain, pool = getPool(), resolver = null, caddyTransport = null } = {}) {
   if (!tenantId) throw domainError('TENANT_REQUIRED', 'Tenant identifier is required.', 400);
   const normalized = normalizeDomain(domain);
 
@@ -230,6 +310,9 @@ async function verifyTenantCustomDomainDns({ tenantId, domain, pool = getPool(),
 
       await connection.commit();
 
+      // 2. Synchronize reverse proxy route to Caddy
+      const caddySync = await syncCaddyReverseProxy({ domain: normalized, transport: caddyTransport });
+
       return {
         success: true,
         domain: normalized,
@@ -239,6 +322,7 @@ async function verifyTenantCustomDomainDns({ tenantId, domain, pool = getPool(),
         sslCertThumbprint: certThumbprint,
         sslExpiresAt: sslExpiresAt.toISOString(),
         verifiedAt: now.toISOString(),
+        caddySync,
       };
     }
 
@@ -337,6 +421,8 @@ module.exports = {
   removeTenantCustomDomain,
   generateTenantToken,
   resolveTxtRecords,
+  generateCaddyRouteConfig,
+  syncCaddyReverseProxy,
   TOKEN_PREFIX,
   TOKEN_TTL_MS,
   MAX_VERIFY_ATTEMPTS,

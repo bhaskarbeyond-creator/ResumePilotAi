@@ -218,4 +218,30 @@ test('Module 12 & 21: Tenant Custom Domains & Automated SSL Suite', async (t) =>
     const domainInfoAfter = await getTenantCustomDomain({ tenantId: tenantA, pool });
     assert.equal(domainInfoAfter, null);
   });
+
+  await t.test('8. generates server-authoritative Caddy reverse-proxy route and synchronizes with TLS automation', async () => {
+    const { generateCaddyRouteConfig, syncCaddyReverseProxy } = require('../services/tenantCustomDomains');
+
+    const config = generateCaddyRouteConfig({ domain: 'careers.acme-corp.com', upstream: '127.0.0.1:5000' });
+    assert.equal(config['@id'], 'route_careers_acme-corp_com');
+    assert.deepEqual(config.match[0].host, ['careers.acme-corp.com']);
+    assert.equal(config.handle[0].routes[0].handle[0].handler, 'reverse_proxy');
+
+    const mockTransport = async ({ domain, route, caddyAdminUrl }) => ({
+      synced: true,
+      status: 200,
+      caddyAdminUrl,
+      domain,
+      routeId: route['@id'],
+    });
+
+    const syncResult = await syncCaddyReverseProxy({
+      domain: 'careers.acme-corp.com',
+      transport: mockTransport,
+    });
+
+    assert.equal(syncResult.synced, true);
+    assert.equal(syncResult.routeId, 'route_careers_acme-corp_com');
+  });
 });
+
