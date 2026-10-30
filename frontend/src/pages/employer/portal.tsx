@@ -1,4 +1,5 @@
 import { useAuth } from '@/providers/auth-provider';
+import { get, post } from '@/lib/api-client';
 /**
  * Employer Portal — Surface 3 Modernization
  *
@@ -12,7 +13,7 @@ import { useAuth } from '@/providers/auth-provider';
  * - ZERO phantom hooks, ZERO fake mock profiles
  */
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Briefcase,
@@ -22,7 +23,6 @@ import {
   TrendingUp,
   Plus,
   Search,
-  CheckCircle2,
   Clock,
   ChevronRight,
   MapPin,
@@ -53,7 +53,7 @@ import {
 } from '@/hooks/use-api-hooks';
 import { CreateJobModal } from '@/components/employer/CreateJobModal';
 import { CandidateReviewDrawer } from '@/components/employer/CandidateReviewDrawer';
-import { EmployerInterviewSlotManagerDialog } from '@/components/employer/EmployerInterviewSlotPanel';
+import { InterviewSlotManager } from '@/components/employer/InterviewSlotManager';
 import { CompanyProfile } from '@/components/employer/CompanyProfile';
 import { TeamSeats } from '@/components/employer/TeamSeats';
 
@@ -74,7 +74,7 @@ const KANBAN_STAGES = [
 ] as const;
 
 export function EmployerPortalPage() {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, user } = useAuth();
 
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -146,55 +146,127 @@ export function EmployerPortalPage() {
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Messages state
-  const [activeChatCandidate, setActiveChatCandidate] = useState<string>('Sarah Jenkins');
-  const [newMessageText, setNewMessageText] = useState('');
-  const [candidateThreads, setCandidateThreads] = useState<Record<string, {
+  // Messages are server-authoritative. A conversation is never synthesized from a candidate list.
+  type EmployerConversation = {
+    id: string;
+    applicationId: string | null;
+    participants: Record<string, boolean>;
+    lastMessage: { id: string; senderId: string; text: string; timestamp: number | string } | null;
+    unreadCount: number;
+    candidateName: string;
     role: string;
-    atsScore: number;
-    unread?: boolean;
-    preview?: string;
-    messages: Array<{ sender: 'recruiter' | 'candidate'; text: string; time: string }>;
-  }>>({
-    'Sarah Jenkins': {
-      role: 'Senior Full-Stack Engineer',
-      atsScore: 88,
-      unread: false,
-      preview: 'Yes, Thursday 2:00 PM EST works...',
-      messages: [
-        { sender: 'candidate', text: 'Hello, thank you for considering my application for Senior Full-Stack Engineer!', time: '10:14 AM' },
-        { sender: 'recruiter', text: 'Hi Sarah, your ATS score and past React/Node experience look stellar. Would you be free for an initial screening call this Thursday?', time: '10:30 AM' },
-        { sender: 'candidate', text: 'Yes, Thursday 2:00 PM EST works perfectly for me. Looking forward to speaking with the team!', time: '10:45 AM' },
-      ],
-    },
-    'David Chen': {
-      role: 'Staff Backend Architect',
-      atsScore: 94,
-      unread: true,
-      preview: 'Attached is my updated portfolio repo...',
-      messages: [
-        { sender: 'candidate', text: 'Hi, attached is my updated portfolio repo and system architecture diagram for review.', time: '09:20 AM' },
-        { sender: 'recruiter', text: 'Thanks David! The distributed queue design matches our technical roadmap closely.', time: '09:45 AM' },
-      ],
-    },
-    'Emily Watson': {
-      role: 'Lead Product Designer',
-      atsScore: 91,
-      unread: false,
-      preview: 'Thank you for the quick interview update!',
-      messages: [
-        { sender: 'candidate', text: 'Thank you for the quick interview update! I have prepared the Cuba design audit deck.', time: 'Yesterday' },
-        { sender: 'recruiter', text: 'Terrific Emily, our design directors will join the walkthrough presentation.', time: 'Yesterday' },
-      ],
-    },
-  });
+  };
+  type ConversationMessage = { id: string; senderId: string; text: string; timestamp: number | string };
+  const [conversations, setConversations] = useState<EmployerConversation[]>([]);
+  const [messagesByConversation, setMessagesByConversation] = useState<Record<string, ConversationMessage[]>>({});
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [newMessageText, setNewMessageText] = useState('');
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [conversationsError, setConversationsError] = useState('');
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState('');
+  const [readError, setReadError] = useState('');
+  const [messageSending, setMessageSending] = useState(false);
+  const activeConversationIdRef = useRef<string | null>(null);
+  activeConversationIdRef.current = activeConversationId;
 
-  // Settings state
-  const [settingsSaved, setSettingsSaved] = useState(false);
+  // Settings cannot claim persistence until an employer-scoped backend contract exists.
+  const [settingsError, setSettingsError] = useState('');
   const [showInterviewSlotManager, setShowInterviewSlotManager] = useState(false);
-  const [emailAlertFrequency, setEmailAlertFrequency] = useState('instant');
-  const [atsThreshold, setAtsThreshold] = useState('75');
-  const [calendarLink, setCalendarLink] = useState('https://calendly.com/talent-team/interview');
+  const [emailAlertFrequency, setEmailAlertFrequency] = useState('');
+  const [atsThreshold, setAtsThreshold] = useState('');
+  const [calendarMode, setCalendarMode] = useState<'native' | 'external'>('native');
+  const [calendarLink, setCalendarLink] = useState('');
+
+  const loadConversations = useCallback(async () => {
+    setConversationsLoading(true);
+    setConversationsError('');
+    try {
+      const response = await get<{ success: boolean; conversations: Array<Omit<EmployerConversation, 'candidateName' | 'role'>> }>('/messages/conversations');
+      const rows = await Promise.all((response.conversations || []).map(async (conversation) => {
+        const otherParticipantId = Object.keys(conversation.participants || {}).find((id) => id !== user?.uid);
+        let candidateName = 'Candidate';
+        if (otherParticipantId) {
+          try {
+            const profile = await get<{ profile?: { name?: string } }>(`/messages/conversations/${encodeURIComponent(conversation.id)}/participant-profile`);
+            candidateName = profile.profile?.name?.trim() || candidateName;
+          } catch { /* Show an honest generic label when the profile endpoint fails. */ }
+        }
+        const application = applications.find((item) => String(item.id) === String(conversation.applicationId));
+        const job = jobs.find((item) => String(item.id) === String(application?.jobId));
+        return { ...conversation, candidateName, role: job?.title || 'Role unavailable' };
+      }));
+      setConversations(rows);
+    } catch (error) {
+      setConversationsError(error instanceof Error ? error.message : 'Conversations could not be loaded.');
+    } finally {
+      setConversationsLoading(false);
+    }
+  }, [applications, jobs, user?.uid]);
+
+  useEffect(() => {
+    if (activeTab === 'messages') void loadConversations();
+  }, [activeTab, loadConversations]);
+
+  const loadMessages = useCallback(async (conversationId: string) => {
+    setMessagesLoading(true);
+    setMessagesError('');
+    const selectedId = conversationId;
+    try {
+      const response = await get<{ success: boolean; messages: ConversationMessage[] }>(`/messages/conversations/${encodeURIComponent(conversationId)}/messages?limit=100`);
+      if (selectedId !== activeConversationIdRef.current) return;
+      const messages = (response.messages || []).slice().sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+      setMessagesByConversation((previous) => ({ ...previous, [conversationId]: messages }));
+      const thread = conversations.find((item) => item.id === conversationId);
+      const newest = messages[messages.length - 1];
+      if (thread && thread.unreadCount > 0 && newest) {
+        setReadError('');
+        try {
+          await post(`/messages/conversations/${encodeURIComponent(conversationId)}/read`, { lastReadMessageId: newest.id });
+          setConversations((previous) => previous.map((item) => item.id === conversationId ? { ...item, unreadCount: 0 } : item));
+        } catch (error) {
+          if (selectedId === activeConversationIdRef.current) setReadError(error instanceof Error ? error.message : 'Read state could not be synchronized.');
+        }
+      }
+    } catch (error) {
+      if (selectedId === activeConversationIdRef.current) {
+        setMessagesError(error instanceof Error ? error.message : 'Messages could not be loaded.');
+      }
+    } finally {
+      if (selectedId === activeConversationIdRef.current) setMessagesLoading(false);
+    }
+  }, [conversations, user?.uid]);
+
+  useEffect(() => {
+    if (activeConversationId) void loadMessages(activeConversationId);
+  }, [activeConversationId, loadMessages]);
+
+  const handleSendMessage = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = newMessageText.trim();
+    if (!activeConversationId || !text || messageSending) return;
+    setMessageSending(true);
+    setMessagesError('');
+    try {
+      const response = await post<{ success: boolean; messageId: string }>('/messages/send', { conversationId: activeConversationId, text });
+      if (!response?.success || !response.messageId) throw new Error('The server did not confirm the message.');
+      setNewMessageText('');
+      // Re-read the authoritative message history for the server ID and timestamp.
+      const history = await get<{ messages: ConversationMessage[] }>(`/messages/conversations/${encodeURIComponent(activeConversationId)}/messages?limit=100`);
+      const ordered = (history.messages || []).slice().sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+      setMessagesByConversation((previous) => ({ ...previous, [activeConversationId]: ordered }));
+      await loadConversations();
+    } catch (error) {
+      setMessagesError(error instanceof Error ? error.message : 'Message could not be sent. Please retry.');
+    } finally {
+      setMessageSending(false);
+    }
+  };
+
+  const handleSaveSettings = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSettingsError('Employer preferences are not available through an authorized persistence endpoint in this branch. No settings were saved.');
+  };
 
   // Filter applications by search
   const filteredApplications = useMemo(() => {
@@ -236,29 +308,6 @@ export function EmployerPortalPage() {
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessageText.trim()) return;
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setCandidateThreads((prev) => ({
-      ...prev,
-      [activeChatCandidate]: {
-        ...prev[activeChatCandidate],
-        preview: newMessageText.trim(),
-        messages: [
-          ...(prev[activeChatCandidate]?.messages || []),
-          { sender: 'recruiter', text: newMessageText.trim(), time: now },
-        ],
-      },
-    }));
-    setNewMessageText('');
-  };
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
-  };
 
   return (
     <div data-testid="employer-portal" className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -977,122 +1026,48 @@ export function EmployerPortalPage() {
       {activeTab === 'messages' && (
         <Card className="border-edge shadow-xs bg-surface overflow-hidden">
           <CardHeader className="border-b border-edge pb-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <CardTitle className="text-sm font-bold text-ink flex items-center gap-2">
-                  <MessageSquare className="size-4 text-accent" /> Candidate Conversations
-                </CardTitle>
-                <CardDescription className="text-xs text-ink-muted">
-                  Live messaging threads with applicants across your requisitions.
-                </CardDescription>
-              </div>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                ● Live sync connected
-              </span>
-            </div>
+            <CardTitle className="text-sm font-bold text-ink flex items-center gap-2"><MessageSquare className="size-4 text-accent" /> Candidate Conversations</CardTitle>
+            <CardDescription className="text-xs text-ink-muted">Server-backed messages from authorized application conversations.</CardDescription>
           </CardHeader>
           <CardContent className="p-0 flex flex-col md:flex-row min-h-[480px]">
-            {/* Candidate list rail */}
-            <div className="w-full md:w-72 border-r border-edge bg-canvas-soft/40 p-3 space-y-2 shrink-0">
-              <div className="relative mb-2">
-                <Search className="size-3.5 text-ink-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <Input placeholder="Search messages..." className="text-xs h-8 pl-8" />
-              </div>
-              {Object.entries(candidateThreads).map(([name, data]) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => setActiveChatCandidate(name)}
-                  className={cn(
-                    'w-full text-left p-2.5 rounded-xl text-xs transition-all cursor-pointer flex flex-col gap-0.5',
-                    activeChatCandidate === name
-                      ? 'bg-accent text-white shadow-2xs font-semibold'
-                      : 'hover:bg-surface text-ink'
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold truncate">{name}</span>
-                    {data.unread && (
-                      <span className="size-2 rounded-full bg-accent-soft border border-white" />
-                    )}
-                  </div>
-                  <span className={cn('text-[11px] truncate', activeChatCandidate === name ? 'text-white/80' : 'text-ink-muted')}>
-                    {data.role}
-                  </span>
-                  <p className={cn('text-[10px] truncate', activeChatCandidate === name ? 'text-white/70' : 'text-ink-muted')}>
-                    {data.preview}
-                  </p>
+            <div className="w-full md:w-72 border-r border-edge bg-canvas-soft/40 p-3 space-y-2 shrink-0" aria-label="Candidate conversations">
+              {conversationsLoading && <p role="status" className="p-3 text-xs text-ink-muted">Loading conversations…</p>}
+              {conversationsError && <p role="alert" className="p-3 text-xs text-red-700">{conversationsError}</p>}
+              {!conversationsLoading && !conversationsError && conversations.length === 0 && (
+                <div className="p-4 text-center"><p className="text-sm font-semibold text-ink">No Active Candidate Conversations</p><p className="mt-1 text-xs text-ink-muted">Initiate communication through a candidate in your hiring pipeline.</p></div>
+              )}
+              {conversations.map((conversation) => (
+                <button key={conversation.id} type="button" onClick={() => { setMessagesError(''); setReadError(''); setActiveConversationId(conversation.id); }}
+                  aria-pressed={activeConversationId === conversation.id}
+                  className={cn('w-full text-left p-3 rounded-xl text-xs flex flex-col gap-1', activeConversationId === conversation.id ? 'bg-accent text-white' : 'hover:bg-surface text-ink')}>
+                  <span className="flex items-center justify-between gap-2"><span className="font-bold truncate">{conversation.candidateName}</span>{conversation.unreadCount > 0 && <span aria-label={`${conversation.unreadCount} unread messages`} className="min-w-5 rounded-full bg-accent-soft px-1.5 text-center text-[10px] text-white">{conversation.unreadCount}</span>}</span>
+                  <span className="truncate opacity-80">{conversation.role}</span>
+                  <span className="truncate opacity-75">{conversation.lastMessage?.text || 'No messages yet'}</span>
+                  {conversation.lastMessage?.timestamp && <time className="text-[10px] opacity-70" dateTime={new Date(Number(conversation.lastMessage.timestamp)).toISOString()}>{new Date(Number(conversation.lastMessage.timestamp)).toLocaleString()}</time>}
                 </button>
               ))}
             </div>
-
-            {/* Conversation view & send box */}
-            {(() => {
-              const activeThread = candidateThreads[activeChatCandidate] || candidateThreads['Sarah Jenkins'];
-              return (
-                <div className="flex-1 flex flex-col justify-between p-4 bg-surface min-h-[400px]">
-                  <div>
-                    <div className="flex items-center justify-between border-b border-edge pb-3 mb-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="size-8 rounded-full bg-accent text-white font-bold text-xs flex items-center justify-center">
-                          {activeChatCandidate.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-ink">{activeChatCandidate}</p>
-                          <p className="text-[10px] text-ink-muted">Applicant • {activeThread?.role}</p>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-7"
-                        onClick={() => handleSelectTab('pipeline')}
-                      >
-                        View ATS Score ({activeThread?.atsScore || 85}%)
-                      </Button>
-                    </div>
-
-                    {/* Message bubbles */}
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                      {activeThread?.messages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={cn(
-                            'flex flex-col max-w-[80%]',
-                            msg.sender === 'recruiter' ? 'ml-auto items-end' : 'mr-auto items-start'
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              'p-3 rounded-2xl text-xs leading-relaxed',
-                              msg.sender === 'recruiter'
-                                ? 'bg-accent text-white rounded-br-xs'
-                                : 'bg-canvas-soft border border-edge text-ink rounded-bl-xs'
-                            )}
-                          >
-                            {msg.text}
-                          </div>
-                          <span className="text-[10px] text-ink-muted mt-1 px-1">{msg.time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Chat Input */}
-                  <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-3 border-t border-edge mt-4">
-                    <Input
-                      value={newMessageText}
-                      onChange={(e) => setNewMessageText(e.target.value)}
-                      placeholder={`Reply to ${activeChatCandidate}...`}
-                      className="text-xs h-9"
-                    />
-                    <Button type="submit" size="sm" className="h-9 px-3 bg-accent hover:bg-accent/90 gap-1.5 shrink-0">
-                      <Send className="size-3.5" /> Send
-                    </Button>
-                  </form>
+            <div className="flex-1 flex flex-col p-4 bg-surface min-h-[400px]">
+              {!activeConversationId ? <p className="m-auto text-sm text-ink-muted">Select a conversation to view its messages.</p> : <>
+                <div className="flex-1 space-y-3 max-h-[360px] overflow-y-auto pr-1" aria-live="polite" aria-busy={messagesLoading}>
+                  {messagesLoading && <p role="status" className="text-xs text-ink-muted">Loading message history…</p>}
+                  {messagesError && <p role="alert" className="text-xs text-red-700">{messagesError}</p>}
+                  {readError && <p role="alert" className="text-xs text-red-700">{readError}</p>}
+                  {(messagesByConversation[activeConversationId] || []).map((message) => {
+                    const mine = message.senderId === user?.uid;
+                    return <div key={message.id} className={cn('flex flex-col max-w-[80%]', mine ? 'ml-auto items-end' : 'mr-auto items-start')}>
+                      <p className={cn('p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words', mine ? 'bg-accent text-white' : 'bg-canvas-soft border border-edge text-ink')}>{message.text}</p>
+                      <time className="text-[10px] text-ink-muted mt-1 px-1" dateTime={new Date(Number(message.timestamp)).toISOString()}>{new Date(Number(message.timestamp)).toLocaleString()}</time>
+                    </div>;
+                  })}
+                  {!messagesLoading && !messagesError && (messagesByConversation[activeConversationId] || []).length === 0 && <p className="text-xs text-ink-muted">No messages in this conversation yet.</p>}
                 </div>
-              );
-            })()}
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-3 border-t border-edge mt-4">
+                  <Input aria-label="Message text" value={newMessageText} onChange={(event) => setNewMessageText(event.target.value)} placeholder="Write a reply…" disabled={messageSending} className="text-xs h-9" />
+                  <Button type="submit" size="sm" disabled={!newMessageText.trim() || messageSending} aria-busy={messageSending} className="h-9 px-3 gap-1.5 shrink-0"><Send className="size-3.5" />{messageSending ? 'Sending…' : 'Send'}</Button>
+                </form>
+              </>}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -1110,6 +1085,7 @@ export function EmployerPortalPage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <form onSubmit={handleSaveSettings} className="space-y-5">
+              <p role="note" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">Hiring preference persistence is not exposed by the authorized backend routes in this branch. Values below are unsaved and will not be represented as saved.</p>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-ink">Applicant Email Alerts</label>
                 <select
@@ -1117,6 +1093,7 @@ export function EmployerPortalPage() {
                   onChange={(e) => setEmailAlertFrequency(e.target.value)}
                   className="w-full text-xs h-9 px-3 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold"
                 >
+                  <option value="">Choose alert frequency</option>
                   <option value="instant">Instant — Notify on every applicant submission</option>
                   <option value="daily">Daily Digest — Summary at 9:00 AM</option>
                   <option value="off">Off — Review directly inside the ATS pipeline</option>
@@ -1138,26 +1115,18 @@ export function EmployerPortalPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-ink">Candidate Interview Scheduling Link</label>
-                <Input
-                  type="url"
-                  value={calendarLink}
-                  onChange={(e) => setCalendarLink(e.target.value)}
-                  placeholder="https://calendly.com/your-team/30min"
-                  className="text-xs h-9"
-                />
-                <p className="text-[11px] text-ink-muted">Included in candidate interview invitation emails.</p>
+                <label htmlFor="calendar-mode" className="text-xs font-bold text-ink">Interview Scheduling Mode</label>
+                <select id="calendar-mode" value={calendarMode} onChange={(event) => setCalendarMode(event.target.value as 'native' | 'external')} className="w-full text-xs h-9 px-3 rounded-lg border border-edge bg-canvas-soft text-ink font-semibold">
+                  <option value="native">Direct Native Slots</option><option value="external">External Calendar Link</option>
+                </select>
+                {calendarMode === 'external' && <><Input aria-label="External calendar link" type="url" value={calendarLink} onChange={(event) => setCalendarLink(event.target.value)} placeholder="Enter your configured HTTPS calendar URL" className="text-xs h-9" /><p className="text-[11px] text-ink-muted">External links are not operational until employer settings persistence is available.</p></>}
               </div>
 
               <div className="pt-3 border-t border-edge flex items-center gap-3">
                 <Button type="submit" size="sm" className="bg-accent hover:bg-accent/90 text-xs font-semibold">
                   Save Hiring Preferences
                 </Button>
-                {settingsSaved && (
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="size-3.5" /> Preferences updated successfully!
-                  </span>
-                )}
+                {settingsError && <span role="alert" className="text-xs text-red-700">{settingsError}</span>}
               </div>
             </form>
           </CardContent>
@@ -1175,10 +1144,7 @@ export function EmployerPortalPage() {
       />
 
       {/* ─── Employer Interview Slot Manager Dialog ─── */}
-      <EmployerInterviewSlotManagerDialog
-        open={showInterviewSlotManager}
-        onOpenChange={setShowInterviewSlotManager}
-      />
+      <InterviewSlotManager open={showInterviewSlotManager} onOpenChange={setShowInterviewSlotManager} />
 
       {/* ─── Candidate Review Drawer ─── */}
       <CandidateReviewDrawer

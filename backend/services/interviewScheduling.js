@@ -240,6 +240,9 @@ async function bookSlot({ slotId, applicationId, actorUid, now = new Date(), poo
     if (!application || String(application.employer_id) !== String(slot.employer_id)) {
       throw scheduleError('APPLICATION_NOT_FOUND', 'Application not found for this employer.', 404);
     }
+    if (new Date(slot.start_time).getTime() <= new Date(now).getTime()) {
+      throw scheduleError('SLOT_IN_TIME_PAST', 'A past interview slot cannot be booked.', 409);
+    }
     const isApplicant = String(application.applicant_id) === String(actorUid);
     const isSlotOwner = String(slot.employer_id) === String(actorUid);
     if (!isApplicant && !isSlotOwner) {

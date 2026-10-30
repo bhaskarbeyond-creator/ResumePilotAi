@@ -3,6 +3,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { getRepository } = require('../repositories');
+const { getPool } = require('../database/mysql');
 const router = express.Router();
 
 // DIR-020: shared allow-lists for the Kanban card metadata and interview
@@ -402,6 +403,79 @@ function applicantContactUpdate(body) {
     }
     return fields;
 }
+
+function requireEmployer(req, res, next) {
+    if (!req.user?.uid) return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Authentication required.' });
+    if (req.user?.claims?.employer !== true) return res.status(403).json({ success: false, code: 'EMPLOYER_ACCESS_REQUIRED', error: 'Approved employer access is required.' });
+    return next();
+}
+
+function parseApplicationExtra(value) {
+    if (!value) return {};
+    if (typeof value === 'object' && !Array.isArray(value)) return value;
+    try { const parsed = JSON.parse(String(value)); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}; }
+    catch { return {}; }
+}
+
+function scorecardView(row) {
+    if (!row) return null;
+    const extra = parseApplicationExtra(row.extra_json);
+    const recommendation = extra.evaluationRecommendation;
+    if ((Number(row.rating) < 1 || Number(row.rating) > 5) && !String(row.notes || '').trim() && !recommendation) return null;
+    return { applicationId: row.id, rating: Number(row.rating) || null, notes: row.notes || '', recommendation: recommendation || null, updatedAt: row.updated_at || null };
+}
+
+// Employer-owned relational scorecard. The current schema has no
+// application_evaluations table; rating and notes use existing applications
+// columns and recommendation is preserved under applications.extra_json.
+router.get('/applications/:id/evaluate', requireEmployer, async (req, res) => {
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(String(req.params.id || ''))) return res.status(400).json({ success: false, error: 'Invalid application ID.' });
+    try {
+        const [rows] = await getPool().query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [req.params.id, req.user.uid]);
+        if (!rows.length) return res.status(404).json({ success: false, error: 'Application not found.' });
+        return res.json({ success: true, evaluation: scorecardView(rows[0]) });
+    } catch (error) {
+        console.error('[Application evaluation read]', error?.code || error?.message || error);
+        return res.status(503).json({ success: false, error: 'Evaluation is temporarily unavailable.' });
+    }
+});
+
+router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
+    const applicationId = String(req.params.id || '');
+    const rating = Number(req.body?.rating);
+    const notes = String(req.body?.notes ?? '').replace(/\r\n?/g, '\n').trim();
+    const recommendation = String(req.body?.recommendation || '').trim();
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) return res.status(400).json({ success: false, error: 'Invalid application ID.' });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be an integer from 1 to 5.' });
+    if (!notes || notes.length > 1000) return res.status(400).json({ success: false, error: 'Hiring notes are required and must be 1,000 characters or fewer.' });
+    if (!['Move to Offer', 'Reject', 'Hold'].includes(recommendation)) return res.status(400).json({ success: false, error: 'Choose Move to Offer, Reject, or Hold.' });
+    const pool = getPool();
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [rows] = await connection.query('SELECT id, extra_json FROM applications WHERE id = ? AND employer_id = ? FOR UPDATE', [applicationId, req.user.uid]);
+        if (!rows.length) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, error: 'Application not found.' });
+        }
+        const extra = parseApplicationExtra(rows[0].extra_json);
+        extra.evaluationRecommendation = recommendation;
+        const [result] = await connection.query(
+            'UPDATE applications SET rating = ?, notes = ?, extra_json = ? WHERE id = ? AND employer_id = ?',
+            [rating, notes, JSON.stringify(extra), applicationId, req.user.uid]
+        );
+        if (Number(result?.affectedRows || 0) !== 1) throw new Error('Evaluation persistence did not update one application.');
+        const [savedRows] = await connection.query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [applicationId, req.user.uid]);
+        await connection.commit();
+        return res.json({ success: true, evaluation: scorecardView(savedRows[0]) });
+    } catch (error) {
+        await connection.rollback().catch(() => {});
+        console.error('[Application evaluation write]', error?.code || error?.message || error);
+        return res.status(503).json({ success: false, error: 'Evaluation could not be saved.' });
+    } finally {
+        connection.release();
+    }
+});
 
 // GET /api/jobs-data/applications/list - My applications (owner-scoped; zero-trust)
 router.get('/applications/list', requireCandidate, async (req, res) => {

@@ -25,10 +25,12 @@ const MAX_LINE_OCTETS = 75;
 /** Escape a value for use inside an iCalendar TEXT property (RFC 5545 §3.3.11). */
 function escapeIcalText(value) {
   return String(value == null ? '' : value)
-    // Control characters are not allowed in a TEXT value at all.
+    // Escape existing backslashes before turning physical newlines into the
+    // single RFC 5545 TEXT newline escape; reversing these operations doubles
+    // the escape and changes a line break into literal backslash-plus-n text.
+    .replace(/\\/g, '\\\\')
     .replace(/\r\n|\r|\n/g, '\\n')
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
-    .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,');
 }
