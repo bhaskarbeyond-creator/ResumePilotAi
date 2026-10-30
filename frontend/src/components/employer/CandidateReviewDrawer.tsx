@@ -4,8 +4,8 @@
  * Slide-out candidate evaluation drawer:
  * - Real candidate metadata from GET /api/jobs/:jobId/applications
  * - Live candidate resume preview via GET /api/employer/jobs/:jobId/applications/:applicationId/resume
- * - ATS semantic match breakdown & score gauge
- * - Recruiter notes auto-save & 5-star rating assessment
+ * - Server-backed recruiter evaluation and interview scheduling
+ * - Relational recruiter rating, hiring notes and stage recommendation
  * - Status transition state machine (pending -> interview|accepted|rejected, etc.)
  * - Optimistic concurrency locking via PATCH /api/job-applications/:applicationId/status
  * - Confirmation dialogs for Rejections and Offers
@@ -17,7 +17,6 @@ import {
   Mail,
   Phone,
   Calendar,
-  Sparkles,
   FileText,
   Star,
   CheckCircle2,
@@ -49,7 +48,7 @@ import { normalizeResumeToDocument } from '@/lib/resume-view-model';
 import { tryGetTemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
 import { EmployerInterviewSlotPanel } from '@/components/employer/EmployerInterviewSlotPanel';
-import { post } from '@/lib/api-client';
+import { apiClient, get, post } from '@/lib/api-client';
 import {
   useApplicationResume,
   useUpdateApplicationStatus,
@@ -76,7 +75,12 @@ export function CandidateReviewDrawer({
   const updateStatusMutation = useUpdateApplicationStatus();
 
   const [notes, setNotes] = useState('');
-  const [rating, setRating] = useState(4);
+  const [rating, setRating] = useState(0);
+  const [recommendation, setRecommendation] = useState('');
+  const [evaluationLoading, setEvaluationLoading] = useState(false);
+  const [evaluationSaving, setEvaluationSaving] = useState(false);
+  const [evaluationError, setEvaluationError] = useState('');
+  const [evaluationSaved, setEvaluationSaved] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     targetStatus: string;
     title: string;
@@ -110,6 +114,10 @@ export function CandidateReviewDrawer({
   useEffect(() => {
     if (application) {
       setNotes('');
+      setRating(0);
+      setRecommendation('');
+      setEvaluationError('');
+      setEvaluationSaved(false);
       setRejectionFeedback('');
       setActionError('');
       setSavedSuccess(false);
@@ -120,6 +128,55 @@ export function CandidateReviewDrawer({
       setZoomLevel(100);
     }
   }, [application]);
+
+  useEffect(() => {
+    if (!application?.id) return;
+    let current = true;
+    setEvaluationLoading(true);
+    setEvaluationError('');
+    get<{ success: boolean; evaluation: { rating: number | null; notes: string; recommendation: string | null } | null }>(`/jobs-data/applications/${encodeURIComponent(application.id)}/evaluate`)
+      .then((response) => {
+        if (!current) return;
+        if (response.evaluation) {
+          setRating(Number(response.evaluation.rating) || 0);
+          setNotes(response.evaluation.notes || '');
+          setRecommendation(response.evaluation.recommendation || '');
+        } else {
+          setRating(0);
+          setNotes('');
+          setRecommendation('');
+        }
+      })
+      .catch((error: unknown) => {
+        if (current) setEvaluationError(error instanceof Error ? error.message : 'Saved evaluation could not be loaded.');
+      })
+      .finally(() => { if (current) setEvaluationLoading(false); });
+    return () => { current = false; };
+  }, [application?.id]);
+
+  const handleSaveEvaluation = async () => {
+    if (!application?.id || evaluationSaving) return;
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !notes.trim() || !recommendation) {
+      setEvaluationError('Provide a rating, hiring notes, and a stage recommendation before saving.');
+      setEvaluationSaved(false);
+      return;
+    }
+    setEvaluationSaving(true);
+    setEvaluationError('');
+    setEvaluationSaved(false);
+    try {
+      const response = await apiClient.put<{ success: boolean; evaluation: { rating: number; notes: string; recommendation: string } }>(`/jobs-data/applications/${encodeURIComponent(application.id)}/evaluate`, { rating, notes: notes.trim(), recommendation });
+      if (!response.data?.success || !response.data.evaluation) throw new Error('The server did not confirm the saved evaluation.');
+      setRating(response.data.evaluation.rating);
+      setNotes(response.data.evaluation.notes);
+      setRecommendation(response.data.evaluation.recommendation);
+      setEvaluationSaved(true);
+    } catch (error) {
+      setEvaluationError(error instanceof Error ? error.message : 'Evaluation could not be saved.');
+    } finally {
+      setEvaluationSaving(false);
+    }
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -279,14 +336,15 @@ export function CandidateReviewDrawer({
 
   const executeTransition = async (targetStatus: string) => {
     setActionError('');
+    const combinedNotes = [
+      rejectionFeedback.trim() ? `[Feedback: ${rejectionFeedback.trim()}]` : null,
+      notes.trim() || null,
+    ].filter(Boolean).join(' • ');
+    if (combinedNotes.length > 1000) {
+      setActionError('Keep the combined hiring notes and rejection feedback to 1,000 characters before changing the stage.');
+      return;
+    }
     try {
-      const combinedNotes = [
-        rejectionFeedback.trim() ? `[Feedback: ${rejectionFeedback.trim()}]` : null,
-        notes.trim() || null,
-      ]
-        .filter(Boolean)
-        .join(' • ');
-
       await updateStatusMutation.mutateAsync({
         applicationId: application.id,
         status: targetStatus,
@@ -432,32 +490,11 @@ export function CandidateReviewDrawer({
 
         {/* Content Body */}
         <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
-          {/* ATS Compatibility Meter */}
-          <div className="p-4 rounded-xl border border-edge bg-canvas-soft/60 flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-ink">
-                <Sparkles className="size-4 text-accent" />
-                <span>AI ATS Semantic Match Score</span>
-              </div>
-              <p className="text-[11px] text-ink-muted">
-                Evaluated against job requirements & target keywords
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                88%
-              </span>
-              <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                Strong Match
-              </span>
-            </div>
-          </div>
-
           {/* Rating Assessment */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-ink">
-              Recruiter Evaluation Score
-            </label>
+            <label className="block text-xs font-semibold text-ink">Recruiter Evaluation Score</label>
+            {evaluationLoading && <p role="status" className="text-xs text-ink-muted">Loading saved evaluation…</p>}
+            {evaluationError && <p role="alert" className="text-xs text-red-700">{evaluationError}</p>}
             <div className="flex items-center gap-1" role="group" aria-label="Recruiter evaluation score">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -478,7 +515,7 @@ export function CandidateReviewDrawer({
                 </button>
               ))}
               <span className="text-xs font-semibold text-ink-muted ml-2">
-                {rating} of 5 Stars
+                {rating ? `${rating} of 5 Stars` : 'Not rated'}
               </span>
             </div>
           </div>
@@ -610,11 +647,24 @@ export function CandidateReviewDrawer({
             <Textarea
               id="candidate-internal-notes"
               rows={3}
+              maxLength={1000}
               placeholder="Record interviewer impressions, compensation discussions, or follow-up milestones..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="text-xs resize-y"
             />
+            <div className="space-y-1.5">
+              <label htmlFor="evaluation-recommendation" className="text-xs font-semibold text-ink">Stage recommendation</label>
+              <select id="evaluation-recommendation" value={recommendation} onChange={(event) => setRecommendation(event.target.value)} className="h-9 w-full rounded-lg border border-edge bg-canvas-soft px-3 text-xs text-ink">
+                <option value="">Select recommendation</option><option value="Move to Offer">Move to Offer</option><option value="Reject">Reject</option><option value="Hold">Hold</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => void handleSaveEvaluation()} disabled={evaluationSaving || evaluationLoading} aria-busy={evaluationSaving}>
+                <Save className="size-3 mr-1" />{evaluationSaving ? 'Saving evaluation…' : 'Save Evaluation'}
+              </Button>
+              {evaluationSaved && <span role="status" className="text-xs text-emerald-700">Evaluation saved.</span>}
+            </div>
           </div>
         </div>
 
