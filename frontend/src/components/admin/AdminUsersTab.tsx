@@ -15,9 +15,10 @@ import { listEnterpriseTenants, subscribeTenants, ENTERPRISE_ROLES, type Enterpr
  * 2. AUDIT TRAIL GENERATION: Account mutations generate cryptographic audit logs.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { get, post, patch, put, normalizeError } from '@/lib/api-client';
 import {
@@ -97,6 +98,31 @@ export function AdminUsersTab() {
 
   // User 360 sub-tab
   const [drawerTab, setDrawerTab] = useState<'identity' | 'tenants' | 'ai' | 'documents'>('identity');
+
+  // Focus restoration targets: these dialogs are opened imperatively (no Radix
+  // DialogTrigger), so the dismissing dialog must return focus explicitly.
+  const user360TriggerRef = useRef<HTMLButtonElement | null>(null);
+  const provisionTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Roving-tabindex keyboard support for the User 360 tab list (APG tab pattern).
+  const user360TabOrder = ['identity', 'tenants', 'ai', 'documents'] as const;
+  const handleUser360TabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const current = user360TabOrder.indexOf(drawerTab);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? user360TabOrder.length - 1
+          : event.key === 'ArrowRight'
+            ? (current + 1) % user360TabOrder.length
+            : (current - 1 + user360TabOrder.length) % user360TabOrder.length;
+    const target = user360TabOrder[next];
+    setDrawerTab(target);
+    window.requestAnimationFrame(() => document.getElementById(`user360-tab-${target}`)?.focus());
+  };
 
   // Provision User Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -474,7 +500,10 @@ export function AdminUsersTab() {
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setShowCreateModal(true)}
+            onClick={(event) => {
+              provisionTriggerRef.current = event.currentTarget;
+              setShowCreateModal(true);
+            }}
             className="text-xs font-bold gap-1.5 shadow-xs"
           >
             <UserPlus className="size-3.5" />
@@ -632,7 +661,11 @@ export function AdminUsersTab() {
                     <Button
                       variant="outline"
                       size="xs"
-                      onClick={() => setSelectedUser(user)}
+                      data-testid="inspect-user-button"
+                      onClick={(event) => {
+                        user360TriggerRef.current = event.currentTarget;
+                        setSelectedUser(user);
+                      }}
                       title="Inspect User 360"
                       className="font-bold"
                     >
@@ -675,67 +708,74 @@ export function AdminUsersTab() {
         </table>
       </div>
 
-      {/* ─── 1. PROVISION USER MODAL ─── */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          role="dialog"
-          aria-modal="true"
+      {/* ─── 1. PROVISION USER MODAL (Cuba M3 executive glass) ─── */}
+      <Dialog open={showCreateModal} onOpenChange={(open) => { if (!open && !isProvisioning) setShowCreateModal(false); }}>
+        <DialogContent
+          aria-describedby={undefined}
+          hideCloseButton
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            provisionTriggerRef.current?.focus();
+          }}
+          className="w-[calc(100%-2rem)] max-w-lg max-h-[92vh] overflow-y-auto p-6 rounded-2xl md:rounded-3xl border-border bg-surface/95 backdrop-blur-xl motion-reduce:animate-none"
         >
-          <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl border border-border space-y-4 animate-[scale-in_150ms_ease-out]">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-brand-50 text-brand-600 border border-brand-200">
+          <div className="min-w-0 space-y-4">
+            <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border pb-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="shrink-0 p-2 rounded-xl bg-brand-50 text-brand-600 border border-brand-200">
                   <UserPlus className="size-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-ink">Provision New User Account</h3>
-                  <p className="text-xs text-ink-muted">
+                <div className="min-w-0">
+                  <DialogTitle className="break-words text-base font-bold text-ink">Provision New User Account</DialogTitle>
+                  <p className="break-words text-xs text-ink-muted">
                     Create candidate, recruiter, or administrative identities with tenant bindings.
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="rounded-lg p-1 text-ink-muted hover:bg-neutral-100 hover:text-ink cursor-pointer"
+              <DialogClose
+                aria-label="Close Create User dialog"
+                disabled={isProvisioning}
+                className="shrink-0 rounded-lg p-1 text-ink-muted hover:bg-neutral-100 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
               >
                 <X className="size-5" />
-              </button>
+              </DialogClose>
             </div>
 
             <form onSubmit={handleProvisionUserSubmit} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Full Name</label>
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor="provision-full-name" className="font-bold text-ink block">Full Name</label>
                   <Input
+                    id="provision-full-name"
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Jordan Hayes"
-                    className="h-8 text-xs"
+                    className="h-9 w-full min-w-0 max-w-full text-xs"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Email Address</label>
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor="provision-email" className="font-bold text-ink block">Email Address</label>
                   <Input
+                    id="provision-email"
                     required
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="jordan.h@company.com"
-                    className="h-8 text-xs"
+                    className="h-9 w-full min-w-0 max-w-full text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Initial Role</label>
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor="provision-role" className="font-bold text-ink block">Initial Role</label>
                   <select
+                    id="provision-role"
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value as PlatformRole)}
-                    className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs font-semibold text-ink"
+                    className="block w-full min-w-0 max-w-full h-9 px-2.5 rounded-lg border border-border bg-canvas text-xs font-semibold text-ink"
                   >
                     <option value="USER">USER (Standard Candidate)</option>
                     <option value="EMPLOYER">EMPLOYER (Hiring Manager / Talent Recruiter)</option>
@@ -748,44 +788,46 @@ export function AdminUsersTab() {
                     <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane Authority)</option>
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-bold text-ink block">Temporary Password (Optional)</label>
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor="provision-password" className="font-bold text-ink block">Temporary Password (Optional)</label>
                   <Input
+                    id="provision-password"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Leave empty to auto-generate"
-                    className="h-8 text-xs"
+                    className="h-9 w-full min-w-0 max-w-full text-xs"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-bold text-ink block">Tenant / Organization Association (Optional)</label>
+              <div className="min-w-0 space-y-1">
+                <label htmlFor="provision-tenant" className="font-bold text-ink block">Tenant / Organization Association (Optional)</label>
                 <select
+                  id="provision-tenant"
                   value={newTenant}
                   onChange={(e) => setNewTenant(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs text-ink"
+                  className="block w-full min-w-0 max-w-full h-9 px-2.5 rounded-lg border border-border bg-canvas text-xs text-ink"
                 >
                   <option value="">None (Standalone Individual)</option>
                   {registryTenants.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex min-w-0 items-start gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="verify-email-check"
                   checked={newVerifyEmail}
                   onChange={(e) => setNewVerifyEmail(e.target.checked)}
-                  className="size-3.5 rounded border-border text-brand-600 focus:ring-brand-500 cursor-pointer"
+                  className="mt-0.5 size-3.5 shrink-0 rounded border-border text-brand-600 focus:ring-brand-500 cursor-pointer"
                 />
-                <label htmlFor="verify-email-check" className="text-xs text-ink cursor-pointer font-medium">
+                <label htmlFor="verify-email-check" className="min-w-0 break-words text-xs text-ink cursor-pointer font-medium">
                   Mark email as pre-verified (bypasses initial activation link requirement)
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -801,29 +843,37 @@ export function AdminUsersTab() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/* ─── 2. COMPLETE USER 360 DRAWER / MODAL ─── */}
-      {selectedUser && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          role="dialog"
-          aria-modal="true"
+      {/* ─── 2. COMPLETE USER 360 DIALOG (Cuba M3 executive glass) ─── */}
+      <Dialog open={!!selectedUser} onOpenChange={(open) => { if (!open) setSelectedUser(null); }}>
+        <DialogContent
+          aria-describedby={undefined}
+          data-testid="user360-dialog"
+          hideCloseButton
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            user360TriggerRef.current?.focus();
+          }}
+          className="w-[calc(100%-2rem)] max-w-2xl p-0 gap-0 rounded-2xl md:rounded-3xl border-border bg-surface/95 backdrop-blur-xl flex flex-col max-h-[92vh] overflow-hidden motion-reduce:animate-none"
         >
-          <div className="w-full max-w-2xl rounded-2xl bg-surface shadow-2xl border border-border overflow-hidden flex flex-col max-h-[92vh] animate-[scale-in_150ms_ease-out]">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between border-b border-border p-4 sm:p-5 bg-neutral-50/50">
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-brand-600 text-white font-black text-base shadow-xs">
+          {selectedUser && (
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {/* Dialog Header */}
+            <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-border p-4 sm:p-5 bg-neutral-50/50">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white font-black text-base shadow-xs">
                   {(selectedUser.displayName?.[0] ?? selectedUser.email?.[0] ?? 'U').toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-extrabold text-ink">{selectedUser.displayName}</h3>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <DialogTitle className="min-w-0 break-words text-base font-extrabold leading-snug text-ink">
+                      {selectedUser.displayName}
+                    </DialogTitle>
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.2 text-[10px] font-black uppercase',
+                        'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase',
                         selectedUser.status === 'active'
                           ? 'bg-emerald-100 text-emerald-800'
                           : selectedUser.status === 'disabled'
@@ -834,20 +884,26 @@ export function AdminUsersTab() {
                       {selectedUser.status}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-muted">{selectedUser.email} • UID: {selectedUser.id}</p>
+                  <p className="break-words text-xs text-ink-muted">
+                    {selectedUser.email} • UID: {selectedUser.id}
+                  </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedUser(null)}
-                className="rounded-lg p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink cursor-pointer"
+              <DialogClose
+                aria-label="Close User 360 dialog"
+                className="shrink-0 rounded-lg p-1.5 text-ink-muted hover:bg-neutral-100 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 cursor-pointer"
               >
                 <X className="size-5" />
-              </button>
+              </DialogClose>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex border-b border-border px-4 sm:px-5 bg-canvas gap-1 overflow-x-auto">
+            {/* Navigation Tabs — wrapping tab list, never clipped, never h-scrolled */}
+            <div
+              role="group"
+              aria-label="User 360 sections"
+              onKeyDown={handleUser360TabKeyDown}
+              className="flex min-w-0 shrink-0 flex-wrap items-center gap-1 border-b border-border bg-canvas px-3 py-2 sm:px-4"
+            >
               {[
                 { id: 'identity', label: 'Identity & RBAC', icon: Shield },
                 { id: 'tenants', label: 'Organizations & Tenants', icon: Building2 },
@@ -859,90 +915,118 @@ export function AdminUsersTab() {
                 return (
                   <button
                     key={tab.id}
+                    id={`user360-tab-${tab.id}`}
                     type="button"
-                    onClick={() => setDrawerTab(tab.id as any)}
+                    aria-pressed={isActive}
+                    onClick={() => setDrawerTab(tab.id as typeof drawerTab)}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap',
+                      'flex min-w-0 max-w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold leading-tight transition-colors cursor-pointer text-left',
+                      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
                       isActive
-                        ? 'border-brand-600 text-brand-700 font-extrabold'
-                        : 'border-transparent text-ink-muted hover:text-ink hover:border-neutral-300'
+                        ? 'bg-brand-50 text-brand-700 font-extrabold ring-1 ring-inset ring-brand-200'
+                        : 'text-ink-muted hover:bg-neutral-100 hover:text-ink'
                     )}
                   >
-                    <Icon className="size-3.5" />
-                    <span>{tab.label}</span>
+                    <Icon className="size-3.5 shrink-0" />
+                    <span className="min-w-0 break-words">{tab.label}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* Content Body */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1">
+            <div
+              id={`user360-panel-${drawerTab}`}
+              role="region"
+              aria-label="User 360 section content"
+              tabIndex={0}
+              className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-500"
+            >
               {/* TAB 1: IDENTITY & RBAC */}
               {drawerTab === 'identity' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-border p-3.5 space-y-2 bg-neutral-25">
-                      <label className="font-bold text-ink block">Platform RBAC Role</label>
-                      <div className="flex gap-2">
-                        <select
-                          value={editRole}
-                          onChange={(e) => setEditRole(e.target.value)}
-                          className="flex-1 h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-ink"
-                        >
-                          <option value="USER">USER (Candidate)</option>
-                          <option value="EMPLOYER">EMPLOYER (Hiring Manager / Recruiter)</option>
-                          <option value="RECRUITER">RECRUITER (Agency Recruiter)</option>
-                          <option value="SUPPORT">SUPPORT (Help Desk & Customer Care Specialist)</option>
-                          <option value="AUDITOR">AUDITOR (Security & Compliance Auditor)</option>
-                          <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
-                          <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
-                          <option value="ADMIN">ADMIN (System Operations Operator)</option>
-                          <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane)</option>
-                        </select>
+                <div className="min-w-0 space-y-4">
+                  <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div
+                      data-testid="user360-rbac-card"
+                      className="min-w-0 rounded-2xl border border-border bg-neutral-25/50 p-4 space-y-3"
+                    >
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                        <label htmlFor="user360-rbac-role" className="min-w-0 break-words font-bold text-ink text-xs">
+                          Platform RBAC Role
+                        </label>
                         <Button
                           size="xs"
                           variant="primary"
-                          disabled={editRole === selectedUser.role}
+                          disabled={savingRole || editRole === selectedUser.role}
+                          loading={savingRole}
                           onClick={handleSaveRole}
+                          className="shrink-0"
                         >
-                          Update
+                          Update Role
                         </Button>
                       </div>
-                      <p className="text-[10px] text-ink-muted">
+                      <select
+                        id="user360-rbac-role"
+                        aria-label="Platform RBAC Role"
+                        value={editRole}
+                        onChange={(e) => setEditRole(e.target.value)}
+                        className="block w-full min-w-0 max-w-full h-9 px-3 rounded-xl border border-border bg-surface text-xs font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand-500"
+                      >
+                        <option value="USER">USER (Candidate)</option>
+                        <option value="EMPLOYER">EMPLOYER (Hiring Manager / Recruiter)</option>
+                        <option value="RECRUITER">RECRUITER (Agency Recruiter)</option>
+                        <option value="SUPPORT">SUPPORT (Help Desk &amp; Customer Care Specialist)</option>
+                        <option value="AUDITOR">AUDITOR (Security &amp; Compliance Auditor)</option>
+                        <option value="ENTERPRISE_MEMBER">ENTERPRISE_MEMBER (Enterprise Workspace Member)</option>
+                        <option value="ENTERPRISE_ADMIN">ENTERPRISE_ADMIN (Enterprise Tenant Administrator)</option>
+                        <option value="ADMIN">ADMIN (System Operations Operator)</option>
+                        <option value="SUPER_ADMIN">SUPER_ADMIN (Root Control-Plane)</option>
+                      </select>
+                      <p className="break-words text-[11px] text-ink-muted">
                         Controls global platform capability matrix and route guards.
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-border p-3.5 space-y-2 bg-neutral-25">
-                      <label className="font-bold text-ink block">Subscription Plan Tier</label>
-                      <div className="flex gap-2">
-                        <select
-                          value={editPlan}
-                          onChange={(e) => setEditPlan(e.target.value)}
-                          className="flex-1 h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-ink"
-                        >
-                          <option value="Basic Free">Basic Free</option>
-                          <option value="Pro Candidate">Pro Candidate (Monthly)</option>
-                          <option value="Pro Recruiter">Pro Recruiter (Seats)</option>
-                          <option value="Enterprise">Enterprise Annual</option>
-                        </select>
+                    <div
+                      data-testid="user360-plan-card"
+                      className="min-w-0 rounded-2xl border border-border bg-neutral-25/50 p-4 space-y-3"
+                    >
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                        <label htmlFor="user360-plan-tier" className="min-w-0 break-words font-bold text-ink text-xs">
+                          Subscription Plan Tier
+                        </label>
                         <Button
                           size="xs"
                           variant="outline"
                           disabled
                           title="Membership plans are granted by the billing mandate; this control is read-only until that endpoint is wired."
+                          className="shrink-0 whitespace-normal"
                         >
                           Billing-owned
                         </Button>
                       </div>
-                      <p className="text-[10px] text-ink-muted">Entitlement level for DOCX export & AI models.</p>
+                      <select
+                        id="user360-plan-tier"
+                        aria-label="Subscription Plan Tier"
+                        value={editPlan}
+                        onChange={(e) => setEditPlan(e.target.value)}
+                        className="block w-full min-w-0 max-w-full h-9 px-3 rounded-xl border border-border bg-surface text-xs font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand-500"
+                      >
+                        <option value="Basic Free">Basic Free</option>
+                        <option value="Pro Candidate">Pro Candidate (Monthly)</option>
+                        <option value="Pro Recruiter">Pro Recruiter (Seats)</option>
+                        <option value="Enterprise">Enterprise Annual</option>
+                      </select>
+                      <p className="break-words text-[11px] text-ink-muted">
+                        Entitlement level for DOCX export &amp; AI models.
+                      </p>
                     </div>
                   </div>
 
                   {/* Actions Grid */}
                   <div className="rounded-xl border border-border p-4 space-y-3">
-                    <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Account Actions & Security</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Account Actions &amp; Security</h4>
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 [&>button]:min-w-0 [&>button]:whitespace-normal [&>button]:text-left">
                       <Button
                         variant="outline"
                         size="sm"
@@ -993,12 +1077,12 @@ export function AdminUsersTab() {
                     </div>
                   </div>
 
-                  {/* Suspension Drawer Section */}
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-rose-950 text-xs">Account Status & Suspension</h4>
-                        <p className="text-[11px] text-rose-800/80">
+                  {/* Suspension Section */}
+                  <div className="min-w-0 rounded-xl border border-rose-200 bg-rose-50/50 p-4 space-y-3">
+                    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-rose-950 text-xs">Account Status &amp; Suspension</h4>
+                        <p className="break-words text-[11px] text-rose-800/80">
                           {selectedUser.status === 'active' || selectedUser.status === 'pending'
                             ? 'Suspending blocks sign-in, revokes refresh tokens and challenges active sessions with HTTP 401.'
                             : selectedUser.status === 'disabled'
@@ -1006,7 +1090,7 @@ export function AdminUsersTab() {
                               : 'This account is SUSPENDED and cannot sign in. Revoke sessions again after reactivation if needed.'}
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <div className="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end [&>button]:min-w-0 [&>button]:whitespace-normal">
                         {selectedUser.status !== 'active' && (
                           <Button
                             variant="outline"
@@ -1048,16 +1132,17 @@ export function AdminUsersTab() {
 
                     {showSuspendInput && (
                       <div className="pt-2 border-t border-rose-200 space-y-2 animate-[fade-in_100ms_ease-out]">
-                        <label className="font-bold text-rose-950 block text-[11px]">
+                        <label htmlFor="user360-suspension-reason" className="block min-w-0 break-words font-bold text-rose-950 text-[11px]">
                           Audited Suspension Reason (Required for Compliance)
                         </label>
                         <Input
+                          id="user360-suspension-reason"
                           value={suspensionReason}
                           onChange={(e) => setSuspensionReason(e.target.value)}
                           placeholder="e.g. Terms of Service violation / fraudulent activity"
-                          className="h-8 text-xs bg-white border-rose-300"
+                          className="h-8 w-full min-w-0 max-w-full text-xs bg-white border-rose-300"
                         />
-                        <div className="flex justify-end gap-2 pt-1">
+                        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 pt-1">
                           <Button size="xs" variant="ghost" onClick={() => setShowSuspendInput(false)}>
                             Cancel
                           </Button>
@@ -1082,12 +1167,12 @@ export function AdminUsersTab() {
                 <div className="space-y-4">
                   <div className="rounded-xl border border-border p-4 bg-neutral-25 space-y-3">
                     <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Assign to Organization</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                       <select
                         aria-label="Assignable organization"
                         value={selectedTenantId}
                         onChange={(e) => setSelectedTenantId(e.target.value)}
-                        className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
+                        className="block w-full min-w-0 max-w-full h-9 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
                       >
                         <option value="">{tenantLoading ? 'Loading tenants…' : 'Select an active live tenant'}</option>
                         {registryTenants.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
@@ -1096,7 +1181,7 @@ export function AdminUsersTab() {
                         aria-label="Enterprise role"
                         value={selectedTenantRole}
                         onChange={(e) => setSelectedTenantRole(e.target.value)}
-                        className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
+                        className="block w-full min-w-0 max-w-full h-9 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
                       >
                         <option value="ENTERPRISE_ADMIN">Admin (Full Management)</option>
                         <option value="ENTERPRISE_MANAGER" disabled>Manager (backend role unavailable)</option>
@@ -1106,6 +1191,7 @@ export function AdminUsersTab() {
                       <Button
                         size="sm"
                         variant="primary"
+                        className="min-w-0 whitespace-normal sm:col-span-2 sm:justify-self-start"
                         disabled={assigning || !registryTenants.some(t => t.id === selectedTenantId) || !ENTERPRISE_ROLES.includes(selectedTenantRole as typeof ENTERPRISE_ROLES[number])}
                         onClick={async () => {
                           if (assigning || selectedTenantRole === 'ENTERPRISE_MANAGER' || !registryTenants.some(t => t.id === selectedTenantId)) return;
@@ -1124,7 +1210,7 @@ export function AdminUsersTab() {
                     </div>
                   </div>
 
-                  {tenantError && <p role="alert" className="text-error-700">{tenantError}</p>}
+                  {tenantError && <p role="alert" className="break-words text-error-700">{tenantError}</p>}
                   <p className="text-xs text-ink-muted">Membership assignments require server confirmation. Open User 360 again to refresh authoritative memberships; sample memberships are not shown.</p>
                 </div>
               )}
@@ -1133,12 +1219,12 @@ export function AdminUsersTab() {
               {drawerTab === 'ai' && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-border p-4 bg-purple-50/50 border-purple-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Brain className="size-4 text-purple-600" />
-                        <h4 className="font-bold text-purple-950 text-xs">Daily AI Generation Quota</h4>
+                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Brain className="size-4 shrink-0 text-purple-600" />
+                        <h4 className="min-w-0 break-words font-bold text-purple-950 text-xs">Daily AI Generation Quota</h4>
                       </div>
-                      <span className="font-bold text-purple-900 text-xs">
+                      <span className="shrink-0 font-bold text-purple-900 text-xs">
                         {selectedUser.aiUsedToday ?? 18} / {selectedUser.aiDailyLimit ?? 100} generations
                       </span>
                     </div>
@@ -1161,31 +1247,33 @@ export function AdminUsersTab() {
 
                   <div className="rounded-xl border border-border p-4 space-y-3">
                     <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Custom Quota Override</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="font-bold text-ink block">Daily Limit</label>
+                    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="min-w-0 space-y-1">
+                        <label htmlFor="user360-ai-limit" className="block font-bold text-ink">Daily Limit</label>
                         <Input
+                          id="user360-ai-limit"
                           type="number"
                           value={customAiLimit}
                           onChange={(e) => setCustomAiLimit(parseInt(e.target.value) || 0)}
-                          className="h-8 text-xs"
+                          className="h-9 w-full min-w-0 max-w-full text-xs"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label className="font-bold text-ink block">Justification Reason</label>
+                      <div className="min-w-0 space-y-1">
+                        <label htmlFor="user360-ai-reason" className="block font-bold text-ink">Justification Reason</label>
                         <Input
+                          id="user360-ai-reason"
                           value={aiLimitReason}
                           onChange={(e) => setAiLimitReason(e.target.value)}
                           placeholder="e.g. VIP Enterprise demo"
-                          className="h-8 text-xs"
+                          className="h-9 w-full min-w-0 max-w-full text-xs"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 pt-2 [&>button]:min-w-0 [&>button]:whitespace-normal">
                       <Button variant="outline" size="xs" onClick={handleResetDailyUsage} disabled={resettingQuota} loading={resettingQuota}>
-                        <RotateCcw className="size-3 mr-1" />
-                        Reset Today's Counter to 0
+                        <RotateCcw className="size-3 mr-1 shrink-0" />
+                        Reset Today&apos;s Counter to 0
                       </Button>
                       <Button variant="primary" size="xs" onClick={handleSaveAiQuota} disabled={savingQuota} loading={savingQuota}>
                         Save Quota Override
@@ -1197,32 +1285,32 @@ export function AdminUsersTab() {
 
               {/* TAB 4: DOCUMENTS & RESUMES */}
               {drawerTab === 'documents' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-ink-muted">Candidate resumes registered under this user identity:</p>
-                    <span className="font-bold text-ink text-xs">{selectedUser.resumeCount} documents</span>
+                <div className="min-w-0 space-y-3">
+                  <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="min-w-0 break-words text-xs text-ink-muted">Candidate resumes registered under this user identity:</p>
+                    <span className="shrink-0 font-bold text-ink text-xs">{selectedUser.resumeCount} documents</span>
                   </div>
 
-                  <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+                  <div className="min-w-0 divide-y divide-border overflow-hidden rounded-xl border border-border">
                     {Array.from({ length: selectedUser.resumeCount || 1 }).map((_, idx) => (
-                      <div key={idx} className="p-3.5 flex items-center justify-between hover:bg-neutral-25">
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                      <div key={idx} className="flex min-w-0 flex-col gap-2 p-3.5 hover:bg-neutral-25 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-200 text-blue-600">
                             <FileText className="size-4" />
                           </div>
-                          <div>
-                            <p className="font-bold text-ink text-xs">
+                          <div className="min-w-0">
+                            <p className="break-words font-bold text-ink text-xs">
                               {idx === 0
                                 ? 'Senior Systems Architect - Master'
                                 : idx === 1
                                 ? 'Cloud DevOps Lead Resume'
                                 : `Tailored Resume Document #${idx + 1}`}
                             </p>
-                            <p className="text-[10px] text-ink-muted">Template: Zurich Executive • Last modified 2 days ago</p>
+                            <p className="break-words text-[10px] text-ink-muted">Template: Zurich Executive • Last modified 2 days ago</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] border border-emerald-200">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0">
+                          <span className="shrink-0 rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] border border-emerald-200">
                             ATS 94%
                           </span>
                           <Button
@@ -1232,7 +1320,7 @@ export function AdminUsersTab() {
                               window.open(`/preview/res_${selectedUser.id}_${idx + 1}`, '_blank');
                             }}
                           >
-                            <ExternalLink className="size-3 mr-1" />
+                            <ExternalLink className="size-3 mr-1 shrink-0" />
                             Preview
                           </Button>
                         </div>
@@ -1243,18 +1331,21 @@ export function AdminUsersTab() {
               )}
             </div>
 
-            {/* Drawer Footer */}
-            <div className="p-4 border-t border-border flex items-center justify-between bg-neutral-50/50">
-              <span className="text-[11px] text-ink-muted">
+            {/* Dialog Footer */}
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-neutral-50/50 p-4">
+              <span className="min-w-0 break-words text-[11px] text-ink-muted">
                 Audit stamp: {selectedUser.email} (Recorded on MariaDB)
               </span>
-              <Button variant="outline" size="sm" onClick={() => setSelectedUser(null)}>
-                Close Drawer
-              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Close
+                </Button>
+              </DialogClose>
             </div>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

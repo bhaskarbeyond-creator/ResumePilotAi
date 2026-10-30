@@ -417,18 +417,18 @@ export function CompanyProfile() {
       {/* ─── Add/Edit Company Entity Modal (11-Field Legacy Parity) ─── */}
       {modalOpen && (
         <Dialog open={modalOpen} onOpenChange={value => { if (!submitting) setModalOpen(value); }}>
-          <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl p-0 gap-0 flex flex-col rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl overflow-hidden motion-reduce:animate-none">
+          <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl max-h-[92vh] p-0 gap-0 flex flex-col rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl overflow-hidden motion-reduce:animate-none">
             {/* Modal Header */}
-            <div className="p-5 border-b border-edge bg-surface-raised/60 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
-                  <Building2 className="size-5" />
+            <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 p-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
+                  <Building2 className="size-5" aria-hidden="true" />
                 </div>
-                <div>
-                  <DialogTitle id="company-modal-title" className="text-base font-bold text-ink">
+                <div className="min-w-0">
+                  <DialogTitle className="break-words text-base font-bold text-ink">
                     {isEditing ? `Edit ${formData.name || 'Company Profile'}` : 'Register Employer Entity'}
                   </DialogTitle>
-                  <p className="text-xs text-ink-muted">
+                  <p className="break-words text-xs text-ink-muted">
                     {isEditing
                       ? 'Update organizational branding, verified contacts, and culture details.'
                       : 'Create a verified company profile to post jobs and evaluate candidates.'}
@@ -439,17 +439,17 @@ export function CompanyProfile() {
                 type="button"
                 onClick={() => setModalOpen(false)}
                 disabled={submitting}
-                className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-canvas transition-colors"
+                className="shrink-0 rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                 aria-label="Close modal"
               >
-                <X className="size-5" />
+                <X className="size-5" aria-hidden="true" />
               </button>
             </div>
 
             {/* Modal Form Body */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+            <form onSubmit={handleSubmit} className="min-h-0 min-w-0 flex-1 space-y-5 overflow-y-auto p-5 text-xs sm:p-6">
               {/* Logo Preview Banner */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-edge bg-canvas-soft">
+              <div className="flex min-w-0 flex-wrap items-center gap-4 rounded-2xl border border-edge bg-canvas-soft p-4">
                 <div className="size-16 rounded-xl border border-edge bg-surface flex items-center justify-center overflow-hidden shrink-0 font-extrabold text-xl text-accent">
                   {formData.companyImage.trim() && formData.companyImage.startsWith('https://') ? (
                     <img
@@ -464,7 +464,7 @@ export function CompanyProfile() {
                     formData.name.trim().charAt(0).toUpperCase() || <ImageIcon className="size-6 text-ink-muted" />
                   )}
                 </div>
-                <div className="flex-1 space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <label className="font-bold text-ink block">Company Logo URL (HTTPS)</label>
                   <Input
                     value={formData.companyImage}
@@ -624,17 +624,18 @@ export function CompanyProfile() {
               </div>
 
               {/* Modal Actions Footer */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-edge">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 border-t border-edge pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setModalOpen(false)}
                   disabled={submitting}
+                  className="min-w-0 whitespace-normal"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" disabled={submitting}>
+                <Button type="submit" size="sm" disabled={submitting} className="min-w-0 whitespace-normal">
                   {submitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Register Entity'}
                 </Button>
               </div>

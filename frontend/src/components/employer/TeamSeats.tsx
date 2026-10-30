@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
@@ -159,7 +159,31 @@ export function TeamSeats() {
       )}
 
       <Button variant="outline" onClick={() => setQuotaOpen(true)}>Inspect Seat Allocation</Button>
-      <Dialog open={quotaOpen} onOpenChange={setQuotaOpen}><DialogContent className="w-[calc(100%-2rem)] rounded-2xl md:rounded-3xl border-border bg-surface/95 backdrop-blur-xl motion-reduce:animate-none"><DialogTitle>Workspace Seat Allocation</DialogTitle><DialogDescription>Authoritative seat usage for the active tenant. Contract changes require platform commercial administration; this view cannot change allocation.</DialogDescription><WorkspaceSeatQuotaCard quota={seatQuota} loading={seatLoading} error={seatError} onRetry={() => void loadSeatQuota()} /></DialogContent></Dialog>
+      <Dialog open={quotaOpen} onOpenChange={setQuotaOpen}>
+        <DialogContent className="flex w-[calc(100%-2rem)] max-w-lg max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl border-border bg-surface/95 p-0 backdrop-blur-xl motion-reduce:animate-none md:rounded-3xl">
+          <div className="flex min-w-0 shrink-0 items-start justify-between gap-3 border-b border-border bg-neutral-50/50 p-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
+                <Users className="size-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="break-words text-base font-bold text-ink">Workspace Seat Allocation</DialogTitle>
+                <DialogDescription className="break-words text-xs text-ink-muted">
+                  Authoritative seat usage for the active tenant. Contract changes require platform commercial administration; this view cannot change allocation.
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
+            <WorkspaceSeatQuotaCard quota={seatQuota} loading={seatLoading} error={seatError} onRetry={() => void loadSeatQuota()} />
+          </div>
+          <div className="flex min-w-0 shrink-0 items-center justify-end border-t border-border bg-neutral-50/50 p-4">
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Close</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Authoritative Workspace Seat Quota Gauge */}
       <WorkspaceSeatQuotaCard
         quota={seatQuota}

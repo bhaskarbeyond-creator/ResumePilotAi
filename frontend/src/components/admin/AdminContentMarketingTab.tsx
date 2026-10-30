@@ -213,32 +213,36 @@ export function AdminContentMarketingTab() {
             </CardHeader>
             <CardContent>
               <Button onClick={() => setPhraseOpen(true)}>Add ATS Keyword</Button>
-              <Dialog open={phraseOpen} onOpenChange={setPhraseOpen}><DialogContent className="w-[calc(100%-2rem)] rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none"><DialogTitle>Add ATS Keyword</DialogTitle><DialogDescription>Local preview only. This does not publish to the ATS service.</DialogDescription>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  aria-label="Action phrase" placeholder="Enter high-impact action phrase (e.g. Architected resilient multi-region...)"
-                  value={newPhraseText}
-                  onChange={(e) => setNewPhraseText(e.target.value)}
-                  className="flex-1"
-                />
-                <select
-                  aria-label="Phrase category"
-                  value={newPhraseCategory}
-                  onChange={(e) => setNewPhraseCategory(e.target.value as PhraseItem['category'])}
-                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="Technical">Technical</option>
-                  <option value="Leadership">Leadership</option>
-                  <option value="Innovation">Innovation</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Finance">Finance</option>
-                </select>
-                <Button variant="primary" onClick={handleAddPhrase}>
-                  <Plus className="mr-1.5 size-4" />
-                  Add Phrase
-                </Button>
-              </div>
-              </DialogContent></Dialog>
+              <Dialog open={phraseOpen} onOpenChange={setPhraseOpen}>
+                <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border-border bg-surface/95 p-6 backdrop-blur-xl motion-reduce:animate-none md:rounded-3xl">
+                  <DialogTitle className="break-words text-base font-bold text-ink">Add ATS Keyword</DialogTitle>
+                  <DialogDescription className="break-words text-xs text-ink-muted">Local preview only. This does not publish to the ATS service.</DialogDescription>
+                  <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+                    <Input
+                      aria-label="Action phrase" placeholder="Enter high-impact action phrase (e.g. Architected resilient multi-region...)"
+                      value={newPhraseText}
+                      onChange={(e) => setNewPhraseText(e.target.value)}
+                      className="min-w-0 flex-1"
+                    />
+                    <select
+                      aria-label="Phrase category"
+                      value={newPhraseCategory}
+                      onChange={(e) => setNewPhraseCategory(e.target.value as PhraseItem['category'])}
+                      className="min-w-0 max-w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-40 sm:shrink-0"
+                    >
+                      <option value="Technical">Technical</option>
+                      <option value="Leadership">Leadership</option>
+                      <option value="Innovation">Innovation</option>
+                      <option value="Operations">Operations</option>
+                      <option value="Finance">Finance</option>
+                    </select>
+                    <Button variant="primary" className="min-w-0 shrink-0 whitespace-normal" onClick={handleAddPhrase}>
+                      <Plus className="mr-1.5 size-4 shrink-0" />
+                      Add Phrase
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
 

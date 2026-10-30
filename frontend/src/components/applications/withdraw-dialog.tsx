@@ -36,7 +36,9 @@ export function WithdrawDialog({ application, open, onOpenChange, onWithdrawn, o
   };
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!busyRef.current || next) onOpenChange(next); }}>
-      <DialogContent className="max-w-md" onCloseAutoFocus={onCloseAutoFocus}
+      <DialogContent
+        className="w-[calc(100%-2rem)] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border-border bg-surface/95 backdrop-blur-xl md:rounded-3xl"
+        onCloseAutoFocus={onCloseAutoFocus}
         onOpenAutoFocus={(event) => { event.preventDefault(); confirmRef.current?.focus(); }}
         onEscapeKeyDown={(event) => { if (busyRef.current) event.preventDefault(); }}
         onPointerDownOutside={(event) => { if (busyRef.current) event.preventDefault(); }}>
@@ -57,9 +59,9 @@ export function WithdrawDialog({ application, open, onOpenChange, onWithdrawn, o
         {error && <div role="alert" className="flex items-start gap-2 rounded-lg border border-error-100 bg-error-50 p-3 text-sm text-error-700">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{error}</span>
         </div>}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex min-w-0 flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
           <DialogClose asChild><Button type="button" variant="outline" disabled={busy}>Keep application</Button></DialogClose>
-          <Button ref={confirmRef} type="button" variant="destructive" onClick={() => void confirm()} disabled={busy} aria-busy={busy || undefined}>
+          <Button ref={confirmRef} type="button" variant="destructive" onClick={() => void confirm()} disabled={busy} aria-busy={busy || undefined} className="min-w-0 whitespace-normal">
             {busy ? 'Withdrawing…' : 'Confirm withdrawal'}
           </Button>
         </div>
