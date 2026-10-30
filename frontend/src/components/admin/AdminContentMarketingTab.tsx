@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 /**
  * Content & Marketing CMS Sub-Module Tab
  *
@@ -92,6 +93,7 @@ const INITIAL_PAGES: LandingPageItem[] = [
 ];
 
 export function AdminContentMarketingTab() {
+  const [phraseOpen, setPhraseOpen] = useState(false);
   const [subTab, setSubTab] = useState<'phrases' | 'reviews' | 'trusted' | 'landing'>('phrases');
   
   // Phrases State
@@ -121,6 +123,7 @@ export function AdminContentMarketingTab() {
     };
     setPhrases([item, ...phrases]);
     setNewPhraseText('');
+    setPhraseOpen(false);
   };
 
   const handleDeletePhrase = (id: string) => {
@@ -156,6 +159,7 @@ export function AdminContentMarketingTab() {
 
   return (
     <div className="space-y-6">
+      <p role="status" className="rounded-xl border border-border p-3 text-sm">LOCAL DEMO — This existing marketing editor uses sample data and in-memory changes only. Changes are not published to the ATS engine or public website.</p>
       {/* Navigation Sub-Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <div className="flex gap-2">
@@ -204,18 +208,21 @@ export function AdminContentMarketingTab() {
                 Add Semantic Action Phrase to ATS Engine
               </CardTitle>
               <CardDescription>
-                Phrases registered here automatically populate AI bullet suggestions and contextual recommendations.
+                Preview semantic phrases in this local editor. Publishing integration is unavailable here.
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <Button onClick={() => setPhraseOpen(true)}>Add ATS Keyword</Button>
+              <Dialog open={phraseOpen} onOpenChange={setPhraseOpen}><DialogContent className="w-[calc(100%-2rem)] rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none"><DialogTitle>Add ATS Keyword</DialogTitle><DialogDescription>Local preview only. This does not publish to the ATS service.</DialogDescription>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
-                  placeholder="Enter high-impact action phrase (e.g. Architected resilient multi-region...)"
+                  aria-label="Action phrase" placeholder="Enter high-impact action phrase (e.g. Architected resilient multi-region...)"
                   value={newPhraseText}
                   onChange={(e) => setNewPhraseText(e.target.value)}
                   className="flex-1"
                 />
                 <select
+                  aria-label="Phrase category"
                   value={newPhraseCategory}
                   onChange={(e) => setNewPhraseCategory(e.target.value as PhraseItem['category'])}
                   className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -231,6 +238,7 @@ export function AdminContentMarketingTab() {
                   Add Phrase
                 </Button>
               </div>
+              </DialogContent></Dialog>
             </CardContent>
           </Card>
 

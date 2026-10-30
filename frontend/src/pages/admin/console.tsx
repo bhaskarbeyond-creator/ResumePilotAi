@@ -163,6 +163,11 @@ export function AdminConsolePage() {
 
   return (
     <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-console-page">
+      <nav aria-label="Workspace command hub" className="rounded-2xl border border-border bg-surface/95 p-4 space-y-3">
+        <h2 className="font-bold">Workspace Command Hub <span className="text-xs text-ink-muted">Current: Admin Console</span></h2>
+        <p className="text-xs text-ink-muted">Safe View Mode uses your existing identity and permissions, not impersonation. Other workspace guards still apply.</p>
+        <div className="flex flex-wrap gap-3">{[['Employer Portal', '/employer/portal?adminView=1'], ['Candidate Workspace', '/dashboard'], ['Public Portfolio Gallery', '/portfolios'], ['Public Marketing', '/']].map(([label, route]) => <button key={route} className="rounded-xl border border-border px-4 py-2 text-sm focus-visible:ring-2 focus-visible:ring-brand-500" onClick={() => navigate(route)}>{label}</button>)}</div>
+      </nav>
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>

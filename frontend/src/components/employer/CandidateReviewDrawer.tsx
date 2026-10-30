@@ -695,13 +695,9 @@ export function CandidateReviewDrawer({
 
       {/* Direct Candidate Messaging Modal */}
       {messageModalOpen && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="direct-message-title"
-          onClick={() => !messageSending && setMessageModalOpen(false)}
-        >
+        <Dialog open={!!messageModalOpen} onOpenChange={value => { if (!value) setMessageModalOpen(false); }}>
+          <DialogContent hideCloseButton aria-label="Direct Message Candidate" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+            <DialogTitle className="sr-only">Direct Message Candidate</DialogTitle>
           <div
             className="bg-surface border border-edge rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
@@ -821,17 +817,15 @@ export function CandidateReviewDrawer({
               </form>
             )}
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Confirmation Modal */}
       {confirmModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
-          role="alertdialog"
-          aria-modal="true"
-          onClick={() => setConfirmModal(null)}
-        >
+        <Dialog open={!!confirmModal} onOpenChange={value => { if (!value) setConfirmModal(null); }}>
+          <DialogContent hideCloseButton aria-label="Confirm Candidate Status Change" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-lg p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+            <DialogTitle className="sr-only">Confirm Candidate Status Change</DialogTitle>
           <div
             className="bg-surface border border-edge rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
@@ -895,7 +889,8 @@ export function CandidateReviewDrawer({
               </Button>
             </div>
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

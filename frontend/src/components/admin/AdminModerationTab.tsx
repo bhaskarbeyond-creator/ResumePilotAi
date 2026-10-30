@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { AdminEnterpriseTenantsModal } from './AdminEnterpriseTenantsModal';
 /**
  * Marketplace & Hiring Moderation Tab
  *
@@ -9,7 +11,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { post, get, normalizeError } from '@/lib/api-client';
@@ -373,7 +374,7 @@ export function AdminModerationTab() {
       )}
 
       {/* ─── Sub-Section 1: Employer Applications ─── */}
-      {subSection === 'applications' && (
+      {(subSection === 'applications' || subSection === 'companies') && (
         <div className="space-y-3">
           <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table className="w-full text-xs min-w-[700px]">
@@ -407,7 +408,7 @@ export function AdminModerationTab() {
                     <td className="px-4 py-3">
                       <div className="font-bold text-ink">{app.companyName}</div>
                       <div className="text-[11px] text-ink-muted font-mono">
-                        Tax ID: {app.taxId || 'Not disclosed to this role'}
+                        Tax ID: {app.taxId ? `••••${app.taxId.slice(-4)}` : 'Not disclosed to this role'}
                       </div>
                       <div className="text-[10px] uppercase tracking-wide text-ink-muted">
                         {app.source === 'APPLICATION_SUBMISSION' ? 'Submitted application' : 'Company profile'}
@@ -435,7 +436,7 @@ export function AdminModerationTab() {
                             : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
                         )}
                       >
-                        {app.status}
+                        {app.status === 'APPROVED' ? 'VERIFIED' : app.status === 'PENDING' ? 'PENDING_REVIEW' : app.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-ink-muted">{app.submittedAt}</td>
@@ -562,30 +563,13 @@ export function AdminModerationTab() {
       )}
 
       {/* ─── Sub-Section 3 & 4: Companies & Tenants ─── */}
-      {(subSection === 'companies' || subSection === 'tenants') && (
-        <Card>
-          <CardContent className="p-6 text-center space-y-2">
-            <Building2 className="size-8 text-brand-600 mx-auto" />
-            <h3 className="text-sm font-bold text-ink">
-              {subSection === 'companies' ? 'Enterprise Company Verification Registry' : 'Multi-Tenant Organizations Directory'}
-            </h3>
-            <p className="text-xs text-ink-muted max-w-md mx-auto">
-              Company badges and tenant registries are managed by their own administrative surfaces. This panel does not
-              render them, so it makes no claim about their state.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {subSection === 'tenants' && <AdminEnterpriseTenantsModal />}
 
       {/* ─── Modal 1: Employer Verification Dossier Modal ─── */}
       {inspectApplication && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setInspectApplication(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="employer-dossier-title"
-        >
+        <Dialog open={!!inspectApplication} onOpenChange={value => { if (!value) setInspectApplication(null); }}>
+          <DialogContent hideCloseButton aria-label="Employer Verification Dossier" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+            <DialogTitle className="sr-only">Employer Verification Dossier</DialogTitle>
           <div
             className="w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
@@ -624,7 +608,7 @@ export function AdminModerationTab() {
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
                   <span className="text-[10px] font-bold uppercase text-ink-muted">Tax ID / VAT</span>
-                  <p className="font-extrabold text-ink mt-0.5 font-mono">{inspectApplication.taxId}</p>
+                  <p className="font-extrabold text-ink mt-0.5 font-mono">{inspectApplication.taxId ? `••••${inspectApplication.taxId.slice(-4)}` : 'Not disclosed'}</p>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-border">
                   <span className="text-[10px] font-bold uppercase text-ink-muted">Company Size</span>
@@ -721,17 +705,15 @@ export function AdminModerationTab() {
               )}
             </div>
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ─── Modal 2: Audited Approval/Rejection Reason Confirmation Modal ─── */}
       {reviewConfirmation && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setReviewConfirmation(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
+        <Dialog open={!!reviewConfirmation} onOpenChange={value => { if (!value) setReviewConfirmation(null); }}>
+          <DialogContent hideCloseButton aria-label="Review Application Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+            <DialogTitle className="sr-only">Review Application Confirmation</DialogTitle>
           <div
             className="w-full max-w-md bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -753,7 +735,7 @@ export function AdminModerationTab() {
             </div>
             <div className="p-5 space-y-3 text-xs">
               <p className="text-ink-muted leading-relaxed">
-                Target organization: <strong className="text-ink">{reviewConfirmation.app.companyName}</strong> (Tax ID: {reviewConfirmation.app.taxId}).
+                Target organization: <strong className="text-ink">{reviewConfirmation.app.companyName}</strong> (Tax ID: {reviewConfirmation.app.taxId ? `••••${reviewConfirmation.app.taxId.slice(-4)}` : 'Not disclosed'}).
                 {reviewConfirmation.action === 'approve'
                   ? ' This will award the verified employer badge and grant full access to candidate resumes and hiring tools.'
                   : ' Please specify the mandatory audited rejection reason for the applicant and platform audit logs.'}
@@ -803,17 +785,15 @@ export function AdminModerationTab() {
               </Button>
             </div>
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ─── Modal 3: Job Spam Moderation Confirmation Dialog ─── */}
       {jobSpamModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-xs animate-[fade-in_150ms_ease-out]"
-          onClick={() => setJobSpamModal(null)}
-          role="alertdialog"
-          aria-modal="true"
-        >
+        <Dialog open={!!jobSpamModal} onOpenChange={value => { if (!value) setJobSpamModal(null); }}>
+          <DialogContent hideCloseButton aria-label="Job Spam Moderation Confirmation" aria-describedby={undefined} className="w-[calc(100%-2rem)] max-w-3xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl motion-reduce:animate-none">
+            <DialogTitle className="sr-only">Job Spam Moderation Confirmation</DialogTitle>
           <div
             className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -851,7 +831,8 @@ export function AdminModerationTab() {
               </Button>
             </div>
           </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

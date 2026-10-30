@@ -1,3 +1,4 @@
+import { useAuth } from '@/providers/auth-provider';
 /**
  * Employer Portal — Surface 3 Modernization
  *
@@ -73,6 +74,8 @@ const KANBAN_STAGES = [
 ] as const;
 
 export function EmployerPortalPage() {
+  const { isSuperAdmin } = useAuth();
+
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -259,6 +262,7 @@ export function EmployerPortalPage() {
 
   return (
     <div data-testid="employer-portal" className="space-y-6 max-w-7xl mx-auto pb-16">
+      {isSuperAdmin && new URLSearchParams(window.location.search).get('adminView') === '1' && <aside className="rounded-xl border border-brand-300 bg-brand-50 p-4 text-brand-900" aria-label="Super Admin viewing context"><strong>Super Admin Mode — Viewing Employer Workspace</strong><p className="text-xs">Same authenticated identity. No user impersonation or additional privileges.</p><a className="underline mr-4" href="/admin">Switch Workspace</a><a className="underline" href="/admin">Return to Admin Console</a></aside>}
       {/* ─── Breadcrumb Path ─── */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-ink-muted">
         <span>Dashboard</span>

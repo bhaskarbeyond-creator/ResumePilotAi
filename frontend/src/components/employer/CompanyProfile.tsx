@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 /**
  * CompanyProfile — Employer Portal
  *
@@ -415,17 +416,8 @@ export function CompanyProfile() {
 
       {/* ─── Add/Edit Company Entity Modal (11-Field Legacy Parity) ─── */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="company-modal-title"
-          onClick={() => !submitting && setModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl bg-surface border border-edge shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Dialog open={modalOpen} onOpenChange={value => { if (!submitting) setModalOpen(value); }}>
+          <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl p-0 gap-0 flex flex-col rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl overflow-hidden motion-reduce:animate-none">
             {/* Modal Header */}
             <div className="p-5 border-b border-edge bg-surface-raised/60 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -433,9 +425,9 @@ export function CompanyProfile() {
                   <Building2 className="size-5" />
                 </div>
                 <div>
-                  <h3 id="company-modal-title" className="text-base font-bold text-ink">
+                  <DialogTitle id="company-modal-title" className="text-base font-bold text-ink">
                     {isEditing ? `Edit ${formData.name || 'Company Profile'}` : 'Register Employer Entity'}
-                  </h3>
+                  </DialogTitle>
                   <p className="text-xs text-ink-muted">
                     {isEditing
                       ? 'Update organizational branding, verified contacts, and culture details.'
@@ -647,8 +639,8 @@ export function CompanyProfile() {
                 </Button>
               </div>
             </form>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
