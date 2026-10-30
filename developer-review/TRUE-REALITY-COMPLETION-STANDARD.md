@@ -4,7 +4,7 @@
 **Document Type:** Mandatory Single Source of Truth & Forensic Engineering Register  
 **Governing Authority:** Antigravity (Executive Engineering Lead, Principal Architect & Release Gatekeeper)  
 **Applicability:** Universally binding on Developer 1, Developer 2, Developer 3, Cline, Roo, Codex, and all contributors.  
-**Baseline Git Revision:** `f0c8232d` on `main` and `dev`  
+**Baseline Git Revision:** `6312539f` on `main` and `dev`  
 **Core Mandate:** **NEVER GIVE INFLATED CLAIMS. ALWAYS BE TRUE AND GIVE THE TRUE REALITY.**
 
 ---
@@ -51,16 +51,16 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════════════════╗
-║                          CANONICAL REALITY SCORECARD (REVISION f0c8232d)              ║
+║                          CANONICAL REALITY SCORECARD (REVISION 6312539f)              ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
-║ 1. Strict Functional Parity (112 Capabilities):    30.4% Strict Full (34 / 112)        ║
-║    — Including Modern Architectural Replacements:  40.2% Reconciled  (45 / 112)        ║
-║ 2. Forensic Discrepancy Log (54 Findings):         38.9% Resolved    (21 / 54)         ║
+║ 1. Strict Functional Parity (112 Capabilities):    31.3% Strict Full (35 / 112)        ║
+║    — Including Modern Architectural Replacements:  41.1% Reconciled  (46 / 112)        ║
+║ 2. Forensic Discrepancy Log (54 Findings):         40.7% Resolved    (22 / 54)         ║
 ║ 3. 42-Module Maturity Breakdown:                                                       ║
-║    — 🟢 Tier 1 (Strict Production Working):        61.9% (26 of 42 modules)            ║
+║    — 🟢 Tier 1 (Strict Production Working):        64.3% (27 of 42 modules)            ║
 ║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 31.0% (13 of 42 modules)            ║
-║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      7.1% ( 3 of 42 modules)            ║
-║ 4. Unit Contract Test Suite:                       100.0% Pass (338 pass, 0 skip, 0 f) ║
+║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      4.8% ( 2 of 42 modules)            ║
+║ 4. Offline Test Suite:                             100.0% Pass (371 pass, 0 skip, 0 f) ║
 ║ 5. Live Runtime & Environmental Certification:     0.0%  Live E2E / Bank Settlement    ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
 ║ OVERALL SYSTEM STATUS: PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE         ║
@@ -68,10 +68,10 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 ```
 
 ### The Three Tiers of Reality Breakdown (112 Standard Capabilities)
-* **🟢 Tier 1 — Strict Production Working (~30.4% / 34 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
-* **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (~41.1% / 46 capabilities)**: Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
-* **🔴 Tier 3 — Completely Missing / Fake (~21.4% / 24 capabilities)**: Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
-* **🔵 Modern Architectural Replacements (~7.1% / 8 capabilities)**: Modern Express/MariaDB architectures replacing deprecated legacy PHP/Firestore patterns.
+* **🟢 Tier 1 — Strict Production Working (~31.3% / 35 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
+* **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (~40.2% / 45 capabilities)**: Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
+* **🔴 Tier 3 — Completely Missing / Fake (~20.5% / 23 capabilities)**: Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
+* **🔵 Modern Architectural Replacements (~8.0% / 9 capabilities)**: Modern Express/MariaDB architectures replacing deprecated legacy PHP/Firestore patterns.
 
 ---
 
@@ -261,14 +261,19 @@ This ledger is the authoritative register for all 42 modules across the 7 archit
 ---
 
 ### Module 14: Enterprise SSO & SAML Authentication
-* **Architectural Anchor:** `backend/routes/auth/saml.js`
-* **Database Tables:** `enterprise_sso_configs`
-* **Forensic Reference:** `FP-B04`
-* **Status:** 🔴 **Tier 3 (Completely Missing / Unbuilt)** · **True % Complete:** **10%**
+* **Architectural Anchor:** `backend/routes/saml.js`, `backend/enterprise/saml.js`, `backend/enterprise/samlStore.js`
+* **Database Tables:** `enterprise_sso_configs`, `enterprise_sso_requests`, `enterprise_sso_assertions` (Migration `037_enterprise_sso.sql`)
+* **Forensic Reference:** `FP-B04`, `FP-M14`
+* **Status:** 🟢 **Tier 1 (Strict Production Working / Offline-Certified)** · **True % Complete:** **85%**
 * **In-Depth Evidence of What is DONE:**
-  - Stub route declaration only.
+  - Complete SAML 2.0 Service Provider: IdP metadata parsing, DEFLATE AuthnRequest generator (`backend/enterprise/saml.js`).
+  - Strict assertion verification: KeyInfo compared against pinned certs, XML signature wrapping defense, single top-level assertion check, DTD/XXE rejection, canonical base64 validation, Conditions/Audience/Recipient/Destination/InResponseTo validation.
+  - Request correlation & durable assertion replay memory (`backend/enterprise/samlStore.js`).
+  - SP metadata (`/api/auth/saml/:tenantSlug/metadata`), login redirect (302), ACS consumer endpoint, and admin trust config.
+  - Comprehensive 33-test suite (`backend/test/saml-sp.test.js`) driving real RSA keys, X.509 certificates, and XML signatures (33/33 pass).
 * **Forensic Evidence of What is PENDING:**
-  - Okta, Azure AD, and Google Workspace SAML/OIDC metadata exchange, SP-initiated SSO, and certificate validation are 0.0% built.
+  - Admin console frontend configuration tab UI (API is 100% complete).
+  - Commercial IdP test pass against live Okta / Azure AD tenant.
 
 ---
 
