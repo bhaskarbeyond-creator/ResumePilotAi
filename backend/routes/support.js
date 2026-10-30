@@ -15,6 +15,7 @@ const express = require('express');
 const { requirePermission, permissionsFor } = require('../security/auth');
 const { replyRepoError } = require('./errorResponder');
 const supportTickets = require('../services/supportTickets');
+const supportLiveChat = require('../services/supportLiveChat');
 
 const userRouter = express.Router();
 const adminRouter = express.Router();
@@ -230,6 +231,80 @@ userRouter.post('/tickets/:ticketId/reply', userReply);
 // Legacy alias kept for existing clients (same service call, same contract).
 userRouter.post('/tickets/:ticketId/messages', userReply);
 
+// ── Live Chat Endpoints (FP-G16) ──
+userRouter.get('/live-chat/session', async (req, res) => {
+  try {
+    const session = await supportLiveChat.getOrCreateLiveChatSession(req.user.uid, req.user.email);
+    res.setHeader('Cache-Control', 'no-store, private');
+    return res.json({ success: true, session });
+  } catch (error) {
+    return fail(res, error, 'Unable to get live chat session.');
+  }
+});
+
+userRouter.post('/live-chat/messages', async (req, res) => {
+  try {
+    const { ticketId, body } = req.body;
+    if (!ticketId) {
+      return invalid(res, 'MISSING_TICKET_ID', 'ticketId is required.');
+    }
+    // Authorize: candidate can only send message to their own ticket
+    const ticket = await supportTickets.getTicket({
+      ticketId,
+      uid: req.user.uid,
+      staff: false,
+    });
+    if (!ticket) {
+      return invalid(res, 'TICKET_NOT_FOUND', 'Ticket not found.', 404);
+    }
+    const message = await supportLiveChat.sendLiveChatMessage({
+      ticketId,
+      authorUid: req.user.uid,
+      authorRole: 'USER',
+      body,
+    });
+    return res.status(201).json({ success: true, message });
+  } catch (error) {
+    return fail(res, error, 'Unable to send message.');
+  }
+});
+
+userRouter.get('/live-chat/stream', async (req, res) => {
+  try {
+    const ticketId = req.query.ticketId;
+    if (!ticketId) {
+      return res.status(400).send('ticketId query parameter required');
+    }
+    // Verify ownership
+    await supportTickets.getTicket({
+      ticketId,
+      uid: req.user.uid,
+      staff: false,
+    });
+    supportLiveChat.subscribeClientToLiveChat(ticketId, req, res);
+  } catch {
+    return res.status(404).send('Ticket not found or unauthorized');
+  }
+});
+
+userRouter.post('/live-chat/typing', async (req, res) => {
+  try {
+    const { ticketId, isTyping } = req.body;
+    if (!ticketId) {
+      return invalid(res, 'MISSING_TICKET_ID', 'ticketId is required.');
+    }
+    supportLiveChat.broadcastTyping({
+      ticketId,
+      authorUid: req.user.uid,
+      authorRole: 'USER',
+      isTyping,
+    });
+    return res.json({ success: true });
+  } catch (error) {
+    return fail(res, error, 'Unable to broadcast typing.');
+  }
+});
+
 // ────────────────────────────── staff surface ──────────────────────────────
 
 adminRouter.use(requireUser);
@@ -324,6 +399,55 @@ adminRouter.patch('/tickets/:ticketId/status', async (req, res) => {
   } catch (error) {
     return fail(res, error, 'Unable to update ticket.');
   }
+});
+
+// ── Staff Live Chat Endpoints (FP-G16) ──
+adminRouter.get('/live-chat/sessions', async (req, res) => {
+  try {
+    const limit = req.query.limit;
+    const sessions = await supportLiveChat.listLiveChatSessions({ limit });
+    res.setHeader('Cache-Control', 'no-store, private');
+    return res.json({ success: true, sessions });
+  } catch (error) {
+    return fail(res, error, 'Unable to list live chat sessions.');
+  }
+});
+
+adminRouter.post('/live-chat/:ticketId/messages', async (req, res) => {
+  try {
+    const ticketId = req.params.ticketId;
+    const body = readMessage(req.body);
+    const message = await supportLiveChat.sendLiveChatMessage({
+      ticketId,
+      authorUid: req.user.uid,
+      authorRole: actorRole(req) || 'STAFF',
+      body,
+    });
+    return res.status(201).json({ success: true, message });
+  } catch (error) {
+    return fail(res, error, 'Unable to send staff message.');
+  }
+});
+
+adminRouter.get('/live-chat/:ticketId/stream', (req, res) => {
+  const ticketId = req.params.ticketId;
+  supportLiveChat.subscribeClientToLiveChat(ticketId, req, res);
+});
+
+adminRouter.get('/live-chat/stream', (req, res) => {
+  supportLiveChat.subscribeStaffToAllChats(req, res);
+});
+
+adminRouter.post('/live-chat/:ticketId/typing', (req, res) => {
+  const ticketId = req.params.ticketId;
+  const isTyping = Boolean(req.body?.isTyping);
+  supportLiveChat.broadcastTyping({
+    ticketId,
+    authorUid: req.user.uid,
+    authorRole: actorRole(req) || 'STAFF',
+    isTyping,
+  });
+  return res.json({ success: true });
 });
 
 module.exports = { supportUserRouter: userRouter, supportAdminRouter: adminRouter };

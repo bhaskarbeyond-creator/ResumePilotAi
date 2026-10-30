@@ -13,6 +13,7 @@ import { RequireAuth, RedirectIfAuthenticated } from '@/components/guards/requir
 import { RequireExportAccess } from '@/components/guards/require-export-access';
 import { AppShell } from '@/components/layout/app-shell';
 import { CubaAppShell } from '@/components/layout/cuba-app-shell';
+import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 
 
 // ─── Lazy-loaded pages ───
@@ -356,6 +357,7 @@ export function AppRouter() {
             {/* ─── Catch-all ─── */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <SupportChatWidget />
         </Suspense>
       </RouteErrorBoundary>
     </BrowserRouter>

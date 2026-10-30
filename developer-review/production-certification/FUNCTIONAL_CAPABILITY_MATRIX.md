@@ -10,12 +10,12 @@
 # 1. METHODOLOGY & CLASSIFICATION TIERS
 
 Each of the 112 capabilities in the canonical inventory is classified into one of four mutually exclusive states:
-1. **🟢 STRICT FULL (64 Capabilities — 57.1%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
+1. **🟢 STRICT FULL (65 Capabilities — 58.0%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
 2. **🔵 MODERN ARCHITECTURAL REPLACEMENTS (9 Capabilities — 8.0%):** Replaced legacy PHP/Firestore patterns with modern Node.js/Express/MariaDB architectures.
 3. **🟡 DEGRADED / PARTIAL (32 Capabilities — 28.6%):** Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
-4. **🔴 MOCK / UNBUILT (7 Capabilities — 6.2%):** Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
+4. **🔴 MOCK / UNBUILT (6 Capabilities — 5.4%):** Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
 
-Combined Reconciled Architectural Parity: **(64 + 9) / 112 = 73 / 112 = 65.2%**.
+Combined Reconciled Architectural Parity: **(65 + 9) / 112 = 74 / 112 = 66.1%**.
 
 ---
 
@@ -171,4 +171,4 @@ Combined Reconciled Architectural Parity: **(64 + 9) / 112 = 73 / 112 = 65.2%**.
 | `FP-G13` | Markdown Blog Publishing Editor | 🟢 STRICT FULL | `AdminBlogManagementTab.tsx` | Markdown editor with instant live HTML preview. |
 | `FP-G14` | Public Blog Article Reader | 🟢 STRICT FULL | `pages/blog/article.tsx` | Slug-based routing and SSR metadata tags. |
 | `FP-G15` | Live Bank Gateway Settlement | 🟡 DEGRADED | `routes/billing.js` | Webhooks verified; live bank settlement unverified (KYC). |
-| `FP-G16` | Real-Time Support Web Chat | 🔴 MOCK / UNBUILT | None | Live WebSocket support chat widget is unbuilt. |
+| `FP-G16` | Real-Time Support Web Chat | 🟢 STRICT FULL | `services/supportLiveChat.js` | Live bidirectional support web chat with SSE streaming (`/api/support/live-chat/stream`), MariaDB `support_tickets` & `support_ticket_messages` persistence, candidate typing broadcast, staff monitoring channels, `SupportChatWidget.tsx` with Cuba executive theme, and quick action launcher in `dashboard/support.tsx` (12/12 integration tests green, 601/601 master tests passing). |

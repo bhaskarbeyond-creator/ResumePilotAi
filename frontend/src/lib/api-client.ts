@@ -63,7 +63,7 @@ async function refreshToken(): Promise<string | null> {
 }
 
 /** Get current auth header */
-async function getAuthHeader(): Promise<string | null> {
+export async function getAuthHeader(): Promise<string | null> {
   try {
     const user = auth.currentUser;
     if (user) {

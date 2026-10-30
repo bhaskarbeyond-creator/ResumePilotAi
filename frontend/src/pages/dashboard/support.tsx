@@ -37,6 +37,7 @@ import {
   Loader2,
   RefreshCw,
   Lock,
+  Headphones,
 } from 'lucide-react';
 
 /** The lifecycle statuses the API returns (lower-case on the wire). */
@@ -311,15 +312,29 @@ export function SupportPage() {
           </p>
         </div>
 
-        <Button
-          ref={createButtonRef}
-          onClick={() => setShowCreateModal(true)}
-          className="gap-1.5 text-xs font-semibold"
-          disabled={createPending}
-        >
-          <MessageSquare className="size-3.5" aria-hidden="true" />
-          Create New Ticket
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              const chatBtn = document.querySelector('button[aria-label="Open Live Support Web Chat"]') as HTMLButtonElement | null;
+              if (chatBtn) chatBtn.click();
+            }}
+            className="gap-1.5 text-xs font-semibold border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10"
+          >
+            <Headphones className="size-3.5 text-cyan-500" aria-hidden="true" />
+            Start Live Chat
+          </Button>
+          <Button
+            ref={createButtonRef}
+            onClick={() => setShowCreateModal(true)}
+            className="gap-1.5 text-xs font-semibold"
+            disabled={createPending}
+          >
+            <MessageSquare className="size-3.5" aria-hidden="true" />
+            Create New Ticket
+          </Button>
+        </div>
       </div>
 
       <NoticeRegions notice={notice} />

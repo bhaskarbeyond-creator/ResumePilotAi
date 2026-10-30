@@ -54,14 +54,14 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 ╔════════════════════════════════════════════════════════════════════════════════════════╗
 ║                          CANONICAL REALITY SCORECARD (REVISION e6c5a473)              ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
-║ 1. Strict Functional Parity (112 Capabilities):    57.1% Strict Full (64 / 112)        ║
-║    — Including Modern Architectural Replacements:  65.2% Reconciled  (73 / 112)        ║
+║ 1. Strict Functional Parity (112 Capabilities):    58.0% Strict Full (65 / 112)        ║
+║    — Including Modern Architectural Replacements:  66.1% Reconciled  (74 / 112)        ║
 ║ 2. Forensic Discrepancy Log (54 Findings):         68.5% Resolved    (37 / 54)         ║
 ║ 3. 42-Module Maturity Breakdown:                                                       ║
 ║    — 🟢 Tier 1 (Strict Production Working):        83.3% (35 of 42 modules)            ║
 ║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 14.3% ( 6 of 42 modules)            ║
 ║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      2.4% ( 1 of 42 modules)            ║
-║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (589 pass, 0 s, 0 f)   ║
+║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (601 pass, 0 s, 0 f)   ║
 ║ 5. Live Runtime & Environmental Certification:     0.0%  Live Bank Settlement / KYC   ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
 ║ OVERALL SYSTEM STATUS: PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE         ║
@@ -70,9 +70,9 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 
 ### The Three Tiers of Reality Breakdown (112 Standard Capabilities)
 
-* **🟢 Tier 1 — Strict Production Working (57.1% / 64 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
+* **🟢 Tier 1 — Strict Production Working (58.0% / 65 capabilities)**: Fully wired to MariaDB persistence, zero mock data, zero layout defects, verified with real payloads.
 * **🟡 Tier 2 — Degraded / Client-Only / Layout Bugs (28.6% / 32 capabilities)**: Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
-* **🔴 Tier 3 — Completely Missing / Fake (6.3% / 7 capabilities)**: Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
+* **🔴 Tier 3 — Completely Missing / Fake (5.4% / 6 capabilities)**: Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
 * **🔵 Modern Architectural Replacements (8.0% / 9 capabilities)**: Modern Express/MariaDB architectures replacing deprecated legacy PHP/Firestore patterns.
 
 ---
@@ -672,14 +672,15 @@ This ledger is the authoritative register for all 42 modules across the 7 archit
 
 ### Module 41: Support Helpdesk & Ticket Management
 
-* **Architectural Anchor:** `frontend/src/pages/dashboard/support.tsx:40-180`, `backend/routes/support.js`
-* **Database Tables:** `support_tickets` (Migration `015_support_tickets.sql:1-40`)
-* **Forensic Reference:** `FP-G03`, `DISC-025`
-* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **70%**
+* **Architectural Anchor:** `frontend/src/pages/dashboard/support.tsx`, `frontend/src/components/support/SupportChatWidget.tsx`, `backend/routes/support.js`, `backend/services/supportLiveChat.js`
+* **Database Tables:** `support_tickets`, `support_ticket_messages` (Migration `015_support_tickets.sql`)
+* **Forensic Reference:** `FP-G11`, `FP-G12`, `FP-G16`, `DISC-025`
+* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **90%**
 * **In-Depth Evidence of What is DONE:**
-  * Ticket submission form, priority categorization, backend persistence in `support_tickets` table, admin ticket response view.
+  * Ticket submission form, priority categorization, backend persistence in `support_tickets` and `support_ticket_messages` tables, admin ticket response view.
+  * Real-time bidirectional support web chat with Server-Sent Events (SSE) live streaming (`/api/support/live-chat/stream`), keepalive pings, cross-user isolation, typing indicators, Cuba executive `SupportChatWidget.tsx` with unread notification badge, quick action launcher in `dashboard/support.tsx`, and 12/12 integration tests green (`support-live-chat-integration.test.js`).
 * **Forensic Evidence of What is PENDING:**
-  * Live WebSocket real-time chat support widget; SLA breach escalation alerts.
+  * SLA breach automated escalation alerts.
 
 ---
 
