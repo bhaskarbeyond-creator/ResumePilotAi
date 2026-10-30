@@ -16,10 +16,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
-const SRC = new URL('../../../frontend/src/', import.meta.url).pathname;
+const SRC = fileURLToPath(new URL('../../../frontend/src/', import.meta.url));
 const STUBS = new Map([
   // Browser-only identity provider: not exercised by anything under test.
   ['lib/firebase', 'export const auth = { currentUser: null };'],
