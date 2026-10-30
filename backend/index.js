@@ -465,10 +465,10 @@ function isPublicApiPath(pathname) {
         || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/jobs\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
-        || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
+        || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?(?:\/(?:unlock|gallery))?$/.test(pathname)
         // Canonical public portfolio route; it is an alias of the frontend's
         // /portfolios/public/:slug contract, so it must be equally anonymous.
-        || /^\/public\/portfolios\/[A-Za-z0-9_-]{1,180}$/.test(pathname)
+        || /^\/public\/portfolios\/[A-Za-z0-9_-]{1,180}(?:\/(?:unlock|gallery))?$/.test(pathname)
         || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname)
         || /^\/public\/geo\/regions\/(?:city|in)\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(pathname)
         || /^\/public\/jobs\/[a-z0-9_-]{1,128}\/og\.png$/.test(pathname)

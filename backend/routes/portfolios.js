@@ -6,6 +6,8 @@ const { normalizeSlugBase } = require('../repositories/portfolioSlug');
 const { getPublicPortfolio } = require('../services/publicPortfolio');
 const { assertPublishableSlug, publishPortfolio } = require('../services/portfolioPublishing');
 const customDomains = require('../services/customDomains');
+const { setPortfolioPassword } = require('../services/portfolioProtectionService');
+const { listGalleryMedia, addGalleryMedia, deleteGalleryMedia, reorderGalleryMedia } = require('../services/portfolioMediaService');
 const router = express.Router();
 
 const VALID_ID = /^[A-Za-z0-9_-]{4,128}$/;
@@ -43,15 +45,80 @@ router.get('/public/:slug', async (req, res) => {
     // public route; both call the same service so the DTO, visibility rules and
     // privacy allowlist cannot drift apart (frontend/src/lib/portfolio.ts).
     try {
-        const portfolio = await getPublicPortfolio({ repository: req.repository, slug: req.params.slug });
-        if (!portfolio) return res.status(404).json({ success: false, code: 'PORTFOLIO_NOT_FOUND', error: 'Portfolio not found' });
-        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-        return res.json({ success: true, portfolio });
+        const { resolvePublicPortfolioWithProtection } = require('./publicPortfolios');
+        const result = await resolvePublicPortfolioWithProtection(req, req.params.slug);
+        if (result.notFound) return res.status(404).json({ success: false, code: 'PORTFOLIO_NOT_FOUND', error: 'Portfolio not found' });
+        if (result.unlocked && !result.isProtected) {
+            res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        } else {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        }
+        return res.json({
+            success: true,
+            portfolio: result.portfolio,
+            isPasswordProtected: result.isProtected,
+            unlocked: result.unlocked,
+        });
     } catch (error) {
         if (error?.code === 'INVALID_PORTFOLIO_SLUG') {
             return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_SLUG', error: error.message });
         }
         return replyRepoError(res, error, 'Failed to fetch portfolio');
+    }
+});
+
+router.post('/public/:slug/unlock', express.json({ limit: '8kb' }), async (req, res) => {
+    try {
+        const repo = req.repository || getRepository();
+        const pool = repo?._getPool ? repo._getPool() : getRepository()._getPool();
+        const slug = req.params.slug;
+        const { checkPortfolioProtection, verifyPassword } = require('../services/portfolioProtectionService');
+        const protection = await checkPortfolioProtection(pool, slug);
+        if (!protection) {
+            return res.status(404).json({ success: false, code: 'PORTFOLIO_NOT_FOUND', error: 'Portfolio not found' });
+        }
+        if (!protection.isPasswordProtected) {
+            const portfolio = await getPublicPortfolio({ repository: repo, slug });
+            return res.json({ success: true, unlocked: true, portfolio });
+        }
+        const password = req.body?.password;
+        if (!password || !verifyPassword(password, protection.passwordHash)) {
+            return res.status(401).json({ success: false, code: 'INVALID_PORTFOLIO_PASSWORD', error: 'Incorrect portfolio password.' });
+        }
+        const portfolio = await getPublicPortfolio({ repository: repo, slug });
+        return res.json({ success: true, unlocked: true, portfolio });
+    } catch (error) {
+        if (error?.code === 'INVALID_PORTFOLIO_SLUG') {
+            return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_SLUG', error: error.message });
+        }
+        return replyRepoError(res, error, 'Failed to unlock portfolio');
+    }
+});
+
+router.get('/public/:slug/gallery', async (req, res) => {
+    try {
+        const repo = req.repository || getRepository();
+        const pool = repo?._getPool ? repo._getPool() : getRepository()._getPool();
+        const slug = req.params.slug;
+        const { resolvePublicPortfolioWithProtection } = require('./publicPortfolios');
+        const result = await resolvePublicPortfolioWithProtection(req, slug);
+        if (result.notFound) {
+            return res.status(404).json({ success: false, code: 'PORTFOLIO_NOT_FOUND', error: 'Portfolio not found' });
+        }
+        if (result.isProtected && !result.unlocked) {
+            return res.status(401).json({ success: false, code: 'PORTFOLIO_PASSWORD_REQUIRED', error: 'This portfolio is protected with a password. Please unlock it to view the gallery.' });
+        }
+        const media = await listGalleryMedia(pool, {
+            portfolioId: result.portfolio.id,
+            projectId: req.query.projectId || null,
+        });
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        return res.json({ success: true, media });
+    } catch (error) {
+        if (error?.code === 'INVALID_PORTFOLIO_SLUG') {
+            return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_SLUG', error: error.message });
+        }
+        return replyRepoError(res, error, 'Failed to fetch portfolio gallery');
     }
 });
 
@@ -268,6 +335,135 @@ router.get('/:id/custom-domain', async (req, res) => {
         return res.json({ success: true, customDomain: domain });
     } catch (error) {
         return customDomainError(res, error, 'Custom domain lookup is temporarily unavailable.');
+    }
+});
+
+/* ─── Password Protection Management (FP-C10) ────────────────────────────── */
+
+router.post('/:id/password', express.json({ limit: '8kb' }), async (req, res) => {
+    const portfolioId = String(req.params.id || '');
+    if (!VALID_ID.test(portfolioId)) {
+        return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_ID', error: 'Invalid portfolio identifier.' });
+    }
+    try {
+        const pool = req.repository?._getPool ? req.repository._getPool() : getRepository()._getPool();
+        const result = await setPortfolioPassword(pool, {
+            userId: req.user.uid,
+            portfolioId,
+            password: req.body?.password ?? null,
+        });
+        return res.json(result);
+    } catch (error) {
+        const status = Number(error?.status) || 500;
+        return res.status(status).json({
+            success: false,
+            code: error?.code || 'PORTFOLIO_PASSWORD_ERROR',
+            error: error.message || 'Failed to update portfolio password protection.',
+        });
+    }
+});
+
+/* ─── Case Study Media Gallery (FP-C07) ──────────────────────────────────── */
+
+router.get('/:id/gallery', async (req, res) => {
+    const portfolioId = String(req.params.id || '');
+    if (!VALID_ID.test(portfolioId)) {
+        return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_ID', error: 'Invalid portfolio identifier.' });
+    }
+    try {
+        const pool = req.repository?._getPool ? req.repository._getPool() : getRepository()._getPool();
+        const media = await listGalleryMedia(pool, {
+            portfolioId,
+            projectId: req.query.projectId || null,
+        });
+        return res.json({ success: true, media });
+    } catch (error) {
+        const status = Number(error?.status) || 500;
+        return res.status(status).json({
+            success: false,
+            code: error?.code || 'GALLERY_FETCH_ERROR',
+            error: error.message || 'Failed to list gallery media.',
+        });
+    }
+});
+
+router.post('/:id/gallery', express.json({ limit: '10mb' }), async (req, res) => {
+    const portfolioId = String(req.params.id || '');
+    if (!VALID_ID.test(portfolioId)) {
+        return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_ID', error: 'Invalid portfolio identifier.' });
+    }
+    try {
+        const pool = req.repository?._getPool ? req.repository._getPool() : getRepository()._getPool();
+        const url = req.body?.url;
+        const fileSize = Number(req.body?.fileSize || (url ? Buffer.byteLength(String(url), 'utf8') : 0));
+        const created = await addGalleryMedia(pool, {
+            userId: req.user.uid,
+            portfolioId,
+            projectId: req.body?.projectId || null,
+            title: req.body?.title || '',
+            caption: req.body?.caption || '',
+            mediaType: req.body?.mediaType || 'IMAGE',
+            mimeType: req.body?.mimeType || 'image/png',
+            fileSize,
+            url,
+            storageKey: req.body?.storageKey || null,
+            displayOrder: req.body?.displayOrder,
+        });
+        return res.status(201).json({ success: true, media: created });
+    } catch (error) {
+        const status = Number(error?.status) || 500;
+        return res.status(status).json({
+            success: false,
+            code: error?.code || 'GALLERY_UPLOAD_ERROR',
+            error: error.message || 'Failed to save gallery media.',
+        });
+    }
+});
+
+router.delete('/:id/gallery/:mediaId', async (req, res) => {
+    const portfolioId = String(req.params.id || '');
+    const mediaId = String(req.params.mediaId || '');
+    if (!VALID_ID.test(portfolioId) || !mediaId) {
+        return res.status(400).json({ success: false, code: 'INVALID_PARAMETERS', error: 'Invalid portfolio or media identifier.' });
+    }
+    try {
+        const pool = req.repository?._getPool ? req.repository._getPool() : getRepository()._getPool();
+        const result = await deleteGalleryMedia(pool, {
+            userId: req.user.uid,
+            portfolioId,
+            mediaId,
+        });
+        return res.json(result);
+    } catch (error) {
+        const status = Number(error?.status) || 500;
+        return res.status(status).json({
+            success: false,
+            code: error?.code || 'GALLERY_DELETE_ERROR',
+            error: error.message || 'Failed to delete gallery media.',
+        });
+    }
+});
+
+router.put('/:id/gallery/reorder', express.json({ limit: '64kb' }), async (req, res) => {
+    const portfolioId = String(req.params.id || '');
+    if (!VALID_ID.test(portfolioId)) {
+        return res.status(400).json({ success: false, code: 'INVALID_PORTFOLIO_ID', error: 'Invalid portfolio identifier.' });
+    }
+    try {
+        const pool = req.repository?._getPool ? req.repository._getPool() : getRepository()._getPool();
+        const result = await reorderGalleryMedia(pool, {
+            userId: req.user.uid,
+            portfolioId,
+            mediaIds: req.body?.mediaIds || [],
+        });
+        return res.json(result);
+    } catch (error) {
+        const status = Number(error?.status) || 500;
+        return res.status(status).json({
+            success: false,
+            code: error?.code || 'GALLERY_REORDER_ERROR',
+            error: error.message || 'Failed to reorder gallery media.',
+        });
     }
 });
 

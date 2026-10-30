@@ -26,7 +26,7 @@ const {
 } = require('../services/interviewCalibration');
 
 const TEST_USER = {
-    uid: 'm28-test-candidate-uid',
+    uid: `m28-test-${Date.now().toString(36)}`,
     email: 'candidate-m28@ime365.test',
     role: 'USER',
 };

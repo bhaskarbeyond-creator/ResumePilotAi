@@ -16,14 +16,14 @@
  */
 
 const PUBLIC_PORTFOLIO_FIELDS = Object.freeze([
-  'id', 'title', 'theme', 'slug', 'isPublished', 'publishedAt', 'metadata', 'data',
+  'id', 'title', 'theme', 'slug', 'isPublished', 'isPasswordProtected', 'publishedAt', 'metadata', 'data',
 ]);
 const PUBLIC_FIELD_SET = new Set(PUBLIC_PORTFOLIO_FIELDS);
 // Defensive deny-list: even if a field were added to the allowlist by mistake,
 // these can never cross the anonymous boundary.
 const FORBIDDEN_PUBLIC_FIELDS = Object.freeze([
   'userId', 'user_id', 'email', 'ownerEmail', 'revision', 'billing', 'billingSnapshot',
-  'customerSnapshot', 'supplierSnapshot', 'gstin', 'paymentOrderId', 'extra_data',
+  'customerSnapshot', 'supplierSnapshot', 'gstin', 'paymentOrderId', 'extra_data', 'password_hash',
 ]);
 
 // Matches the storage slug shape (published slugs may be up to 180 chars: the
@@ -53,7 +53,7 @@ function toPublicPortfolio(record) {
     projected[key] = record[key];
   }
   if (!projected.id || !projected.slug) return null;
-  return {
+  const result = {
     id: projected.id,
     title: projected.title,
     theme: projected.theme,
@@ -63,6 +63,10 @@ function toPublicPortfolio(record) {
     metadata: projected.metadata || { description: '', tags: [], seoTitle: '', seoDescription: '' },
     data: projected.data || { content: [], root: { props: {} }, canonical: null },
   };
+  if (projected.isPasswordProtected !== undefined) {
+    result.isPasswordProtected = Boolean(projected.isPasswordProtected);
+  }
+  return result;
 }
 
 /**

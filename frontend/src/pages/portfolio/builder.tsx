@@ -25,23 +25,27 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Copy, Eye, ExternalLink, Globe, Link2, Loader2, Monitor, Pencil, Plus, RotateCcw, Save, Share2, Smartphone, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Copy, Eye, ExternalLink, Globe, Link2, Loader2, Lock, Monitor, Pencil, Plus, RotateCcw, Save, Share2, Smartphone, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortfolioView } from '@/components/portfolio/portfolio-view';
 import { EntryListEditor, TextAreaField, TextField, VisibilityControls } from '@/components/portfolio/portfolio-editor-fields';
+import { PortfolioGallery } from '@/components/portfolio/Gallery';
 import {
   ConflictDialog,
   ConfirmDialog,
   CreatePortfolioDialog,
   CustomDomainDialog,
+  PasswordProtectionDialog,
   PublishDialog,
   type CreatePortfolioInput,
 } from '@/components/portfolio/portfolio-dialogs';
 import { SharePublicationDialog } from '@/components/portfolio/share-publication';
 import {
   deletePortfolio,
+  deletePortfolioGalleryMedia,
   extractStoredCustomDomain,
   getPortfolio,
+  getPortfolioGallery,
   getResumeRecord,
   listPortfolios,
   mintPortfolioId,
@@ -50,8 +54,10 @@ import {
   savePortfolio,
   toPortfolioError,
   unpublishPortfolioById,
+  uploadPortfolioGalleryMedia,
   type CustomDomainConfig,
   type PortfolioApiError,
+  type PortfolioMediaItem,
   type StoredPortfolio,
 } from '@/lib/portfolio';
 import {
@@ -343,7 +349,7 @@ type EditorState =
   | { status: 'not-found' }
   | { status: 'error'; error: PortfolioApiError };
 
-type EditorDialog = null | 'publish' | 'unpublish' | 'custom-domain' | 'share';
+type EditorDialog = null | 'publish' | 'unpublish' | 'custom-domain' | 'share' | 'password';
 type PreviewDevice = 'desktop' | 'mobile';
 
 /** The server version behind an unresolved 409, plus the local edits it collided with. */
@@ -364,6 +370,8 @@ const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
   const [state, setState] = useState<EditorState>({ status: 'loading' });
   const [stored, setStored] = useState<StoredPortfolio | null>(null);
+  const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [galleryMedia, setGalleryMedia] = useState<PortfolioMediaItem[]>([]);
   const [customDomainConfig, setCustomDomainConfig] = useState<CustomDomainConfig | null>(null);
   const [title, setTitle] = useState('');
   const [titleError, setTitleError] = useState('');
@@ -382,6 +390,7 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
   const titleRef = useRef<HTMLInputElement>(null);
   const visibilityButtonRef = useRef<HTMLButtonElement>(null);
   const domainButtonRef = useRef<HTMLButtonElement>(null);
+  const passwordButtonRef = useRef<HTMLButtonElement>(null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const conflictButtonRef = useRef<HTMLButtonElement>(null);
   const conflictRef = useRef<HTMLDivElement>(null);
@@ -392,6 +401,7 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
   const apply = useCallback((portfolio: StoredPortfolio) => {
     const next = normalizeCanonical(portfolio);
     setStored(portfolio);
+    setIsPasswordProtected(Boolean(portfolio.isPasswordProtected));
     setTitle(portfolio.title ?? '');
     setCanonical(next);
     setSavedSnapshot(snapshot(portfolio.title ?? '', next));
@@ -410,6 +420,7 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
         setConflict(null);
         setConflictOpen(false);
         setState({ status: 'ready' });
+        getPortfolioGallery(portfolioId).then(setGalleryMedia).catch(() => setGalleryMedia([]));
       })
       .catch((cause: unknown) => {
         const error = toPortfolioError(cause);
@@ -796,6 +807,34 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
             { key: 'description', label: 'Description', multiline: true },
           ]}
         />
+        {stored && (
+          <div className="mt-5 border-t border-border pt-4">
+            <h3 className="text-sm font-semibold text-ink">Project Case Study Gallery</h3>
+            <p className="mt-0.5 text-xs text-ink-secondary">
+              Upload case study screenshots, design mockups, and media to showcase in your portfolio (PNG, JPEG, WebP, GIF, SVG up to 5MB).
+            </p>
+            <div className="mt-3">
+              <PortfolioGallery
+                portfolioId={stored.id}
+                items={galleryMedia}
+                onUpload={async (item) => {
+                  const uploaded = await uploadPortfolioGalleryMedia(stored.id, {
+                    title: item.title,
+                    caption: item.caption,
+                    mimeType: item.mimeType,
+                    url: item.url,
+                    fileSize: item.fileSize,
+                  });
+                  setGalleryMedia((prev) => [...prev, uploaded]);
+                }}
+                onDelete={async (mediaId) => {
+                  await deletePortfolioGalleryMedia(stored.id, mediaId);
+                  setGalleryMedia((prev) => prev.filter((m) => m.id !== mediaId));
+                }}
+              />
+            </div>
+          </div>
+        )}
       </EditorSection>
 
       <EditorSection id="portfolio-skills" title="Skills">
@@ -936,6 +975,15 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
           >
             <Link2 aria-hidden="true" /> Custom domain
           </Button>
+          <Button
+            ref={passwordButtonRef}
+            size="sm"
+            variant="outline"
+            onClick={() => { setDialogError(null); setDialog('password'); }}
+            disabled={saving}
+          >
+            <Lock aria-hidden="true" /> {isPasswordProtected ? 'Password protected' : 'Set password'}
+          </Button>
           {editable && (
             <Button size="sm" variant="outline" onClick={() => void save()} loading={saving && dialog === null} disabled={!dirty || saving || saveBlocked}>
               <Save aria-hidden="true" /> Save
@@ -1038,6 +1086,17 @@ function PortfolioEditor({ portfolioId }: { portfolioId: string }) {
         onRefreshPortfolio={refreshPortfolioRecord}
         onClose={() => setDialog(null)}
         returnFocusRef={domainButtonRef}
+      />
+      <PasswordProtectionDialog
+        open={dialog === 'password'}
+        portfolioId={stored.id}
+        isPasswordProtected={isPasswordProtected}
+        onPasswordChanged={(protectedStatus) => {
+          setIsPasswordProtected(protectedStatus);
+          setAnnouncement(protectedStatus ? 'Portfolio password protection enabled.' : 'Portfolio password protection removed.');
+        }}
+        onClose={() => setDialog(null)}
+        returnFocusRef={passwordButtonRef}
       />
       <ConflictDialog
         open={conflictOpen && conflict !== null}

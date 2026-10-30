@@ -18,6 +18,8 @@ process.env.DB_PORT = process.env.DB_PORT || '3306';
 process.env.DB_USER = process.env.DB_USER || 'root';
 process.env.DB_PASSWORD = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '';
 process.env.DB_NAME = process.env.DB_NAME || 'airesume_test';
+process.env.AI_BURST_LIMIT = '500';
+process.env.GLOBAL_RATE_LIMIT_MAX = '20000';
 
 const repoRoot = path.resolve(__dirname, '../..');
 const unitDir = path.join(repoRoot, 'developer-implemented/TESTS/unit');
@@ -45,13 +47,14 @@ const explicitFiles = [
   path.join(repoRoot, 'backend/test/payments.test.js'),
   path.join(repoRoot, 'backend/test/ip-filter-jail-integration.test.js'),
   path.join(repoRoot, 'backend/test/tenant-retention-purge-integration.test.js'),
+  path.join(repoRoot, 'backend/test/portfolio-gallery-protection-integration.test.js'),
 ];
 
 const allFiles = [...unitFiles, ...explicitFiles];
 
 console.log(`Executing ${allFiles.length} test files with live MariaDB integration (${process.env.DB_NAME})...`);
 
-const result = spawnSync(process.execPath, ['--test', '--test-force-exit', ...allFiles], {
+const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', '--test-force-exit', ...allFiles], {
   cwd: repoRoot,
   env: process.env,
   stdio: 'inherit',

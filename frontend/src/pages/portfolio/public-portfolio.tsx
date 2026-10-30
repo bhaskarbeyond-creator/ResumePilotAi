@@ -9,14 +9,19 @@
  */
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RotateCcw, SearchX } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2, Lock, RotateCcw, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { PortfolioView } from '@/components/portfolio/portfolio-view';
+import { PortfolioGallery } from '@/components/portfolio/Gallery';
 import {
   getPublishedPortfolio,
+  getPublicPortfolioGallery,
+  unlockPublishedPortfolio,
   publicPortfolioUrl,
   toPortfolioError,
   type PortfolioApiError,
+  type PortfolioMediaItem,
   type PublicPortfolio,
 } from '@/lib/portfolio';
 import { canonicalWithVisibility, hasContent, normalizeCanonical } from '@/lib/portfolio-document';
@@ -99,6 +104,10 @@ export function PublicPortfolioPage() {
   const { slug = '' } = useParams<{ slug: string }>();
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [password, setPassword] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [galleryItems, setGalleryItems] = useState<PortfolioMediaItem[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -122,6 +131,14 @@ export function PublicPortfolioPage() {
     const snapshot = applyPortfolioMetadata(state.portfolio);
     return () => restoreMetadata(snapshot);
   }, [state]);
+
+  useEffect(() => {
+    if (state.status === 'ready' && (!state.portfolio.isPasswordProtected || state.portfolio.unlocked)) {
+      getPublicPortfolioGallery(slug.toLowerCase())
+        .then((items) => setGalleryItems(items))
+        .catch(() => setGalleryItems([]));
+    }
+  }, [state, slug]);
 
   const topBar = (
     <nav aria-label="Portfolio" className="border-b border-border bg-surface px-4 py-3">
@@ -168,6 +185,63 @@ export function PublicPortfolioPage() {
   }
 
   const { portfolio } = state;
+
+  if (portfolio.isPasswordProtected && !portfolio.unlocked) {
+    return (
+      <div className="min-h-screen bg-canvas">
+        {topBar}
+        <main id="main-content" className="mx-auto flex min-h-[65vh] max-w-md flex-col items-center justify-center px-4 text-center">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">
+            <Lock className="size-7" aria-hidden="true" />
+          </div>
+          <h1 className="mt-4 text-2xl font-bold text-ink">Password-Protected Portfolio</h1>
+          <p className="mt-2 text-sm text-ink-secondary">
+            This portfolio is private. Please enter the password provided by the owner to view its contents.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!password.trim() || unlocking) return;
+              setUnlocking(true);
+              setUnlockError(null);
+              try {
+                const unlockedPortfolio = await unlockPublishedPortfolio(slug.toLowerCase(), password);
+                setState({ status: 'ready', portfolio: { ...unlockedPortfolio, unlocked: true } });
+              } catch (cause) {
+                const err = toPortfolioError(cause);
+                setUnlockError(err.status === 401 ? 'Incorrect password. Please try again.' : err.message);
+              } finally {
+                setUnlocking(false);
+              }
+            }}
+            className="mt-6 w-full space-y-3"
+          >
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (unlockError) setUnlockError(null);
+              }}
+              placeholder="Enter password…"
+              disabled={unlocking}
+              autoFocus
+              className="text-center text-sm"
+            />
+            {unlockError && (
+              <p role="alert" className="text-xs font-medium text-error-600">
+                {unlockError}
+              </p>
+            )}
+            <Button type="submit" className="w-full" loading={unlocking} disabled={!password.trim() || unlocking}>
+              <KeyRound className="mr-1.5 size-4" aria-hidden="true" /> Unlock Portfolio
+            </Button>
+          </form>
+        </main>
+      </div>
+    );
+  }
+
   const data = portfolio.data ?? { content: [], root: {}, canonical: null };
   const blocks = Array.isArray(data.content) ? data.content : [];
   if (!data.canonical && blocks.length > 0) {
@@ -198,6 +272,15 @@ export function PublicPortfolioPage() {
           </p>
         )}
         <PortfolioView canonical={canonical} headingLevel={1} className="min-h-[calc(100vh-3rem)]" />
+        {galleryItems.length > 0 && (
+          <section aria-label="Project Case Study Gallery" className="mx-auto max-w-5xl px-4 py-10">
+            <div className="mb-6 border-t border-border pt-8 text-center">
+              <h2 className="text-2xl font-bold text-ink">Project Case Studies & Gallery</h2>
+              <p className="mt-1 text-sm text-ink-secondary">Visual media, architectural designs, and case study assets.</p>
+            </div>
+            <PortfolioGallery items={galleryItems} readOnly={true} />
+          </section>
+        )}
       </main>
     </div>
   );

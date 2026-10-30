@@ -10,12 +10,12 @@
 # 1. METHODOLOGY & CLASSIFICATION TIERS
 
 Each of the 112 capabilities in the canonical inventory is classified into one of four mutually exclusive states:
-1. **🟢 STRICT FULL (61 Capabilities — 54.5%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
+1. **🟢 STRICT FULL (63 Capabilities — 56.3%):** End-to-end operational, fully wired to real backend endpoints and real MariaDB persistence, zero mock data, zero layout defects.
 2. **🔵 MODERN ARCHITECTURAL REPLACEMENTS (9 Capabilities — 8.0%):** Replaced legacy PHP/Firestore patterns with modern Node.js/Express/MariaDB architectures.
-3. **🟡 DEGRADED / PARTIAL (35 Capabilities — 31.2%):** Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
-4. **🔴 MOCK / UNBUILT (7 Capabilities — 6.3%):** Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
+3. **🟡 DEGRADED / PARTIAL (33 Capabilities — 29.5%):** Renders in UI, but relies on optimistic client state, unverified backend endpoints, or environment mock fallbacks.
+4. **🔴 MOCK / UNBUILT (7 Capabilities — 6.2%):** Hardcoded mock data, dead action buttons, unbuilt backend routes or webhooks.
 
-Combined Reconciled Architectural Parity: **(61 + 9) / 112 = 70 / 112 = 62.5%**.
+Combined Reconciled Architectural Parity: **(63 + 9) / 112 = 72 / 112 = 64.3%**.
 
 ---
 
@@ -74,10 +74,10 @@ Combined Reconciled Architectural Parity: **(61 + 9) / 112 = 70 / 112 = 62.5%**.
 | `FP-C04` | Public Showcase Vanity Viewer | 🟢 STRICT FULL | `pages/portfolio/public.tsx` | Public responsive portfolio view with SEO tags. |
 | `FP-C05` | Contact Privacy Masking | 🟢 STRICT FULL | `services/privacyRedaction.js` | Phone/email masking for unauthenticated visitors. |
 | `FP-C06` | Custom Domain SSL Provisioning | 🟢 STRICT FULL | `services/tenantCustomDomains.js` | Migration 040; 90-day Let's Encrypt thumbprints, TXT cryptographic verification (8/8 tests green). |
-| `FP-C07` | Portfolio Case Study Gallery | 🟡 DEGRADED | `components/portfolio/Gallery.tsx`| Project case studies; drag-and-drop media upload pending. |
+| `FP-C07` | Portfolio Case Study Gallery | 🟢 STRICT FULL | `components/portfolio/Gallery.tsx` | Migration 042 relational `portfolio_media`; drag-and-drop media upload, MIME & 5MB file-size limits, ordering, lightbox (16/16 tests green). |
 | `FP-C08` | Portfolio Theme Customizer | 🟢 STRICT FULL | `lib/portfolio.ts` | 5 curated color palettes with dark/light modes. |
 | `FP-C09` | Social Profile Link Hub | 🟢 STRICT FULL | `components/portfolio/Socials.tsx`| Social badges with validated URI schemes. |
-| `FP-C10` | Portfolio Password Protection | 🟡 DEGRADED | `pages/portfolio/public.tsx` | Client PIN gate; server-side bcrypt challenge pending. |
+| `FP-C10` | Portfolio Password Protection | 🟢 STRICT FULL | `services/portfolioProtectionService.js` | Migration 042 `password_hash`; PBKDF2-SHA512 verification, redacted public stub challenge & X-Portfolio-Password header (16/16 tests green). |
 | `FP-C11` | Portfolio Version History | 🟢 STRICT FULL | `portfolios.revision` | Monotonic revision counter for conflict detection. |
 | `FP-C12` | Portfolio PDF Print View | 🟢 STRICT FULL | `cv-renderer.tsx` | Clean CSS print media stylesheet. |
 

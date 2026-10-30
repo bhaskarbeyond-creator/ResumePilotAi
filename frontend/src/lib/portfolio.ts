@@ -36,12 +36,30 @@ export interface PublicPortfolioSummary {
   data: { renderer: string; templateKey: string; template: string };
 }
 
+export interface PortfolioMediaItem {
+  id: string;
+  portfolioId: string;
+  projectId: string | null;
+  title: string;
+  caption: string | null;
+  mediaType: 'IMAGE' | 'DOCUMENT' | 'VIDEO' | 'LINK';
+  mimeType: string;
+  fileSize: number;
+  storageKey?: string;
+  url: string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface PublicPortfolio {
   id: string;
   title: string;
   theme: string;
   slug: string;
   isPublished?: boolean;
+  isPasswordProtected?: boolean;
+  unlocked?: boolean;
   publishedAt: string | null;
   metadata: PublicMetadata;
   data: {
@@ -695,7 +713,15 @@ export function sanitizePublicPortfolioDto(raw: unknown): PublicPortfolio {
     };
   }
 
-  return {
+  const hasProtectionField =
+    (isObjectRecord(raw) && 'isPasswordProtected' in raw) || 'isPasswordProtected' in source;
+  const hasUnlockedField =
+    (isObjectRecord(raw) && 'unlocked' in raw) || 'unlocked' in source;
+
+  const isPasswordProtected = Boolean(source.isPasswordProtected ?? (isObjectRecord(raw) && raw.isPasswordProtected));
+  const unlocked = source.unlocked !== false && (isObjectRecord(raw) ? raw.unlocked !== false : true);
+
+  const result: PublicPortfolio = {
     id,
     title: typeof source.title === 'string' ? source.title : 'Portfolio',
     theme: typeof source.theme === 'string' ? source.theme : 'modern-minimal',
@@ -714,16 +740,111 @@ export function sanitizePublicPortfolioDto(raw: unknown): PublicPortfolio {
       canonical: safeCanonical,
     },
   };
+
+  if (hasProtectionField) {
+    result.isPasswordProtected = isPasswordProtected;
+  }
+  if (hasUnlockedField) {
+    result.unlocked = unlocked;
+  }
+
+  return result;
 }
 
 export async function getPublishedPortfolio(
   slug: string,
   signal?: AbortSignal,
+  password?: string,
 ): Promise<PublicPortfolio> {
+  const headers: Record<string, string> = {};
+  if (password) {
+    headers['X-Portfolio-Password'] = password;
+  }
   const data = await call(() =>
-    apiClient.get<unknown>(`/portfolios/public/${encodeURIComponent(slug)}`, { signal }),
+    apiClient.get<unknown>(`/portfolios/public/${encodeURIComponent(slug)}`, { signal, headers }),
   );
   return sanitizePublicPortfolioDto(data);
+}
+
+export async function unlockPublishedPortfolio(
+  slug: string,
+  password: string,
+): Promise<PublicPortfolio> {
+  const data = await call(() =>
+    apiClient.post<{ portfolio: unknown }>(`/portfolios/public/${encodeURIComponent(slug)}/unlock`, {
+      password,
+    }),
+  );
+  return sanitizePublicPortfolioDto(data);
+}
+
+export async function setPortfolioPassword(
+  portfolioId: string,
+  password: string | null,
+): Promise<{ success: boolean; isPasswordProtected: boolean }> {
+  return await call(() =>
+    apiClient.post<{ success: boolean; isPasswordProtected: boolean }>(
+      `/portfolios/${encodeURIComponent(portfolioId)}/password`,
+      { password },
+    ),
+  );
+}
+
+export async function getPortfolioGallery(
+  portfolioId: string,
+  projectId?: string,
+): Promise<PortfolioMediaItem[]> {
+  const data = await call(() =>
+    apiClient.get<{ media: PortfolioMediaItem[] }>(`/portfolios/${encodeURIComponent(portfolioId)}/gallery`, {
+      params: projectId ? { projectId } : undefined,
+    }),
+  );
+  return Array.isArray(data.media) ? data.media : [];
+}
+
+export async function uploadPortfolioGalleryMedia(
+  portfolioId: string,
+  payload: {
+    title?: string;
+    caption?: string;
+    mediaType?: 'IMAGE' | 'DOCUMENT' | 'VIDEO' | 'LINK';
+    mimeType: string;
+    url: string;
+    fileSize?: number;
+    projectId?: string;
+  },
+): Promise<PortfolioMediaItem> {
+  const data = await call(() =>
+    apiClient.post<{ media: PortfolioMediaItem }>(
+      `/portfolios/${encodeURIComponent(portfolioId)}/gallery`,
+      payload,
+    ),
+  );
+  return data.media;
+}
+
+export async function deletePortfolioGalleryMedia(
+  portfolioId: string,
+  mediaId: string,
+): Promise<{ success: boolean; mediaId: string }> {
+  return await call(() =>
+    apiClient.delete<{ success: boolean; mediaId: string }>(
+      `/portfolios/${encodeURIComponent(portfolioId)}/gallery/${encodeURIComponent(mediaId)}`,
+    ),
+  );
+}
+
+export async function getPublicPortfolioGallery(
+  slug: string,
+  projectId?: string,
+): Promise<PortfolioMediaItem[]> {
+  const data = await call(() =>
+    apiClient.get<{ media: PortfolioMediaItem[] }>(
+      `/portfolios/public/${encodeURIComponent(slug)}/gallery`,
+      { params: projectId ? { projectId } : undefined },
+    ),
+  );
+  return Array.isArray(data.media) ? data.media : [];
 }
 
 /* ─── Resumes, as a starting point for a new portfolio ─── */

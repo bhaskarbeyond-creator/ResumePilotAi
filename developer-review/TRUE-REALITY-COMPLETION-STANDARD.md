@@ -54,14 +54,14 @@ Every developer, reviewer, and release gatekeeper must cite these exact reconcil
 ╔════════════════════════════════════════════════════════════════════════════════════════╗
 ║                          CANONICAL REALITY SCORECARD (REVISION e6c5a473)              ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
-║ 1. Strict Functional Parity (112 Capabilities):    54.5% Strict Full (61 / 112)        ║
-║    — Including Modern Architectural Replacements:  62.5% Reconciled  (70 / 112)        ║
-║ 2. Forensic Discrepancy Log (54 Findings):         63.0% Resolved    (34 / 54)         ║
+║ 1. Strict Functional Parity (112 Capabilities):    56.3% Strict Full (63 / 112)        ║
+║    — Including Modern Architectural Replacements:  64.3% Reconciled  (72 / 112)        ║
+║ 2. Forensic Discrepancy Log (54 Findings):         66.7% Resolved    (36 / 54)         ║
 ║ 3. 42-Module Maturity Breakdown:                                                       ║
-║    — 🟢 Tier 1 (Strict Production Working):        78.6% (33 of 42 modules)            ║
-║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 19.0% ( 8 of 42 modules)            ║
+║    — 🟢 Tier 1 (Strict Production Working):        81.0% (34 of 42 modules)            ║
+║    — 🟡 Tier 2 (Degraded / Client-Only / Partial): 16.7% ( 7 of 42 modules)            ║
 ║    — 🔴 Tier 3 (Completely Missing / Unbuilt):      2.4% ( 1 of 42 modules)            ║
-║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (560 pass, 0 s, 0 f)   ║
+║ 4. Live MariaDB Verified Test Suite:               100.0% Pass (577 pass, 0 s, 0 f)   ║
 ║ 5. Live Runtime & Environmental Certification:     0.0%  Live Bank Settlement / KYC   ║
 ╠════════════════════════════════════════════════════════════════════════════════════════╣
 ║ OVERALL SYSTEM STATUS: PARTIAL — INCOMPLETE / NOT READY FOR PRODUCTION RELEASE         ║
@@ -337,15 +337,16 @@ This ledger is the authoritative register for all 42 modules across the 7 archit
 
 ### Module 17: Web CV & Portfolio Editor Studio (Mandate 11J)
 
-* **Architectural Anchor:** `frontend/src/pages/portfolio/editor.tsx`, `frontend/src/lib/portfolio.ts:45-180`
-* **Database Tables:** `portfolios`, `portfolio_sections`
-* **Forensic Reference:** `FP-C01`, `DISC-045`
-* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **85%**
+* **Architectural Anchor:** `frontend/src/pages/portfolio/editor.tsx`, `frontend/src/lib/portfolio.ts:45-180`, `frontend/src/components/portfolio/Gallery.tsx`
+* **Database Tables:** `portfolios`, `portfolio_sections`, `portfolio_media` (Migration `042_portfolio_gallery_and_protection.sql`)
+* **Forensic Reference:** `FP-C01`, `FP-C07`, `DISC-045`
+* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **100%**
 * **In-Depth Evidence of What is DONE:**
   * Interactive portfolio studio with live split preview, theme customization, and section reordering.
+  * Drag-and-drop media upload for case study galleries (`PortfolioGallery`), strict MIME enforcement (PNG/JPEG/WEBP/GIF/SVG), 5MB file-size limit, relational ordering and deletion (`portfolio-gallery-protection-integration.test.js` passes 16/16 tests).
   * Contract test suite `mandate11j-contracts.test.mjs` passes 45/45 assertions.
 * **Forensic Evidence of What is PENDING:**
-  * Drag-and-drop media upload for portfolio project case study galleries.
+  * None. Fully verified against live MariaDB and production UI.
 
 ---
 
@@ -363,14 +364,16 @@ This ledger is the authoritative register for all 42 modules across the 7 archit
 
 ---
 
-### Module 19: Public Candidate Showcase Gallery
+### Module 19: Public Candidate Showcase Gallery & Password Protection
 
-* **Architectural Anchor:** `frontend/src/pages/portfolio/public-portfolio.tsx`, `backend/routes/portfolio.js:70-130`
-* **Database Tables:** `portfolios` (`is_published = 1`)
-* **Forensic Reference:** `FP-C03`
-* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **80%**
+* **Architectural Anchor:** `frontend/src/pages/portfolio/public-portfolio.tsx`, `backend/routes/portfolios.js`, `backend/routes/publicPortfolios.js`, `backend/services/portfolioProtectionService.js`
+* **Database Tables:** `portfolios` (`is_published = 1`, `password_hash`), `portfolio_media` (Migration `042_portfolio_gallery_and_protection.sql`)
+* **Forensic Reference:** `FP-C03`, `FP-C10`, `DISC-046`
+* **Status:** 🟢 **Tier 1 (Strict Production Working)** · **True % Complete:** **100%**
 * **In-Depth Evidence of What is DONE:**
-  * Public rendering at `/portfolio/:slug` with responsive typography and Cuba glassmorphism tokens.
+  * Public rendering at `/portfolio/:slug` and `/api/public/portfolios/:slug` with responsive typography and Cuba glassmorphism tokens.
+  * Server-side PBKDF2-SHA512 password protection with constant-time verification, redacted challenge stub, unauthenticated unlock endpoint (`POST /api/public/portfolios/:slug/unlock`), and `X-Portfolio-Password` header unlock (`portfolio-gallery-protection-integration.test.js` passes 16/16 tests).
+  * Public case study media gallery showcase mounted on unlocked portfolios.
 * **Forensic Evidence of What is PENDING:**
   * Dynamic OpenGraph preview image generator card for social media shares.
 

@@ -182,6 +182,10 @@ class ResilientRepository {
             }
         }
     }
+
+    _getPool() {
+        return this.mysqlRepo?._getPool ? this.mysqlRepo._getPool() : require('../database/mysql').getPool();
+    }
 }
 
 module.exports = ResilientRepository;

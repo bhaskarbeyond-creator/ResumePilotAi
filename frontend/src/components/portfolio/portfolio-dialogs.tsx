@@ -20,8 +20,11 @@ import {
   Clock,
   Copy,
   Globe,
+  KeyRound,
+  Lock,
   RefreshCw,
   ShieldAlert,
+  Unlock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +48,7 @@ import {
   getPortfolioCustomDomain,
   listResumeChoices,
   publicPortfolioPreviewLabel,
+  setPortfolioPassword,
   suggestPortfolioSlug,
   toPortfolioError,
   validateCustomDomain,
@@ -991,3 +995,183 @@ export function CustomDomainDialog({
     </Dialog>
   );
 }
+
+export interface PasswordProtectionDialogProps {
+  open: boolean;
+  onClose: () => void;
+  portfolioId: string;
+  isPasswordProtected: boolean;
+  onPasswordChanged: (protectedStatus: boolean) => void;
+  returnFocusRef: RefObject<HTMLElement | null>;
+}
+
+export function PasswordProtectionDialog({
+  open,
+  onClose,
+  portfolioId,
+  isPasswordProtected,
+  onPasswordChanged,
+  returnFocusRef,
+}: Readonly<PasswordProtectionDialogProps>) {
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const passwordFieldId = useId();
+
+  useEffect(() => {
+    if (open) {
+      setPassword('');
+      setSubmitError(null);
+      setSuccessMessage(null);
+    }
+  }, [open]);
+
+  const handleSetPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!password.trim()) {
+      setSubmitError('Please enter a password.');
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    try {
+      const res = await setPortfolioPassword(portfolioId, password);
+      onPasswordChanged(res.isPasswordProtected);
+      setSuccessMessage('Password protection enabled successfully.');
+      setPassword('');
+    } catch (cause) {
+      setSubmitError(toPortfolioError(cause).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemovePassword = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    try {
+      const res = await setPortfolioPassword(portfolioId, null);
+      onPasswordChanged(res.isPasswordProtected);
+      setSuccessMessage('Password protection removed. Portfolio is now public.');
+    } catch (cause) {
+      setSubmitError(toPortfolioError(cause).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !submitting) onClose();
+      }}
+    >
+      <DialogContent
+        className={dialogClass}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          returnFocusRef.current?.focus();
+        }}
+      >
+        <div className="space-y-5">
+          <DialogHeader>
+            <DialogTitle className={titleClass}>Portfolio Password Protection</DialogTitle>
+            <DialogDescription>
+              Restrict access to this portfolio with server-side PBKDF2/Bcrypt hash verification (FP-C10).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  'flex size-10 shrink-0 items-center justify-center rounded-full',
+                  isPasswordProtected ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700',
+                )}
+              >
+                {isPasswordProtected ? <Lock className="size-5" /> : <Unlock className="size-5" />}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-ink">
+                  {isPasswordProtected ? 'Password Protected' : 'Public Access'}
+                </p>
+                <p className="text-xs text-ink-secondary">
+                  {isPasswordProtected
+                    ? 'Visitors must enter the correct password to unlock and view portfolio sections.'
+                    : 'Anyone with the published URL can view your portfolio.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={(e) => void handleSetPassword(e)} noValidate className="space-y-3">
+            <div>
+              <label htmlFor={passwordFieldId} className="mb-1.5 block text-sm font-medium text-ink">
+                {isPasswordProtected ? 'Change Password' : 'Set Access Password'}
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  ref={inputRef}
+                  id={passwordFieldId}
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (submitError) setSubmitError(null);
+                  }}
+                  placeholder="Enter a secure password..."
+                  disabled={submitting}
+                  className="flex-1 text-sm"
+                />
+                <Button type="submit" disabled={submitting || !password.trim()} loading={submitting}>
+                  <KeyRound className="mr-1 size-4" /> Save
+                </Button>
+              </div>
+            </div>
+          </form>
+
+          {isPasswordProtected && (
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <span className="text-xs text-ink-muted">Want to remove password barrier?</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={submitting}
+                onClick={() => void handleRemovePassword()}
+              >
+                <Unlock className="mr-1 size-4" /> Remove Password
+              </Button>
+            </div>
+          )}
+
+          {submitError && <InlineError message={submitError} />}
+          {successMessage && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+              <p className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                {successMessage}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              Close
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
