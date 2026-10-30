@@ -1,0 +1,280 @@
+TAP version 13
+# Subtest: mintPortfolioId produces an identifier the routing and API contracts accept
+ok 1 - mintPortfolioId produces an identifier the routing and API contracts accept
+  ---
+  duration_ms: 2.869805
+  type: 'test'
+  ...
+# Subtest: mintPortfolioId is unique across repeated calls
+ok 2 - mintPortfolioId is unique across repeated calls
+  ---
+  duration_ms: 0.646259
+  type: 'test'
+  ...
+# Subtest: the generated identifier survives a save/reload round trip unchanged
+ok 3 - the generated identifier survives a save/reload round trip unchanged
+  ---
+  duration_ms: 0.526185
+  type: 'test'
+  ...
+# Subtest: normalizeCanonical keeps every field of a valid document
+ok 4 - normalizeCanonical keeps every field of a valid document
+  ---
+  duration_ms: 1.260234
+  type: 'test'
+  ...
+# Subtest: normalizeCanonical tolerates every missing collection
+ok 5 - normalizeCanonical tolerates every missing collection
+  ---
+  duration_ms: 0.243506
+  type: 'test'
+  ...
+# Subtest: normalizeCanonical tolerates null, empty and legacy shapes without throwing
+ok 6 - normalizeCanonical tolerates null, empty and legacy shapes without throwing
+  ---
+  duration_ms: 0.487175
+  type: 'test'
+  ...
+# Subtest: normalizeCanonical is deterministic and idempotent
+ok 7 - normalizeCanonical is deterministic and idempotent
+  ---
+  duration_ms: 0.542613
+  type: 'test'
+  ...
+# Subtest: the canonical document shape survives a JSON round trip (what the API stores)
+ok 8 - the canonical document shape survives a JSON round trip (what the API stores)
+  ---
+  duration_ms: 0.243429
+  type: 'test'
+  ...
+# Subtest: documentWithVisibility removes hidden experience from the rendered projection
+ok 9 - documentWithVisibility removes hidden experience from the rendered projection
+  ---
+  duration_ms: 0.476628
+  type: 'test'
+  ...
+# Subtest: documentWithVisibility removes hidden education
+ok 10 - documentWithVisibility removes hidden education
+  ---
+  duration_ms: 0.39755
+  type: 'test'
+  ...
+# Subtest: documentWithVisibility removes hidden projects
+ok 11 - documentWithVisibility removes hidden projects
+  ---
+  duration_ms: 0.185261
+  type: 'test'
+  ...
+# Subtest: documentWithVisibility removes hidden skills
+ok 12 - documentWithVisibility removes hidden skills
+  ---
+  duration_ms: 0.125781
+  type: 'test'
+  ...
+# Subtest: documentWithVisibility removes hidden contact details but keeps the person
+ok 13 - documentWithVisibility removes hidden contact details but keeps the person
+  ---
+  duration_ms: 0.164034
+  type: 'test'
+  ...
+# Subtest: hiding a section never deletes the stored content
+ok 14 - hiding a section never deletes the stored content
+  ---
+  duration_ms: 0.226322
+  type: 'test'
+  ...
+# Subtest: the visibility projection is idempotent and never mutates its input
+ok 15 - the visibility projection is idempotent and never mutates its input
+  ---
+  duration_ms: 0.169641
+  type: 'test'
+  ...
+# Subtest: a document saved before visibility existed reads as fully visible
+ok 16 - a document saved before visibility existed reads as fully visible
+  ---
+  duration_ms: 0.199336
+  type: 'test'
+  ...
+# Subtest: canonicalFromResume maps the supported resume fields
+ok 17 - canonicalFromResume maps the supported resume fields
+  ---
+  duration_ms: 0.540982
+  type: 'test'
+  ...
+# Subtest: canonicalFromResume tolerates an incomplete resume record
+ok 18 - canonicalFromResume tolerates an incomplete resume record
+  ---
+  duration_ms: 0.16558
+  type: 'test'
+  ...
+# Subtest: templateMeta recognises every supported template
+ok 19 - templateMeta recognises every supported template
+  ---
+  duration_ms: 0.072361
+  type: 'test'
+  ...
+# Subtest: unknown and malformed template ids fall back safely
+ok 20 - unknown and malformed template ids fall back safely
+  ---
+  duration_ms: 0.073082
+  type: 'test'
+  ...
+# Subtest: custom domains reject schemes, paths, query strings, fragments and trailing slashes
+ok 21 - custom domains reject schemes, paths, query strings, fragments and trailing slashes
+  ---
+  duration_ms: 0.50053
+  type: 'test'
+  ...
+# Subtest: a clean fully-qualified domain is accepted and normalised
+ok 22 - a clean fully-qualified domain is accepted and normalised
+  ---
+  duration_ms: 0.140334
+  type: 'test'
+  ...
+# Subtest: DNS instructions use the TXT record the backend actually issues
+ok 23 - DNS instructions use the TXT record the backend actually issues
+  ---
+  duration_ms: 0.127763
+  type: 'test'
+  ...
+# Subtest: the deployment does not claim a CNAME/A routing target it cannot verify
+ok 24 - the deployment does not claim a CNAME/A routing target it cannot verify
+  ---
+  duration_ms: 0.07802
+  type: 'test'
+  ...
+# Subtest: a registration without a verification token produces no DNS record to display
+ok 25 - a registration without a verification token produces no DNS record to display
+  ---
+  duration_ms: 0.068083
+  type: 'test'
+  ...
+# Subtest: the public DTO keeps only published, publicly renderable fields
+ok 26 - the public DTO keeps only published, publicly renderable fields
+  ---
+  duration_ms: 0.415957
+  type: 'test'
+  ...
+# Subtest: the public DTO never carries the owner id, revision or billing data
+ok 27 - the public DTO never carries the owner id, revision or billing data
+  ---
+  duration_ms: 0.183438
+  type: 'test'
+  ...
+# Subtest: the public DTO drops the street address and postal code
+ok 28 - the public DTO drops the street address and postal code
+  ---
+  duration_ms: 0.111042
+  type: 'test'
+  ...
+# Subtest: unpublished drafts and malformed responses cannot pass as public
+ok 29 - unpublished drafts and malformed responses cannot pass as public
+  ---
+  duration_ms: 0.406604
+  type: 'test'
+  ...
+# Subtest: hidden sections are absent from the public DTO, not merely hidden by CSS
+ok 30 - hidden sections are absent from the public DTO, not merely hidden by CSS
+  ---
+  duration_ms: 0.186283
+  type: 'test'
+  ...
+# Subtest: a save envelope carries the expected revision
+ok 31 - a save envelope carries the expected revision
+  ---
+  duration_ms: 0.078454
+  type: 'test'
+  ...
+# Subtest: a missing, negative, fractional or unsafe revision is refused before any request
+ok 32 - a missing, negative, fractional or unsafe revision is refused before any request
+  ---
+  duration_ms: 0.499162
+  type: 'test'
+  ...
+# Subtest: savePortfolio sends exactly the contract the backend reads
+ok 33 - savePortfolio sends exactly the contract the backend reads
+  ---
+  duration_ms: 2.40966
+  type: 'test'
+  ...
+# Subtest: a 409 is surfaced as a conflict carrying the server revision
+ok 34 - a 409 is surfaced as a conflict carrying the server revision
+  ---
+  duration_ms: 1.521184
+  type: 'test'
+  ...
+# Subtest: the module-disabled state is recognised only by its exact error code
+ok 35 - the module-disabled state is recognised only by its exact error code
+  ---
+  duration_ms: 0.245935
+  type: 'test'
+  ...
+# Subtest: slug validation matches the publishing contract
+ok 36 - slug validation matches the publishing contract
+  ---
+  duration_ms: 0.221805
+  type: 'test'
+  ...
+# Subtest: portfolio URLs are built from the public route and encoded
+ok 37 - portfolio URLs are built from the public route and encoded
+  ---
+  duration_ms: 0.199072
+  type: 'test'
+  ...
+# Subtest: safe link helpers allow only web and mail links
+ok 38 - safe link helpers allow only web and mail links
+  ---
+  duration_ms: 0.171953
+  type: 'test'
+  ...
+# Subtest: the QR encoder encodes exactly the canonical public URL
+ok 39 - the QR encoder encodes exactly the canonical public URL
+  ---
+  duration_ms: 10.322349
+  type: 'test'
+  ...
+# Subtest: the QR matrix is a structurally valid symbol
+ok 40 - the QR matrix is a structurally valid symbol
+  ---
+  duration_ms: 12.174061
+  type: 'test'
+  ...
+# Subtest: QR capacity is honest about what it can encode
+ok 41 - QR capacity is honest about what it can encode
+  ---
+  duration_ms: 12.890752
+  type: 'test'
+  ...
+# Subtest: the share QR is built from the public URL, and refuses to invent one
+ok 42 - the share QR is built from the public URL, and refuses to invent one
+  ---
+  duration_ms: 3.017503
+  type: 'test'
+  ...
+# Subtest: the conflict comparison lists exactly the fields that differ
+ok 43 - the conflict comparison lists exactly the fields that differ
+  ---
+  duration_ms: 0.478318
+  type: 'test'
+  ...
+# Subtest: visibility differences are reported as shown/hidden
+ok 44 - visibility differences are reported as shown/hidden
+  ---
+  duration_ms: 0.13401
+  type: 'test'
+  ...
+# Subtest: normalizeVisibility only hides on an explicit false
+ok 45 - normalizeVisibility only hides on an explicit false
+  ---
+  duration_ms: 0.134066
+  type: 'test'
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 318.867199

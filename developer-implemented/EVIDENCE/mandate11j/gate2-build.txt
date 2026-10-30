@@ -1,0 +1,138 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build && node ../scripts/sync-dist.mjs
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 2590 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                        1.66 kB │ gzip:   0.71 kB
+dist/tests/harness/engine.html                         1.82 kB │ gzip:   0.55 kB
+dist/assets/src-CdRgVDkr.css                         180.95 kB │ gzip:  26.40 kB
+dist/assets/chevron-left-DzjdH5KJ.js                   0.21 kB │ gzip:   0.20 kB │ map:     0.91 kB
+dist/assets/plus-CrrH-bJ7.js                           0.22 kB │ gzip:   0.20 kB │ map:     0.96 kB
+dist/assets/arrow-left-B0vKEHlk.js                     0.24 kB │ gzip:   0.22 kB │ map:     1.01 kB
+dist/assets/arrow-right-DLHI0TLj.js                    0.24 kB │ gzip:   0.22 kB │ map:     1.01 kB
+dist/assets/gauge-p5eoAvJs.js                          0.24 kB │ gzip:   0.22 kB │ map:     0.99 kB
+dist/assets/trending-up-CuRu-QSz.js                    0.25 kB │ gzip:   0.22 kB │ map:     1.02 kB
+dist/assets/play-BUNX9nc4.js                           0.26 kB │ gzip:   0.23 kB │ map:     0.98 kB
+dist/assets/circle-slash-Bx_uNIx6.js                   0.27 kB │ gzip:   0.23 kB │ map:     1.11 kB
+dist/assets/smartphone-B3hmdAT9.js                     0.27 kB │ gzip:   0.24 kB │ map:     1.11 kB
+dist/assets/info-CFmLaOpF.js                           0.27 kB │ gzip:   0.23 kB │ map:     1.10 kB
+dist/assets/rotate-ccw-DOaplGLp.js                     0.27 kB │ gzip:   0.24 kB │ map:     1.04 kB
+dist/assets/undo-2-DOQxgOib.js                         0.28 kB │ gzip:   0.23 kB │ map:     1.03 kB
+dist/assets/target-DsZ-Mw9l.js                         0.30 kB │ gzip:   0.22 kB │ map:     1.19 kB
+dist/assets/circle-x-vCZiVcYh.js                       0.30 kB │ gzip:   0.24 kB │ map:     1.18 kB
+dist/assets/bookmark-8ge2vTiC.js                       0.30 kB │ gzip:   0.25 kB │ map:     1.04 kB
+dist/assets/copy-C7HKMf8g.js                           0.30 kB │ gzip:   0.26 kB │ map:     1.12 kB
+dist/assets/globe-VeDuw4kR.js                          0.31 kB │ gzip:   0.25 kB │ map:     1.15 kB
+dist/assets/link-2-BrOqReHa.js                         0.31 kB │ gzip:   0.26 kB │ map:     1.17 kB
+dist/assets/user-check-DXFvTQKw.js                     0.32 kB │ gzip:   0.26 kB │ map:     1.18 kB
+dist/assets/message-circle-CtL2nlG9.js                 0.32 kB │ gzip:   0.26 kB │ map:     1.09 kB
+dist/assets/panels-top-left-CJU_z-8b.js                0.33 kB │ gzip:   0.26 kB │ map:     1.27 kB
+dist/assets/external-link-DeuuDDiL.js                  0.33 kB │ gzip:   0.25 kB │ map:     1.18 kB
+dist/assets/map-pin-D-faK2et.js                        0.33 kB │ gzip:   0.28 kB │ map:     1.16 kB
+dist/assets/key-BFp8-FVY.js                            0.33 kB │ gzip:   0.28 kB │ map:     1.18 kB
+dist/assets/ellipsis-vertical-CwFgX1Mf.js              0.34 kB │ gzip:   0.24 kB │ map:     1.32 kB
+dist/assets/pencil-Bs9luaKE.js                         0.35 kB │ gzip:   0.28 kB │ map:     1.14 kB
+dist/assets/circle-alert-7y772mzv.js                   0.35 kB │ gzip:   0.25 kB │ map:     1.33 kB
+dist/assets/use-restore-focus-when-idle-BqOYN-vH.js    0.35 kB │ gzip:   0.27 kB │ map:     1.17 kB
+dist/assets/lightbulb-BGZk2IdX.js                      0.36 kB │ gzip:   0.28 kB │ map:     1.23 kB
+dist/assets/book-open-63QolT0p.js                      0.36 kB │ gzip:   0.27 kB │ map:     1.17 kB
+dist/assets/pen-line-B1c9om6H.js                       0.37 kB │ gzip:   0.29 kB │ map:     1.20 kB
+dist/assets/wrench-DR7R6eqh.js                         0.37 kB │ gzip:   0.29 kB │ map:     1.11 kB
+dist/assets/clipboard-check-BSOCiFnY.js                0.38 kB │ gzip:   0.29 kB │ map:     1.36 kB
+dist/assets/user-plus-D75aMdS7.js                      0.38 kB │ gzip:   0.29 kB │ map:     1.39 kB
+dist/assets/printer-CXxRiS9G.js                        0.39 kB │ gzip:   0.29 kB │ map:     1.31 kB
+dist/assets/phone-C0SEciGn.js                          0.39 kB │ gzip:   0.28 kB │ map:     1.12 kB
+dist/assets/save-Dkrimu6P.js                           0.39 kB │ gzip:   0.28 kB │ map:     1.25 kB
+dist/assets/engineHarness-gLs0RaDK.js                  0.40 kB │ gzip:   0.29 kB │ map:     0.97 kB
+dist/assets/trash-cvV9iPIo.js                          0.41 kB │ gzip:   0.28 kB │ map:     1.38 kB
+dist/assets/share-2-ujKAXFlj.js                        0.43 kB │ gzip:   0.29 kB │ map:     1.54 kB
+dist/assets/shield-alert-mC265PB7.js                   0.43 kB │ gzip:   0.31 kB │ map:     1.32 kB
+dist/assets/radio-B5FuBjWC.js                          0.44 kB │ gzip:   0.31 kB │ map:     1.42 kB
+dist/assets/clipboard-copy-D7rOdA8D.js                 0.46 kB │ gzip:   0.31 kB │ map:     1.51 kB
+dist/assets/calendar-clock-BFoehTdK.js                 0.46 kB │ gzip:   0.31 kB │ map:     1.54 kB
+dist/assets/QueryClientProvider-Dxf_o9CG.js            0.47 kB │ gzip:   0.32 kB │ map:     2.85 kB
+dist/assets/eye-off-p1sjwRFj.js                        0.50 kB │ gzip:   0.33 kB │ map:     1.48 kB
+dist/assets/layers-CBv_TQU0.js                         0.51 kB │ gzip:   0.30 kB │ map:     1.49 kB
+dist/assets/dollar-sign-9YYQkLgR.js                    0.52 kB │ gzip:   0.34 kB │ map:     2.26 kB
+dist/assets/palette-_V3kVSvE.js                        0.58 kB │ gzip:   0.33 kB │ map:     1.75 kB
+dist/assets/zoom-out-DTf4rMBt.js                       0.59 kB │ gzip:   0.29 kB │ map:     2.54 kB
+dist/assets/building-Bg6BuxeX.js                       0.63 kB │ gzip:   0.34 kB │ map:     2.03 kB
+dist/assets/list-CcVuvaFO.js                           0.69 kB │ gzip:   0.34 kB │ map:     2.79 kB
+dist/assets/cpu-DsKVzFvE.js                            0.71 kB │ gzip:   0.35 kB │ map:     2.32 kB
+dist/assets/textarea-Xsvv_N3m.js                       0.78 kB │ gzip:   0.46 kB │ map:     1.77 kB
+dist/assets/input-C0v8Me-t.js                          0.85 kB │ gzip:   0.49 kB │ map:     1.84 kB
+dist/assets/placeholder-DfEfCUem.js                    1.02 kB │ gzip:   0.52 kB │ map:     3.50 kB
+dist/assets/resume-metrics-nWBfd8HT.js                 1.04 kB │ gzip:   0.53 kB │ map:     4.56 kB
+dist/assets/card-CWuCpgbt.js                           1.20 kB │ gzip:   0.48 kB │ map:     3.48 kB
+dist/assets/rolldown-runtime-BCiCTKAo.js               1.30 kB │ gzip:   0.71 kB
+dist/assets/notice-regions-CQcR490B.js                 1.40 kB │ gzip:   0.59 kB │ map:     4.26 kB
+dist/assets/share-publication-piFxa5bS.js              2.31 kB │ gzip:   1.04 kB │ map:     7.82 kB
+dist/assets/messages-DECIB5qM.js                       3.79 kB │ gzip:   1.49 kB │ map:    14.88 kB
+dist/assets/resume-view-model-COK_Hu8-.js              4.13 kB │ gzip:   1.54 kB │ map:    13.69 kB
+dist/assets/job-tracker-display-DzGxxuj2.js            4.44 kB │ gzip:   1.85 kB │ map:    15.58 kB
+dist/assets/job-tracker-CMQkkoLq.js                    4.81 kB │ gzip:   2.04 kB │ map:    16.81 kB
+dist/assets/public-portfolio-EpmrxC1K.js               5.22 kB │ gzip:   2.14 kB │ map:    14.98 kB
+dist/assets/resume-view-kuwljBtl.js                    5.51 kB │ gzip:   2.19 kB │ map:    14.14 kB
+dist/assets/gallery-YEcVuaTw.js                        6.08 kB │ gzip:   2.25 kB │ map:    15.96 kB
+dist/assets/dialog-Co5-0nG_.js                         7.31 kB │ gzip:   2.69 kB │ map:    29.23 kB
+dist/assets/account-settings-DfzWX_bT.js               7.43 kB │ gzip:   3.08 kB │ map:    32.10 kB
+dist/assets/cover-letters-CjkFqaTY.js                  7.57 kB │ gzip:   3.38 kB │ map:    23.99 kB
+dist/assets/features-DhOjihqA.js                       9.06 kB │ gzip:   3.20 kB │ map:    16.59 kB
+dist/assets/master-profile-2zGEM9Ll.js                 9.07 kB │ gzip:   3.18 kB │ map:    35.32 kB
+dist/assets/ai-processing-modal-CDPmt6wD.js            9.08 kB │ gzip:   3.51 kB │ map:    19.42 kB
+dist/assets/blog-DTfmFqfO.js                           9.18 kB │ gzip:   3.21 kB │ map:    25.74 kB
+dist/assets/session-security-DHuoHPJA.js               9.45 kB │ gzip:   3.82 kB │ map:    37.51 kB
+dist/assets/cover-letters-CPohUMHB.js                 10.59 kB │ gzip:   3.64 kB │ map:    28.82 kB
+dist/assets/cv-renderer-D2HEPZpl.js                   11.05 kB │ gzip:   4.01 kB │ map:    30.43 kB
+dist/assets/portfolio-view-BMCDF72E.js                11.31 kB │ gzip:   3.36 kB │ map:    30.37 kB
+dist/assets/portfolio-document-CuHvrPdQ.js            12.19 kB │ gzip:   4.10 kB │ map:    45.35 kB
+dist/assets/landing-9dFWunNX.js                       13.27 kB │ gzip:   3.59 kB │ map:    27.40 kB
+dist/assets/cms-d4KbP2EH.js                           14.04 kB │ gzip:   4.93 kB │ map:    28.01 kB
+dist/assets/ats-score-Ca9IpRWY.js                     14.50 kB │ gzip:   4.60 kB │ map:    36.15 kB
+dist/assets/InviteTeammateDialog-CFPHEKz7.js          14.58 kB │ gzip:   4.72 kB │ map:    41.59 kB
+dist/assets/ai-assistant-UJ9GLdav.js                  15.07 kB │ gzip:   4.84 kB │ map:    41.46 kB
+dist/assets/preview-modal-OLK4L-1q.js                 15.29 kB │ gzip:   5.27 kB │ map:    43.93 kB
+dist/assets/portal-De0owMrD.js                        15.36 kB │ gzip:   5.20 kB │ map:    45.83 kB
+dist/assets/favourites-CnlYgmN4.js                    15.42 kB │ gzip:   5.34 kB │ map:    48.20 kB
+dist/assets/job-application-modal-Dz7dN4UM.js         16.76 kB │ gzip:   5.66 kB │ map:    49.38 kB
+dist/assets/regional-hub-CnjFEZlc.js                  17.10 kB │ gzip:   5.25 kB │ map:    46.46 kB
+dist/assets/portfolio-CEsW5_jT.js                     18.57 kB │ gzip:   6.84 kB │ map:    76.37 kB
+dist/assets/support-646kxeXF.js                       18.62 kB │ gzip:   5.44 kB │ map:    51.74 kB
+dist/assets/editor-BwdBaLTD.js                        18.87 kB │ gzip:   6.19 kB │ map:    52.97 kB
+dist/assets/login-C0wPF_FF.js                         19.25 kB │ gzip:   6.10 kB │ map:    57.43 kB
+dist/assets/notifications-Bc73OSLP.js                 19.50 kB │ gzip:   6.10 kB │ map:    60.01 kB
+dist/assets/invoice-detail-dialog-DIgwm1Ay.js         21.02 kB │ gzip:   6.48 kB │ map:    64.86 kB
+dist/assets/applied-jobs-CI_3niz8.js                  22.09 kB │ gzip:   7.14 kB │ map:    69.71 kB
+dist/assets/useQuery-ZiTMDVIS.js                      22.60 kB │ gzip:   7.54 kB │ map:   142.82 kB
+dist/assets/select-CYeMJkqC.js                        22.87 kB │ gzip:   7.79 kB │ map:   100.72 kB
+dist/assets/messages-DCM2oWB9.js                      24.41 kB │ gzip:   8.02 kB │ map:    87.22 kB
+dist/assets/job-tracker-CRctDZ9q.js                   28.44 kB │ gzip:   8.87 kB │ map:    83.10 kB
+dist/assets/purify.es-BXhPiKO5.js                     29.06 kB │ gzip:  11.48 kB │ map:   133.56 kB
+dist/assets/resume-score-BuSTVdfn.js                  29.56 kB │ gzip:  11.15 kB │ map:    89.73 kB
+dist/assets/template-catalog-DKtOtfZm.js              33.42 kB │ gzip:   4.90 kB │ map:    56.95 kB
+dist/assets/cover-letter-builder-B0c_NWxy.js          37.90 kB │ gzip:   9.78 kB │ map:    97.36 kB
+dist/assets/overview-Dtg1O5l6.js                      38.17 kB │ gzip:   8.67 kB │ map:    96.68 kB
+dist/assets/pricing-vqOPKnAb.js                       44.53 kB │ gzip:  12.46 kB │ map:   110.79 kB
+dist/assets/button-BvA_HUng.js                        44.55 kB │ gzip:  15.22 kB │ map:   222.90 kB
+dist/assets/resumes-CyuYHh36.js                       46.60 kB │ gzip:  11.27 kB │ map:   125.50 kB
+dist/assets/settings-CvBZ9cnC.js                      54.71 kB │ gzip:  15.06 kB │ map:   157.09 kB
+dist/assets/builder-B7OpaBgr.js                       60.79 kB │ gzip:  15.53 kB │ map:   177.71 kB
+dist/assets/AdminAiSettingsTab-WyFRPlUo.js            87.05 kB │ gzip:  20.39 kB │ map:   250.39 kB
+dist/assets/interview-coach-BItma2QR.js               87.44 kB │ gzip:  24.13 kB │ map:   244.62 kB
+dist/assets/smart-resume-document-DjDcI_m_.js         92.50 kB │ gzip:  19.00 kB │ map:   256.82 kB
+dist/assets/portal-Hxixs71g.js                       124.87 kB │ gzip:  27.39 kB │ map:   332.35 kB
+dist/assets/console-B1WDNn-D.js                      186.61 kB │ gzip:  39.77 kB │ map:   520.60 kB
+dist/assets/main-tk6RDI2O.js                         230.70 kB │ gzip:  62.39 kB │ map:   914.56 kB
+dist/assets/resume-builder-CQx9yfM8.js               261.03 kB │ gzip:  66.55 kB │ map:   661.70 kB
+dist/assets/console-D3RQeQ4M.js                      277.36 kB │ gzip:  62.64 kB │ map:   706.37 kB
+dist/assets/lib-DI1hcji2.js                          308.16 kB │ gzip:  95.14 kB │ map: 1,067.57 kB
+dist/assets/src-Cb7FCu6o.js                          468.85 kB │ gzip: 148.86 kB │ map: 2,717.19 kB
+
+✓ built in 1.84s
+✓ Successfully synchronized frontend/dist -> dist (355 files copied, 2 superseded entry chunks pruned)
+  source:      /home/user/ResumePilotAi/frontend/dist
+  destination: /home/user/ResumePilotAi/dist

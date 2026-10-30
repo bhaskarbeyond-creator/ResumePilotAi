@@ -10,6 +10,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ExternalLink, FolderGit2, Globe, Link2, Mail, MapPin, Phone } from 'lucide-react';
 import {
+  canonicalWithVisibility,
   displayName,
   hasContent,
   safeHttpUrl,
@@ -57,7 +58,11 @@ interface PortfolioViewProps {
   className?: string;
 }
 
-export function PortfolioView({ canonical, headingLevel = 1, className }: PortfolioViewProps) {
+export function PortfolioView({ canonical: source, headingLevel = 1, className }: PortfolioViewProps) {
+  // Section visibility is applied here as well as being applied by the callers, so
+  // a hidden section cannot slip through an alternative rendering path. The
+  // projection is idempotent, so double application is harmless.
+  const canonical = canonicalWithVisibility(source);
   const palette = PALETTES[templateMeta(canonical.template).id] ?? PALETTES.modernMinimal;
   const section = (headingLevel + 1) as Level;
   const item = (headingLevel + 2) as Level;

@@ -1,0 +1,44 @@
+[WebServer] 
+[WebServer] > frontend@0.0.0 dev
+[WebServer] > vite --host 127.0.0.1 --port 4017 --strictPort
+[WebServer] 
+
+[WebServer] 
+[WebServer]   VITE v8.3.4  ready in 230 ms
+[WebServer] 
+
+[WebServer]   ➜  Local:   http://127.0.0.1:4017/
+
+
+Running 29 tests using 1 worker
+
+[1/29] tests/mandate11j.spec.ts:401:1 › an existing portfolio loads the values the server stored
+[2/29] tests/mandate11j.spec.ts:419:1 › a new portfolio is persisted as a draft before the editor opens, and the id survives a refresh
+[3/29] tests/mandate11j.spec.ts:451:1 › hiding a section updates the live preview immediately and keeps the content
+[4/29] tests/mandate11j.spec.ts:474:1 › visibility flags are saved with the document and restored on reload
+[5/29] tests/mandate11j.spec.ts:494:1 › choosing a template changes the live preview
+[6/29] tests/mandate11j.spec.ts:508:1 › the split-screen preview switches between desktop and mobile widths
+[7/29] tests/mandate11j.spec.ts:538:1 › a 409 conflict keeps local edits and blocks saving until it is resolved
+[8/29] tests/mandate11j.spec.ts:568:1 › the conflict dialog explains both versions and offers the three resolutions
+[9/29] tests/mandate11j.spec.ts:609:1 › Keep local & overwrite saves with the current server revision
+[10/29] tests/mandate11j.spec.ts:627:1 › Discard & reload replaces local edits with the newest server version
+[11/29] tests/mandate11j.spec.ts:649:1 › a 403 PORTFOLIO_MODULE_DISABLED shows the banner and removes editing
+[12/29] tests/mandate11j.spec.ts:664:1 › the portfolio list also reports the disabled module without offering creation
+[13/29] tests/mandate11j.spec.ts:673:1 › an unrelated 403 is not mistaken for the disabled module
+[14/29] tests/mandate11j.spec.ts:693:1 › the publish dialog validates the slug before calling the server
+[15/29] tests/mandate11j.spec.ts:720:1 › the public portfolio renders by slug with its own document title
+[16/29] tests/mandate11j.spec.ts:735:1 › the public page never renders private owner fields or hidden sections
+[17/29] tests/mandate11j.spec.ts:753:1 › a missing or unpublished portfolio slug shows a not-found state
+[18/29] tests/mandate11j.spec.ts:771:1 › the gallery lists published portfolios and filters by search and template
+[19/29] tests/mandate11j.spec.ts:803:1 › gallery filters are read from the URL and survive a refresh
+[20/29] tests/mandate11j.spec.ts:820:1 › an unknown template parameter is ignored rather than trusted
+[21/29] tests/mandate11j.spec.ts:832:1 › the share dialog copies the public link and announces the result
+[22/29] tests/mandate11j.spec.ts:859:1 › the share dialog refuses to report success when the clipboard fails
+[23/29] tests/mandate11j.spec.ts:881:1 › the QR code encodes exactly the public URL shown
+[24/29] tests/mandate11j.spec.ts:905:1 › an unpublished portfolio offers publishing instead of a shareable link
+[25/29] tests/mandate11j.spec.ts:919:1 › custom-domain validation rejects schemes, paths and trailing slashes without calling the API
+[26/29] tests/mandate11j.spec.ts:941:1 › a registered domain shows the TXT record the server issued and its real status
+[27/29] tests/mandate11j.spec.ts:967:1 › a failed DNS lookup is reported as pending, never as verified
+[28/29] tests/mandate11j.spec.ts:986:1 › the builder, its preview and the conflict dialog pass axe at 1280px
+[29/29] tests/mandate11j.spec.ts:1007:1 › the public portfolio and gallery pass axe at 1280px and 375px
+  29 passed (1.1m)

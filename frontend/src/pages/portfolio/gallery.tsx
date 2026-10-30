@@ -33,8 +33,15 @@ export function PortfolioGalleryPage() {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [params, setParams] = useSearchParams();
-  const query = params.get('q') ?? '';
-  const templateFilter = params.get('template') ?? '';
+  // Filters live in the URL so they survive reload, back/forward and can be
+  // shared. Unknown values are ignored rather than trusted: an arbitrary
+  // ?template= cannot put the page into a state no filter can undo.
+  const rawQuery = params.get('q') ?? '';
+  const query = rawQuery.slice(0, 120);
+  const requestedTemplate = params.get('template') ?? '';
+  const templateFilter = PORTFOLIO_TEMPLATES.some((template) => template.id === requestedTemplate)
+    ? requestedTemplate
+    : '';
 
   useEffect(() => {
     const controller = new AbortController();
