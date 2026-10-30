@@ -469,6 +469,11 @@ function isPublicApiPath(pathname) {
         || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname)
         || /^\/public\/geo\/regions\/(?:city|in)\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(pathname)
         || /^\/public\/jobs\/[a-z0-9_-]{1,128}\/og\.png$/.test(pathname)
+        // Enterprise SAML 2.0 (FP-M14). These three legs are reached by a browser
+        // that has no session yet — that is the point of SSO — so they must be
+        // anonymous. The tenant trust configuration on the same router is NOT
+        // matched here and stays behind authentication.
+        || /^\/auth\/saml\/[A-Za-z0-9][A-Za-z0-9_-]{0,63}\/(?:login|acs|metadata)$/.test(pathname)
         || /^\/public\/blog\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?\/og\.png$/.test(pathname);
 }
 // Enterprise API authentication accepts exactly one credential kind per request:
@@ -7388,6 +7393,23 @@ async function issueOAuthExchange(uid, provider) {
     const { createOAuthExchangeCode } = require('./database/oauthStore');
     await createOAuthExchangeCode({ codeHash: hashOpaque(code), uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS });
     return code;
+}
+
+// Enterprise SAML 2.0 SSO (FP-M14). Mounted beside the OAuth callbacks because it
+// completes the same contract: verify an external identity proof, then hand the
+// client the same one-time exchange code. It deliberately introduces no second
+// session mechanism.
+{
+    const { createSamlRouter } = require('./routes/saml');
+    const { createMysqlSamlStore } = require('./enterprise/samlStore');
+    const samlBase = `${protocol}://${websiteName}/api/auth/saml`;
+    app.use('/api/auth/saml', createSamlRouter({
+        store: createMysqlSamlStore(),
+        upsertFederatedIdentity,
+        issueOAuthExchange,
+        entityIdBase: String(process.env.SAML_SP_ENTITY_ID || samlBase).replace(/\/+$/, ''),
+        acsBaseUrl: samlBase,
+    }));
 }
 
 app.get('/api/auth/linkedin', (req, res) => beginOAuth('linkedin', req, res));

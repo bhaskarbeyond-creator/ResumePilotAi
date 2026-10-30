@@ -105,6 +105,15 @@ const ENTITIES = Object.freeze({
     // Mandate 12 workstream 3: one relational scorecard per (application, reviewer).
     application_evaluation: maria('application_evaluation', 'application_evaluations',
         'Relational interview scorecards; applications.rating/notes remain the dual-written legacy projection.'),
+    // Mandate 13 workstream: enterprise SAML 2.0 SSO. The trust configuration is
+    // the security boundary (which IdP certificates are believed), so it must have
+    // exactly one owner like every other tenant-scoped record.
+    enterprise_sso_config: maria('enterprise_sso_config', 'enterprise_sso_config',
+        'Per-tenant IdP trust anchor: entity id, SSO URL and the signing certificates that are believed.'),
+    saml_authn_request: maria('saml_authn_request', 'saml_authn_requests',
+        'SP-initiated request correlation; consumed exactly once so a response cannot be replayed.'),
+    saml_assertion_replay: maria('saml_assertion_replay', 'saml_assertion_replay',
+        'Assertion ids already accepted; the primary key is the replay defence across processes.'),
     enterprise_principal_tenant: maria('enterprise_principal_tenant', 'enterprise_principal_tenants'),
     enterprise_workspace: maria('enterprise_workspace', 'enterprise_workspaces'),
     enterprise_workspace_membership: maria('enterprise_workspace_membership', 'enterprise_workspace_memberships'),
@@ -142,6 +151,7 @@ const ALIASES = Object.freeze({
     applications: 'job_application', companies: 'company', conversations: 'conversation',
     conversation_participants: 'conversation_participant', conversation_messages: 'message', messages: 'message',
     employer_settings: 'employer_settings', application_evaluations: 'application_evaluation', revoked_sessions: 'operator_session_revocation',
+    enterprise_sso_config: 'enterprise_sso_config', saml_authn_requests: 'saml_authn_request', saml_assertion_replay: 'saml_assertion_replay',
     notifications: 'notification', notification_outbox: 'notification_delivery',
     email_logs: 'email_log', email_verification_tokens: 'email_verification_token', email_verification_state: 'email_verification_state',
     password_reset_tokens: 'password_reset_token', password_reset_state: 'password_reset_state',
