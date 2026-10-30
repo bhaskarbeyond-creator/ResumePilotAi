@@ -19,6 +19,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { requireRecentAdminAuthentication } = require('../security/auth');
 const saml = require('../enterprise/saml');
+const { MetadataFetchError, fetchIdpMetadata } = require('../enterprise/samlMetadataFetch');
 
 const TENANT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 
@@ -39,6 +40,7 @@ function createSamlRouter({
   entityIdBase,
   acsBaseUrl,
   now = () => Date.now(),
+  fetchMetadata = fetchIdpMetadata,
   logger = console,
 }) {
   if (!store) throw new Error('createSamlRouter requires a store');
@@ -57,7 +59,7 @@ function createSamlRouter({
   const acsUrl = tenantId => `${acsBaseUrl}/${tenantId}/acs`;
 
   function handle(res, error) {
-    if (error instanceof saml.SamlError) {
+    if (error instanceof saml.SamlError || error instanceof MetadataFetchError) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(error.status || 400).json({ error: { code: error.code, message: error.message } });
     }
@@ -205,13 +207,28 @@ function createSamlRouter({
     }
   });
 
-  router.put('/:tenantId/config', requireRecentAdminAuthentication, async (req, res) => {
+  const saveConfig = async (req, res) => {
     const tenantId = readTenantId(req);
     if (!tenantId) return badRequest(res, 'INVALID_TENANT_ID', 'Tenant id is not valid');
     const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
     try {
       let source = body;
-      if (body.metadataXml) {
+      if (body.metadataXml && body.metadataUrl) {
+        return badRequest(res, 'SAML_CONFIG_INVALID', 'Provide metadataXml or metadataUrl, not both');
+      }
+      if (body.metadataUrl) {
+        // Server-side import: the guards in samlMetadataFetch decide what may be
+        // fetched, then the same parser that handles pasted XML runs on the result.
+        const xml = await fetchMetadata(String(body.metadataUrl));
+        const metadata = saml.parseIdpMetadata(xml);
+        source = {
+          entityId: metadata.entityId,
+          ssoUrl: metadata.ssoUrl,
+          sloUrl: metadata.sloUrl,
+          certificates: metadata.certificates.map(cert => cert.base64),
+          nameIdFormat: metadata.nameIdFormat,
+        };
+      } else if (body.metadataXml) {
         const metadata = saml.parseIdpMetadata(String(body.metadataXml));
         source = {
           entityId: metadata.entityId,
@@ -223,6 +240,21 @@ function createSamlRouter({
       }
       if (!source.entityId) return badRequest(res, 'SAML_CONFIG_INVALID', 'entityId is required (or supply metadataXml)');
       if (!source.ssoUrl) return badRequest(res, 'SAML_CONFIG_INVALID', 'ssoUrl is required (or supply metadataXml)');
+      // The SSO URL is where this platform sends a browser with a live session
+      // request; storing a plaintext or credential-bearing one would downgrade
+      // every future sign-in, so it is refused at write time rather than at use.
+      for (const [field, value] of [['ssoUrl', source.ssoUrl], ['sloUrl', source.sloUrl]]) {
+        if (!value) continue;
+        let parsed;
+        try {
+          parsed = new URL(String(value));
+        } catch (_error) {
+          return badRequest(res, 'SAML_CONFIG_INVALID', `${field} must be an absolute https URL`);
+        }
+        if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+          return badRequest(res, 'SAML_CONFIG_INVALID', `${field} must be an absolute https URL`);
+        }
+      }
       const certificates = saml.normalizeCertificates(source.certificates).map(cert => cert.base64);
       const saved = await store.saveConfig(tenantId, {
         entityId: String(source.entityId),
@@ -239,7 +271,13 @@ function createSamlRouter({
     } catch (error) {
       return handle(res, error);
     }
-  });
+  };
+
+  // PUT is canonical. POST is accepted as an alias because the console
+  // specification names it; both verbs run the identical handler, so the trust
+  // store can never behave differently depending on which one a client picked.
+  router.put('/:tenantId/config', requireRecentAdminAuthentication, saveConfig);
+  router.post('/:tenantId/config', requireRecentAdminAuthentication, saveConfig);
 
   return router;
 }

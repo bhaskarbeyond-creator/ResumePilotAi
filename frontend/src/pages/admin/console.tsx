@@ -28,6 +28,7 @@ import { AdminContentMarketingTab } from '@/components/admin/AdminContentMarketi
 import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
 import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
 import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
+import { AdminEnterpriseSsoTab } from '@/components/admin/AdminEnterpriseSsoTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
 import { AdminBillingTab } from '@/components/admin/AdminBillingTab';
 
@@ -46,6 +47,7 @@ export type AdminTabId =
   | 'ai-settings'
   | 'email'
   | 'security'
+  | 'sso'
   | 'settings'
   | 'modules';
 
@@ -64,6 +66,7 @@ const VALID_TABS: AdminTabId[] = [
   'ai-settings',
   'email',
   'security',
+  'sso',
   'settings',
   'modules',
 ];
@@ -99,7 +102,9 @@ export function AdminConsolePage() {
       };
     }
     return {
-      allowedTabs: VALID_TABS,
+      // The SSO trust store is super-admin-only on the server, so a plain System
+      // Admin must not be shown a tab whose every action would be refused.
+      allowedTabs: isSuperAdmin ? VALID_TABS : VALID_TABS.filter(tab => tab !== 'sso'),
       defaultTab: 'dashboard' as AdminTabId,
       roleBadgeText: isSuperAdmin ? 'Root Level' : 'System Admin Suite',
       roleSubtitle: 'Platform governance, 28-service operational telemetry, AI provider orchestration, and CMS control.',
@@ -221,6 +226,7 @@ export function AdminConsolePage() {
             {activeTab === 'billing' && <AdminBillingTab />}
             {activeTab === 'support' && <AdminHelpDeskTab />}
             {activeTab === 'security' && <AdminSecurityTab />}
+            {activeTab === 'sso' && <AdminEnterpriseSsoTab />}
             {activeTab === 'moderation' && <AdminModerationTab />}
             {activeTab === 'blog' && <AdminBlogManagementTab />}
             {activeTab === 'content' && <AdminContentMarketingTab />}
