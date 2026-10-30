@@ -1153,6 +1153,47 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             );
             break;
 
+        case 'interview_scorecard_submitted':
+        case 'interview-scorecard-submitted':
+            subject = vars.subject || `Interview Scorecard Submitted: ${candidateName} — ${vars.job_title || 'Position'} (${vars.recommendation || 'Recommendation'})`;
+            bodyHtml = buildEmailWrapper(
+                'Candidate Evaluation Scorecard',
+                'INTERVIEW SCORECARD',
+                `
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="color: #166534; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Interview Evaluation Completed</h3>
+                    <p style="color: #15803d; margin: 0; font-size: 13px; line-height: 1.5;">An interview scorecard has been submitted for <strong>${candidateName}</strong> for the <strong>${vars.job_title || 'Position'}</strong> role at <strong>${vars.company_name || brandName}</strong>.</p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin: 20px 0; font-size: 13px; color: #334155;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px 0; font-weight: 600; color: #64748b;">Reviewer:</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f172a;">${vars.reviewer_name || 'Hiring Team Member'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px 0; font-weight: 600; color: #64748b;">Scorecard Rating:</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: 800; color: #4f46e5; font-size: 15px;">${vars.rating ? `${vars.rating} / 5` : 'N/A'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px 0; font-weight: 600; color: #64748b;">Recommendation:</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #16a34a;">${vars.recommendation || 'Evaluated'}</td>
+                        </tr>
+                        ${vars.notes ? `
+                        <tr>
+                            <td colspan="2" style="padding: 12px 0 0 0;">
+                                <span style="font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Evaluation Notes:</span>
+                                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; font-style: italic; color: #475569; line-height: 1.5;">${vars.notes}</div>
+                            </td>
+                        </tr>` : ''}
+                    </table>
+                </div>
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">View Candidate in Hiring Dashboard &rarr;</a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center; word-break: break-all;">If the button does not work, copy this link:<br/><a href="${vars.action_url}" style="color: #4f46e5;">${escapeEmailHtml(rawActionUrl)}</a></p>`
+            );
+            break;
+
         default:
             subject = vars.subject || `Notification from ${brandName}`;
             bodyHtml = buildEmailWrapper(

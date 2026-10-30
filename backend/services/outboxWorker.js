@@ -53,7 +53,8 @@ const DELIVERABLE_TEMPLATE_TYPES = Object.freeze([
   'security_alert', 'account_created_admin', 'password_changed_confirm',
   'admin_system_alert', 'broadcast_announcement', 'tenant_notification',
   'enterprise-invitation', 'enterprise_invitation', 'invitation',
-  'interview-invitation', 'role_change', 'role_update', 'enterprise_role_update',
+  'interview-invitation', 'interview_scorecard_submitted', 'interview-scorecard-submitted',
+  'role_change', 'role_update', 'enterprise_role_update',
   'team_assignment', 'workspace_assignment', 'enterprise_security_alert',
   'quota_warning', 'quota_alert', 'enterprise_quota_alert',
 ]);

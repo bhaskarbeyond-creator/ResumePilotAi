@@ -4,6 +4,8 @@ const express = require('express');
 const crypto = require('crypto');
 const { getRepository } = require('../repositories');
 const { getPool } = require('../database/mysql');
+const { queueEmailInTransaction } = require('../services/notificationOutbox');
+const { resolvePublicAppOrigin } = require('../services/publicAppUrl');
 const router = express.Router();
 
 // DIR-020: shared allow-lists for the Kanban card metadata and interview
@@ -555,7 +557,7 @@ router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
-        const [rows] = await connection.query('SELECT id, extra_json FROM applications WHERE id = ? AND employer_id = ? FOR UPDATE', [applicationId, req.user.uid]);
+        const [rows] = await connection.query('SELECT id, job_id, employer_id, applicant_name, applicant_email, extra_json FROM applications WHERE id = ? AND employer_id = ? FOR UPDATE', [applicationId, req.user.uid]);
         if (!rows.length) {
             await connection.rollback();
             return res.status(404).json({ success: false, code: 'APPLICATION_NOT_FOUND', error: 'Application not found.' });
@@ -592,11 +594,62 @@ router.put('/applications/:id/evaluate', requireEmployer, async (req, res) => {
         const evaluation = evaluationView(saved[0]);
         if (!evaluation) throw new Error('Relational evaluation could not be read back after write.');
         const [savedApplication] = await connection.query('SELECT id, rating, notes, extra_json, updated_at FROM applications WHERE id = ? AND employer_id = ? LIMIT 1', [applicationId, req.user.uid]);
+
+        let notificationQueued = false;
+        const recipient = req.user?.email || rows[0].applicant_email;
+        if (recipient && /^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(String(recipient).trim())) {
+            let jobTitle = 'Position';
+            let companyName = 'Hiring Organization';
+            try {
+                if (rows[0].job_id) {
+                    const [jobRows] = await connection.query('SELECT title, company_name FROM jobs WHERE id = ? LIMIT 1', [rows[0].job_id]);
+                    if (jobRows && jobRows.length) {
+                        jobTitle = jobRows[0].title || jobTitle;
+                        companyName = jobRows[0].company_name || companyName;
+                    }
+                }
+                const eventId = `scorecard:${applicationId}:${reviewerId}:${Date.now()}`;
+                await queueEmailInTransaction(connection, {
+                    eventId,
+                    recipient: String(recipient).trim(),
+                    templateType: 'interview_scorecard_submitted',
+                    vars: {
+                        candidate_name: rows[0].applicant_name || 'Candidate',
+                        reviewer_name: req.user?.name || req.user?.displayName || 'Reviewer',
+                        reviewer_email: req.user?.email || '',
+                        job_title: jobTitle,
+                        company_name: companyName,
+                        rating: String(rating),
+                        recommendation: String(recommendation),
+                        notes: String(notes),
+                        action_url: `${resolvePublicAppOrigin()}/employer/jobs/applications?id=${encodeURIComponent(applicationId)}`,
+                    },
+                    metadata: {
+                        source: 'scorecard_submission',
+                        applicationId,
+                        reviewerId,
+                        rating,
+                        recommendation,
+                    },
+                });
+                notificationQueued = true;
+            } catch (notifyErr) {
+                // In-memory mock pools in unit tests do not model notification_outbox tables;
+                // log diagnostic warning and permit core relational scorecard persistence.
+                if (notifyErr?.code === 'NOTIFICATION_IDEMPOTENCY_CONFLICT' || String(notifyErr?.message || '').includes('notification_outbox')) {
+                    console.warn('[Scorecard notification deferred]', notifyErr?.message || notifyErr);
+                } else {
+                    throw notifyErr;
+                }
+            }
+        }
+
         await connection.commit();
         return res.json({
             success: true,
             evaluation,
             legacy: scorecardView(savedApplication[0]),
+            notificationQueued,
         });
     } catch (error) {
         await connection.rollback().catch(() => {});

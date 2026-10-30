@@ -326,6 +326,39 @@ class EmailNotifier {
             }).catch(() => {});
         }).catch(() => {});
     }
+
+    /**
+     * 17. Interview Scorecard Submitted (Hiring Team / Recruiter Notification)
+     */
+    static async notifyScorecardSubmitted({
+        recipientEmail,
+        reviewerName,
+        reviewerEmail,
+        candidateName,
+        jobTitle,
+        companyName,
+        rating,
+        recommendation,
+        notes,
+        applicationId,
+    }) {
+        if (!recipientEmail) return;
+        return sendNotification({
+            to: recipientEmail,
+            templateType: 'interview_scorecard_submitted',
+            vars: {
+                candidate_name: candidateName || 'Candidate',
+                reviewer_name: reviewerName || reviewerEmail || 'Interviewer',
+                reviewer_email: reviewerEmail || '',
+                job_title: jobTitle || 'Position',
+                company_name: companyName || 'Hiring Organization',
+                rating: String(rating || '0'),
+                recommendation: String(recommendation || 'Evaluated'),
+                notes: String(notes || ''),
+                action_url: `${publicSiteOrigin()}/employer/jobs/applications?id=${encodeURIComponent(applicationId || '')}`,
+            },
+        });
+    }
 }
 
 module.exports = EmailNotifier;
