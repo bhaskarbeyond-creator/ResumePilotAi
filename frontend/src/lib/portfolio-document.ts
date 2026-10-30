@@ -79,6 +79,76 @@ export interface PortfolioReference { id: string; name: string; reference: strin
 export interface PortfolioLanguage { id: string; name: string; level: string }
 export interface PortfolioCustomSection { id: string; title: string; items: Array<{ id: string; title: string; description: string }>; content: string }
 
+/**
+ * Section-level visibility. A hidden section is NEVER deleted: the content stays
+ * in the canonical document (so the candidate can show it again) and only the
+ * projection handed to a renderer — the live preview and the public page — drops
+ * it. Missing or unrecognised flags mean "visible", which is what every document
+ * saved before this model existed must be read as.
+ */
+export interface PortfolioVisibility {
+  showExperience: boolean;
+  showEducation: boolean;
+  showProjects: boolean;
+  showSkills: boolean;
+  showContact: boolean;
+}
+
+export const VISIBILITY_KEYS = [
+  'showExperience',
+  'showEducation',
+  'showProjects',
+  'showSkills',
+  'showContact',
+] as const;
+
+export type VisibilityKey = (typeof VISIBILITY_KEYS)[number];
+
+export const VISIBILITY_LABELS: Record<VisibilityKey, { label: string; description: string }> = {
+  showExperience: { label: 'Experience', description: 'Roles, employers and dates.' },
+  showEducation: { label: 'Education', description: 'Schools, degrees and dates.' },
+  showProjects: { label: 'Projects', description: 'Project names, links and descriptions.' },
+  showSkills: { label: 'Skills', description: 'Skill rows and groups.' },
+  showContact: { label: 'Contact details', description: 'Email, phone, website, LinkedIn and GitHub links.' },
+};
+
+export function defaultVisibility(): PortfolioVisibility {
+  return {
+    showExperience: true,
+    showEducation: true,
+    showProjects: true,
+    showSkills: true,
+    showContact: true,
+  };
+}
+
+/**
+ * Reads visibility from any shape a document may hold, defaulting to visible.
+ * Only an explicit boolean `false` (or the legacy string `'false'`) hides a
+ * section, so unexpected values never silently hide a candidate's content.
+ */
+export function normalizeVisibility(input: unknown): PortfolioVisibility {
+  const source = (input && typeof input === 'object' ? input : {}) as Loose;
+  const read = (key: VisibilityKey): boolean => {
+    const value = source[key];
+    if (value === false) return false;
+    if (typeof value === 'string' && value.trim().toLowerCase() === 'false') return false;
+    return true;
+  };
+  return {
+    showExperience: read('showExperience'),
+    showEducation: read('showEducation'),
+    showProjects: read('showProjects'),
+    showSkills: read('showSkills'),
+    showContact: read('showContact'),
+  };
+}
+
+export function visibilityOf(canonical: unknown): PortfolioVisibility {
+  const source = (canonical && typeof canonical === 'object' ? canonical : {}) as Loose;
+  return normalizeVisibility(source.visibility);
+}
+
 export interface PortfolioCanonical {
   version: 1;
   template: PortfolioTemplateId;
@@ -96,6 +166,7 @@ export interface PortfolioCanonical {
   customSections: PortfolioCustomSection[];
   extras: { tagline: string; heroImage: string; seoTitle: string; seoDescription: string };
   source: { resumeId: string | null; resumeTitle: string; ingestedAt: string | null };
+  visibility: PortfolioVisibility;
 }
 
 type Loose = Record<string, unknown>;
@@ -160,6 +231,7 @@ export function emptyCanonical(template: unknown = DEFAULT_TEMPLATE): PortfolioC
     customSections: [],
     extras: { tagline: '', heroImage: '', seoTitle: '', seoDescription: '' },
     source: { resumeId: null, resumeTitle: '', ingestedAt: null },
+    visibility: defaultVisibility(),
   };
 }
 
@@ -296,6 +368,7 @@ export function normalizeCanonical(input: unknown, template?: unknown): Portfoli
     customSections: objects(raw.customSections).map(customSectionFrom),
     extras: { tagline: first(extras, 'tagline') || first(raw, 'tagline'), heroImage: first(extras, 'heroImage') || first(raw, 'heroImage'), seoTitle: first(extras, 'seoTitle'), seoDescription: first(extras, 'seoDescription') },
     source: { resumeId: text(source.resumeId) || null, resumeTitle: text(source.resumeTitle), ingestedAt: text(source.ingestedAt) || null },
+    visibility: normalizeVisibility(raw.visibility),
   };
 }
 
@@ -367,6 +440,7 @@ export function buildDocument({ canonical, title, isPublished, slugBase, previou
     if (!SERVER_FIELDS.includes(key)) kept[key] = value;
   }
   const template = resolveTemplate(canonical.template);
+  const visibility = normalizeVisibility(canonical.visibility);
   const name = displayName(canonical);
   const cleanTitle = text(title) || name || 'My Web CV';
   const description = canonical.summary.slice(0, 500);
@@ -377,7 +451,7 @@ export function buildDocument({ canonical, title, isPublished, slugBase, previou
     renderer: 'webcv',
     templateKey: template,
     template,
-    canonical: { ...canonical, template },
+    canonical: { ...canonical, template, visibility },
     content: Array.isArray(kept.content) ? kept.content : [],
     root: { ...previousRoot, props: { ...previousProps, title: cleanTitle, description } },
     title: cleanTitle,
@@ -386,24 +460,74 @@ export function buildDocument({ canonical, title, isPublished, slugBase, previou
     seoTitle: canonical.extras.seoTitle || name || cleanTitle,
     seoDescription: (canonical.extras.seoDescription || canonical.summary).slice(0, 300),
     theme: templateMeta(template).theme,
+    visibility,
     isPublished,
     ...(slugBase ? { slug: slugBase } : {}),
   };
 }
 
 /**
- * Changes only the visibility of a stored document, leaving its content exactly as
- * stored. Used for every portfolio, including ones this builder cannot edit. The
- * owner projection echoes top-level documents back under `data`; that echo is
- * dropped, but a document that genuinely stores its blocks under `data` keeps it.
+ * The projection a renderer receives: the same document with every hidden
+ * section dropped. Deterministic and idempotent — running it on its own output
+ * changes nothing — and it never mutates its input, so the candidate's stored
+ * content is untouched. Hidden contact details become empty strings rather than
+ * being removed, so the heading keeps its shape.
  */
-export function documentWithVisibility(previous: Loose, isPublished: boolean): Loose {
+export function canonicalWithVisibility(canonical: PortfolioCanonical): PortfolioCanonical {
+  const visibility = normalizeVisibility(canonical.visibility);
+  if (VISIBILITY_KEYS.every((key) => visibility[key])) return canonical;
+  const heading = { ...canonical.heading };
+  if (!visibility.showContact) {
+    heading.email = '';
+    heading.phone = '';
+    heading.website = '';
+    heading.linkedin = '';
+    heading.github = '';
+  }
+  return {
+    ...canonical,
+    heading,
+    experiences: visibility.showExperience ? canonical.experiences : [],
+    education: visibility.showEducation ? canonical.education : [],
+    projects: visibility.showProjects ? canonical.projects : [],
+    skills: visibility.showSkills ? canonical.skills : [],
+    visibility,
+  };
+}
+
+/** True when at least one section is hidden — used for the public/owner notices. */
+export function hasHiddenSections(canonical: PortfolioCanonical): boolean {
+  const visibility = normalizeVisibility(canonical.visibility);
+  return VISIBILITY_KEYS.some((key) => !visibility[key]);
+}
+
+/**
+ * Publication + visibility projection of a stored document: the shape a renderer
+ * (live preview, public page) is allowed to read.
+ *
+ * It is deliberately a READ projection. Persisting an editable portfolio goes
+ * through `buildDocument`, which keeps every section in `canonical` and stores
+ * the flags alongside, so hiding a section never deletes the candidate's content.
+ * This function is used to (a) flip publication state on a document this builder
+ * cannot edit, and (b) hand a renderer a document whose hidden sections are gone.
+ */
+export function documentWithVisibility(
+  previous: Loose,
+  isPublished: boolean,
+  visibility?: Partial<PortfolioVisibility>,
+): Loose {
   const next: Loose = {};
   for (const [key, value] of Object.entries(previous)) {
     if (!SERVER_FIELDS.includes(key)) next[key] = value;
   }
   const data = previous.data && typeof previous.data === 'object' ? (previous.data as Loose) : null;
   if (data && !Array.isArray(previous.content) && Array.isArray(data.content)) next.data = data;
+  const canonical = (next.canonical && typeof next.canonical === 'object' ? next.canonical : null) as Loose | null;
+  const resolved = normalizeVisibility({ ...(canonical?.visibility as Loose | undefined), ...visibility });
+  next.visibility = resolved;
+  if (canonical) {
+    next.canonical = canonicalWithVisibility({ ...(canonical as unknown as PortfolioCanonical), visibility: resolved });
+  }
   next.isPublished = isPublished;
   return next;
 }
@@ -449,4 +573,54 @@ export function normalizeSlugBase(input: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 130);
+}
+
+/* ─── Conflict comparison ─── */
+
+export interface ConflictDifference {
+  key: string;
+  label: string;
+  /** Human-readable local value; never HTML. */
+  local: string;
+  remote: string;
+}
+
+const shorten = (value: string, limit = 90): string => {
+  const flat = value.replace(/\s+/g, ' ').trim();
+  return flat.length > limit ? `${flat.slice(0, limit - 1)}…` : flat;
+};
+
+const yesNo = (value: boolean) => (value ? 'Shown' : 'Hidden');
+
+/**
+ * What differs between the version this tab has open and the version the server
+ * reported in its 409. Used by the conflict dialog so "Inspect remote changes"
+ * shows real information instead of only closing the dialog. Deterministic, and
+ * empty when the two versions hold the same visible content.
+ */
+export function compareCanonical(
+  local: { title: string; canonical: PortfolioCanonical },
+  remote: { title: string; canonical: PortfolioCanonical },
+): ConflictDifference[] {
+  const differences: ConflictDifference[] = [];
+  const push = (key: string, label: string, localValue: string, remoteValue: string) => {
+    if (localValue !== remoteValue) differences.push({ key, label, local: localValue, remote: remoteValue });
+  };
+
+  push('title', 'Portfolio title', shorten(local.title, 60) || 'Untitled', shorten(remote.title, 60) || 'Untitled');
+  push('template', 'Template', templateMeta(local.canonical.template).name, templateMeta(remote.canonical.template).name);
+  push('name', 'Name', shorten(displayName(local.canonical)) || 'Empty', shorten(displayName(remote.canonical)) || 'Empty');
+  push('occupation', 'Occupation', shorten(local.canonical.heading.occupation) || 'Empty', shorten(remote.canonical.heading.occupation) || 'Empty');
+  push('summary', 'About', shorten(local.canonical.summary) || 'Empty', shorten(remote.canonical.summary) || 'Empty');
+  push('experiences', 'Experience entries', String(local.canonical.experiences.length), String(remote.canonical.experiences.length));
+  push('education', 'Education entries', String(local.canonical.education.length), String(remote.canonical.education.length));
+  push('projects', 'Project entries', String(local.canonical.projects.length), String(remote.canonical.projects.length));
+  push('skills', 'Skills', String(local.canonical.skills.length), String(remote.canonical.skills.length));
+
+  const localVisibility = normalizeVisibility(local.canonical.visibility);
+  const remoteVisibility = normalizeVisibility(remote.canonical.visibility);
+  for (const key of VISIBILITY_KEYS) {
+    push(`visibility.${key}`, VISIBILITY_LABELS[key].label, yesNo(localVisibility[key]), yesNo(remoteVisibility[key]));
+  }
+  return differences;
 }

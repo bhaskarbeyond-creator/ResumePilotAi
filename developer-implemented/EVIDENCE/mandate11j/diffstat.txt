@@ -1,0 +1,10 @@
+ .../src/components/portfolio/portfolio-dialogs.tsx | 475 +++++++++-----
+ .../portfolio/portfolio-editor-fields.tsx          |  52 ++
+ .../src/components/portfolio/portfolio-view.tsx    |   7 +-
+ frontend/src/lib/portfolio-document.ts             | 186 +++++-
+ frontend/src/lib/portfolio.ts                      | 666 +++++++++++++++++++-
+ frontend/src/pages/portfolio/builder.tsx           | 697 ++++++++++++++-------
+ frontend/src/pages/portfolio/gallery.tsx           |  11 +-
+ frontend/src/pages/portfolio/public-portfolio.tsx  |  97 ++-
+ frontend/tests/candidate/settings.spec.ts          |  78 ++-
+ 9 files changed, 1866 insertions(+), 403 deletions(-)

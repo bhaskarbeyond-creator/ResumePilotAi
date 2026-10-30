@@ -13,6 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import {
+  VISIBILITY_KEYS,
+  VISIBILITY_LABELS,
+  type PortfolioVisibility,
+} from '@/lib/portfolio-document';
 
 interface FieldProps {
   label: string;
@@ -165,5 +170,52 @@ export function EntryListEditor<T extends { id: string }>({ noun, entries, field
       </Button>
       <p role="status" className="sr-only">{announcement}</p>
     </div>
+  );
+}
+
+/* ─── Section visibility ─── */
+
+interface VisibilityControlsProps {
+  visibility: PortfolioVisibility;
+  onChange: (next: PortfolioVisibility) => void;
+  disabled?: boolean;
+}
+
+/**
+ * One checkbox per section. Checking hides or shows that section in the live
+ * preview and on the public page; nothing is deleted, and the copy says so.
+ * A hidden section stays in the document, so ticking it again restores it.
+ */
+export function VisibilityControls({ visibility, onChange, disabled }: VisibilityControlsProps) {
+  return (
+    <fieldset className="min-w-0" disabled={disabled}>
+      <legend className="mb-1 text-sm font-medium text-ink">Sections shown on your portfolio</legend>
+      <p className="mb-3 text-xs text-ink-muted">
+        Hiding a section takes it off the preview and the public page. Your content is kept, so you can show it again at any time.
+      </p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {VISIBILITY_KEYS.map((key) => {
+          const inputId = `portfolio-visibility-${key}`;
+          const { label, description } = VISIBILITY_LABELS[key];
+          return (
+            <li key={key} className="flex items-start gap-3 rounded-xl border border-border p-3">
+              <input
+                id={inputId}
+                type="checkbox"
+                checked={visibility[key]}
+                disabled={disabled}
+                onChange={(event) => onChange({ ...visibility, [key]: event.target.checked })}
+                aria-describedby={`${inputId}-description`}
+                className="mt-0.5 size-4 shrink-0 rounded border-border text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              />
+              <span className="min-w-0">
+                <label htmlFor={inputId} className="block text-sm font-medium text-ink">Show {label}</label>
+                <span id={`${inputId}-description`} className="block text-xs text-ink-secondary">{description}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </fieldset>
   );
 }

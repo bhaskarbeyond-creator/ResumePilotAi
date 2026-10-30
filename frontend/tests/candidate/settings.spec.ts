@@ -203,8 +203,10 @@ test.describe('Master Profile', () => {
     expect(posts, 'an unchanged profile is not re-sent').toBe(0);
   });
 
-  test('keeps the edits on a save conflict, merges them onto the newer version, or shows that version', async ({ page, request, guard }) => {
+  test('keeps the edits on a save conflict and requires an explicit resolution', async ({ page, request, guard }) => {
     guard.expectApiStatuses(409);
+    let saves = 0;
+    page.on('response', (response) => { if (isProfileSave(response)) saves += 1; });
     await openSettings(page);
     await expectProfileLoaded(page);
     await field(page, 'City').fill('Vijayawada');
@@ -214,39 +216,56 @@ test.describe('Master Profile', () => {
     await saveButton(page).click();
     expect((await first).status()).toBe(409);
     await expect(formAlert(page)).toContainText('changed in another tab or device');
+
+    // The conflict is announced, the local edit survives and the server keeps its version.
+    await expect(profileForm(page).getByRole('heading', { name: 'Changed in another tab or device' })).toBeVisible();
     await expect(field(page, 'City')).toHaveValue('Vijayawada');
     expect((await readProfile(request)).profile.city, 'nothing was overwritten').toBe('Guntur');
 
-    // Saving again sends only this tab's edit, so the other tab's country survives.
-    const second = page.waitForResponse(isProfileSave);
+    // Saving again does not guess: it asks for one of the three explicit resolutions
+    // and sends no request, so the other tab's write can never be silently replaced.
+    const saveAttempts = saves;
     await saveButton(page).click();
+    await expect(formAlert(page)).toHaveText('Your Master Profile was changed elsewhere. Choose one of the options above before saving.');
+    expect(saves, 'no save is sent while the conflict is unresolved').toBe(saveAttempts);
+
+    // "Inspect remote changes" shows both versions side by side without writing anything.
+    await profileForm(page).getByRole('button', { name: 'Review differences', exact: true }).click();
+    const review = page.getByRole('dialog');
+    await expect(review.getByRole('heading', { name: 'Review differences', exact: true })).toBeVisible();
+    await expect(review.getByRole('columnheader', { name: 'Field', exact: true })).toBeVisible();
+    await expect(review.getByRole('cell', { name: 'Guntur', exact: true })).toBeVisible();
+    await expect(review.getByRole('cell', { name: 'Vijayawada', exact: true })).toBeVisible();
+    await review.getByRole('button', { name: 'Back to my edits', exact: true }).click();
+    await expect(review).toBeHidden();
+    expect((await readProfile(request)).profile.city, 'inspecting writes nothing').toBe('Guntur');
+
+    // "Keep local & overwrite" sends only this tab's edit on top of the revision the
+    // server reported, so the other tab's untouched field survives.
+    const serverRevision = (await readProfile(request)).revision;
+    const second = page.waitForResponse(isProfileSave);
+    await profileForm(page).getByRole('button', { name: 'Keep my edits and overwrite', exact: true }).click();
     const merged = await second;
     expect(merged.status()).toBe(200);
-    expect((merged.request().postDataJSON() as { profile: Record<string, string> }).profile).toEqual({ city: 'Vijayawada' });
+    const sent = merged.request().postDataJSON() as { expectedRevision: number; profile: Record<string, string> };
+    expect(sent.profile).toEqual({ city: 'Vijayawada' });
+    expect(sent.expectedRevision, 'the write targets the revision the server just reported').toBe(serverRevision);
     await expect(formStatus(page)).toHaveText('Master Profile saved.');
     await expect(field(page, 'Country')).toHaveValue('Bharat');
     const stored = (await readProfile(request)).profile;
     expect(stored.city).toBe('Vijayawada');
     expect(stored.country, 'the other tab’s change is kept').toBe('Bharat');
+    await expect(profileForm(page).getByRole('heading', { name: 'Changed in another tab or device' })).toHaveCount(0);
 
-    // Discarding after a conflict shows the newer saved version, not the stale one.
+    // "Discard & reload" loads the newest saved version instead of the stale one.
     await field(page, 'City').fill('Eluru');
     await writeProfile(request, { city: 'Tenali' });
     await saveButton(page).click();
     await expect(formAlert(page)).toContainText('changed in another tab or device');
-    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await profileForm(page).getByRole('button', { name: 'Discard my edits and load the newer version', exact: true }).click();
     await expect(field(page, 'City')).toHaveValue('Tenali');
-    await expect(formStatus(page)).toHaveText('Unsaved changes discarded. Showing the newer saved version.');
-
-    // "Load the newer version" does the same without saving anything.
-    await field(page, 'City').fill('Ongole');
-    await writeProfile(request, { city: 'Kakinada' });
-    await saveButton(page).click();
-    await expect(formAlert(page)).toContainText('changed in another tab or device');
-    await page.getByRole('button', { name: 'Load the newer version', exact: true }).click();
-    await expect(field(page, 'City')).toHaveValue('Kakinada');
     await expect(formStatus(page)).toHaveText('Loaded the newer saved version. Your unsaved edits were discarded.');
-    expect((await readProfile(request)).profile.city).toBe('Kakinada');
+    expect((await readProfile(request)).profile.city, 'discarding writes nothing').toBe('Tenali');
   });
 
   test('shows a loading state, then a retryable error instead of an empty form', async ({ page, guard }) => {
@@ -538,6 +557,28 @@ test.describe('Account deletion with a disposable account', () => {
       await expect(deleteTrigger(page)).toBeFocused();
     });
 
+    await test.step('the deletion request carries the session bearer token', async () => {
+      await deleteTrigger(page).click();
+      await dialog.getByLabel('Type DELETE to confirm').fill('DELETE');
+      // Injected response (labelled): the request is captured before answering, so the
+      // test can check what the browser sent without deleting anything here.
+      let sentAuth: string | undefined;
+      await page.route('**/api/account/delete', async (route) => {
+        sentAuth = route.request().headers()['authorization'];
+        await route.fulfill({ status: 403, json: { error: { code: 'RECENT_AUTH_REQUIRED', message: 'Please reauthenticate before this sensitive operation' } } });
+      });
+      const attempt = page.waitForResponse((response) => pathOf(response) === '/api/account/delete');
+      await dialog.getByRole('button', { name: 'Delete my account', exact: true }).click();
+      const response = await attempt;
+      expect(sentAuth, 'the session token is sent as a bearer credential').toBe(`Bearer ${token}`);
+      expect(response.request().headers()['authorization'], 'the page sends the same header').toBe(`Bearer ${token}`);
+      expect(response.request().method(), 'the deletion is a token-authenticated API call').toBe('POST');
+      await expect(dialog.getByRole('alert')).toHaveText('For your security, deleting your account needs a sign-in from the last 10 minutes. Nothing was deleted. Sign in again, then return here.');
+      expect((await readProfile(request, token)).email, 'the account is intact').toBe(email);
+      await page.unroute('**/api/account/delete');
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    });
+
     await test.step('the real deletion removes the personal data; identity removal stays pending here', async () => {
       await deleteTrigger(page).click();
       await expect(dialog.getByLabel('Type DELETE to confirm')).toHaveValue('');
@@ -546,6 +587,7 @@ test.describe('Account deletion with a disposable account', () => {
       const deletion = page.waitForResponse((response) => pathOf(response) === '/api/account/delete');
       await dialog.getByRole('button', { name: 'Delete my account', exact: true }).click();
       const response = await deletion;
+      expect(response.request().headers()['authorization'], 'the real deletion carries the session token').toBe(`Bearer ${token}`);
       expect(response.status()).toBe(503);
       expect(((await response.json()) as { code?: string }).code).toBe('ACCOUNT_IDENTITY_DELETE_FAILED');
       await expect(dialog.getByRole('heading', { name: 'Your personal data was deleted' })).toBeVisible();
@@ -559,7 +601,9 @@ test.describe('Account deletion with a disposable account', () => {
     await test.step('a real retry says identity removal is still pending', async () => {
       const retry = page.waitForResponse((response) => pathOf(response) === '/api/account/delete');
       await dialog.getByRole('button', { name: 'Retry identity removal', exact: true }).click();
-      expect((await retry).status()).toBe(503);
+      const retried = await retry;
+      expect(retried.request().headers()['authorization'], 'the retry stays authenticated').toBe(`Bearer ${token}`);
+      expect(retried.status()).toBe(503);
       await expect(dialog.getByRole('alert')).toHaveText('The retry did not finish either. Removing your sign-in identity is still pending. Try again in a moment, or sign out and contact support.');
     });
 
