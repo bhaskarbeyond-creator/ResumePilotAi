@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
@@ -52,6 +53,7 @@ export function TeamSeats() {
   const [rosterError, setRosterError] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [quotaOpen, setQuotaOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -156,6 +158,8 @@ export function TeamSeats() {
         </div>
       )}
 
+      <Button variant="outline" onClick={() => setQuotaOpen(true)}>Inspect Seat Allocation</Button>
+      <Dialog open={quotaOpen} onOpenChange={setQuotaOpen}><DialogContent className="w-[calc(100%-2rem)] rounded-2xl md:rounded-3xl border-border bg-surface/95 backdrop-blur-xl motion-reduce:animate-none"><DialogTitle>Workspace Seat Allocation</DialogTitle><DialogDescription>Authoritative seat usage for the active tenant. Contract changes require platform commercial administration; this view cannot change allocation.</DialogDescription><WorkspaceSeatQuotaCard quota={seatQuota} loading={seatLoading} error={seatError} onRetry={() => void loadSeatQuota()} /></DialogContent></Dialog>
       {/* Authoritative Workspace Seat Quota Gauge */}
       <WorkspaceSeatQuotaCard
         quota={seatQuota}

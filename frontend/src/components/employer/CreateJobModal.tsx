@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 /**
  * CreateJobModal — Employer Portal
  *
@@ -257,16 +258,8 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-job-modal-title"
-    >
-      <div
-        className="h-full w-full max-w-2xl bg-surface border-l border-edge shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog open onOpenChange={value => { if (!value && !createJobMutation.isPending) onClose(); }}>
+      <DialogContent hideCloseButton aria-describedby={undefined} className="w-[calc(100%-1rem)] max-w-2xl p-0 gap-0 rounded-2xl md:rounded-3xl bg-surface/95 border-border backdrop-blur-xl flex flex-col overflow-hidden motion-reduce:animate-none">
         {/* Header */}
         <div className="p-5 border-b border-edge bg-canvas-soft/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -274,12 +267,12 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
               <Briefcase className="size-5" />
             </div>
             <div>
-              <h2 id="create-job-modal-title" className="text-base font-bold text-ink flex items-center gap-2">
+              <DialogTitle id="create-job-modal-title" className="text-base font-bold text-ink flex items-center gap-2">
                 Post Job Requisition
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
                   Full ATS Parity
                 </span>
-              </h2>
+              </DialogTitle>
               <p className="text-xs text-ink-muted">
                 Create a verified job posting with structured screening questions & salary bands
               </p>
@@ -740,7 +733,7 @@ export function CreateJobModal({ isOpen, onClose, onSuccess }: CreateJobModalPro
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

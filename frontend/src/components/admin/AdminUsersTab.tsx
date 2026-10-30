@@ -1,3 +1,4 @@
+import { listEnterpriseTenants, subscribeTenants, ENTERPRISE_ROLES, type EnterpriseTenant } from '@/lib/admin-tenants';
 /**
  * Admin Users Manager & User 360 Tab (Master Edition)
  *
@@ -115,7 +116,26 @@ export function AdminUsersTab() {
   const [showSuspendInput, setShowSuspendInput] = useState(false);
   const [customAiLimit, setCustomAiLimit] = useState<number>(100);
   const [aiLimitReason, setAiLimitReason] = useState('');
-  const [selectedTenantId, setSelectedTenantId] = useState('northwind');
+  const [registryTenants, setRegistryTenants] = useState<EnterpriseTenant[]>([]);
+  const [tenantError, setTenantError] = useState('');
+  const [tenantLoading, setTenantLoading] = useState(true);
+  const [assigning, setAssigning] = useState(false);
+  useEffect(() => {
+    let active = true;
+    let revision = 0;
+    const refresh = () => {
+      const request = ++revision; setTenantLoading(true);
+      listEnterpriseTenants().then(data => {
+        if (!active || request !== revision) return;
+        const assignable = data.filter(t => t.source === 'LIVE' && t.lifecycleState === 'ACTIVE');
+        setRegistryTenants(assignable); setTenantError('');
+        setSelectedTenantId(id => assignable.some(t => t.id === id) ? id : '');
+      }).catch(e => { if (active && request === revision) { setTenantError(normalizeError(e).message); setRegistryTenants([]); setSelectedTenantId(''); } }).finally(() => { if (active && request === revision) setTenantLoading(false); });
+    };
+    refresh(); const unsubscribe = subscribeTenants(refresh);
+    return () => { active = false; unsubscribe(); };
+  }, []);
+  const [selectedTenantId, setSelectedTenantId] = useState('');
   const [selectedTenantRole, setSelectedTenantRole] = useState('ENTERPRISE_MEMBER');
 
   const loadUsers = async () => {
@@ -748,9 +768,7 @@ export function AdminUsersTab() {
                   className="w-full h-8 px-2.5 rounded-lg border border-border bg-canvas text-xs text-ink"
                 >
                   <option value="">None (Standalone Individual)</option>
-                  <option value="Northwind Careers">Northwind Careers (Enterprise)</option>
-                  <option value="Globex Talent">Globex Talent (Recruitment Agency)</option>
-                  <option value="Initech HR">Initech HR (Corporate)</option>
+                  {registryTenants.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                 </select>
               </div>
 
@@ -1066,30 +1084,39 @@ export function AdminUsersTab() {
                     <h4 className="font-bold text-ink text-xs uppercase tracking-wider">Assign to Organization</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <select
+                        aria-label="Assignable organization"
                         value={selectedTenantId}
                         onChange={(e) => setSelectedTenantId(e.target.value)}
                         className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
                       >
-                        <option value="northwind">Northwind Careers</option>
-                        <option value="globex">Globex Talent</option>
-                        <option value="initech">Initech HR</option>
+                        <option value="">{tenantLoading ? 'Loading tenants…' : 'Select an active live tenant'}</option>
+                        {registryTenants.map(t => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                       </select>
                       <select
+                        aria-label="Enterprise role"
                         value={selectedTenantRole}
                         onChange={(e) => setSelectedTenantRole(e.target.value)}
                         className="h-8 px-2 rounded-lg border border-border bg-surface text-xs text-ink"
                       >
                         <option value="ENTERPRISE_ADMIN">Admin (Full Management)</option>
-                        <option value="ENTERPRISE_MANAGER">Manager (Department Lead)</option>
+                        <option value="ENTERPRISE_MANAGER" disabled>Manager (backend role unavailable)</option>
                         <option value="ENTERPRISE_MEMBER">Member (Draft & Export)</option>
                         <option value="ENTERPRISE_VIEWER">Viewer (Read-only)</option>
                       </select>
                       <Button
                         size="sm"
                         variant="primary"
-                        onClick={() => {
-                          setActionSuccess(`Assigned ${selectedUser.displayName} to organization with role ${selectedTenantRole}.`);
-                          setTimeout(() => setActionSuccess(null), 3000);
+                        disabled={assigning || !registryTenants.some(t => t.id === selectedTenantId) || !ENTERPRISE_ROLES.includes(selectedTenantRole as typeof ENTERPRISE_ROLES[number])}
+                        onClick={async () => {
+                          if (assigning || selectedTenantRole === 'ENTERPRISE_MANAGER' || !registryTenants.some(t => t.id === selectedTenantId)) return;
+                          setAssigning(true);
+                          try {
+                            const result = await post<{ success: boolean; message?: string }>(`/admin/users/${encodeURIComponent(selectedUser.id)}/tenants`, { tenantId: selectedTenantId, role: selectedTenantRole });
+                            if (result.success !== true) throw new Error('Server did not confirm assignment.');
+                            setActionSuccess(result.message || 'Server confirmed membership.');
+                            await loadUsers();
+                          } catch (e) { setTenantError(normalizeError(e).message); }
+                          finally { setAssigning(false); }
                         }}
                       >
                         Assign Membership
@@ -1097,38 +1124,8 @@ export function AdminUsersTab() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border overflow-hidden">
-                    <div className="p-3 bg-neutral-50 border-b border-border font-bold text-ink text-xs">
-                      Active Organization Memberships
-                    </div>
-                    <div className="divide-y divide-border">
-                      <div className="p-3.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <Building2 className="size-4 text-brand-600" />
-                          <div>
-                            <p className="font-bold text-ink">Northwind Careers</p>
-                            <p className="text-[10px] text-ink-muted">Slug: northwind-careers • Workspace: Engineering</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full px-2 py-0.5 bg-brand-50 text-brand-700 font-bold text-[10px]">
-                            ENTERPRISE_ADMIN
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            className="text-rose-600 hover:text-rose-700"
-                            onClick={() => {
-                              setActionSuccess(`Membership removed for Northwind Careers.`);
-                              setTimeout(() => setActionSuccess(null), 3000);
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {tenantError && <p role="alert" className="text-error-700">{tenantError}</p>}
+                  <p className="text-xs text-ink-muted">Membership assignments require server confirmation. Open User 360 again to refresh authoritative memberships; sample memberships are not shown.</p>
                 </div>
               )}
 
