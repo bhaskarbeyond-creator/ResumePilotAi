@@ -287,3 +287,133 @@ while persisting nothing, and the test estate was structurally unable to detect
 it. The reported test totals (620) and the reported commit history (11 commits)
 are both unreproducible. The application-side corrections made here are verified;
 the wider matrix requires a live MariaDB before it can be audited at all.
+
+---
+
+# ADDENDUM — 2026-10-31, after a live database became available
+
+Two findings above were **wrong** and are corrected in
+`REMOTE_REPOSITORY_BASELINE.md`: the commit history was absent only because this
+sandbox was a shallow clone (`--unshallow` restores 1,589 commits and all eleven
+supplied SHAs), and 620 is the curated master suite behind
+`backend/scripts/run-all-verified-tests.js`, which is not wired into any
+`package.json` script. Both were my errors, not the local developer's.
+
+The repository ships its own answer to the "no MariaDB" blocker:
+`scripts/dev-db/setup-sandbox-tools.sh` installs `lite4mariadb@0.1.2` (MariaDB
+compiled to WebAssembly) from the npm registry, and
+`scripts/dev-db/mariadb-sandbox-bridge.mjs` exposes it as a loopback MySQL
+wire endpoint so the backend connects **unmodified** through its normal `mysql2`
+pool. Bridge fidelity: **9/9 checks pass**. Chromium 153 also installs, so the
+Playwright blocker is likewise removable.
+
+## Verified: migrations 001–044 install cleanly
+
+Fresh installation into an empty database, using the project's own
+`runMigrations`:
+
+```
+applied=44  pending=0  mismatches=0  unknownApplied=0  tables=88
+ledger rows: 44; first=001 last=044
+```
+
+This satisfies the fresh-install leg of directive §13. The upgrade leg and the
+rollback leg are **not** verified.
+
+## FINDING FA-03 — One test destroys the shared database and 87 failures are collateral
+
+`backend/test/mariadb-migration-gate.test.js` calls
+`loadDisposableMariaDb(process.env, { destructive: true })` and `resetSchema()`,
+which drops **every** table in the target schema. Its `t.after` hook only closes
+the pool — **it never restores the schema**.
+
+`backend/scripts/run-tests-with-annotations.js` points all 199 files at the same
+`airesume_test` database with `MARIADB_TEST_ALLOW_RESET=true`. So the gate test
+wipes the schema that every alphabetically-later file depends on.
+
+Measured, same code, same database, only that one file differing:
+
+| Run | Tests | Pass | Fail | Skipped | DB after |
+|---|---:|---:|---:|---:|---|
+| Full suite, clean DB | 1,770 | 1,677 | **93** | 0 | **39 tables / 1 migration** |
+| Same suite, gate excluded | 1,818 | 1,812 | **6** | 0 | 88 tables / 44 migrations |
+
+**87 of the 93 failures were collateral damage.** The database is left at
+39 tables with only migration 001 recorded, and `users` is missing — so
+subsequent files fail with `ER_NO_SUCH_TABLE` on tables that were there before
+the run.
+
+Two consequences that matter beyond this sandbox:
+
+1. **`npm test` is not idempotent.** Consecutive runs from the same starting
+   state gave 101 and then 93 failures, because the first run degrades the
+   database the second run inherits. A "green" result therefore depends on what
+   ran before it.
+2. **A passing run does not prove the suite is green** — it may only prove the
+   destructive file ran last, or that the schema happened to survive.
+
+On the WASM engine the drop-then-recreate leaves the schema inconsistent
+(`CREATE TABLE IF NOT EXISTS` records 001 as applied while `users` does not
+exist), which is an engine-fidelity limit; on native MariaDB the same test
+presumably restores the schema correctly. But the **absence of any restore in
+`t.after`** is a genuine test-isolation defect on any engine: a destructive test
+that shares a database with 198 others must put the schema back.
+
+## The genuine residual defect population
+
+With a clean migrated database and the destructive file excluded, **6 failures**
+remain out of 1,818 tests. These — not the 93 — are the real audit population:
+
+| Test | Location | Symptom |
+|---|---|---|
+| every migrated application table has exactly one declared MariaDB domain owner | `database-ownership-completeness.test.js:21` | deep-equal mismatch, extra entries |
+| POST /api/admin/users/:uid/status accepts status payload for admin | `mandate9b-contracts.test.js:116` | **502** |
+| PATCH /api/admin/users/:uid handles body.status normalization | `mandate9b-contracts.test.js:124` | **500** |
+| Admin can create, fetch, update, and delete a blog post via /api/blog/posts | `mandate9b-contracts.test.js:172` | **400 !== 200** |
+
+These are open and untriaged. They are the correct starting point for the next
+phase, and they are reachable only because the destructive file no longer masks
+them.
+
+## Corrections landed in this addendum
+
+Two further failures that survived with no database present were closed
+(commit `7112efa9`):
+
+* `portfolio-public-projection.test.js` asserted a hardcoded 8-field public
+  allowlist; the canonical `PUBLIC_PORTFOLIO_FIELDS` and
+  `MySQLRepository._publicPortfolioProjection` both expose 9. Verified
+  intentional and not information disclosure — the value is
+  `Boolean(parsed.password_hash)`, and `password_hash` sits on
+  `FORBIDDEN_PUBLIC_FIELDS`. The assertion now binds to the exported canonical
+  list so it cannot drift again.
+* `ip-filter-jail-integration.test.js` called `issueLocalTestToken` without
+  setting `TEST_AUTH_HMAC_SECRET`, so `crypto.createHmac` received `undefined`
+  and all 12 tests died with a `TypeError`. Proven by A/B: supplying the secret
+  removed every `TypeError` and left only `ECONNREFUSED`. Now self-provisioned
+  before the requires, matching the existing convention in
+  `favourites-candidate-api.test.js` and the dir008 suites. Note that
+  `TEST_AUTH_HMAC_SECRET` is documented in the runbooks but is **absent from
+  `.env.example`** — recorded as an open documentation gap.
+
+## Infrastructure answer
+
+Neither provisioning option offered is available, and both were tested rather
+than assumed:
+
+* **Docker:** `docker`, `podman`, `nerdctl` and `docker-compose` are all absent;
+  `/var/run/docker.sock` does not exist.
+* **External connection string:** raw TCP to a non-allowlisted host *connects*
+  but returns **zero bytes** (`example.com:80`, `example.com:3306`, `1.1.1.1:53`
+  all `CONNECTED, received 0 bytes`), and TLS fails with `SSL_ERROR_SYSCALL`.
+  Egress is allowlisted to github.com, api.github.com, codeload.github.com,
+  registry.npmjs.org, pypi.org and files.pythonhosted.org. A remote MariaDB
+  would connect and then hang.
+
+The repository's own WASM bridge is the working path and needs no external
+authorization. Its documented limits must be carried into any evidence produced
+through it: the engine is **MariaDB 13.1.0-embedded, not 10.4/11.4**; it has a
+**single session**, so concurrency is stricter than InnoDB row locking and
+`ER_LOCK_WAIT_TIMEOUT` can occur where a real server would succeed; server-side
+prepared statements are rejected. Findings that depend on lock behaviour must be
+re-confirmed on native MariaDB.

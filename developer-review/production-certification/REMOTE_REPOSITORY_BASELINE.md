@@ -52,7 +52,33 @@ Every figure below is reproduced from a command whose raw output is stored in
 
 ---
 
-## 4. FINDING RB-01 — The reported commit history does not exist
+## 4. FINDING RB-01 — WITHDRAWN (was: "the reported commit history does not exist")
+
+> **CORRECTION, 2026-10-31.** This finding was **wrong** and is withdrawn. The
+> Engineering Lead correctly identified the cause: this sandbox was a **shallow
+> clone**. Verified: `git rev-parse --is-shallow-repository` returned `true` and
+> `.git/shallow` existed, so `025479b5` was a *grafted* root with no parents —
+> an artifact of the shallow fetch, not of the repository.
+>
+> After `git fetch --unshallow`:
+>
+> ```
+> $ git rev-list --count HEAD            → 1589
+> $ git rev-parse --is-shallow-repository → false
+> $ git cat-file -t 78bcdc1c … 529e51fd   → commit   (all ten resolve)
+> ```
+>
+> All eleven supplied SHAs exist, and `git log` reproduces the claimed ancestry
+> order exactly (`025479b5` → `529e51fd` → `fd717427` → `88f3b536` → `a2257135`
+> → `6ae9e5d9` → `e6c5a473` → `5677724a` → `29fb0756` → `dfda228d` → `78bcdc1c`).
+> **Forensic commit inspection (directive §3.3) is therefore fully executable**
+> and is not blocked. The methodological error was concluding "history absent"
+> from a grafted root without first checking `--is-shallow-repository`.
+
+The remainder of this section is retained only as the record of the retracted
+claim and its superseding evidence.
+
+### Original (incorrect) finding
 
 The handover supplies an 11-commit ancestry for forensic inspection:
 
@@ -140,7 +166,50 @@ verified** — see §7.
 
 ---
 
-## 6. FINDING RB-02 — The 620-test claim is not reproducible
+## 6. FINDING RB-02 — CORRECTED: 620 is the curated master suite, and it is reproducible
+
+> **CORRECTION, 2026-10-31.** This finding was **wrong as stated** and is
+> corrected. `backend/scripts/run-all-verified-tests.js` exists (3,252 bytes) and
+> is the curated master runner behind the 620 figure. It assembles
+> `developer-implemented/TESTS/unit/*.test.mjs` (18 files) plus an explicit list
+> of backend integration files (24 at revision `0d1a52fc`) — **42 files** — and
+> prints `Executing 42 test files with live MariaDB integration`.
+>
+> The methodological error: this runner is **not referenced by any
+> `package.json` script**, so auditing only `npm test` / `npm run test:*` missed
+> it. The 1,716 figure I reported is the raw TAP crawl of all 224 files produced
+> by `run-tests-with-annotations.js`, a different and much broader population.
+>
+> `0d1a52fc` added exactly one line to the curated list —
+> `backend/test/enterprise-team-lead-contract.test.js` — so 620 + 15 = **635** is
+> internally consistent with the 15 tests added in `03a52f57`.
+>
+> **Independently reproduced, 2026-10-31.** Once a live database was available
+> (see the addendum to `LOCAL_IMPLEMENTATION_FORENSIC_AUDIT.md`), the curated
+> runner returned:
+>
+> | Run | Tests | Pass | Fail | Skipped | Exit |
+> |---|---:|---:|---:|---:|---:|
+> | 1 (freshly reset DB) | 605 | 605 | 0 | 0 | 0 |
+> | 2 | **635** | **635** | 0 | 0 | 0 |
+> | 3 | 621 | 621 | 0 | 0 | 0 |
+>
+> **635/635 was reproduced exactly**, confirming 620 + the 15 tests added in
+> `03a52f57`. Zero failures with exit 0 was stable across all three runs.
+>
+> **Residual caveat, recorded not glossed:** the *count* is not deterministic —
+> 605, 635 and 621 from the same revision — because data-driven subtests depend
+> on accumulated database state. Green is reproducible; the specific denominator
+> is a function of what the database already contains. A certification figure
+> quoted as a fixed count will drift.
+>
+> Two environment prerequisites were required and are easy to miss: the
+> `frontend` workspace's dependencies must be installed (eight
+> `mandate11*.test.mjs` files import `frontend/src/lib/billing-invoices.ts`,
+> which imports `dompurify`; without them the files crash at load with
+> `ERR_MODULE_NOT_FOUND`), and `TEST_AUTH_HMAC_SECRET` must be set.
+
+### Superseded measurement (raw TAP crawl, not the curated suite)
 
 The handover reports *"Test cases: 620, Passed: 620, Failed: 0, Skipped: 0"*.
 

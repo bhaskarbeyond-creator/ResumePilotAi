@@ -1,0 +1,46 @@
+# Machine-generated evidence — live MariaDB (WASM bridge) runs
+# generated: 2026-10-31T05:35:06Z
+# revision: 7112efa9869d0c1b11fe22093f709294a3aec9a7
+# engine: MariaDB 13.1.0-MariaDB-embedded (WASM, lite4mariadb 0.1.2) via scripts/dev-db/mariadb-sandbox-bridge.mjs
+
+## bridge fidelity (node --test scripts/dev-db/bridge-fidelity.test.mjs)
+# tests 9 / # pass 9 / # fail 0
+
+## fresh-install migration (runMigrations into empty airesume_test)
+applied=44 pending=0 mismatches=0 unknownApplied=0 tables=88
+
+## FULL backend suite vs live DB, clean 88/44 start
+# tests 1770
+# pass 1677
+# fail 93
+# cancelled 0
+# skipped 0
+DB state after run: tables=39 migrations=1   <-- destructive gate test
+
+## SAME suite with mariadb-migration-gate.test.js EXCLUDED, clean start
+# tests 1818
+# pass 1812
+# fail 6
+# cancelled 0
+# skipped 0
+DB state after run: tables=88 migrations=44
+
+## curated master runner (backend/scripts/run-all-verified-tests.js) in this sandbox
+Executing 42 test files with live MariaDB integration (airesume_test)...
+# tests 320
+# pass 218
+# fail 89
+# cancelled 0
+# skipped 13
+
+## curated master runner vs LIVE DB — three consecutive runs
+run 1: # tests 605 # pass 605 # fail 0 # skipped 0 | exit=0
+run 2: # tests 635 # pass 635 # fail 0 # skipped 0 | exit=0
+run 3: # tests 621 # pass 621 # fail 0 # skipped 0 | exit=0
+
+NOTE: pass/fail is stable at zero failures with exit 0 across all three runs,
+but the test COUNT varies (605 -> 635 -> 621) because data-driven subtests depend
+on accumulated database state. 635 was reproduced exactly on run 2.
+
+## enterprise suite vs LIVE DB
+# tests 187 / # pass 187 / # fail 0 / # skipped 0
