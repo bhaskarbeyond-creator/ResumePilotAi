@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const MySQLRepository = require('../repositories/MySQLRepository');
+const { PUBLIC_PORTFOLIO_FIELDS, FORBIDDEN_PUBLIC_FIELDS } = require('../services/publicPortfolio');
 
 function publishedRow(overrides = {}) {
   return {
@@ -47,9 +48,16 @@ test('anonymous portfolio detail is an explicit public allowlist', async () => {
   });
 
   const portfolio = await repository.getPublishedPortfolioBySlug('public-work-deadbeef');
-  assert.deepEqual(Object.keys(portfolio).sort(), [
-    'data', 'id', 'isPublished', 'metadata', 'publishedAt', 'slug', 'theme', 'title',
-  ]);
+  // Bind to the authoritative allowlist in services/publicPortfolio.js rather than
+  // a duplicated literal, so the repository projection cannot drift from the
+  // canonical public DTO without failing here. `isPasswordProtected` joined the
+  // allowlist with the FP-C10 password-protection work: it is Boolean(password_hash),
+  // which the public UI needs to decide whether to prompt, and it is not a secret.
+  assert.deepEqual(Object.keys(portfolio).sort(), [...PUBLIC_PORTFOLIO_FIELDS].sort());
+  assert.equal(typeof portfolio.isPasswordProtected, 'boolean');
+  // The hash itself is on the forbidden list and must never cross the boundary.
+  assert.ok(FORBIDDEN_PUBLIC_FIELDS.includes('password_hash'), 'password_hash must stay forbidden');
+  assert.equal(portfolio.password_hash, undefined);
   assert.equal(portfolio.userId, undefined);
   assert.equal(portfolio.revision, undefined);
   assert.equal(portfolio.createdAt, undefined);

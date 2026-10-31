@@ -20,6 +20,13 @@ process.env.RUN_MARIADB_INTEGRATION = 'true';
 process.env.MARIADB_TEST_ALLOW_RESET = 'true';
 process.env.SESSION_REVOCATION_IN_TEST = 'true';
 process.env.DB_NAME = process.env.DB_NAME || 'airesume_test';
+// The repository's own non-production verifier (security/auth.js) signs the
+// `rptest.` tokens this suite issues. Without it `issueLocalTestToken` calls
+// createHmac with an undefined key and every test dies on a TypeError instead of
+// exercising the JTI/IP-jail behaviour. Set before the requires below, because
+// `testVerifierEnabled` reads it at module load. Same convention as
+// favourites-candidate-api.test.js and the dir008 suites.
+process.env.TEST_AUTH_HMAC_SECRET = process.env.TEST_AUTH_HMAC_SECRET || 'ip-filter-jail-test-secret-0123456789';
 
 const { getPool } = require('../database/mysql');
 const ipAccessService = require('../services/ipAccessService');
