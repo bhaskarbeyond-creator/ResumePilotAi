@@ -372,7 +372,7 @@ test.describe('Resume Builder (account A)', () => {
     } else {
       expect(response.status()).toBe(200);
       if (body.skills && body.skills.length > 0) {
-        await expect(page.getByText(/Recommended Skills for/)).toBeVisible();
+        await expect(page.getByText(/(Recommended Skills|Skill Recommendations) for/)).toBeVisible();
       }
     }
   });
