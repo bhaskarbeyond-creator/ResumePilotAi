@@ -19,6 +19,8 @@ const itemClass = 'gap-2 px-2.5 py-2 text-sm text-ink focus:bg-neutral-100 focus
 interface TrackerEntryProps {
   job: TrackedJob;
   moving: boolean;
+  selected?: boolean;
+  onToggleSelect?: (job: TrackedJob) => void;
   onMove: (job: TrackedJob, status: TrackerStatus, via?: 'stage' | 'advance') => void;
   onEdit: (job: TrackedJob, focus?: 'interview') => void;
   onDelete: (job: TrackedJob) => void;
@@ -27,7 +29,7 @@ interface TrackerEntryProps {
   onDragEnd?: () => void;
   dragging?: boolean;
 }
-export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportInterview, onDragStart, onDragEnd, dragging }: TrackerEntryProps) {
+export function TrackerEntry({ job, moving, selected, onToggleSelect, onMove, onEdit, onDelete, onExportInterview, onDragStart, onDragEnd, dragging }: TrackerEntryProps) {
   const titleId = `tracker-job-${job.id}-title`;
   const progress = progressDate(job), deadline = deadlineInfo(job), interview = interviewInfo(job);
   const calendar = interviewCalendarFile(job);
@@ -37,8 +39,20 @@ export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportIn
   const name = `${job.title} at ${job.company}`;
   return (
     <article aria-labelledby={titleId} data-tracker-id={job.id} data-stage={job.status}
-      className={cn('min-w-0 rounded-xl border border-border bg-surface p-4 shadow-xs', dragging && 'opacity-60 ring-2 ring-brand-500')}>
+      draggable={!moving}
+      onDragStart={(event) => onDragStart?.(job, event)}
+      onDragEnd={onDragEnd}
+      className={cn('min-w-0 rounded-xl border border-border bg-surface p-4 shadow-xs transition-colors', dragging && 'opacity-60 ring-2 ring-brand-500', selected && 'ring-2 ring-brand-600 bg-brand-50/20')}>
       <div className="flex items-start gap-2">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={!!selected}
+            onChange={() => onToggleSelect(job)}
+            aria-label={`Select ${name}`}
+            className="mt-1 size-4 rounded border-border text-brand-600 focus:ring-brand-500 cursor-pointer"
+          />
+        )}
         {onDragStart && <button type="button" id={dragHandleId(job)} draggable={!moving} disabled={moving}
           aria-label={`Drag ${name} to another stage; or use the Stage selector`} title="Drag to another stage. Keyboard: use Stage or Advance."
           onDragStart={(event) => onDragStart(job, event)} onDragEnd={onDragEnd}
@@ -58,7 +72,7 @@ export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportIn
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuItem className={itemClass} onSelect={() => onEdit(job)}><Pencil aria-hidden="true" /> Edit details</DropdownMenuItem>
             <DropdownMenuItem className={itemClass} onSelect={() => onEdit(job, 'interview')}><CalendarClock aria-hidden="true" /> {job.interviewAt ? 'Change interview' : 'Schedule interview'}</DropdownMenuItem>
-            <DropdownMenuItem className={itemClass} disabled={!calendar} onSelect={() => onExportInterview(job)}><Download aria-hidden="true" /> Download calendar (.ics)</DropdownMenuItem>
+            <DropdownMenuItem className={itemClass} disabled={!calendar} onSelect={() => onExportInterview(job)}><Download aria-hidden="true" /> Add interview to calendar (.ics)</DropdownMenuItem>
             <DropdownMenuItem className={itemClass} asChild><Link to={coverLetterHref(job)}>Write a cover letter</Link></DropdownMenuItem>
             {job.url && <DropdownMenuItem className={itemClass} asChild><a href={job.url} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" /> Open job posting<span className="sr-only"> (opens in a new tab)</span></a></DropdownMenuItem>}
             <DropdownMenuSeparator className="my-1 h-px bg-border" />
@@ -77,7 +91,7 @@ export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportIn
       {interview && <div className="mt-3 rounded-lg border border-warning-100 bg-warning-50 px-3 py-2 text-xs text-warning-700">
         <p className="flex flex-wrap items-center gap-1.5 font-medium"><CalendarClock className="size-3.5 shrink-0" aria-hidden="true" />Interview{interview.upcoming && <span className="rounded-full bg-warning-100 px-1.5 py-0.5 text-[11px] font-semibold">Upcoming</span>}</p>
         <p className="mt-1 break-words">{interviewKind && <span>{interviewKind} · </span>}<time dateTime={interview.dateTime}>{interview.label}</time></p>
-        {job.interviewLink && <a href={job.interviewLink} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-medium text-brand-700 underline-offset-4 hover:underline"><Video className="size-3.5" aria-hidden="true" />Join meeting<span className="sr-only"> for {name} (opens in a new tab)</span></a>}
+        {job.interviewLink && <a href={job.interviewLink} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-medium text-brand-700 underline-offset-4 hover:underline"><Video className="size-3.5" aria-hidden="true" />Join the meeting<span className="sr-only"> for {name} (opens in a new tab)</span></a>}
         <Button type="button" variant="outline" size="xs" className="mt-2" disabled={!calendar || moving} onClick={() => onExportInterview(job)} aria-label={`Download interview calendar for ${name}`}><Download aria-hidden="true" /> Calendar (.ics)</Button>
       </div>}
       {(job.contactPerson || job.contactEmail) && <p className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-ink-secondary">
@@ -93,11 +107,11 @@ export function TrackerEntry({ job, moving, onMove, onEdit, onDelete, onExportIn
           className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 text-xs text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500 disabled:cursor-wait">
           {TRACKER_STAGES.map((stage) => <option key={stage.id} value={stage.id}>{stage.label}</option>)}
         </select>
-        <Button id={advanceButtonId(job)} type="button" variant="outline" size="sm" className="shrink-0"
+        <Button id={advanceButtonId(job)} type="button" variant="outline" size="icon-sm" className="shrink-0"
           disabled={moving || !next} onClick={() => { if (next) onMove(job, next, 'advance'); }}
-          aria-label={next ? `Advance ${name} to ${stageLabel(next)}` : `No next stage for ${name}`}
-          title={next ? `Advance to ${stageLabel(next)}` : 'Terminal stage: use Stage to make an explicit change'}>
-          <ArrowRight aria-hidden="true" /> Advance
+          aria-label={next ? `Move to ${stageLabel(next)}: ${name}` : `No next stage for ${name}`}
+          title={next ? `Move to ${stageLabel(next)}` : 'Terminal stage: use Stage to make an explicit change'}>
+          <ArrowRight aria-hidden="true" />
         </Button>
       </div>
     </article>

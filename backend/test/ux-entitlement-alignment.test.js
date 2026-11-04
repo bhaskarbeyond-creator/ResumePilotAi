@@ -65,19 +65,20 @@ test('UX-Entitlement Alignment: Zero Customer-Facing AI Provider Leakage', async
 });
 
 test('UX-Entitlement Alignment: Accurate Feature Copy (No Fake "Unlimited" Claims)', async () => {
-  const plansPath = path.resolve(__dirname, '../../src/components/Billing/Plans/Plans.jsx');
-  const modalPath = path.resolve(__dirname, '../../src/components/Dashboard/DashboardSettings/SubscriptionModal.jsx');
+  const fs = require('fs');
+  const path = require('path');
+  const { PRO_UNLOCKED_FEATURES, PLANS_FEATURES } = require('../../shared/utils/planEntitlements.js');
 
-  const plansContent = fs.readFileSync(plansPath, 'utf8');
-  const modalContent = fs.readFileSync(modalPath, 'utf8');
+  const plansText = PLANS_FEATURES.join(' ');
+  const modalText = PRO_UNLOCKED_FEATURES.join(' ');
 
   // Must not claim "Unlimited AI Resume Builds & Downloads" in PRO_UNLOCKED_FEATURES
-  assert.ok(!plansContent.includes('Unlimited AI Resume Builds & Downloads'), 'Plans.jsx must not claim unlimited AI');
-  assert.ok(!modalContent.includes('Unlimited AI Resume Builds & Downloads'), 'SubscriptionModal.jsx must not claim unlimited AI');
+  assert.ok(!plansText.includes('Unlimited AI Resume Builds & Downloads'), 'PLANS_FEATURES must not claim unlimited AI');
+  assert.ok(!modalText.includes('Unlimited AI Resume Builds & Downloads'), 'PRO_UNLOCKED_FEATURES must not claim unlimited AI');
 
   // Must specify the actual daily limit (100 ops/day)
-  assert.ok(plansContent.includes('100 ops/day'), 'Plans.jsx features must document 100 ops/day quota');
-  assert.ok(modalContent.includes('100 ops/day'), 'SubscriptionModal.jsx features must document 100 ops/day quota');
+  assert.ok(plansText.includes('100 ops/day'), 'PLANS_FEATURES features must document 100 ops/day quota');
+  assert.ok(modalText.includes('100 ops/day'), 'PRO_UNLOCKED_FEATURES features must document 100 ops/day quota');
 });
 
 test('UX-Entitlement Alignment: Multi-Currency Pricing Dynamic Mapping', async () => {

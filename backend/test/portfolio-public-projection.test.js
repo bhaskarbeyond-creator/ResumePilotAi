@@ -48,7 +48,7 @@ test('anonymous portfolio detail is an explicit public allowlist', async () => {
 
   const portfolio = await repository.getPublishedPortfolioBySlug('public-work-deadbeef');
   assert.deepEqual(Object.keys(portfolio).sort(), [
-    'data', 'id', 'isPublished', 'metadata', 'publishedAt', 'slug', 'theme', 'title',
+    'data', 'id', 'isPasswordProtected', 'isPublished', 'metadata', 'publishedAt', 'slug', 'theme', 'title',
   ]);
   assert.equal(portfolio.userId, undefined);
   assert.equal(portfolio.revision, undefined);

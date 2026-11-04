@@ -30,7 +30,7 @@ function setPortfolioModule(enabled: boolean) {
       DB_PORT: process.env.E2E_DB_PORT || '3306',
       DB_USER: process.env.E2E_DB_USER || 'root',
       DB_PASSWORD: process.env.E2E_DB_PASSWORD || '',
-      DB_NAME: process.env.E2E_DB_NAME || 'ime365_sandbox',
+      DB_NAME: process.env.E2E_DB_NAME || process.env.DB_NAME || 'ai_resume_builder',
     },
     stdio: 'pipe',
   });
@@ -227,6 +227,7 @@ test.describe('Portfolios — module turned on', () => {
     const seeded = await seedPortfolio(request, 'a', 'Avery Tester — QA');
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto(`/dashboard/portfolio/${seeded.id}`);
+    const baseUrl = new URL(page.url()).origin;
     const publish = page.getByRole('button', { name: 'Publish', exact: true });
     await publish.click();
     const dialog = page.getByRole('dialog', { name: 'Publish your portfolio' });
@@ -234,13 +235,13 @@ test.describe('Portfolios — module turned on', () => {
     await expect(address).toBeFocused();
     await expect(address).toHaveValue('avery-tester');
     const slug = expectedSlug('avery-tester', seeded.id);
-    await expect(dialog.getByText(`Available: http://127.0.0.1:4000/portfolio/${slug}`)).toBeVisible();
+    await expect(dialog.getByText(`Available: ${baseUrl}/portfolio/${slug}`)).toBeVisible();
     await expectNoAxeViolations(page, '[role="dialog"]');
     await address.fill('ab');
     await expect(dialog.getByText('Use at least 3 letters or numbers.')).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Publish' })).toBeDisabled();
     await address.fill('Avery Tester');
-    await expect(dialog.getByText(`Available: http://127.0.0.1:4000/portfolio/${slug}`)).toBeVisible();
+    await expect(dialog.getByText(`Available: ${baseUrl}/portfolio/${slug}`)).toBeVisible();
     const published = page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === `/api/portfolios/${seeded.id}`);
     await dialog.getByRole('button', { name: 'Publish' }).click();
     expect((await published).status()).toBe(200);
@@ -248,7 +249,7 @@ test.describe('Portfolios — module turned on', () => {
     const unpublish = page.getByRole('button', { name: 'Unpublish' });
     await expect(unpublish).toBeFocused();
     await expect(page.getByText('Published', { exact: true })).toBeVisible();
-    const publicUrl = `http://127.0.0.1:4000/portfolio/${slug}`;
+    const publicUrl = `${baseUrl}/portfolio/${slug}`;
     await expect(main(page).getByRole('link', { name: new RegExp(publicUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toBeVisible();
     await page.getByRole('button', { name: 'Copy link' }).click();
     await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
@@ -256,7 +257,7 @@ test.describe('Portfolios — module turned on', () => {
     expect((await storedPortfolio(request, 'a', seeded.id)).body).toMatchObject({ isPublished: true, slug });
 
     // A visitor without an account sees the published page; owner fields never cross the boundary.
-    const visitor = await browser.newContext({ baseURL: 'http://127.0.0.1:4000' });
+    const visitor = await browser.newContext({ baseURL: baseUrl });
     const visitorPage = await visitor.newPage();
     await visitorPage.goto(`/portfolio/${slug}`);
     await expect(visitorPage.getByRole('heading', { level: 1, name: 'Avery Tester' })).toBeVisible();
@@ -265,7 +266,7 @@ test.describe('Portfolios — module turned on', () => {
     await expectNoHorizontalOverflow(visitorPage);
     await expectNoAxeViolations(visitorPage);
     const publicBody = (await (await request.get(`/api/portfolios/public/${slug}`)).json()) as { portfolio: Record<string, unknown> };
-    expect(Object.keys(publicBody.portfolio).sort()).toEqual(['data', 'id', 'isPublished', 'metadata', 'publishedAt', 'slug', 'theme', 'title']);
+    expect(Object.keys(publicBody.portfolio).sort()).toEqual(['data', 'id', 'isPasswordProtected', 'isPublished', 'metadata', 'publishedAt', 'slug', 'theme', 'title']);
 
     // The gallery lists it; search lives in the URL and survives reload.
     await visitorPage.goto('/portfolios');
@@ -299,7 +300,7 @@ test.describe('Portfolios — module turned on', () => {
     // that already viewed the page may keep a copy for a few minutes (the dialog says so).
     // Uncached observers see the change at once.
     expect((await request.get(`/api/portfolios/public/${slug}`)).status()).toBe(404);
-    const freshVisitor = await browser.newContext({ baseURL: 'http://127.0.0.1:4000' });
+    const freshVisitor = await browser.newContext({ baseURL: baseUrl });
     const freshPage = await freshVisitor.newPage();
     await freshPage.goto(`/portfolio/${slug}`);
     await expect(freshPage.getByRole('heading', { level: 1, name: 'Portfolio not found' })).toBeVisible();
@@ -312,7 +313,7 @@ test.describe('Portfolios — module turned on', () => {
     await again.getByRole('button', { name: 'Publish' }).click();
     await expect(page.getByText('Published', { exact: true })).toBeVisible();
     expect((await request.get(`/api/portfolios/public/${slug}`)).status()).toBe(200);
-    const returning = await browser.newContext({ baseURL: 'http://127.0.0.1:4000' });
+    const returning = await browser.newContext({ baseURL: baseUrl });
     const returningPage = await returning.newPage();
     await returningPage.goto(`/portfolio/${slug}`);
     await expect(returningPage.getByRole('heading', { level: 1, name: 'Avery Tester' })).toBeVisible();
@@ -354,7 +355,7 @@ test.describe('Portfolios — module turned on', () => {
     expect((await request.get('/api/portfolios')).status()).toBe(401);
     expect((await storedPortfolio(request, 'a', seeded.id)).body?.title).toBe('Delete check');
 
-    const other = await browser.newContext({ baseURL: 'http://127.0.0.1:4000', storageState: 'test-results/.auth/candidate-b.json' });
+    const other = await browser.newContext({ baseURL: process.env.E2E_BASE_URL || 'https://ime365.local', storageState: 'test-results/.auth/candidate-b.json' });
     const otherPage = await other.newPage();
     await otherPage.goto(`/dashboard/portfolio/${seeded.id}`);
     await expect(otherPage.getByRole('heading', { level: 1, name: 'Portfolio not found' })).toBeVisible();
@@ -448,6 +449,7 @@ test.describe('Portfolios — module turned on', () => {
     });
     expect(seeded.status()).toBe(201);
     await page.goto(`/dashboard/portfolio/${id}`);
+    const baseUrl = new URL(page.url()).origin;
     await expect(page.getByText('Built with the earlier page editor', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Preview' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
@@ -455,13 +457,13 @@ test.describe('Portfolios — module turned on', () => {
     const dialog = page.getByRole('dialog', { name: 'Publish your portfolio' });
     await dialog.getByLabel('Address').fill('earlier-blocks');
     const slug = expectedSlug('earlier-blocks', id);
-    await expect(dialog.getByText(`Available: http://127.0.0.1:4000/portfolio/${slug}`)).toBeVisible();
+    await expect(dialog.getByText(`Available: ${baseUrl}/portfolio/${slug}`)).toBeVisible();
     await dialog.getByRole('button', { name: 'Publish' }).click();
     await expect(page.getByText('Published', { exact: true })).toBeVisible();
     const { body } = await storedPortfolio(request, 'a', id);
     expect(body).toMatchObject({ isPublished: true, slug, renderer: 'puck', title: 'Earlier editor page' });
     expect((body as unknown as { content: unknown[] }).content).toEqual(blocks);
-    const visitor = await browser.newContext({ baseURL: 'http://127.0.0.1:4000' });
+    const visitor = await browser.newContext({ baseURL: baseUrl });
     const visitorPage = await visitor.newPage();
     await visitorPage.goto(`/portfolio/${slug}`);
     await expect(visitorPage.getByRole('heading', { level: 1, name: 'Earlier editor page' })).toBeVisible();

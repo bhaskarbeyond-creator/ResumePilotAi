@@ -22,12 +22,14 @@ const router = express.Router();
 
 async function resolvePublicPortfolioWithProtection(req, slug) {
   const repo = req.repository || getRepository();
-  const pool = repo?._getPool ? repo._getPool() : getRepository()._getPool();
+  const pool = typeof repo?._getPool === 'function'
+    ? repo._getPool()
+    : (typeof getRepository()._getPool === 'function' ? getRepository()._getPool() : null);
 
   const portfolio = await getPublicPortfolio({ repository: repo, slug });
   if (!portfolio) return { notFound: true };
 
-  const protection = await checkPortfolioProtection(pool, slug);
+  const protection = pool ? await checkPortfolioProtection(pool, slug) : { isPasswordProtected: false };
   const isProtected = Boolean(protection?.isPasswordProtected);
 
   if (!isProtected) {

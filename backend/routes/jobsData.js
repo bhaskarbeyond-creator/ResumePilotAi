@@ -271,56 +271,13 @@ router.delete('/tracker/:id', requireCandidate, async (req, res) => {
     } catch (error) { return replyTrackerError(res, error); }
 });
 
-// GET /api/jobs-data/:id - Owners may inspect their own non-active records;
-// every other caller receives only a currently active, non-tombstoned record.
-router.get('/:id', async (req, res) => {
-    try {
-        const job = await req.repository.getJob(req.params.id);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-        const ownerId = String(job.employerId || job.employer_id || '');
-        const ownsJob = Boolean(req.user?.uid && ownerId === String(req.user.uid));
-        if (!ownsJob && !isPubliclyVisibleJob(job)) {
-            return res.status(404).json({ success: false, error: 'Job not found' });
-        }
-        return res.json({ success: true, job });
-    } catch (_err) {
-        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
-    }
-});
-
-// POST /api/jobs-data/:id - Save job without permitting primary-key takeover.
-router.post('/:id', async (req, res) => {
-    try {
-        const existing = await req.repository.getJob(req.params.id);
-        const existingOwner = String(existing?.employerId || existing?.employer_id || '');
-        if (existing && existingOwner !== String(req.user.uid)) {
-            return res.status(404).json({ success: false, error: 'Job not found' });
-        }
-        const jobData = { ...req.body, employerId: req.user.uid, employer_id: req.user.uid };
-        const saved = await req.repository.saveJob(req.params.id, jobData);
-        return res.json({ success: true, job: saved });
-    } catch (error) {
-        if (error?.status === 404 || error?.code === 'JOB_NOT_FOUND') {
-            return res.status(404).json({ success: false, error: 'Job not found' });
-        }
-        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
-    }
-});
-
-// DELETE /api/jobs-data/:id - Delete job (owner-scoped in both route and SQL).
-router.delete('/:id', async (req, res) => {
-    try {
-        const job = await req.repository.getJob(req.params.id);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-        if (String(job.employerId || job.employer_id || '') !== String(req.user.uid)) {
-            return res.status(404).json({ success: false, error: 'Job not found' });
-        }
-        const deleted = await req.repository.deleteJob(req.params.id, req.user.uid);
-        if (!deleted) return res.status(404).json({ success: false, error: 'Job not found' });
-        return res.json({ success: true });
-    } catch (_err) {
-        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
-    }
+// POST /api/jobs/naukri - Dedicated endpoint for Naukri ingestion (deliberately unconfigured in local demo).
+router.post('/naukri', async (_req, res) => {
+    return res.status(501).json({
+        success: false,
+        code: 'SCRAPER_NOT_CONFIGURED',
+        error: 'Naukri ingestion is not configured. No demo or fabricated listings are returned.',
+    });
 });
 
 // ——— Submitted applications: the applicant's side (P002 C14) ———
@@ -722,6 +679,60 @@ router.delete('/applications/:id', requireCandidate, async (req, res) => {
         return res.json({ success: true });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to delete application' });
+    }
+});
+
+// ——— Parameterized Fallback Routes (Registered after all static paths to prevent shadowing) ———
+
+// GET /api/jobs-data/:id - Owners may inspect their own non-active records;
+// every other caller receives only a currently active, non-tombstoned record.
+router.get('/:id', async (req, res) => {
+    try {
+        const job = await req.repository.getJob(req.params.id);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+        const ownerId = String(job.employerId || job.employer_id || '');
+        const ownsJob = Boolean(req.user?.uid && ownerId === String(req.user.uid));
+        if (!ownsJob && !isPubliclyVisibleJob(job)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        return res.json({ success: true, job });
+    } catch (_err) {
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
+    }
+});
+
+// POST /api/jobs-data/:id - Save job without permitting primary-key takeover.
+router.post('/:id', async (req, res) => {
+    try {
+        const existing = await req.repository.getJob(req.params.id);
+        const existingOwner = String(existing?.employerId || existing?.employer_id || '');
+        if (existing && existingOwner !== String(req.user.uid)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        const jobData = { ...req.body, employerId: req.user.uid, employer_id: req.user.uid };
+        const saved = await req.repository.saveJob(req.params.id, jobData);
+        return res.json({ success: true, job: saved });
+    } catch (error) {
+        if (error?.status === 404 || error?.code === 'JOB_NOT_FOUND') {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
+    }
+});
+
+// DELETE /api/jobs-data/:id - Delete job (owner-scoped in both route and SQL).
+router.delete('/:id', async (req, res) => {
+    try {
+        const job = await req.repository.getJob(req.params.id);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+        if (String(job.employerId || job.employer_id || '') !== String(req.user.uid)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        const deleted = await req.repository.deleteJob(req.params.id, req.user.uid);
+        if (!deleted) return res.status(404).json({ success: false, error: 'Job not found' });
+        return res.json({ success: true });
+    } catch (_err) {
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
     }
 });
 

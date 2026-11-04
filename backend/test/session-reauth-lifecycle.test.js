@@ -3,12 +3,12 @@
 process.env.NODE_ENV = 'test';
 process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
 
-const test = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { getPool } = require('../database/mysql');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { isSafeInternalPath, loginPathWithNext } = require('../../src/utils/safeInternalPath');
+const { isSafeInternalPath, loginPathWithNext } = require('../../shared/utils/safeInternalPath');
 const app = require('../index');
 
 const pool = getPool();
@@ -248,5 +248,8 @@ test('Authentication, Token Lifecycle & Re-Authentication Architecture', async (
     assert.equal(res.status, 200);
     assert.equal(res.body.context.simulatedRole, null, 'Simulated role must be null for normal users');
     assert.deepEqual(res.body.context.roles, ['ENTERPRISE_MEMBER']);
+  });
+  after(async () => {
+    await pool.end().catch(() => {});
   });
 });

@@ -21,12 +21,13 @@ test('enterprise rollout uses a single canonical server feature-flag implementat
 
 test('enterprise configuration separates browser UX flag from server-only data-plane secret', () => {
   const env = read('.env.example');
-  const frontend = read('src/enterprise/EnterpriseContext.jsx');
+  const frontend = read('frontend/src/components/enterprise/EnterpriseContext.tsx');
+  const api = read('frontend/src/lib/enterprise-api.ts');
   assert.match(env, /^ENTERPRISE_TENANCY_ENABLED=false$/m);
   assert.match(env, /^VITE_ENTERPRISE_TENANCY_ENABLED=false$/m);
   assert.doesNotMatch(env, /^TENANT_DATABASE_URL=/m);
   assert.doesNotMatch(env, /^VITE_TENANT_DATABASE_URL=/m);
-  assert.match(frontend, /\/api\/enterprise\/status/);
+  assert.match(api, /\/api\/enterprise\/status/);
   assert.match(frontend, /serverDisabled/);
 });
 

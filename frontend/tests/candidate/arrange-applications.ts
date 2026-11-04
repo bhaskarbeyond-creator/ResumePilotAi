@@ -29,7 +29,7 @@ const dbEnv = {
   DB_PORT: process.env.E2E_DB_PORT || '3306',
   DB_USER: process.env.E2E_DB_USER || 'root',
   DB_PASSWORD: process.env.E2E_DB_PASSWORD || '',
-  DB_NAME: process.env.E2E_DB_NAME || 'ime365_sandbox',
+  DB_NAME: process.env.E2E_DB_NAME || process.env.DB_NAME || 'ai_resume_builder',
 };
 const arrangeScript = path.join(repoRoot, 'scripts', 'dev-db', 'arrange-messaging-job.mjs');
 const runArrange = (args: string[]) => execFileSync(process.execPath, [arrangeScript, ...args], { env: dbEnv, stdio: 'pipe' }).toString();

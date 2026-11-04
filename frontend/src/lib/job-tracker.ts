@@ -8,7 +8,7 @@ import { apiClient, del, normalizeError, patch, post } from '@/lib/api-client';
 
 export type TrackerStatus = 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected';
 export const TRACKER_STAGES: ReadonlyArray<{ id: TrackerStatus; label: string; hint: string }> = [
-  { id: 'wishlist', label: 'Saved', hint: 'Saved to apply later.' },
+  { id: 'wishlist', label: 'Wishlist', hint: 'Saved to apply later.' },
   { id: 'applied', label: 'Applied', hint: 'Sent and waiting for a reply.' },
   { id: 'interview', label: 'Interviewing', hint: 'Screens, interviews and tests.' },
   { id: 'offer', label: 'Offer', hint: 'Offers received.' },
@@ -67,7 +67,7 @@ export function nextStage(status: TrackerStatus): TrackerStatus | null {
 const text = (value: unknown): string => typeof value === 'string' ? value : value == null ? '' : String(value);
 const dateOnly = (value: unknown): string => /^(\d{4}-\d{2}-\d{2})/.exec(text(value).trim())?.[1] ?? '';
 function wallClock(value: unknown): string {
-  const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(text(value).trim());
+  const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::\d{2}(?:\.\d+)?Z?)?$/.exec(text(value).trim());
   return match ? `${match[1]}T${match[2]}` : '';
 }
 
@@ -92,7 +92,7 @@ function toTrackerError(error: unknown): TrackerError {
   if (failure.status === 404) return new TrackerError('This job is no longer in your tracker.', 'not-found');
   if (failure.status === 400 || failure.status === 422) return new TrackerError(failure.message || 'Check the highlighted details.', 'validation');
   if (failure.status === 401 || failure.status === 403) return new TrackerError('Your account cannot access this tracker. Sign in with the owning account and try again.', 'unavailable');
-  return new TrackerError('The job tracker could not be reached. Your saved data has not been replaced. Try again.', 'unavailable');
+  return new TrackerError('The job tracker could not be reached, so nothing was changed. Try again.', 'unavailable');
 }
 
 /** Reject malformed records instead of silently dropping them or guessing revision 1. */
@@ -163,7 +163,7 @@ export function validateTracker(fields: TrackerFields): TrackerErrors {
   }
   if (!isTrackerStage(value.status)) errors.status = 'Choose one of the five tracker stages.';
   for (const key of ['url', 'interviewLink'] as const) {
-    if (!errors[key] && value[key] && !isWebAddress(value[key])) errors[key] = 'Enter a complete http:// or https:// web address.';
+    if (!errors[key] && value[key] && !isWebAddress(value[key])) errors[key] = 'Enter a web address that starts with http:// or https://.';
   }
   if (!errors.contactEmail && value.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.contactEmail)) errors.contactEmail = 'Enter an email address like name@example.com.';
   for (const key of ['dateApplied', 'deadline'] as const) {
@@ -173,13 +173,6 @@ export function validateTracker(fields: TrackerFields): TrackerErrors {
   if (value.workMode && !(WORK_MODES as readonly string[]).includes(value.workMode)) errors.workMode = 'Choose Remote, Hybrid or On-site.';
   if (value.interviewRound && !(INTERVIEW_ROUNDS as readonly string[]).includes(value.interviewRound)) errors.interviewRound = 'Choose a round from the list.';
   if (value.interviewFormat && !(INTERVIEW_FORMATS as readonly string[]).includes(value.interviewFormat)) errors.interviewFormat = 'Choose a format from the list.';
-  // Entering Interviewing alone does not mean an interview has been scheduled.
-  // Once any scheduling detail is supplied, require a complete round/format/time.
-  if (value.interviewRound || value.interviewFormat || value.interviewAt || value.interviewLink) {
-    if (!value.interviewRound) errors.interviewRound = 'Choose the interview round.';
-    if (!value.interviewFormat) errors.interviewFormat = 'Choose the interview format.';
-    if (!value.interviewAt) errors.interviewAt = 'Enter the interview date and time.';
-  }
   return errors;
 }
 

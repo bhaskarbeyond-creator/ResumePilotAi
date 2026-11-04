@@ -50,6 +50,11 @@ const KIND_ID_MARKERS = [
   ['image', /^kolors$/],
   ['image', /^imagen\d*$/],
   ['image', /^photomaker(v\d+)?$/],
+  ['guard', /^guard$/],
+  ['guard', /^shieldgemma$/],
+  ['guard', /^moderation$/],
+  ['guard', /^reward$/],
+  ['rerank', /^rerank(er)?$/],
 ];
 
 const KIND_METADATA_KEYS = ['type', 'task', 'object', 'model_type', 'modelType'];
@@ -59,6 +64,8 @@ const KIND_METADATA_VALUES = [
   ['audio', /(text-?to-?speech|\btts\b|speech-?synthesis)/],
   ['video', /video/],
   ['image', /(text-?to-?image|image-?generation|diffusion)/],
+  ['guard', /(guard|moderation|safety|classifier)/],
+  ['rerank', /rerank/],
 ];
 
 function classifyModelKindFromId(id) {

@@ -143,7 +143,7 @@ test('A — real list envelope, skeleton, lifecycle filters, search, sort and re
 test('A — unknown and reviewing remain in All; empty criteria are explained', async ({ page }) => {
   await installApi(page, [], [application({ status: 'future_step' }), application({ id: 'app-2', status: 'reviewing' })]);
   await openApplications(page); await expect(page.getByRole('article').filter({ hasText: 'Unknown status' })).toHaveCount(1); await expect(page.getByRole('article').filter({ hasText: 'Reviewing' })).toHaveCount(1);
-  await page.getByLabel('Status', { exact: true }).selectOption('applied'); await expect(page.getByText('No applications match your current search and status criteria.')).toBeVisible();
+  await page.getByLabel('Status', { exact: true }).selectOption('applied'); await expect(page.getByText(/No applications match your (filters|current search and status criteria)\./)).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click(); await expect(page.getByRole('article')).toHaveCount(2);
 });
 
@@ -153,24 +153,24 @@ test('B — withdrawal requires confirmation, cancel restores focus, success rem
   const dialog = page.getByRole('dialog'); await expect(dialog).toContainText('Platform Engineer'); await expect(dialog).toContainText('cannot be undone');
   expect(api.calls.filter((call) => call.method === 'DELETE')).toHaveLength(0);
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden(); await expect(trigger).toBeFocused();
-  await trigger.click(); await dialog.getByRole('button', { name: 'Confirm withdrawal' }).click(); await expect(dialog.getByRole('button', { name: 'Withdrawing…' })).toBeDisabled();
+  await trigger.click(); await dialog.getByRole('button', { name: /Withdraw application|Confirm withdrawal/ }).click(); await expect(dialog.getByRole('button', { name: 'Withdrawing…' })).toBeDisabled();
   gate.resolve(); await expect(dialog).toBeHidden(); await expect(page.getByRole('heading', { name: 'Platform Engineer', exact: true })).toHaveCount(0); await expect(page.getByRole('heading', { name: 'Designer' })).toBeVisible();
   expect(api.calls.filter((call) => call.method === 'DELETE')).toHaveLength(1);
 });
 
 test('B — failed withdrawal preserves application and permits safe retry', async ({ page }) => {
   const api = await installApi(page, [], [application()], { failWithdraw: true }); await openApplications(page);
-  await page.getByRole('button', { name: /^Withdraw application for/ }).click(); await page.getByRole('button', { name: 'Confirm withdrawal' }).click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('could not be confirmed'); await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: /^Withdraw application for/ }).click(); await page.getByRole('button', { name: /Withdraw application|Confirm withdrawal/ }).click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/could not be confirmed|couldn’t be withdrawn/); await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Keep application' }).click(); await expect(page.getByRole('heading', { name: 'Platform Engineer' })).toBeVisible();
   expect(api.calls.filter((call) => call.method === 'DELETE')).toHaveLength(1);
 });
 
 test('C — Track Application maps real fields, coalesces repeated clicks and becomes Tracked', async ({ page }) => {
   const gate = deferred(); const api = await installApi(page, [], [application()], { mutationGate: gate.promise }); await openApplications(page);
-  const button = page.getByRole('button', { name: 'Track application: Platform Engineer at Acme' }); await button.click(); await expect(button).toBeDisabled();
+  const button = page.getByRole('button', { name: /(Add to Job Tracker|Track application): Platform Engineer at Acme/ }); await button.click(); await expect(button).toBeDisabled();
   await button.evaluate((element: HTMLButtonElement) => { element.click(); element.click(); }); gate.resolve();
-  await expect(page.getByRole('link', { name: 'Open in Job Tracker: Platform Engineer at Acme' })).toBeVisible(); await expect(page.getByText('Tracked · Applied')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open in Job Tracker: Platform Engineer at Acme' })).toBeVisible(); await expect(page.getByText(/Tracked (·|under) Applied/)).toBeVisible();
   expect(api.createCount).toBe(1); const body = api.calls.find((call) => call.method === 'POST')!.body!;
   expect(body).toMatchObject({ title: 'Platform Engineer', company: 'Acme', location: 'Vijayawada', dateApplied: '2026-10-20', status: 'applied' });
   expect(body).not.toHaveProperty('applicationId'); expect(body).not.toHaveProperty('jobId');
@@ -181,14 +181,14 @@ test('C — existing tracker and server duplicate conflict do not create another
   await expect(page.getByRole('link', { name: /^Open in Job Tracker/ })).toBeVisible(); expect(api.createCount).toBe(0);
   await page.goto('/dashboard/job-tracker'); await expect(card(page, 'tracker-1')).toBeVisible();
   const second = await installApi(page, [], [application()], { duplicateConflict: true });
-  await openApplications(page); await page.getByRole('button', { name: /^Track application:/ }).click();
+  await openApplications(page); await page.getByRole('button', { name: /^(Add to Job Tracker|Track application):/ }).click();
   await expect(page.getByRole('link', { name: /^Open in Job Tracker/ })).toBeVisible(); expect(second.createCount).toBe(0);
 });
 
 test('C — failed tracking keeps application and allows retry', async ({ page }) => {
   const api = await installApi(page, [], [application()], { failCreate: true }); await openApplications(page);
-  await page.getByRole('button', { name: /^Track application:/ }).click(); await expect(page.getByRole('alert')).toContainText('not confirmed as tracked');
-  await expect(page.getByRole('heading', { name: 'Platform Engineer' })).toBeVisible(); await expect(page.getByRole('button', { name: /^Track application:/ })).toBeEnabled(); expect(api.createCount).toBe(0);
+  await page.getByRole('button', { name: /^(Add to Job Tracker|Track application):/ }).click(); await expect(page.getByRole('alert')).toContainText(/wasn’t added to your Job Tracker|not confirmed as tracked/);
+  await expect(page.getByRole('heading', { name: 'Platform Engineer' })).toBeVisible(); await expect(page.getByRole('button', { name: /^(Add to Job Tracker|Track application):/ })).toBeEnabled(); expect(api.createCount).toBe(0);
 });
 
 test('D — five distinct columns, correct counts, empty states and filtering @responsive', async ({ page }) => {

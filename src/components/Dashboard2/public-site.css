@@ -1,6 +1,0 @@
-/*
- * Backward-compatible facade: the marketing stylesheet now lives at
- * src/components/Marketing/public-site.css. Retained so any legacy or cached
- * consumer importing 'Dashboard2/public-site.css' still resolves to the same rules.
- */
-@import '../Marketing/public-site.css';

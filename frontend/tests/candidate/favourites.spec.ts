@@ -504,7 +504,7 @@ test('works with the keyboard and has no axe violations, with and without a remo
   // Tab order follows the page: the filters, the search, then each item's controls.
   await page.getByRole('button', { name: 'All 5', exact: true }).focus();
   const order: string[] = [];
-  for (let step = 0; step < 6; step += 1) {
+  for (let step = 0; step < 8; step += 1) {
     await page.keyboard.press('Tab');
     order.push(await page.evaluate(() => {
       const element = document.activeElement as HTMLElement | null;
@@ -516,7 +516,9 @@ test('works with the keyboard and has no axe violations, with and without a remo
     'Documents 2',
     'Search saved items',
     `Remove ${nameOf(researcher)} from your saved items`,
+    `Apply to ${nameOf(researcher)}`,
     `Remove ${nameOf(engineer)} from your saved items`,
+    `Apply to ${nameOf(engineer)}`,
     `Remove ${nameOf(reliability)} from your saved items`,
   ]);
 

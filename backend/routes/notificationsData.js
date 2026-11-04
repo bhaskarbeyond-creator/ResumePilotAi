@@ -142,6 +142,46 @@ router.get('/', async (req, res) => {
     }
 });
 
+// POST /api/notifications-data/mark-all-read — mark every UNREAD notification
+// belonging to the CURRENT user as read (DIR-055 S3).
+//
+// Owner-scoped by construction: the UPDATE is constrained by `user_id = ?`, so
+// it can never touch another tenant's rows. Additive endpoint — it does not
+// alter the existing GET or PATCH contracts. Idempotent: a second call finds no
+// unread rows and reports 0 changed, which is the real number, not an estimate.
+router.post('/mark-all-read', async (req, res) => {
+    if (!req.user?.uid) return unauthorized(res);
+
+    let pool;
+    try {
+        pool = require('../database/mysql').getPool();
+    } catch (error) {
+        return databaseFailure(res, error, 'Failed to mark notifications as read');
+    }
+
+    try {
+        const [result] = await pool.query(
+            'UPDATE notifications SET is_read = 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_read = 0',
+            [req.user.uid]
+        );
+        const changed = Number(result?.affectedRows);
+        noStore(res);
+        return res.json({ success: true, updated: Number.isFinite(changed) && changed > 0 ? changed : 0 });
+    } catch (error) {
+        return databaseFailure(res, error, 'Failed to mark notifications as read');
+    }
+});
+
+// GET /api/notifications-data/contact/list - List contact submissions (Admin / messages.read permission required)
+router.get('/contact/list', requirePermission('messages.read'), async (req, res) => {
+    try {
+        const messages = await req.repository.getContactMessages();
+        return res.json({ success: true, messages });
+    } catch (error) {
+        return databaseFailure(res, error, 'Failed to fetch contact messages');
+    }
+});
+
 // PATCH /api/notifications-data/:id — set one row's read state.
 //
 // The write is a single atomic UPDATE constrained by BOTH the id and the
@@ -199,46 +239,6 @@ router.patch('/:id', async (req, res) => {
         });
     } catch (error) {
         return databaseFailure(res, error, 'Failed to update notification');
-    }
-});
-
-// POST /api/notifications-data/mark-all-read — mark every UNREAD notification
-// belonging to the CURRENT user as read (DIR-055 S3).
-//
-// Owner-scoped by construction: the UPDATE is constrained by `user_id = ?`, so
-// it can never touch another tenant's rows. Additive endpoint — it does not
-// alter the existing GET or PATCH contracts. Idempotent: a second call finds no
-// unread rows and reports 0 changed, which is the real number, not an estimate.
-router.post('/mark-all-read', async (req, res) => {
-    if (!req.user?.uid) return unauthorized(res);
-
-    let pool;
-    try {
-        pool = require('../database/mysql').getPool();
-    } catch (error) {
-        return databaseFailure(res, error, 'Failed to mark notifications as read');
-    }
-
-    try {
-        const [result] = await pool.query(
-            'UPDATE notifications SET is_read = 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_read = 0',
-            [req.user.uid]
-        );
-        const changed = Number(result?.affectedRows);
-        noStore(res);
-        return res.json({ success: true, updated: Number.isFinite(changed) && changed > 0 ? changed : 0 });
-    } catch (error) {
-        return databaseFailure(res, error, 'Failed to mark notifications as read');
-    }
-});
-
-// GET /api/notifications-data/contact/list - List contact submissions (Admin / messages.read permission required)
-router.get('/contact/list', requirePermission('messages.read'), async (req, res) => {
-    try {
-        const messages = await req.repository.getContactMessages();
-        return res.json({ success: true, messages });
-    } catch (error) {
-        return databaseFailure(res, error, 'Failed to fetch contact messages');
     }
 });
 

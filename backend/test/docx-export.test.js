@@ -290,7 +290,7 @@ test('content cannot disappear across archetypes', async () => {
 });
 
 test('theme registry stays synchronized with the PDF themePresets source', () => {
-  const src = fs.readFileSync(path.resolve(__dirname, '../../src/engine/hybrid/themePresets.js'), 'utf8');
+  const src = fs.readFileSync(path.resolve(__dirname, '../../shared/utils/themePresets.js'), 'utf8');
   for (let i = 1; i <= 51; i++) {
     const id = `Cv${i}`;
     const block = src.split(`${id}:`)[1];

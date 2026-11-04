@@ -1,6 +1,0 @@
-#root {
-  max-width: none; /* Remove width constraint */
-  margin: 0;
-  padding: 0; /* Remove padding for dashboard */
-  text-align: left; /* Better for dashboard layout */
-}

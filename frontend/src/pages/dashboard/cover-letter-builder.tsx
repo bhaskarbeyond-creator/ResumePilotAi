@@ -804,7 +804,7 @@ export function CoverLetterBuilderPage() {
     : autosave === 'failed' && dirty
       ? 'Autosave failed — these changes are not saved'
       : dirty
-        ? persisted ? 'Unsaved changes · autosaving shortly' : 'Unsaved changes'
+        ? 'Unsaved changes'
         : persisted
           ? `All changes saved${autosave === 'saved' ? ' (autosaved)' : ''} · ${formatUpdated(lastSavedAt)}`
           : 'Not saved yet';

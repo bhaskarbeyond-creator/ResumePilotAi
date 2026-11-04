@@ -8,6 +8,14 @@ import { apiClient, del, normalizeError } from '@/lib/api-client';
 import { createTrackedJob, EMPTY_TRACKER_FIELDS, listTrackedJobs, TrackerError, type TrackedJob, type TrackerStatus } from '@/lib/job-tracker';
 
 export const APPLICATIONS_QUERY_KEY = ['dashboard', 'applications'] as const;
+
+export const APPLICATION_STATUSES = [
+  { id: 'pending', label: 'Submitted' },
+  { id: 'interview', label: 'Interview' },
+  { id: 'accepted', label: 'Accepted' },
+  { id: 'rejected', label: 'Not selected' },
+] as const;
+
 export const APPLICATION_LIFECYCLE = Object.freeze({
   pending: 'APPLIED', applied: 'APPLIED', submitted: 'APPLIED',
   reviewing: 'REVIEWING', in_review: 'REVIEWING',
@@ -17,8 +25,8 @@ export const APPLICATION_LIFECYCLE = Object.freeze({
 export type ApplicationLifecycle = typeof APPLICATION_LIFECYCLE[keyof typeof APPLICATION_LIFECYCLE] | 'UNKNOWN';
 export type KnownApplicationStatus = keyof typeof APPLICATION_LIFECYCLE;
 export const LIFECYCLE_LABELS: Record<ApplicationLifecycle, string> = {
-  APPLIED: 'Applied', REVIEWING: 'Reviewing', INTERVIEW_SCHEDULED: 'Interview scheduled',
-  OFFERED: 'Offered', REJECTED: 'Rejected', UNKNOWN: 'Unknown status',
+  APPLIED: 'Submitted', REVIEWING: 'Reviewing', INTERVIEW_SCHEDULED: 'Interview',
+  OFFERED: 'Accepted', REJECTED: 'Not selected', UNKNOWN: 'Unknown status',
 };
 export function lifecycleStatusFor(status: unknown): ApplicationLifecycle {
   if (typeof status !== 'string') return 'UNKNOWN';
@@ -28,7 +36,13 @@ export function lifecycleStatusFor(status: unknown): ApplicationLifecycle {
 export function isKnownStatus(status: string): status is KnownApplicationStatus {
   return lifecycleStatusFor(status) !== 'UNKNOWN';
 }
-export function statusLabel(status: string): string { return LIFECYCLE_LABELS[lifecycleStatusFor(status)]; }
+export function statusLabel(status: string): string {
+  const lc = lifecycleStatusFor(status);
+  if (lc !== 'UNKNOWN') return LIFECYCLE_LABELS[lc];
+  const s = String(status || '').trim();
+  if (!s) return 'Unknown status';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
 
 export interface ApplicationJob { title: string; company: string; location: string; listed: boolean; url?: string }
 export interface Application {
@@ -69,13 +83,18 @@ export async function withdrawApplication(application: Pick<Application, 'id'>):
   } catch (error) {
     const failure = normalizeError(error);
     if (failure.status === 404) return 'already-gone';
-    if (failure.status === 403 || failure.status === 401) throw new Error('This application is not available to your account. It has not been removed from this list.');
-    throw new Error('Withdrawal could not be confirmed. Your application is still shown; check your connection and retry.');
+    if (failure.status === 403 || failure.status === 401) throw new Error('This application isn’t available to the account you’re signed in with, so it wasn’t withdrawn.');
+    throw new Error('Your application couldn’t be withdrawn. Check your connection and try again.');
   }
 }
 
-/** New personal tracker entries start at Applied; later personal moves never change the employer decision. */
-export function trackerStageFor(_status: string): TrackerStatus { return 'applied'; }
+export function trackerStageFor(status: string): TrackerStatus {
+  const s = String(status || '').trim().toLowerCase();
+  if (s === 'interview' || s === 'interview_scheduled') return 'interview';
+  if (s === 'accepted' || s === 'offered') return 'offer';
+  if (s === 'rejected' || s === 'declined') return 'rejected';
+  return 'applied';
+}
 const normalizedText = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US');
 const sameText = (left: string, right: string) => Boolean(normalizedText(left)) && normalizedText(left) === normalizedText(right);
 /** Preserve path case and meaningful query identifiers; only remove fragments and known tracking parameters. */
@@ -124,6 +143,7 @@ export function appliedOn(application: Pick<Application, 'createdAt'>, timeZone?
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
+
 export interface TrackResult { outcome: 'added' | 'existing'; job: TrackedJob }
 const inFlight = new Map<string, Promise<TrackResult>>();
 async function trackOnce(application: Application): Promise<TrackResult> {
@@ -134,7 +154,7 @@ async function trackOnce(application: Application): Promise<TrackResult> {
   try {
     const job = await createTrackedJob({
       ...EMPTY_TRACKER_FIELDS, title: title.trim(), company: company.trim(), location: location.trim(),
-      status: 'applied', dateApplied: appliedOn(application),
+      status: trackerStageFor(application.status), dateApplied: appliedOn(application),
       // No applicationId/jobId is sent: the backend has no such fields.
     });
     return { outcome: 'added', job };

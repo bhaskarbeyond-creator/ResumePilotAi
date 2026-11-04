@@ -96,6 +96,56 @@ export function AdminUsersTab() {
   const [exportingUser, setExportingUser] = useState(false);
   const [observingUser, setObservingUser] = useState<string | null>(null);
 
+  // Multi-select bulk user management state
+  const [selectedUids, setSelectedUids] = useState<string[]>([]);
+  const [bulkActionPending, setBulkActionPending] = useState(false);
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<'suspend' | 'activate' | 'revoke-sessions' | null>(null);
+
+  const handleToggleSelectAll = () => {
+    if (selectedUids.length === filteredUsers.length) {
+      setSelectedUids([]);
+    } else {
+      setSelectedUids(filteredUsers.map(u => u.id));
+    }
+  };
+
+  const handleToggleSelectOne = (uid: string) => {
+    setSelectedUids(prev => 
+      prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+    );
+  };
+
+  const executeBulkAction = async (action: 'suspend' | 'activate' | 'revoke-sessions') => {
+    if (!selectedUids.length || bulkActionPending) return;
+    setBulkActionPending(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      const res = await post<{
+        success: boolean;
+        summary: { total: number; succeeded: number; failed: number };
+        results?: { succeeded: string[]; failed: { uid: string; error: string }[] };
+      }>('/admin/users/bulk-status', {
+        uids: selectedUids,
+        action,
+        status: action === 'suspend' ? 'SUSPENDED' : action === 'activate' ? 'ACTIVE' : undefined,
+        revokeSessions: action === 'revoke-sessions' || action === 'suspend',
+      });
+      if (res.success || (res.summary && res.summary.succeeded > 0)) {
+        setActionSuccess(`Bulk ${action} completed: ${res.summary?.succeeded ?? selectedUids.length} succeeded, ${res.summary?.failed ?? 0} failed.`);
+        setSelectedUids([]);
+        setBulkConfirmAction(null);
+        await loadUsers();
+      } else {
+        setActionError(`Bulk ${action} failed: ${res.results?.failed?.[0]?.error || 'Operation failed'}`);
+      }
+    } catch (err) {
+      setActionError(normalizeError(err).message);
+    } finally {
+      setBulkActionPending(false);
+    }
+  };
+
   // User 360 sub-tab
   const [drawerTab, setDrawerTab] = useState<'identity' | 'tenants' | 'ai' | 'documents'>('identity');
 
@@ -578,6 +628,54 @@ export function AdminUsersTab() {
         />
       </div>
 
+      {/* ─── Multi-Select Bulk Actions Toolbar ─── */}
+      {selectedUids.length > 0 && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800/60 shadow-sm transition-all">
+          <div className="text-xs font-semibold text-brand-900 dark:text-brand-200 flex items-center gap-2">
+            <CheckCircle2 className="size-4 text-brand-600 dark:text-brand-400" />
+            <span>{selectedUids.length} user{selectedUids.length === 1 ? '' : 's'} selected for governance action</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkActionPending}
+              onClick={() => setBulkConfirmAction('activate')}
+              className="text-xs h-7 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            >
+              Bulk Activate
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkActionPending}
+              onClick={() => setBulkConfirmAction('suspend')}
+              className="text-xs h-7 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            >
+              Bulk Suspend
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkActionPending}
+              onClick={() => setBulkConfirmAction('revoke-sessions')}
+              className="text-xs h-7 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+            >
+              Revoke Sessions
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkActionPending}
+              onClick={() => setSelectedUids([])}
+              className="text-xs h-7 text-ink-muted hover:text-ink"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ─── Users Table ─── */}
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
         <table className="w-full text-xs min-w-[760px]">
@@ -595,7 +693,7 @@ export function AdminUsersTab() {
           <tbody className="divide-y divide-border">
             {loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-ink-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-ink-muted">
                   Loading the administrative user directory…
                 </td>
               </tr>

@@ -333,10 +333,10 @@ function ProfileForm({ snapshot }: { snapshot: ProfileSnapshot }) {
             <Button
               ref={saveRef}
               type="submit"
-              aria-disabled={!canSave || undefined}
+              aria-disabled={busy !== 'idle' || undefined}
               aria-busy={busy === 'saving' || undefined}
               aria-describedby={saveHint ? 'settings-profile-save-hint' : undefined}
-              className={cn(!canSave && 'opacity-60')}
+              className={cn(busy !== 'idle' && 'opacity-60')}
             >
               <Save className="size-4" aria-hidden="true" />
               {busy === 'saving' ? 'Saving…' : 'Save Master Profile'}
@@ -481,7 +481,7 @@ function CompletenessCard({ completeness }: { completeness: ReturnType<typeof se
           <ul aria-label="Suggested next steps" className="list-disc space-y-1 pl-5 text-sm text-ink-secondary">
             {missing.map((item) => (
               <li key={item.key}>
-                <a href={`#${fieldId(item.key)}`} className="text-brand-700 underline-offset-2 hover:underline">{item.label}</a>: {item.suggestion}
+                <a href={`#${fieldId(item.key)}`} className="underline text-brand-700 underline-offset-2 hover:text-brand-800">{item.label}</a>: {item.suggestion}
               </li>
             ))}
           </ul>

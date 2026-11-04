@@ -1,5 +1,5 @@
 import { useAuth } from '@/providers/auth-provider';
-import { get, post, patch } from '@/lib/api-client';
+import { get, post, patch, normalizeError } from '@/lib/api-client';
 /**
  * Employer Portal — Surface 3 Modernization
  *
@@ -255,6 +255,8 @@ export function EmployerPortalPage() {
   const [messageSending, setMessageSending] = useState(false);
   const activeConversationIdRef = useRef<string | null>(null);
   activeConversationIdRef.current = activeConversationId;
+  const conversationsRef = useRef<EmployerConversation[]>([]);
+  conversationsRef.current = conversations;
 
   // ─── Hiring preferences (GET/PATCH /api/employer/settings) ───────────────
   // `settingsBaseline` is the last state the SERVER confirmed. The form is only
@@ -302,14 +304,13 @@ export function EmployerPortalPage() {
 
   const loadMessages = useCallback(async (conversationId: string) => {
     setMessagesLoading(true);
-    setMessagesError('');
     const selectedId = conversationId;
     try {
       const response = await get<{ success: boolean; messages: ConversationMessage[] }>(`/messages/conversations/${encodeURIComponent(conversationId)}/messages?limit=100`);
       if (selectedId !== activeConversationIdRef.current) return;
       const messages = (response.messages || []).slice().sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
       setMessagesByConversation((previous) => ({ ...previous, [conversationId]: messages }));
-      const thread = conversations.find((item) => item.id === conversationId);
+      const thread = conversationsRef.current.find((item) => item.id === conversationId);
       const newest = messages[messages.length - 1];
       if (thread && thread.unreadCount > 0 && newest) {
         setReadError('');
@@ -327,7 +328,7 @@ export function EmployerPortalPage() {
     } finally {
       if (selectedId === activeConversationIdRef.current) setMessagesLoading(false);
     }
-  }, [conversations, user?.uid]);
+  }, [user?.uid]);
 
   useEffect(() => {
     if (activeConversationId) void loadMessages(activeConversationId);
@@ -349,7 +350,7 @@ export function EmployerPortalPage() {
       setMessagesByConversation((previous) => ({ ...previous, [activeConversationId]: ordered }));
       await loadConversations();
     } catch (error) {
-      setMessagesError(error instanceof Error ? error.message : 'Message could not be sent. Please retry.');
+      setMessagesError(normalizeError(error).message || 'Message could not be sent. Please retry.');
     } finally {
       setMessageSending(false);
     }

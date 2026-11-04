@@ -11,7 +11,7 @@ export const detailsButtonId = (application: Pick<Application, 'id'>) => `applic
 export const withdrawButtonId = (application: Pick<Application, 'id'>) => `application-withdraw-${application.id}`;
 export const trackControlId = (application: Pick<Application, 'id'>) => `application-track-${application.id}`;
 export function trackerHref(job: TrackedJob): string {
-  return `/dashboard/job-tracker?${new URLSearchParams({ view: 'board', q: job.title }).toString()}`;
+  return `/dashboard/job-tracker?${new URLSearchParams({ q: job.title }).toString()}`;
 }
 const STATUS_TONE: Record<ApplicationLifecycle, { className: string; Icon: LucideIcon }> = {
   APPLIED: { className: 'border-border bg-canvas-soft text-ink-secondary', Icon: Send },
@@ -78,12 +78,12 @@ export function ApplicationEntry({ application, expanded, onToggleDetails, track
                 <Columns3 aria-hidden="true" /> Open in Job Tracker
               </Link>
             </Button>
-            <span className="text-xs text-ink-muted">Tracked · {stageLabel(tracked.status)}</span>
+            <span className="text-xs text-ink-muted">Tracked under {stageLabel(tracked.status)}</span>
           </span>
         ) : (
-          <Button id={trackControlId(application)} variant="outline" size="sm" aria-label={`Track application: ${name}`}
+          <Button id={trackControlId(application)} variant="outline" size="sm" aria-label={`Add to Job Tracker: ${name}`}
             disabled={tracking} aria-busy={tracking || undefined} onClick={() => onTrack(application)}>
-            <ListPlus aria-hidden="true" /> {tracking ? 'Tracking…' : 'Track Application'}
+            <ListPlus aria-hidden="true" /> {tracking ? 'Adding…' : 'Add to Job Tracker'}
           </Button>
         ))}
         <Button id={withdrawButtonId(application)} variant="ghost" size="sm" className="text-error-700 hover:bg-error-50 hover:text-error-700"

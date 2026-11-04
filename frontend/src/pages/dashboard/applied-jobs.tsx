@@ -9,7 +9,7 @@ import { NoticeRegions, type Notice } from '@/components/settings/notice-regions
 import { ApplicationEntry, detailsButtonId, trackControlId, withdrawButtonId } from '@/components/applications/application-entry';
 import { WithdrawDialog } from '@/components/applications/withdraw-dialog';
 import { cn } from '@/lib/utils';
-import { APPLICATIONS_QUERY_KEY, findTrackedJob, LIFECYCLE_LABELS, listApplications, trackApplication, type Application, type WithdrawOutcome } from '@/lib/applications';
+import { APPLICATION_STATUSES, APPLICATIONS_QUERY_KEY, findTrackedJob, LIFECYCLE_LABELS, listApplications, trackApplication, type Application, type WithdrawOutcome } from '@/lib/applications';
 import { applicationName, matchesFilter, matchesQuery, parseApplicationURL, SORT_OPTIONS, sortApplications, STATUS_FILTERS, statusSummary } from '@/lib/application-display';
 import { listTrackedJobs, stageLabel, TRACKER_QUERY_KEY, TrackerError, type TrackedJob } from '@/lib/job-tracker';
 import { listResumeChoices } from '@/lib/portfolio';
@@ -19,7 +19,7 @@ const RESUME_CHOICES_KEY = ['dashboard', 'resumeChoices'] as const;
 const countLabel = (count: number) => `${count} ${count === 1 ? 'application' : 'applications'}`;
 export function LoadingSkeleton({ label }: { label: string }) {
   return <div role="status" aria-label={label} data-testid="loading-skeleton" className="space-y-3 py-2">
-    <span className="sr-only">{label}</span>
+    <p className="text-sm text-ink-muted">Loading your applications…</p>
     {[0, 1, 2].map((item) => <div key={item} aria-hidden="true" className="animate-pulse rounded-xl border border-border bg-surface p-5 motion-reduce:animate-none"><div className="h-4 w-2/3 rounded bg-neutral-200" /><div className="mt-3 h-3 w-1/3 rounded bg-neutral-200" /><div className="mt-5 h-8 w-48 rounded bg-neutral-100" /></div>)}
   </div>;
 }
@@ -104,9 +104,9 @@ export function AppliedJobsPage() {
       if (!mounted.current) return;
       pendingFocus.current = [trackControlId(application)];
       setNotice(result.outcome === 'added' ? { tone: 'success', text: `Added ${name} to your Job Tracker under ${stageLabel(result.job.status)}.` }
-        : { tone: 'info', text: `${name} is already tracked (${stageLabel(result.job.status)}). No duplicate was added.` });
+        : { tone: 'info', text: `${name} is already in your Job Tracker (${stageLabel(result.job.status)}), so nothing was added.` });
     } catch (error) {
-      if (mounted.current) setNotice({ tone: 'error', text: `${name} was not confirmed as tracked. ${error instanceof TrackerError || error instanceof Error ? error.message : 'Check your connection and retry.'}` });
+      if (mounted.current) setNotice({ tone: 'error', text: `${name} wasn’t added to your Job Tracker.` });
     } finally {
       trackingRef.current.delete(application.id);
       if (mounted.current) setTrackingIds(new Set(trackingRef.current));
@@ -126,7 +126,7 @@ export function AppliedJobsPage() {
     queryClient.setQueryData<Application[]>(APPLICATIONS_QUERY_KEY, (current) => (current ?? []).filter((item) => item.id !== application.id));
     setExpanded((current) => { const next = new Set(current); next.delete(application.id); return next; });
     setNotice(outcome === 'withdrawn' ? { tone: 'success', text: `Withdrew your application for ${applicationName(application)}.` }
-      : { tone: 'info', text: `Your application for ${applicationName(application)} was already withdrawn or removed.` });
+      : { tone: 'info', text: `Your application for ${applicationName(application)} had already been withdrawn or removed.` });
   };
   const resumeTextFor = (application: Application): string => {
     if (!application.resumeId) return 'None attached';
@@ -143,7 +143,10 @@ export function AppliedJobsPage() {
       </div>
     </header>
     {loaded && applications.length > 0 && <>
-      <ul aria-label="Applications by lifecycle" className="mb-5 flex flex-wrap gap-2">{Object.entries(LIFECYCLE_LABELS).filter(([key]) => key !== 'UNKNOWN' || summary.counts.UNKNOWN > 0).map(([key, label]) => <li key={key} className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-secondary"><span className="font-semibold text-ink">{summary.counts[key as keyof typeof summary.counts]}</span> {label}</li>)}</ul>
+      <ul aria-label="Applications by status" className="mb-5 flex flex-wrap gap-2">
+        {APPLICATION_STATUSES.map((item) => <li key={item.id} className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-secondary"><span className="font-semibold text-ink">{summary.counts[item.id]}</span> {item.label}</li>)}
+        {summary.counts.other > 0 && <li key="other" className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-secondary"><span className="font-semibold text-ink">{summary.counts.other}</span> Other</li>}
+      </ul>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <form role="search" className="relative min-w-0 lg:max-w-md lg:flex-1" onSubmit={(event) => { event.preventDefault(); commitQuery(draftQuery); }}>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
@@ -152,7 +155,7 @@ export function AppliedJobsPage() {
         </form>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <div className="flex items-center gap-2"><label htmlFor="applications-status" className="shrink-0 text-sm text-ink-secondary">Status</label><select id="applications-status" value={status} onChange={(event) => setParam('status', event.target.value, 'all')} className="h-10 min-w-0 max-w-44 rounded-lg border border-border bg-surface px-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-500">{STATUS_FILTERS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-          <div className="flex items-center gap-2"><label htmlFor="applications-sort" className="shrink-0 text-sm text-ink-secondary">Sort by</label><select id="applications-sort" value={sort} onChange={(event) => setParam('sort', event.target.value, 'date')} className="h-10 min-w-0 max-w-48 rounded-lg border border-border bg-surface px-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-500">{SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+          <div className="flex items-center gap-2"><label htmlFor="applications-sort" className="shrink-0 text-sm text-ink-secondary">Sort by</label><select id="applications-sort" value={sort} onChange={(event) => setParam('sort', event.target.value, 'newest')} className="h-10 min-w-0 max-w-48 rounded-lg border border-border bg-surface px-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-500">{SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
         </div>
       </div>
     </>}
@@ -161,10 +164,10 @@ export function AppliedJobsPage() {
     <section aria-labelledby="applications-results-heading" aria-busy={list.isPending || undefined}>
       <h2 id="applications-results-heading" className="sr-only">Your applications</h2>
       {list.isPending && <LoadingSkeleton label="Loading your applications" />}
-      {list.isError && <div role="alert" className="mb-4 flex flex-col items-start gap-3 rounded-xl border border-error-100 bg-error-50 p-4 text-sm text-error-700 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0" aria-hidden="true" /><span className="flex-1">{loaded ? 'The latest applications could not be loaded. The previous list is preserved below.' : 'Your applications could not be loaded. Check your connection and try again.'}</span><Button variant="outline" size="sm" onClick={() => void list.refetch()} disabled={list.isFetching}><RefreshCw aria-hidden="true" /> Try again</Button></div>}
-      {loaded && applications.length === 0 && <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center"><h3 className="text-lg font-semibold text-ink">No applications yet</h3><p className="mt-1 max-w-sm text-sm text-ink-muted">Applications submitted through the job portal appear here.</p><Button asChild variant="outline" className="mt-5"><Link to="/dashboard/jobs">Find jobs to apply for</Link></Button></div>}
+      {list.isError && <div role="alert" className="mb-4 flex flex-col items-start gap-3 rounded-xl border border-error-100 bg-error-50 p-4 text-sm text-error-700 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0" aria-hidden="true" /><span className="flex-1">{loaded ? 'The latest version of your applications couldn’t be loaded, so the list below may be out of date.' : 'Your applications couldn’t be loaded. Check your connection and try again.'}</span><Button variant="outline" size="sm" onClick={() => void list.refetch()} disabled={list.isFetching}><RefreshCw aria-hidden="true" /> Try again</Button></div>}
+      {loaded && applications.length === 0 && <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center"><h3 className="text-lg font-semibold text-ink">No applications yet</h3><p className="mt-1 max-w-sm text-sm text-ink-muted">When you apply for a job on the job portal, it appears here with its status.</p><Button asChild variant="outline" className="mt-5"><Link to="/dashboard/jobs">Find jobs to apply for</Link></Button></div>}
       {loaded && applications.length > 0 && <p className="mb-3 text-xs text-ink-muted" role="status">{status !== 'all' || draftQuery.trim() ? `Showing ${visible.length} of ${countLabel(applications.length)}` : countLabel(applications.length)}</p>}
-      {loaded && applications.length > 0 && visible.length === 0 && <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center"><p className="text-sm text-ink">No applications match your current search and status criteria.</p><Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>Clear filters</Button></div>}
+      {loaded && applications.length > 0 && visible.length === 0 && <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center"><p className="text-sm text-ink">No applications match your filters.</p><Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>Clear filters</Button></div>}
       {loaded && visible.length > 0 && <ul role="list" aria-label="Applications" className="space-y-3">{visible.map((application) => <li key={application.id}><ApplicationEntry application={application} expanded={expanded.has(application.id)} onToggleDetails={(item) => setExpanded((current) => { const next = new Set(current); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next; })} tracked={findTrackedJob(application, trackedJobs)} tracking={trackingIds.has(application.id)} onTrack={(item) => void track(item)} onWithdraw={openWithdrawal} resumeText={resumeTextFor(application)} /></li>)}</ul>}
     </section>
     {withdrawal && <WithdrawDialog key={withdrawal.session} application={withdrawal.application} open={withdrawal.open} onOpenChange={(open) => { if (!open) closeWithdrawal(); }} onCloseAutoFocus={restoreFocus} onWithdrawn={onWithdrawn} />}

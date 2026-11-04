@@ -348,9 +348,8 @@ function DeleteAccountDialog() {
                 <Button
                   type="submit"
                   variant="destructive"
-                  aria-disabled={deleteBlocked || undefined}
+                  aria-disabled={busy || undefined}
                   aria-busy={phase === 'busy' || undefined}
-                  className={cn(deleteBlocked && 'opacity-60')}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
                   {phase === 'busy' ? 'Deleting…' : 'Delete my account'}

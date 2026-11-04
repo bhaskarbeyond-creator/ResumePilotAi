@@ -303,7 +303,7 @@ export function FavouritesPage() {
                         onClick={() => setApplying(item)}
                         aria-label={`Apply to ${favouriteName(view)}`}
                       >
-                        Apply now
+                        Apply
                       </Button>
                     </div>
                   )}

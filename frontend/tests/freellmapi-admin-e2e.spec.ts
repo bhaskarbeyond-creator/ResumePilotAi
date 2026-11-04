@@ -129,7 +129,7 @@ async function takeViewportScreenshot(page: Page, viewportName: string) {
 }
 
 test.describe('AI Multi-Provider Engine - Deep Links & Subtab Navigation', () => {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
   test.beforeEach(async ({ page, request }) => {
     await authenticate(page, request);
@@ -226,7 +226,7 @@ test.describe('AI Multi-Provider Engine - Deep Links & Subtab Navigation', () =>
 });
 
 test.describe('AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA', () => {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
   test.beforeEach(async ({ page, request }) => {
     await authenticate(page, request);
@@ -353,7 +353,7 @@ test.describe('AI Multi-Provider Engine - Modal Census & WCAG 2.1 AA', () => {
 });
 
 test.describe('AI Multi-Provider Engine - Real Data Integration (No Fabrication)', () => {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
   test.beforeEach(async ({ page, request }) => {
     await authenticate(page, request);
@@ -406,20 +406,20 @@ test.describe('AI Multi-Provider Engine - Real Data Integration (No Fabrication)
 
   test('Empty states show actionable "Add key" actions, not dummy data', async ({ page }) => {
     // Navigate to a provider that's not configured on the fresh database
-    await page.goto(`${baseUrl}/admin?tab=ai-settings&provider=groq`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseUrl}/admin?tab=ai-settings&provider=cohere`, { waitUntil: 'domcontentloaded' });
     await waitForAiSettings(page);
 
     // Should show the real "Not Configured" pill with the actionable
     // "Add key" button (the old 'text=Not Configured, text=Add key, ...'
     // comma-list selector matched nothing).
-    await expect(page.locator('[data-testid="provider-row-groq"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="provider-row-cohere"]')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Not Configured').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('button:has-text("Add key")').first()).toBeVisible({ timeout: 10000 });
   });
 });
 
 test.describe('AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Overflow', () => {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
   const viewports = [
     { name: 'mobile-iphone-se', width: 375, height: 667 },
@@ -478,7 +478,7 @@ test.describe('AI Multi-Provider Engine - Responsive Layout & Zero Horizontal Ov
 });
 
 test.describe('AI Multi-Provider Engine - Modal Responsive Containment', () => {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
   const viewports = [
     { name: 'mobile-iphone-se', width: 375, height: 667 },

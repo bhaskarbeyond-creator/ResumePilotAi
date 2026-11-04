@@ -144,7 +144,7 @@ test('a p=none DMARC policy is reported as DEGRADED, not as enforced', async () 
 
 test('the fabricated deliverability claims are gone from the Admin UI', () => {
   const source = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'src/components/admin/settings/EmailSmtpSettings.jsx'),
+    path.join(__dirname, '..', '..', 'frontend/src/components/admin/AdminEmailSmtpTab.tsx'),
     'utf8',
   );
 

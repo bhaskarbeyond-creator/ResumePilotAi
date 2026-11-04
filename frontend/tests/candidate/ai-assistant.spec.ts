@@ -158,7 +158,7 @@ test.describe('AI Writing Assistant', () => {
     });
     const body = (await response.json().catch(() => ({}))) as { aiUnavailable?: boolean; skills?: unknown[] };
     if (response.status() >= 500 || body.aiUnavailable) {
-      await expect(statusRegion(page)).toContainText('AI generation is unavailable right now');
+      await expect(statusRegion(page)).toContainText(/AI (skill suggestions are|generation is) unavailable right now/);
       await expect(page.getByRole('list', { name: 'Suggested skills' })).toHaveCount(0);
     } else {
       await expect(page.getByRole('list', { name: 'Suggested skills' }).getByRole('listitem')).toHaveCount(body.skills!.length);

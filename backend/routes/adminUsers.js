@@ -372,23 +372,37 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/bulk', async (req, res) => {
+router.post(['/bulk', '/bulk-status'], async (req, res) => {
   const callerPermissions = permissionsFor(req.user);
-  if (!callerPermissions.has('*') && !callerPermissions.has('users.update')) {
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update') && !callerPermissions.has('users.write')) {
     return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to modify users.' });
   }
   const uids = Array.isArray(req.body?.uids) ? req.body.uids.map(id => String(id).trim()).filter(Boolean) : [];
-  const action = String(req.body?.action || '').trim().toLowerCase();
+  
+  // Normalize action from body.action or body.status
+  let action = String(req.body?.action || '').trim().toLowerCase();
+  const rawStatus = String(req.body?.status || '').trim().toUpperCase();
+  if (!action && rawStatus) {
+    if (rawStatus === 'SUSPENDED') action = 'suspend';
+    else if (rawStatus === 'ACTIVE') action = 'activate';
+    else if (rawStatus === 'DISABLED') action = 'disable';
+  }
+
+  const revokeSessionsRequested = Boolean(req.body?.revokeSessions);
+
   if (!uids.length || uids.length > 100) {
     return res.status(400).json({ success: false, code: 'INVALID_UIDS', error: 'Specify between 1 and 100 user identifiers.' });
   }
-  if (!['suspend', 'activate'].includes(action)) {
-    return res.status(400).json({ success: false, code: 'INVALID_BULK_ACTION', error: 'Action must be "suspend" or "activate".' });
+  if (!['suspend', 'activate', 'disable', 'revoke-sessions'].includes(action)) {
+    return res.status(400).json({ success: false, code: 'INVALID_BULK_ACTION', error: 'Action must be "suspend", "activate", "disable", or "revoke-sessions" (or status ACTIVE|SUSPENDED|DISABLED).' });
   }
 
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   const repo = req.repository || getRepository();
   const willSuspend = action === 'suspend';
+  const willDisable = action === 'disable';
+  const willActivate = action === 'activate';
+  const willRevokeOnly = action === 'revoke-sessions';
   const callerUid = req.user?.uid;
   const results = { succeeded: [], failed: [] };
 
@@ -398,20 +412,58 @@ router.post('/bulk', async (req, res) => {
       continue;
     }
     try {
-      if (identityAdmin?.auth) {
-        await identityAdmin.auth().updateUser(uid, { disabled: willSuspend }).catch(() => {});
+      if (willSuspend || willDisable) {
+        if (identityAdmin?.auth) {
+          await identityAdmin.auth().updateUser(uid, { disabled: true }).catch(() => {});
+          await identityAdmin.auth().revokeRefreshTokens(uid).catch(() => {});
+        }
+        const existing = await repo.getUser(uid).catch(() => null);
+        if (existing) {
+          const expectedRevision = Number(existing.revision || 0);
+          await repo.saveUserWithRevisionGuard(uid, {
+            ...existing,
+            suspended: true,
+            status: willDisable ? 'DISABLED' : 'SUSPENDED',
+          }, expectedRevision);
+        } else {
+          await getPool().query(
+            'UPDATE users SET suspended = 1, status = ?, updated_at = NOW() WHERE id = ?',
+            [willDisable ? 'DISABLED' : 'SUSPENDED', uid]
+          ).catch(() => {});
+        }
+        // Invalidate active sessions and set token cutoff
+        await getPool().query('UPDATE active_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL', [uid]).catch(() => {});
+        await getPool().query('UPDATE users SET token_invalid_before = NOW() WHERE id = ?', [uid]).catch(() => {});
+      } else if (willActivate) {
+        if (identityAdmin?.auth) {
+          await identityAdmin.auth().updateUser(uid, { disabled: false }).catch(() => {});
+        }
+        const existing = await repo.getUser(uid).catch(() => null);
+        if (existing) {
+          const expectedRevision = Number(existing.revision || 0);
+          await repo.saveUserWithRevisionGuard(uid, {
+            ...existing,
+            suspended: false,
+            status: 'ACTIVE',
+          }, expectedRevision);
+        } else {
+          await getPool().query(
+            'UPDATE users SET suspended = 0, status = "ACTIVE", updated_at = NOW() WHERE id = ?',
+            [uid]
+          ).catch(() => {});
+        }
+      } else if (willRevokeOnly || revokeSessionsRequested) {
+        if (identityAdmin?.auth) {
+          await identityAdmin.auth().revokeRefreshTokens(uid).catch(() => {});
+        }
+        await getPool().query('UPDATE active_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL', [uid]).catch(() => {});
+        await getPool().query('UPDATE users SET token_invalid_before = NOW() WHERE id = ?', [uid]).catch(() => {});
       }
-      const existing = await repo.getUser(uid).catch(() => null);
-      if (existing) {
-        const expectedRevision = Number(existing.revision || 0);
-        await repo.saveUserWithRevisionGuard(uid, { ...existing, suspended: willSuspend }, expectedRevision);
-      } else {
-        await getPool().query('UPDATE users SET suspended = ?, updated_at = NOW() WHERE id = ?', [willSuspend ? 1 : 0, uid]);
-      }
+
       await recordAdminAuditLog(req, {
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
-        action: willSuspend ? 'USER_SUSPENDED' : 'USER_REACTIVATED',
+        action: willSuspend ? 'USER_BULK_SUSPENDED' : willDisable ? 'USER_BULK_DISABLED' : willActivate ? 'USER_BULK_ACTIVATED' : 'USER_BULK_SESSIONS_REVOKED',
         category: 'iam.users',
         severity: 'HIGH',
         method: 'POST',
@@ -419,7 +471,7 @@ router.post('/bulk', async (req, res) => {
         statusCode: 200,
         resourceType: 'user',
         resourceId: uid,
-        metadata: { bulk: true, action },
+        metadata: { bulk: true, action, revokeSessionsRequested },
         requestId: res.locals.requestId,
       });
       results.succeeded.push(uid);

@@ -10,27 +10,36 @@
  * - Configuration: AI Multi-Provider Orchestration, Email & SMTP Deliverability, Security & Staff RBAC
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 
-// Sub-Module Tabs
-import { AdminDashboardTab } from '@/components/admin/AdminDashboardTab';
-import { AdminHealthTab } from '@/components/admin/AdminHealthTab';
-import { AdminQueuesTab } from '@/components/admin/AdminQueuesTab';
-import { AdminOperationsTab } from '@/components/admin/AdminOperationsTab';
-import { AdminAttentionTab } from '@/components/admin/AdminAttentionTab';
-import { AdminUsersTab } from '@/components/admin/AdminUsersTab';
-import { AdminHelpDeskTab } from '@/components/admin/AdminHelpDeskTab';
-import { AdminModerationTab } from '@/components/admin/AdminModerationTab';
-import { AdminBlogManagementTab } from '@/components/admin/AdminBlogManagementTab';
-import { AdminContentMarketingTab } from '@/components/admin/AdminContentMarketingTab';
-import { AdminAiSettingsTab } from '@/components/admin/AdminAiSettingsTab';
-import { AdminEmailSmtpTab } from '@/components/admin/AdminEmailSmtpTab';
-import { AdminSecurityTab } from '@/components/admin/AdminSecurityTab';
-import { AdminEnterpriseSsoTab } from '@/components/admin/AdminEnterpriseSsoTab';
-import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
-import { AdminBillingTab } from '@/components/admin/AdminBillingTab';
+// Lazy-loaded Sub-Module Tabs for optimal bundle splitting
+const AdminDashboardTab = lazy(() => import('@/components/admin/AdminDashboardTab').then((m) => ({ default: m.AdminDashboardTab })));
+const AdminHealthTab = lazy(() => import('@/components/admin/AdminHealthTab').then((m) => ({ default: m.AdminHealthTab })));
+const AdminQueuesTab = lazy(() => import('@/components/admin/AdminQueuesTab').then((m) => ({ default: m.AdminQueuesTab })));
+const AdminOperationsTab = lazy(() => import('@/components/admin/AdminOperationsTab').then((m) => ({ default: m.AdminOperationsTab })));
+const AdminAttentionTab = lazy(() => import('@/components/admin/AdminAttentionTab').then((m) => ({ default: m.AdminAttentionTab })));
+const AdminUsersTab = lazy(() => import('@/components/admin/AdminUsersTab').then((m) => ({ default: m.AdminUsersTab })));
+const AdminHelpDeskTab = lazy(() => import('@/components/admin/AdminHelpDeskTab').then((m) => ({ default: m.AdminHelpDeskTab })));
+const AdminModerationTab = lazy(() => import('@/components/admin/AdminModerationTab').then((m) => ({ default: m.AdminModerationTab })));
+const AdminBlogManagementTab = lazy(() => import('@/components/admin/AdminBlogManagementTab').then((m) => ({ default: m.AdminBlogManagementTab })));
+const AdminContentMarketingTab = lazy(() => import('@/components/admin/AdminContentMarketingTab').then((m) => ({ default: m.AdminContentMarketingTab })));
+const AdminAiSettingsTab = lazy(() => import('@/components/admin/AdminAiSettingsTab').then((m) => ({ default: m.AdminAiSettingsTab })));
+const AdminEmailSmtpTab = lazy(() => import('@/components/admin/AdminEmailSmtpTab').then((m) => ({ default: m.AdminEmailSmtpTab })));
+const AdminSecurityTab = lazy(() => import('@/components/admin/AdminSecurityTab').then((m) => ({ default: m.AdminSecurityTab })));
+const AdminEnterpriseSsoTab = lazy(() => import('@/components/admin/AdminEnterpriseSsoTab').then((m) => ({ default: m.AdminEnterpriseSsoTab })));
+const AdminSettingsTab = lazy(() => import('@/components/admin/AdminSettingsTab').then((m) => ({ default: m.AdminSettingsTab })));
+const AdminBillingTab = lazy(() => import('@/components/admin/AdminBillingTab').then((m) => ({ default: m.AdminBillingTab })));
+
+function AdminTabFallback() {
+  return (
+    <div className="flex items-center justify-center p-12 text-ink-muted">
+      <Loader2 className="size-6 animate-spin mr-2 text-brand-600" />
+      <span className="text-sm font-medium">Loading control module...</span>
+    </div>
+  );
+}
 
 export type AdminTabId =
   | 'dashboard'
@@ -216,7 +225,7 @@ export function AdminConsolePage() {
             </div>
           </div>
         ) : (
-          <>
+          <Suspense fallback={<AdminTabFallback />}>
             {activeTab === 'dashboard' && <AdminDashboardTab onNavigateTab={handleSelectTab} />}
             {activeTab === 'health' && <AdminHealthTab />}
             {activeTab === 'queues' && <AdminQueuesTab />}
@@ -237,7 +246,7 @@ export function AdminConsolePage() {
             {(activeTab === 'settings' || activeTab === 'modules') && (
               <AdminSettingsTab initialSection="modules" />
             )}
-          </>
+          </Suspense>
         )}
       </main>
     </div>

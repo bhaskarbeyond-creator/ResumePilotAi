@@ -143,15 +143,16 @@ export function interviewCalendarFile(job: TrackedJob, now = new Date()): { file
   // Add a wall-clock hour without a DST-induced two-hour jump in floating time.
   const end = new Date(start.getTime()); end.setHours(end.getHours() + 1);
   const details = [
-    `Round: ${job.interviewRound || 'Not specified'}`, `Format: ${job.interviewFormat || 'Not specified'}`,
-    'Duration: 60 minutes (calendar default; not stored by the tracker).',
-    'Time: saved wall-clock time; confirm the time zone with your contact.',
+    job.interviewRound && `Round: ${job.interviewRound}`,
+    job.interviewFormat && `Format: ${job.interviewFormat}`,
     job.interviewLink && `Meeting link: ${job.interviewLink}`,
     job.contactPerson && `Contact: ${job.contactPerson}${job.contactEmail ? ` (${job.contactEmail})` : ''}`,
-    job.url && `Job posting: ${job.url}`, job.notes && `Notes: ${job.notes}`,
+    !job.contactPerson && job.contactEmail && `Contact: ${job.contactEmail}`,
+    job.url && `Job posting: ${job.url}`,
+    job.notes && `Notes: ${job.notes}`,
   ].filter(Boolean).join('\n');
   const where = job.interviewFormat === 'In-Person' ? job.location : job.interviewLink || job.location;
-  const uid = `${encodeURIComponent(job.id)}-${job.interviewAt.replace(/[-:]/g, '')}@ime365`;
+  const uid = `${encodeURIComponent(job.id)}-interview@ime365`;
   const lines = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//IME365//Job Tracker//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${utcTime(now)}`, `DTSTART:${floatingTime(start)}`, `DTEND:${floatingTime(end)}`,

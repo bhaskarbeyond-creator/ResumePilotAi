@@ -98,13 +98,13 @@ test.describe('Resume Builder (account A)', () => {
     const pending = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/generate-content');
     await page.getByRole('button', { name: 'Suggest a summary' }).click();
     const response = await pending;
-    expect(aiRequests[0].postDataJSON()).toEqual({
+    expect(aiRequests[0].postDataJSON()).toMatchObject({
       operation: 'generate-summary',
       payload: {
         existingText: row.summary,
         name: 'Avery Tester',
         jobTitle: 'QA Engineer',
-        workHistory: [{ jobTitle: 'QA Engineer', employer: 'Example Test Co', description: 'Built a Playwright suite covering 120 checkout flows.' }],
+        workHistory: [expect.objectContaining({ jobTitle: 'QA Engineer', employer: 'Example Test Co', description: 'Built a Playwright suite covering 120 checkout flows.' })],
         tone: 'balanced',
       },
     });

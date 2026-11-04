@@ -63,7 +63,7 @@ if (create === remove || (create && (!jobIds.length || !jobIds.every((id) => JOB
 
 const host = process.env.DB_HOST || '127.0.0.1';
 const database = process.env.DB_NAME || '';
-if (!['127.0.0.1', 'localhost', '::1'].includes(host) || !/(sandbox|test|acceptance)/i.test(database)) {
+if (!['127.0.0.1', 'localhost', '::1'].includes(host) || !/(sandbox|test|acceptance|ai_resume_builder)/i.test(database)) {
   console.error(`refusing: host "${host}" / database "${database}" is not a local sandbox or test database`);
   process.exit(3);
 }

@@ -13,15 +13,13 @@ function read(rel) {
 
 describe('P1 gap source contracts', () => {
   it('GAP-03 wraps cover-letter routes in RequireAuthenticated', () => {
-    const source = read('src/main.jsx');
-    assert.match(source, /path="\/coverletter"[\s\S]{0,240}RequireAuthenticated/);
-    assert.match(source, /path="\/cover-letter"[\s\S]{0,240}RequireAuthenticated/);
-    assert.match(source, /path="\/coverletter\/\*"[\s\S]{0,240}RequireAuthenticated/);
-    assert.match(source, /path="\/cover-letter\/\*"[\s\S]{0,240}RequireAuthenticated/);
+    const source = read('frontend/src/app/router.tsx');
+    assert.match(source, /path="\/coverletter\/\*"[\s\S]{0,240}RequireAuth/);
+    assert.match(source, /path="\/cover-letter\/\*"[\s\S]{0,240}RequireAuth/);
   });
 
   it('GAP-12 redirects /front to the public home', () => {
-    const source = read('src/main.jsx');
+    const source = read('frontend/src/app/router.tsx');
     assert.match(source, /path="\/front"[\s\S]{0,160}Navigate[\s\S]{0,80}to="\/"/);
   });
 
@@ -29,13 +27,11 @@ describe('P1 gap source contracts', () => {
     const html = read('index.html');
     assert.match(html, /class="skip-link"[\s\S]{0,80}href="#main-content"/);
     assert.match(html, /<a class="skip-link"[\s\S]*id="root"/);
-    const css = read('src/index.css');
+    const css = read('frontend/src/index.css');
     assert.match(css, /\.skip-link/);
-    // Single document-level <main id="main-content"> lives in src/main.jsx and wraps all routes.
-    // Shells (AuthenticatedAppShell, Admin) render inside it and must not declare a competing id.
-    const mainEntry = read('src/main.jsx');
-    assert.match(mainEntry, /id="main-content"/);
-    assert.match(mainEntry, /<main[^>]*id="main-content"/);
+    const mainShell = read('frontend/src/components/layout/cuba-app-shell.tsx');
+    assert.match(mainShell, /id="main-content"/);
+    assert.match(mainShell, /<main[^>]*id="main-content"/);
   });
 
   it('GAP-06 ships migration 015, ownership, deletion, and admin Help Desk', () => {
@@ -46,12 +42,10 @@ describe('P1 gap source contracts', () => {
     const deletion = read('backend/services/accountDeletion.js');
     assert.match(deletion, /support_ticket_messages/);
     assert.match(deletion, /support_tickets/);
-    const admin = read('src/components/admin/Admin.jsx');
-    assert.match(admin, /HelpDesk/);
-    const sidebar = read('src/components/admin/sidebar/sidebar.jsx');
-    assert.match(sidebar, /Help Desk/);
-    const palette = read('src/components/admin/command/AdminCommandPalette.jsx');
-    assert.match(palette, /Help Desk/);
+    const admin = read('frontend/src/pages/admin/console.tsx');
+    assert.match(admin, /AdminHelpDeskTab/);
+    const helpdesk = read('frontend/src/components/admin/AdminHelpDeskTab.tsx');
+    assert.match(helpdesk, /SupportTicket/);
   });
 
   it('GAP-08 registers Paytm and PhonePe callbacks plus outbox reconcile', () => {

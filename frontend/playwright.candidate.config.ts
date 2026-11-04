@@ -43,7 +43,7 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report/candidate', open: 'never' }],
   ],
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:4000',
+    baseURL: process.env.E2E_BASE_URL || 'https://ime365.local',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     launchOptions,

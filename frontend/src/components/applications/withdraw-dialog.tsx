@@ -54,7 +54,10 @@ export function WithdrawDialog({ application, open, onOpenChange, onWithdrawn, o
           {sent && <><dt className="text-ink-muted">Applied</dt><dd className="text-ink"><time dateTime={sent.dateTime}>{sent.label.replace(/^Applied /, '')}</time></dd></>}
         </dl>
         <p className="text-sm text-ink-secondary">
-          {application.job.listed ? 'You can submit a new application while the job is listed.' : 'The job is not currently listed, so a new application may not be possible.'} Your Job Tracker is not changed.
+          {application.job.listed
+            ? 'You can apply again while the job is listed.'
+            : 'The job is no longer listed, so you won’t be able to apply again.'}{' '}
+          Your Job Tracker isn’t changed.
         </p>
         {error && <div role="alert" className="flex items-start gap-2 rounded-lg border border-error-100 bg-error-50 p-3 text-sm text-error-700">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{error}</span>
@@ -62,7 +65,7 @@ export function WithdrawDialog({ application, open, onOpenChange, onWithdrawn, o
         <div className="flex min-w-0 flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
           <DialogClose asChild><Button type="button" variant="outline" disabled={busy}>Keep application</Button></DialogClose>
           <Button ref={confirmRef} type="button" variant="destructive" onClick={() => void confirm()} disabled={busy} aria-busy={busy || undefined} className="min-w-0 whitespace-normal">
-            {busy ? 'Withdrawing…' : 'Confirm withdrawal'}
+            {busy ? 'Withdrawing…' : 'Withdraw application'}
           </Button>
         </div>
       </DialogContent>

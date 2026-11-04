@@ -383,7 +383,7 @@ export function resolveTruthfulDiagnostic(params: {
   // 9. Completely unknown cause
   return {
     code: code || 'UNKNOWN_AI_CAUSE',
-    message: 'AI generation was unavailable (cause unknown). Nothing was generated, and your text has not changed.',
+    message: AI_UNAVAILABLE_MESSAGE,
     remediation: remediation || 'Inspect server logs for requestId detail.',
     note,
   };

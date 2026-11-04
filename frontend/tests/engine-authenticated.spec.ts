@@ -462,7 +462,8 @@ test.describe('Phase 3b — 6-Role Deep-Link Matrix & Real Persistence', () => {
     await expect(page.getByRole('heading', { name: 'Unified Gateway' })).toBeVisible();
     // DEF-14: dynamic origin, zero hardcoded localhost in user-facing gateway/snippets when accessed via 127.0.0.1
     const gatewayCode = await page.getByRole('region', { name: 'Gateway integration code snippet' }).textContent();
-    expect(gatewayCode).toContain('http://127.0.0.1:4000/v1');
+    const origin = new URL(page.url()).origin;
+    expect(gatewayCode).toContain(`${origin}/v1`);
     expect(gatewayCode).not.toContain('localhost:');
 
     // DEF-15: Playground executes live completion

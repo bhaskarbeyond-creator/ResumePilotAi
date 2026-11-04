@@ -561,7 +561,7 @@ test('when the tracker can’t be loaded it says so, never shows an empty tracke
 test('adds an interview to a calendar as an .ics file at the time the candidate entered', async ({ page, apiAs }) => {
   const job = await arrange(apiAs('a'), {
     title: `Analytics Manager ${tag}`, company: `Contoso, Ltd ${tag}`, status: 'interview', interviewRound: 'Hiring Manager',
-    interviewFormat: 'Video', interviewAt: '2026-11-03T15:45', interviewLink: 'https://meet.example.com/final', contactPerson: 'Priya Nair',
+    interviewFormat: 'Video', interviewAt: '2026-11-23T15:45', interviewLink: 'https://meet.example.com/final', contactPerson: 'Priya Nair',
   });
   await openTracker(page);
   // The summary covers the whole tracker, so count every upcoming interview candidate A has.
@@ -575,11 +575,11 @@ test('adds an interview to a calendar as an .ics file at the time the candidate 
   const download = page.waitForEvent('download');
   await openMenuItem(page, job, 'Add interview to calendar (.ics)');
   const file = await download;
-  expect(file.suggestedFilename()).toBe(`interview-contoso-ltd-${tag}-2026-11-03.ics`);
+  expect(file.suggestedFilename()).toBe(`interview-contoso-ltd-${tag}-2026-11-23.ics`);
   const content = fs.readFileSync(await file.path(), 'utf8');
   expect(content.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0\r\n')).toBe(true);
-  expect(content).toContain('\r\nDTSTART:20261103T154500\r\n');
-  expect(content).toContain('\r\nDTEND:20261103T164500\r\n');
+  expect(content).toContain('\r\nDTSTART:20261123T154500\r\n');
+  expect(content).toContain('\r\nDTEND:20261123T164500\r\n');
   expect(content).toContain(`\r\nUID:${job.id}-interview@ime365\r\n`);
   expect(content.replace(/\r\n /g, '')).toContain(`SUMMARY:Interview: ${job.title} at Contoso\\, Ltd ${tag}`);
   expect(content.replace(/\r\n /g, '')).toContain('DESCRIPTION:Round: Hiring Manager\\nFormat: Video\\nMeeting link: https://meet.example.com/final\\nContact: Priya Nair');

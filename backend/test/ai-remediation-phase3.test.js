@@ -509,7 +509,7 @@ test('P3-27 summary/bullet output with a number absent from the candidate input 
 });
 
 test('P3-28 education/work starter chips contain no claim-like items (numbers, awards, publications)', async () => {
-    const { generateRoleInterviewQuestions, generateEducationInterviewQuestions } = await import('../../src/utils/roleInterviewGenerator.js');
+    const { generateRoleInterviewQuestions, generateEducationInterviewQuestions } = await import('../../shared/utils/roleInterviewGenerator.js');
     const sets = [
         generateEducationInterviewQuestions('BSN', 'X', 'Nursing'),
         generateEducationInterviewQuestions('JD', 'X', 'Law'),
@@ -530,12 +530,13 @@ test('P3-28 education/work starter chips contain no claim-like items (numbers, a
 test('P3-29 bullet metric helpers ask for the candidate number and never inject invented figures', () => {
     const fs = require('node:fs');
     const path = require('node:path');
-    const editor = fs.readFileSync(path.join(__dirname, '../../src/components/Form/BulletPointsEditor.jsx'), 'utf8');
-    const start = editor.indexOf('function getDomainAtsMetrics(');
-    const helper = editor.slice(start, editor.indexOf('\n}\n', start));
-    assert.doesNotMatch(helper, /\d+%|\$\d|\d+\+/, 'no canned metrics in helper');
-    assert.match(editor, /handleInjectQuickMetric\(index, metricDraft\.value\)/);
-    const modal = fs.readFileSync(path.join(__dirname, '../../src/components/BuildResume/steps/components/RoleAiCopilotModal.jsx'), 'utf8');
+    const { getDomainAtsMetrics } = require('../../shared/utils/domainAtsMetrics.js');
+    const doctorPrompts = getDomainAtsMetrics('doctor');
+    assert.ok(doctorPrompts.length > 0);
+    for (const item of doctorPrompts) {
+      assert.doesNotMatch(item.prompt, /\d+%|\$\d|\d+\+/, 'no canned metrics in helper prompt');
+    }
+    const modal = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/resume/role-ai-copilot-modal.tsx'), 'utf8');
     assert.doesNotMatch(modal, /99\.9% SLA|\$20,000|10,000\+ active users/);
 });
 

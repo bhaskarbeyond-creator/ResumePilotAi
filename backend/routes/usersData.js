@@ -110,38 +110,6 @@ router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req,
     }
 });
 
-// GET /api/users-data/:id - Get a user profile.
-// Privacy: the FULL record (email, payment status, revision, profile blob) is
-// only returned to the account owner or to an operator holding users.read
-// (Admin+). Every other authenticated caller receives a minimal public
-// projection (display name + avatar) so a uid can never be used to enumerate
-// another account's PII.
-router.get('/:id', requireAuth, async (req, res) => {
-    try {
-        const targetId = String(req.params.id || '');
-        const user = await req.repository.getUser(targetId);
-        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-
-        const isOwner = req.user?.uid === targetId;
-        const isOperator = permissionsFor(req.user).has('users.read') || permissionsFor(req.user).has('*');
-        if (isOwner || isOperator) {
-            return res.json({ success: true, user: selfUserProjection(user) });
-        }
-
-        const displayName = String(user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User');
-        return res.json({
-            success: true,
-            user: {
-                id: user.id,
-                displayName,
-                photoURL: user.photoURL || user.photoUrl || null,
-            },
-        });
-    } catch (err) {
-        return replyRepoError(res, err, 'Failed to fetch user');
-    }
-});
-
 // POST /api/users-data/mfa/disable - Server-assisted MFA unenroll with active authenticated session
 // Recent sign-in is enforced by the route policy (security/policy.js).
 // Identity-provider failures are answered with controlled codes: provider
@@ -182,6 +150,38 @@ router.post('/mfa/disable', requireAuth, async (req, res) => {
             });
         }
         return replyRepoError(res, err, 'Failed to disable MFA');
+    }
+});
+
+// GET /api/users-data/:id - Get a user profile.
+// Privacy: the FULL record (email, payment status, revision, profile blob) is
+// only returned to the account owner or to an operator holding users.read
+// (Admin+). Every other authenticated caller receives a minimal public
+// projection (display name + avatar) so a uid can never be used to enumerate
+// another account's PII.
+router.get('/:id', requireAuth, async (req, res) => {
+    try {
+        const targetId = String(req.params.id || '');
+        const user = await req.repository.getUser(targetId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        const isOwner = req.user?.uid === targetId;
+        const isOperator = permissionsFor(req.user).has('users.read') || permissionsFor(req.user).has('*');
+        if (isOwner || isOperator) {
+            return res.json({ success: true, user: selfUserProjection(user) });
+        }
+
+        const displayName = String(user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User');
+        return res.json({
+            success: true,
+            user: {
+                id: user.id,
+                displayName,
+                photoURL: user.photoURL || user.photoUrl || null,
+            },
+        });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to fetch user');
     }
 });
 

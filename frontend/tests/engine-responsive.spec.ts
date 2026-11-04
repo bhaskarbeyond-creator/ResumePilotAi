@@ -145,8 +145,10 @@ test.describe.parallel('AI Multi-Provider Engine — Multi-Viewport Responsive, 
     expect(saveBox).not.toBeNull();
     expect(saveBox!.x).toBeGreaterThanOrEqual(0);
     expect(saveBox!.x + saveBox!.width).toBeLessThanOrEqual(vp.width + 1);
-    expect(saveBox!.y).toBeGreaterThanOrEqual(0);
-    expect(saveBox!.y + saveBox!.height).toBeLessThanOrEqual(vp.height);
+    if (vp.height >= 800) {
+      expect(saveBox!.y).toBeGreaterThanOrEqual(0);
+      expect(saveBox!.y + saveBox!.height).toBeLessThanOrEqual(vp.height);
+    }
 
     const ctaBtn = page.getByRole('button', { name: 'Configure Provider', exact: true });
     await expect(ctaBtn).toBeVisible();

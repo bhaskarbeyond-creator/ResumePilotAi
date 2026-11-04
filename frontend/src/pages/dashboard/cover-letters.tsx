@@ -235,7 +235,7 @@ export function CoverLettersPage() {
             </div>
           </div>
 
-          <p className="sr-only" role="status">
+          <p className="sr-only">
             {visible.length === letters.length
               ? `Showing all ${letters.length} saved cover letters.`
               : `Showing ${visible.length} of ${letters.length} saved cover letters.`}

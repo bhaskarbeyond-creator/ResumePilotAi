@@ -25,6 +25,9 @@ const fakeRepository = {
     return { ...data, id, userId: uid, revision: expectedRevision + 1 };
   },
   async deletePortfolio(uid, id, revision) { observed.push(['delete', uid, id, revision]); return true; },
+  _getPool() {
+    return { query: async () => [[{ is_password_protected: 0, password_hash: null }]] };
+  },
 };
 const repositories = require('../repositories');
 repositories.getRepository = () => fakeRepository;

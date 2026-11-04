@@ -6,7 +6,7 @@
  */
 
 // @ts-ignore - Javascript utility in root src
-import { matchUniversalDirectory } from '../../../src/utils/autocompleteDirectories.js';
+import { matchUniversalDirectory } from './autocompleteDirectories.js';
 import { fetchAiAutocomplete } from './ai-content';
 
 const suggestionCache: Record<string, string[]> = {};

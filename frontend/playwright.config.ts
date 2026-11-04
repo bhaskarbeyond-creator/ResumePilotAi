@@ -18,7 +18,7 @@ const chromiumLaunchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
     }
   : {};
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4000';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://ime365.local';
 
 export default defineConfig({
   testDir: './tests',

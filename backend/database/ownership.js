@@ -130,6 +130,13 @@ const ENTITIES = Object.freeze({
     enterprise_support_grant: maria('enterprise_support_grant', 'enterprise_support_grants'),
     enterprise_quota: maria('enterprise_quota', 'enterprise_quota_buckets'),
     enterprise_job: maria('enterprise_job', 'enterprise_outbox'),
+    voice_interview_room: maria('voice_interview_room', 'voice_interview_rooms', 'Server-authoritative WebRTC room lifecycle and SFU session state.'),
+    voice_interview_transcript: maria('voice_interview_transcript', 'voice_interview_transcripts', 'Real-time speech-to-text transcript turn persistence.'),
+    tenant_custom_domain: maria('tenant_custom_domain', 'tenant_custom_domains', 'Server-authoritative DNS verification and automated SSL/TLS state machine for enterprise tenants.'),
+    ip_access_rule: maria('ip_access_rule', 'ip_access_rules', 'Corporate IP CIDR access control, brute-force jail, and temporary/permanent deny rules.'),
+    portfolio_media: maria('portfolio_media', 'portfolio_media', 'Media assets, case study attachments, and portfolio project media gallery.'),
+    payment_bank_settlement: maria('payment_bank_settlement', 'payment_bank_settlements', 'Bank gateway settlement ledger and webhook payout reconciliation batches.'),
+    payment_settlement_item: maria('payment_settlement_item', 'payment_settlement_items', 'Itemized payment order allocations within bank gateway settlements.'),
     permission: Object.freeze({
         entity: 'permission', owner: 'CODE', table: null,
         writeMode: 'IMMUTABLE_POLICY', consistency: 'PROCESS_LOCAL', replication: 'NONE',
@@ -173,6 +180,13 @@ const ALIASES = Object.freeze({
     enterprise_ai_usage: 'enterprise_ai_usage', enterprise_service_accounts: 'enterprise_service_account',
     ai_routing_decisions: 'ai_routing_decision',
     enterprise_support_grants: 'enterprise_support_grant', enterprise_quota_buckets: 'enterprise_quota', enterprise_outbox: 'enterprise_job',
+    voice_interview_rooms: 'voice_interview_room',
+    voice_interview_transcripts: 'voice_interview_transcript',
+    tenant_custom_domains: 'tenant_custom_domain',
+    ip_access_rules: 'ip_access_rule',
+    portfolio_media: 'portfolio_media',
+    payment_bank_settlements: 'payment_bank_settlement',
+    payment_settlement_items: 'payment_settlement_item',
     roles: 'permission', permissions: 'permission',
 });
 

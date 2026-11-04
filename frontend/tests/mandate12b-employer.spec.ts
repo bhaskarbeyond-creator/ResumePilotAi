@@ -76,6 +76,7 @@ test.beforeEach(({ browserName }, info) => {
 test('real conversation flow sends, reloads, and reconciles server messages at all required viewports', async ({ page }) => {
   await installSession(page);
   for (const viewport of REQUIRED_VIEWPORTS) {
+    postedMessages = [{ id: 'msg_10000000000_abcdef12', senderId: 'candidate', text: 'Could we talk this week?', timestamp }];
     await page.setViewportSize(viewport);
     await page.goto('/employer?tab=messages');
     await expect(page.getByText('Candidate Fixture')).toBeVisible();
@@ -87,7 +88,7 @@ test('real conversation flow sends, reloads, and reconciles server messages at a
     const sendRequest = page.waitForRequest((request) => request.url().endsWith('/api/messages/send') && request.method() === 'POST');
     await page.getByRole('button', { name: 'Send', exact: true }).click();
     expect((await sendRequest).postDataJSON()).toEqual({ conversationId, text: `Reply at ${viewport.width}` });
-    await expect(page.getByText(`Reply at ${viewport.width}`)).toBeVisible();
+    await expect(page.getByText(`Reply at ${viewport.width}`).last()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
@@ -114,6 +115,7 @@ test('failed message request is never represented as delivered', async ({ page }
 test('slot manager modal is titled and submits a native 30-minute slot at all required viewports', async ({ page }) => {
   await installSession(page);
   for (const viewport of REQUIRED_VIEWPORTS) {
+    postedMessages = [{ id: 'msg_10000000000_abcdef12', senderId: 'candidate', text: 'Could we talk this week?', timestamp }];
     await page.setViewportSize(viewport);
     slots = [];
     await page.goto('/employer/pipeline');
@@ -132,9 +134,9 @@ test('slot manager modal is titled and submits a native 30-minute slot at all re
     const body = (await request).postDataJSON() as { durationMinutes: number; startTime: string; endTime: string };
     expect(body.durationMinutes).toBe(30);
     expect(Date.parse(body.endTime) - Date.parse(body.startTime)).toBe(30 * 60_000);
-    await expect(dialog.getByText(/10:00–10:30/)).toBeVisible();
+    await expect(dialog.getByText(/10:00[–-]10:30/).last()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await dialog.getByRole('button', { name: 'Close' }).click();
+    await dialog.getByRole('button', { name: 'Close' }).first().click();
   }
 });
 
@@ -152,10 +154,10 @@ test('candidate interview booking and scorecard use the application ID and persi
   await expect(drawer).toBeVisible();
   await drawer.getByRole('button', { name: 'Rate 5 of 5 stars' }).click();
   await drawer.getByLabel('Hiring Team Notes').fill('Strong systems design and communication.');
-  await drawer.getByLabel('Stage recommendation').selectOption('Move to Offer');
+  await drawer.getByLabel('Stage recommendation').selectOption('STRONG_YES');
   const evaluation = page.waitForRequest((request) => request.url().endsWith('/api/jobs-data/applications/app-12b/evaluate') && request.method() === 'PUT');
   await drawer.getByRole('button', { name: 'Save Evaluation' }).click();
-  expect((await evaluation).postDataJSON()).toEqual({ rating: 5, notes: 'Strong systems design and communication.', recommendation: 'Move to Offer' });
+  expect((await evaluation).postDataJSON()).toEqual({ rating: 5, notes: 'Strong systems design and communication.', recommendation: 'STRONG_YES' });
   const selection = drawer.getByRole('radio', { name: /Select slot on/ });
   await selection.check();
   const booking = page.waitForRequest((request) => request.url().endsWith('/api/employer/interviews/slots/islot_available_12345678/book') && request.method() === 'POST');

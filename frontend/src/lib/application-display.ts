@@ -2,25 +2,30 @@
 import { lifecycleStatusFor, statusLabel, type Application, type ApplicationLifecycle } from '@/lib/applications';
 import { formatDay } from '@/lib/job-tracker-display';
 
-export type ApplicationSort = 'date' | 'company' | 'oldest' | 'updated';
-export type StatusFilter = 'all' | 'applied' | 'reviewing' | 'interview' | 'offered' | 'rejected';
+export type ApplicationSort = 'newest' | 'date' | 'company' | 'oldest' | 'updated';
+export type StatusFilter = 'all' | 'pending' | 'interview' | 'accepted' | 'rejected' | 'applied' | 'reviewing' | 'offered';
 export const SORT_OPTIONS: ReadonlyArray<{ value: ApplicationSort; label: string }> = [
-  { value: 'date', label: 'Date applied, newest first' },
-  { value: 'company', label: 'Company, A to Z' },
+  { value: 'newest', label: 'Date applied, newest first' },
   { value: 'oldest', label: 'Date applied, oldest first' },
   { value: 'updated', label: 'Last updated' },
+  { value: 'company', label: 'Company, A to Z' },
 ];
 export const STATUS_FILTERS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
-  { value: 'all', label: 'All statuses' }, { value: 'applied', label: 'Applied' },
-  { value: 'reviewing', label: 'Reviewing' }, { value: 'interview', label: 'Interview scheduled' },
-  { value: 'offered', label: 'Offered' }, { value: 'rejected', label: 'Rejected' },
+  { value: 'all', label: 'All statuses' },
+  { value: 'pending', label: 'Submitted' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Not selected' },
+  { value: 'applied', label: 'Applied' },
+  { value: 'reviewing', label: 'Reviewing' },
+  { value: 'offered', label: 'Offered' },
 ];
-const FILTER_LIFECYCLE: Record<Exclude<StatusFilter, 'all'>, ApplicationLifecycle> = {
-  applied: 'APPLIED', reviewing: 'REVIEWING', interview: 'INTERVIEW_SCHEDULED', offered: 'OFFERED', rejected: 'REJECTED',
+const FILTER_LIFECYCLE: Record<string, ApplicationLifecycle> = {
+  pending: 'APPLIED', applied: 'APPLIED', reviewing: 'REVIEWING', interview: 'INTERVIEW_SCHEDULED', accepted: 'OFFERED', offered: 'OFFERED', rejected: 'REJECTED',
 };
 export function parseSort(value: string | null): ApplicationSort {
-  if (value === 'newest') return 'date';
-  return SORT_OPTIONS.some((option) => option.value === value) ? value as ApplicationSort : 'date';
+  if (value === 'date' || value === 'newest') return 'newest';
+  return SORT_OPTIONS.some((option) => option.value === value) ? value as ApplicationSort : 'newest';
 }
 export function parseStatusFilter(value: string | null): StatusFilter {
   return STATUS_FILTERS.some((option) => option.value === value) ? value as StatusFilter : 'all';
@@ -32,21 +37,28 @@ export function parseApplicationURL(params: URLSearchParams): ApplicationURLStat
 /** Keep unrelated parameters and represent defaults without needless clutter. */
 export function applicationURLParameters(current: URLSearchParams, state: ApplicationURLState): URLSearchParams {
   const next = new URLSearchParams(current);
-  for (const [key, value, fallback] of [['status', state.status, 'all'], ['q', state.q.trim(), ''], ['sort', state.sort, 'date']] as const) {
+  for (const [key, value, fallback] of [['status', state.status, 'all'], ['q', state.q.trim(), ''], ['sort', state.sort, 'newest']] as const) {
     if (value === fallback) next.delete(key); else next.set(key, value);
   }
   return next;
 }
 export function applicationName(application: Application): string {
   const { title, company } = application.job;
-  return title && company ? `${title} at ${company}` : title || company || 'this application';
+  return title && company ? `${title} at ${company}` : title || company || 'this job';
 }
 export function matchesFilter(application: Application, filter: StatusFilter): boolean {
-  return filter === 'all' || lifecycleStatusFor(application.status) === FILTER_LIFECYCLE[filter];
+  if (filter === 'all') return true;
+  const s = application.status.trim().toLowerCase();
+  if (filter === 'pending' || filter === 'applied') return s === 'pending' || s === 'applied' || s === 'submitted';
+  if (filter === 'interview') return s === 'interview' || s === 'interview_scheduled';
+  if (filter === 'accepted' || filter === 'offered') return s === 'accepted' || s === 'offered';
+  if (filter === 'rejected') return s === 'rejected' || s === 'declined';
+  if (filter === 'reviewing') return s === 'reviewing' || s === 'in_review';
+  return lifecycleStatusFor(application.status) === FILTER_LIFECYCLE[filter];
 }
 export function matchesQuery(application: Application, query: string): boolean {
   const needle = query.trim().toLocaleLowerCase();
-  return !needle || [application.job.title, application.job.company, application.job.location].some((value) => value.toLocaleLowerCase().includes(needle));
+  return !needle || [application.job.title, application.job.company, application.job.location, statusLabel(application.status)].some((value) => value.toLocaleLowerCase().includes(needle));
 }
 function timestamp(value: string): number | null {
   if (!value.trim()) return null;
@@ -74,10 +86,22 @@ export function sortApplications(applications: readonly Application[], sort: App
     return order || a.index - b.index;
   }).map(({ application }) => application);
 }
-export interface StatusSummary { counts: Record<ApplicationLifecycle, number> }
+export interface StatusSummary { counts: Record<string, number> & Record<ApplicationLifecycle, number> }
 export function statusSummary(applications: readonly Application[]): StatusSummary {
-  const counts: Record<ApplicationLifecycle, number> = { APPLIED: 0, REVIEWING: 0, INTERVIEW_SCHEDULED: 0, OFFERED: 0, REJECTED: 0, UNKNOWN: 0 };
-  for (const application of applications) counts[lifecycleStatusFor(application.status)] += 1;
+  const counts: Record<string, number> & Record<ApplicationLifecycle, number> = {
+    pending: 0, interview: 0, accepted: 0, rejected: 0, other: 0,
+    APPLIED: 0, REVIEWING: 0, INTERVIEW_SCHEDULED: 0, OFFERED: 0, REJECTED: 0, UNKNOWN: 0,
+  };
+  for (const application of applications) {
+    const lc = lifecycleStatusFor(application.status);
+    counts[lc] += 1;
+    const s = application.status.trim().toLowerCase();
+    if (s === 'pending' || s === 'applied' || s === 'submitted') counts.pending += 1;
+    else if (s === 'interview' || s === 'interview_scheduled') counts.interview += 1;
+    else if (s === 'accepted' || s === 'offered') counts.accepted += 1;
+    else if (s === 'rejected' || s === 'declined') counts.rejected += 1;
+    else counts.other += 1;
+  }
   return { counts };
 }
 function validDate(value: string): Date | null {

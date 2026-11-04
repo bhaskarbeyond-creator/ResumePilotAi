@@ -44,6 +44,19 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
   const formRef = useRef<HTMLFormElement>(null);
   const interviewRef = useRef<HTMLSelectElement>(null);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    if (open) {
+      const b = job ? fieldsOf(job) : { ...EMPTY_TRACKER_FIELDS, status: request.initialStatus ?? 'wishlist' };
+      setBaseline(b);
+      setDraft(job && request.focus === 'interview' ? { ...fieldsOf(job), status: 'interview' } : b);
+      setRevision(job?.revision ?? 1);
+      setErrors({});
+      setFormError(null);
+      setMissing(false);
+      setConflict(null);
+      setCheckingConflict(false);
+    }
+  }, [open, request, job]);
   const update = (name: TrackerFieldName) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const value = event.target.value;
     setDraft((current) => ({ ...current, [name]: value }));
@@ -58,7 +71,7 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
       if (!mounted.current) return;
       if (!latest) { setMissing(true); setFormError('This job was removed elsewhere. These changes cannot be saved.'); onMissing(job); return; }
       setConflict(latest);
-      setFormError('This job changed elsewhere. Review the latest version below. Your draft is preserved; nothing has been saved over it.');
+      setFormError('This job was changed in another tab or device. Your edits are still here: select Save changes to apply them on top of the latest version, or Cancel to discard them.');
     } catch {
       if (mounted.current) setFormError('The record changed elsewhere, but its latest version could not be loaded. Your draft is safe. Retry the review before saving.');
     } finally { if (mounted.current) setCheckingConflict(false); }
@@ -75,17 +88,32 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (busyRef.current || missing || conflict || checkingConflict) return;
+    if (busyRef.current || missing || checkingConflict) return;
     const normalized = normalizeTrackerFields(draft);
-    const found = validateTracker(normalized);
-    const invalid = FIELD_ORDER.filter((name) => found[name]);
-    setErrors(found);
-    if (invalid.length) { setFormError(`Check the ${invalid.length} highlighted ${invalid.length === 1 ? 'field' : 'fields'}.`); focusField(invalid[0]); return; }
-    const changes = mode === 'edit' ? changedFields(baseline, normalized) : normalized;
+    let targetJob = job;
+    let targetRevision = revision;
+    let changes: Partial<TrackerFields>;
+    if (conflict) {
+      const edits = changedFields(baseline, draft);
+      const latestFields = fieldsOf(conflict);
+      targetJob = conflict;
+      targetRevision = conflict.revision;
+      setBaseline(latestFields);
+      setRevision(targetRevision);
+      setConflict(null);
+      setFormError(null);
+      changes = edits;
+    } else {
+      const found = validateTracker(normalized);
+      const invalid = FIELD_ORDER.filter((name) => found[name]);
+      setErrors(found);
+      if (invalid.length) { setFormError(`Check the ${invalid.length} highlighted ${invalid.length === 1 ? 'field' : 'fields'}.`); focusField(invalid[0]); return; }
+      changes = mode === 'edit' ? changedFields(baseline, normalized) : normalized;
+    }
     if (mode === 'edit' && !Object.keys(changes).length) { onUnchanged(); return; }
     busyRef.current = true; setBusy(true); setFormError(null);
     try {
-      const saved = mode === 'edit' && job ? await updateTrackedJob(job, changes, revision) : await createTrackedJob(normalized);
+      const saved = mode === 'edit' && targetJob ? await updateTrackedJob(targetJob, changes, targetRevision) : await createTrackedJob(normalized);
       if (mounted.current) onSaved(saved, mode);
     } catch (error) {
       if (!mounted.current) return;
@@ -153,16 +181,14 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
           </Section>
           <fieldset className="min-w-0">
             <legend className="mb-2 text-sm font-semibold text-ink">Interview</legend>
-            {draft.status === 'interview' ? <>
-              <p className="mb-3 text-xs text-ink-muted">Entering Interviewing does not schedule a round. Leave these fields empty until confirmed. This tracker stores one round per job; saving changes replaces those details. Time is saved as a wall-clock time without a time zone.</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {selectField('interviewRound', 'Round', optional(INTERVIEW_ROUNDS, 'Not scheduled'), true)}
-                {selectField('interviewFormat', 'Format', optional(INTERVIEW_FORMATS, 'Not specified'))}
-                {textField('interviewAt', 'Date and time', { type: 'datetime-local' })}
-                {textField('interviewLink', 'Meeting link', { type: 'url', inputMode: 'url', placeholder: 'https://' })}
-              </div>
-              <p className="mt-2 text-xs text-ink-muted">Calendar downloads use a documented 60-minute default duration. Confirm the time zone with your contact.</p>
-            </> : <p className="text-sm text-ink-muted">Choose the Interviewing stage to schedule a round. Any previously saved interview details are retained.</p>}
+            <p className="mb-3 text-xs text-ink-muted">Leave these fields empty until confirmed. This tracker stores one round per job; saving changes replaces those details. Time is saved as a wall-clock time without a time zone.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {selectField('interviewRound', 'Round', optional(INTERVIEW_ROUNDS, 'Not scheduled'), true)}
+              {selectField('interviewFormat', 'Format', optional(INTERVIEW_FORMATS, 'Not specified'))}
+              {textField('interviewAt', 'Date and time', { type: 'datetime-local' })}
+              {textField('interviewLink', 'Meeting link', { type: 'url', inputMode: 'url', placeholder: 'https://' })}
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">Calendar downloads use a documented 60-minute default duration. Confirm the time zone with your contact.</p>
           </fieldset>
           <Field name="notes" label="Notes" error={errors.notes} wide>
             <Textarea {...common('notes')} rows={4} error={Boolean(errors.notes)} aria-describedby={cn(errors.notes && `${fieldId('notes')}-error`, `${fieldId('notes')}-count`)} />
@@ -170,7 +196,7 @@ export function TrackerFormDialog({ open, request, onOpenChange, onSaved, onUnch
           </Field>
           <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
             <DialogClose asChild><Button type="button" variant="outline" disabled={busy}>Cancel</Button></DialogClose>
-            <Button type="submit" disabled={busy || missing || Boolean(conflict) || checkingConflict} aria-busy={busy || undefined}>{busy ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Add to tracker'}</Button>
+            <Button type="submit" disabled={busy || missing || checkingConflict} aria-busy={busy || undefined}>{busy ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Add to tracker'}</Button>
           </div>
         </form>
       </DialogContent>

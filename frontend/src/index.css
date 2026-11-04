@@ -415,3 +415,25 @@
   scrollbar-width: none !important;
 }
 
+
+/* ─── Accessibility: WCAG Skip-Link ─── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0.75rem;
+  z-index: 10000;
+  padding: 0.5rem 0.85rem;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 0.35rem;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+@media print {
+  .skip-link {
+    display: none !important;
+  }
+}

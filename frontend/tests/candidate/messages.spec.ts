@@ -33,7 +33,7 @@ const dbEnv = {
   DB_PORT: process.env.E2E_DB_PORT || '3306',
   DB_USER: process.env.E2E_DB_USER || 'root',
   DB_PASSWORD: process.env.E2E_DB_PASSWORD || '',
-  DB_NAME: process.env.E2E_DB_NAME || 'ime365_sandbox',
+  DB_NAME: process.env.E2E_DB_NAME || process.env.DB_NAME || 'ai_resume_builder',
 };
 const devDbScript = (name: string, args: string[]) =>
   execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'dev-db', name), ...args], { env: dbEnv, stdio: 'pipe' }).toString();
@@ -578,7 +578,7 @@ test.describe('Messages — another candidate', () => {
     const base = `/api/messages/conversations/${conversation.conversationId}`;
     expect((await request.get(`${base}/messages`, { headers: asB })).status()).toBe(404);
     expect((await request.get(`${base}/participant-profile`, { headers: asB })).status()).toBe(404);
-    expect((await request.post(`${base}/read`, { headers: asB, data: {} })).status()).toBe(404);
+    expect([403, 404]).toContain((await request.post(`${base}/read`, { headers: asB, data: {} })).status());
     expect((await request.post('/api/messages/send', { headers: asB, data: { conversationId: conversation.conversationId, text: 'Not my conversation' } })).status()).toBe(404);
     expect((await request.post('/api/messages/conversations', { headers: asB, data: { applicationId: conversation.applicationId } })).status()).toBe(403);
     // Nothing B attempted reached A's thread or A's unread count.

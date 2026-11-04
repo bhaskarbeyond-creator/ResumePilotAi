@@ -206,10 +206,12 @@ describe('Mandate 9B Contract Coverage', () => {
       assert.equal(updateRes.status, 200);
       assert.equal(updateRes.body.success, true);
 
-      // 4. Delete post
+      // 4. Delete post (supplying expectedRevision for CAS optimistic delete)
+      const expectedRev = updateRes.body?.post?.revision || 2;
       const deleteRes = await request(app)
         .delete(`/api/blog/posts/${postId}`)
-        .set('Authorization', 'Bearer admin');
+        .set('Authorization', 'Bearer admin')
+        .send({ expectedRevision: expectedRev });
       assert.equal(deleteRes.status, 200);
       assert.equal(deleteRes.body.success, true);
     });

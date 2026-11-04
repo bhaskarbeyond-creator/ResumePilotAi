@@ -2,16 +2,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, LayoutGrid, List, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, CheckSquare, LayoutGrid, List, Plus, RefreshCw, Search, Square, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NoticeRegions, type Notice } from '@/components/settings/notice-regions';
 import { TrackerDeleteDialog } from '@/components/job-tracker/tracker-delete-dialog';
 import { actionsTriggerId, advanceButtonId, dragHandleId, stageSelectId, TrackerEntry } from '@/components/job-tracker/tracker-entry';
 import { TrackerFormDialog, type TrackerFormRequest } from '@/components/job-tracker/tracker-form-dialog';
 import { LoadingSkeleton } from '@/pages/dashboard/applied-jobs';
 import { cn } from '@/lib/utils';
-import { listTrackedJobs, reconcileTrackedJob, rollbackTrackedJob, moveTrackedJobStage, stageLabel, TRACKER_QUERY_KEY, TRACKER_STAGES, type TrackedJob, type TrackerStatus } from '@/lib/job-tracker';
+import { deleteTrackedJob, listTrackedJobs, reconcileTrackedJob, rollbackTrackedJob, moveTrackedJobStage, stageLabel, TRACKER_QUERY_KEY, TRACKER_STAGES, type TrackedJob, type TrackerStatus } from '@/lib/job-tracker';
 import { CALENDAR_MIME_TYPE, interviewCalendarFile, matchesQuery, parseTrackerURL, pipelineSummary, reconcileTrackerSnapshot, SORT_OPTIONS, sortJobs, type TrackerView } from '@/lib/job-tracker-display';
 
 const HEADING_ID = 'tracker-heading';
@@ -48,6 +49,73 @@ export function JobTrackerPage() {
   const [dropStage, setDropStage] = useState<TrackerStatus | null>(null);
   const [form, setForm] = useState<{ session: number; open: boolean; request: TrackerFormRequest } | null>(null);
   const [removal, setRemoval] = useState<{ session: number; open: boolean; job: TrackedJob } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+  const toggleSelectJob = useCallback((job: TrackedJob) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(job.id)) next.delete(job.id);
+      else next.add(job.id);
+      return next;
+    });
+  }, []);
+
+  const allSelected = visible.length > 0 && visible.every((job) => selectedIds.has(job.id));
+  const handleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visible.map((j) => j.id)));
+    }
+  }, [allSelected, visible]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkMove = async (targetStatus: TrackerStatus) => {
+    const jobsToMove = jobs.filter((j) => selectedIds.has(j.id) && j.status !== targetStatus);
+    if (!jobsToMove.length) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setNotice({ tone: 'info', text: `Moving ${jobsToMove.length} ${jobsToMove.length === 1 ? 'job' : 'jobs'} to ${stageLabel(targetStatus)}...` });
+    let movedCount = 0;
+    for (const job of jobsToMove) {
+      try {
+        await moveJob(job, targetStatus, 'stage');
+        movedCount++;
+      } catch (err) {
+        console.error('Bulk move item error:', err);
+      }
+    }
+    setSelectedIds(new Set());
+    setNotice({ tone: 'success', text: `Moved ${movedCount} ${movedCount === 1 ? 'job' : 'jobs'} to ${stageLabel(targetStatus)}.` });
+    refreshInBackground();
+  };
+
+  const handleBulkDelete = async () => {
+    const jobsToDelete = jobs.filter((j) => selectedIds.has(j.id));
+    if (!jobsToDelete.length) return;
+    setIsBulkDeleting(true);
+    let deletedCount = 0;
+    for (const job of jobsToDelete) {
+      try {
+        await deleteTrackedJob(job);
+        deletedCount++;
+      } catch (err) {
+        console.error('Bulk delete item error:', err);
+      }
+    }
+    setJobs((current) => current.filter((j) => !selectedIds.has(j.id)));
+    setSelectedIds(new Set());
+    setIsBulkDeleting(false);
+    setShowBulkDeleteModal(false);
+    setNotice({ tone: 'success', text: `Removed ${deletedCount} ${deletedCount === 1 ? 'job' : 'jobs'} from your tracker.` });
+    refreshInBackground();
+  };
   const session = useRef(0);
   const returnFocus = useRef(ADD_BUTTON_ID);
   const pendingFocus = useRef<string[] | null>(null);
@@ -125,10 +193,11 @@ export function JobTrackerPage() {
         setNotice({ tone: 'error', text: `${describe(job)} is no longer in your tracker. It may have been removed elsewhere.` });
       } else if (result.kind === 'failed') {
         pendingFocus.current = focusAfterMove;
-        const suffix = result.error.kind === 'conflict'
-          ? result.refreshed ? ' Its latest version is shown. Review it before trying again.' : ' The latest version could not be loaded. Refresh before trying again.'
-          : ` It stays in ${stageLabel(job.status)}. Check your connection and retry.`;
-        setNotice({ tone: 'error', text: `${describe(job)} could not be moved.${suffix}` });
+        if (result.error.kind === 'conflict') {
+          setNotice({ tone: 'error', text: `${describe(job)} was changed in another tab or device, so it wasn’t moved. Its latest version is shown; try again.` });
+        } else {
+          setNotice({ tone: 'error', text: `${describe(job)} couldn’t be moved, so it stays in ${stageLabel(job.status)}. Check your connection and try again.` });
+        }
       }
     } finally {
       pendingMoves.current.delete(job.id); movingRef.current.delete(job.id);
@@ -143,7 +212,7 @@ export function JobTrackerPage() {
       url = URL.createObjectURL(new Blob([file.content], { type: CALENDAR_MIME_TYPE }));
       const link = document.createElement('a'); link.href = url; link.download = file.filename;
       document.body.appendChild(link); link.click(); link.remove();
-      setNotice({ tone: 'success', text: `Calendar download initiated: ${file.filename}. Open it to add the interview.` });
+      setNotice({ tone: 'success', text: `Downloaded ${file.filename}. Open it to add the interview to your calendar.` });
     } catch { setNotice({ tone: 'error', text: 'The calendar download could not be started. Your interview details are unchanged.' }); }
     finally { if (url) { const objectURL = url; setTimeout(() => URL.revokeObjectURL(objectURL), 1000); } }
   };
@@ -153,6 +222,7 @@ export function JobTrackerPage() {
     onMove: (job: TrackedJob, status: TrackerStatus, via?: 'stage' | 'advance') => void moveJob(job, status, via),
     onEdit: (job: TrackedJob, focus?: 'interview') => openForm({ mode: 'edit', job, focus }, actionsTriggerId(job)),
     onDelete: openRemoval, onExportInterview: exportInterview,
+    onToggleSelect: toggleSelectJob,
   };
   return <div className="relative min-w-0 p-4 lg:p-6 xl:p-8">
     <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -173,6 +243,10 @@ export function JobTrackerPage() {
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <div className="flex items-center gap-2"><label htmlFor="tracker-sort" className="shrink-0 text-sm text-ink-secondary">Sort by</label><select id="tracker-sort" value={sort} onChange={(event) => setParam('sort', event.target.value, 'stage')} className="h-10 min-w-0 max-w-48 rounded-lg border border-border bg-surface px-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-500">{SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
           <div role="group" aria-label="View" className="flex rounded-lg border border-border bg-surface p-0.5">{([['board', 'Board', LayoutGrid], ['list', 'List', List]] as Array<[TrackerView, string, typeof List]>).map(([value, label, Icon]) => <button key={value} type="button" aria-pressed={view === value} onClick={() => setParam('view', value, 'board')} className={cn('inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium focus-visible:outline-2 focus-visible:outline-brand-500', view === value ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:text-ink')}><Icon className="size-4" aria-hidden="true" />{label}</button>)}</div>
+          <Button type="button" variant="outline" size="sm" onClick={handleSelectAll} className="flex items-center gap-1.5 text-xs">
+            {allSelected ? <CheckSquare className="size-4 text-brand-600" /> : <Square className="size-4 text-ink-muted" />}
+            {allSelected ? 'Deselect all' : 'Select all'}
+          </Button>
         </div>
       </div>
     </>}
@@ -180,11 +254,11 @@ export function JobTrackerPage() {
     <section aria-labelledby="tracker-results-heading" aria-busy={tracker.isPending || undefined}>
       <h2 id="tracker-results-heading" className="sr-only">{view === 'list' ? 'All tracked jobs' : 'Tracked jobs by stage'}</h2>
       {tracker.isPending && <LoadingSkeleton label="Loading your tracked jobs" />}
-      {tracker.isError && <div role="alert" className="mb-4 flex flex-col items-start gap-3 rounded-xl border border-error-100 bg-error-50 p-4 text-sm text-error-700 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0" aria-hidden="true" /><span className="flex-1">The latest tracker could not be loaded.{loaded ? ' The previous list is preserved below.' : ' Check your connection and try again.'}</span><Button variant="outline" size="sm" disabled={tracker.isFetching} onClick={() => void tracker.refetch()}><RefreshCw aria-hidden="true" /> Try again</Button></div>}
+      {tracker.isError && <div role="alert" className="mb-4 flex flex-col items-start gap-3 rounded-xl border border-error-100 bg-error-50 p-4 text-sm text-error-700 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0" aria-hidden="true" /><span className="flex-1">{loaded ? 'The latest tracker could not be loaded. The previous list is preserved below.' : 'Your tracked jobs couldn’t be loaded. Check your connection and try again.'}</span><Button variant="outline" size="sm" disabled={tracker.isFetching} onClick={() => void tracker.refetch()}><RefreshCw aria-hidden="true" /> Try again</Button></div>}
       {loaded && jobs.length === 0 && <div className="mb-5 flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center"><h3 className="text-lg font-semibold text-ink">No tracked jobs yet</h3><p className="mt-1 max-w-sm text-sm text-ink-muted">Save a job, then move it through the funnel as you apply, interview and hear back.</p><Button id="tracker-add-first" className="mt-5" onClick={() => openForm({ mode: 'create', job: null }, 'tracker-add-first')}><Plus aria-hidden="true" /> Track your first job</Button></div>}
       {loaded && jobs.length > 0 && visible.length === 0 && <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface px-6 py-6 text-center"><p className="text-sm text-ink">No tracked jobs match “{draftQuery.trim()}”.</p><Button variant="outline" size="sm" className="mt-3" onClick={() => { setDraftQuery(''); commitQuery(''); }}>Clear search</Button></div>}
       {loaded && view === 'board' && <>
-        <p className="mb-3 text-xs text-ink-muted">Drag using the handle, or use each card’s Stage selector and Advance button. On small screens, scroll the board horizontally.</p>
+        <p className="mb-3 text-xs text-ink-muted">Drag a job to another stage, or use its Stage control. On small screens, scroll the board horizontally.</p>
         <div role="region" aria-label="Five-stage Kanban board, horizontally scrollable" tabIndex={0} className="overflow-x-auto rounded-sm pb-3 focus-visible:outline-2 focus-visible:outline-brand-500">
           <div className="grid min-w-[1380px] grid-cols-5 gap-4">
             {TRACKER_STAGES.map((stage) => {
@@ -197,7 +271,7 @@ export function JobTrackerPage() {
                 className={cn('min-w-0 rounded-2xl bg-canvas-soft p-3', dropStage === stage.id && 'outline-2 outline-offset-2 outline-brand-500')}>
                 <div className="flex items-baseline justify-between gap-2 px-1"><h2 id={headingId} className="text-sm font-semibold text-ink">{stage.label}<span className="sr-only"> ({items.length} {items.length === 1 ? 'job' : 'jobs'})</span></h2><span aria-hidden="true" data-testid={`count-${stage.id}`} className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-secondary">{items.length}</span></div>
                 <p className="mb-3 mt-0.5 px-1 text-xs text-ink-muted">{stage.hint}</p>
-                {items.length ? <ul role="list" aria-label={`${stage.label} jobs`} className="space-y-3">{items.map((job) => <li key={job.id}><TrackerEntry job={job} moving={movingIds.has(job.id)} {...entryProps} dragging={dragId === job.id}
+                {items.length ? <ul role="list" aria-label={`${stage.label} jobs`} className="space-y-3">{items.map((job) => <li key={job.id}><TrackerEntry job={job} selected={selectedIds.has(job.id)} moving={movingIds.has(job.id)} {...entryProps} dragging={dragId === job.id}
                   onDragStart={(dragged, event) => { event.dataTransfer.setData('application/x-ime365-tracker', dragged.id); event.dataTransfer.setData('text/plain', describe(dragged)); event.dataTransfer.effectAllowed = 'move'; const card = event.currentTarget.closest('article'); if (card) event.dataTransfer.setDragImage(card, 30, 30); setDragId(dragged.id); }}
                   onDragEnd={() => { setDragId(null); setDropStage(null); }} /></li>)}</ul>
                   : <p className="rounded-xl border border-dashed border-border px-3 py-5 text-center text-xs text-ink-muted">{draftQuery.trim() ? 'No matching jobs in this stage.' : 'No jobs in this stage.'}</p>}
@@ -206,7 +280,7 @@ export function JobTrackerPage() {
           </div>
         </div>
       </>}
-      {loaded && view === 'list' && visible.length > 0 && <ul role="list" aria-label="Tracked jobs" className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{visible.map((job) => <li key={job.id}><TrackerEntry job={job} moving={movingIds.has(job.id)} {...entryProps} /></li>)}</ul>}
+      {loaded && view === 'list' && visible.length > 0 && <ul role="list" aria-label="Tracked jobs" className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{visible.map((job) => <li key={job.id}><TrackerEntry job={job} selected={selectedIds.has(job.id)} moving={movingIds.has(job.id)} {...entryProps} /></li>)}</ul>}
     </section>
     {form && <TrackerFormDialog key={form.session} open={form.open} request={form.request} onOpenChange={(open) => { if (!open) closeForm(); }} onCloseAutoFocus={restoreFocus}
       onSaved={(saved, mode) => {
@@ -231,7 +305,78 @@ export function JobTrackerPage() {
         returnFocus.current = neighbour && neighbour.id !== job.id ? actionsTriggerId(neighbour) : jobs.length > 1 ? HEADING_ID : ADD_BUTTON_ID;
         setRemoval((current) => current ? { ...current, open: false } : current);
         setJobs((current) => current.filter((item) => item.id !== job.id));
-        setNotice(alreadyGone ? { tone: 'info', text: `${describe(job)} was already removed elsewhere.` } : { tone: 'success', text: `Removed ${describe(job)} from your tracker.` });
+        setNotice(alreadyGone ? { tone: 'info', text: `${describe(job)} had already been removed in another tab or device.` } : { tone: 'success', text: `Removed ${describe(job)} from your tracker.` });
       }} />}
+
+    {selectedIds.size > 0 && (
+      <div
+        role="region"
+        aria-label="Bulk actions toolbar"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface/95 px-5 py-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4"
+      >
+        <span className="text-xs font-bold text-ink">
+          {selectedIds.size} {selectedIds.size === 1 ? 'job' : 'jobs'} selected
+        </span>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-ink-muted">Move to:</span>
+          {TRACKER_STAGES.map((stage) => (
+            <Button
+              key={stage.id}
+              variant="outline"
+              size="xs"
+              onClick={() => void handleBulkMove(stage.id)}
+              className="text-xs"
+            >
+              {stage.label}
+            </Button>
+          ))}
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <Button
+          variant="destructive"
+          size="xs"
+          onClick={() => setShowBulkDeleteModal(true)}
+          className="text-xs flex items-center gap-1"
+        >
+          <Trash2 className="size-3.5" /> Delete
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={handleClearSelection}
+          className="text-xs text-ink-muted"
+        >
+          Clear
+        </Button>
+      </div>
+    )}
+
+    <Dialog open={showBulkDeleteModal} onOpenChange={setShowBulkDeleteModal}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete {selectedIds.size} tracked jobs?</DialogTitle>
+          <DialogDescription>
+            The selected {selectedIds.size} jobs will be permanently removed from your private tracker. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="mt-4 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={isBulkDeleting}
+            onClick={() => setShowBulkDeleteModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={isBulkDeleting}
+            onClick={() => void handleBulkDelete()}
+          >
+            {isBulkDeleting ? 'Deleting...' : `Confirm Delete (${selectedIds.size})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>;
 }
