@@ -68,7 +68,13 @@ function buildCoverLetterPrompt(fields) {
 
     return [
         'You write cover letters for job seekers.',
-        'Task: write one cover letter of three short paragraphs followed by a sign-off.',
+        'Task: write one complete professional cover letter of three paragraphs (between 150 and 300 words) followed by a formal sign-off.',
+        '',
+        'Structure:',
+        '- Paragraph 1: Introduce the candidate and express interest in the target role and company, referencing relevant background.',
+        '- Paragraph 2: Connect the candidate\'s stated skills and experience to the role requirements or job description.',
+        '- Paragraph 3: Reiterate value and enthusiasm for discussing how the candidate can contribute in an interview.',
+        '- Sign-off: Sincerely, followed by the candidate name.',
         '',
         'Rules:',
         '- Use ONLY the facts inside <candidate_data>. Do not invent employers, projects, metrics, percentages, years, certifications, tools or achievements. If a fact is missing, leave it out rather than guessing.',

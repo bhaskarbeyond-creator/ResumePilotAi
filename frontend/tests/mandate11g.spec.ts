@@ -3,17 +3,13 @@
  * Network fixtures replace the unavailable backend/auth service, not the React
  * components. This is not a live-database integration test.
  */
-import type { BrowserContext, Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from '../src/lib/template-catalog';
 import { getLayoutSpec } from '../src/lib/template-layouts';
 
-// The required command launches Playwright from the repository root. Resolve
-// its test API from that same root, even when frontend has a separate install.
-const rootRequire = createRequire(new URL('../../package.json', import.meta.url));
-const { test, expect } = rootRequire('@playwright/test') as typeof import('@playwright/test');
 const frontendRequire = createRequire(import.meta.url);
 const fixtureFont = resolve(dirname(frontendRequire.resolve('pdfjs-dist/package.json')), 'standard_fonts/LiberationSans-Regular.ttf');
 

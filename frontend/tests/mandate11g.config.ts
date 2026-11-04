@@ -1,12 +1,9 @@
-import { createRequire } from 'node:module';
+import { defineConfig, devices } from '@playwright/test';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// Resolve the same Playwright installation used by the root-level CLI.
-const rootRequire = createRequire(resolve(here, '../../package.json'));
-const { defineConfig, devices } = rootRequire('@playwright/test') as typeof import('@playwright/test');
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined;
 const args = process.env.PLAYWRIGHT_CHROMIUM_ARGS?.split(/\s+/).filter(Boolean) || ['--no-sandbox', '--disable-dev-shm-usage'];
 

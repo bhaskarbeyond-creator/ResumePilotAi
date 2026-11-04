@@ -231,18 +231,26 @@ async function resolveEffectiveAiConfiguration(req, res) {
 
     const baseConfig = await baseConfigPromise; // resolved during tenant checks above
     const tenantAiPolicy = resolved.tenant?.aiPolicy || {};
+    const enabledPlatformProviders = Object.keys(baseConfig.providers || {}).filter(p => baseConfig.providers[p]?.enabled);
+    const effectiveAllowedProviders = (Array.isArray(tenantAiPolicy.allowedProviders) && tenantAiPolicy.allowedProviders.length > 0)
+        ? tenantAiPolicy.allowedProviders
+        : (tenantAiPolicy.disabled ? [] : enabledPlatformProviders);
     // F-08: read tenant BYOK keys from the encrypted credential store and merge
     // them into the policy before applying it — resolution order is
     // tenant BYOK -> platform admin config -> environment default.
     const storedByokKeys = await loadTenantByokKeys({
         registry: tenantService.registry,
         tenantId: resolved.context?.tenantId,
-        allowedProviders: tenantAiPolicy.allowedProviders,
+        allowedProviders: effectiveAllowedProviders,
     });
     const effectiveConfig = applyTenantAiPolicy(
         baseConfig,
         resolved.context,
-        { ...tenantAiPolicy, customProviderKeys: { ...storedByokKeys, ...(tenantAiPolicy.customProviderKeys || {}) } }
+        {
+            ...tenantAiPolicy,
+            allowedProviders: effectiveAllowedProviders,
+            customProviderKeys: { ...storedByokKeys, ...(tenantAiPolicy.customProviderKeys || {}) }
+        }
     );
 
     return {

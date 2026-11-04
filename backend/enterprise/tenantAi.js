@@ -105,7 +105,7 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
       primaryModel: policy.primaryModel ? String(policy.primaryModel).trim() : null,
     }),
     tenantPolicyVersion: Number(policy.version || context.policyVersion),
-    tenantAiProfile: String(policy.profile || context.dataPlane.aiProfile || 'platform-default'),
+    tenantAiProfile: String(policy.profile || context?.dataPlane?.aiProfile || 'platform-default'),
   });
 }
 

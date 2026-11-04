@@ -131,15 +131,24 @@ function enterpriseService(req) {
  */
 async function buildTenantAiConfiguration(req) {
   const policy = req.tenant.aiPolicy || {};
+  const baseConfig = await loadProviderConfiguration();
+  const enabledPlatformProviders = Object.keys(baseConfig.providers || {}).filter(p => baseConfig.providers[p]?.enabled);
+  const effectiveAllowedProviders = (Array.isArray(policy.allowedProviders) && policy.allowedProviders.length > 0)
+    ? policy.allowedProviders
+    : (policy.disabled ? [] : enabledPlatformProviders);
   const storedByokKeys = await loadTenantByokKeys({
     registry: enterpriseService(req).registry,
     tenantId: req.tenantContext?.tenantId,
-    allowedProviders: policy.allowedProviders,
+    allowedProviders: effectiveAllowedProviders,
   });
   return applyTenantAiPolicy(
-    await loadProviderConfiguration(),
+    baseConfig,
     req.tenantContext,
-    { ...policy, customProviderKeys: { ...storedByokKeys, ...(policy.customProviderKeys || {}) } }
+    {
+      ...policy,
+      allowedProviders: effectiveAllowedProviders,
+      customProviderKeys: { ...storedByokKeys, ...(policy.customProviderKeys || {}) }
+    }
   );
 }
 

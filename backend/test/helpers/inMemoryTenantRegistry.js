@@ -114,7 +114,7 @@ function defaultTenantConfiguration(tenantId) {
   return {
     tenantId,
     revision: 1,
-    aiPolicy: { version: 1, allowedProviders: [], allowedModels: [], primaryModel: '' },
+    aiPolicy: { version: 1, allowedProviders: ['nvidia', 'gemini', 'openai', 'groq'], allowedModels: [], primaryModel: '' },
     quotaPolicy: { aiRequestsPerMinute: 12, aiRequestsPerDay: 100, renderConcurrency: 2 },
     retentionPolicy: { aiMemoryEnabled: false, retentionDays: 30 },
     securityPolicy: { requireMfaForAdmins: false, supportAccessRequiresApproval: true },
