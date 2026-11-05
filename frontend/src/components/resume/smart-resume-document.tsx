@@ -82,18 +82,25 @@ const DOCUMENT_STYLES = `
 .resume-role[data-date-rail=true] { display:grid; grid-template-columns:minmax(75px, 25%) 1fr; gap:14px; }
 .resume-role[data-date-rail=true] .resume-role-date { text-align:left; font-weight:600; }
 .resume-project-card { padding:9px 11px; border:1px solid #cbd5e1; border-inline-start:3px solid var(--resume-secondary); border-radius:5px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.resume-cert-card { padding:8px 11px; border:1px solid #e2e8f0; background:#f8fafc; border-radius:6px; margin-bottom:5px; display:flex; align-items:flex-start; gap:8px; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.resume-cert-card { padding:8px 11px; border:1px solid #e2e8f0; background:#f8fafc; color:#0f172a; border-radius:6px; margin-bottom:5px; display:flex; align-items:flex-start; gap:8px; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 .resume-cert-icon { flex:none; width:22px; height:22px; border-radius:5px; background:rgba(30, 64, 175, 0.08); color:var(--resume-primary); display:flex; align-items:center; justify-content:center; margin-top:1px; }
 .resume-cert-body { flex:1; min-width:0; }
-.resume-cert-body h3 { font-size:11.5px; font-weight:700; margin:0 0 1px; line-height:1.3; }
+.resume-cert-body h3 { font-size:11.5px; font-weight:700; margin:0 0 1px; line-height:1.3; color:#0f172a; }
 .resume-cert-body .resume-muted { font-size:10px; color:#64748b; }
 .resume-achievement-item { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; break-inside:avoid; }
 .resume-achievement-icon { flex:none; width:16px; height:16px; color:var(--resume-secondary); display:flex; align-items:center; justify-content:center; margin-top:1px; }
 .resume-achievement-body { flex:1; min-width:0; }
 .resume-achievement-body h3 { font-size:11.5px; font-weight:700; margin:0 0 1px; line-height:1.3; }
-.resume-reference-card { padding:8px 11px; border:1px solid #e2e8f0; background:#f8fafc; border-radius:6px; margin-bottom:5px; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.resume-reference-card h3 { font-size:11.5px; font-weight:700; margin:0 0 1px; line-height:1.3; }
+.resume-reference-card { padding:8px 11px; border:1px solid #e2e8f0; background:#f8fafc; color:#0f172a; border-radius:6px; margin-bottom:5px; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.resume-reference-card h3 { font-size:11.5px; font-weight:700; margin:0 0 1px; line-height:1.3; color:#0f172a; }
 .resume-reference-card .resume-muted { font-size:10px; color:#64748b; }
+.resume-rail[data-rail-theme='dark'] .resume-cert-card,
+.resume-rail[data-rail-theme='dark'] .resume-reference-card { background:rgba(255, 255, 255, 0.08); border:1px solid rgba(255, 255, 255, 0.16); color:#ffffff; }
+.resume-rail[data-rail-theme='dark'] .resume-cert-card h3,
+.resume-rail[data-rail-theme='dark'] .resume-reference-card h3 { color:#ffffff; }
+.resume-rail[data-rail-theme='dark'] .resume-cert-icon { background:rgba(255, 255, 255, 0.14); color:#ffffff; }
+.resume-rail[data-rail-theme='dark'] .resume-cert-body .resume-muted,
+.resume-rail[data-rail-theme='dark'] .resume-reference-card .resume-muted { color:rgba(255, 255, 255, 0.75); }
 .resume-skill-list { display:flex; flex-wrap:wrap; gap:5px; margin-top:3px; }
 .resume-skill-list .resume-skill { display:inline-block; border:1px solid currentColor; border-radius:var(--resume-badge-radius); padding:1px 6px; }
 .resume-page[data-skill-variant='pills'] .resume-skill { border-radius:999px; }

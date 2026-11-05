@@ -2012,8 +2012,9 @@ export function ComposableResumeLayout({ resume, meta, layout, palette, fullName
       <div className="resume-contact-list">{contacts.map((contact, index) => <div key={index}><SafeDocumentLink value={contact} /></div>)}</div>
     </section>
   ) : null;
+  const isDarkRail = sidebarText === '#ffffff' || sidebarText === '#f8fafc';
   const rail = effectiveHasRail ? (
-    <aside className="resume-column resume-rail" data-resume-column="rail" data-layout-rail={layout.family}>
+    <aside className="resume-column resume-rail" data-resume-column="rail" data-layout-rail={layout.family} data-rail-theme={isDarkRail ? 'dark' : 'light'}>
       {asideSections.map(section => section === 'contact' ? <React.Fragment key={section}>{contactBlock}</React.Fragment>
         : <DocumentSectionBlocks key={section} section={section} resume={resume} meta={meta} layout={layout} />)}
     </aside>
