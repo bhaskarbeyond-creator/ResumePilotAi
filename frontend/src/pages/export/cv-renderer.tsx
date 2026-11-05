@@ -17,7 +17,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { get } from '@/lib/api-client';
+import { get, post, normalizeError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { TEMPLATES, COVER_TEMPLATES, tryGetTemplateMeta } from '@/lib/template-catalog';
 import { normalizeDocumentResume } from '@/cv-templates/templateUtils';
@@ -252,38 +252,21 @@ export function CVRendererPage() {
     setDownloadingDocx(true);
     setExportMessage(null);
     try {
-      const devUser = localStorage.getItem('ime_dev_user');
-      let token = localStorage.getItem('token') || localStorage.getItem('auth_token') || '';
-      if (devUser) {
-        try {
-          const parsed = JSON.parse(devUser);
-          if (parsed?.token) token = parsed.token;
-        } catch {
-          // ignore
-        }
-      }
-
       if (!resumeId || !currentMeta) {
         throw new Error('Save the resume and choose a supported template before exporting it to Word.');
       }
-      const res = await fetch('/api/export-docx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+      const publicToken = new URLSearchParams(location.search).get('publicToken');
+      const endpoint = publicToken ? '/public-export-docx' : '/export-docx';
+      const blob = await post<Blob>(
+        endpoint,
+        {
           resumeId,
           resumeName: currentMeta.id,
           language: 'en',
-        }),
-      });
+        },
+        { responseType: 'blob' },
+      );
 
-      if (!res.ok) {
-        throw new Error(`Export returned status ${res.status}`);
-      }
-
-      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -293,7 +276,8 @@ export function CVRendererPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      setExportMessage(`Could not download the Word document: ${err?.message || 'export failed'}`);
+      const apiErr = normalizeError(err);
+      setExportMessage(`Could not download the Word document: ${apiErr.message || 'export failed'}`);
     } finally {
       setDownloadingDocx(false);
     }
@@ -502,11 +486,14 @@ export function CVRendererPage() {
             variant="outline"
             size="sm"
             onClick={handleDownloadDocx}
-            className="text-xs hidden sm:flex text-emerald-700 border-emerald-300 hover:bg-emerald-50 px-2 sm:px-3"
+            className="text-xs flex text-emerald-700 border-emerald-300 hover:bg-emerald-50 px-2 sm:px-3"
             disabled={downloadingDocx}
+            title="Download Word document (.docx)"
+            aria-label="Download Word document"
           >
             <Download className="size-3.5" />
-            <span>{downloadingDocx ? 'Generating...' : 'Word (.docx)'}</span>
+            <span className="hidden sm:inline">{downloadingDocx ? 'Generating...' : 'Word (.docx)'}</span>
+            <span className="sm:hidden">{downloadingDocx ? '...' : 'Word'}</span>
           </Button>
 
           <Button

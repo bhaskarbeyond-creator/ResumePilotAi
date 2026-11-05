@@ -33,6 +33,7 @@ import {
 import { TEMPLATES, tryGetTemplateMeta } from '@/lib/template-catalog';
 import { SmartResumeDocument } from '@/components/resume/smart-resume-document';
 import { ShareModal } from './share-modal';
+import { post, normalizeError } from '@/lib/api-client';
 
 interface ResumePreviewData {
   id?: string;
@@ -190,35 +191,16 @@ export function PreviewModal({
     setExportError(null);
     setDownloadingDocx(true);
     try {
-      const devUser = localStorage.getItem('ime_dev_user');
-      let token = localStorage.getItem('token') || localStorage.getItem('auth_token') || '';
-      if (devUser) {
-        try {
-          const parsed = JSON.parse(devUser);
-          if (parsed?.token) token = parsed.token;
-        } catch {
-          // ignore
-        }
-      }
-
-      const res = await fetch('/api/export-docx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+      const blob = await post<Blob>(
+        '/export-docx',
+        {
           resumeId: resume.id,
           resumeName: currentTemplateId,
           language: 'en',
-        }),
-      });
+        },
+        { responseType: 'blob' },
+      );
 
-      if (!res.ok) {
-        throw new Error(`Export returned status ${res.status}`);
-      }
-
-      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -228,7 +210,8 @@ export function PreviewModal({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      setExportError(`Could not download the Word document: ${err.message || 'export failed'}`);
+      const apiErr = normalizeError(err);
+      setExportError(`Could not download the Word document: ${apiErr.message || 'export failed'}`);
     } finally {
       setDownloadingDocx(false);
     }

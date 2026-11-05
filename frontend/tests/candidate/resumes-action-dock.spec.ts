@@ -114,6 +114,52 @@ test.describe('Candidate Resumes Action Dock & Modals', () => {
     expect(contentType).toContain('wordprocessingml.document');
   });
 
+  test('PreviewModal Download Word (DOCX) succeeds with HTTP 200 without 401', async ({ page, apiAs }) => {
+    const resume = await seedResume(apiAs('a'), 'Preview Modal DOCX Resume', 'Cv1');
+    await page.goto('/dashboard/resumes');
+
+    const card = page.getByTestId('resume-card').filter({ hasText: 'Preview Modal DOCX Resume' });
+    const previewBtn = card.locator('button:has-text("Full Size Preview")');
+    await previewBtn.click();
+
+    const modal = page.locator('role=dialog');
+    await expect(modal).toBeVisible();
+
+    const modalDocxBtn = modal.locator('button:has-text("DOCX"), button[aria-label="Download Word document"]').first();
+    await expect(modalDocxBtn).toBeVisible();
+
+    const [docxResponse] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/api/export-docx') && resp.request().method() === 'POST'),
+      modalDocxBtn.click(),
+    ]);
+
+    expect(docxResponse.status()).toBe(200);
+    const contentType = docxResponse.headers()['content-type'] || '';
+    expect(contentType).toContain('wordprocessingml.document');
+
+    // Ensure no error toast/notice appeared in modal
+    await expect(modal.locator('text=Could not download the Word document')).toHaveCount(0);
+  });
+
+  test('CV Renderer export page Download Word (DOCX) succeeds with HTTP 200 without 401', async ({ page, apiAs }) => {
+    const resume = await seedResume(apiAs('a'), 'Renderer DOCX Resume', 'Cv1');
+    await page.goto(`/export/Cv1/${encodeURIComponent(resume.id)}/en`);
+
+    await page.waitForSelector('[data-export-ready="true"]', { timeout: 10000 });
+
+    const docxBtn = page.locator('button:has-text("Download DOCX"), button:has-text("Word")').first();
+    await expect(docxBtn).toBeVisible();
+
+    const [docxResponse] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/api/export-docx') && resp.request().method() === 'POST'),
+      docxBtn.click(),
+    ]);
+
+    expect(docxResponse.status()).toBe(200);
+    const contentType = docxResponse.headers()['content-type'] || '';
+    expect(contentType).toContain('wordprocessingml.document');
+  });
+
   test('card options dropdown contains Duplicate, Rename, and Delete operations', async ({ page, apiAs }) => {
     await seedResume(apiAs('a'), 'Menu Lifecycle Resume', 'Cv1');
     await page.goto('/dashboard/resumes');
