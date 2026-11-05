@@ -170,6 +170,15 @@ Do not abuse the terminal for tasks covered by specialized native MCP tools:
 - **Codebase AST architecture:** Use `cartographer` for dependency graphs and symbol callers.
 - **Terminal scope:** Strictly reserved for authoritative automated test runs (`npm run test:backend`, `npm run test:candidate`, `node --test ...`), building (`npm run build`), and git operations (`git push origin main / dev`).
 
+### 2.15 Advanced Code Intelligence & Logic Plugins
+
+Claude utilizes specialized installed plugins to guarantee syntax correctness, catch silent logic flaws, and eliminate workflow gaps:
+- **Syntax & Type Safety:** 	ypescript-patterns-enforcer (runs automated PostToolUse validation on code edits).
+- **Silent Failure Hunter & Simplifier:** pr-review-toolkit (silent-failure-hunter catches swallowed errors; code-simplifier refactors complex branching; 	ype-design-analyzer guards interface contracts).
+- **Disciplined Engineering:** skills-for-real-engineers (grill-me for requirements alignment; diagnosing-bugs for multi-phase RCA; 	o-spec for invariant definition).
+- **Feature Architecture:** eature-dev (code-architect, code-explorer, code-reviewer).
+- **Live Documentation:** context7 remote MCP to verify official framework APIs and eliminate deprecated syntax hallucinations.
+
 ---
 
 # 3. MANDATORY BRIDGE DIRECTIVE LIFECYCLE

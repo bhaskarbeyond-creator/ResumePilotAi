@@ -323,3 +323,38 @@ The local configuration file at `%APPDATA%\Claude\claude_desktop_config.json` is
   }
 }
 ```
+
+---
+
+# 10. ADVANCED CODE INTELLIGENCE & QUALITY PLUGINS
+
+To eliminate syntax errors, logic flaws, and workflow gaps before running code, Claude Desktop is equipped with specialized plugins:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                      CODE INTELLIGENCE & LOGIC ACCELERATION ENGINE                     │
+├──────────────────────────┬─────────────────────────────────────────────────────────────┤
+│ Capability               │ Active Plugin & Specialized Agents                          │
+├──────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ 📐 Syntax & Type Safety  │ typescript-patterns-enforcer (PostToolUse hook + linter)    │
+│ 🕵️ Logic & Silent Errors │ pr-review-toolkit (silent-failure-hunter, code-simplifier)  │
+│ 🧬 Type Design Contracts │ pr-review-toolkit (type-design-analyzer, pr-test-analyzer)  │
+│ 🎯 Real Engineering TDD  │ skills-for-real-engineers (grill-me, diagnosing-bugs, to-spec)│
+│ 🏗️ Feature Architecture │ feature-dev (code-architect, code-explorer, code-reviewer)  │
+│ 📚 Live Docs Verification│ context7 (Hosted remote MCP for current API docs & samples) │
+└──────────────────────────┴─────────────────────────────────────────────────────────────┘
+```
+
+### 10.1 Automated Syntax & Type Guard (`typescript-patterns-enforcer`)
+* Fires automatically after code edits via a `PostToolUse` hook.
+* Flags anti-patterns, non-null assertions (`!`), unvalidated `any` casts, and improper type narrowing before the TypeScript compiler runs.
+
+### 10.2 Silent Failure Hunter & Logic Auditor (`pr-review-toolkit`)
+* **`silent-failure-hunter`:** Audits error-handling logic for swallowed exceptions, empty catch blocks, or fallback returns that mask underlying defects.
+* **`code-simplifier`:** Analyzes complex conditional trees ($O(n^2)$ loops, deeply nested ternary logic) and refactors them into clean, linear pipelines.
+* **`type-design-analyzer`:** Audits interface contracts, ensuring discriminated unions and generic bounds preserve type safety across frontend and backend.
+
+### 10.3 Spec & Alignment Protocol (`skills-for-real-engineers` & `feature-dev`)
+* **`grill-me`:** When requirements are ambiguous or high-risk, Claude interactively questions assumptions before planning.
+* **`to-spec`:** Translates user directives into rigorous engineering specifications with unambiguous invariants.
+* **`context7`:** Queries live, version-specific official documentation to prevent hallucinating deprecated APIs.
