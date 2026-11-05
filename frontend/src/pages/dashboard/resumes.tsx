@@ -376,35 +376,16 @@ export function ResumesPage() {
     setDownloadingDocxId(resume.id);
     try {
       const templateId = resume.template || 'Cv1';
-      const devUser = localStorage.getItem('ime_dev_user');
-      let token = localStorage.getItem('token') || localStorage.getItem('auth_token') || '';
-      if (devUser) {
-        try {
-          const parsed = JSON.parse(devUser);
-          if (parsed?.token) token = parsed.token;
-        } catch {
-          // ignore
-        }
-      }
-
-      const res = await fetch('/api/export-docx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+      const blob = await post<Blob>(
+        '/export-docx',
+        {
           resumeId: resume.id,
           resumeName: templateId,
           language: 'en',
-        }),
-      });
+        },
+        { responseType: 'blob' },
+      );
 
-      if (!res.ok) {
-        throw new Error(`Export failed with HTTP ${res.status}`);
-      }
-
-      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -414,7 +395,8 @@ export function ResumesPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      setActionError(`Could not download the Word document: ${err?.message || 'export failed'}`);
+      const apiErr = normalizeError(err);
+      setActionError(`Could not download the Word document: ${apiErr.message || 'export failed'}`);
     } finally {
       setDownloadingDocxId(null);
     }
