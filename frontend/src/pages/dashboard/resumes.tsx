@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageSpinner } from '@/components/ui/loading';
 import { get, post, del, normalizeError } from '@/lib/api-client';
-import { TEMPLATES, TEMPLATE_CATEGORIES, tryGetTemplateMeta } from '@/lib/template-catalog';
+import { tryGetTemplateMeta } from '@/lib/template-catalog';
 import { normalizeDocumentResume } from '@/cv-templates/templateUtils';
 import type { ResumeDocumentModel } from '@/lib/resume-view-model';
 import { describeMasterCompleteness, type MasterProfileCompleteness } from '@/lib/master-profile';
@@ -122,23 +122,10 @@ export function ResumesPage() {
   // Modal & operation states
   const [previewResume, setPreviewResume] = useState<ResumeDocumentModel | null>(null);
   const [previewSavedTemplate, setPreviewSavedTemplate] = useState('');
-  const [galleryQuery, setGalleryQuery] = useState('');
-  const [galleryCategory, setGalleryCategory] = useState('all');
-  const [galleryResumeId, setGalleryResumeId] = useState('');
-  const [galleryTemplate, setGalleryTemplate] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewRequest = useRef(0);
   const previewTrigger = useRef<HTMLElement | null>(null);
   useEffect(() => () => { previewRequest.current += 1; }, []);
-  const galleryResults = useMemo(() => {
-    const query = galleryQuery.trim().toLowerCase();
-    return TEMPLATES.filter(template =>
-      (galleryCategory === 'all' || template.category === galleryCategory) &&
-      (!query || [template.id, template.name, template.archetype, template.category, template.description || '', template.headerStyle || '', template.timelineStyle || '']
-        .some(value => value.toLowerCase().includes(query)))
-    );
-  }, [galleryCategory, galleryQuery]);
-  const galleryResume = resumes.find(item => item.id === galleryResumeId) || resumes[0];
   const [shareResume, setShareResume] = useState<{ id: string; name: string; template: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Resume | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -354,7 +341,6 @@ export function ResumesPage() {
       const model = normalizeDocumentResume(full.resume);
       if (request !== previewRequest.current) return;
       const template = requestedTemplate || model.template || resume.template || 'Cv1';
-      setGalleryTemplate(template);
       setPreviewSavedTemplate(model.template || resume.template || 'Cv1');
       setPreviewResume({ ...model, id: model.id || resume.id, template });
     } catch (err) {
@@ -1358,55 +1344,6 @@ export function ResumesPage() {
         </nav>
       )}
 
-      {/* The catalog is lightweight: only the selected document is rendered. */}
-      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5 space-y-4" aria-labelledby="template-gallery-heading" data-testid="template-gallery">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 id="template-gallery-heading" className="text-lg font-bold text-ink">Resume template gallery</h2>
-            <p className="mt-1 text-sm text-ink-muted">Preview a design with a saved resume. Switching designs here does not change your saved resume.</p>
-          </div>
-          <div className="w-full sm:w-64">
-            <label htmlFor="gallery-resume" className="mb-1 block text-xs font-semibold text-ink">Resume for preview</label>
-            <select id="gallery-resume" className="h-10 w-full rounded-lg border border-border bg-white px-2 text-sm" value={galleryResume?.id || ''} onChange={event => setGalleryResumeId(event.target.value)}>
-              {!galleryResume && <option value="">No saved resumes</option>}
-              {resumes.map(item => <option key={item.id} value={item.id}>{item.title || item.name || 'Untitled Resume'}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label htmlFor="gallery-search" className="mb-1 block text-xs font-semibold text-ink">Search templates</label>
-          <Input id="gallery-search" type="search" value={galleryQuery} onChange={event => setGalleryQuery(event.target.value)} placeholder="Search name, style, category, or ID" />
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Template categories">
-          {TEMPLATE_CATEGORIES.map(category => (
-            <button key={category.id} type="button" aria-pressed={galleryCategory === category.id}
-              onClick={() => setGalleryCategory(category.id)}
-              className={cn('rounded-full border px-3 py-1.5 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600', galleryCategory === category.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100')}>
-              {category.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-ink-muted" aria-live="polite">{galleryResults.length} template{galleryResults.length === 1 ? '' : 's'} found{!galleryResume ? ' · Save a resume to preview it.' : ''}</p>
-        {galleryResults.length === 0 ? <p className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700">No templates match these filters. Try another search or category.</p> : (
-          <div className="grid max-h-[680px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" aria-label="Template results">
-            {galleryResults.map(template => (
-              <article key={template.id} data-testid="template-card" data-template-id={template.id} data-selected={galleryTemplate === template.id || undefined} className="min-w-0 rounded-xl border border-slate-200 bg-white p-2.5">
-                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md bg-slate-100" aria-hidden="true">
-                  <div className="absolute inset-3 bg-white p-2 shadow-sm"><div className="h-3 w-2/3" style={{ backgroundColor: template.primary }} /><div className="mt-3 h-1 w-full bg-slate-200" /><div className="mt-2 h-1 w-4/5 bg-slate-200" /><div className="mt-4 h-1 w-full bg-slate-200" /></div>
-                  <img src={template.thumbnail} alt="" loading="lazy" className="relative h-full w-full object-cover object-top" onError={event => { event.currentTarget.style.display = 'none'; }} />
-                </div>
-                <h3 className="text-xs font-bold text-slate-900">{template.name}</h3>
-                <p className="mt-0.5 text-[11px] text-slate-600">{template.id} · {template.category}</p>
-                <Button variant="outline" size="sm" className="mt-2 w-full text-xs" disabled={!galleryResume || previewLoading}
-                  aria-label={`Preview ${template.name}`} onClick={() => { if (galleryResume) void handleOpenPreview(galleryResume, template.id); }}>
-                  Preview
-                </Button>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* 10. Global Full-Fidelity PreviewModal */}
       {previewResume && (
         <PreviewModal
@@ -1418,7 +1355,6 @@ export function ResumesPage() {
           returnFocusTo={previewTrigger.current}
           savedTemplateId={previewSavedTemplate}
           onTemplateChange={(tmplId) => {
-            setGalleryTemplate(tmplId);
             setPreviewResume((prev) => (prev ? { ...prev, template: tmplId } : null));
           }}
         />

@@ -63,8 +63,8 @@ test.describe('Candidate Resumes List Surface', () => {
     await expect(page.getByTestId('resume-list-controls')).toBeVisible();
     await expect(page.getByTestId('resume-card').first()).toBeVisible();
 
-    // Template Gallery is present at the bottom
-    await expect(page.getByTestId('template-gallery')).toBeVisible();
+    // Template Gallery is removed for clean candidate focus
+    await expect(page.getByTestId('template-gallery')).toHaveCount(0);
   });
 
   test('search filter dynamically narrows down matching resumes', async ({ page, apiAs }) => {
