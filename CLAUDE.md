@@ -106,6 +106,60 @@ If a required tool, external service, test dependency, browser, or approval mech
 
 A successful build is not proof of functional correctness. Passing unit tests is not proof of end-to-end correctness. A completed directive is not proof of production readiness.
 
+### 2.8 The 100% Quality Mandate
+
+Zero broken tests, zero ignored compiler warnings, zero unverified assumptions. All work must satisfy the 100% quality bar across the entire test pyramid:
+- **Backend Core:** 1,848 / 1,848 passed (`npm run test:backend`).
+- **DOCX Parity:** 25 / 25 passed (`node --test backend/test/docx-export.test.js backend/test/docx-parity.test.js`).
+- **Enterprise Multi-Tenancy:** 187 / 187 passed (`npm run test:enterprise`).
+- **Payments:** 43 / 43 passed (`npm run test:payments`).
+- **TypeScript Build:** 0 compilation errors (`npm run build` in `frontend/`).
+- **Candidate E2E:** 100% passing across 5 viewports (`npm run test:candidate`).
+- **WCAG 2.1 AA/AAA Contrast:** Body text >= 4.5:1, large headings >= 3.0:1, dark rail cards >= 12.0:1.
+- **Export Parity:** Full Preview == PDF == DOCX == Print.
+
+### 2.9 Auto Bug Fixing Mandate (5-Step Forensic RCA)
+
+Never patch symptoms. Trace every defect to its root cause:
+1. **Reproduce & Isolate:** Inspect live failure traces, DB rows, or DOM elements without guessing.
+2. **Differentiate Failure Type:** Classify into Environment/Network vs Code/Schema defect.
+3. **Minimal Safe Surgical Fix:** Apply the smallest diff that eliminates the root cause while preserving system invariants.
+4. **Idempotent Application:** Safe against duplicate executions and re-runs.
+5. **Full Regression Verification:** Re-verify the affected component AND all adjacent test suites.
+
+### 2.10 100% Evidence-Based Reasoning & Fixes Mandate
+
+Zero hallucination, zero assumed outcomes. Truth hierarchy:
+1. Runtime execution & observed test logs.
+2. Live MariaDB rows and HTTP response payloads.
+3. Static source code files with exact line numbers.
+4. Project configuration.
+5. Documentation and assumptions (lowest).
+Never report a test as passing or a bug as fixed without quoting observed execution output.
+
+### 2.11 Zero Dummy Data Mandate (Core Product Identity)
+
+IME365 is an elite career platform. Professional presentation is the core IP:
+- **Strictly Prohibited:** "Lorem ipsum", "completed html css making websites", "foo/bar", "test user", and synthetic filler strings.
+- **Mandatory Enterprise Profiles:** Real, high-caliber career profiles (Senior Staff Distributed Systems Architect, Lead Technical Recruiter) with metrics-driven achievements.
+
+### 2.12 Frozen Subsystem Protocol (Mandates 20–23)
+
+Subsystems certified under Mandates 20–23 are **PRODUCTION FROZEN**:
+- 104 Resume & CV Templates (`Cv1`–`Cv104`).
+- Smart Partition Manager & Multi-Page Column Collapsing (`ResumePageComposer.tsx`).
+- Frosted Glass Dual-Theming Architecture (`smart-layout-families.tsx`).
+- Floating Support Chat Balloon Suppression on Preview/Print.
+- Dynamic Continuation Header Routing (`— Resume` vs `— Curriculum Vitae`).
+*Modification Protocol:* Inform Lead -> Evaluate Impact -> Grant Explicit Approval -> Surgical Diff -> Re-Verify & Re-Freeze.
+
+### 2.13 Claude Desktop App Interactive Approvals Protocol
+
+When operating inside the Claude Desktop App:
+- **Developer Role:** Formulate a structured plan (root cause, affected files, invariants, test plan). **STOP and ask the user for approval:** *"Awaiting Lead/User approval before modifying code. Proceed? [Y/N]"*. Never edit code until approved.
+- **Lead Role:** Formulate architectural directives, evaluate plans, enforce system invariants, and issue gatekeeper certifications.
+- Standalone project instructions are preserved in `CLAUDE_DESKTOP_PROJECT_INSTRUCTIONS.md`.
+
 ---
 
 # 3. MANDATORY BRIDGE DIRECTIVE LIFECYCLE
