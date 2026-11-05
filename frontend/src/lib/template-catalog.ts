@@ -204,7 +204,82 @@ export const COVER_TEMPLATES: TemplateMeta[] = [
   },
 ];
 
+/**
+ * 4 Distinct Curriculum Vitae (CV) Long-Form Templates
+ * Mandate 20: 100 Resume Templates (Cv1–Cv100) + 4 CV Templates (Cv101–Cv104) = 104 distinct templates.
+ * Cover letters (Cover1–Cover4) remain strictly separate.
+ */
+export const CV_TEMPLATES: TemplateMeta[] = [
+  {
+    id: 'Cv101',
+    name: 'Oxford Academic CV',
+    archetype: 'executive-banner',
+    category: 'specialized',
+    primary: '#1e3a8a',
+    secondary: '#93c5fd',
+    thumbnail: '/templates/Cv101.JPG',
+    headerStyle: 'banner',
+    skillVariant: 'badges',
+    timelineStyle: 'subtle-line',
+    dividerStyle: 'solid-thin',
+    font: 'Merriweather',
+    density: 'spacious',
+    description: 'Comprehensive academic CV format with extensive publications, fellowships, and committee appointments.',
+  },
+  {
+    id: 'Cv102',
+    name: 'Cambridge Clinical CV',
+    archetype: 'compact-euro',
+    category: 'specialized',
+    primary: '#0f766e',
+    secondary: '#5eead4',
+    thumbnail: '/templates/Cv102.JPG',
+    headerStyle: 'left-bold',
+    skillVariant: 'pills',
+    timelineStyle: 'accent-bullet',
+    dividerStyle: 'solid-thick',
+    font: 'Inter',
+    density: 'standard',
+    description: 'Clinical and medical practitioner CV with residencies, board certifications, and clinical trials.',
+  },
+  {
+    id: 'Cv103',
+    name: 'Sorbonne Professorial CV',
+    archetype: 'minimal-ats',
+    category: 'specialized',
+    primary: '#374151',
+    secondary: '#9ca3af',
+    thumbnail: '/templates/Cv103.JPG',
+    headerStyle: 'centered-classic',
+    skillVariant: 'inline',
+    timelineStyle: 'compact-clean',
+    dividerStyle: 'double-line',
+    font: 'Cinzel',
+    density: 'spacious',
+    description: 'Distinguished professorial faculty CV with department chairing, grants awarded, and doctoral advisees.',
+  },
+  {
+    id: 'Cv104',
+    name: 'Max Planck Scientific CV',
+    archetype: 'tech-grid',
+    category: 'specialized',
+    primary: '#0284c7',
+    secondary: '#38bdf8',
+    thumbnail: '/templates/Cv104.JPG',
+    headerStyle: 'accent-bracket',
+    skillVariant: 'bars',
+    timelineStyle: 'code-tag',
+    dividerStyle: 'left-bar',
+    font: 'Plus Jakarta Sans',
+    density: 'compact',
+    description: 'Scientific researcher CV emphasizing laboratory leadership, preprints, patents, and citation indexes.',
+  },
+];
+
+export const ALL_104_TEMPLATES: TemplateMeta[] = [...TEMPLATES, ...CV_TEMPLATES];
+
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
+const CV_BY_ID = new Map(CV_TEMPLATES.map((t) => [t.id, t]));
 const COVER_BY_ID = new Map(COVER_TEMPLATES.map((t) => [t.id, t]));
 
 /** Strict resolution preserves existing route handlers' explicit unsupported
@@ -217,11 +292,19 @@ export function getTemplateMeta(id: string): TemplateMeta {
 
 export function tryGetTemplateMeta(id: string): TemplateMeta | null {
   if (typeof id !== 'string') return null;
-  return (id.startsWith('Cover') ? COVER_BY_ID.get(id) : BY_ID.get(id)) ?? null;
+  return (id.startsWith('Cover') ? COVER_BY_ID.get(id) : (BY_ID.get(id) || CV_BY_ID.get(id))) ?? null;
 }
 
 export function getAllTemplates(): TemplateMeta[] {
   return TEMPLATES;
+}
+
+export function getAllCvTemplates(): TemplateMeta[] {
+  return CV_TEMPLATES;
+}
+
+export function getAll104Templates(): TemplateMeta[] {
+  return ALL_104_TEMPLATES;
 }
 
 export function getAllCoverTemplates(): TemplateMeta[] {

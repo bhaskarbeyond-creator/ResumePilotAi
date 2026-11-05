@@ -691,54 +691,7 @@ export function ResumesPage() {
         </div>
       )}
 
-      {/* The catalog is lightweight: only the selected document is rendered. */}
-      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5 space-y-4" aria-labelledby="template-gallery-heading" data-testid="template-gallery">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 id="template-gallery-heading" className="text-lg font-bold text-ink">Resume template gallery</h2>
-            <p className="mt-1 text-sm text-ink-muted">Preview a design with a saved resume. Switching designs here does not change your saved resume.</p>
-          </div>
-          <div className="w-full sm:w-64">
-            <label htmlFor="gallery-resume" className="mb-1 block text-xs font-semibold text-ink">Resume for preview</label>
-            <select id="gallery-resume" className="h-10 w-full rounded-lg border border-border bg-white px-2 text-sm" value={galleryResume?.id || ''} onChange={event => setGalleryResumeId(event.target.value)}>
-              {!galleryResume && <option value="">No saved resumes</option>}
-              {resumes.map(item => <option key={item.id} value={item.id}>{item.title || item.name || 'Untitled Resume'}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label htmlFor="gallery-search" className="mb-1 block text-xs font-semibold text-ink">Search templates</label>
-          <Input id="gallery-search" type="search" value={galleryQuery} onChange={event => setGalleryQuery(event.target.value)} placeholder="Search name, style, category, or ID" />
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Template categories">
-          {TEMPLATE_CATEGORIES.map(category => (
-            <button key={category.id} type="button" aria-pressed={galleryCategory === category.id}
-              onClick={() => setGalleryCategory(category.id)}
-              className={cn('rounded-full border px-3 py-1.5 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600', galleryCategory === category.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100')}>
-              {category.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-ink-muted" aria-live="polite">{galleryResults.length} template{galleryResults.length === 1 ? '' : 's'} found{!galleryResume ? ' · Save a resume to preview it.' : ''}</p>
-        {galleryResults.length === 0 ? <p className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700">No templates match these filters. Try another search or category.</p> : (
-          <div className="grid max-h-[680px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" aria-label="Template results">
-            {galleryResults.map(template => (
-              <article key={template.id} data-testid="template-card" data-template-id={template.id} data-selected={galleryTemplate === template.id || undefined} className="min-w-0 rounded-xl border border-slate-200 bg-white p-2.5">
-                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md bg-slate-100" aria-hidden="true">
-                  <div className="absolute inset-3 bg-white p-2 shadow-sm"><div className="h-3 w-2/3" style={{ backgroundColor: template.primary }} /><div className="mt-3 h-1 w-full bg-slate-200" /><div className="mt-2 h-1 w-4/5 bg-slate-200" /><div className="mt-4 h-1 w-full bg-slate-200" /></div>
-                  <img src={template.thumbnail} alt="" loading="lazy" className="relative h-full w-full object-cover object-top" onError={event => { event.currentTarget.style.display = 'none'; }} />
-                </div>
-                <h3 className="text-xs font-bold text-slate-900">{template.name}</h3>
-                <p className="mt-0.5 text-[11px] text-slate-600">{template.id} · {template.category}</p>
-                <Button variant="outline" size="sm" className="mt-2 w-full text-xs" disabled={!galleryResume || previewLoading}
-                  aria-label={`Preview ${template.name}`} onClick={() => { if (galleryResume) void handleOpenPreview(galleryResume, template.id); }}>
-                  Preview
-                </Button>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      
 
       {/* 4. Section Heading & Search / Filter Controls */}
       <div className="space-y-3 min-w-0">
@@ -980,39 +933,33 @@ export function ResumesPage() {
             return (
               <article
                 key={resume.id}
-                className="group relative flex flex-col rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-xs backdrop-blur-xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/5 min-w-0"
+                className="group relative flex flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/5 min-w-0"
                 data-testid="resume-card"
               >
-                {/* Header: Title and Options Menu */}
+                {/* Header Row 1: Document Title and Options Menu */}
                 <header className="flex items-start justify-between gap-2 min-w-0">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="min-w-0 truncate text-[15px] font-bold text-slate-900 group-hover:text-brand-600 transition-colors" title={title}>
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(resume)}
-                        className="text-left font-bold text-slate-900 hover:text-brand-600 transition-colors truncate block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                      >
-                        {title}
-                      </button>
-                    </h3>
-                    <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                      <Clock className="size-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{dateStr}</span>
-                    </div>
-                  </div>
+                  <h3 className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors" title={title}>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(resume)}
+                      className="text-left font-bold text-slate-900 hover:text-brand-600 transition-colors truncate block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded cursor-pointer"
+                    >
+                      {title}
+                    </button>
+                  </h3>
 
                   {/* Options Menu Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                        className="flex size-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                         aria-label="Resume options"
                       >
                         <MoreVertical className="size-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-50">
+                    <DropdownMenuContent align="end" className="w-52">
                       <DropdownMenuItem onClick={() => handleEdit(resume)} className="gap-2 text-xs">
                         <Edit className="size-3.5 text-brand-600" />
                         Edit in Builder
@@ -1064,10 +1011,15 @@ export function ResumesPage() {
                   </DropdownMenu>
                 </header>
 
-                {/* ATS Readiness & Template metadata bar */}
-                <div className="mt-2.5 flex items-center justify-between gap-2">
+                {/* Header Row 2: Date + ATS Score Pill */}
+                <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Clock className="size-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{dateStr}</span>
+                  </div>
+
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold border shrink-0 transition-colors ${
                       bucketTone(bucketForScore(score)).border
                     } ${bucketTone(bucketForScore(score)).bg} ${bucketTone(bucketForScore(score)).text}`}
                     title={`ATS readiness score — ${bucketTone(bucketForScore(score)).label}`}
@@ -1076,17 +1028,9 @@ export function ResumesPage() {
                     <span className="size-1.5 rounded-full bg-current opacity-80" />
                     ATS: {score === null ? '—' : `${score}/100`}
                   </span>
-
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                    <span
-                      className="size-2 rounded-full ring-1 ring-slate-200 shrink-0"
-                      style={{ backgroundColor: meta.primary }}
-                    />
-                    <span className="truncate max-w-[120px]">{meta.id} · {meta.name}</span>
-                  </span>
                 </div>
 
-                {/* Visual A4 Document Thumbnail Preview */}
+                {/* Visual A4 Document Thumbnail Preview with Centered "Full Size Preview" */}
                 <div
                   className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-slate-100/70 shadow-xs group-hover:shadow-md group-hover:border-slate-300 transition-all duration-300 cursor-pointer"
                   onClick={() => handleEdit(resume)}
@@ -1101,40 +1045,30 @@ export function ResumesPage() {
                     }}
                   />
 
-                  {/* Template chip on top-left of thumbnail */}
-                  <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/85 px-2.5 py-1 text-[10px] font-semibold text-white shadow-xs backdrop-blur-md">
+                  {/* Centered Frosted Glass "Full Size Preview" button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleOpenPreview(resume);
+                    }}
+                    className="absolute inset-x-0 mx-auto w-fit top-1/2 -translate-y-1/2 z-10 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-slate-800 shadow-md backdrop-blur-md border border-slate-200/80 hover:bg-white hover:shadow-lg hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
+                    title="Full Size Preview"
+                    data-testid="full-size-preview-btn"
+                  >
+                    <Eye className="size-3.5 text-brand-600" />
+                    <span>Full Size Preview</span>
+                  </button>
+
+                  {/* Discrete Template chip on bottom-left of thumbnail */}
+                  <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-2.5 py-0.5 text-[10px] font-medium text-white shadow-xs backdrop-blur-md border border-white/10">
                       <span
                         className="size-1.5 rounded-full shrink-0"
                         style={{ backgroundColor: meta.primary }}
                       />
-                      {meta.name}
+                      <span>{meta.id} · {meta.name}</span>
                     </span>
-                  </div>
-
-                  {/* Hover overlay with Preview & Edit buttons */}
-                  <div
-                    className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="bg-white/95 font-semibold text-slate-900 hover:bg-white shadow-md gap-1.5 rounded-lg text-xs h-8"
-                      onClick={() => void handleOpenPreview(resume)}
-                    >
-                      <Eye className="size-3.5 text-indigo-600" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="bg-brand-600 font-semibold text-white hover:bg-brand-700 shadow-md gap-1.5 rounded-lg text-xs h-8"
-                      onClick={() => handleEdit(resume)}
-                    >
-                      <Edit className="size-3.5" />
-                      Edit
-                    </Button>
                   </div>
                 </div>
 
@@ -1145,14 +1079,14 @@ export function ResumesPage() {
                     type="button"
                     onClick={() => handleEdit(resume)}
                     aria-label={`Edit ${title}`}
-                    className="group/btn relative flex h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-xs transition-all duration-200 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-500/20 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    className="group/btn relative flex h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-500/20 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                   >
                     <Edit className="size-4 transition-transform group-hover/btn:scale-110" />
                     <span>Edit Resume</span>
                   </button>
 
-                  {/* Tier 2: Streamlined Quick-Action Group */}
-                  <div className="grid grid-cols-4 gap-1.5">
+                  {/* Tier 2: 3 Segmented Direct Action Buttons (PDF, Word, Share) */}
+                  <div className="grid grid-cols-3 gap-2">
                     {/* Action 1: Download PDF */}
                     <button
                       type="button"
@@ -1160,14 +1094,15 @@ export function ResumesPage() {
                       disabled={downloadingPdfId === resume.id}
                       aria-label={`Download PDF for ${title}`}
                       title="Download PDF"
-                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-700 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-800 text-xs font-semibold shadow-2xs transition active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
                     >
                       {downloadingPdfId === resume.id ? (
-                        <RefreshCw className="size-3.5 animate-spin text-emerald-600" />
+                        <RefreshCw className="size-3.5 animate-spin text-emerald-600 shrink-0" />
                       ) : (
-                        <Download className="size-3.5 text-emerald-600" />
+                        <Download className="size-3.5 text-emerald-600 shrink-0" />
                       )}
-                      <span className="hidden sm:inline text-[11px]">PDF</span>
+                      <span className="font-semibold">PDF</span>
+                      <span className="sr-only">Download PDF</span>
                     </button>
 
                     {/* Action 2: Download Word (DOCX) */}
@@ -1175,16 +1110,17 @@ export function ResumesPage() {
                       type="button"
                       onClick={() => void handleDownloadDocx(resume)}
                       disabled={downloadingDocxId === resume.id}
-                      aria-label={`Download Word for ${title}`}
+                      aria-label={`Download Word (DOCX) for ${title}`}
                       title="Download Word (DOCX)"
-                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50/70 hover:text-blue-700 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-300 text-blue-800 text-xs font-semibold shadow-2xs transition active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
                     >
                       {downloadingDocxId === resume.id ? (
-                        <RefreshCw className="size-3.5 animate-spin text-blue-600" />
+                        <RefreshCw className="size-3.5 animate-spin text-blue-600 shrink-0" />
                       ) : (
-                        <FileDown className="size-3.5 text-blue-600" />
+                        <FileDown className="size-3.5 text-blue-600 shrink-0" />
                       )}
-                      <span className="hidden sm:inline text-[11px]">DOCX</span>
+                      <span className="font-semibold">Word</span>
+                      <span className="sr-only">Download Word (DOCX)</span>
                     </button>
 
                     {/* Action 3: Share Resume */}
@@ -1194,22 +1130,11 @@ export function ResumesPage() {
                       aria-label={`Share ${title}`}
                       data-testid="resume-action-share"
                       title="Share Public Link"
-                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50/70 hover:text-indigo-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-300 text-indigo-800 text-xs font-semibold shadow-2xs transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
                     >
-                      <Share2 className="size-3.5 text-indigo-600" />
-                      <span className="hidden sm:inline text-[11px]">Share</span>
-                    </button>
-
-                    {/* Action 4: Full Size Preview Modal */}
-                    <button
-                      type="button"
-                      onClick={() => void handleOpenPreview(resume)}
-                      aria-label={`Preview ${title}`}
-                      title="Full Size Preview"
-                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50/70 hover:text-violet-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-                    >
-                      <Eye className="size-3.5 text-violet-600" />
-                      <span className="hidden sm:inline text-[11px]">View</span>
+                      <Share2 className="size-3.5 text-indigo-600 shrink-0" />
+                      <span className="font-semibold">Share</span>
+                      <span className="sr-only">Share Resume</span>
                     </button>
                   </div>
                 </div>
@@ -1432,6 +1357,55 @@ export function ResumesPage() {
           </div>
         </nav>
       )}
+
+      {/* The catalog is lightweight: only the selected document is rendered. */}
+      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5 space-y-4" aria-labelledby="template-gallery-heading" data-testid="template-gallery">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="template-gallery-heading" className="text-lg font-bold text-ink">Resume template gallery</h2>
+            <p className="mt-1 text-sm text-ink-muted">Preview a design with a saved resume. Switching designs here does not change your saved resume.</p>
+          </div>
+          <div className="w-full sm:w-64">
+            <label htmlFor="gallery-resume" className="mb-1 block text-xs font-semibold text-ink">Resume for preview</label>
+            <select id="gallery-resume" className="h-10 w-full rounded-lg border border-border bg-white px-2 text-sm" value={galleryResume?.id || ''} onChange={event => setGalleryResumeId(event.target.value)}>
+              {!galleryResume && <option value="">No saved resumes</option>}
+              {resumes.map(item => <option key={item.id} value={item.id}>{item.title || item.name || 'Untitled Resume'}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="gallery-search" className="mb-1 block text-xs font-semibold text-ink">Search templates</label>
+          <Input id="gallery-search" type="search" value={galleryQuery} onChange={event => setGalleryQuery(event.target.value)} placeholder="Search name, style, category, or ID" />
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Template categories">
+          {TEMPLATE_CATEGORIES.map(category => (
+            <button key={category.id} type="button" aria-pressed={galleryCategory === category.id}
+              onClick={() => setGalleryCategory(category.id)}
+              className={cn('rounded-full border px-3 py-1.5 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600', galleryCategory === category.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100')}>
+              {category.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-ink-muted" aria-live="polite">{galleryResults.length} template{galleryResults.length === 1 ? '' : 's'} found{!galleryResume ? ' · Save a resume to preview it.' : ''}</p>
+        {galleryResults.length === 0 ? <p className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700">No templates match these filters. Try another search or category.</p> : (
+          <div className="grid max-h-[680px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" aria-label="Template results">
+            {galleryResults.map(template => (
+              <article key={template.id} data-testid="template-card" data-template-id={template.id} data-selected={galleryTemplate === template.id || undefined} className="min-w-0 rounded-xl border border-slate-200 bg-white p-2.5">
+                <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-md bg-slate-100" aria-hidden="true">
+                  <div className="absolute inset-3 bg-white p-2 shadow-sm"><div className="h-3 w-2/3" style={{ backgroundColor: template.primary }} /><div className="mt-3 h-1 w-full bg-slate-200" /><div className="mt-2 h-1 w-4/5 bg-slate-200" /><div className="mt-4 h-1 w-full bg-slate-200" /></div>
+                  <img src={template.thumbnail} alt="" loading="lazy" className="relative h-full w-full object-cover object-top" onError={event => { event.currentTarget.style.display = 'none'; }} />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900">{template.name}</h3>
+                <p className="mt-0.5 text-[11px] text-slate-600">{template.id} · {template.category}</p>
+                <Button variant="outline" size="sm" className="mt-2 w-full text-xs" disabled={!galleryResume || previewLoading}
+                  aria-label={`Preview ${template.name}`} onClick={() => { if (galleryResume) void handleOpenPreview(galleryResume, template.id); }}>
+                  Preview
+                </Button>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* 10. Global Full-Fidelity PreviewModal */}
       {previewResume && (

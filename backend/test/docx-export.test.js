@@ -317,7 +317,8 @@ test('resolveExportTemplate rejects client spoofing and mismatch', () => {
   // The catalog is Cv1..Cv100 (DIR-008 expanded scope); 101+ is invalid.
   assert.equal(resolveExportTemplate({}, 'Cv99'), 'Cv99');
   assert.equal(resolveExportTemplate({ template: 'Cv100' }, 'Cv100'), 'Cv100');
-  assert.throws(() => resolveExportTemplate({}, 'Cv101'), /INVALID_TEMPLATE/);
+  assert.equal(resolveExportTemplate({ template: 'Cv104' }, 'Cv104'), 'Cv104');
+  assert.throws(() => resolveExportTemplate({}, 'Cv105'), /INVALID_TEMPLATE/);
   assert.throws(() => resolveExportTemplate({}, '../etc/passwd'), /INVALID_TEMPLATE/);
 });
 

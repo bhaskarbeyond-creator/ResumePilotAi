@@ -155,9 +155,13 @@ const THEMES = Object.freeze({
   Cv49: theme({ name: "Berlin Tech Compact", archetype: A.COMPACT_EURO, primary: '#18181b', secondary: '#3b82f6', font: "'Inter', sans-serif", skillVariant: S.PILLS, headerStyle: 'minimal-inline', dividerStyle: 'left-bar', timelineStyle: 'date-rail', density: 'compact' }),
   Cv50: theme({ name: "Executive Platinum Split", archetype: A.MODERN_SPLIT, sidebarPosition: 'right', primary: '#0f172a', secondary: '#475569', sidebarBg: '#e2e8f0', sidebarText: '#1e293b', font: "'Plus Jakarta Sans', sans-serif", skillVariant: S.BADGES, sidebarWidth: '32%', headerStyle: 'sidebar', dividerStyle: 'solid-thin', timelineStyle: 'subtle-line', density: 'standard' }),
   Cv51: theme({ name: "Standard Europass Modern", archetype: A.MODERN_SPLIT, primary: '#0f4c81', secondary: '#f59e0b', sidebarBg: '#eff6ff', sidebarText: '#1e3a8a', font: "'Inter', sans-serif", skillVariant: S.DOTS, sidebarWidth: '33%', headerStyle: 'sidebar', dividerStyle: 'left-bar', timelineStyle: 'date-rail', density: 'standard' }),
+  Cv101: theme({ name: "Oxford Academic CV", archetype: A.EXECUTIVE_BANNER, primary: '#1e3a8a', secondary: '#93c5fd', font: "'Merriweather', serif", skillVariant: S.BADGES, headerStyle: 'banner', dividerStyle: 'solid-thin', timelineStyle: 'subtle-line', density: 'spacious' }),
+  Cv102: theme({ name: "Cambridge Clinical CV", archetype: A.COMPACT_EURO, primary: '#0f766e', secondary: '#5eead4', font: "'Inter', sans-serif", skillVariant: S.PILLS, headerStyle: 'left-bold', dividerStyle: 'solid-thick', timelineStyle: 'accent-bullet', density: 'standard' }),
+  Cv103: theme({ name: "Sorbonne Professorial CV", archetype: A.MINIMAL_ATS, primary: '#374151', secondary: '#9ca3af', font: "'Cinzel', serif", skillVariant: S.INLINE, headerStyle: 'centered-classic', dividerStyle: 'double-line', timelineStyle: 'compact-clean', density: 'spacious' }),
+  Cv104: theme({ name: "Max Planck Scientific CV", archetype: A.TECH_GRID, primary: '#0284c7', secondary: '#38bdf8', font: "'Plus Jakarta Sans', sans-serif", skillVariant: S.BARS, headerStyle: 'accent-bracket', dividerStyle: 'left-bar', timelineStyle: 'code-tag', density: 'compact' }),
 });
 
-const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-9][0-9]|100)|Cover[1-4])$/;
+const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-9][0-9]|10[0-4])|Cover[1-4])$/;
 
 function normalizeTemplateId(templateName) {
   const name = String(templateName || '').trim();
@@ -166,7 +170,7 @@ function normalizeTemplateId(templateName) {
   if (cv) {
     const key = `Cv${parseInt(cv[1], 10)}`;
     if (THEMES[key]) return key;
-    if (parseInt(cv[1], 10) >= 1 && parseInt(cv[1], 10) <= 100) return key;
+    if (parseInt(cv[1], 10) >= 1 && parseInt(cv[1], 10) <= 104) return key;
   }
   const cover = name.match(/^cover\s*([1-4])$/i);
   if (cover) return `Cover${cover[1]}`;
@@ -178,7 +182,7 @@ function getTemplateStyle(templateName, customColors = null) {
   let base = THEMES[key];
   if (!base) {
     const num = parseInt(key.replace(/^Cv/i, ''), 10);
-    if (!isNaN(num) && num >= 1 && num <= 100) {
+    if (!isNaN(num) && num >= 1 && num <= 104) {
       const archs = [ARCHETYPES.MODERN_SPLIT, ARCHETYPES.EXECUTIVE_BANNER, ARCHETYPES.MINIMAL_ATS, ARCHETYPES.TECH_GRID, ARCHETYPES.COMPACT_EURO];
       const arch = archs[num % archs.length];
       base = theme({
