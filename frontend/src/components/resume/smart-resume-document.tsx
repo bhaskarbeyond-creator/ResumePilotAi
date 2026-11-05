@@ -96,7 +96,7 @@ const DOCUMENT_STYLES = `
 @media print {
   @page { size:A4; margin:0; }
   html, body { margin:0 !important; padding:0 !important; background:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .resume-composer-source, .resume-compose-scratch { display:none !important; }
+  .resume-composer-source, .resume-compose-scratch, .support-chat-widget, [data-testid="support-chat-launcher"], [aria-label="Open Live Support Web Chat"] { display:none !important; }
   .resume-pages { display:block !important; }
   .resume-page.page-sheet { width:210mm !important; height:297mm !important; min-height:297mm !important; max-height:297mm !important; margin:0 !important; box-shadow:none !important; break-after:page !important; page-break-after:always !important; }
   .resume-page.page-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }

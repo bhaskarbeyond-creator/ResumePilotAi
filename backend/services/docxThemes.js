@@ -54,7 +54,8 @@ function wordFont(cssFont) {
   if (font.includes('consolas') || font.includes('fira code') || font.includes('mono')) return 'Consolas';
   if (font.includes('arial')) return 'Arial';
   if (font.includes('times')) return 'Times New Roman';
-  return 'Calibri';
+  if (font.includes('plus jakarta') || font.includes('outfit') || font.includes('montserrat') || font.includes('inter') || font.includes('sans')) return 'Segoe UI';
+  return 'Segoe UI';
 }
 
 function parseSidebarWidth(value) {

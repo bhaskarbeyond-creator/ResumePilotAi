@@ -112,7 +112,10 @@ function makePage(source: HTMLElement, pageNumber: number, fullName: string, wat
   page.dataset.timelineStyle = source.dataset.timelineStyle || '';
   page.dataset.accentBar = source.dataset.accentBar || 'false';
   page.dataset.pageNumber = String(pageNumber);
-  const documentLabel = source.dataset.templateId?.startsWith('Cover') ? 'Cover letter' : 'Resume';
+  const templateId = source.dataset.templateId || '';
+  const isCover = templateId.startsWith('Cover');
+  const isCv = /^(?:Cv10[1-4]|Cv51)$/i.test(templateId) || source.dataset.documentType === 'cv';
+  const documentLabel = isCover ? 'Cover letter' : isCv ? 'Curriculum Vitae' : 'Resume';
   page.setAttribute('aria-label', `${documentLabel} page ${pageNumber}`);
   if (pageNumber === 1) {
     const header = source.querySelector<HTMLElement>('[data-resume-header]');
@@ -121,7 +124,7 @@ function makePage(source: HTMLElement, pageNumber: number, fullName: string, wat
     const header = document.createElement('header');
     header.className = 'resume-continuation-header';
     const who = document.createElement('span');
-    const continuationLabel = documentLabel === 'Cover letter' ? 'Cover Letter' : 'Curriculum Vitae';
+    const continuationLabel = isCover ? 'Cover Letter' : isCv ? 'Curriculum Vitae' : 'Resume';
     who.textContent = fullName ? `${fullName} — ${continuationLabel}` : continuationLabel;
     const number = document.createElement('span');
     number.textContent = `Page ${pageNumber}`;

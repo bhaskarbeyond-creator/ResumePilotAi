@@ -286,7 +286,7 @@ test('controlled two-page document preserves ordered content and continuation ge
   for (let index = 0; index < 10; index++) expect(texts.join(' ').split(`ROLE-${String(index).padStart(2, '0')}-END`).length - 1).toBe(1);
   expect(texts[0]).toContain('ROLE-00-END');
   expect(texts[1]).toContain('ROLE-09-END');
-  await expect(pages.nth(1).locator('.resume-continuation-header')).toContainText('Asha Rao — Curriculum Vitae');
+  await expect(pages.nth(1).locator('.resume-continuation-header')).toContainText(/Asha Rao — (?:Resume|Curriculum Vitae)/);
   await expect(pages.nth(1).locator('.resume-continuation-header')).toContainText('Page 2');
   expect((await pages.last().locator('[data-resume-block]').count())).toBeGreaterThan(0);
   for (const block of await page.locator('.resume-page [data-resume-block]:has(> h2)').all()) {

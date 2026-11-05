@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/providers/auth-provider';
 import { get, post, normalizeError, getAuthHeader } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -285,13 +286,41 @@ export function SupportChatWidget() {
     }
   };
 
+  const location = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const checkModal = () => {
+      // Suppress launcher when full-screen preview modals or dialogs are active
+      const hasOpenDialog = Boolean(
+        document.querySelector('[role="dialog"]:not([aria-label="Live Support Chat"]), [data-preview-modal], [data-testid="cuba-preview-modal"]')
+      );
+      setIsModalOpen(hasOpenDialog);
+    };
+    checkModal();
+    const observer = new MutationObserver(checkModal);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    return () => observer.disconnect();
+  }, []);
+
   // Only render for authenticated users
   if (!isAuthenticated || !user) {
     return null;
   }
 
+  // Do not render on export/preview dedicated routes
+  if (location.pathname.startsWith('/export/') || location.pathname.startsWith('/preview/')) {
+    return null;
+  }
+
+  // Hide the floating trigger balloon when an inspection modal is open
+  if (isModalOpen && !isOpen) {
+    return null;
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end print:hidden support-chat-widget">
       {/* ── Chat Popover Window ── */}
       {isOpen && (
         <div
@@ -506,6 +535,7 @@ export function SupportChatWidget() {
       {/* ── Floating Launcher Trigger ── */}
       <button
         type="button"
+        data-testid="support-chat-launcher"
         onClick={() => {
           setIsOpen(!isOpen);
           setIsMinimized(false);
