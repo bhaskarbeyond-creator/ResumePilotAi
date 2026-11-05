@@ -159,8 +159,8 @@ test('client-supplied colors cannot override the authoritative theme palette', a
   assert.doesNotMatch(documentXml, /00FF00/i);
 });
 
-test('DOCX export successfully generates valid OOXML packages for all 51 templates', async () => {
-  for (let i = 1; i <= 51; i++) {
+test('DOCX export successfully generates valid OOXML packages for all 104 templates', async () => {
+  for (let i = 1; i <= 104; i++) {
     const templateName = `Cv${i}`;
     const buffer = await createResumeDocx({
       firstname: 'Candidate',
@@ -291,7 +291,7 @@ test('content cannot disappear across archetypes', async () => {
 
 test('theme registry stays synchronized with the PDF themePresets source', () => {
   const src = fs.readFileSync(path.resolve(__dirname, '../../shared/utils/themePresets.js'), 'utf8');
-  for (let i = 1; i <= 51; i++) {
+  for (let i = 1; i <= 104; i++) {
     const id = `Cv${i}`;
     const block = src.split(`${id}:`)[1];
     assert.ok(block, `frontend preset missing ${id}`);

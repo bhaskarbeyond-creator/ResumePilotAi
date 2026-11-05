@@ -868,7 +868,7 @@ export function ResumesPage() {
             </div>
             <h3 className="text-xl font-bold text-ink">No resumes yet</h3>
             <p className="mt-2 max-w-md text-sm text-ink-muted">
-              Build your first executive resume using our AI-guided builder with 51+ high-fidelity templates. Your Master Profile Data gives it a head start!
+              Build your first executive resume using our AI-guided builder with 104 high-fidelity templates. Your Master Profile Data gives it a head start!
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button
@@ -1613,11 +1613,11 @@ export function ResumesPage() {
                   <div className="flex items-center justify-between w-full">
                     <Layers className="size-4 text-indigo-600" />
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                      51 Styles
+                      104 Styles
                     </span>
                   </div>
                   <div className="text-xs font-bold text-ink">Template First</div>
-                  <p className="text-[10px] text-ink-subtle leading-tight">Pick from 51 A4 executive designs</p>
+                  <p className="text-[10px] text-ink-subtle leading-tight">Pick from 104 A4 executive designs</p>
                 </button>
 
                 <button

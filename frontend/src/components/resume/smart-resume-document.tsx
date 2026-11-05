@@ -93,6 +93,10 @@ const DOCUMENT_STYLES = `
 .resume-watermark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; pointer-events:none; z-index:1; }
 .resume-watermark span { color:#0f172a; font:900 38px sans-serif; letter-spacing:.2em; text-transform:uppercase; white-space:nowrap; user-select:none; }
 .resume-page-footer { flex:none; border-top:1px solid #e2e8f0; padding:7px 30px; text-align:right; color:#475569; font-size:10px; }
+body:has([data-testid="cuba-preview-modal"]) .support-chat-widget,
+body:has([data-preview-modal]) .support-chat-widget,
+body:has(.smart-resume-page) .support-chat-widget,
+body:has(.resume-page) .support-chat-widget { display:none !important; }
 @media print {
   @page { size:A4; margin:0; }
   html, body { margin:0 !important; padding:0 !important; background:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }

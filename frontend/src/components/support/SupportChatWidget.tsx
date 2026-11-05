@@ -292,9 +292,11 @@ export function SupportChatWidget() {
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const checkModal = () => {
-      // Suppress launcher when full-screen preview modals or dialogs are active
+      // Suppress launcher when full-screen preview modals, dialogs, or resume canvases are active
       const hasOpenDialog = Boolean(
-        document.querySelector('[role="dialog"]:not([aria-label="Live Support Chat"]), [data-preview-modal], [data-testid="cuba-preview-modal"]')
+        document.querySelector(
+          '[role="dialog"]:not([aria-label="Live Support Chat"]), [data-preview-modal], [data-testid="cuba-preview-modal"], .smart-resume-page, .resume-page'
+        )
       );
       setIsModalOpen(hasOpenDialog);
     };
@@ -309,8 +311,15 @@ export function SupportChatWidget() {
     return null;
   }
 
-  // Do not render on export/preview dedicated routes
-  if (location.pathname.startsWith('/export/') || location.pathname.startsWith('/preview/')) {
+  // Do not render on export, preview, or document-authoring canvas routes
+  if (
+    location.pathname.startsWith('/export/') ||
+    location.pathname.startsWith('/preview/') ||
+    location.pathname.startsWith('/build-resume') ||
+    location.pathname.startsWith('/create-resume') ||
+    location.pathname.startsWith('/coverletter') ||
+    location.pathname.startsWith('/cover-letter')
+  ) {
     return null;
   }
 

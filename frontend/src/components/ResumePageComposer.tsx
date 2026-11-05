@@ -114,7 +114,7 @@ function makePage(source: HTMLElement, pageNumber: number, fullName: string, wat
   page.dataset.pageNumber = String(pageNumber);
   const templateId = source.dataset.templateId || '';
   const isCover = templateId.startsWith('Cover');
-  const isCv = /^(?:Cv10[1-4]|Cv51)$/i.test(templateId) || source.dataset.documentType === 'cv';
+  const isCv = /^(?:Cv10[1-4])$/i.test(templateId) || source.dataset.documentType === 'cv';
   const documentLabel = isCover ? 'Cover letter' : isCv ? 'Curriculum Vitae' : 'Resume';
   page.setAttribute('aria-label', `${documentLabel} page ${pageNumber}`);
   if (pageNumber === 1) {

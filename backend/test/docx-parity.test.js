@@ -94,9 +94,9 @@ function score(result) {
   return Math.max(0, value);
 }
 
-test('all 51 templates produce forensic-grade DOCX matching PDF architecture', async () => {
+test('all 104 templates produce forensic-grade DOCX matching PDF architecture', async () => {
   const rows = [];
-  for (let i = 1; i <= 51; i++) {
+  for (let i = 1; i <= 104; i++) {
     const template = `Cv${i}`;
     const result = await inspect(template);
     const fidelity = score(result);

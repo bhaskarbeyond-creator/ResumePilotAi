@@ -355,7 +355,7 @@ function IdentityBlock({
             <div className="mt-3 flex items-end justify-between gap-3 border-t border-neutral-300 pt-2">
               <ContactRow heading={heading} layout={layout} />
               <span className="shrink-0 text-[8.5px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-                Curriculum Vitae
+                {/^(?:Cv10[1-4])$/i.test(layout.id) ? 'Curriculum Vitae' : 'Resume'}
               </span>
             </div>
           </div>
@@ -1001,7 +1001,7 @@ function EuropassFamily(props: FamilyPageProps) {
           <div className="min-w-0">
             <IdentityText heading={heading} fullName={fullName} layout={layout} />
             <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em]" style={{ color: palette.primary }}>
-              Curriculum Vitae
+              {/^(?:Cv10[1-4])$/i.test(layout.id) ? 'Curriculum Vitae' : 'Resume'}
             </div>
           </div>
           <Photo heading={heading} fullName={fullName} layout={layout} size="size-[88px]" />
