@@ -160,6 +160,16 @@ When operating inside the Claude Desktop App:
 - **Lead Role:** Formulate architectural directives, evaluate plans, enforce system invariants, and issue gatekeeper certifications.
 - Standalone project instructions are preserved in `CLAUDE_DESKTOP_PROJECT_INSTRUCTIONS.md`.
 
+### 2.14 Tool & MCP Optimization: Forensic RCA & Multi-Tool Routing Protocol
+
+Do not abuse the terminal for tasks covered by specialized native MCP tools:
+- **Database investigations:** Always use `ime365-mysql` (`db_query`, `db_describe_table`, `db_table_sample`) rather than running shell scripts in the terminal.
+- **Browser & visual inspection:** Always use `playwright` (`browser_navigate`, `browser_snapshot`, `browser_take_screenshot`, `browser_console_messages`) to verify the real rendered DOM on `https://ime365.local/`.
+- **Deep Forensic RCA:** Always activate `sequentialthinking` to hypothesize, trace, and verify before editing code.
+- **Office documents (.docx, .pdf, .pptx):** Always use `readoc` (`readoc`, `editdoc`) and `pptx-deck-plugin` for direct document operations.
+- **Codebase AST architecture:** Use `cartographer` for dependency graphs and symbol callers.
+- **Terminal scope:** Strictly reserved for authoritative automated test runs (`npm run test:backend`, `npm run test:candidate`, `node --test ...`), building (`npm run build`), and git operations (`git push origin main / dev`).
+
 ---
 
 # 3. MANDATORY BRIDGE DIRECTIVE LIFECYCLE

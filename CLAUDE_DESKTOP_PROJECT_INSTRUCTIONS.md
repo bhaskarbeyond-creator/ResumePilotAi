@@ -226,3 +226,100 @@ INFORM LEAD ──► EVALUATE IMPACT ──► GRANT EXPLICIT APPROVAL ──�
   cd frontend && npm run build
   ```
   *(Syncs 397+ hashed production assets directly to `dist/` with zero TypeScript errors).*
+
+---
+
+# 8. TOOL & MCP OPTIMIZATION: FORENSIC RCA & MULTI-TOOL ROUTING PROTOCOL
+
+Claude Desktop is equipped with dedicated native Model Context Protocol (MCP) servers and plugins. **Do not default to running terminal shell scripts when a specialized native tool or MCP server exists for the task.**
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        OPTIMAL TOOL ROUTING & INVESTIGATION MATRIX                     │
+├──────────────────────────┬─────────────────────────────┬───────────────────────────────┤
+│ Investigation Target     │ DO NOT DO (Terminal Abuse)  │ DO THIS (Native Tool / MCP)   │
+├──────────────────────────┼─────────────────────────────┼───────────────────────────────┤
+│ 🗄️ Database Rows/Schema   │ node -e "mysql query..."    │ ime365-mysql (db_query)       │
+│ 🌐 Live Web DOM / Visual │ Blind curl or headless cmd  │ playwright (browser_navigate) │
+│ 🧠 Complex RCA Reasoning │ Jumping to hasty code edits │ sequentialthinking (MANDATORY)│
+│ 📁 File Read / Edit      │ cat << 'EOF' or echo > file │ filesystem (read/edit_file)   │
+│ 📄 Office (.docx, .pdf)  │ Raw binary hex scripts      │ readoc / pptx-deck-plugin     │
+│ 🗺️ Codebase AST Mapping  │ grep / findstr sprawl       │ cartographer (AST graphs)     │
+│ 🛡️ Security Vulnerabilities│ Guessing taint flows      │ claude-security (SAST scan)   │
+│ 🧪 Automated Test Suites │ N/A (Keep in terminal)      │ Terminal (npm run test:...)   │
+└──────────────────────────┴─────────────────────────────┴───────────────────────────────┘
+```
+
+### 8.1 When to Use `ime365-mysql` MCP
+* **Never use terminal one-liners** like `node -e "const { getPool } = ..."` or `mysql.exe` for data inspection.
+* **Always use `db_query`, `db_describe_table`, `db_list_tables`, `db_table_sample`:**
+  - Check resume records: `SELECT id, user_id, title, template FROM resumes ORDER BY id DESC LIMIT 5`
+  - Verify user accounts: `SELECT id, email, role FROM users WHERE email = '...'`
+  - Inspect table schema: `db_describe_table` with table `resumes`.
+
+### 8.2 When to Use `playwright` MCP
+* **Never guess what the user is seeing in the browser.**
+* **Always use native Playwright browser tools for visual and DOM debugging:**
+  - `browser_navigate`: Open `https://ime365.local/dashboard/resumes`
+  - `browser_snapshot`: Capture the full interactive DOM hierarchy and accessible text.
+  - `browser_take_screenshot`: Capture exact visual layout, glassmorphic rendering, and contrast.
+  - `browser_console_messages`: Intercept frontend JavaScript errors and unhandled exceptions.
+
+### 8.3 When to Use `sequentialthinking` (Forensic RCA Protocol)
+* Before writing a line of code for any bug fix or architectural change, activate **Sequential Thinking**:
+  - **Thought 1 (Trace):** What is the exact symptom and failing assertion?
+  - **Thought 2 (Hypothesis):** What are the top 2 possible root causes? (Environment vs Logic vs Schema).
+  - **Thought 3 (Verification):** Query the actual DB row (`db_query`) or DOM state (`browser_snapshot`).
+  - **Thought 4 (Invariants):** Does this change affect frozen templates or public API contracts?
+  - **Thought 5 (Surgical Fix):** What is the minimal safe diff to cure the defect at its source?
+
+### 8.4 When to Use the Terminal (Appropriate Tool Scope)
+The terminal is strictly reserved for authoritative build and test lifecycle commands:
+* `npm run test:backend`
+* `npm run test:candidate`
+* `node --test backend/test/docx-export.test.js backend/test/docx-parity.test.js`
+* `npm run test:enterprise`
+* `npm run test:payments`
+* `npm run build`
+* `git push origin main / dev`
+
+---
+
+# 9. CLAUDE DESKTOP CONFIGURATION REFERENCE
+
+The local configuration file at `%APPDATA%\Claude\claude_desktop_config.json` is configured with:
+
+```json
+{
+  "mcpServers": {
+    "ime365-mysql": {
+      "command": "node",
+      "args": ["C:\\Users\\mbhas\\.ai-bridge\\tools\\ime365_db_mcp.cjs"]
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["E:\\Caches\\npm\\node_modules\\@playwright\\mcp\\cli.js"]
+    },
+    "sequential-thinking": {
+      "command": "node",
+      "args": ["E:\\Caches\\npm\\node_modules\\@modelcontextprotocol\\server-sequential-thinking\\dist\\index.js"]
+    },
+    "filesystem": {
+      "command": "node",
+      "args": [
+        "E:\\Caches\\npm\\node_modules\\@modelcontextprotocol\\server-filesystem\\dist\\index.js",
+        "D:\\xampp\\htdocs\\IME365",
+        "C:\\Users\\mbhas\\.ai-bridge",
+        "C:\\Users\\mbhas\\.claude"
+      ]
+    },
+    "ai-bridge": {
+      "command": "node",
+      "args": ["C:\\Users\\mbhas\\.ai-bridge\\bridge.cjs", "mcp"],
+      "env": {
+        "AI_BRIDGE_ROLE": "dev"
+      }
+    }
+  }
+}
+```
