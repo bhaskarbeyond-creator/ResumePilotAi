@@ -998,27 +998,33 @@ export function ResumesPage() {
             return (
               <article
                 key={resume.id}
-                className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 hover:shadow-lg min-w-0"
+                className="group relative flex flex-col rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-xs backdrop-blur-xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/5 min-w-0"
                 data-testid="resume-card"
               >
                 {/* Header: Title and Options Menu */}
-                <header className="flex items-center justify-between gap-2 min-w-0">
-                  <h3 className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-900 hover:text-brand-600 transition-colors" title={title}>
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(resume)}
-                      className="text-left font-bold text-slate-900 hover:text-brand-600 transition-colors truncate block w-full"
-                    >
-                      {title}
-                    </button>
-                  </h3>
+                <header className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="min-w-0 truncate text-[15px] font-bold text-slate-900 group-hover:text-brand-600 transition-colors" title={title}>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(resume)}
+                        className="text-left font-bold text-slate-900 hover:text-brand-600 transition-colors truncate block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                      >
+                        {title}
+                      </button>
+                    </h3>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                      <Clock className="size-3 text-slate-400 shrink-0" />
+                      <span className="truncate">{dateStr}</span>
+                    </div>
+                  </div>
 
                   {/* Options Menu Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                         aria-label="Resume options"
                       >
                         <MoreVertical className="size-4" />
@@ -1076,26 +1082,37 @@ export function ResumesPage() {
                   </DropdownMenu>
                 </header>
 
-                {/* Subtitle row: Date + ATS Score pill */}
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                  <span>{dateStr}</span>
+                {/* ATS Readiness & Template metadata bar */}
+                <div className="mt-2.5 flex items-center justify-between gap-2">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
                       bucketTone(bucketForScore(score)).border
                     } ${bucketTone(bucketForScore(score)).bg} ${bucketTone(bucketForScore(score)).text}`}
                     title={`ATS readiness score — ${bucketTone(bucketForScore(score)).label}`}
                     data-ats-bucket={bucketForScore(score)}
                   >
+                    <span className="size-1.5 rounded-full bg-current opacity-80" />
                     ATS: {score === null ? '—' : `${score}/100`}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                    <span
+                      className="size-2 rounded-full ring-1 ring-slate-200 shrink-0"
+                      style={{ backgroundColor: meta.primary }}
+                    />
+                    <span className="truncate max-w-[120px]">{meta.id} · {meta.name}</span>
                   </span>
                 </div>
 
                 {/* Visual A4 Document Thumbnail Preview */}
-                <div className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-xs">
+                <div
+                  className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-slate-100/70 shadow-xs group-hover:shadow-md group-hover:border-slate-300 transition-all duration-300 cursor-pointer"
+                  onClick={() => handleEdit(resume)}
+                >
                   <img
                     src={meta.thumbnail || undefined}
                     alt={`${meta.name} preview`}
-                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
                     loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
@@ -1104,21 +1121,24 @@ export function ResumesPage() {
 
                   {/* Template chip on top-left of thumbnail */}
                   <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-neutral-800 shadow-xs backdrop-blur-md">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/85 px-2.5 py-1 text-[10px] font-semibold text-white shadow-xs backdrop-blur-md">
                       <span
-                        className="size-2 rounded-full"
+                        className="size-1.5 rounded-full shrink-0"
                         style={{ backgroundColor: meta.primary }}
                       />
-                      {meta.id} · {meta.name}
+                      {meta.name}
                     </span>
                   </div>
 
-                  {/* Hover overlay with Preview button */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-neutral-950/65 opacity-0 backdrop-blur-xs transition-opacity duration-200 group-hover:opacity-100">
+                  {/* Hover overlay with Preview & Edit buttons */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="bg-white/95 font-semibold text-slate-900 hover:bg-white shadow-md gap-1.5"
+                      className="bg-white/95 font-semibold text-slate-900 hover:bg-white shadow-md gap-1.5 rounded-lg text-xs h-8"
                       onClick={() => void handleOpenPreview(resume)}
                     >
                       <Eye className="size-3.5 text-indigo-600" />
@@ -1127,63 +1147,89 @@ export function ResumesPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="bg-white/95 font-semibold text-slate-900 hover:bg-white shadow-md gap-1.5"
+                      className="bg-brand-600 font-semibold text-white hover:bg-brand-700 shadow-md gap-1.5 rounded-lg text-xs h-8"
                       onClick={() => handleEdit(resume)}
                     >
-                      <Edit className="size-3.5 text-brand-600" />
+                      <Edit className="size-3.5" />
                       Edit
                     </Button>
                   </div>
                 </div>
 
-                {/* 4 Prominent Direct Action Buttons (Matching old layout) */}
-                <div className="mt-4 flex flex-col gap-2 pt-1">
-                  {/* Button 1: Edit Resume */}
+                {/* Executive 2-Tier Action Dock */}
+                <div className="mt-3.5 flex flex-col gap-2 pt-0.5">
+                  {/* Tier 1: Primary Full-Width CTA (Edit in Builder) */}
                   <button
                     type="button"
                     onClick={() => handleEdit(resume)}
                     aria-label={`Edit ${title}`}
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    className="group/btn relative flex h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-xs transition-all duration-200 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-500/20 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
-                    <Edit className="size-4" />
-                    Edit Resume
+                    <Edit className="size-4 transition-transform group-hover/btn:scale-110" />
+                    <span>Edit Resume</span>
                   </button>
 
-                  {/* Button 2: Share Resume */}
-                  <button
-                    type="button"
-                    onClick={() => setShareResume({ id: resume.id, name: title, template: templateId })}
-                    aria-label={`Share ${title}`}
-                    data-testid="resume-action-share"
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition hover:bg-slate-50 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                  >
-                    <Share2 className="size-4 text-indigo-600" />
-                    Share Resume
-                  </button>
+                  {/* Tier 2: Streamlined Quick-Action Group */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {/* Action 1: Download PDF */}
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPdf(resume)}
+                      disabled={downloadingPdfId === resume.id}
+                      aria-label={`Download PDF for ${title}`}
+                      title="Download PDF"
+                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-700 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    >
+                      {downloadingPdfId === resume.id ? (
+                        <RefreshCw className="size-3.5 animate-spin text-emerald-600" />
+                      ) : (
+                        <Download className="size-3.5 text-emerald-600" />
+                      )}
+                      <span className="hidden sm:inline text-[11px]">PDF</span>
+                    </button>
 
-                  {/* Button 3: Download PDF */}
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadPdf(resume)}
-                    disabled={downloadingPdfId === resume.id}
-                    aria-label={`Download PDF for ${title}`}
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:opacity-60"
-                  >
-                    <Download className="size-4" />
-                    {downloadingPdfId === resume.id ? 'Preparing PDF…' : 'Download PDF'}
-                  </button>
+                    {/* Action 2: Download Word (DOCX) */}
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadDocx(resume)}
+                      disabled={downloadingDocxId === resume.id}
+                      aria-label={`Download Word for ${title}`}
+                      title="Download Word (DOCX)"
+                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50/70 hover:text-blue-700 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      {downloadingDocxId === resume.id ? (
+                        <RefreshCw className="size-3.5 animate-spin text-blue-600" />
+                      ) : (
+                        <FileDown className="size-3.5 text-blue-600" />
+                      )}
+                      <span className="hidden sm:inline text-[11px]">DOCX</span>
+                    </button>
 
-                  {/* Button 4: Download Word (DOCX) */}
-                  <button
-                    type="button"
-                    onClick={() => void handleDownloadDocx(resume)}
-                    disabled={downloadingDocxId === resume.id}
-                    aria-label={`Download Word for ${title}`}
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-60"
-                  >
-                    <FileDown className="size-4" />
-                    {downloadingDocxId === resume.id ? 'Preparing Word…' : 'Download Word (DOCX)'}
-                  </button>
+                    {/* Action 3: Share Resume */}
+                    <button
+                      type="button"
+                      onClick={() => setShareResume({ id: resume.id, name: title, template: templateId })}
+                      aria-label={`Share ${title}`}
+                      data-testid="resume-action-share"
+                      title="Share Public Link"
+                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50/70 hover:text-indigo-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    >
+                      <Share2 className="size-3.5 text-indigo-600" />
+                      <span className="hidden sm:inline text-[11px]">Share</span>
+                    </button>
+
+                    {/* Action 4: Full Size Preview Modal */}
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenPreview(resume)}
+                      aria-label={`Preview ${title}`}
+                      title="Full Size Preview"
+                      className="flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50/70 hover:text-violet-700 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                    >
+                      <Eye className="size-3.5 text-violet-600" />
+                      <span className="hidden sm:inline text-[11px]">View</span>
+                    </button>
+                  </div>
                 </div>
               </article>
             );
