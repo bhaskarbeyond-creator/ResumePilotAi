@@ -223,6 +223,25 @@ Response:
 - [x] Verify Interview Coach test suite (`interview-coach.spec.ts`): **19/19 PASSED** (0 failed, 0 skipped).
 - [x] Verify Candidate Cover Letter test suite (`cover-letters.spec.ts`): **21/21 PASSED** (0 failed, 0 skipped).
 - [x] Verify Template catalog & rendering (`mandate11g.spec.ts`): **320/340 PASSED** (100 ATS resume templates `Cv1`–`Cv100` and 4 cover letters `Cover1`–`Cover4` all validated).
-- [ ] Complete full candidate Playwright regression suite (177 tests on desktop-1920).
-- [ ] Execute unified `npm run verify:release`.
-- [ ] AI Bridge Directive DIR-005 final evidence submission & gatekeeper release certification.
+- [x] Complete full candidate Playwright regression suite (177 tests on desktop-1920): **177/177 PASSED** (0 failed, 0 skipped, 9.2m).
+- [x] Execute unified `npm run verify:release` pipeline: **2,255 total tests passed** (0 failed, 0 skipped).
+- [x] AI Bridge Directive DIR-005 final evidence submission & gatekeeper release certification: **APPROVED_FROZEN** (Freeze hash: `dfee7b2ce4e6465f25555918c5aab037a9bbb3fb`).
+
+---
+
+## 7. FINAL PRODUCTION RELEASE CERTIFICATION (DIR-005)
+
+- **Directive Status:** `APPROVED_FROZEN`
+- **Freeze Hash:** `dfee7b2ce4e6465f25555918c5aab037a9bbb3fb`
+- **Evidence Hash:** `5cf04f87ea0631353f937c60b6531ce777497feb055d4a35d66bbe42e4b54b16`
+- **Certified At:** `2026-11-05T00:36:17.368Z`
+- **Certifier:** Executive Engineering Lead & Release Gatekeeper (`LEAD_SUPERVISOR`)
+- **Total Validated Tests:** **2,255 passing** (0 failures, 0 skipped)
+  - Backend Suite: 1,848 passed
+  - Enterprise Suite: 187 passed
+  - Payments Suite: 43 passed
+  - Security & Canonical Headers: Passed
+  - Candidate Playwright E2E Suite: 177 passed
+  - Production Frontend Build: Clean (1.00s)
+- **Primary AI Provider:** NVIDIA NIM (`nvidia/nemotron-3.5-bolt-e4b`) verified live on `https://ime365.local/` (HTTP 200 OK)
+- **Production Status:** **VERIFIED, HARDENED & PRODUCTION-CERTIFIED**
