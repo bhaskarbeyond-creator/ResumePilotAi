@@ -406,7 +406,10 @@ test.describe('Interview Coach — acceptance stack (stub AI provider, real back
   async function routeAiToAcceptance(page: Page) {
     await page.route((url) => /^\/api\/(generate-interview$|live-interview\/)/.test(url.pathname), async (route) => {
       const url = new URL(route.request().url());
-      await route.continue({ url: `${ACCEPTANCE_API}${url.pathname}${url.search}` });
+      const response = await route.fetch({
+        url: `${ACCEPTANCE_API}${url.pathname}${url.search}`,
+      });
+      await route.fulfill({ response });
     });
   }
 
@@ -454,7 +457,11 @@ test.describe('Interview Coach — acceptance stack (stub AI provider, real back
       await expect(examQuestion(page)).toHaveText(question.question);
       const choice = index === 4 ? (question.correctAnswer + 1) % question.options.length : question.correctAnswer;
       await examOptions(page).nth(choice).click();
-      if (index < 4) await page.getByRole('button', { name: 'Next' }).click();
+      await expect(examOptions(page).nth(choice)).toHaveAttribute('aria-pressed', 'true');
+      if (index < 4) {
+        await page.getByRole('button', { name: 'Next' }).click();
+        await expect(examQuestion(page)).not.toHaveText(question.question);
+      }
     }
     await expectNoAxeViolations(page);
     await page.getByRole('button', { name: 'Submit exam' }).first().click();

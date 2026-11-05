@@ -1291,7 +1291,7 @@ function ExamView({ state, timeRemaining, onSelect, onToggleFlag, onNavigate, on
               );
             })}
           </div>
-          <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-4">
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-4 pr-24">
             <Button variant="outline" size="sm" onClick={() => onNavigate(state.index - 1)} disabled={state.index === 0}>
               <ArrowLeft aria-hidden="true" /> Previous
             </Button>

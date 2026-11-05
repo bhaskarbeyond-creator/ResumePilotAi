@@ -79,7 +79,7 @@ function firstUnasked(list, prompt) {
 function generateInterview(prompt) {
   const occupation = (/"title":\s*"([^"]*?) - [A-Za-z]+ Assessment"/.exec(prompt) || [])[1] || 'Candidate';
   const retry = /Regenerate ONLY (\d+)/.exec(prompt);
-  const requested = Number((retry || /Generate exactly (\d+)\b/.exec(prompt) || [])[1] || 10);
+  const requested = Number((retry || /"totalQuestions":\s*(\d+)/.exec(prompt) || /Generate exactly (\d+) realistic questions/.exec(prompt) || /Generate exactly (\d+)\b/.exec(prompt) || [])[1] || 10);
   const fresh = MCQ_BANK.filter(([question]) => !prompt.includes(question));
   // Rotate the correct option so clients must read correctAnswer instead of assuming a position.
   const questions = fresh.slice(0, Math.max(1, Math.min(requested, fresh.length))).map(([question, options, correct, explanation], index) => {
