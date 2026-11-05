@@ -1818,8 +1818,11 @@ function DocumentSectionBlocks({
     case 'summary':
       entries = resume.summary && resume.summary.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim() ? [<RichTextContent content={resume.summary} />] : [];
       break;
-    case 'experience':
-      entries = resume.experience.map((role) => (
+    case 'experience': {
+      const validRoles = (resume.experience || []).filter(role =>
+        Boolean(role.position?.trim() || role.company?.trim() || (role.description && role.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+      );
+      entries = validRoles.map((role) => (
         <div className="resume-role" data-date-rail={meta.archetype === 'compact-euro' || meta.timelineStyle === 'date-rail' || layout.family === 'europass' ? 'true' : undefined}>
           <div className="resume-role-date">{formatDateRange(role.startDate, role.endDate, role.current)}</div>
           <div className="resume-role-details">
@@ -1830,8 +1833,12 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
-    case 'education':
-      entries = resume.education.map((entry) => (
+    }
+    case 'education': {
+      const validEdu = (resume.education || []).filter(entry =>
+        Boolean(entry.degree?.trim() || entry.field?.trim() || entry.institution?.trim() || (entry.description && entry.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+      );
+      entries = validEdu.map((entry) => (
         <div>
           {(entry.degree || entry.field) && <h3>{[entry.degree, entry.field].filter(Boolean).join(' · ')}</h3>}
           <div className="resume-muted">{[entry.institution, entry.location, formatDateRange(entry.startDate, entry.endDate), entry.gpa ? `GPA: ${entry.gpa}` : ''].filter(Boolean).join(' · ')}</div>
@@ -1839,8 +1846,12 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
-    case 'projects':
-      entries = resume.projects.map((project) => (
+    }
+    case 'projects': {
+      const validProjects = (resume.projects || []).filter(project =>
+        Boolean(project.title?.trim() || (project.description && project.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+      );
+      entries = validProjects.map((project) => (
         <div className={meta.archetype === 'tech-grid' ? 'resume-project-card' : ''} data-project-card={meta.archetype === 'tech-grid' ? 'true' : undefined}>
           {project.title && <h3>{project.title}</h3>}
           {project.technologies && <div className="resume-muted">{project.technologies}</div>}
@@ -1851,8 +1862,12 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
-    case 'achievements':
-      entries = resume.achievements.map((achievement) => (
+    }
+    case 'achievements': {
+      const validAchievements = (resume.achievements || []).filter(achievement =>
+        Boolean(achievement.title?.trim() || (achievement.description && achievement.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+      );
+      entries = validAchievements.map((achievement) => (
         <div className="resume-achievement-item">
           <div className="resume-achievement-icon" aria-hidden="true">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1865,13 +1880,16 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
-    case 'skills':
+    }
+    case 'skills': {
       // Small groups are independent measured blocks, so a page boundary does
       // not cut through an otherwise ordinary skill badge.
-      entries = resume.skillCategories.flatMap((category) => {
+      entries = (resume.skillCategories || []).flatMap((category) => {
         const skills: Array<string | { name?: string; rating?: number }> = Array.isArray(category.skills) ? category.skills : [];
+        const validSkills = skills.filter(s => typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.name?.trim()));
+        if (!validSkills.length) return [];
         const chunks: Array<Array<string | { name?: string; rating?: number }>> = [];
-        for (let index = 0; index < skills.length; index += 8) chunks.push(skills.slice(index, index + 8));
+        for (let index = 0; index < validSkills.length; index += 8) chunks.push(skills.slice(index, index + 8));
         return chunks.map((chunk, chunkIndex) => (
           <div>
             {category.category && chunkIndex === 0 && <h3>{category.category}</h3>}
@@ -1884,8 +1902,12 @@ function DocumentSectionBlocks({
         ));
       });
       break;
-    case 'certifications':
-      entries = resume.certifications.map((certificate) => (
+    }
+    case 'certifications': {
+      const validCerts = (resume.certifications || []).filter(certificate =>
+        Boolean((certificate.name || certificate.title)?.trim())
+      );
+      entries = validCerts.map((certificate) => (
         <div className="resume-cert-card">
           <div className="resume-cert-icon" aria-hidden="true">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
@@ -1899,14 +1921,26 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
-    case 'languages':
-      entries = resume.languages.map((language) => <div>{language.name || language.language}{language.proficiency ? ` — ${language.proficiency}` : ''}</div>);
+    }
+    case 'languages': {
+      const validLangs = (resume.languages || []).filter(language =>
+        Boolean((language.name || language.language)?.trim())
+      );
+      entries = validLangs.map((language) => <div>{language.name || language.language}{language.proficiency ? ` — ${language.proficiency}` : ''}</div>);
       break;
-    case 'hobbies':
-      entries = resume.hobbies.map((hobby) => <div>{hobby}</div>);
+    }
+    case 'hobbies': {
+      const validHobbies = (resume.hobbies || []).filter(hobby =>
+        typeof hobby === 'string' ? Boolean(hobby.trim()) : Boolean((hobby as any)?.name?.trim())
+      );
+      entries = validHobbies.map((hobby) => <div>{typeof hobby === 'string' ? hobby : (hobby as any).name}</div>);
       break;
-    case 'references':
-      entries = resume.references.map((reference) => (
+    }
+    case 'references': {
+      const validRefs = (resume.references || []).filter(reference =>
+        Boolean(reference.name?.trim() || reference.company?.trim() || (reference.description && reference.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+      );
+      entries = validRefs.map((reference) => (
         <div className="resume-reference-card">
           {reference.name && <h3>{reference.name}</h3>}
           <div className="resume-muted">{[reference.position, reference.company, reference.email, reference.phone, reference.relationship].filter(Boolean).join(' · ')}</div>
@@ -1914,6 +1948,7 @@ function DocumentSectionBlocks({
         </div>
       ));
       break;
+    }
   }
   return <>{entries.map((entry, index) => (
     <section className="resume-block" data-resume-block="true" data-section={section} key={`${section}-${index}`}>
@@ -1929,12 +1964,21 @@ export function ComposableResumeLayout({ resume, meta, layout, palette, fullName
   const hasRail = isSplit || (archetype !== 'minimal-ats' && Boolean(layout.aside));
   const position = meta.sidebarPosition || layout.aside || 'left';
   const asideSections = hasRail
-    ? (layout.asideSections.length ? layout.asideSections : ['contact', 'skills', 'languages', 'education'] as AsideSectionKey[])
+    ? (layout.asideSections.length ? layout.asideSections : ['contact', 'skills', 'languages', 'certifications'] as AsideSectionKey[])
     : [];
   const asideSet = new Set<string>(asideSections);
-  const orderedMain = [...layout.mainOrder, ...SECTION_KEYS].filter((key, index, all) => !asideSet.has(key) && all.indexOf(key) === index);
   const heading = resume.heading;
   const contacts = [heading.email, heading.phone, heading.address, heading.location, heading.postalCode, heading.website, heading.linkedin, heading.github].filter((value, index, all): value is string => Boolean(value) && all.indexOf(value) === index);
+
+  const hasContactInRail = asideSet.has('contact') && contacts.length > 0;
+  const hasSkillsInRail = asideSet.has('skills') && (resume.skillCategories || []).some(c => (c.skills || []).length > 0);
+  const hasLanguagesInRail = asideSet.has('languages') && (resume.languages || []).some(l => Boolean((l.name || l.language)?.trim()));
+  const hasCertsInRail = asideSet.has('certifications') && (resume.certifications || []).some(c => Boolean((c.name || c.title)?.trim()));
+  const hasAchievementsInRail = asideSet.has('achievements') && (resume.achievements || []).some(a => Boolean(a.title?.trim() || a.description?.replace(/<[^>]*>/g, '').trim()));
+  const hasHobbiesInRail = asideSet.has('hobbies') && (resume.hobbies || []).some(h => typeof h === 'string' ? Boolean(h.trim()) : Boolean((h as any)?.name?.trim()));
+  const effectiveHasRail = hasRail && (hasContactInRail || hasSkillsInRail || hasLanguagesInRail || hasCertsInRail || hasAchievementsInRail || hasHobbiesInRail);
+
+  const orderedMain = [...layout.mainOrder, ...SECTION_KEYS].filter((key, index, all) => (effectiveHasRail ? !asideSet.has(key) : true) && all.indexOf(key) === index);
   let sidebarBg = meta.sidebarBg && backgroundStops(meta.sidebarBg).length ? meta.sidebarBg : '#f1f5f9';
   let stops = backgroundStops(sidebarBg);
   const readableOnRail = (color: string) => stops.every(stop => contrastRatio(color, stop) >= 4.5);
@@ -1968,7 +2012,7 @@ export function ComposableResumeLayout({ resume, meta, layout, palette, fullName
       <div className="resume-contact-list">{contacts.map((contact, index) => <div key={index}><SafeDocumentLink value={contact} /></div>)}</div>
     </section>
   ) : null;
-  const rail = hasRail ? (
+  const rail = effectiveHasRail ? (
     <aside className="resume-column resume-rail" data-resume-column="rail" data-layout-rail={layout.family}>
       {asideSections.map(section => section === 'contact' ? <React.Fragment key={section}>{contactBlock}</React.Fragment>
         : <DocumentSectionBlocks key={section} section={section} resume={resume} meta={meta} layout={layout} />)}
@@ -1978,8 +2022,11 @@ export function ComposableResumeLayout({ resume, meta, layout, palette, fullName
     <main className="resume-column resume-main" data-resume-column="main">
       {orderedMain.map(section => <DocumentSectionBlocks key={section} section={section} resume={resume} meta={meta} layout={layout} />)}
       {(resume.customSections || []).flatMap((section, sectionIndex) => {
-        if (!section.items.length) return section.sectionTitle ? [<section key={`custom-${sectionIndex}`} className="resume-block" data-resume-block="true" data-section="custom"><p><strong>{section.sectionTitle}</strong></p></section>] : [];
-        return section.items.map((item, itemIndex) => (
+        const validItems = (section.items || []).filter(item =>
+          Boolean(item.title?.trim() || (item.description && item.description.replace(/<[^>]*>/g, '').replace(/&nbsp;|&#160;/gi, ' ').trim()))
+        );
+        if (!validItems.length) return [];
+        return validItems.map((item, itemIndex) => (
           <section key={`custom-${sectionIndex}-${itemIndex}`} className="resume-block" data-resume-block="true" data-section="custom">
             {itemIndex === 0 && section.sectionTitle && <h2 className={`resume-section-title resume-title-${layout.titleStyle}`}>{section.sectionTitle}</h2>}
             {item.title && <h3>{item.title}</h3>}
@@ -2000,10 +2047,10 @@ export function ComposableResumeLayout({ resume, meta, layout, palette, fullName
           {!asideSet.has('contact') && contacts.length > 0 && <div className="resume-contact-row">{contacts.map((contact, index) => <SafeDocumentLink key={index} value={contact} />)}</div>}
         </div>
       </header>
-      <div className="resume-columns" data-resume-columns="true" data-sidebar-position={hasRail ? position : 'none'}>
-        {hasRail && position === 'left' && rail}
+      <div className="resume-columns" data-resume-columns="true" data-sidebar-position={effectiveHasRail ? position : 'none'}>
+        {effectiveHasRail && position === 'left' && rail}
         {main}
-        {hasRail && position === 'right' && rail}
+        {effectiveHasRail && position === 'right' && rail}
       </div>
     </div>
   );

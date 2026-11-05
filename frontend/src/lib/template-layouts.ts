@@ -105,7 +105,8 @@ export type AsideSectionKey =
   | 'skills'
   | 'certifications'
   | 'languages'
-  | 'achievements';
+  | 'achievements'
+  | 'hobbies';
 
 export interface TemplateLayoutSpec {
   id: string;
@@ -142,14 +143,14 @@ const SECTION_ORDERS: SectionKey[][] = [
 const ASIDE_COMBOS: AsideSectionKey[][] = [
   ['contact', 'skills', 'languages', 'certifications'],
   ['contact', 'skills', 'languages'],
-  ['contact', 'education', 'skills', 'certifications'],
-  ['contact', 'summary', 'skills'],
-  ['contact', 'skills', 'projects'],
+  ['contact', 'skills', 'certifications'],
+  ['contact', 'skills', 'achievements'],
+  ['contact', 'languages', 'skills', 'certifications'],
   ['contact', 'skills', 'achievements', 'languages'],
   ['contact', 'certifications', 'languages'],
-  ['contact', 'summary', 'education', 'skills'],
-  ['contact', 'skills', 'languages', 'achievements'],
-  ['contact', 'skills', 'projects', 'certifications'],
+  ['contact', 'skills', 'languages', 'hobbies'],
+  ['contact', 'languages', 'skills', 'achievements'],
+  ['contact', 'skills', 'certifications', 'hobbies'],
 ];
 
 const FAMILY_POOLS: Record<string, LayoutFamily[]> = {
@@ -261,8 +262,8 @@ const SPECIAL_SPECS: Record<string, Partial<TemplateLayoutSpec>> = {
     family: 'cv25',
     header: 'cv25',
     aside: 'right',
-    asideSections: ['summary', 'skills', 'languages'] as AsideSectionKey[],
-    mainOrder: ['experience', 'education', 'projects', 'achievements', 'certifications', 'hobbies', 'references'],
+    asideSections: ['skills', 'languages', 'certifications'] as AsideSectionKey[],
+    mainOrder: ['summary', 'experience', 'education', 'projects', 'achievements', 'hobbies', 'references'],
     titleStyle: 'micro',
     photoShape: 'circle',
     density: 'compact',

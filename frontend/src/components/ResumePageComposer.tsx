@@ -190,8 +190,35 @@ export default function ResumePageComposer({
       do {
         const page = makePage(source, pages.length + 1, fullName, watermark);
         scratch.appendChild(page);
-        const columnElements = Array.from(page.querySelector<HTMLElement>('[data-resume-columns]')!.children) as HTMLElement[];
-        const columns: PageColumn[] = columnElements.map((element, index) => ({ element, pending: queues[index] }));
+        const columnsContainer = page.querySelector<HTMLElement>('[data-resume-columns]')!;
+        let columnElements = Array.from(columnsContainer.children) as HTMLElement[];
+
+        // Adaptive column collapsing: on continuation pages (page >= 2), or on page 1 if one queue is completely empty:
+        // if only one queue has pending blocks, collapse the multi-column shell to a single full-width column,
+        // preventing empty column voids (e.g. 66% blank right area or dead 32% sidebar rail).
+        const activeQueueIndices = queues
+          .map((q, idx) => (q.length > 0 ? idx : -1))
+          .filter((idx) => idx !== -1);
+
+        if (columnElements.length > 1 && activeQueueIndices.length === 1 && (!first || queues[0].length === 0)) {
+          const activeIndex = activeQueueIndices[0];
+          columnElements.forEach((el, idx) => {
+            if (idx !== activeIndex) el.remove();
+          });
+          const activeCol = columnElements[activeIndex];
+          activeCol.style.width = '100%';
+          activeCol.style.maxWidth = '100%';
+          activeCol.style.flex = '1 1 100%';
+          activeCol.style.gridColumn = '1 / -1';
+          columnsContainer.style.display = 'block';
+          columnsContainer.style.gridTemplateColumns = '1fr';
+          columnsContainer.dataset.sidebarPosition = 'none';
+          columnElements = [activeCol];
+        }
+
+        const columns: PageColumn[] = columnElements.length === 1 && activeQueueIndices.length === 1
+          ? [{ element: columnElements[0], pending: queues[activeQueueIndices[0]] }]
+          : columnElements.map((element, index) => ({ element, pending: queues[index] }));
         let placed = 0;
         for (const { element, pending } of columns) {
           while (pending.length) {
@@ -219,7 +246,8 @@ export default function ResumePageComposer({
         // rather than clipped or repeatedly creating blank sheets.
         if (!placed && !first && queues.some(queue => queue.length)) {
           const index = queues.findIndex(queue => queue.length);
-          columnElements[index].appendChild(queues[index].shift()!);
+          const targetCol = columnElements.length === 1 ? columnElements[0] : columnElements[index];
+          targetCol.appendChild(queues[index].shift()!);
           page.dataset.overflow = 'true';
         }
         pages.push(page);

@@ -270,7 +270,7 @@ export function partitionResumeContent(
     blocks.set(section, labelled);
   };
 
-  if (resume.summary && String(resume.summary).trim()) {
+  if (resume.summary && getTextLength(resume.summary) > 0) {
     const summaryBlocks = splitSummaryBlocks(resume.summary);
     pushBlock('summary', summaryBlocks.map((block, index) => ({
       id: `summary-${index}`,
@@ -280,8 +280,11 @@ export function partitionResumeContent(
     })));
   }
 
-  if (Array.isArray(resume.experience) && resume.experience.length > 0) {
-    pushBlock('experience', resume.experience.map((exp: any, index: number) => ({
+  const validExperience = Array.isArray(resume.experience)
+    ? resume.experience.filter((exp: any) => Boolean(exp.position?.trim() || exp.company?.trim() || getTextLength(exp.description) > 0))
+    : [];
+  if (validExperience.length > 0) {
+    pushBlock('experience', validExperience.map((exp: any, index: number) => ({
       id: exp.id || `exp-${index}`,
       type: 'experience' as const,
       data: exp,
@@ -289,8 +292,11 @@ export function partitionResumeContent(
     })));
   }
 
-  if (Array.isArray(resume.education) && resume.education.length > 0) {
-    pushBlock('education', resume.education.map((edu: any, index: number) => ({
+  const validEducation = Array.isArray(resume.education)
+    ? resume.education.filter((edu: any) => Boolean(edu.degree?.trim() || edu.institution?.trim() || edu.field?.trim() || getTextLength(edu.description) > 0))
+    : [];
+  if (validEducation.length > 0) {
+    pushBlock('education', validEducation.map((edu: any, index: number) => ({
       id: edu.id || `edu-${index}`,
       type: 'education' as const,
       data: edu,
@@ -298,8 +304,11 @@ export function partitionResumeContent(
     })));
   }
 
-  if (Array.isArray(resume.projects) && resume.projects.length > 0) {
-    pushBlock('projects', resume.projects.map((project: any, index: number) => ({
+  const validProjects = Array.isArray(resume.projects)
+    ? resume.projects.filter((project: any) => Boolean(project.title?.trim() || getTextLength(project.description) > 0))
+    : [];
+  if (validProjects.length > 0) {
+    pushBlock('projects', validProjects.map((project: any, index: number) => ({
       id: project.id || `proj-${index}`,
       type: 'projects' as const,
       data: project,
@@ -307,8 +316,11 @@ export function partitionResumeContent(
     })));
   }
 
-  if (Array.isArray(resume.achievements) && resume.achievements.length > 0) {
-    pushBlock('achievements', resume.achievements.map((achievement: any, index: number) => ({
+  const validAchievements = Array.isArray(resume.achievements)
+    ? resume.achievements.filter((achievement: any) => Boolean(achievement.title?.trim() || getTextLength(achievement.description) > 0))
+    : [];
+  if (validAchievements.length > 0) {
+    pushBlock('achievements', validAchievements.map((achievement: any, index: number) => ({
       id: achievement.id || `ach-${index}`,
       type: 'achievements' as const,
       data: achievement,
@@ -317,13 +329,18 @@ export function partitionResumeContent(
   }
 
   const categories = Array.isArray(resume.skillCategories) && resume.skillCategories.length
-    ? resume.skillCategories
+    ? resume.skillCategories.map((c: any) => ({
+        ...c,
+        skills: (c.skills || []).filter((s: any) => typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.name?.trim()))
+      })).filter((c: any) => c.skills.length > 0)
     : Array.isArray(resume.skills) && resume.skills.length
       ? [{
           id: 'core',
           category: 'Core Skills',
-          skills: resume.skills.map((skill: any) => typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.skill || '')),
-        }]
+          skills: resume.skills
+            .map((skill: any) => typeof skill === 'string' ? skill.trim() : (skill.name || skill.skillName || skill.skill || '').trim())
+            .filter(Boolean),
+        }].filter((c: any) => c.skills.length > 0)
       : [];
   if (categories.length > 0) {
     const allSkills = categories.flatMap((category: any) => category.skills || []);
@@ -335,26 +352,32 @@ export function partitionResumeContent(
     }]);
   }
 
-  if (Array.isArray(resume.certifications) && resume.certifications.length > 0) {
+  const validCerts = Array.isArray(resume.certifications)
+    ? resume.certifications.filter((c: any) => Boolean((c.name || c.title)?.trim()))
+    : [];
+  if (validCerts.length > 0) {
     pushBlock('certifications', [{
       id: 'certifications-main',
       type: 'certifications' as const,
-      data: resume.certifications,
-      estimatedHeight: 28 + resume.certifications.length * 20 + sectionGapPx,
+      data: validCerts,
+      estimatedHeight: 28 + validCerts.length * 20 + sectionGapPx,
     }]);
   }
 
-  if (Array.isArray(resume.languages) && resume.languages.length > 0) {
+  const validLangs = Array.isArray(resume.languages)
+    ? resume.languages.filter((l: any) => Boolean((l.name || l.language)?.trim()))
+    : [];
+  if (validLangs.length > 0) {
     pushBlock('languages', [{
       id: 'languages-main',
       type: 'languages' as const,
-      data: resume.languages,
-      estimatedHeight: 28 + resume.languages.length * 20 + sectionGapPx,
+      data: validLangs,
+      estimatedHeight: 28 + validLangs.length * 20 + sectionGapPx,
     }]);
   }
 
   const hobbies = Array.isArray(resume.hobbies)
-    ? resume.hobbies.map((hobby: any) => typeof hobby === 'string' ? hobby : (hobby.name || '')).filter(Boolean)
+    ? resume.hobbies.map((hobby: any) => typeof hobby === 'string' ? hobby.trim() : (hobby.name || '').trim()).filter(Boolean)
     : [];
   if (hobbies.length > 0) {
     pushBlock('hobbies', [{
@@ -365,8 +388,11 @@ export function partitionResumeContent(
     }]);
   }
 
-  if (Array.isArray(resume.references) && resume.references.length > 0) {
-    pushBlock('references', resume.references.map((reference: any, index: number) => ({
+  const validRefs = Array.isArray(resume.references)
+    ? resume.references.filter((reference: any) => Boolean(reference.name?.trim() || reference.company?.trim() || getTextLength(reference.description) > 0))
+    : [];
+  if (validRefs.length > 0) {
+    pushBlock('references', validRefs.map((reference: any, index: number) => ({
       id: reference.id || `ref-${index}`,
       type: 'references' as const,
       data: reference,
