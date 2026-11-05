@@ -397,6 +397,12 @@ function createSectionHeading(title, style, options = {}) {
   });
 }
 
+function sidebarInnerWidth(style) {
+  const leftPct = style.sidebarWidth || 34;
+  const leftWidth = Math.round(CONTENT_WIDTH * (leftPct / 100));
+  return Math.max(1800, leftWidth - 180);
+}
+
 function heroInnerWidth(style) {
   const leftPct = style.sidebarWidth || 34;
   const leftWidth = Math.round(CONTENT_WIDTH * (leftPct / 100));
@@ -994,31 +1000,6 @@ function buildCertCardCell(cert, style, width) {
 function buildCertificationsBlock(certs, style, options = {}) {
   const items = list(certs);
   if (!items.length) return [];
-  const twoCol = options.columns !== 1 && items.length > 1;
-  if (!twoCol) {
-    const entryNodes = [];
-    for (const cert of items) {
-      const title = stripAllHtmlTags(cert.name || cert.title || '');
-      const issuer = stripAllHtmlTags(cert.issuer || cert.organization || '');
-      const date = stripAllHtmlTags(cert.date || cert.year || '');
-      const line = [title, issuer, date].filter(Boolean).join(' — ');
-      if (!line) continue;
-      entryNodes.push(new Paragraph({
-        numbering: { reference: BULLET_REF, level: 0 },
-        children: [new TextRun({ text: line, size: 20, font: style.font, color: '333333' })],
-        spacing: { before: 20, after: 20 },
-      }));
-    }
-    if (!entryNodes.length) return [];
-    return [
-      createSectionHeading(options.title || 'Certifications', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }),
-      ...entryNodes,
-    ];
-  }
-  // DIR-065: render real 2-column cards (shading #f8fafc, #e2e8f0 borders, cell
-  // padding, bold title + issuer·date meta) matching `SmartCertifications.jsx`.
-  // DIR-066: a certification with no meaningful title, issuer or date must NOT
-  // emit an empty "Certifications" heading (canonical hasMeaningfulDocxText rule).
   const meaningful = items.filter((cert) => {
     if (!cert) return false;
     if (typeof cert === 'string') return hasMeaningfulDocxText(cert);
@@ -1032,21 +1013,32 @@ function buildCertificationsBlock(certs, style, options = {}) {
   });
   if (!meaningful.length) return [];
   const totalWidth = options.contentWidth || CONTENT_WIDTH;
-  const colWidth = Math.floor(totalWidth / 2);
+  const twoCol = options.columns !== 1 && meaningful.length > 1;
+  const colWidth = twoCol ? Math.floor(totalWidth / 2) : totalWidth;
   const rows = [];
-  for (let i = 0; i < meaningful.length; i += 2) {
-    rows.push(new TableRow({
-      children: [
-        buildCertCardCell(meaningful[i], style, colWidth),
-        buildCertCardCell(meaningful[i + 1], style, colWidth),
-      ],
-    }));
+  if (twoCol) {
+    for (let i = 0; i < meaningful.length; i += 2) {
+      rows.push(new TableRow({
+        children: [
+          buildCertCardCell(meaningful[i], style, colWidth),
+          buildCertCardCell(meaningful[i + 1], style, colWidth),
+        ],
+      }));
+    }
+  } else {
+    for (let i = 0; i < meaningful.length; i++) {
+      rows.push(new TableRow({
+        children: [
+          buildCertCardCell(meaningful[i], style, colWidth),
+        ],
+      }));
+    }
   }
   return [
     createSectionHeading(options.title || 'Certifications', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }),
     new Table({
       width: { size: totalWidth, type: WidthType.DXA },
-      columnWidths: [colWidth, colWidth],
+      columnWidths: twoCol ? [colWidth, colWidth] : [colWidth],
       layout: TableLayoutType.FIXED,
       borders: NO_BORDERS,
       rows,
@@ -1062,8 +1054,11 @@ function buildAchievementsBlock(items, style, options = {}) {
     const title = stripAllHtmlTags(item.title || item.name || '');
     if (title) {
       entryNodes.push(new Paragraph({
-        spacing: { before: 60, after: 20 },
-        children: [new TextRun({ text: title, bold: true, size: 21, font: style.font, color: '111827' })],
+        spacing: { before: 80, after: 20 },
+        children: [
+          new TextRun({ text: '★  ', bold: true, size: 20, font: style.font, color: style.secondaryColor || style.primaryColor || '2563EB' }),
+          new TextRun({ text: title, bold: true, size: 21, font: style.font, color: '0F172A' })
+        ],
       }));
     }
     if (item.description) entryNodes.push(...parseRichTextToParagraphs(item.description, style, { size: 20 }));
@@ -1075,33 +1070,103 @@ function buildAchievementsBlock(items, style, options = {}) {
   ];
 }
 
+function buildReferenceCardCell(reference, style, width) {
+  if (!reference) {
+    return new TableCell({
+      width: { size: width, type: WidthType.DXA },
+      borders: NO_BORDERS,
+      children: [emptyParagraph()],
+    });
+  }
+  const name = stripAllHtmlTags(reference.name || reference.title || '');
+  const position = stripAllHtmlTags(reference.position || reference.jobTitle || '');
+  const company = stripAllHtmlTags(reference.company || reference.organization || '');
+  const contact = [reference.email, reference.phone].map(stripAllHtmlTags).filter(Boolean).join(' · ');
+  const meta = [position, company].filter(Boolean).join(' — ');
+  const detail = stripAllHtmlTags(reference.reference || reference.description || reference.content || '');
+
+  const children = [];
+  if (name) {
+    children.push(new Paragraph({
+      spacing: { after: 20 },
+      children: [new TextRun({ text: name, bold: true, size: 21, font: style.font, color: '0F172A' })],
+    }));
+  }
+  if (meta) {
+    children.push(new Paragraph({
+      spacing: { after: contact ? 20 : 0 },
+      children: [new TextRun({ text: meta, size: 19, font: style.font, color: '334155' })],
+    }));
+  }
+  if (contact) {
+    children.push(new Paragraph({
+      spacing: { after: detail ? 20 : 0 },
+      children: [new TextRun({ text: contact, size: 18, font: style.font, color: '64748B' })],
+    }));
+  }
+  if (detail) {
+    children.push(new Paragraph({
+      spacing: { after: 0 },
+      children: [new TextRun({ text: detail, italic: true, size: 18, font: style.font, color: '475569' })],
+    }));
+  }
+  if (!children.length) children.push(emptyParagraph());
+
+  return new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    borders: CARD_BORDERS,
+    shading: { fill: CARD_FILL },
+    margins: CARD_CELL_MARGINS,
+    children,
+  });
+}
+
 function buildReferencesBlock(items, style, options = {}) {
   const listItems = list(items);
   if (!listItems.length) return [];
-  const entryNodes = [];
-  for (const item of listItems) {
-    const name = stripAllHtmlTags(item.name || item.title || '');
-    const detail = stripAllHtmlTags(item.reference || item.description || item.content || '');
-    if (name) {
-      entryNodes.push(new Paragraph({
-        spacing: { before: 50, after: 10 },
-        children: [new TextRun({ text: name, bold: true, size: 21, font: style.font, color: '111827' })],
+  const meaningful = listItems.filter((ref) => {
+    if (!ref) return false;
+    if (typeof ref === 'string') return hasMeaningfulDocxText(ref);
+    return hasMeaningfulDocxText(ref.name)
+      || hasMeaningfulDocxText(ref.position)
+      || hasMeaningfulDocxText(ref.company)
+      || hasMeaningfulDocxText(ref.reference)
+      || hasMeaningfulDocxText(ref.description);
+  });
+  if (!meaningful.length) return [];
+  const totalWidth = options.contentWidth || CONTENT_WIDTH;
+  const twoCol = options.columns !== 1 && meaningful.length > 1;
+  const colWidth = twoCol ? Math.floor(totalWidth / 2) : totalWidth;
+  const rows = [];
+  if (twoCol) {
+    for (let i = 0; i < meaningful.length; i += 2) {
+      rows.push(new TableRow({
+        children: [
+          buildReferenceCardCell(meaningful[i], style, colWidth),
+          buildReferenceCardCell(meaningful[i + 1], style, colWidth),
+        ],
       }));
     }
-    if (detail) {
-      entryNodes.push(new Paragraph({
-        spacing: { before: 0, after: 40 },
-        children: [new TextRun({ text: detail, size: 20, font: style.font, color: '334155' })],
+  } else {
+    for (let i = 0; i < meaningful.length; i++) {
+      rows.push(new TableRow({
+        children: [
+          buildReferenceCardCell(meaningful[i], style, colWidth),
+        ],
       }));
     }
   }
-  if (!entryNodes.length) return [];
   return [
     createSectionHeading(options.title || 'References', style, { beforeSpacing: options.beforeSpacing ?? 160, color: options.headingColor, underlined: options.underlined }),
-    ...entryNodes,
+    new Table({
+      width: { size: totalWidth, type: WidthType.DXA },
+      columnWidths: twoCol ? [colWidth, colWidth] : [colWidth],
+      layout: TableLayoutType.FIXED,
+      borders: NO_BORDERS,
+      rows,
+    }),
   ];
 }
-
 
 function buildCustomSections(resume, style, options = {}) {
   const nodes = [];
@@ -1227,6 +1292,7 @@ function sidebarTone(style) {
 
 function buildSidebarStack(resume, style, options = {}) {
   const tone = sidebarTone(style);
+  const sideWidth = options.contentWidth || sidebarInnerWidth(style);
   const nodes = [];
   if (options.includeIdentity !== false) {
     nodes.push(...buildIdentityHeader(resume, style, {
@@ -1249,7 +1315,7 @@ function buildSidebarStack(resume, style, options = {}) {
     nodes.push(...buildHobbiesBlock(resume.hobbies || resume.interests, style, { ...tone, beforeSpacing: 140 }));
   }
   if (options.includeCerts) {
-    nodes.push(...buildCertificationsBlock(resume.certifications, style, { ...tone, columns: 1, beforeSpacing: 140 }));
+    nodes.push(...buildCertificationsBlock(resume.certifications, style, { ...tone, columns: 1, beforeSpacing: 140, contentWidth: sideWidth }));
   }
   nodes.push(...buildLanguagesBlock(resume.languages, style, { ...tone, beforeSpacing: 140 }));
   return nodes;

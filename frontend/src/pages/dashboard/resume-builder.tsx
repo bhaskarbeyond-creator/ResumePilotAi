@@ -35,6 +35,7 @@ import { applyMasterProfile, describeMasterSync } from '@/lib/master-profile';
 import { cn } from '@/lib/utils';
 import { compressHeadshot, validateImageFile } from '@/lib/image-compression';
 import { PreviewModal } from '@/components/ui/preview-modal';
+import { PhotoCropModal } from '@/components/ui/photo-crop-modal';
 import { ShareModal } from '@/components/ui/share-modal';
 import {
   Dialog,
@@ -97,6 +98,7 @@ import {
   FileDown,
   Camera,
   UploadCloud,
+  Crop,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -2595,12 +2597,14 @@ function HeadingStep({
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [compressingPhoto, setCompressingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const update = (field: keyof ResumeHeading, value: any) => {
     onChange({ ...heading, [field]: value });
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -2611,15 +2615,29 @@ function HeadingStep({
       return;
     }
 
-    try {
-      setCompressingPhoto(true);
-      const compressed = await compressHeadshot(file);
-      update('photo', compressed.dataUrl);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to compress photo. Please try a different image.';
-      setPhotoError(msg);
-    } finally {
-      setCompressingPhoto(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setCropImageSrc(reader.result);
+        setIsCropModalOpen(true);
+      }
+    };
+    reader.onerror = () => {
+      setPhotoError('Failed to read image file.');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedDataUrl: string) => {
+    update('photo', croppedDataUrl);
+    setIsCropModalOpen(false);
+  };
+
+  const handleOpenCropForExisting = () => {
+    if (heading.photo) {
+      setCropImageSrc(heading.photo);
+      setIsCropModalOpen(true);
     }
   };
 
@@ -2721,17 +2739,30 @@ function HeadingStep({
               )}
             </Button>
             {heading.photo && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={compressingPhoto}
-                onClick={handleRemovePhoto}
-                className="gap-1.5 text-xs text-error-600 hover:text-error-700 hover:bg-error-50"
-              >
-                <Trash2 className="size-3.5" />
-                <span>Remove</span>
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenCropForExisting}
+                  className="gap-1.5 text-xs font-medium text-brand-700 border-brand-200 hover:bg-brand-50"
+                  title="Crop and reposition photo"
+                >
+                  <Crop className="size-3.5 text-brand-600" />
+                  <span>Adjust Crop</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={compressingPhoto}
+                  onClick={handleRemovePhoto}
+                  className="gap-1.5 text-xs text-error-600 hover:text-error-700 hover:bg-error-50"
+                >
+                  <Trash2 className="size-3.5" />
+                  <span>Remove</span>
+                </Button>
+              </>
             )}
             <label className="inline-flex items-center gap-1.5 text-xs font-medium text-ink cursor-pointer ml-auto">
               <input
@@ -2974,6 +3005,14 @@ function HeadingStep({
           </div>
         )}
       </div>
+
+      {/* Photo Crop Area Popup Dialog */}
+      <PhotoCropModal
+        isOpen={isCropModalOpen}
+        imageSrc={cropImageSrc}
+        onClose={() => setIsCropModalOpen(false)}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 }

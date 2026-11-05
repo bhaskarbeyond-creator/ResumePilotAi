@@ -1853,7 +1853,16 @@ function DocumentSectionBlocks({
       break;
     case 'achievements':
       entries = resume.achievements.map((achievement) => (
-        <div>{achievement.title && <h3>{achievement.title}</h3>}{achievement.date && <div className="resume-muted">{achievement.date}</div>}<RichTextContent content={achievement.description} /></div>
+        <div className="resume-achievement-item">
+          <div className="resume-achievement-icon" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div className="resume-achievement-body">
+            {achievement.title && <h3>{achievement.title}</h3>}
+            {achievement.date && <div className="resume-muted">{achievement.date}</div>}
+            <RichTextContent content={achievement.description} />
+          </div>
+        </div>
       ));
       break;
     case 'skills':
@@ -1877,7 +1886,17 @@ function DocumentSectionBlocks({
       break;
     case 'certifications':
       entries = resume.certifications.map((certificate) => (
-        <div><h3>{certificate.name || certificate.title}</h3><div className="resume-muted">{[certificate.issuer, certificate.date, certificate.expiryDate ? `Expires: ${certificate.expiryDate}` : ''].filter(Boolean).join(' · ')}</div>{certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialId} /></div>}{certificate.credentialUrl && certificate.credentialUrl !== certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialUrl} /></div>}</div>
+        <div className="resume-cert-card">
+          <div className="resume-cert-icon" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+          </div>
+          <div className="resume-cert-body">
+            <h3>{certificate.name || certificate.title}</h3>
+            <div className="resume-muted">{[certificate.issuer, certificate.date, certificate.expiryDate ? `Expires: ${certificate.expiryDate}` : ''].filter(Boolean).join(' · ')}</div>
+            {certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialId} /></div>}
+            {certificate.credentialUrl && certificate.credentialUrl !== certificate.credentialId && <div><SafeDocumentLink value={certificate.credentialUrl} /></div>}
+          </div>
+        </div>
       ));
       break;
     case 'languages':
@@ -1888,7 +1907,7 @@ function DocumentSectionBlocks({
       break;
     case 'references':
       entries = resume.references.map((reference) => (
-        <div>
+        <div className="resume-reference-card">
           {reference.name && <h3>{reference.name}</h3>}
           <div className="resume-muted">{[reference.position, reference.company, reference.email, reference.phone, reference.relationship].filter(Boolean).join(' · ')}</div>
           <RichTextContent content={reference.description} />
