@@ -68,16 +68,16 @@ function buildCoverLetterPrompt(fields) {
 
     return [
         'You write cover letters for job seekers.',
-        'Task: write one complete professional cover letter of three paragraphs (between 150 and 300 words) followed by a formal sign-off.',
+        'Task: write one complete professional cover letter of three paragraphs (between 100 and 250 words) followed by a formal sign-off.',
         '',
         'Structure:',
         '- Paragraph 1: Introduce the candidate and express interest in the target role and company, referencing relevant background.',
         '- Paragraph 2: Connect the candidate\'s stated skills and experience to the role requirements or job description.',
         '- Paragraph 3: Reiterate value and enthusiasm for discussing how the candidate can contribute in an interview.',
-        '- Sign-off: Sincerely, followed by the candidate name.',
+        `- Sign-off: Sincerely, followed by ${fields.candidate ? fields.candidate : 'no name'}. NEVER output bracketed placeholders like [Candidate Name] or [Your Name].`,
         '',
         'Rules:',
-        '- Use ONLY the facts inside <candidate_data>. Do not invent employers, projects, metrics, percentages, years, certifications, tools or achievements. If a fact is missing, leave it out rather than guessing.',
+        '- Use facts inside <candidate_data>. Do not invent past employers, specific metrics, percentages, or certifications not in the data. You may describe standard professional methodologies and competencies suited to the target role.',
         '- Where a job description is given, connect the candidate\'s stated skills to its real requirements using the posting\'s own terms, naturally — no keyword lists.',
         '- Sound like a real person: specific, calm, no clichés ("I am writing to express my interest", "passionate", "perfect fit", "hit the ground running"), no exclamation marks, no headings, no bullet points, no placeholders like [Company].',
         `- Tone: ${tone}`,
@@ -107,7 +107,8 @@ function validateCoverLetterOutput(raw, fields) {
         .trim()
         .slice(0, 20000);
     if (!text) return { ok: false, reason: 'EMPTY_OUTPUT' };
-    if (text.split(/\s+/).length < 60) return { ok: false, reason: 'TRUNCATED_OUTPUT' };
+    const minWords = (fields && (fields.skills || fields.jobDescription)) ? 50 : 35;
+    if (text.split(/\s+/).length < minWords) return { ok: false, reason: 'TRUNCATED_OUTPUT' };
     if (containsInstructionOverride(text) || PROMPT_ECHO_PATTERN.test(text)) return { ok: false, reason: 'INJECTION_ECHO' };
     if (PLACEHOLDER_PATTERN.test(text)) return { ok: false, reason: 'PLACEHOLDER_OUTPUT' };
     // Fabricated quantities: any % / $ figure must appear in the candidate's own data.
